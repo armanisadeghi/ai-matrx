@@ -246,7 +246,7 @@ export function syncOrchestratorPrompt(args: {
         (req?.status === "error" ? "the run ended in an error" : lastDetail);
       if (attempt < DESCRIBE_ATTEMPTS) {
         console.warn(
-          `[agent-sets] role describer attempt ${attempt}/${DESCRIBE_ATTEMPTS} produced no output (${lastDetail}); retrying`,
+          `[orchestras] role describer attempt ${attempt}/${DESCRIBE_ATTEMPTS} produced no output (${lastDetail}); retrying`,
         );
         await new Promise((r) => setTimeout(r, 700 * attempt));
       }
@@ -294,7 +294,7 @@ export function syncOrchestratorPrompt(args: {
       if (res.ok) membersUpdated += 1;
       else {
         console.warn(
-          `[agent-sets] could not save role/gap for member ${m.agentId}: ${res.error}`,
+          `[orchestras] could not save role/gap for member ${m.agentId}: ${res.error}`,
         );
       }
     }

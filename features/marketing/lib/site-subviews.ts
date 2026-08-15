@@ -93,6 +93,10 @@ export const MARKETING_SITE_SUBVIEWS = [
     views: [
       { id: "overview", label: "Overview" },
       { id: "links", label: "Backlinks" },
+      // What HAPPENED to the links we already have (seo.backlink_change_event,
+      // written nightly). A different question from the Backlinks table, which
+      // shows the links as they stand right now.
+      { id: "changes", label: "Link changes" },
       { id: "domains", label: "Referring domains" },
       { id: "anchors", label: "Anchors" },
       { id: "pages", label: "Top pages" },

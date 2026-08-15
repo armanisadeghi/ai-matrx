@@ -6,12 +6,15 @@ import type { BacklinkLensKey } from "@/features/marketing/components/backlinks/
 import type { BacklinkObservationRow } from "@/features/marketing/data/backlinks-types";
 import {
   getBacklink,
+  getBacklinkChangeSummary,
   getBacklinkTrend,
   getBacklinkWorkspace,
   listAllAnchors,
+  listBacklinkChangeEvents,
   listDimensionRows,
   listLatestBacklinks,
   listReferringDomainProfiles,
+  type BacklinkChangeFilters,
   type BacklinkDimensionKind,
 } from "@/features/marketing/data/backlinks-queries";
 import { marketingKeys } from "@/features/marketing/data/hooks";
@@ -49,6 +52,20 @@ export const backlinkKeys = {
     [...marketingKeys.site(siteId), "backlinks", "anchors-full"] as const,
   trend: (siteId: string) =>
     [...marketingKeys.site(siteId), "backlinks", "trend"] as const,
+  changeEvents: (
+    siteId: string,
+    state: MatrxDataTableQueryState,
+    filters: BacklinkChangeFilters,
+  ) =>
+    [
+      ...marketingKeys.site(siteId),
+      "backlinks",
+      "change-events",
+      filters,
+      state,
+    ] as const,
+  changeSummary: (siteId: string) =>
+    [...marketingKeys.site(siteId), "backlinks", "change-summary"] as const,
   domainProfiles: (siteId: string, state: MatrxDataTableQueryState) =>
     [
       ...marketingKeys.site(siteId),
@@ -105,6 +122,30 @@ export function useLatestBacklinks(
       listLatestBacklinks(siteId, state, lens ? { lens } : undefined, signal),
     enabled: Boolean(siteId),
     placeholderData: keepPreviousData,
+  });
+}
+
+/** The paged Link changes table (server-filtered by kind / alert floor). */
+export function useBacklinkChangeEvents(
+  siteId: string,
+  state: MatrxDataTableQueryState,
+  filters: BacklinkChangeFilters = {},
+) {
+  return useQuery({
+    queryKey: backlinkKeys.changeEvents(siteId, state, filters),
+    queryFn: ({ signal }) =>
+      listBacklinkChangeEvents(siteId, state, filters, signal),
+    enabled: Boolean(siteId),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/** Counts behind the Link changes KPI band — every tile is a door. */
+export function useBacklinkChangeSummary(siteId: string) {
+  return useQuery({
+    queryKey: backlinkKeys.changeSummary(siteId),
+    queryFn: ({ signal }) => getBacklinkChangeSummary(siteId, signal),
+    enabled: Boolean(siteId),
   });
 }
 

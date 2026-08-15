@@ -1,5 +1,7 @@
 import type { MatrxDataTableQueryState } from "@/components/official/matrx-data-table/types";
 import type {
+  BacklinkChangeEventRow,
+  BacklinkChangeSummary,
   BacklinkDimensionRow,
   BacklinkObservationRow,
   BacklinkPagedResult,
@@ -9,6 +11,11 @@ import type {
   ReferringDomainProfileRow,
 } from "@/features/marketing/data/backlinks-types";
 import type { BacklinkLensKey } from "@/features/marketing/components/backlinks/lib/vocab";
+import {
+  BACKLINK_CHANGE_KINDS,
+  CHANGE_ALERT_SEVERITY_FLOOR,
+  type BacklinkChangeKind,
+} from "@/features/marketing/components/backlinks/lib/changes";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 
@@ -461,6 +468,127 @@ export async function listLatestBacklinks(
   return {
     rows: assertData(response.data, response.error),
     total: response.count ?? 0,
+  };
+}
+
+const CHANGE_EVENT_SORT_COLUMNS: Readonly<
+  Record<string, keyof BacklinkChangeEventRow>
+> = {
+  detected_at: "detected_at",
+  observed_at: "observed_at",
+  severity: "severity",
+  change_kind: "change_kind",
+  source_domain: "source_domain",
+  target_url: "target_url",
+};
+
+export interface BacklinkChangeFilters {
+  /** Preselected by the `?changeKind=` deep link the server assists emit. */
+  changeKind?: string | null;
+  /** The alert-floor lens: only changes the server would raise an alert for. */
+  needsAttention?: boolean;
+}
+
+/**
+ * Recorded backlink changes for one site, paged server-side — same shape and
+ * same rules as `listLatestBacklinks`. Every control the Link changes table
+ * renders maps 1:1 to a filter honored here; nothing is filtered client-side.
+ */
+export async function listBacklinkChangeEvents(
+  siteId: string,
+  state: MatrxDataTableQueryState,
+  filters?: BacklinkChangeFilters,
+  signal?: AbortSignal,
+): Promise<BacklinkPagedResult<BacklinkChangeEventRow>> {
+  const { from, to } = rangeFor(state);
+  const db = await seoDb();
+  let query = db
+    .from("backlink_change_event")
+    .select("*", { count: "exact" })
+    .eq("site_id", siteId);
+  const search = cleanSearch(state.search);
+  if (search) {
+    query = query.or(
+      `source_domain.ilike.%${search}%,source_url.ilike.%${search}%,target_url.ilike.%${search}%`,
+    );
+  }
+  if (filters?.needsAttention) {
+    query = query.gte("severity", CHANGE_ALERT_SEVERITY_FLOOR);
+  }
+  // The lens argument wins over the column filter only when the column filter
+  // is unset — the user narrowing the table must always beat the URL that
+  // opened it, or a deep link would be impossible to escape without a reload.
+  const kinds = selectedValues(state.columnFilters.change_kind);
+  if (kinds.length === 1) {
+    query = query.eq("change_kind", kinds[0]);
+  } else if (kinds.length > 1) {
+    query = query.in("change_kind", kinds);
+  } else if (filters?.changeKind) {
+    query = query.eq("change_kind", filters.changeKind);
+  }
+  const severityFilter = state.columnFilters.severity;
+  if (severityFilter?.kind === "number") {
+    if (severityFilter.min !== undefined) {
+      query = query.gte("severity", severityFilter.min);
+    }
+    if (severityFilter.max !== undefined) {
+      query = query.lte("severity", severityFilter.max);
+    }
+  }
+  const sortColumn = state.sort
+    ? (CHANGE_EVENT_SORT_COLUMNS[state.sort.id] ?? "detected_at")
+    : "detected_at";
+  const ascending = state.sort ? state.sort.direction === "asc" : false;
+  const response = await query
+    .order(sortColumn, { ascending, nullsFirst: false })
+    // Same-timestamp ties break on how urgent the change is, then on id, so
+    // paging is stable across requests.
+    .order("severity", { ascending: false })
+    .order("id", { ascending: true })
+    .range(from, to)
+    .abortSignal(signal ?? new AbortController().signal);
+  return {
+    rows: assertData(response.data, response.error),
+    total: response.count ?? 0,
+  };
+}
+
+/**
+ * Exact counts for the Link changes KPI band — one head count per kind plus
+ * the alert-floor set, all in parallel (the same shape `getBacklinkWorkspace`
+ * uses for its enrichment tiles). Head counts, not a capped read: a tile that
+ * silently stops counting past 1000 rows would be worse than no tile.
+ */
+export async function getBacklinkChangeSummary(
+  siteId: string,
+  signal?: AbortSignal,
+): Promise<BacklinkChangeSummary> {
+  const db = await seoDb();
+  const abortSignal = signal ?? new AbortController().signal;
+  const base = () =>
+    db
+      .from("backlink_change_event")
+      .select("*", { count: "exact", head: true })
+      .eq("site_id", siteId);
+  const [totalResponse, alertableResponse, ...kindResponses] =
+    await Promise.all([
+      base().abortSignal(abortSignal),
+      base().gte("severity", CHANGE_ALERT_SEVERITY_FLOOR).abortSignal(
+        abortSignal,
+      ),
+      ...BACKLINK_CHANGE_KINDS.map((kind) =>
+        base().eq("change_kind", kind.key).abortSignal(abortSignal),
+      ),
+    ]);
+  const byKind = {} as Record<BacklinkChangeKind, number>;
+  BACKLINK_CHANGE_KINDS.forEach((kind, index) => {
+    const response = kindResponses[index];
+    byKind[kind.key] = assertCount(response.count, response.error);
+  });
+  return {
+    total: assertCount(totalResponse.count, totalResponse.error),
+    alertable: assertCount(alertableResponse.count, alertableResponse.error),
+    byKind,
   };
 }
 

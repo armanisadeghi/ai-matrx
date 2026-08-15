@@ -12,6 +12,7 @@
  */
 
 import {
+  Activity,
   BookOpen,
   Briefcase,
   Building2,
@@ -72,6 +73,7 @@ export const MARKETING_SUBVIEW_ICONS: Record<string, LucideIcon> = {
 
   "backlinks:overview": LayoutDashboard,
   "backlinks:links": Link2,
+  "backlinks:changes": Activity,
   "backlinks:domains": Globe,
   "backlinks:anchors": Type,
   "backlinks:pages": FileText,

@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database.types";
+import type { BacklinkChangeKind } from "@/features/marketing/components/backlinks/lib/changes";
 
 export type BacklinkSnapshotRow =
   Database["seo"]["Tables"]["backlink_snapshot"]["Row"];
@@ -9,10 +10,28 @@ export type ReferringDomainProfileRow =
   Database["seo"]["Tables"]["referring_domain_profile"]["Row"];
 export type BacklinkDimensionRow =
   Database["seo"]["Tables"]["backlink_dimension_snapshot"]["Row"];
+/**
+ * One recorded change to an acquired backlink — written nightly by the server
+ * comparison, never by this client. The plain-language verdict for a row
+ * lives in `components/backlinks/lib/changes.ts`.
+ */
+export type BacklinkChangeEventRow =
+  Database["seo"]["Tables"]["backlink_change_event"]["Row"];
 
 export interface BacklinkPagedResult<T> {
   rows: T[];
   total: number;
+}
+
+/**
+ * Counts behind the Link changes KPI band. `alertable` is the set at or above
+ * the server's alert floor — the same rows the "Needs your attention" lens
+ * lists, so a tile and the table it opens can never disagree.
+ */
+export interface BacklinkChangeSummary {
+  total: number;
+  alertable: number;
+  byKind: Record<BacklinkChangeKind, number>;
 }
 
 export interface BacklinkWorkspaceData {

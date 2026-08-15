@@ -43,7 +43,7 @@ import { AgentPeekButton } from "./AgentPeekButton";
 import { accentClasses } from "./accents";
 import { DEFAULT_ORCHESTRA_ACCENT, ORCHESTRA_ACCENTS, type OrchestraAccent } from "../constants";
 
-const PICKER_CONSUMER = "agent-sets-orchestrator-picker";
+const PICKER_CONSUMER = "orchestras-orchestrator-picker";
 
 /** Bridge DesktopFilterPanel's whole-array setter onto the consumer's per-item toggle. */
 function applyArrayViaToggle(

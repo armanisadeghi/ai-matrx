@@ -30,7 +30,7 @@ import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorC
 /** MIME key used to hand an agent id from the rail to the canvas drop target. */
 export const AGENT_DND_MIME = "application/x-matrx-agent-id";
 
-const LIBRARY_CONSUMER = "agent-sets-library";
+const LIBRARY_CONSUMER = "orchestras-library";
 
 /** Bridge DesktopFilterPanel's whole-array setter onto the consumer's per-item toggle. */
 function applyArrayViaToggle(current: string[], next: string[], toggle: (v: string) => void) {

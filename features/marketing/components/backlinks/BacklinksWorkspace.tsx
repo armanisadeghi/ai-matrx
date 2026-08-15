@@ -82,6 +82,7 @@ import { marketingKeys } from "@/features/marketing/data/hooks";
 import { BacklinkKpiBand } from "@/features/marketing/components/backlinks/BacklinkKpiBand";
 import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/BacklinkTrendChart";
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
+import { BacklinkChangesTable } from "@/features/marketing/components/backlinks/BacklinkChangesTable";
 import { BacklinkDimensionTable } from "@/features/marketing/components/backlinks/BacklinkDimensionTable";
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
 import { BacklinkProspectsTab } from "@/features/marketing/components/backlinks/BacklinkProspectsTab";
@@ -486,6 +487,12 @@ export function BacklinksWorkspace() {
     // this. Drop it here or a stale one would win back on the default view.
     params.delete("tab");
     params.delete(DOMAIN_VIEW_PARAM);
+    // The Link changes view's own lens params. A stale `changeKind` carried
+    // onto another tab does nothing there, but it comes BACK the moment the
+    // user returns — so the tab would reopen filtered with no explanation.
+    params.delete("changeKind");
+    params.delete("changeEvent");
+    params.delete("attention");
     for (const [key, value] of Object.entries(extra ?? {})) {
       params.set(key, value);
     }
@@ -1468,6 +1475,10 @@ export function BacklinksWorkspace() {
                 onDismissAnalysisRun={dismissAnalysisRun}
                 analysisDisabled={analysisDisabled}
               />
+            </div>
+          ) : tab === "changes" ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <BacklinkChangesTable siteId={site.id} />
             </div>
           ) : tab === "prospects" ? (
             <BacklinkProspectsTab
