@@ -4449,6 +4449,9 @@ export default function OverlayController() {
             requestId={
               typeof data?.requestId === "string" ? data.requestId : null
             }
+            runSetKey={
+              typeof data?.runSetKey === "string" ? data.runSetKey : null
+            }
             label={typeof data?.label === "string" ? data.label : null}
             pending={data?.pending === true}
             progress={parseLiveRunProgressState(data?.progress)}

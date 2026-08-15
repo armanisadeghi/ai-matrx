@@ -29,11 +29,14 @@ import {
   LiveRunDisplay,
   useLiveRunStatus,
 } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { RunSetDisplay } from "@/features/agents/components/live-run/RunSetDisplay";
+import { selectRunSetEntries } from "@/features/agents/redux/execution-system/run-sets/run-sets.slice";
 import {
   LiveRunProgress,
   type LiveRunProgressState,
 } from "@/features/agents/components/live-run/LiveRunProgress";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 /**
  * 🚨 THE SIZING RULE — the reading column must match `/chat`, exactly.
@@ -73,6 +76,8 @@ export interface LiveRunWindowProps {
   conversationId?: string | null;
   /** Adopted server-pipeline runs (`adoptForeignStream`) bind by request id. */
   requestId?: string | null;
+  /** Multi-run surfaces bind by stable run-set key and render every entry. */
+  runSetKey?: string | null;
   /** What the user is watching, e.g. "Drafting brief". */
   label?: string | null;
   /** The run has been launched but no stream has connected yet. */
@@ -94,13 +99,25 @@ export default function LiveRunWindow({
   onClose,
   conversationId = null,
   requestId = null,
+  runSetKey = null,
   label = null,
   pending = false,
   width = LIVE_RUN_WIDTH,
   height = LIVE_RUN_HEIGHT,
   progress = null,
 }: LiveRunWindowProps) {
-  const { statusText } = useLiveRunStatus(conversationId, requestId, pending);
+  const runSetEntries = useAppSelector((state) =>
+    selectRunSetEntries(state, runSetKey ?? ""),
+  );
+  const latestRunEntry = runSetEntries.findLast(
+    (entry) => entry.kind === "run",
+  );
+  const statusRequestId = requestId ?? latestRunEntry?.requestId ?? null;
+  const { statusText } = useLiveRunStatus(
+    conversationId,
+    statusRequestId,
+    pending && !statusRequestId,
+  );
 
   // The phase rides in the frame's OWN title bar. It is not a second row, not
   // a subtitle strip, and not a status bar inside the body — the window
@@ -129,6 +146,10 @@ export default function LiveRunWindow({
       <div className="h-full min-h-0 overflow-hidden">
         {progress ? (
           <LiveRunProgress progress={progress} />
+        ) : runSetKey ? (
+          <div className="h-full min-h-0 overflow-y-auto">
+            <RunSetDisplay setKey={runSetKey} variant="bare" />
+          </div>
         ) : (
           <LiveRunDisplay
             conversationId={conversationId}

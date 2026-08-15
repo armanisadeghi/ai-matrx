@@ -80,6 +80,7 @@ import {
 } from "../hooks/usePlanWorkspaceParams";
 import { PlanAssistStrip } from "./PlanAssistStrip";
 import { PlanDriftBar } from "./PlanDriftBar";
+import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
 import { PlanDriftSheet, type DriftFilter } from "./PlanDriftSheet";
 import { PlanGenerateBar } from "./PlanGenerateBar";
 import { PlanWebsiteBar } from "./PlanWebsiteBar";
@@ -723,6 +724,24 @@ export function ContentPlanWorkbench({
       getWriteHandlers={getWriteHandlers}
     >
       <div className="flex h-full flex-col pt-[var(--shell-header-h)]">
+        <RunSetWindowController
+          setKey={generate.runSetKey}
+          instanceId={`content-plan-generate:${siteId ?? "none"}`}
+          label="Generating plan"
+          active={generate.run.status === "running"}
+        />
+        <RunSetWindowController
+          setKey={deepen.runSetKey}
+          instanceId={`content-plan-deepen:${siteId ?? "none"}`}
+          label="Deepening page — brief + sources"
+          active={deepen.run.status === "running"}
+        />
+        <RunSetWindowController
+          setKey={bulkDeepen.runSetKey}
+          instanceId={`content-plan-bulk-deepen:${siteId ?? "none"}`}
+          label="Deepening plan briefs"
+          active={bulkDeepen.run.status === "running"}
+        />
         {site && !site.brand_id ? (
           <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
             This site has no brand — the database rejects plan rows for it

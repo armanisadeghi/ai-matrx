@@ -26,6 +26,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import {
+  addRunToSet,
+  clearRunSet,
+} from "@/features/agents/redux/execution-system/run-sets/run-sets.thunks";
 import { callApi } from "@/lib/api/call-api";
 import {
   describeBackendFailure,
@@ -104,7 +108,9 @@ export function readBriefDraft(node: PlanNodeRow): BriefDraft | null {
     must_not_cover: strings(row.must_not_cover),
     concerns: strings(row.concerns),
     suggested_word_count:
-      typeof row.suggested_word_count === "number" ? row.suggested_word_count : null,
+      typeof row.suggested_word_count === "number"
+        ? row.suggested_word_count
+        : null,
     slot_key: typeof row.slot_key === "string" ? row.slot_key : "",
     agent_id: typeof row.agent_id === "string" ? row.agent_id : null,
     model_id: typeof row.model_id === "string" ? row.model_id : null,
@@ -148,7 +154,10 @@ function parseRunSummaries(data: unknown): BriefRunSummary[] {
  * it — a consumed draft whose lines still match the live brief is history,
  * not a pending decision.
  */
-export function isDraftPending(node: PlanNodeRow, draft: BriefDraft | null): boolean {
+export function isDraftPending(
+  node: PlanNodeRow,
+  draft: BriefDraft | null,
+): boolean {
   if (!draft) return false;
   const live = node.brief ?? [];
   const same =
@@ -187,25 +196,38 @@ export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
   const adoptedRequestIdRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const cancelledRef = useRef(false);
+  /** A late stream completion may never overwrite a newer draft run. */
+  const runEpochRef = useRef(0);
+  const mountedRef = useRef(true);
 
-  useEffect(
-    () => () => {
+  const nodeId = args.node.id;
+  const siteId = args.siteId;
+  const runSetKey = `content-plan-ai:${siteId}:brief:${nodeId}`;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
       cancelledRef.current = true;
-      abortRef.current?.abort();
+      // Keep the reader alive so the set-held row continues streaming through
+      // a NodePanel remount; only local state becomes stale.
+      runEpochRef.current += 1;
       if (adoptedRequestIdRef.current) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
         adoptedRequestIdRef.current = null;
       }
-    },
-    [dispatch],
-  );
-
-  const nodeId = args.node.id;
-  const siteId = args.siteId;
+    };
+  }, [dispatch]);
 
   const start = useCallback(
     async (guidance = "") => {
       if (inFlight.current) return;
+      const epoch = ++runEpochRef.current;
+      const setRunForEpoch = (
+        updater: (current: BriefWriterRunState) => BriefWriterRunState,
+      ) => {
+        if (runEpochRef.current === epoch) setRun(updater);
+      };
       inFlight.current = true;
       cancelledRef.current = false;
       setRun({ status: "running", stage: "Reading neighbours + research…" });
@@ -215,18 +237,32 @@ export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
         dispatch(removeRequest(adoptedRequestIdRef.current));
         adoptedRequestIdRef.current = null;
       }
+      dispatch(clearRunSet(runSetKey));
       const streamAbort = new AbortController();
       abortRef.current = streamAbort;
       const consumeStream = dispatch(
         adoptForeignStream({
           onAdopted: ({ requestId }) => {
+            if (runEpochRef.current !== epoch) {
+              dispatch(removeRequest(requestId));
+              return;
+            }
             adoptedRequestIdRef.current = requestId;
-            setRun((current) => ({ ...current, requestId }));
+            setRunForEpoch((current) => ({ ...current, requestId }));
+            dispatch(
+              addRunToSet({
+                setKey: runSetKey,
+                requestId,
+                label: `Drafting brief — ${args.node.route ?? args.node.label}`,
+              }),
+            );
           },
           abortController: streamAbort,
           onEvent: (event) => {
             const stage = readPhaseMessage(event);
-            if (stage) setRun((current) => ({ ...current, stage }));
+            if (stage) {
+              setRunForEpoch((current) => ({ ...current, stage }));
+            }
             if (event.event === "error") {
               streamFailure = describeBackendFailure(
                 parseStreamError(event.data),
@@ -248,12 +284,18 @@ export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
         }),
       );
 
-      inFlight.current = false;
-      abortRef.current = null;
+      if (runEpochRef.current === epoch) {
+        inFlight.current = false;
+        if (abortRef.current === streamAbort) abortRef.current = null;
+      }
       // The server persists the draft before it streams anything — refetch
       // regardless of how the stream ended. A user who closed the tab mid-run
       // finds the draft waiting when they come back.
       void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+
+      // Reset/dismiss/unmount or a newer run owns the surface now. Everything
+      // below is local UI state/toast for the stale epoch, so settle silently.
+      if (runEpochRef.current !== epoch) return;
 
       if (cancelledRef.current) {
         cancelledRef.current = false;
@@ -261,20 +303,37 @@ export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
         return;
       }
       if (result.error) {
-        const explanation = describeBackendFailure(parseCallApiError(result.error));
-        setRun({ status: "error", error: explanation.headline });
+        const explanation = describeBackendFailure(
+          parseCallApiError(result.error),
+        );
+        setRunForEpoch(() => ({
+          status: "error",
+          error: explanation.headline,
+        }));
         toast.error(`Brief draft failed: ${explanation.headline}`);
         return;
       }
-      if (streamFailure) {
-        setRun({ status: "error", error: streamFailure });
-        toast.error(`Brief draft failed: ${streamFailure}`);
+      const finalStreamFailure = streamFailure;
+      if (finalStreamFailure) {
+        setRunForEpoch(() => ({
+          status: "error",
+          error: finalStreamFailure,
+        }));
+        toast.error(`Brief draft failed: ${finalStreamFailure}`);
         return;
       }
-      setRun((current) => ({ ...current, status: "done" }));
+      setRunForEpoch((current) => ({ ...current, status: "done" }));
       toast.success("Brief drafted and saved to this page — review it below.");
     },
-    [dispatch, nodeId, queryClient, siteId],
+    [
+      args.node.label,
+      args.node.route,
+      dispatch,
+      nodeId,
+      queryClient,
+      runSetKey,
+      siteId,
+    ],
   );
 
   /** Promote the persisted draft onto the node's live brief. */
@@ -289,7 +348,7 @@ export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
         body: {},
       }),
     );
-    setAccepting(false);
+    if (mountedRef.current) setAccepting(false);
     void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
     if (result.error) {
       toast.error(
@@ -339,31 +398,39 @@ export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
           body: { run_id: runId },
         }),
       );
-      setRestoringRunId(null);
+      if (mountedRef.current) setRestoringRunId(null);
       void queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
-      void queryClient.invalidateQueries({ queryKey: briefRunKeys.list(nodeId) });
+      void queryClient.invalidateQueries({
+        queryKey: briefRunKeys.list(nodeId),
+      });
       if (result.error) {
         toast.error(
           `Could not restore that run: ${describeBackendFailure(parseCallApiError(result.error)).headline}`,
         );
         return;
       }
-      toast.success("That run is the current draft again — review and apply it.");
+      toast.success(
+        "That run is the current draft again — review and apply it.",
+      );
     },
     [dispatch, nodeId, queryClient, siteId],
   );
 
   const reset = useCallback(() => {
+    runEpochRef.current += 1;
     if (inFlight.current) {
       cancelledRef.current = true;
       abortRef.current?.abort();
     }
+    inFlight.current = false;
+    abortRef.current = null;
     if (adoptedRequestIdRef.current) {
       dispatch(removeRequest(adoptedRequestIdRef.current));
       adoptedRequestIdRef.current = null;
     }
+    dispatch(clearRunSet(runSetKey));
     setRun(IDLE);
-  }, [dispatch]);
+  }, [dispatch, runSetKey]);
 
   return {
     run,
@@ -380,6 +447,7 @@ export function useBriefWriter(args: { node: PlanNodeRow; siteId: string }) {
       runsQuery.error instanceof Error ? runsQuery.error.message : null,
     restore,
     restoringRunId,
+    runSetKey,
   };
 }
 

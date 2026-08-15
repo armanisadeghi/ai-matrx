@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-12
+updated: 2026-08-15
 repos: [matrx-frontend]
 vision: [features/window-panels/FEATURE.md]
 ---
@@ -371,17 +371,6 @@ run. Guard tests: `request-viewer-retention.test.ts`, `run-sets.test.ts`.
   the FE has nothing to bind — the work is server-side in aidream (stream the route, or
   emit phase/info milestones the way content_plan `_progress` does), then adopt with
   `adoptForeignStream`. Do NOT paper over it with invented client-side stages.
-
-### 7b. Run-set migration for multi-lane content-plan hooks — chipped 2026-08-15, M
-
-`features/marketing/content-plan/hooks/useContentPlanAi.ts`, `useSetupPasses.ts`, and
-`useBriefWriter.ts` each fire MANY adopted streams (one per lane/pass/node) and hold every
-requestId in component state. Viewer retention + abort-before-reap already stop the mid-run
-blanking, but a host remount still makes the surface FORGET lanes that are streaming — the
-exact "system gets confused with more than one call" class. Migrate them onto the `runSets`
-slice + `RunSetDisplay` (`features/agents/components/live-run/RunSetDisplay.tsx`);
-`useKeywordResearch` (`runSetKey` + epoch guard + `rejoinPhrase`) is the worked exemplar, and
-`LIVE_RUN_RETENTION.md` § Multi-run surfaces is the contract.
 
 ### 8. Refresh-fragility only (stage narration is present) — D, M each
 

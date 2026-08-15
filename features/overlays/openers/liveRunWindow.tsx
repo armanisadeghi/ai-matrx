@@ -37,6 +37,8 @@ export interface OpenLiveRunWindowOptions {
   conversationId?: string | null;
   /** Adopted server-pipeline runs bind by request id. */
   requestId?: string | null;
+  /** Multi-run surfaces bind the window to one stable Redux run-set key. */
+  runSetKey?: string | null;
   /** What the user is watching, e.g. "Drafting brief". */
   label?: string | null;
   /** Launched, but no stream has connected yet. */
@@ -77,6 +79,7 @@ export function openLiveRunWindowAction(
       windowInstanceId: opts.instanceId,
       conversationId: opts.conversationId ?? null,
       requestId: opts.requestId ?? null,
+      runSetKey: opts.runSetKey ?? null,
       label: opts.label ?? null,
       pending: opts.pending ?? false,
       // Undefined (not null) so the component's chat-matched defaults
@@ -151,6 +154,7 @@ export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
     instanceId,
     conversationId,
     requestId,
+    runSetKey,
     label,
     width,
     height,
@@ -165,6 +169,7 @@ export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
     handleRef.current.update({
       conversationId,
       requestId,
+      runSetKey,
       label,
       progress,
       // `pending` only until a stream handle exists to bind.
@@ -176,6 +181,7 @@ export function useFloatingLiveRun(opts: FloatingLiveRunOptions): void {
     instanceId,
     conversationId,
     requestId,
+    runSetKey,
     label,
     width,
     height,
@@ -196,6 +202,7 @@ export function LiveRunWindowController(
     instanceId,
     conversationId,
     requestId,
+    runSetKey,
     label,
     pending,
     width,
@@ -216,13 +223,23 @@ export function LiveRunWindowController(
     handleRef.current?.update({
       conversationId,
       requestId,
+      runSetKey,
       label,
       pending,
       width,
       height,
       progress,
     });
-  }, [conversationId, requestId, label, pending, width, height, progress]);
+  }, [
+    conversationId,
+    requestId,
+    runSetKey,
+    label,
+    pending,
+    width,
+    height,
+    progress,
+  ]);
 
   return null;
 }

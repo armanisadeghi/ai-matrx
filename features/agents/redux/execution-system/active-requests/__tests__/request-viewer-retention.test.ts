@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import { destroyInstance } from "../../conversations/conversations.slice";
 import activeRequestsReducer, {
+  appendChunk,
   createRequest,
   releaseRequestForViewer,
   removeRequest,
@@ -112,6 +113,36 @@ test("requests without viewers are removed immediately", () => {
 
   store.dispatch(removeRequest(REQUEST_ID));
 
+  expect(
+    store.getState().activeRequests.byRequestId[REQUEST_ID],
+  ).toBeUndefined();
+});
+
+test("a retained row keeps accepting stream events after its owner unmounts", () => {
+  const store = makeStore();
+  createTestRequest(store);
+  store.dispatch(
+    retainRequestForViewer({
+      requestId: REQUEST_ID,
+      viewerId: "run-set:content-plan:lane",
+    }),
+  );
+
+  // The launcher hook is gone, but its reader deliberately keeps draining
+  // into the Redux row held by the remount-proof run set.
+  store.dispatch(removeRequest(REQUEST_ID));
+  store.dispatch(appendChunk({ requestId: REQUEST_ID, content: "still live" }));
+
+  expect(
+    store.getState().activeRequests.byRequestId[REQUEST_ID]?.chunkCount,
+  ).toBe(1);
+
+  store.dispatch(
+    releaseRequestForViewer({
+      requestId: REQUEST_ID,
+      viewerId: "run-set:content-plan:lane",
+    }),
+  );
   expect(
     store.getState().activeRequests.byRequestId[REQUEST_ID],
   ).toBeUndefined();

@@ -36,6 +36,7 @@ import {
   clearRunSet,
   removeRunSetEntry,
 } from "@/features/agents/redux/execution-system/run-sets/run-sets.thunks";
+import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 
 export interface RunSetDisplayProps {
   /** Stable identity of this surface's set ("keyword-research:brain:org123"). */
@@ -121,4 +122,40 @@ export function useRunSet(setKey: string) {
     remove: (id: string) => dispatch(removeRunSetEntry({ setKey, id })),
     clear: () => dispatch(clearRunSet(setKey)),
   };
+}
+
+export interface RunSetWindowControllerProps {
+  /** Stable Redux identity for every run rendered in this window. */
+  setKey: string;
+  /** Stable overlay identity so host remounts re-bind one existing window. */
+  instanceId: string;
+  label: string;
+  /** Opens before adoption while the first request id is still pending. */
+  active?: boolean;
+  width?: number | string;
+  height?: number | string;
+}
+
+/**
+ * Floating-law host for a run set. The window reads request ids from Redux,
+ * so a remounted caller needs no component-local handle to re-show every run.
+ */
+export function RunSetWindowController({
+  setKey,
+  instanceId,
+  label,
+  active,
+  width,
+  height,
+}: RunSetWindowControllerProps): null {
+  const entries = useAppSelector((state) => selectRunSetEntries(state, setKey));
+  useFloatingLiveRun({
+    active: (active ?? false) || entries.length > 0,
+    instanceId,
+    runSetKey: setKey,
+    label,
+    width,
+    height,
+  });
+  return null;
 }
