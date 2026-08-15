@@ -26,6 +26,7 @@ import {
   verifySiteOwnership,
   verifyCollectionOwnership,
 } from "../_lib/cmsDb";
+import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import {
   validateItem,
@@ -363,13 +364,13 @@ function resolveItemFilter(raw: unknown): CollectionItemFilter {
 }
 
 /**
- * Verify every item id belongs to a site the user owns. Returns the rows
+ * Verify every item id belongs to a site the caller may edit. Returns the rows
  * (id, collection_id, client_id) on success so callers can log per collection.
  */
 async function verifyItemsOwnership(
   db: SupabaseClient,
   itemIds: string[],
-  userId: string,
+  caller: CmsCaller,
 ): Promise<
   | { ok: true; items: { id: string; collection_id: string; client_id: string }[] }
   | { ok: false }
@@ -381,7 +382,7 @@ async function verifyItemsOwnership(
   if (error || !items || items.length !== itemIds.length) return { ok: false };
   const clientIds = [...new Set(items.map((i) => i.client_id as string))];
   for (const clientId of clientIds) {
-    if (!(await verifySiteOwnership(db, clientId, userId))) return { ok: false };
+    if (!(await verifySiteOwnership(db, clientId, caller))) return { ok: false };
   }
   return {
     ok: true,
@@ -417,6 +418,12 @@ export async function POST(request: NextRequest) {
     const { action, ...params } = body as Record<string, unknown>;
     const db = getCmsClient();
 
+    // Org memberships for this request. A CMS site is org-scoped and shareable
+    // (Arman, 2026-08-15), so every ownership check below needs the caller's
+    // orgs, not just their user id. Resolved once, never cached across
+    // requests: a revoked membership must stop working on the next call.
+    const caller: CmsCaller = await resolveCmsCaller(mainSupabase, user.id);
+
     switch (action) {
       // ── List a site's collections (with live counts) ───────────────
       case "list": {
@@ -425,7 +432,7 @@ export async function POST(request: NextRequest) {
         if (!siteId) {
           return NextResponse.json({ error: "siteId is required" }, { status: 400 });
         }
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -491,7 +498,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifyCollectionOwnership(db, collectionId, user.id))) {
+        if (!(await verifyCollectionOwnership(db, collectionId, caller))) {
           return NextResponse.json(
             { error: "Collection not found or access denied" },
             { status: 403 },
@@ -550,7 +557,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -663,7 +670,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifyCollectionOwnership(db, collectionId, user.id))) {
+        if (!(await verifyCollectionOwnership(db, collectionId, caller))) {
           return NextResponse.json(
             { error: "Collection not found or access denied" },
             { status: 403 },
@@ -878,7 +885,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifyCollectionOwnership(db, collectionId, user.id))) {
+        if (!(await verifyCollectionOwnership(db, collectionId, caller))) {
           return NextResponse.json(
             { error: "Collection not found or access denied" },
             { status: 403 },
@@ -915,7 +922,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifyCollectionOwnership(db, collectionId, user.id))) {
+        if (!(await verifyCollectionOwnership(db, collectionId, caller))) {
           return NextResponse.json(
             { error: "Collection not found or access denied" },
             { status: 403 },
@@ -949,7 +956,7 @@ export async function POST(request: NextRequest) {
         if (!siteId) {
           return NextResponse.json({ error: "siteId is required" }, { status: 400 });
         }
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -988,7 +995,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifyCollectionOwnership(db, collectionId, user.id))) {
+        if (!(await verifyCollectionOwnership(db, collectionId, caller))) {
           return NextResponse.json(
             { error: "Collection not found or access denied" },
             { status: 403 },
@@ -1100,7 +1107,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        const owned = await verifyItemsOwnership(db, [itemId], user.id);
+        const owned = await verifyItemsOwnership(db, [itemId], caller);
         if (!owned.ok) {
           return NextResponse.json(
             { error: "Item not found or access denied" },
@@ -1144,7 +1151,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifyCollectionOwnership(db, collectionId, user.id))) {
+        if (!(await verifyCollectionOwnership(db, collectionId, caller))) {
           return NextResponse.json(
             { error: "Collection not found or access denied" },
             { status: 403 },
@@ -1272,7 +1279,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        const owned = await verifyItemsOwnership(db, [itemId], user.id);
+        const owned = await verifyItemsOwnership(db, [itemId], caller);
         if (!owned.ok) {
           return NextResponse.json(
             { error: "Item not found or access denied" },
@@ -1381,7 +1388,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const owned = await verifyItemsOwnership(db, ids, user.id);
+        const owned = await verifyItemsOwnership(db, ids, caller);
         if (!owned.ok) {
           return NextResponse.json(
             { error: "One or more items not found or access denied" },
@@ -1423,7 +1430,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: normalized.error }, { status: 400 });
         }
         const ids = normalized.ids;
-        const owned = await verifyItemsOwnership(db, ids, user.id);
+        const owned = await verifyItemsOwnership(db, ids, caller);
         if (!owned.ok) {
           return NextResponse.json(
             { error: "One or more items not found or access denied" },
@@ -1460,7 +1467,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifyCollectionOwnership(db, collectionId, user.id))) {
+        if (!(await verifyCollectionOwnership(db, collectionId, caller))) {
           return NextResponse.json(
             { error: "Collection not found or access denied" },
             { status: 403 },

@@ -1,9 +1,12 @@
 /**
- * CMS Sites API Route — v3 (ownership-secured + admin fleet visibility)
+ * CMS Sites API Route — v4 (org-scoped + admin fleet visibility)
  *
- * Owner-scoped actions (`list`, `get`, `create`, `update`, `delete`) filter by
- * `owner_user_id = authenticated user` — mirrors P1's service-layer semantics so the
- * UI and agent tools behave identically (master plan §6.1).
+ * Access actions (`list`, `get`, `create`, `update`, `delete`) resolve through
+ * `../_lib/cmsAccess` — the owner PLUS the site's organization, per Arman's
+ * ruling of 2026-08-15 ("of course they should be ORG scoped and shareable").
+ * Before that, every action filtered on `owner_user_id = authenticated user`,
+ * which is why an org's marketing site could point (via
+ * `web.site.settings.cms.site_id`) at a CMS site no teammate could open.
  *
  * `admin_*` actions bypass per-user ownership and are gated by `requireSuperAdmin`
  * instead — they back the fleet-wide agent-activity visibility surface at
@@ -17,6 +20,15 @@ import { isIP } from "node:net";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { getCmsClient } from "../_lib/cmsDb";
+import {
+  canAccessCmsSite,
+  cmsAccessSource,
+  cmsVisibleSitesFilter,
+  isCmsVisibility,
+  resolveCmsCaller,
+  type CmsAccessLevel,
+  type CmsCaller,
+} from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import {
   ResearchLineageValidationError,
@@ -115,9 +127,38 @@ export async function POST(request: NextRequest) {
     const { action, ...params } = body;
     const db = getCmsClient();
 
+    // Resolved ONCE per request, never cached across requests: a revoked
+    // membership must stop working on the very next call.
+    const caller = await resolveCmsCaller(mainSupabase, user.id);
+
+    /** Load a site's governance columns and gate it — the shared read+check. */
+    const loadAccessibleSite = async (
+      siteId: string,
+      level: CmsAccessLevel,
+      columns = "*",
+    ): Promise<
+      | { ok: true; site: Record<string, unknown> }
+      | { ok: false; status: 403 | 404 }
+    > => {
+      const { data } = await db
+        .from("client_sites")
+        .select(columns)
+        .eq("id", siteId)
+        .single();
+      if (!data) return { ok: false, status: 404 };
+      const site = data as unknown as Record<string, unknown> & {
+        owner_user_id: string | null;
+        organization_id: string | null;
+        visibility: string | null;
+      };
+      if (!canAccessCmsSite(caller, site, level))
+        return { ok: false, status: 403 };
+      return { ok: true, site };
+    };
+
     switch (action) {
       case "list": {
-        // Owner-scoped only. No first-claim: an unowned site (owner_user_id is
+        // No first-claim: an unowned site (owner_user_id is
         // null) simply does not appear here — silently claiming it for whoever
         // lists first was a live bug (master plan §3 "Known defects", F2). If one
         // ever surfaces, log it loudly instead of mutating data on a read.
@@ -139,22 +180,33 @@ export async function POST(request: NextRequest) {
         // tab where it can be revealed/rotated deliberately. Returning the row
         // without it while typing the response `ClientSite[]` is exactly how
         // `has_data_api_key` reported false for every site that has one.
-        const { data, error } = await db
+        // Mine + my orgs'. `cmsVisibleSitesFilter` is the query form of the
+        // access predicate; with no org memberships it returns null and we fall
+        // back to the owner filter (an empty PostgREST `in.()` is a syntax
+        // error, not an empty set).
+        const orFilter = cmsVisibleSitesFilter(caller);
+        let query = db
           .from("client_sites")
           .select(
-            "id, slug, name, domain, is_active, owner_user_id, favicon, settings, created_at, updated_at, data_api_key",
-          )
-          .eq("owner_user_id", user.id)
-          .order("name");
+            "id, slug, name, domain, is_active, owner_user_id, organization_id, visibility, favicon, settings, created_at, updated_at, data_api_key",
+          );
+        query = orFilter
+          ? query.or(orFilter)
+          : query.eq("owner_user_id", user.id);
+
+        const { data, error } = await query.order("name");
 
         if (error) {
           console.error("[cms/sites] list error:", error);
           return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        // `access` tells the UI HOW the caller reaches each row, so a
+        // teammate's site is never silently indistinguishable from their own.
         const sites = (data ?? []).map(({ data_api_key, ...site }) => ({
           ...site,
           has_data_api_key: Boolean(data_api_key),
+          access: cmsAccessSource(caller, site),
         }));
         return NextResponse.json({ sites });
       }
@@ -168,23 +220,17 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { data, error } = await db
-          .from("client_sites")
-          .select("*")
-          .eq("id", siteId)
-          .eq("owner_user_id", user.id)
-          .single();
-
-        if (error) {
-          console.error("[cms/sites] get error:", error);
-          const status = error.code === "PGRST116" ? 404 : 500;
+        const result = await loadAccessibleSite(siteId, "viewer");
+        if (!result.ok) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
-            { status },
+            { status: result.status },
           );
         }
 
-        return NextResponse.json({ site: data });
+        return NextResponse.json({
+          site: { ...result.site, access: cmsAccessSource(caller, result.site as never) },
+        });
       }
 
       case "create": {
@@ -201,11 +247,36 @@ export async function POST(request: NextRequest) {
           settings,
           globalCss,
           favicon,
+          organizationId,
+          visibility,
         } = params;
 
         if (!name || !slug) {
           return NextResponse.json(
             { error: "name and slug are required" },
+            { status: 400 },
+          );
+        }
+
+        // The org a site is created into must be one the caller actually
+        // belongs to — a client-supplied id is never trusted. Omitting it is
+        // allowed and yields an owner-only site (fail closed, never a widening);
+        // the UI always sends the caller's active org.
+        if (organizationId !== undefined && organizationId !== null) {
+          if (
+            typeof organizationId !== "string" ||
+            !caller.memberOrgIds.includes(organizationId)
+          ) {
+            return NextResponse.json(
+              { error: "You are not a member of that organization." },
+              { status: 403 },
+            );
+          }
+        }
+
+        if (visibility !== undefined && !isCmsVisibility(visibility)) {
+          return NextResponse.json(
+            { error: "visibility must be personal, internal, link or public." },
             { status: 400 },
           );
         }
@@ -228,6 +299,11 @@ export async function POST(request: NextRequest) {
             slug,
             domain: domain || null,
             owner_user_id: user.id, // Always set to authenticated user
+            created_by: user.id, // Audit stamp; ownership can transfer, this cannot
+            organization_id: organizationId ?? null,
+            // A company's website is org work — `personal` would hide it from
+            // the very teammates this feature exists to include.
+            visibility: visibility ?? "internal",
             theme_config: themeConfig || {},
             navigation: navigation || [],
             footer_config: footerConfig || {},
@@ -268,20 +344,23 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Verify ownership before updating
-        const { data: existing } = await db
-          .from("client_sites")
-          .select("id, domain, settings")
-          .eq("id", siteId)
-          .eq("owner_user_id", user.id)
-          .single();
-
-        if (!existing) {
+        // Editing a site's content is editor-level — org members hold it.
+        const gate = await loadAccessibleSite(
+          siteId,
+          "editor",
+          "id, domain, settings",
+        );
+        if (!gate.ok) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
-            { status: 403 },
+            { status: gate.status },
           );
         }
+        const existing = gate.site as {
+          id: string;
+          domain: string | null;
+          settings: unknown;
+        };
 
         const fieldMap: Record<string, string> = {
           name: "name",
@@ -333,7 +412,6 @@ export async function POST(request: NextRequest) {
           .from("client_sites")
           .update(updateData)
           .eq("id", siteId)
-          .eq("owner_user_id", user.id)
           .select()
           .single();
 
@@ -367,16 +445,11 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        const { data: existing } = await db
-          .from("client_sites")
-          .select("id")
-          .eq("id", siteId)
-          .eq("owner_user_id", user.id)
-          .single();
-        if (!existing) {
+        const lineageGate = await loadAccessibleSite(siteId, "editor", "id");
+        if (!lineageGate.ok) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
-            { status: 403 },
+            { status: lineageGate.status },
           );
         }
         try {
@@ -389,7 +462,6 @@ export async function POST(request: NextRequest) {
             .from("client_sites")
             .update({ research_topic_ids: topicIds, research_tag_ids: tagIds })
             .eq("id", siteId)
-            .eq("owner_user_id", user.id)
             .select()
             .single();
           if (error) throw error;
@@ -425,17 +497,22 @@ export async function POST(request: NextRequest) {
             { error: "siteId is required" },
             { status: 400 },
           );
-        const { data: site } = await db
-          .from("client_sites")
-          .select("id, slug, domain, settings")
-          .eq("id", siteId)
-          .eq("owner_user_id", user.id)
-          .single();
-        if (!site)
+        const domainGate = await loadAccessibleSite(
+          siteId,
+          "editor",
+          "id, slug, domain, settings",
+        );
+        if (!domainGate.ok)
           return NextResponse.json(
             { error: "Site not found or access denied" },
-            { status: 403 },
+            { status: domainGate.status },
           );
+        const site = domainGate.site as {
+          id: string;
+          slug: string;
+          domain: string | null;
+          settings: unknown;
+        };
         const settings = asSettings(site.settings);
         const prior = asSettings(settings.domain_traffic);
         settings.domain_traffic = { ...prior, mode: "platform" };
@@ -443,7 +520,6 @@ export async function POST(request: NextRequest) {
           .from("client_sites")
           .update({ settings })
           .eq("id", siteId)
-          .eq("owner_user_id", user.id)
           .select()
           .single();
         if (error)
@@ -467,17 +543,22 @@ export async function POST(request: NextRequest) {
             { error: "siteId is required" },
             { status: 400 },
           );
-        const { data: site } = await db
-          .from("client_sites")
-          .select("id, slug, domain, settings")
-          .eq("id", siteId)
-          .eq("owner_user_id", user.id)
-          .single();
-        if (!site)
+        const domainGate = await loadAccessibleSite(
+          siteId,
+          "editor",
+          "id, slug, domain, settings",
+        );
+        if (!domainGate.ok)
           return NextResponse.json(
             { error: "Site not found or access denied" },
-            { status: 403 },
+            { status: domainGate.status },
           );
+        const site = domainGate.site as {
+          id: string;
+          slug: string;
+          domain: string | null;
+          settings: unknown;
+        };
         const domain = typeof site.domain === "string" ? site.domain : "";
         if (!domain) {
           return NextResponse.json(
@@ -536,7 +617,6 @@ export async function POST(request: NextRequest) {
           .from("client_sites")
           .update({ settings })
           .eq("id", siteId)
-          .eq("owner_user_id", user.id)
           .select()
           .single();
         if (error)
@@ -575,12 +655,17 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const { data: site } = await db
-          .from("client_sites")
-          .select("id, slug, name")
-          .eq("id", siteId)
-          .eq("owner_user_id", user.id)
-          .single();
+        // ADMIN, not editor: per the platform's share levels, edit has never
+        // meant delete. An org teammate can build this site; only the owner or
+        // an org admin can destroy it.
+        const deleteGate = await loadAccessibleSite(
+          siteId,
+          "admin",
+          "id, slug, name",
+        );
+        const site = deleteGate.ok
+          ? (deleteGate.site as { id: string; slug: string; name: string })
+          : null;
 
         if (!site) {
           return NextResponse.json(

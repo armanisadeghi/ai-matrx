@@ -29,6 +29,7 @@ import {
   verifyHtmlPageOwnership,
   verifyCollectionOwnership,
 } from "../_lib/cmsDb";
+import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import type {
   CmsEntityType,
   ClientEntityVersion,
@@ -82,15 +83,24 @@ type VersionGetRow = ClientEntityVersion & { row_data: Record<string, unknown> }
  */
 const OWNERSHIP: Record<
   CmsEntityType,
-  (db: SupabaseClient, rowId: string, userId: string) => Promise<boolean>
+  (db: SupabaseClient, rowId: string, caller: CmsCaller) => Promise<boolean>
 > = {
-  client_site: verifySiteOwnership,
-  client_page: verifyPageOwnership,
-  client_component: async (db, rowId, userId) =>
-    (await verifyComponentOwnership(db, rowId, userId)).ok,
-  client_asset: verifyAssetOwnership,
-  html_page: verifyHtmlPageOwnership,
-  site_collection: verifyCollectionOwnership,
+  // This route is read-only (`list` / `get`), so `viewer` is the level asked
+  // for — reading a site's own history is not an edit. Restore lives in
+  // `/api/cms/pages` and asks for editor there.
+  client_site: (db, rowId, caller) =>
+    verifySiteOwnership(db, rowId, caller, "viewer"),
+  client_page: (db, rowId, caller) =>
+    verifyPageOwnership(db, rowId, caller, "viewer"),
+  client_component: async (db, rowId, caller) =>
+    (await verifyComponentOwnership(db, rowId, caller, "viewer")).ok,
+  client_asset: (db, rowId, caller) =>
+    verifyAssetOwnership(db, rowId, caller, "viewer"),
+  // `html_pages` has no site and no org — ownership stays the direct user id.
+  html_page: (db, rowId, caller) =>
+    verifyHtmlPageOwnership(db, rowId, caller.userId),
+  site_collection: (db, rowId, caller) =>
+    verifyCollectionOwnership(db, rowId, caller, "viewer"),
 };
 
 function resolveEntityType(raw: unknown): CmsEntityType | null {
@@ -116,6 +126,10 @@ export async function POST(request: NextRequest) {
     const { action, ...params } = body;
     const db = getCmsClient();
 
+    // Org memberships for this request — a CMS site is org-scoped and
+    // shareable, so history is readable by the site's org, not just its owner.
+    const caller: CmsCaller = await resolveCmsCaller(mainSupabase, user.id);
+
     const entityType = resolveEntityType(params.entityType);
     if (!entityType) {
       return NextResponse.json(
@@ -138,7 +152,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await OWNERSHIP[entityType](db, rowId, user.id))) {
+        if (!(await OWNERSHIP[entityType](db, rowId, caller))) {
           return NextResponse.json(
             { error: "Not found or access denied" },
             { status: 403 },
@@ -185,7 +199,7 @@ export async function POST(request: NextRequest) {
 
         // Ownership is checked on the ROW the version belongs to — the RPC itself
         // has no access gate.
-        if (!(await OWNERSHIP[entityType](db, row.row_id, user.id))) {
+        if (!(await OWNERSHIP[entityType](db, row.row_id, caller))) {
           return NextResponse.json({ error: "Access denied" }, { status: 403 });
         }
 

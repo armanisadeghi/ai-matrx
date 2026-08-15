@@ -13,6 +13,7 @@ import {
   verifySiteOwnership,
   verifyComponentOwnership,
 } from "../_lib/cmsDb";
+import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import {
   cmsContentBlockedResponse,
@@ -48,6 +49,12 @@ export async function POST(request: NextRequest) {
     const { action, ...params } = body;
     const db = getCmsClient();
 
+    // Org memberships for this request. A CMS site is org-scoped and shareable
+    // (Arman, 2026-08-15), so every ownership check below needs the caller's
+    // orgs, not just their user id. Resolved once, never cached across
+    // requests: a revoked membership must stop working on the next call.
+    const caller: CmsCaller = await resolveCmsCaller(mainSupabase, user.id);
+
     switch (action) {
       case "list": {
         const { siteId } = params;
@@ -58,7 +65,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -102,7 +109,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifySiteOwnership(db, comp.client_id, user.id))) {
+        if (!(await verifySiteOwnership(db, comp.client_id, caller))) {
           return NextResponse.json({ error: "Access denied" }, { status: 403 });
         }
 
@@ -118,7 +125,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -177,7 +184,7 @@ export async function POST(request: NextRequest) {
         const { ok, clientId } = await verifyComponentOwnership(
           db,
           componentId,
-          user.id,
+          caller,
         );
         if (!ok) {
           return NextResponse.json(
@@ -278,7 +285,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifySiteOwnership(db, comp.client_id, user.id))) {
+        if (!(await verifySiteOwnership(db, comp.client_id, caller))) {
           return NextResponse.json({ error: "Access denied" }, { status: 403 });
         }
 

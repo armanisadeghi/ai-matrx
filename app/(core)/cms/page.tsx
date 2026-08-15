@@ -4,6 +4,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { ClientSiteSummary } from "@/features/cms/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -192,6 +194,8 @@ export default function SitesListPage() {
     },
   });
 
+  const activeOrganizationId = useAppSelector(selectEffectiveOrganizationId);
+
   const handleCreate = async () => {
     if (!newName || !newSlug) return;
     setIsCreating(true);
@@ -200,6 +204,10 @@ export default function SitesListPage() {
         name: newName,
         slug: newSlug,
         domain: newDomain || undefined,
+        // A website belongs to the company, not to whoever clicked New — this
+        // is what lets a teammate open it (CMS migration 0039). The route
+        // refuses an org the caller is not a member of.
+        organizationId: activeOrganizationId,
       });
       setDialogOpen(false);
       setNewName("");

@@ -21,6 +21,7 @@ import { NextRequest, NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { getCmsClient, verifySiteOwnership, verifyAssetOwnership } from "../_lib/cmsDb";
+import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import { requireSuperAdmin } from "@/utils/auth/adminUtils";
 import { readAllRows } from "@/lib/supabase/readAllRows";
@@ -188,13 +189,19 @@ export async function POST(request: NextRequest) {
     const { action, ...params } = body;
     const db = getCmsClient();
 
+    // Org memberships for this request. A CMS site is org-scoped and shareable
+    // (Arman, 2026-08-15), so every ownership check below needs the caller's
+    // orgs, not just their user id. Resolved once, never cached across
+    // requests: a revoked membership must stop working on the next call.
+    const caller: CmsCaller = await resolveCmsCaller(mainSupabase, user.id);
+
     switch (action) {
       case "list": {
         const { siteId, folder, fileType, includeInactive } = params;
         if (!siteId) {
           return NextResponse.json({ error: "siteId is required" }, { status: 400 });
         }
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json({ error: "Site not found or access denied" }, { status: 403 });
         }
         let query = db
@@ -240,7 +247,7 @@ export async function POST(request: NextRequest) {
         if (!assetId) {
           return NextResponse.json({ error: "assetId is required" }, { status: 400 });
         }
-        if (!(await verifyAssetOwnership(db, assetId, user.id))) {
+        if (!(await verifyAssetOwnership(db, assetId, caller))) {
           return NextResponse.json({ error: "Asset not found or access denied" }, { status: 403 });
         }
         const { data, error } = await db.from("client_assets").select("*").eq("id", assetId).single();
@@ -261,7 +268,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json({ error: "Site not found or access denied" }, { status: 403 });
         }
         if (
@@ -324,7 +331,7 @@ export async function POST(request: NextRequest) {
         if (!assetId || !updates || typeof updates !== "object") {
           return NextResponse.json({ error: "assetId and updates are required" }, { status: 400 });
         }
-        if (!(await verifyAssetOwnership(db, assetId, user.id))) {
+        if (!(await verifyAssetOwnership(db, assetId, caller))) {
           return NextResponse.json({ error: "Asset not found or access denied" }, { status: 403 });
         }
         const clean: Record<string, unknown> = {};
@@ -360,7 +367,7 @@ export async function POST(request: NextRequest) {
         if (!assetId) {
           return NextResponse.json({ error: "assetId is required" }, { status: 400 });
         }
-        if (!(await verifyAssetOwnership(db, assetId, user.id))) {
+        if (!(await verifyAssetOwnership(db, assetId, caller))) {
           return NextResponse.json({ error: "Asset not found or access denied" }, { status: 403 });
         }
         const { data: asset } = await db.from("client_assets").select("*").eq("id", assetId).single();
@@ -382,7 +389,7 @@ export async function POST(request: NextRequest) {
         if (!assetId) {
           return NextResponse.json({ error: "assetId is required" }, { status: 400 });
         }
-        if (!(await verifyAssetOwnership(db, assetId, user.id))) {
+        if (!(await verifyAssetOwnership(db, assetId, caller))) {
           return NextResponse.json({ error: "Asset not found or access denied" }, { status: 403 });
         }
         const { data: asset } = await db.from("client_assets").select("*").eq("id", assetId).single();

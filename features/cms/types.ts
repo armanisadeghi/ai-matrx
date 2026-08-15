@@ -24,6 +24,15 @@ export interface ClientSiteSettings {
   [key: string]: unknown;
 }
 
+/** Twin of MAIN `platform.visibility`, ascending. */
+export type CmsSiteVisibility = "personal" | "internal" | "link" | "public";
+
+/**
+ * HOW the current user reaches a site — returned by `list`/`get` so a
+ * teammate's site is never silently indistinguishable from one's own.
+ */
+export type CmsAccessSource = "owner" | "organization" | "public" | "none";
+
 // ─── Site ──────────────────────────────────────────────────────────────
 export interface ClientSite {
   id: string;
@@ -39,6 +48,23 @@ export interface ClientSite {
   settings: ClientSiteSettings;
   is_active: boolean;
   owner_user_id: string | null;
+  /**
+   * Governance (CMS migration 0039). A CMS site is ORG-SCOPED and SHAREABLE
+   * (Arman, 2026-08-15) — before this it was private-ownership-only, which is
+   * why an org's marketing site could name a CMS site no teammate could open.
+   *
+   * `organization_id` is a MAIN-project (`txzxabzwovsujtloxrus`)
+   * `iam.organizations.id` carried BARE: no FK is possible across databases,
+   * the same convention as `web_site_id`. Null = owner-only.
+   *
+   * `visibility` is the twin of MAIN's `platform.visibility`. Default
+   * `internal`, never `personal` — a company website is org work. The predicate
+   * that reads both lives in `app/api/cms/_lib/cmsAccess.ts`.
+   */
+  organization_id: string | null;
+  visibility: CmsSiteVisibility;
+  /** Audit stamp — who created it. Ownership is `owner_user_id` and can transfer. */
+  created_by: string | null;
   global_css: string | null;
   favicon: string | null;
   /**
@@ -80,6 +106,8 @@ export type ClientSiteSummary = Pick<
   | "domain"
   | "is_active"
   | "owner_user_id"
+  | "organization_id"
+  | "visibility"
   | "favicon"
   | "settings"
   | "created_at"
@@ -91,6 +119,8 @@ export type ClientSiteSummary = Pick<
    * server-side in `app/api/cms/sites/route.ts` (action=`list`).
    */
   has_data_api_key: boolean;
+  /** How the caller reaches this row. Server-computed; absent on older payloads. */
+  access?: CmsAccessSource;
 };
 
 /** Narrow a full site to the summary shape (create/update return full rows). */
@@ -102,6 +132,8 @@ export function toClientSiteSummary(site: ClientSite): ClientSiteSummary {
     domain: site.domain,
     is_active: site.is_active,
     owner_user_id: site.owner_user_id,
+    organization_id: site.organization_id,
+    visibility: site.visibility,
     favicon: site.favicon,
     settings: site.settings,
     created_at: site.created_at,

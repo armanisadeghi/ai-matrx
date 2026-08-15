@@ -596,7 +596,12 @@ export async function bridgeStarterKit(
  */
 export async function createAndLinkCmsSite(
   dispatch: AppDispatch,
-  site: { id: string; name: string; domain: string | null },
+  site: {
+    id: string;
+    name: string;
+    domain: string | null;
+    organization_id?: string | null;
+  },
 ): Promise<{ cmsSiteId: string; cmsSlug: string }> {
   const slug =
     slugify(normalizeDomain(site.domain).replace(/\./g, "-")) ||
@@ -613,6 +618,11 @@ export async function createAndLinkCmsSite(
     // The rungs below (starter kit, realize) write through aidream's guarded
     // seams, where an unset agent_write_policy means BLOCKED.
     settings: { agent_write_policy: "full" },
+    // The CMS site inherits the org of the web.site it realizes — the whole
+    // point of the pairing. Without this the marketing site is org-visible and
+    // its own CMS counterpart is not, which is the exact split that made
+    // `resolveCmsLink` refuse for teammates (CMS migration 0039).
+    organizationId: site.organization_id ?? null,
   });
   // FRESH row, not a query cache copy: Setup's draft autosaves bump `version`
   // continuously, so a cached version deterministically fails the guard.

@@ -17,6 +17,7 @@ import {
   verifyPageOwnership,
   verifyHtmlPageOwnership,
 } from "../_lib/cmsDb";
+import { resolveCmsCaller, type CmsCaller } from "../_lib/cmsAccess";
 import { logCmsActivity } from "../_lib/activityLog";
 import {
   splitHtmlDocument,
@@ -93,6 +94,12 @@ export async function POST(request: NextRequest) {
     const { action, ...params } = body;
     const db = getCmsClient();
 
+    // Org memberships for this request. A CMS site is org-scoped and shareable
+    // (Arman, 2026-08-15), so every ownership check below needs the caller's
+    // orgs, not just their user id. Resolved once, never cached across
+    // requests: a revoked membership must stop working on the next call.
+    const caller: CmsCaller = await resolveCmsCaller(mainSupabase, user.id);
+
     switch (action) {
       // ── List pages (compact) ──────────────────────────────────────
       case "list": {
@@ -106,7 +113,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify site ownership
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -146,7 +153,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await verifyPageOwnership(db, pageId, caller))) {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -206,7 +213,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify site ownership
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -300,7 +307,7 @@ export async function POST(request: NextRequest) {
             { status: 403 },
           );
         }
-        if (!(await verifySiteOwnership(db, siteId, user.id))) {
+        if (!(await verifySiteOwnership(db, siteId, caller))) {
           return NextResponse.json(
             { error: "Site not found or access denied" },
             { status: 403 },
@@ -540,7 +547,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await verifyPageOwnership(db, pageId, caller))) {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -651,7 +658,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await verifyPageOwnership(db, pageId, caller))) {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -713,7 +720,7 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await verifyPageOwnership(db, pageId, caller))) {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -778,7 +785,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await verifyPageOwnership(db, pageId, caller))) {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -846,7 +853,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await verifyPageOwnership(db, pageId, caller))) {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -892,7 +899,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await verifyPageOwnership(db, pageId, caller))) {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -941,7 +948,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await verifyPageOwnership(db, pageId, caller))) {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },
@@ -992,7 +999,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        if (!(await verifyPageOwnership(db, pageId, user.id))) {
+        if (!(await verifyPageOwnership(db, pageId, caller))) {
           return NextResponse.json(
             { error: "Page not found or access denied" },
             { status: 403 },

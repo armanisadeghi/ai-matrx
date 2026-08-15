@@ -34,6 +34,7 @@ import type {
   CollectionItemFilter,
   CollectionExportRow,
   SiteCollectionSettings,
+  CmsSiteVisibility,
 } from "../types";
 import type { ItemValidationProblem } from "../collections/validateItem";
 
@@ -98,6 +99,15 @@ export const CmsSiteService = {
      * `site_service.create` applies — because an unset policy is `blocked`.
      */
     settings?: Record<string, unknown>;
+    /**
+     * The org the site belongs to (MAIN `iam.organizations.id`). The route
+     * REFUSES an org the caller is not a member of, so this is a real
+     * authorization input, not a hint. Omitting it creates an owner-only site —
+     * fail closed, never a silent widening. UI callers pass the active org.
+     */
+    organizationId?: string | null;
+    /** Defaults to `internal` server-side. A company website is org work. */
+    visibility?: CmsSiteVisibility;
   }): Promise<ClientSite> {
     const res = await callApi<{ site: ClientSite }>("sites", "create", params);
     return res.site;
