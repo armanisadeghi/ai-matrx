@@ -21,6 +21,8 @@ import {
   ArrowRight,
   CheckCircle2,
   ChevronRight,
+  ExternalLink,
+  FileCode2,
   GitCompareArrows,
   History,
   Loader2,
@@ -28,6 +30,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { useAppDispatch } from "@/lib/redux/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -51,9 +54,11 @@ import { SlotInputsCell, SlotOutputCell } from "./slot-contract-cells";
 import { useGuardedRepin } from "./useGuardedRepin";
 import {
   buildRepinFixBrief,
+  codeTruthRepinImpact,
   computeRepinImpact,
   type RepinImpact,
 } from "./repin-impact";
+import { VariableVerdictList } from "./variable-verdict-presentation";
 import {
   CreateSystemTwinButton,
   LineageChip,
@@ -71,12 +76,14 @@ import {
 import {
   fetchAgentVersions,
   fetchPinnedAgentIdentity,
+  fetchSlotVariableVerdicts,
   fetchVersionSnapshotDefinition,
   updateSlotDefinition,
   type PinnedAgentIdentityResult,
   type SlotBindingRow,
   type SlotConsoleData,
   type SlotDefinitionRow,
+  type SlotVariableVerdict,
   type SlotVersionInfo,
 } from "./service";
 
@@ -263,6 +270,7 @@ function DriftPanel({
             candidateVariables: nextSnap.variableDefinitions ?? [],
             contractRequired: parseSlotContract(row.slot.contract)
               .requiredVariables,
+            codeSuppliedVariables: row.codeTruth?.code_variables,
           });
           if (impact.breaking.length > 0) {
             setVersionImpact({ mode, impact });
@@ -425,6 +433,7 @@ function DriftPanel({
                   slotKey: row.slotKey,
                   candidateName: `${row.agentName} v${latestSaved?.versionNumber}`,
                   impact: versionImpact.impact,
+                  codeTruth: row.codeTruth ?? undefined,
                 })}
                 label="Copy fix brief for AI"
                 tooltip="A paste-ready brief naming the mismatch and every call site to update"
@@ -508,6 +517,7 @@ function NonSystemPanel({
               slot={row.slot}
               twin={twin}
               currentAgentId={row.agentId}
+              codeTruth={row.codeTruth}
               onSaved={onSaved}
             />
             <LinkedSyncButton
@@ -679,6 +689,7 @@ function UnresolvedPinPanel({
                     isSystem: true,
                   }}
                   currentAgentId={agent.id}
+                  codeTruth={row.codeTruth}
                   onSaved={onSaved}
                 />
               </>
@@ -697,22 +708,227 @@ function UnresolvedPinPanel({
   );
 }
 
+// ── Code truth drift — the acceptance-test failure, with real options ───────
+
+function CodeAgentDriftPanel({
+  row,
+  variableVerdicts,
+  onOpenRepin,
+}: {
+  row: SlotRow;
+  variableVerdicts: SlotVariableVerdict[];
+  onOpenRepin: () => void;
+}) {
+  const truth = row.codeTruth;
+  if (!truth) return null;
+  const impact = codeTruthRepinImpact(truth);
+  const brief = buildRepinFixBrief({
+    slotKey: row.slotKey,
+    candidateName: truth.bound_agent?.name ?? row.agentName,
+    impact,
+    codeTruth: truth,
+  });
+  const agentVariables = truth.bound_agent?.declared_variables ?? [];
+  const usesDefault = variableVerdicts.some(
+    (item) => item.verdict === "default_used",
+  );
+  const agentEditHref = row.agentId
+    ? getAgentModeHref(
+        "edit",
+        row.agentId,
+        row.agentType === "builtin" ? SYSTEM_AGENT_BASE : USER_AGENT_BASE,
+      )
+    : null;
+
+  return (
+    <div className="space-y-3 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-xs">
+      <div className="flex items-start gap-2">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+        <div>
+          <div className="font-medium text-rose-600">
+            The code and {truth.bound_agent?.name ?? "the bound agent"} do not
+            agree.
+          </div>
+          <div className="mt-0.5 text-muted-foreground">
+            Code passes {truth.code_variables.join(", ") || "no named variables"}; the
+            agent declares {agentVariables.join(", ") || "no variables"}. Pick the
+            intent below—the system will not guess or silently block the slot.
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        <div className="rounded border border-border bg-card p-2">
+          <div className="font-medium">Map to an existing variable</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            Keep the code value and route it to a variable the agent already
+            declares.
+          </div>
+          {agentVariables.length > 0 ? (
+            <CopyButton
+              content={`${brief}\n\nPREFERRED OPTION: map the code value to one of the existing agent variables (${agentVariables.join(", ")}). Confirm meaning before choosing; do not guess from the name alone.`}
+              label="Copy mapping fix"
+              size="sm"
+              className="mt-2"
+            />
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2 h-7 text-xs"
+              disabled
+              title="This agent declares no variables to map onto"
+            >
+              No agent variable available
+            </Button>
+          )}
+        </div>
+
+        <div className="rounded border border-border bg-card p-2">
+          <div className="font-medium">Use the agent&apos;s default</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            Safe only when the declared agent variable actually has a default.
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2 h-7 text-xs"
+            disabled
+            title={
+              usesDefault
+                ? "The verdict above confirms the default is already in use"
+                : "No applicable agent default was reported"
+            }
+          >
+            {usesDefault ? "Default already used" : "No default available"}
+          </Button>
+        </div>
+
+        <div className="rounded border border-border bg-card p-2">
+          <div className="font-medium">Pass it as user text</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            Preserve the value immediately as labeled user_input; keep the
+            caution visible until the contract gains a real variable.
+          </div>
+          <CopyButton
+            content={`${brief}\n\nPREFERRED OPTION: spill the unconsumed code value into user_input as "Name: value" and preserve the caution verdict. Update every discovered call site.`}
+            label="Copy user-text fix"
+            size="sm"
+            className="mt-2"
+          />
+        </div>
+
+        <div className="rounded border border-border bg-card p-2">
+          <div className="font-medium">Declare it on the agent</div>
+          <div className="mt-0.5 text-[11px] text-muted-foreground">
+            Add the variable to the agent and update its prompt to consume it.
+          </div>
+          {agentEditHref ? (
+            <Button asChild size="sm" variant="outline" className="mt-2 h-7 text-xs">
+              <a href={agentEditHref} target="_blank" rel="noopener noreferrer">
+                Open agent builder <ExternalLink className="ml-1 h-3 w-3" />
+              </a>
+            </Button>
+          ) : (
+            <Button size="sm" variant="outline" className="mt-2 h-7 text-xs" disabled>
+              Agent unavailable
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <CopyButton
+          content={brief}
+          label="Copy full code-fix brief"
+          tooltip="Includes the runner, live variables, source file, and every discovered call site"
+          size="sm"
+        />
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onOpenRepin}>
+          Choose a different agent
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ── Status banner — one verdict, matched to the state, never a mismatch ──────
 
 function StatusBanner({
   row,
+  variableVerdicts,
   lineage,
   onSaved,
   onTest,
   onOpenRepin,
 }: {
   row: SlotRow;
+  variableVerdicts: SlotVariableVerdict[];
   lineage: AgentLineage;
   onSaved: () => void;
   onTest: () => void;
   onOpenRepin: () => void;
 }) {
   switch (row.health) {
+    case "code ↔ agent drift":
+      return (
+        <CodeAgentDriftPanel
+          row={row}
+          variableVerdicts={variableVerdicts}
+          onOpenRepin={onOpenRepin}
+        />
+      );
+    case "code truth import failed":
+      return (
+        <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div>
+              <div className="font-medium text-amber-700 dark:text-amber-500">
+                The code declaration could not be loaded.
+              </div>
+              <div className="mt-0.5 text-muted-foreground">
+                {row.codeTruth?.import_error ??
+                  HEALTH_HINT["code truth import failed"]}
+              </div>
+            </div>
+          </div>
+          <CopyButton
+            content={`Fix the code-truth import failure for agent slot "${row.slotKey}".\n\nRead /Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FEATURE.md first.\n\nImport failure: ${row.codeTruth?.import_error ?? "unknown"}\n\nRestore the declaring module so GET /agent-slots/code-truth reports code_declaration_found, then verify every variable and call site. Do not change the slot pin or contract to hide the import failure.`}
+            label="Copy import-fix brief"
+            size="sm"
+          />
+        </div>
+      );
+    case "code ↔ contract drift":
+      return (
+        <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div>
+              <div className="font-medium text-amber-700 dark:text-amber-500">
+                Live code and the stored contract cache disagree.
+              </div>
+              <div className="mt-0.5 text-muted-foreground">
+                Code is authoritative. Code-only: {row.codeTruth?.code_only_variables.join(", ") || "none"}; contract-only:{" "}
+                {row.codeTruth?.db_only_variables.join(", ") || "none"}.
+              </div>
+            </div>
+          </div>
+          {row.codeTruth && (
+            <CopyButton
+              content={buildRepinFixBrief({
+                slotKey: row.slotKey,
+                candidateName: row.agentName,
+                impact: codeTruthRepinImpact(row.codeTruth),
+                codeTruth: row.codeTruth,
+              })}
+              label="Copy contract-fix brief"
+              size="sm"
+            />
+          )}
+        </div>
+      );
     case "ok":
       return (
         <div className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs">
@@ -787,7 +1003,17 @@ function Fact({
  * output promise. The problem verdict comes AFTER the reader knows what
  * they're looking at (Arman's ordering ruling, 2026-08-14).
  */
-function FactsPanel({ row }: { row: SlotRow }) {
+function FactsPanel({
+  row,
+  variableVerdicts,
+  verdictsLoading,
+  verdictsError,
+}: {
+  row: SlotRow;
+  variableVerdicts: SlotVariableVerdict[];
+  verdictsLoading: boolean;
+  verdictsError: string | null;
+}) {
   const isSystem = row.agentType === "builtin";
   const drifted = row.drift != null;
   return (
@@ -865,6 +1091,91 @@ function FactsPanel({ row }: { row: SlotRow }) {
       <Fact label="Output">
         <SlotOutputCell row={row} maxChips={8} />
       </Fact>
+      {row.codeTruth && (
+        <>
+          <Fact label="Code declaration">
+            {row.codeTruth.source ? (
+              <span className="inline-flex min-w-0 items-center gap-1">
+                <FileCode2 className="h-3 w-3 shrink-0 text-muted-foreground" />
+                <code className="break-all text-[11px]">
+                  {row.codeTruth.source.class_name} ·{" "}
+                  {row.codeTruth.source.source_file}:{row.codeTruth.source.line}
+                </code>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">
+                {row.codeTruth.resolution.replaceAll("_", " ")}
+              </span>
+            )}
+          </Fact>
+          <Fact label="Code passes">
+            {row.codeTruth.code_variables.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {row.codeTruth.code_variables.map((name) => (
+                  <code
+                    key={name}
+                    className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
+                  >
+                    {name}
+                  </code>
+                ))}
+              </div>
+            ) : (
+              <span className="text-muted-foreground">no named variables</span>
+            )}
+          </Fact>
+          <Fact label="Agent declares">
+            {(row.codeTruth.bound_agent?.declared_variables.length ?? 0) > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {row.codeTruth.bound_agent?.declared_variables.map((name) => (
+                  <code
+                    key={name}
+                    className="rounded border border-border bg-muted/40 px-1 py-0.5 text-[11px]"
+                  >
+                    {name}
+                  </code>
+                ))}
+              </div>
+            ) : (
+              <span className="font-medium text-rose-600">no variables</span>
+            )}
+          </Fact>
+          <Fact label="User text">
+            {row.codeTruth.passes_user_input
+              ? "The call site passes user_input"
+              : "The call site does not pass user_input"}
+          </Fact>
+          <Fact label="Call sites">
+            {row.codeTruth.call_sites?.length ? (
+              <div className="space-y-0.5">
+                {row.codeTruth.call_sites.map((site) => (
+                  <div
+                    key={`${site.source_file}:${site.line}`}
+                    className="break-all font-mono text-[11px]"
+                  >
+                    {site.source_file}:{site.line} · user text{" "}
+                    {site.passes_user_input ? "yes" : "no"}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <span className="text-muted-foreground">none discovered</span>
+            )}
+          </Fact>
+          <Fact label="Variable flow">
+            {verdictsLoading ? (
+              <span className="inline-flex items-center gap-1 text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Checking the bound
+                agent…
+              </span>
+            ) : verdictsError ? (
+              <span className="text-rose-600">{verdictsError}</span>
+            ) : (
+              <VariableVerdictList items={variableVerdicts} />
+            )}
+          </Fact>
+        </>
+      )}
     </div>
   );
 }
@@ -876,6 +1187,7 @@ function SlotEditor({
   data,
   builtinAgentsById,
   currentAgentId,
+  codeTruth,
   onSaved,
 }: {
   slot: SlotDefinitionRow;
@@ -883,6 +1195,7 @@ function SlotEditor({
   builtinAgentsById: ReadonlyMap<string, string>;
   /** The agent bound today — the baseline THE REPIN GUARD compares against. */
   currentAgentId: string | null;
+  codeTruth: SlotRow["codeTruth"];
   onSaved: () => void;
 }) {
   const {
@@ -890,7 +1203,7 @@ function SlotEditor({
     dialog: repinDialog,
     checking,
     saving: repinSaving,
-  } = useGuardedRepin({ slot, currentAgentId, onSaved });
+  } = useGuardedRepin({ slot, currentAgentId, codeTruth, onSaved });
   const pinnedVersion = slot.default_agent_version_id
     ? data.versionsById[slot.default_agent_version_id]
     : undefined;
@@ -1088,7 +1401,13 @@ export function SlotDetail({
   builtinAgentsById: ReadonlyMap<string, string>;
   onSaved: () => void;
 }) {
+  const dispatch = useAppDispatch();
   const bindings = data.bindingsBySlotId[row.id] ?? [];
+  const [verdictState, setVerdictState] = useState<{
+    slotKey: string;
+    verdicts: SlotVariableVerdict[];
+    error: string | null;
+  } | null>(null);
   // The section relevant to the verdict opens itself; the rest stay folded.
   const [pinOpen, setPinOpen] = useState(
     row.health === "agent archived" || row.health === "unresolved pin",
@@ -1101,6 +1420,32 @@ export function SlotDetail({
   const benchRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const truth = row.codeTruth;
+    if (!truth || truth.resolution !== "code_declaration_found") return;
+    let cancelled = false;
+    fetchSlotVariableVerdicts(dispatch, truth)
+      .then((result) => {
+        if (cancelled) return;
+        setVerdictState({
+          slotKey: truth.slot_key,
+          verdicts: result.verdicts ?? [],
+          error: null,
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setVerdictState({
+          slotKey: truth.slot_key,
+          verdicts: [],
+          error: describeError(error),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, row.codeTruth]);
+
+  useEffect(() => {
     if (benchFocus === 0) return;
     benchRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [benchFocus]);
@@ -1109,6 +1454,12 @@ export function SlotDetail({
     row.pinnedVersionNumber != null
       ? `Current — pinned v${row.pinnedVersionNumber}`
       : "Current binding";
+  const liveVerdictState =
+    verdictState?.slotKey === row.slotKey ? verdictState : null;
+  const variableVerdicts = liveVerdictState?.verdicts ?? [];
+  const verdictsLoading =
+    row.codeTruth?.resolution === "code_declaration_found" &&
+    liveVerdictState === null;
 
   return (
     // SidePanelSurface (and the WindowPanel body) hand children an
@@ -1123,10 +1474,16 @@ export function SlotDetail({
       )}
 
       {/* Facts first — what IS. The verdict on what's wrong comes second. */}
-      <FactsPanel row={row} />
+      <FactsPanel
+        row={row}
+        variableVerdicts={variableVerdicts}
+        verdictsLoading={verdictsLoading}
+        verdictsError={liveVerdictState?.error ?? null}
+      />
 
       <StatusBanner
         row={row}
+        variableVerdicts={variableVerdicts}
         lineage={lineage}
         onSaved={onSaved}
         onTest={() => {
@@ -1149,6 +1506,7 @@ export function SlotDetail({
           data={data}
           builtinAgentsById={builtinAgentsById}
           currentAgentId={row.agentId}
+          codeTruth={row.codeTruth}
           onSaved={onSaved}
         />
       </Section>

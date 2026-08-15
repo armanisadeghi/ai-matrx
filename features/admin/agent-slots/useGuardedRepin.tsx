@@ -13,10 +13,9 @@
  */
 
 import { useCallback, useState } from "react";
-import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
-import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
@@ -27,9 +26,13 @@ import {
   buildRepinFixBrief,
   computeRepinImpact,
   type RepinImpact,
-  type RepinVariableImpact,
 } from "./repin-impact";
-import { updateSlotDefinition, type SlotDefinitionRow } from "./service";
+import { VariableVerdictList } from "./variable-verdict-presentation";
+import {
+  updateSlotDefinition,
+  type SlotCodeTruth,
+  type SlotDefinitionRow,
+} from "./service";
 
 export interface RepinRequest {
   /** The agent to bind. */
@@ -40,42 +43,6 @@ export interface RepinRequest {
   versionId?: string | null;
   useLatest?: boolean;
   successMessage: string;
-}
-
-const VERDICT_COPY: Record<
-  RepinVariableImpact["verdict"],
-  { label: string; tone: "bad" | "warn" | "ok" }
-> = {
-  lost: { label: "stops reaching the agent", tone: "bad" },
-  unsupplied_required: { label: "required, nothing supplies it", tone: "bad" },
-  rename_candidate: { label: "same value, different name", tone: "warn" },
-  default_available: { label: "agent default will be used", tone: "ok" },
-  ok: { label: "keeps flowing", tone: "ok" },
-};
-
-function ImpactRow({ item }: { item: RepinVariableImpact }) {
-  const copy = VERDICT_COPY[item.verdict];
-  return (
-    <li className="flex flex-wrap items-center gap-1.5 py-0.5">
-      <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
-        {item.name}
-      </code>
-      {item.suggestedMapping && (
-        <>
-          <ArrowRight className="h-3 w-3 text-muted-foreground" />
-          <code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
-            {item.suggestedMapping}
-          </code>
-        </>
-      )}
-      <Badge
-        variant={copy.tone === "bad" ? "destructive" : "outline"}
-        className="h-4 px-1 text-[10px]"
-      >
-        {copy.label}
-      </Badge>
-    </li>
-  );
 }
 
 /** Reads an agent's declared variables, or null when they can't be read. */
@@ -98,10 +65,12 @@ async function readAgentVariables(
 export function useGuardedRepin({
   slot,
   currentAgentId,
+  codeTruth,
   onSaved,
 }: {
   slot: SlotDefinitionRow;
   currentAgentId: string | null;
+  codeTruth?: SlotCodeTruth | null;
   onSaved: () => void;
 }) {
   const dispatch = useAppDispatch();
@@ -167,6 +136,7 @@ export function useGuardedRepin({
           currentVariables,
           candidateVariables,
           contractRequired: parseSlotContract(slot.contract).requiredVariables,
+          codeSuppliedVariables: codeTruth?.code_variables,
         });
         if (impact.clean && !impact.indeterminate) {
           await write(request);
@@ -177,7 +147,7 @@ export function useGuardedRepin({
         setChecking(false);
       }
     },
-    [currentAgentId, dispatch, slot.contract, store, write],
+    [codeTruth?.code_variables, currentAgentId, dispatch, slot.contract, store, write],
   );
 
   const dialog = pending ? (
@@ -204,13 +174,7 @@ export function useGuardedRepin({
             </div>
           )}
           {pending.impact.variables.length > 0 && (
-            <ul className="rounded border border-border bg-muted/30 p-2">
-              {pending.impact.variables
-                .filter((item) => item.verdict !== "ok")
-                .map((item) => (
-                  <ImpactRow key={`${item.name}-${item.verdict}`} item={item} />
-                ))}
-            </ul>
+            <VariableVerdictList items={pending.impact.variables} hideOk />
           )}
           {pending.impact.breaking.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
@@ -219,6 +183,7 @@ export function useGuardedRepin({
                   slotKey: slot.slot_key,
                   candidateName: pending.request.agentName,
                   impact: pending.impact,
+                  codeTruth: codeTruth ?? undefined,
                 })}
                 label="Copy fix brief for AI"
                 tooltip="A paste-ready brief naming the mismatch and every call site to update"

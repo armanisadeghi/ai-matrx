@@ -110,7 +110,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "slots_summary",
     label: "Slots summary",
     description:
-      "One entry per slot: id, slot_key, label, agent name, pin label, drift, health, input/output kinds, overrides count, enabled flag, placeholder flag. Empty array while loading. Bindable rather than auto-context.",
+      "One entry per slot: identity, agent and pin, worst-first health, live code/contract and code/agent drift, code variables, bound-agent variables, I/O contract, binding count, enabled flag, and placeholder flag. Empty array while loading. Bindable rather than auto-context.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 4000,
@@ -122,7 +122,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "health_summary",
     label: "Health roll-up",
     description:
-      'Counts of slots per health state: { ok, version_drift, agent_archived, not_a_system_agent }. All zeros while loading. "not_a_system_agent" is a SYSTEM-AGENT LAW violation and always a defect.',
+      'Counts of slots per worst-first health state, including code_agent_drift, code_contract_drift, and code_truth_import_failed alongside pin health. All zeros while loading. "not_a_system_agent" is a SYSTEM-AGENT LAW violation; code_agent_drift means live code and the bound agent disagree.',
     valueType: "object",
     alwaysAvailable: true,
     typicalCharCount: 80,
@@ -133,7 +133,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "unhealthy_slots",
     label: "Unhealthy slots",
     description:
-      "Summary entries (same shape as slots_summary) for every slot whose health is not \"ok\" — version drift, archived agent, or a non-system-agent pin. Empty array when everything is healthy.",
+      'Summary entries (same shape as slots_summary) for every slot whose health is not "ok" — code truth drift/import failure or an unhealthy pin. Empty array when everything is healthy.',
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 800,
@@ -328,7 +328,7 @@ export const agentSlotsManifest: SurfaceManifest = {
   intro: `<surface_intro>
 This is an ADMIN surface: the Agent Slots console at /administration/agents/slots.
 
-A slot is a named platform position (agent.slot_definition) whose work is done by a pinned SYSTEM agent — e.g. "the conversation labeler". The console shows every slot with its current pin (a specific agent version, or floating "latest"), a Health verdict (ok / version drift / agent archived / not a system agent), per-principal overrides (agent.slot_binding), and an exemplar test bench for comparing candidate agents against stored real inputs.
+A slot is a named platform position (agent.slot_definition) whose work is done by a pinned SYSTEM agent — e.g. "the conversation labeler". The console shows every slot with its current pin (a specific agent version, or floating "latest"), a worst-first Health verdict (including live code↔agent and code↔contract drift), per-principal bindings (agent.slot_binding), and an exemplar test bench for comparing candidate agents against stored real inputs.
 
 Two laws govern this page: (1) THE SYSTEM-AGENT LAW — a slot default may only reference a system (builtin) agent; "not a system agent" health is always a defect to fix. (2) Latest is not always better — pins exist so a slot's behavior only changes deliberately; "version drift" means a newer version exists, not that repinning is required.
 
@@ -355,6 +355,10 @@ export interface AgentSlotSummary {
   pin: string;
   drift: string | null;
   health: string;
+  code_truth_drift: "code_only" | "db_only" | "diff" | "match" | null;
+  bound_agent_drift: "code_only" | "db_only" | "diff" | "match" | null;
+  code_variables: string[];
+  bound_agent_variables: string[];
   input_kind: string;
   output_kind: string;
   overrides_count: number;
@@ -370,6 +374,12 @@ export interface AgentSlotsHealthSummary {
   not_a_system_agent: number;
   /** Pins whose agent row the caller could not read (RLS or deleted). */
   unresolved_pin: number;
+  /** Live code supplies values the bound agent does not agree with. */
+  code_agent_drift: number;
+  /** Live code and the DB contract cache disagree. */
+  code_contract_drift: number;
+  /** A declaring module was found but failed to import. */
+  code_truth_import_failed: number;
 }
 
 /** Full detail of the slot open in the workbench. */

@@ -8,17 +8,33 @@
 import { isJsonObject } from "@/types/json";
 import { parseSlotContract } from "@/features/agents/slots/overrides";
 import type {
+  SlotCodeTruth,
   SlotConsoleData,
   SlotDefinitionRow,
 } from "./service";
 
 /** Slot health, worst-first. Drives the Health column + the drawer banner. */
 export type SlotHealth =
+  | "code ↔ agent drift"
+  | "code truth import failed"
   | "unresolved pin"
   | "not a system agent"
   | "agent archived"
+  | "code ↔ contract drift"
   | "version drift"
   | "ok";
+
+/** Stable worst-first order for both primary-health selection and table rows. */
+export const HEALTH_PRIORITY: Record<SlotHealth, number> = {
+  "code ↔ agent drift": 0,
+  "code truth import failed": 1,
+  "unresolved pin": 2,
+  "not a system agent": 3,
+  "agent archived": 4,
+  "code ↔ contract drift": 5,
+  "version drift": 6,
+  ok: 7,
+};
 
 /**
  * Where a given agent's record actually lives. System agents open in the
@@ -51,6 +67,9 @@ export interface SlotRow {
   /** e.g. "v7 is latest" when the pin trails the agent's master version. */
   drift: string | null;
   health: SlotHealth;
+  /** Live source/agent/DB comparison from aidream; null means this slot has no
+   * returned report (for example while the endpoint is unavailable). */
+  codeTruth: SlotCodeTruth | null;
   inputKind: string;
   outputKind: string;
   /** The slot's REAL inputs — the contract's required variables. Every run
@@ -73,6 +92,7 @@ export interface SlotRow {
 export function buildRow(
   slot: SlotDefinitionRow,
   data: SlotConsoleData,
+  codeTruth?: SlotCodeTruth,
 ): SlotRow {
   let agentId: string | null = null;
   let agentName = "(unknown agent)";
@@ -120,15 +140,31 @@ export function buildRow(
   // exactly the kind of dead end this console exists to prevent.
   const unresolved = agentId == null || agentType == null;
 
-  const health: SlotHealth = unresolved
-    ? "unresolved pin"
-    : nonSystem
-      ? "not a system agent"
-      : archived
-        ? "agent archived"
-        : drift
-          ? "version drift"
-          : "ok";
+  const codeAgentDrift =
+    codeTruth?.resolution === "code_declaration_found" &&
+    codeTruth.bound_agent_drift != null &&
+    codeTruth.bound_agent_drift !== "match";
+  const codeContractDrift =
+    codeTruth?.resolution === "code_declaration_found" &&
+    codeTruth.drift !== "match";
+  const codeImportFailed =
+    codeTruth?.resolution === "code_exists_but_import_failed";
+
+  const health: SlotHealth = codeAgentDrift
+    ? "code ↔ agent drift"
+    : codeImportFailed
+      ? "code truth import failed"
+      : unresolved
+        ? "unresolved pin"
+        : nonSystem
+          ? "not a system agent"
+          : archived
+            ? "agent archived"
+            : codeContractDrift
+              ? "code ↔ contract drift"
+              : drift
+                ? "version drift"
+                : "ok";
 
   // The contract is the slot's factual I/O declaration — the Inputs and
   // Output columns render THIS, never the bare input_kind/output_kind
@@ -149,6 +185,7 @@ export function buildRow(
     pinLabel,
     drift,
     health,
+    codeTruth: codeTruth ?? null,
     inputKind: slot.input_kind ?? "—",
     outputKind: slot.output_kind ?? "text",
     requiredVariables: contract.requiredVariables,
@@ -174,7 +211,13 @@ export function buildRow(
 
 export const HEALTH_CLASS: Record<SlotHealth, string> = {
   ok: "text-emerald-600 border-emerald-500/40 bg-emerald-500/10",
+  "code ↔ agent drift":
+    "text-rose-600 border-rose-500/40 bg-rose-500/10",
+  "code truth import failed":
+    "text-amber-600 border-amber-500/40 bg-amber-500/10",
   "version drift": "text-amber-600 border-amber-500/40 bg-amber-500/10",
+  "code ↔ contract drift":
+    "text-amber-600 border-amber-500/40 bg-amber-500/10",
   "agent archived": "text-rose-600 border-rose-500/40 bg-rose-500/10",
   "not a system agent": "text-rose-600 border-rose-500/40 bg-rose-500/10",
   "unresolved pin": "text-rose-600 border-rose-500/40 bg-rose-500/10",
@@ -182,6 +225,12 @@ export const HEALTH_CLASS: Record<SlotHealth, string> = {
 
 /** What the admin should do about each unhealthy state — shown, not implied. */
 export const HEALTH_HINT: Partial<Record<SlotHealth, string>> = {
+  "code ↔ agent drift":
+    "The calling code and the bound agent disagree about which variables exist. Values may be dropping before the prompt.",
+  "code truth import failed":
+    "aidream found the code declaration but could not import it, so this slot cannot be verified from live code.",
+  "code ↔ contract drift":
+    "The live code declaration and the slot's stored contract cache disagree. Code truth is authoritative.",
   "version drift":
     "A newer saved version of this agent exists — users keep getting the pinned one until the pin is updated.",
   "unresolved pin":

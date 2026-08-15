@@ -2,6 +2,8 @@ import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import {
   isSlotTestResult,
+  fetchSlotCodeTruthReport,
+  fetchSlotVariableVerdicts,
   parseSlotTestHistory,
   runSlotTests,
   type SlotTestBatchResponse,
@@ -140,5 +142,69 @@ describe("agent slot owner bench service", () => {
         }),
       }),
     );
+  });
+
+  it("loads the live code-truth report through the typed client", async () => {
+    const response = {
+      slots: [],
+      import_failures: [],
+      counts: { total: 0 },
+    };
+    const dispatch = jest.fn().mockResolvedValue({ data: response });
+
+    await expect(
+      fetchSlotCodeTruthReport(dispatch as unknown as AppDispatch),
+    ).resolves.toEqual(response);
+    expect(callApiMock).toHaveBeenCalledWith({
+      path: "/agent-slots/code-truth",
+      method: "GET",
+    });
+  });
+
+  it("evaluates the mapped code fields against the agent that really runs", async () => {
+    const response = {
+      variables: {},
+      user_input: null,
+      verdicts: [
+        {
+          variable: "user_request",
+          code_name: "user_request",
+          verdict: "dropped" as const,
+          message: "code value is dropped",
+          caution: true,
+          blocking: false,
+          lossy: false,
+        },
+      ],
+      blocking: false,
+    };
+    const dispatch = jest.fn().mockResolvedValue({ data: response });
+
+    await expect(
+      fetchSlotVariableVerdicts(dispatch as unknown as AppDispatch, {
+        slot_key: "podcast.deep_research",
+        resolution: "code_declaration_found",
+        drift: "code_only",
+        bound_agent_drift: "code_only",
+        code_variables: ["user_request"],
+        db_required_variables: [],
+        code_only_variables: ["user_request"],
+        db_only_variables: [],
+        inputs: [
+          {
+            name: "user_request",
+            mapped_name: "user_request",
+            type: "str",
+            required: true,
+          },
+        ],
+      }),
+    ).resolves.toEqual(response);
+    expect(callApiMock).toHaveBeenCalledWith({
+      path: "/agent-slots/{slot_key}/variable-verdicts",
+      method: "POST",
+      pathParams: { slot_key: "podcast.deep_research" },
+      body: { code_values: { user_request: "example value" } },
+    });
   });
 });

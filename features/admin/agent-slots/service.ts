@@ -384,6 +384,174 @@ export type SlotTestBatchRequest =
 export type SlotTestBatchResponse =
   components["schemas"]["SlotTestBatchResponse"];
 export type SlotTestResponse = components["schemas"]["SlotTestResult"];
+export type SlotCodeTruth = components["schemas"]["SlotCodeTruth"];
+export type SlotCodeTruthReport =
+  components["schemas"]["SlotCodeTruthReport"];
+export type SlotVariableVerdictRequest =
+  components["schemas"]["SlotVariableVerdictRequest"];
+export type SlotVariableResolution =
+  components["schemas"]["VariableResolution"];
+export type SlotVariableVerdict = components["schemas"]["VariableVerdict"];
+
+const CODE_TRUTH_DRIFT = new Set(["code_only", "db_only", "diff", "match"]);
+const CODE_TRUTH_RESOLUTION = new Set([
+  "code_declaration_found",
+  "code_exists_but_import_failed",
+  "no_code_declaration_found",
+]);
+
+function isStringArray(value: unknown): boolean {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+/** Runtime validation at the Python boundary; the target type remains the
+ * generated OpenAPI alias above, never a local response mirror. */
+function isSlotCodeTruthReport(value: unknown): value is SlotCodeTruthReport {
+  if (!isJsonObject(value)) return false;
+  if (
+    !Array.isArray(value.slots) ||
+    !isStringArray(value.import_failures) ||
+    !isJsonObject(value.counts)
+  ) {
+    return false;
+  }
+  return value.slots.every((slot) => {
+    if (!isJsonObject(slot)) return false;
+    if (
+      typeof slot.slot_key !== "string" ||
+      typeof slot.resolution !== "string" ||
+      !CODE_TRUTH_RESOLUTION.has(slot.resolution) ||
+      typeof slot.drift !== "string" ||
+      !CODE_TRUTH_DRIFT.has(slot.drift) ||
+      !isStringArray(slot.code_variables) ||
+      !isStringArray(slot.db_required_variables) ||
+      !isStringArray(slot.code_only_variables) ||
+      !isStringArray(slot.db_only_variables)
+    ) {
+      return false;
+    }
+    if (
+      slot.bound_agent_drift != null &&
+      (typeof slot.bound_agent_drift !== "string" ||
+        !CODE_TRUTH_DRIFT.has(slot.bound_agent_drift))
+    ) {
+      return false;
+    }
+    if (slot.inputs != null) {
+      if (
+        !Array.isArray(slot.inputs) ||
+        !slot.inputs.every(
+          (field) =>
+            isJsonObject(field) &&
+            typeof field.name === "string" &&
+            typeof field.mapped_name === "string" &&
+            typeof field.type === "string" &&
+            typeof field.required === "boolean",
+        )
+      ) {
+        return false;
+      }
+    }
+    if (slot.call_sites != null) {
+      if (
+        !Array.isArray(slot.call_sites) ||
+        !slot.call_sites.every(
+          (site) =>
+            isJsonObject(site) &&
+            typeof site.source_file === "string" &&
+            typeof site.line === "number" &&
+            typeof site.passes_user_input === "boolean",
+        )
+      ) {
+        return false;
+      }
+    }
+    if (
+      slot.bound_agent != null &&
+      (!isJsonObject(slot.bound_agent) ||
+        typeof slot.bound_agent.id !== "string" ||
+        typeof slot.bound_agent.name !== "string" ||
+        !isStringArray(slot.bound_agent.declared_variables))
+    ) {
+      return false;
+    }
+    return true;
+  });
+}
+
+/** Live code declarations from aidream's in-process NamedAgent registry.
+ * This is compute/source inspection, so it correctly goes to aidream through
+ * the typed client; `agent.slot_definition.contract` is only a drifted cache. */
+export async function fetchSlotCodeTruthReport(
+  dispatch: AppDispatch,
+): Promise<SlotCodeTruthReport> {
+  const response = await dispatch(
+    callApi({
+      path: "/agent-slots/code-truth",
+      method: "GET",
+    }),
+  );
+  if (response.error) throw new Error(response.error.message);
+  if (!isSlotCodeTruthReport(response.data)) {
+    throw new Error("Agent slot code-truth returned an invalid report.");
+  }
+  return response.data;
+}
+
+/** A representative value with the code field's real type. The verdict API
+ * judges availability, mapping, and type compatibility; it never needs or
+ * receives a user's live value just to explain the wiring. */
+function representativeCodeValue(
+  field: components["schemas"]["CodeTruthField"],
+): components["schemas"]["JsonValue"] {
+  if (field.default_value !== undefined && field.default_value !== null) {
+    return field.default_value;
+  }
+  const type = field.type.toLowerCase();
+  if (type.includes("bool")) return true;
+  if (
+    type.includes("int") ||
+    type.includes("float") ||
+    type.includes("decimal") ||
+    type.includes("number")
+  ) {
+    return 1;
+  }
+  if (type.includes("list") || type.includes("set") || type.includes("tuple")) {
+    return [];
+  }
+  if (type.includes("dict") || type.includes("mapping")) return {};
+  return "example value";
+}
+
+/** Ask aidream how the live code-side fields flow into the currently resolved
+ * agent. Keys use `mapped_name`, matching NamedAgent.prepare_variables after
+ * the class's real `variable_map` has been applied. */
+export async function fetchSlotVariableVerdicts(
+  dispatch: AppDispatch,
+  codeTruth: SlotCodeTruth,
+): Promise<SlotVariableResolution> {
+  const codeValues: SlotVariableVerdictRequest["code_values"] = {};
+  for (const field of codeTruth.inputs ?? []) {
+    codeValues[field.mapped_name] = representativeCodeValue(field);
+  }
+  const body: SlotVariableVerdictRequest = { code_values: codeValues };
+  const response = await dispatch(
+    callApi({
+      path: "/agent-slots/{slot_key}/variable-verdicts",
+      method: "POST",
+      pathParams: { slot_key: codeTruth.slot_key },
+      body,
+    }),
+  );
+  if (response.error) throw new Error(response.error.message);
+  if (!response.data) {
+    throw new Error(
+      `Agent slot ${codeTruth.slot_key} returned no variable verdicts.`,
+    );
+  }
+  return response.data;
+}
 
 /** Run the owner bench in one server batch. `callApi` supplies auth, selected
  * backend, diagnostics, and the generated request contract. */

@@ -22,12 +22,15 @@
  *   2. The CURRENTLY BOUND agent's declarations — what is demonstrably flowing
  *      right now. For a REPIN this is the strongest signal available on the
  *      client and needs no server round trip.
- *   3. (pending) aidream's code-truth API — what the call site actually passes.
- *      `codeSuppliedVariables` is the seam; pass it once that endpoint lands and
- *      the verdicts sharpen automatically. Absent = we say so, never guess.
+ *   3. aidream's code-truth API — what the call site actually passes. The
+ *      console feeds it through `codeSuppliedVariables`; absent means the UI
+ *      says truth is unavailable, never guesses.
  */
 
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
+import type { components } from "@/types/python-generated/api-types";
+
+type SlotCodeTruth = components["schemas"]["SlotCodeTruth"];
 
 /** Per-variable verdict. Mirrors the cross-repo scenario matrix. */
 export type RepinVerdict =
@@ -149,6 +152,27 @@ export function computeRepinImpact({
   };
 }
 
+/** Turn the live code-vs-bound-agent comparison into the SAME impact model the
+ * repin guard presents. This keeps the drawer, guard, and fix brief on one
+ * vocabulary instead of inventing a second drift explanation. */
+export function codeTruthRepinImpact(codeTruth: SlotCodeTruth): RepinImpact {
+  const missing = new Set(codeTruth.bound_agent_missing_variables ?? []);
+  const variables: RepinVariableImpact[] = codeTruth.code_variables.map(
+    (name) => ({
+      name,
+      verdict: missing.has(name) ? "lost" : "ok",
+    }),
+  );
+  const breaking = variables.filter((item) => item.verdict === "lost");
+  return {
+    variables,
+    breaking,
+    cautions: [],
+    clean: breaking.length === 0,
+    indeterminate: codeTruth.bound_agent_drift == null,
+  };
+}
+
 /**
  * The copy-paste brief for the one case that genuinely needs code (Scenario 6).
  * Names the slot, the exact mismatch, and the requirement to update every use —
@@ -158,10 +182,12 @@ export function buildRepinFixBrief({
   slotKey,
   candidateName,
   impact,
+  codeTruth,
 }: {
   slotKey: string;
   candidateName: string;
   impact: RepinImpact;
+  codeTruth?: SlotCodeTruth;
 }): string {
   const lost = impact.breaking
     .filter((v) => v.verdict === "lost")
@@ -172,6 +198,16 @@ export function buildRepinFixBrief({
   const renames = impact.cautions
     .map((v) => `  - "${v.name}" -> "${v.suggestedMapping}"`)
     .join("\n");
+  const source = codeTruth?.source;
+  const callSites = codeTruth?.call_sites ?? [];
+  const callSiteLines = callSites.length
+    ? callSites
+        .map(
+          (site) =>
+            `  - ${site.source_file}:${site.line} (passes user_input: ${site.passes_user_input ? "yes" : "no"})`,
+        )
+        .join("\n")
+    : "  - No call sites were discovered in the registered source module.";
 
   return [
     `Fix the agent slot "${slotKey}" after a repin to the agent "${candidateName}".`,
@@ -187,6 +223,9 @@ export function buildRepinFixBrief({
       ? `- The new agent REQUIRES these and nothing supplies them: ${unsupplied.join(", ")}.`
       : `- (nothing unsupplied)`,
     renames ? `\nLIKELY RENAMES (same meaning, different name):\n${renames}` : ``,
+    codeTruth
+      ? `\nLIVE CODE TRUTH:\n- Runner: ${source ? `${source.class_name} (${source.source_file}:${source.line})` : "declaration unavailable"}\n- Code supplies: ${codeTruth.code_variables.join(", ") || "none"}.\n- Bound agent declares: ${codeTruth.bound_agent?.declared_variables.join(", ") || "none"}.\n- The code path passes user_input: ${codeTruth.passes_user_input ? "yes" : "no"}.\n- Call sites:\n${callSiteLines}`
+      : ``,
     ``,
     `WHAT TO DO — pick per variable, do not guess:`,
     `1. If it is only a NAME difference, add a mapping. Do NOT rename anything in code.`,

@@ -15,7 +15,13 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { History, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import {
+  AlertTriangle,
+  History,
+  Loader2,
+  RefreshCw,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -58,6 +64,7 @@ import {
 import {
   HEALTH_CLASS,
   HEALTH_HINT,
+  HEALTH_PRIORITY,
   SYSTEM_AGENT_BASE,
   USER_AGENT_BASE,
   agentHref,
@@ -65,9 +72,11 @@ import {
   type SlotRow,
 } from "./slot-health";
 import {
+  fetchSlotCodeTruthReport,
   fetchSlotConsoleData,
   updateSlotDefinition,
   type SlotAgentOption,
+  type SlotCodeTruth,
   type SlotConsoleData,
 } from "./service";
 
@@ -81,6 +90,10 @@ function toSlotSummary(r: SlotRow): AgentSlotSummary {
     pin: r.pinLabel,
     drift: r.drift,
     health: r.health,
+    code_truth_drift: r.codeTruth?.drift ?? null,
+    bound_agent_drift: r.codeTruth?.bound_agent_drift ?? null,
+    code_variables: r.codeTruth?.code_variables ?? [],
+    bound_agent_variables: r.codeTruth?.bound_agent?.declared_variables ?? [],
     input_kind: r.inputKind,
     output_kind: r.outputKind,
     overrides_count: r.overridesCount,
@@ -112,6 +125,12 @@ function humanRow(r: SlotRow): string {
     `Agent: ${r.agentName}`,
     `Pin: ${r.pinLabel}${r.drift ? ` — ${r.drift}` : ""}`,
     `Health: ${r.health}`,
+    ...(r.codeTruth
+      ? [
+          `Code passes: ${r.codeTruth.code_variables.join(", ") || "none"}`,
+          `Bound agent declares: ${r.codeTruth.bound_agent?.declared_variables.join(", ") || "none"}`,
+        ]
+      : []),
     `Inputs: ${r.inputSummary}`,
     `Output: ${r.outputSummary}`,
     `Bindings: ${r.overridesCount}`,
@@ -122,6 +141,10 @@ function humanRow(r: SlotRow): string {
 export function AgentSlotsConsole() {
   const dispatch = useAppDispatch();
   const [data, setData] = useState<SlotConsoleData | null>(null);
+  const [codeTruthBySlotKey, setCodeTruthBySlotKey] = useState<
+    Record<string, SlotCodeTruth>
+  >({});
+  const [codeTruthError, setCodeTruthError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -155,18 +178,39 @@ export function AgentSlotsConsole() {
   // effect (react-hooks/set-state-in-effect). Initial state is loading=true;
   // the button-driven reload may flip `fetching` synchronously (event handler).
   const fetchData = useCallback(() => {
-    fetchSlotConsoleData()
-      .then(setData)
-      .catch((error: unknown) => {
-        toast.error(
-          `Failed to load agent slots: ${error instanceof Error ? error.message : String(error)}`,
-        );
+    Promise.allSettled([
+      fetchSlotConsoleData(),
+      fetchSlotCodeTruthReport(dispatch),
+    ])
+      .then(([consoleResult, truthResult]) => {
+        if (consoleResult.status === "rejected") {
+          toast.error(
+            `Failed to load agent slots: ${consoleResult.reason instanceof Error ? consoleResult.reason.message : String(consoleResult.reason)}`,
+          );
+        } else {
+          setData(consoleResult.value);
+        }
+        if (truthResult.status === "rejected") {
+          const message =
+            truthResult.reason instanceof Error
+              ? truthResult.reason.message
+              : String(truthResult.reason);
+          setCodeTruthError(message);
+          console.error("[agent-slots] code truth unavailable", truthResult.reason);
+        } else {
+          setCodeTruthBySlotKey(
+            Object.fromEntries(
+              truthResult.value.slots.map((slot) => [slot.slot_key, slot]),
+            ),
+          );
+          setCodeTruthError(null);
+        }
       })
       .finally(() => {
         setLoading(false);
         setFetching(false);
       });
-  }, []);
+  }, [dispatch]);
 
   const reload = useCallback(() => {
     setFetching(true);
@@ -198,9 +242,21 @@ export function AgentSlotsConsole() {
     [reload],
   );
 
-  const rows = useMemo(
-    () => (data ? data.slots.map((slot) => buildRow(slot, data)) : []),
-    [data],
+  const rows = useMemo(() => {
+    if (!data) return [];
+    return data.slots
+      .map((slot) =>
+        buildRow(slot, data, codeTruthBySlotKey[slot.slot_key]),
+      )
+      .sort(
+        (left, right) =>
+          HEALTH_PRIORITY[left.health] - HEALTH_PRIORITY[right.health] ||
+          left.slotKey.localeCompare(right.slotKey),
+      );
+  }, [codeTruthBySlotKey, data]);
+
+  const codeAgentDriftRows = rows.filter(
+    (row) => row.health === "code ↔ agent drift",
   );
 
   // Surface scope — built at Run time from live console state so agents
@@ -214,9 +270,18 @@ export function AgentSlotsConsole() {
       agent_archived: 0,
       not_a_system_agent: 0,
       unresolved_pin: 0,
+      code_agent_drift: 0,
+      code_contract_drift: 0,
+      code_truth_import_failed: 0,
     };
     for (const r of rows) {
       if (r.health === "ok") health.ok += 1;
+      else if (r.health === "code ↔ agent drift")
+        health.code_agent_drift += 1;
+      else if (r.health === "code ↔ contract drift")
+        health.code_contract_drift += 1;
+      else if (r.health === "code truth import failed")
+        health.code_truth_import_failed += 1;
       else if (r.health === "version drift") health.version_drift += 1;
       else if (r.health === "agent archived") health.agent_archived += 1;
       else if (r.health === "unresolved pin") health.unresolved_pin += 1;
@@ -452,6 +517,14 @@ export function AgentSlotsConsole() {
                   ? "NOT a system agent"
                   : r.health}
               </Badge>
+              {r.health === "code ↔ agent drift" && r.codeTruth && (
+                <span className="basis-full text-[10px] leading-tight text-rose-600">
+                  code: {r.codeTruth.code_variables.join(", ") || "none"}
+                  {" · "}agent:{" "}
+                  {r.codeTruth.bound_agent?.declared_variables.join(", ") ||
+                    "none"}
+                </span>
+              )}
               {/* Drift always names both numbers — "version drift" without
                   saying WHICH versions was the console's top complaint. */}
               {r.drift && (
@@ -473,6 +546,7 @@ export function AgentSlotsConsole() {
                     slot={r.slot}
                     twin={twin}
                     currentAgentId={r.agentId}
+                    codeTruth={r.codeTruth}
                     onSaved={reload}
                   />
                 </>
@@ -574,6 +648,39 @@ export function AgentSlotsConsole() {
         }}
         className="flex h-full min-h-0 flex-col gap-3 p-4"
       >
+        {codeTruthError && (
+          <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <div className="font-medium">Code truth is unavailable.</div>
+              <div className="text-muted-foreground">
+                Slot rows still work, but code-to-agent drift cannot be trusted
+                until aidream answers: {codeTruthError}
+              </div>
+            </div>
+          </div>
+        )}
+        {codeAgentDriftRows.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-xs">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+            <span className="font-medium text-rose-600">
+              {codeAgentDriftRows.length} slot
+              {codeAgentDriftRows.length === 1 ? "" : "s"} disagree with the
+              code that calls them.
+            </span>
+            {codeAgentDriftRows.slice(0, 3).map((row) => (
+              <Button
+                key={row.id}
+                size="sm"
+                variant="outline"
+                className="h-6 font-mono text-[11px]"
+                onClick={() => setSelectedId(row.id)}
+              >
+                Review {row.slotKey}
+              </Button>
+            ))}
+          </div>
+        )}
         <div className="min-h-0 flex-1" data-surface-value="slots_summary">
           <MatrxDataTable
             urlState={{ id: "agent-slots", selectedRow: false }}

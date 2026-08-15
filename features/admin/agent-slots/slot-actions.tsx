@@ -21,7 +21,11 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenAgentConvertSystemWindow } from "@/features/overlays/openers/agentConvertSystemWindow";
 import { agentHref } from "./slot-health";
 import { useGuardedRepin } from "./useGuardedRepin";
-import { updateSlotDefinition, type SlotDefinitionRow } from "./service";
+import {
+  updateSlotDefinition,
+  type SlotCodeTruth,
+  type SlotDefinitionRow,
+} from "./service";
 
 /** A lineage relative, always rendered with a door. */
 export function LineageChip({
@@ -64,12 +68,14 @@ export function RepinToTwinButton({
   slot,
   twin,
   currentAgentId,
+  codeTruth,
   onSaved,
 }: {
   slot: SlotDefinitionRow;
   twin: AgentLineageRef;
   /** The agent bound today — the baseline the guard compares against. */
   currentAgentId: string | null;
+  codeTruth?: SlotCodeTruth | null;
   onSaved: () => void;
 }) {
   // THE GUARD. This exact button is what broke `podcast.deep_research`: the
@@ -78,6 +84,7 @@ export function RepinToTwinButton({
   const { requestRepin, dialog, checking, saving } = useGuardedRepin({
     slot,
     currentAgentId,
+    codeTruth,
     onSaved,
   });
   const busy = checking || saving;

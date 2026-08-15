@@ -9,6 +9,7 @@
 
 import {
   buildRepinFixBrief,
+  codeTruthRepinImpact,
   computeRepinImpact,
 } from "../repin-impact";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
@@ -122,5 +123,65 @@ describe("buildRepinFixBrief", () => {
     expect(brief).toContain("user_request");
     expect(brief).toContain("EVERY call site");
     expect(brief).toContain("agent-variable-binding/FEATURE.md");
+  });
+
+  it("includes the live runner, source, bound-agent declaration, and call sites", () => {
+    const codeTruth = {
+      slot_key: "podcast.deep_research",
+      resolution: "code_declaration_found" as const,
+      drift: "code_only" as const,
+      bound_agent_drift: "code_only" as const,
+      code_variables: ["user_request"],
+      db_required_variables: [],
+      code_only_variables: ["user_request"],
+      db_only_variables: [],
+      bound_agent_missing_variables: ["user_request"],
+      bound_agent_only_variables: [],
+      source: {
+        class_name: "DeepResearchAgent",
+        module: "matrx_ai.agent_runners.podcast_generator",
+        source_file: "/srv/aidream/podcast_generator.py",
+        line: 120,
+      },
+      inputs: [
+        {
+          name: "user_request",
+          mapped_name: "user_request",
+          type: "str",
+          required: true,
+        },
+      ],
+      variable_map: {},
+      output: null,
+      passes_user_input: false,
+      call_sites: [
+        {
+          source_file: "/srv/aidream/podcast_generator.py",
+          line: 188,
+          passes_user_input: false,
+        },
+      ],
+      bound_agent: {
+        id: "agent-1",
+        name: "Deep Web Research Agent",
+        declared_variables: [],
+      },
+      import_error: null,
+    };
+    const impact = codeTruthRepinImpact(codeTruth);
+    const brief = buildRepinFixBrief({
+      slotKey: codeTruth.slot_key,
+      candidateName: codeTruth.bound_agent.name,
+      impact,
+      codeTruth,
+    });
+
+    expect(impact.breaking).toEqual([
+      { name: "user_request", verdict: "lost" },
+    ]);
+    expect(brief).toContain("DeepResearchAgent");
+    expect(brief).toContain("/srv/aidream/podcast_generator.py:188");
+    expect(brief).toContain("Bound agent declares: none");
+    expect(brief).toContain("passes user_input: no");
   });
 });
