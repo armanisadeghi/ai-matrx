@@ -7,15 +7,23 @@
 
 import { STAGES } from "../../map/loop-map";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { useState } from "react";
+import { ArrowUpRight, Loader2, RotateCcw, TriangleAlert } from "lucide-react";
 
-import type { LoopEventView, StageRefKind } from "../api";
+import {
+  releasePageMeasurementQuarantine,
+  type LoopEventView,
+  type StageRefKind,
+} from "../api";
 import {
   resolveStageEntry,
   resolveStageRef,
   type RefSubject,
 } from "../stage-doors";
 import { formatCompactDate } from "@/features/marketing/components/shared/MarketingUi";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/lib/toast";
 
 const EVENT_COPY: Record<string, string> = {
   loop_started: "Loop started",
@@ -47,6 +55,18 @@ interface QualityJudgment {
   reasoning: string | null;
 }
 
+interface TerminalMeasurement {
+  pageId: string;
+  pageUrl: string | null;
+  strategy: string;
+  failureCode: string | null;
+  reason: string;
+  healthRecorded: boolean;
+  quarantined: boolean;
+  quarantineReason: string | null;
+  quarantineExpiresAt: string | null;
+}
+
 function record(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -71,6 +91,130 @@ function qualityFromEvent(event: LoopEventView): QualityJudgment | null {
     reasoning:
       typeof quality.reasoning === "string" ? quality.reasoning : null,
   };
+}
+
+function terminalMeasurementFromEvent(
+  event: LoopEventView,
+): TerminalMeasurement | null {
+  if (event.event_type !== "stage_completed") return null;
+  const outcome = record(event.payload.outcome);
+  const measurement = record(outcome?.measurement);
+  if (measurement?.status !== "terminal_unmeasurable") return null;
+  const pageId = measurement.page_id;
+  const strategy = measurement.strategy;
+  if (typeof pageId !== "string" || typeof strategy !== "string") return null;
+  return {
+    pageId,
+    pageUrl:
+      typeof measurement.page_url === "string" ? measurement.page_url : null,
+    strategy,
+    failureCode:
+      typeof measurement.failure_code === "string"
+        ? measurement.failure_code
+        : null,
+    reason:
+      typeof measurement.reason === "string"
+        ? measurement.reason
+        : "PageSpeed marked this page as terminally unmeasurable.",
+    healthRecorded: measurement.health_recorded === true,
+    quarantined: measurement.quarantined === true,
+    quarantineReason:
+      typeof measurement.quarantine_reason === "string"
+        ? measurement.quarantine_reason
+        : null,
+    quarantineExpiresAt:
+      typeof measurement.quarantine_expires_at === "string"
+        ? measurement.quarantine_expires_at
+        : null,
+  };
+}
+
+function TerminalMeasurementCard({
+  measurement,
+}: {
+  measurement: TerminalMeasurement;
+}) {
+  const [releaseState, setReleaseState] = useState<
+    "idle" | "releasing" | "released"
+  >("idle");
+
+  async function release() {
+    setReleaseState("releasing");
+    try {
+      await releasePageMeasurementQuarantine({
+        pageId: measurement.pageId,
+        strategy: measurement.strategy,
+        reason: "Released from the Growth Loop measurement history.",
+      });
+      setReleaseState("released");
+      toast.success("PageSpeed quarantine released. The page can be measured again.");
+    } catch (error) {
+      setReleaseState("idle");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "PageSpeed quarantine could not be released.",
+      );
+    }
+  }
+
+  return (
+    <div className="ml-[5.4rem] mt-1 space-y-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-2.5 py-2">
+      <div className="flex items-start gap-2">
+        <TriangleAlert
+          className="mt-0.5 h-4 w-4 shrink-0 text-amber-600"
+          aria-hidden
+        />
+        <div className="min-w-0 space-y-1">
+          <p className="text-xs font-semibold text-foreground">
+            PageSpeed could not measure this page
+            {measurement.failureCode ? ` · ${measurement.failureCode}` : ""}
+          </p>
+          <EntityRef
+            token="web_page"
+            id={measurement.pageId}
+            name={measurement.pageUrl ?? "Affected page"}
+            openInNewTab
+            wrap
+            alwaysShowActions
+          />
+          <p className="text-xs leading-5 text-muted-foreground">
+            {measurement.reason}
+          </p>
+          {measurement.quarantineReason ? (
+            <p className="text-xs leading-5 text-muted-foreground">
+              Quarantined: {measurement.quarantineReason}
+              {measurement.quarantineExpiresAt
+                ? ` · retries after ${formatCompactDate(measurement.quarantineExpiresAt)}`
+                : ""}
+            </p>
+          ) : null}
+          {!measurement.healthRecorded ? (
+            <p className="text-xs font-medium text-destructive">
+              The health ledger could not be updated; this recovery may need an
+              operator.
+            </p>
+          ) : null}
+        </div>
+      </div>
+      {measurement.quarantined ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={releaseState !== "idle"}
+          onClick={() => void release()}
+        >
+          {releaseState === "releasing" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          ) : (
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+          )}
+          {releaseState === "released" ? "Released" : "Release and try again"}
+        </Button>
+      ) : null}
+    </div>
+  );
 }
 
 function outputDoor(event: LoopEventView, subject: RefSubject) {
@@ -110,6 +254,7 @@ export function LoopHistoryFeed({
       {[...events].reverse().map((event) => {
         const stage = stageTitle(event.stage);
         const quality = qualityFromEvent(event);
+        const terminalMeasurement = terminalMeasurementFromEvent(event);
         const door = quality ? outputDoor(event, subject) : null;
         return (
           <li
@@ -153,6 +298,9 @@ export function LoopHistoryFeed({
                   </p>
                 ) : null}
               </div>
+            ) : null}
+            {terminalMeasurement ? (
+              <TerminalMeasurementCard measurement={terminalMeasurement} />
             ) : null}
           </li>
         );
