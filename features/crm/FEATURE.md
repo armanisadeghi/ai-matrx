@@ -128,7 +128,12 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
 **Routes:** `/crm` (list: People + Companies, `app/(core)/crm/page.tsx`) ·
 `/crm/[partyId]` (record page) · `/crm/outreach-lists` (outreach-list console) ·
 `/crm/outreach-lists/[listId]` (outreach-list workspace) ·
-`/crm/outreach-lists/[listId]/dial` (call queue) · `/crm/admin` (the feature
+`/crm/outreach-lists/[listId]/dial` (call queue) ·
+`/crm/sending-identities` + `/crm/sending-identities/[identityId]` (THE RIGHT TO
+SEND — the mailboxes outreach is sent from; its own
+[FEATURE.md](sending-identities/FEATURE.md), and the ONE part of this feature
+that talks to aidream instead of Supabase, because DNS proofs, OAuth mailbox
+credentials and the send gate are server-side by nature) · `/crm/admin` (the feature
 admin map).
 The main app menu links to the route, opens the manager window, and opens
 person/company capture directly. All consume `features/crm/`:
