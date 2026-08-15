@@ -489,7 +489,13 @@ export default function PageListView({
                           )}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td
+                        className="px-4 py-3 text-right"
+                        // Radix menu content is portaled in the DOM but still
+                        // bubbles through this React ancestor. Stop here so a
+                        // menu action never also activates the clickable row.
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         <ItemMenu
                           align="end"
                           contentMinWidth="15rem"
