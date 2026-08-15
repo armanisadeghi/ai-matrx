@@ -32,6 +32,13 @@ import {
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import {
+  csvExportItem,
+  jsonExportItem,
+} from "@/components/agent-copy/export";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
@@ -53,6 +60,7 @@ import {
 } from "../lib/tree-view";
 import type { PlanNodeRow, PlanNodeTreeItem, PlanNodeType } from "../types";
 import { buildPlanTree } from "../types";
+import { planNodeKeyFields, planNodeSummary } from "../format";
 import type { NodePipelineProgress } from "../lib/pipeline-progress";
 import { PipelineProgressBadge } from "./PipelineProgressBadge";
 import { filterWithAncestors } from "./pillar-map/layouts";
@@ -306,6 +314,98 @@ export function PlanTree({
           onCollapseAll={collapseAll}
           onLevel={applyLevel}
           onAddRoot={() => onAddChild(null)}
+          trailing={
+            nodes.length > 0 ? (
+              <>
+                <CopyButtons
+                  size="icon"
+                  label="Plan tree"
+                  human={() =>
+                    rows
+                      .map(
+                        (row) =>
+                          `${"  ".repeat(row.depth)}${planNodeSummary(row.node)}`,
+                      )
+                      .join("\n")
+                  }
+                  json={() => rows.map((row) => planNodeKeyFields(row.node))}
+                  agentVariant={{
+                    id: "this-view",
+                    label: "This view",
+                    hint: "The rows on screen, in tree order, with the filters",
+                    position: "first",
+                  }}
+                  agent={() => ({
+                    kind: "plan_tree_view",
+                    location: webLocation("Content Plan — tree"),
+                    description:
+                      "The plan tree as rendered: the visible rows in tree order, with the search/filters that produced them.",
+                    data: {
+                      rows: rows.map((row) => ({
+                        ...planNodeKeyFields(row.node),
+                        // The indent on screen. `depth` from the node itself
+                        // is the plan's own depth — under a filter the two
+                        // legitimately differ, so both are named.
+                        rendered_indent: row.depth,
+                        has_children: row.hasChildren,
+                        dimmed: dimmed.has(row.node.id),
+                      })),
+                    },
+                    attributes: {
+                      rows: rows.length,
+                      pages_planned: nodes.length,
+                      matched: matchedCount,
+                      filtered: queryActive,
+                    },
+                    context: {
+                      search: search || undefined,
+                      sort: sortMode,
+                      filters_active: countActiveTreeFilters(filters),
+                    },
+                  })}
+                  aiVariants={[
+                    {
+                      id: "everything",
+                      label: "Everything",
+                      hint: "Every planned page, not just the visible rows",
+                      build: () => ({
+                        kind: "plan_tree",
+                        location: webLocation("Content Plan — tree"),
+                        description:
+                          "Every page in this plan (the whole tree, ignoring the current search/filters).",
+                        data: { pages: nodes.map(planNodeKeyFields) },
+                        attributes: {
+                          detail: "everything",
+                          pages_planned: nodes.length,
+                        },
+                      }),
+                    },
+                  ]}
+                />
+                {/* Export always covers ALL pages, never the visible slice. */}
+                <ExportMenu
+                  label="Content plan pages"
+                  items={[
+                    jsonExportItem(
+                      () => nodes.map(planNodeKeyFields),
+                      "JSON (all pages)",
+                    ),
+                    csvExportItem(
+                      () =>
+                        nodes.map(
+                          (node) =>
+                            planNodeKeyFields(node) as unknown as Record<
+                              string,
+                              unknown
+                            >,
+                        ),
+                      "CSV (all pages)",
+                    ),
+                  ]}
+                />
+              </>
+            ) : null
+          }
         />
         {activeId ? <RootDropStrip /> : null}
         <div

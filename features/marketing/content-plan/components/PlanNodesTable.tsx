@@ -34,6 +34,10 @@ import type {
   MatrxColumnDef,
   MatrxDataTableQueryState,
 } from "@/components/official/matrx-data-table/types";
+import {
+  keyFieldsAiVariant,
+  webLocation,
+} from "@/features/marketing/lib/copy-payloads";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
@@ -42,6 +46,7 @@ import { cn } from "@/lib/utils";
 
 import { NODE_TYPE_LABELS, planStatusColor } from "../constants";
 import type { PlanDriftModel } from "../lib/drift";
+import { planNodeKeyFields, planNodeSummary } from "../format";
 import {
   PIPELINE_FILTER_OPTIONS,
   type NodePipelineProgress,
@@ -563,14 +568,88 @@ export function PlanNodesTable({
         height: 760,
       }}
       copy={{
-        label: "Plan node",
-        listLabel: "Plan nodes",
-        location: "/marketing/content-plan/[siteId]?view=table",
+        label: "Plan page",
+        listLabel: "Plan pages",
+        location: webLocation("Content Plan — pages table"),
         rowKind: "plan_node",
         listKind: "plan_node_list",
-        humanRow: (row) =>
-          `${row.label} — ${row.route ?? "(no route)"} [${row.node_type}]`,
-        showRow: false,
+        rowDescription: "One planned page, as the table renders it.",
+        listDescription:
+          "The plan's pages in the current table view, with the plan-vs-site verdict each row shows.",
+        humanRow: planNodeSummary,
+        // The row's drift cell is a rendered verdict, not a column — carry it
+        // so a copied row says the same thing the screen does.
+        agentRow: (row) => ({
+          ...planNodeKeyFields(row),
+          plan_vs_site: !drift.isPaired && !drift.hasCrawlData
+            ? "not-connected"
+            : (drift.byNodeId.get(row.id)?.verdict ?? "matches the live site"),
+          pipeline: pipelineByNodeId.get(row.id) ?? null,
+          cms_page_id: cmsPageById?.get(row.id)?.pageId ?? null,
+        }),
+        rowAttributes: (row) => ({
+          node_id: row.id,
+          route: row.route,
+          node_type: row.node_type,
+        }),
+        listAttributes: (visible, all) => ({
+          rows: visible.length,
+          pages_planned: all.length,
+          without_keyword: all.filter((row) => !row.primary_keyword_id).length,
+          without_brief: all.filter(
+            (row) => !row.brief || row.brief.length === 0,
+          ).length,
+          drift_total: drift.counts.total,
+          drift_ghosts: drift.counts.ghosts,
+          drift_conflicts: drift.counts.conflicts,
+          drift_orphans: drift.counts.orphans,
+        }),
+        aiVariants: (visible, all) => [
+          keyFieldsAiVariant({
+            kind: "plan_node_list",
+            location: webLocation("Content Plan — pages table"),
+            description:
+              "The pages in the current table view, projected to their core planning fields.",
+            visible,
+            project: planNodeKeyFields,
+            query,
+            attributes: { pages_planned: all.length },
+          }),
+          {
+            id: "gaps",
+            label: "Gaps only",
+            hint: "Pages missing a target keyword or a brief",
+            build: () => {
+              const gaps = all.filter(
+                (row) =>
+                  !row.primary_keyword_id ||
+                  !row.brief ||
+                  row.brief.length === 0,
+              );
+              return {
+                kind: "plan_node_gaps",
+                location: webLocation("Content Plan — pages table"),
+                description:
+                  "Every planned page (across the WHOLE plan, not just this view) still missing a target keyword or a brief.",
+                data: {
+                  gaps: gaps.map((row) => ({
+                    ...planNodeKeyFields(row),
+                    missing: [
+                      row.primary_keyword_id ? null : "target keyword",
+                      row.brief && row.brief.length > 0 ? null : "brief",
+                    ].filter(Boolean),
+                  })),
+                },
+                attributes: {
+                  detail: "gaps",
+                  gaps: gaps.length,
+                  pages_planned: all.length,
+                  drift_total: drift.counts.total,
+                },
+              };
+            },
+          },
+        ],
       }}
       toolbar={{
         searchPlaceholder: "Search label, route, keyword…",
