@@ -41,7 +41,7 @@ vision: []
 
 ## Live board and current line
 
-Live Supabase count on 2026-08-15: **74 verified / 91 partial / 1 stub / 7 unregistered-active = 173 active**. The seven unregistered-active rows are deliberate non-web contracts: `matrx-default/{default,basic-content-display,basic-editor}`, `chrome-extension/{assistant,pilot}`, and `matrx-local/desktop`.
+Live Supabase count on 2026-08-15: **75 verified / 90 partial / 1 stub / 7 unregistered-active = 173 active**. The seven unregistered-active rows are deliberate non-web contracts: `matrx-default/{default,basic-content-display,basic-editor}`, `chrome-extension/{assistant,pilot}`, and `matrx-local/desktop`.
 
 Registration is complete. Promotion is the main remaining line.
 
@@ -60,7 +60,7 @@ Registration is complete. Promotion is the main remaining line.
 
 ## Done
 
-- **2026-08-15 browser batch 1:** promoted `matrx-admin/{server-logs,sandbox,email}` to verified, synced and ledgered `migrations/surface_sync_admin_browser_verified_batch1_20260815.sql`, added Email and Scheduling Locate anchors, corrected Scheduling's stale readiness note without promoting it, and left the board at 74 verified / 91 partial / 1 stub / 7 deliberate non-web rows.
+- **2026-08-15 browser batch 1:** promoted `matrx-admin/{server-logs,sandbox,email}` to verified, synced and ledgered `migrations/surface_sync_admin_browser_verified_batch1_20260815.sql`, added Email and Scheduling Locate anchors, corrected Scheduling's stale readiness note without promoting it, and refreshed the live board at 75 verified / 90 partial / 1 stub / 7 deliberate non-web rows after one concurrent promotion.
 
 ## Decisions needed
 
