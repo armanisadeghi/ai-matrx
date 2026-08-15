@@ -37,6 +37,10 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { ExportMenu } from "@/components/agent-copy/ExportMenu";
+import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,6 +83,7 @@ import {
   useUpdatePlanEntity,
 } from "../data/hooks";
 import { createPlanEntity } from "../data/service";
+import { planEntitySummary } from "../format";
 import { createParty, searchPartiesByName } from "@/features/crm/service";
 import type { PartyRef, PartyRow } from "@/features/crm/types";
 import { PartyCreateForm } from "@/features/crm/components/PartyCreateForm";
@@ -815,6 +820,57 @@ export function EntityManager({
               People &amp; companies
             </h4>
             <div className="flex items-center gap-1.5">
+              {partyRows.length > 0 ? (
+                <>
+                  <CopyButtons
+                    size="xs"
+                    label="People & companies"
+                    human={() =>
+                      partyRows
+                        .map((party) =>
+                          [
+                            party.party_kind === "organization"
+                              ? "org"
+                              : "person",
+                            party.display_name,
+                            party.job_title,
+                          ]
+                            .filter(Boolean)
+                            .join(" — "),
+                        )
+                        .join("\n")
+                    }
+                    json={() => partyRows}
+                    agent={() => ({
+                      kind: "plan_site_parties",
+                      location: webLocation("Content Plan — entities"),
+                      description:
+                        "The people and companies linked to this site — the authors and reviewers behind its content (E-E-A-T).",
+                      data: { parties: partyRows },
+                      attributes: {
+                        rows: partyRows.length,
+                        site_id: siteId,
+                      },
+                    })}
+                  />
+                  <ExportMenu
+                    label="Content plan people and companies"
+                    items={[
+                      jsonExportItem(() => partyRows, "JSON (all)"),
+                      csvExportItem(
+                        () =>
+                          partyRows.map((party) => ({
+                            id: party.id,
+                            display_name: party.display_name,
+                            party_kind: party.party_kind,
+                            job_title: party.job_title ?? "",
+                          })),
+                        "CSV (all)",
+                      ),
+                    ]}
+                  />
+                </>
+              ) : null}
               <LinkExistingPartyPopover
                 orgId={organizationId}
                 linkedIds={partyRows.map((party) => party.id)}
@@ -908,15 +964,51 @@ export function EntityManager({
             <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
               Sources &amp; media
             </h4>
-            <Button
-              size="sm"
-              className="h-7 text-xs"
-              onClick={() => {
-                openEditor(null);
-              }}
-            >
-              <Plus className="mr-1 h-3 w-3" /> New source
-            </Button>
+            <div className="flex items-center gap-1.5">
+              {rows.length > 0 ? (
+                <>
+                  <CopyButtons
+                    size="xs"
+                    label="Sources & media"
+                    human={() => rows.map(planEntitySummary).join("\n")}
+                    json={() => rows}
+                    agent={() => ({
+                      kind: "plan_site_sources",
+                      location: webLocation("Content Plan — entities"),
+                      description:
+                        "The sources and media this site's content cites — studies, guidelines and statistics pages.",
+                      data: { sources: rows },
+                      attributes: { rows: rows.length, site_id: siteId },
+                    })}
+                  />
+                  <ExportMenu
+                    label="Content plan sources and media"
+                    items={[
+                      jsonExportItem(() => rows, "JSON (all)"),
+                      csvExportItem(
+                        () =>
+                          rows.map((entity) => ({
+                            id: entity.id,
+                            label: entity.label,
+                            entity_type: entity.entity_type,
+                            source_type_id: entity.source_type_id ?? "",
+                          })),
+                        "CSV (all)",
+                      ),
+                    ]}
+                  />
+                </>
+              ) : null}
+              <Button
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => {
+                  openEditor(null);
+                }}
+              >
+                <Plus className="mr-1 h-3 w-3" /> New source
+              </Button>
+            </div>
           </div>
           {entities.isLoading ? (
             <div className="space-y-2">

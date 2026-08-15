@@ -41,6 +41,8 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { Button } from "@/components/ui/button";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import {
   Select,
   SelectContent,
@@ -60,6 +62,7 @@ import {
 } from "../constants";
 import type { PlanNodeRow } from "../types";
 import { buildPlanTree, PLAN_NODE_TYPES, TECHNICAL_DEPTHS } from "../types";
+import { planNodeKeyFields, planNodeSummary } from "../format";
 import {
   collapseVisible,
   filterWithAncestors,
@@ -475,6 +478,73 @@ export function PillarMap({
         >
           Legend
         </Button>
+        {/* The map is a PROJECTION of the plan — copy what is on the canvas
+          (filters applied, collapsed pillars accounted for), with the whole
+          plan as the Everything variant. */}
+        <CopyButtons
+          size="icon"
+          label="Pillar map"
+          human={() =>
+            [
+              `Pillar map — ${visible.length} of ${nodes.length} pages on the canvas`,
+              ...visible.map(planNodeSummary),
+            ].join("\n")
+          }
+          json={() => visible.map(planNodeKeyFields)}
+          agentVariant={{
+            id: "this-view",
+            label: "This view",
+            hint: "The pages on the canvas, with the active filters",
+            position: "first",
+          }}
+          agent={() => ({
+            kind: "plan_pillar_map_view",
+            location: webLocation("Content Plan — pillar map"),
+            description:
+              "The pillar map as rendered: the pages currently on the canvas, the filters that produced them, and the current selection.",
+            data: {
+              pages: visible.map((node) => ({
+                ...planNodeKeyFields(node),
+                dimmed: dimmed.has(node.id),
+                collapsed_descendants: hiddenCounts.get(node.id) ?? 0,
+                selected: selectedIds.includes(node.id),
+              })),
+            },
+            attributes: {
+              rows: visible.length,
+              pages_planned: nodes.length,
+              selected: selectedIds.length,
+              layout: layoutId,
+            },
+            context: {
+              status_filter: statusFilter,
+              type_filter: typeFilter,
+              pillar_filter: pillarFilter,
+              keyword_filter: keywordFilter,
+              reviewer_filter: reviewerFilter,
+              technical_depth_filter: depthFilter,
+              collapsed_pillars: collapsed.size,
+            },
+          })}
+          aiVariants={[
+            {
+              id: "everything",
+              label: "Everything",
+              hint: "Every planned page, ignoring the map's filters",
+              build: () => ({
+                kind: "plan_pillar_map",
+                location: webLocation("Content Plan — pillar map"),
+                description:
+                  "Every page in this plan (the whole tree behind the map, ignoring its filters).",
+                data: { pages: nodes.map(planNodeKeyFields) },
+                attributes: {
+                  detail: "everything",
+                  pages_planned: nodes.length,
+                },
+              }),
+            },
+          ]}
+        />
         {selectedIds.length > 1 ? (
           <div className="ml-auto flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">
