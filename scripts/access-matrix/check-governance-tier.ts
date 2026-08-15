@@ -6,12 +6,18 @@
  * common-docs/systems/access-architecture/FEATURE.md §2.6 and
  * migrations/iam_governance_column_tier.sql (FOUND_DEFECTS D119).
  *
- * It asserts BOTH halves, because over-tightening is a defect too (db-rules §6):
- *   1. An `editor` sharee CANNOT change who can reach the row —
- *      `visibility`, `created_by`, or an already-owned `organization_id`.
- *   2. That same editor CAN still do all their real work — rename, edit the
- *      body, edit metadata, trash and un-trash.
- *   3. The owner and an `admin` grantee CAN govern.
+ * THE THREE SHARE LEVELS (Arman, 2026-08-14 — see
+ * common-docs/systems/access-architecture/SHARE_LEVELS.md):
+ *   VIEW  — see everything, change nothing.
+ *   EDIT  — edit the basics. NOT delete, NOT destructive things, NOT the core
+ *           fields that say who the item belongs to. Publishing IS included —
+ *           in real companies the publisher is the approver at the end of the
+ *           line, not whoever clicked "new" first.
+ *   FULL  — the owner's own privileges, delegated (the enum still spells this
+ *           `admin`, which is NOT the org-admin role — see the doc).
+ *
+ * Both halves are asserted, because a blocked legitimate collaborator is as
+ * serious a defect as an intruder.
  *
  * Every probe is a REAL PostgREST write with a REAL minted user JWT — the exact
  * path a sharee would use to walk around a UI-only check. No mocks, ever.
@@ -147,24 +153,29 @@ async function main(): Promise<void> {
     const asOwner = (patch: Record<string, unknown>) =>
       rlsPatch(env, ownerJwt, SCHEMA, TABLE, f, patch);
 
-    console.log(`\n${C.bold}EDITOR — may not govern${C.reset}`);
-    record("editor: visibility -> public", "refused", await asSharee({ visibility: "public" }));
-    record("editor: created_by -> self", "refused", await asSharee({ created_by: shareeId }));
-    record("editor: organization_id -> own org", "refused", await asSharee({ organization_id: shareeOrg }));
+    // EDIT = "edit the basics, but you cannot delete or change who this belongs
+    // to". Publishing is NOT on this list — it is an edit-level action.
+    console.log(`\n${C.bold}EDIT — may not delete, may not change who it belongs to${C.reset}`);
+    record("edit: trash it", "refused", await asSharee({ deleted_at: new Date().toISOString() }));
+    record("edit: take ownership", "refused", await asSharee({ created_by: shareeId }));
+    record("edit: move to own org", "refused", await asSharee({ organization_id: shareeOrg }));
 
-    console.log(`\n${C.bold}EDITOR — may still work${C.reset}`);
-    record("editor: rename", "allowed", await asSharee({ title: "renamed by editor" }));
-    record("editor: edit content", "allowed", await asSharee({ content: "edited by editor" }));
-    record("editor: edit metadata", "allowed", await asSharee({ metadata: { probe: true } }));
-    record("editor: trash", "allowed", await asSharee({ deleted_at: new Date().toISOString() }));
-    record("editor: un-trash", "allowed", await asSharee({ deleted_at: null }));
+    console.log(`\n${C.bold}EDIT — may still do all real work${C.reset}`);
+    record("edit: rename", "allowed", await asSharee({ title: "renamed by editor" }));
+    record("edit: change content", "allowed", await asSharee({ content: "edited by editor" }));
+    record("edit: change metadata", "allowed", await asSharee({ metadata: { probe: true } }));
+    record("edit: PUBLISH (an edit-level action)", "allowed", await asSharee({ visibility: "public" }));
+    record("edit: un-publish", "allowed", await asSharee({ visibility: "personal" }));
+    record("edit: restore something trashed", "allowed", await asSharee({ deleted_at: null }));
 
-    console.log(`\n${C.bold}OWNER — governs${C.reset}`);
-    record("owner: visibility -> public", "allowed", await asOwner({ visibility: "public" }));
-    record("owner: visibility -> personal", "allowed", await asOwner({ visibility: "personal" }));
-    record("owner: created_by is never transferable", "refused", await asOwner({ created_by: shareeId }));
+    console.log(`\n${C.bold}OWNER — full privileges${C.reset}`);
+    record("owner: publish", "allowed", await asOwner({ visibility: "public" }));
+    record("owner: un-publish", "allowed", await asOwner({ visibility: "personal" }));
+    record("owner: trash their own", "allowed", await asOwner({ deleted_at: new Date().toISOString() }));
+    record("owner: restore", "allowed", await asOwner({ deleted_at: null }));
+    record("owner: ownership is never a column write", "refused", await asOwner({ created_by: shareeId }));
 
-    console.log(`\n${C.bold}ADMIN grantee — governs${C.reset}`);
+    console.log(`\n${C.bold}FULL access (share level 'admin') — the owner's privileges${C.reset}`);
     if (grantId) {
       await svc(env, `permissions?id=eq.${grantId}`, {
         schema: "iam",
@@ -172,9 +183,10 @@ async function main(): Promise<void> {
         body: JSON.stringify({ permission_level: "admin" }),
       });
     }
-    record("admin: visibility -> public", "allowed", await asSharee({ visibility: "public" }));
-    record("admin: organization_id -> own org", "allowed", await asSharee({ organization_id: shareeOrg }));
-    record("admin: created_by still refused", "refused", await asSharee({ created_by: shareeId }));
+    record("full: trash it", "allowed", await asSharee({ deleted_at: new Date().toISOString() }));
+    record("full: restore it", "allowed", await asSharee({ deleted_at: null }));
+    record("full: move to own org", "allowed", await asSharee({ organization_id: shareeOrg }));
+    record("full: ownership still not a column write", "refused", await asSharee({ created_by: shareeId }));
   } finally {
     if (grantId) {
       await svc(env, `permissions?id=eq.${grantId}`, { schema: "iam", method: "DELETE" }).catch(() => {});

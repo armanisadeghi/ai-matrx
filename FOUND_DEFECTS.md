@@ -502,46 +502,47 @@ The 4-day platform freeze is fixed, and the runway guard shipped 2026-08-15 (`pn
 
 Board: [docs/handoffs/website-factory-bug-dispatch.md](docs/handoffs/website-factory-bug-dispatch.md) (WF-1…WF-12); vision gaps in `website-factory-vision.md`. Close when the board is empty. **Arman assigns; WF-1/2/3 are HIGH.**
 
-### D119 — RESOLVED 2026-08-14: THE GOVERNANCE-COLUMN TIER (the tiered model's missing column axis)
+### D119 — RESOLVED 2026-08-14: the EDIT/FULL boundary is now enforced on columns, not just statements
 
-**It was worse than filed.** With a real `editor` grant, the real `authenticated` role and a real
-minted JWT, an editor-sharee could not only flip `visibility` to `public` — they could **take
-ownership** (`created_by := self`) and **re-home the row into their own org**
-(`organization_id`). And those chain: stealing ownership makes `std_delete`'s owner arm true, so
-the follow-up hard DELETE succeeded, defeating the one tier that WAS built.
+**The share levels are view / edit / FULL** — canonical statement, in Arman's words:
+`common-docs/systems/access-architecture/SHARE_LEVELS.md`. **Read it before touching anything about
+what an editor may do.** It also carries the naming warning: the level the enum spells `admin` is a
+personal delegation on ONE item and is NOT the org-admin role — that collision is what made agents
+re-ask these questions for months.
 
-**Archaeology (Arman's ruling: restore the tiering, never a one-off guard).** The STATEMENT axis
-was built and is correct — `std_select` viewer / `std_update` editor / **`std_delete` admin**, the
-EDITOR-CAP RULING made concrete. The COLUMN axis was **never designed**: no migration creates the
-`permission_level` enum, the only tier enumeration (the vision-era `.arman` playbook) makes DELETE
-the entire editor↔admin difference, and `NEW.visibility IS DISTINCT FROM OLD.visibility` appears
-zero times in the corpus. Two one-off column guards exist (`content_ir.kind_definition.is_active`,
-`ctx_scope_types.is_system`), both keyed to owner/super-admin, never generalized. Meanwhile
-`access-architecture/FEATURE.md` §2 and `utils/permissions/service.ts` both asserted owner-only
-`visibility` writes as fact. Full account: `common-docs/systems/access-architecture/FEATURE.md` §2.6.
+**The bug.** The tier applies on two axes; only the statement axis was built (`std_delete` at full).
+The column axis was never designed, so every access-deciding column sat inside the editor-writable
+set. Proven live with a real edit grant: the sharee could **take ownership** (`created_by := self`),
+**re-home the row into their own org**, and **trash it** — and those chain, since taking ownership
+makes `std_delete`'s owner arm true, so the follow-up hard DELETE succeeded.
 
-**Fix — in the canonical pipeline, not per table.** RLS is row-level and cannot express a column
-tier, and column GRANTs are role-wide, so the axis is a generated BEFORE UPDATE trigger emitted by
-`iam.apply_rls` beside the policies: `iam._guard_governance_columns` + `iam.apply_governance_guard`
-/ `drop_governance_guard` + `iam.sweep_governance_guards()` (one short transaction per table —
-137 ACCESS EXCLUSIVE locks in one transaction deadlocks a live DB), with per-entity-type room on
-`platform.entity_types.governed_columns` (NULL = `{visibility, created_by, organization_id}`).
-Live on 137 entity-family tables; components/ledger/restricted deliberately excluded. Migration
-`migrations/iam_governance_column_tier.sql`. Guard: `pnpm check:governance-tier` (14/14 through
-real PostgREST). Not over-tightening: of 1,650 visibility changes in 120 days, 1,594 had a NULL
-actor (privileged writes, skipped) and 56 were the owner — **zero by a real non-owner**.
+**The fix.** A generated BEFORE UPDATE trigger emitted by `iam.apply_rls`
+(`iam._guard_governance_columns`), live on 139 whole-item tables, per-item-type set on
+`platform.entity_types.governed_columns` (default `{created_by, organization_id, deleted_at}`).
+Never hand-write a per-table guard — add the column to that set. Migrations
+`iam_governance_column_tier.sql` + `iam_governance_columns_align_to_share_levels.sql`. Guard:
+`pnpm check:governance-tier` (18/18 through real requests with real user logins).
 
-**Still open — two product-semantics questions, Arman decides** (documented in §2.6):
-1. **`deleted_at` is not governed.** Soft-delete stays an editor action while the editor-cap
-   ruling put "deleting others' work" — naming `entity_soft_delete` — in the admin tier. Those
-   disagree: an editor cannot call the RPC but can write the column.
-2. **Plain org members on `internal` rows** are now refused a `visibility` change on org work
-   product they did not create. Consistent with "members work, owners/admins govern", but it
-   narrows what a member could do yesterday.
+**Two corrections to my first pass, both from misreading the levels — do not reintroduce either:**
+- **Publishing is EDIT-level.** I wrongly made `visibility` owner-only. Creating something does not
+  make you the only person qualified to publish it; in real companies the publisher is the approver
+  at the end of the line. Removed from the governed set.
+- **Edit has NEVER meant delete.** I wrongly left `deleted_at` open to editors and even recommended
+  keeping it that way. The platform already said otherwise — `entity_soft_delete` requires full,
+  `entity_undelete` requires edit — and the raw column write was simply a second door with no lock.
+  Now governed, asymmetrically: trashing needs full, restoring stays edit-level.
 
-**Also found, not changed (product semantics):** the **component** variant puts DELETE at `editor`
-on the parent while the entity variant puts it at `admin` — ~162 tables where `editor ≡ admin` for
-destruction. Defensible under THE COMPONENT OWNERSHIP LAW, never explicitly ruled.
+**OPEN — parts vs whole things, with both of its complete forms written down.** A piece of a bigger
+thing (a page inside a website; ~162 tables) can still be permanently deleted at edit level, while a
+whole thing needs full. Left alone deliberately. Per
+`common-docs/policies/decisions-must-be-complete.md`, the question is NOT which direction: if pieces
+stay deletable at edit level we owe a **notification to the parent's owner** so wrong deletions get
+caught; if not, we owe a **"Request deletion" path** to whoever can decide. Either is correct.
+Neither is correct alone.
+
+**ALSO REQUIRED, NOT BUILT — request-deletion.** An editor refused a delete gets a good error
+message and nothing else. The complete version routes the ask to whoever can decide, same shape as
+the existing access-request lane. Specified in `SHARE_LEVELS.md`.
 
 ### D118 — conveying `working_document → conversation` edges let an editor-sharee re-share and amplify access (2026-07-29)
 
