@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P8",
+  "runId": "01a001b0-1582-7fc2-935e-299e2d1d4826",
+  "state": "delivered",
+  "updatedAt": "2026-08-15T18:33:16.700Z",
+  "summary": "DELIVERED: the independently certified Real Loading States cleanup is on origin/main and shipped in v0.4.603.",
+  "source": "01a001b0-1582-7fc2-935e-299e2d1d4826.json",
+  "eventHash": "1578473f74808701a5da0e5cde00d10c2da3c2b61b8a2fe0282f5f0b547a30b3"
+}
