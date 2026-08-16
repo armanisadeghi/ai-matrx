@@ -179,6 +179,12 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- **2026-08-16** — Queued/mirror replays render honestly: `replayInFlight`
+  (`types.ts`) marks `pending`/`processing` rows and `ReplaysTable` shows a
+  neutral "queued"/"running" badge + "still in flight" copy instead of the red
+  "did not run" failure treatment (the mirror queue writes rows as `pending`
+  until the worker lands the verdict). Backend twin: `replay_failed_count`
+  now counts only `status='failed'`.
 - **2026-08-16** — One-click **revert** for applied findings (D-41): shared
   `RevertButton` on `FindingCard` (applied state, distinct amber icon+word
   `reverted` badge) and on `VersionLadder`'s current `from review` row; calls

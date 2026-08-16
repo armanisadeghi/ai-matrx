@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import {
   replayBaseline,
   replayFailureReason,
+  replayInFlight,
   replayJudgeReasoning,
   replayRan,
   replaySpend,
@@ -64,13 +65,18 @@ export function ReplaysTable({ replays }: { replays: Replay[] }) {
           <TableBody>
             {replays.map((r) => {
               const ran = replayRan(r);
+              const inFlight = replayInFlight(r);
               const spend = replaySpend(r);
               const baseline = replayBaseline(r);
               const sourceDoor = exampleDoor("conversation", r.source_conversation_id, audience);
               return (
                 <TableRow key={r.id} className={cn(!ran && "opacity-80")}>
                   <TableCell>
-                    {!ran ? (
+                    {inFlight ? (
+                      <Badge variant="outline" className="text-muted-foreground">
+                        {r.status === "processing" ? "running" : "queued"}
+                      </Badge>
+                    ) : !ran ? (
                       <Badge
                         variant="outline"
                         className="border-red-500/40 text-red-600 dark:text-red-400"
@@ -88,6 +94,10 @@ export function ReplaysTable({ replays }: { replays: Replay[] }) {
                   <TableCell className="tabular-nums">
                     {ran ? (
                       fmtCost(spend)
+                    ) : inFlight ? (
+                      <span className="text-xs text-muted-foreground">
+                        not yet — still in flight
+                      </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">
                         nothing spent — it never reached the model
@@ -113,7 +123,9 @@ export function ReplaysTable({ replays }: { replays: Replay[] }) {
                     <span className="line-clamp-2 text-xs text-muted-foreground">
                       {ran
                         ? (replayJudgeReasoning(r) ?? "judge returned no reasoning")
-                        : replayFailureReason(r)}
+                        : inFlight
+                          ? "waiting for the replay worker — the verdict lands here when it finishes"
+                          : replayFailureReason(r)}
                     </span>
                   </TableCell>
                   <TableCell>

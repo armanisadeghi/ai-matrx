@@ -42,6 +42,16 @@ export function replayRan(replay: Replay): boolean {
   return replay.status === "completed";
 }
 
+/**
+ * A replay dispatched to the mirror queue (`pending`) or currently executing
+ * (`processing`) has not failed and has not run — it is IN FLIGHT. Rendering
+ * it as "did not run" (red, with a failure reason) tells the user their replay
+ * broke when it is simply waiting for the mirror worker.
+ */
+export function replayInFlight(replay: Replay): boolean {
+  return replay.status === "pending" || replay.status === "processing";
+}
+
 /** Money Hindsight SPENT on this replay. Only meaningful when it ran. */
 export function replaySpend(replay: Replay): number | null {
   const cost = replay.metrics?.["cost"];
