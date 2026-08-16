@@ -3,7 +3,7 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-08-16`
 
 ---
 
@@ -36,6 +36,7 @@
 - ✅ **Column-type badges** — every header now shows the `data_type` under the display name
 - ✅ **`op:'merge'` in `udt_bulk_write`** — applied live + verified; partial-row patch via `jsonb_concat`
 - ✅ **Table-native selection + scoped copy** — every `UserTableViewer` surface has persistent page-spanning row checkboxes, icon-only direct Copy / Copy for AI, selected-row copy, and a large non-blocking WindowPanel workspace for exact row/column projection. The workspace reuses the canonical `MatrxDataTable` search, whole-word matching, per-column filters, layered advanced filters, sorting, pagination, and selection at every table size.
+- ✅ **Responsive Table Settings + dataset door** — column controls use a phone-safe two-column grid with the format option rail on its own row, tap-sized inputs/actions, and the dialog title renders the dataset through `EntityRef` so the named resource always opens.
 
 **P4 workbook surface (lossless spreadsheet, v1):**
 - ✅ `udt_workbook_snapshots` table — append-only content store keyed by `workbook_id`; RLS mirrors `udt_workbooks`; viewers see all snapshots they can view the parent of; editors can append; in `supabase_realtime` publication.
@@ -539,6 +540,8 @@ into:
 Decide before agent-heavy workloads land.
 
 ## Change log
+
+- 2026-08-16 — codex: **Table Settings is phone-safe and its dataset identity is a door.** The column editor uses a responsive two-column grid, tap-sized controls, and the shared `FieldFormatPicker` embedded layout so conditional format options take a full-width rail instead of squeezing the row sideways. The title now renders the named dataset through `EntityRef` with open/peek actions. Focused picker tests preserve both embedded and default stacked contracts.
 
 - 2026-08-15 — codex: **Custom copy rebuilt as a real table workspace.** Removed the blocking two-column dialog and its large-table row-selection restriction. Custom Copy and Copy for AI now open a viewport-sized, resizable WindowPanel with a searchable, non-clipping column sidebar and the canonical `MatrxDataTable` interaction stack: contains/whole-word search, per-column filters, layered advanced filters, sorting, pagination, page/Shift selection, only-filtered selection, source-table selection, Select all, and Clear all. Every row and column starts included. Direct toolbar actions are icon-only with accessible names; the shared AI-copy mark is now copy sheets plus a connected intelligence node, with no bot/star/sparkle.
 

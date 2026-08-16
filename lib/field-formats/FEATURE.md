@@ -40,7 +40,7 @@ module — do not make it seven.
 | `registry.ts` | THE registry — 22 formats, their `format()` / `parse()`, and `formatsForBase` / `defaultFormatForBase` |
 | `format.ts` | `formatFieldValue`, `parseFieldInput`, `resolveFieldFormat`, `readFieldFormatConfig` — THE FALLBACK LAW lives here |
 | `FormattedFieldValue.tsx` | The ONE read-only renderer (links, swatch, chips, stars, amber mismatch) |
-| `FieldFormatPicker.tsx` | The ONE picker — format select + only the options that format reads |
+| `FieldFormatPicker.tsx` | The ONE picker — format select + only the options that format reads; stacked by default, `layout="embedded"` exposes the option rail to a responsive parent |
 | `context-value-types.ts` | Bridge from the scopes `ContextValueType` vocabulary |
 
 ## The formats
@@ -68,6 +68,9 @@ Persisted at `workbench.udt_dataset_fields.metadata.format = {id, options}`.
 - A column with no declared format takes the identity format for its storage
   type, and `UserTableViewer` then renders it down its **original** code path.
   Existing tables are byte-identically unchanged until someone picks a format.
+- Dense consumers use `layout="embedded"` plus `optionsClassName` to place
+  format-specific controls on their own responsive rail. The default remains
+  stacked so existing callers do not change layout.
 
 **Scopes / context items.** `contextValueTypeToFormat()` maps
 `ContextValueType` onto a `FieldFormatId`. `ContextValueType` remains the
@@ -91,6 +94,9 @@ unknown format id degrades to the plain storage type by design.
 
 ## Change log
 
+- **2026-08-16** — Added the opt-in embedded layout contract so Table Settings
+  keeps the primary format selector aligned while its conditional controls take
+  a full responsive rail; the default stacked contract remains unchanged.
 - **2026-08-14** — Created. Extracted the formatting concepts scattered across
   `ContextValueDisplay.renderTyped`, six per-domain `format.ts` helpers, and
   `UserTableViewer.formatCellValue` into one registry; wired data tables
