@@ -240,6 +240,28 @@ function makeRunState(
   };
 }
 
+/**
+ * Stamp the sticky whole-node-completion fact iff the node's aggregate is
+ * SETTLED right now — mirrors aggregatePhase's "settled" verdict exactly:
+ * every expected invocation terminal, NONE failed, not all skipped. A mixed
+ * fan-out with a failure must never read as completed (the node:completed
+ * trigger fires on settled only), and the stamp is evaluated after
+ * node_completed AND node_skipped so a trailing skip still completes the set.
+ */
+function maybeStickCompleted(run: WorkflowRunState, nodeId: string): void {
+  const aggregate = run.nodeAggregates[nodeId];
+  if (!aggregate) return;
+  const keys = aggregate.invocationKeys;
+  if (keys.length < aggregate.expectedCount || keys.length === 0) return;
+  let settled = 0;
+  for (const key of keys) {
+    const phase = run.nodes[key]?.phase;
+    if (phase === "settled") settled += 1;
+    else if (phase !== "skipped") return; // running/retrying/failed/missing
+  }
+  if (settled > 0) run.sticky.completedNodes[nodeId] = true;
+}
+
 /** The ONE invocation a node-level (un-attributed) stream delta or heartbeat
  * tail lands on: the first running invocation, else the latest. Fanning one
  * multiplexed delta into EVERY sibling rendered N identical copies on screen
@@ -477,20 +499,7 @@ function applyEvent(
       // A retry that succeeded makes prior diagnostics stale.
       invocation.error = null;
       invocation.progress = null;
-      // Sticky whole-node completion: every expected invocation terminal.
-      const aggregate = run.nodeAggregates[event.node_id];
-      if (aggregate) {
-        const keys = aggregate.invocationKeys;
-        const allTerminal =
-          keys.length >= aggregate.expectedCount &&
-          keys.every((k) => {
-            const phase = run.nodes[k]?.phase;
-            return (
-              phase === "settled" || phase === "failed" || phase === "skipped"
-            );
-          });
-        if (allTerminal) run.sticky.completedNodes[event.node_id] = true;
-      }
+      maybeStickCompleted(run, event.node_id);
       break;
     }
     case "node_failed": {
@@ -509,6 +518,8 @@ function applyEvent(
     case "node_skipped": {
       const invocation = upsertInvocation(run, event, event);
       invocation.phase = "skipped";
+      // A trailing skip can be what completes the invocation set.
+      maybeStickCompleted(run, event.node_id);
       break;
     }
     case "node_retry_scheduled": {

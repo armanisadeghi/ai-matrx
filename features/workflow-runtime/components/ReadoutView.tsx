@@ -46,12 +46,19 @@ import {
   getDefaultSurface,
   fetchWorkflowDefinition,
 } from "../surface/service";
-import type { WorkflowDefinitionLike } from "../trigger-points";
+import {
+  nodeActionReadiness,
+  type NodeActionReadiness,
+  type WorkflowDefinitionLike,
+} from "../trigger-points";
+import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
 import {
   selectChildRunIdForNode,
   selectNodeAggregate,
+  selectNodeAggregatePhases,
   selectRunDefinitionId,
   selectRunStatus,
+  selectRunStickyFacts,
 } from "../redux/workflow-runs.selectors";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
 import { InvocationBody, PhaseIcon, PHASE_LABEL } from "./readout-parts";
@@ -64,6 +71,9 @@ export type EnsureLaneFn = (
   invocationKey: string,
   seedText?: string,
 ) => string | null;
+
+/** Author-defined marks are Phase 5+ — none fire from readouts. */
+const EMPTY_MARKS: ReadonlySet<string> = new Set();
 
 /**
  * Promote a visible node readout's running, lane-less invocations to
@@ -196,7 +206,15 @@ function NodeReadout({
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
   const { invocations, phase } = aggregate;
-  const hostRef = useViewportLanePromotion(invocations, ensureLane);
+  // Promotion is SINGLE-invocation only: fan-out deltas carry node_id alone
+  // and stay in the tracked tier, so a promoted sibling lane could never
+  // receive content — a blank pane shadowing the tail (same defect class the
+  // fan-out routing fix removed). Guard mirrors the adapter's isFanOut test.
+  const canPromote =
+    invocations.length <= 1 && aggregate.expectedCount <= 1
+      ? ensureLane
+      : undefined;
+  const hostRef = useViewportLanePromotion(invocations, canPromote);
 
   if (invocations.length === 0) {
     // No invocations → nothing to promote, so no observer host needed.
@@ -424,19 +442,106 @@ function ChildRunReadout({
   );
 }
 
-function ActionReadout({ label }: { label: string }) {
-  // Phase 4 wires execution; the stub keeps the authored surface honest.
+const READINESS_NOTE: Record<NodeActionReadiness, string> = {
+  waiting: "Waiting for earlier steps",
+  ready: "Ready to run",
+  running: "Working…",
+  done: "Done — run again if you want a fresh result",
+  failed: "The last run needs attention — try again",
+};
+
+/**
+ * The Phase 4 action readout: a verb button that UNLOCKS when the node's
+ * dependencies are ready (nodeActionReadiness — the blog-post example: the
+ * post needs research + script, not audio). Manual mode waits for the click;
+ * auto mode fires ONCE when ready (the user can flip the toggle live).
+ * Execution goes through the ONE controls hook (`executeNode`); progress
+ * arrives on the adopted run stream like any other node.
+ */
+function ActionReadout({
+  runId,
+  nodeId,
+  label,
+  mode,
+  definition,
+}: {
+  runId: string;
+  nodeId: string;
+  label: string;
+  mode: "manual" | "auto";
+  definition?: WorkflowDefinitionLike;
+}) {
+  const nodePhases = useAppSelector(selectNodeAggregatePhases(runId));
+  const sticky = useAppSelector(selectRunStickyFacts(runId));
+  const runStatus = useAppSelector(selectRunStatus(runId));
+  const { executeNode } = useWorkflowRunControls();
+  const [auto, setAuto] = useState(mode === "auto");
+  const [busy, setBusy] = useState(false);
+  const autoFiredRef = useRef(false);
+
+  const readiness: NodeActionReadiness = definition
+    ? nodeActionReadiness(definition, nodeId, {
+        runStatus,
+        nodePhases,
+        marks: EMPTY_MARKS,
+        deliverableNodeId: null,
+        sticky,
+      })
+    : "waiting";
+
+  const executeRef = useRef(executeNode);
+  useEffect(() => {
+    executeRef.current = executeNode;
+  });
+
+  // Auto mode fires ONCE on the waiting→ready edge. No busy state here —
+  // the node's own "running" readiness is the progress signal.
+  useEffect(() => {
+    if (!auto || readiness !== "ready" || autoFiredRef.current) return;
+    autoFiredRef.current = true;
+    void executeRef.current(runId, nodeId);
+  }, [auto, readiness, runId, nodeId]);
+
+  const clickable =
+    !busy && (readiness === "ready" || readiness === "done" || readiness === "failed");
+
   return (
     <div className="space-y-1">
-      <button
-        type="button"
-        disabled
-        className="rounded-md border border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground opacity-60"
-      >
-        {label}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          disabled={!clickable}
+          onClick={() => {
+            setBusy(true);
+            void executeRef.current(runId, nodeId).finally(() => setBusy(false));
+          }}
+          className={
+            clickable
+              ? "rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
+              : "rounded-md border border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground opacity-60"
+          }
+        >
+          {readiness === "running" || busy
+            ? "Working…"
+            : readiness === "failed"
+              ? `${label} (try again)`
+              : label}
+        </button>
+        <label className="flex items-center gap-1 text-[11px] text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={auto}
+            onChange={(e) => {
+              setAuto(e.target.checked);
+              // Re-arm: flipping auto ON while already ready should fire.
+              if (e.target.checked) autoFiredRef.current = false;
+            }}
+          />
+          Run automatically when ready
+        </label>
+      </div>
       <p className="text-[11px] text-muted-foreground">
-        Ready when its step can run
+        {READINESS_NOTE[readiness]}
       </p>
     </div>
   );
@@ -446,11 +551,14 @@ export function ReadoutView({
   runId,
   readout,
   ensureLane,
+  definition,
 }: {
   runId: string;
   readout: Readout;
   /** Lane promotion bound to this readout's run (from the adoption handle). */
   ensureLane?: EnsureLaneFn;
+  /** The workflow graph — action readouts derive readiness from its edges. */
+  definition?: WorkflowDefinitionLike;
 }) {
   const source: ReadoutSource = readout.source;
   const prefer = readout.prefer ?? "live";
@@ -491,7 +599,15 @@ export function ReadoutView({
     case "static":
       return <MarkdownStream content={source.markdown} />;
     case "action":
-      return <ActionReadout label={source.label} />;
+      return (
+        <ActionReadout
+          runId={runId}
+          nodeId={source.nodeId}
+          label={source.label}
+          mode={source.mode}
+          definition={definition}
+        />
+      );
     default:
       return null;
   }

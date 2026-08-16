@@ -155,3 +155,33 @@ describe("sticky whole-node completion", () => {
     expect(state.byRunId[RUN].sticky.completedNodes["fan"]).toBe(true);
   });
 });
+
+describe("sticky completion never counts failures as done", () => {
+  it("a mixed fan-out (one failed, one settled) does NOT stamp completedNodes", () => {
+    let state = fanOutState();
+    const failed = {
+      event: "node_failed",
+      run_id: RUN,
+      ts: "2026-08-16T00:00:01Z",
+      step: 1,
+      node_id: "fan",
+      spec_type: "agent",
+      attempt: 1,
+      dispatch_id: "d1",
+      item_index: 0,
+      invocation_count: 2,
+      error_type: "boom",
+      error_message: "it broke",
+    } as unknown as WorkflowRunEvent;
+    state = reducer(
+      state,
+      applyRunEvent({ runId: RUN, event: failed, seq: 3, replay: false }),
+    );
+    state = reducer(
+      state,
+      applyRunEvent({ runId: RUN, event: completed("fan", "d2", 1), seq: 4, replay: false }),
+    );
+    expect(state.byRunId[RUN].sticky.completedNodes["fan"]).toBeUndefined();
+    expect(state.byRunId[RUN].sticky.failedNodes["fan"]).toBe(true);
+  });
+});

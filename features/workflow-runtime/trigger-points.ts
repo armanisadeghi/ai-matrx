@@ -221,6 +221,41 @@ const STARTED_PHASES: ReadonlySet<NodeTriggerPhase> = new Set([
   "retrying",
 ]);
 
+/** Action-readout readiness for a node (ruling R2's "actions unlock when
+ * their dependencies are ready" — the blog-post-needs-research+script case). */
+export type NodeActionReadiness =
+  | "waiting"
+  | "ready"
+  | "running"
+  | "done"
+  | "failed";
+
+/**
+ * Derive whether a node's manual/auto action can run: READY when every
+ * upstream dependency (edges into it) has completed — sticky-aware, so a
+ * later retry elsewhere never re-locks an unlocked action. A node with no
+ * upstream edges is ready immediately (step-mode entry nodes).
+ */
+export function nodeActionReadiness(
+  def: WorkflowDefinitionLike,
+  nodeId: string,
+  state: TriggerResolutionState,
+): NodeActionReadiness {
+  const phase = phaseOf(state, nodeId);
+  if (phase === "running" || phase === "retrying" || phase === "waiting") {
+    return "running";
+  }
+  if (phase === "settled" || phase === "skipped") return "done";
+  if (phase === "failed") return "failed";
+  const upstream = def.edges
+    .filter((e) => e.target === nodeId)
+    .map((e) => e.source);
+  const done = (id: string): boolean =>
+    phaseOf(state, id) === "settled" ||
+    state.sticky?.completedNodes[id] === true;
+  return upstream.every(done) ? "ready" : "waiting";
+}
+
 /**
  * Resolve whether a trigger point has fired for the given run state.
  * Unknown or malformed ids resolve to false — never throw.
