@@ -169,11 +169,36 @@ function parseInterruptFields(schemaHint: unknown): InterruptField[] | null {
 
 export function InterruptCard({ runId }: { runId: string }) {
   const interrupt = useAppSelector(selectRunInterrupt(runId));
+  if (!interrupt) return null;
+  // Keyed by checkpoint so a LATER Pause & Ask in the same run mounts a
+  // fresh form — carrying the previous answer/values across interrupts
+  // submitted stale keys against the new question.
+  return (
+    <InterruptForm
+      key={`${runId}:${interrupt.checkpointId}`}
+      runId={runId}
+      interrupt={interrupt}
+    />
+  );
+}
+
+interface InterruptView {
+  nodeId: string;
+  payload: Record<string, unknown>;
+  checkpointId: string;
+}
+
+function InterruptForm({
+  runId,
+  interrupt,
+}: {
+  runId: string;
+  interrupt: InterruptView;
+}) {
   const { answerInterrupt } = useWorkflowRunControls();
   const [answer, setAnswer] = useState<string | null>(null);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [sending, setSending] = useState(false);
-  if (!interrupt) return null;
 
   const prompt =
     typeof interrupt.payload.prompt === "string"
