@@ -97,6 +97,11 @@ export const MARKETING_SITE_SUBVIEWS = [
       // written nightly). A different question from the Backlinks table, which
       // shows the links as they stand right now.
       { id: "changes", label: "Link changes" },
+      // Who wrote about this brand (seo.coverage_mention, filled every 30 min
+      // from the free news index and then verified by our own crawl). A
+      // different question again: backlinks are what a site GAVE you, coverage
+      // is what the world SAID about you — most of which never links.
+      { id: "coverage", label: "Coverage" },
       { id: "domains", label: "Referring domains" },
       { id: "anchors", label: "Anchors" },
       { id: "pages", label: "Top pages" },

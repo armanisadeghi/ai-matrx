@@ -27103,6 +27103,7 @@ export type Database = {
           id: string
           last_review_at: string | null
           lens_config: Json
+          lens_visibility: string
           max_examples_per_review: number
           metadata: Json
           next_eligible_at: string | null
@@ -27117,6 +27118,8 @@ export type Database = {
           updated_by: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
+          window_mode: string
+          window_n: number | null
         }
         Insert: {
           created_at?: string
@@ -27128,6 +27131,7 @@ export type Database = {
           id?: string
           last_review_at?: string | null
           lens_config?: Json
+          lens_visibility?: string
           max_examples_per_review?: number
           metadata?: Json
           next_eligible_at?: string | null
@@ -27142,6 +27146,8 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          window_mode?: string
+          window_n?: number | null
         }
         Update: {
           created_at?: string
@@ -27153,6 +27159,7 @@ export type Database = {
           id?: string
           last_review_at?: string | null
           lens_config?: Json
+          lens_visibility?: string
           max_examples_per_review?: number
           metadata?: Json
           next_eligible_at?: string | null
@@ -27167,6 +27174,8 @@ export type Database = {
           updated_by?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
+          window_mode?: string
+          window_n?: number | null
         }
         Relationships: []
       }
@@ -31220,7 +31229,9 @@ export type Database = {
           page_id: string
           result: Json | null
           route: string
+          seq: number
           status: string
+          step: string
           updated_at: string
           updated_by: string | null
           version: number
@@ -31243,7 +31254,9 @@ export type Database = {
           page_id: string
           result?: Json | null
           route?: string
+          seq?: number
           status?: string
+          step?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -31266,7 +31279,9 @@ export type Database = {
           page_id?: string
           result?: Json | null
           route?: string
+          seq?: number
           status?: string
+          step?: string
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -32846,6 +32861,123 @@ export type Database = {
         }
         Relationships: []
       }
+      judge_verdict: {
+        Row: {
+          agent_slot: string | null
+          agreed: boolean | null
+          agreement_at: string | null
+          authority_kind: string | null
+          authority_ref_id: string | null
+          authority_ref_type: string | null
+          authority_verdict: string | null
+          candidate_refs: Json
+          confidence: number | null
+          consumer: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          invocation: Json
+          judge_key: string
+          judge_version: number
+          metadata: Json
+          mode: string
+          model: string | null
+          organization_id: string
+          question: string
+          reasoning: string | null
+          reference_ref_id: string | null
+          reference_ref_type: string | null
+          rubric_author: string | null
+          rubric_fingerprint: string | null
+          rubric_name: string | null
+          rubric_provenance: string | null
+          subject_kind: string
+          subject_ref_id: string | null
+          subject_ref_type: string | null
+          updated_at: string
+          updated_by: string | null
+          verdict: string
+          version: number
+        }
+        Insert: {
+          agent_slot?: string | null
+          agreed?: boolean | null
+          agreement_at?: string | null
+          authority_kind?: string | null
+          authority_ref_id?: string | null
+          authority_ref_type?: string | null
+          authority_verdict?: string | null
+          candidate_refs?: Json
+          confidence?: number | null
+          consumer?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          invocation?: Json
+          judge_key: string
+          judge_version?: number
+          metadata?: Json
+          mode: string
+          model?: string | null
+          organization_id: string
+          question?: string
+          reasoning?: string | null
+          reference_ref_id?: string | null
+          reference_ref_type?: string | null
+          rubric_author?: string | null
+          rubric_fingerprint?: string | null
+          rubric_name?: string | null
+          rubric_provenance?: string | null
+          subject_kind: string
+          subject_ref_id?: string | null
+          subject_ref_type?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verdict: string
+          version?: number
+        }
+        Update: {
+          agent_slot?: string | null
+          agreed?: boolean | null
+          agreement_at?: string | null
+          authority_kind?: string | null
+          authority_ref_id?: string | null
+          authority_ref_type?: string | null
+          authority_verdict?: string | null
+          candidate_refs?: Json
+          confidence?: number | null
+          consumer?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          invocation?: Json
+          judge_key?: string
+          judge_version?: number
+          metadata?: Json
+          mode?: string
+          model?: string | null
+          organization_id?: string
+          question?: string
+          reasoning?: string | null
+          reference_ref_id?: string | null
+          reference_ref_type?: string | null
+          rubric_author?: string | null
+          rubric_fingerprint?: string | null
+          rubric_name?: string | null
+          rubric_provenance?: string | null
+          subject_kind?: string
+          subject_ref_id?: string | null
+          subject_ref_type?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string
+          version?: number
+        }
+        Relationships: []
+      }
       matrx_action_ledger: {
         Row: {
           conversation_id: string | null
@@ -33184,6 +33316,60 @@ export type Database = {
           },
         ]
       }
+      purpose: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          grounding_tag: string
+          id: string
+          inputs: Json
+          metadata: Json
+          organization_id: string
+          outputs: Json
+          safe_conditions: Json | null
+          statement: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          grounding_tag?: string
+          id?: string
+          inputs?: Json
+          metadata?: Json
+          organization_id: string
+          outputs?: Json
+          safe_conditions?: Json | null
+          statement: string
+          title: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          grounding_tag?: string
+          id?: string
+          inputs?: Json
+          metadata?: Json
+          organization_id?: string
+          outputs?: Json
+          safe_conditions?: Json | null
+          statement?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       reachability: {
         Row: {
           container_id: string
@@ -33513,6 +33699,51 @@ export type Database = {
         }
         Relationships: []
       }
+      v_judge_agreement: {
+        Row: {
+          agreed_count: number | null
+          agreement_rate: number | null
+          first_at: string | null
+          invocations: number | null
+          judge_key: string | null
+          judge_version: number | null
+          last_at: string | null
+          mode: string | null
+          scored: number | null
+          subject_kind: string | null
+        }
+        Relationships: []
+      }
+      v_purpose_orphaned: {
+        Row: {
+          created_at: string | null
+          grounding_tag: string | null
+          organization_id: string | null
+          purpose_id: string | null
+          statement: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          grounding_tag?: string | null
+          organization_id?: string | null
+          purpose_id?: string | null
+          statement?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          grounding_tag?: string | null
+          organization_id?: string | null
+          purpose_id?: string | null
+          statement?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       v_table_access_stats: {
         Row: {
           last_read: string | null
@@ -33521,6 +33752,29 @@ export type Database = {
           schema: unknown
           table_name: unknown
           writes: number | null
+        }
+        Relationships: []
+      }
+      v_unit_purpose_coverage: {
+        Row: {
+          grounding_a: number | null
+          grounding_h: number | null
+          grounding_v: number | null
+          missing_purpose: number | null
+          organization_id: string | null
+          total_units: number | null
+          unit_type: string | null
+          with_purpose: number | null
+        }
+        Relationships: []
+      }
+      v_units_without_purpose: {
+        Row: {
+          created_at: string | null
+          name: string | null
+          organization_id: string | null
+          unit_id: string | null
+          unit_type: string | null
         }
         Relationships: []
       }
@@ -33660,6 +33914,32 @@ export type Database = {
           scopeable: boolean
         }[]
       }
+      purpose_for_unit: {
+        Args: { p_position?: number; p_unit_id: string; p_unit_type: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          grounding_tag: string
+          id: string
+          inputs: Json
+          metadata: Json
+          organization_id: string
+          outputs: Json
+          safe_conditions: Json | null
+          statement: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purpose"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       reachability_ancestors: {
         Args: { p_id: string; p_type: string }
         Returns: {
@@ -33764,6 +34044,42 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "output_feedback"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      upsert_unit_purpose: {
+        Args: {
+          p_grounding_tag: string
+          p_inputs?: Json
+          p_outputs?: Json
+          p_position?: number
+          p_safe_conditions?: Json
+          p_statement: string
+          p_title: string
+          p_unit_id: string
+          p_unit_type: string
+        }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          grounding_tag: string
+          id: string
+          inputs: Json
+          metadata: Json
+          organization_id: string
+          outputs: Json
+          safe_conditions: Json | null
+          statement: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purpose"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -49837,6 +50153,257 @@ export type Database = {
           },
         ]
       }
+      coverage_mention: {
+        Row: {
+          alerted_at: string | null
+          analysis: Json
+          analyzed_at: string | null
+          author_name: string | null
+          author_party_id: string | null
+          brand_key: string
+          capture_status: string
+          captured_at: string | null
+          competitor_key: string | null
+          created_at: string
+          created_by: string | null
+          dedupe_key: string
+          discovered_at: string
+          domain: string
+          external_id: string | null
+          hit_reason: string | null
+          hit_score: number | null
+          id: string
+          is_competitor: boolean
+          key_quote: string | null
+          language: string | null
+          link_urls: string[]
+          links_to_site: boolean
+          matched_terms: string[]
+          medium: string
+          metadata: Json
+          normalized_url: string
+          organization_id: string
+          outcome_event_id: string | null
+          prominence: string | null
+          prominence_score: number | null
+          published_at: string | null
+          sentiment: string | null
+          sentiment_score: number | null
+          site_id: string
+          source: string
+          source_capture: Json
+          title: string | null
+          topics: Json
+          tracker_id: string
+          updated_at: string
+          updated_by: string | null
+          url: string
+          version: number
+        }
+        Insert: {
+          alerted_at?: string | null
+          analysis?: Json
+          analyzed_at?: string | null
+          author_name?: string | null
+          author_party_id?: string | null
+          brand_key: string
+          capture_status?: string
+          captured_at?: string | null
+          competitor_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key: string
+          discovered_at: string
+          domain: string
+          external_id?: string | null
+          hit_reason?: string | null
+          hit_score?: number | null
+          id?: string
+          is_competitor?: boolean
+          key_quote?: string | null
+          language?: string | null
+          link_urls?: string[]
+          links_to_site?: boolean
+          matched_terms?: string[]
+          medium?: string
+          metadata?: Json
+          normalized_url: string
+          organization_id: string
+          outcome_event_id?: string | null
+          prominence?: string | null
+          prominence_score?: number | null
+          published_at?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          site_id: string
+          source: string
+          source_capture?: Json
+          title?: string | null
+          topics?: Json
+          tracker_id: string
+          updated_at?: string
+          updated_by?: string | null
+          url: string
+          version?: number
+        }
+        Update: {
+          alerted_at?: string | null
+          analysis?: Json
+          analyzed_at?: string | null
+          author_name?: string | null
+          author_party_id?: string | null
+          brand_key?: string
+          capture_status?: string
+          captured_at?: string | null
+          competitor_key?: string | null
+          created_at?: string
+          created_by?: string | null
+          dedupe_key?: string
+          discovered_at?: string
+          domain?: string
+          external_id?: string | null
+          hit_reason?: string | null
+          hit_score?: number | null
+          id?: string
+          is_competitor?: boolean
+          key_quote?: string | null
+          language?: string | null
+          link_urls?: string[]
+          links_to_site?: boolean
+          matched_terms?: string[]
+          medium?: string
+          metadata?: Json
+          normalized_url?: string
+          organization_id?: string
+          outcome_event_id?: string | null
+          prominence?: string | null
+          prominence_score?: number | null
+          published_at?: string | null
+          sentiment?: string | null
+          sentiment_score?: number | null
+          site_id?: string
+          source?: string
+          source_capture?: Json
+          title?: string | null
+          topics?: Json
+          tracker_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coverage_mention_tracker_id_fkey"
+            columns: ["tracker_id"]
+            isOneToOne: false
+            referencedRelation: "coverage_tracker"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coverage_tracker: {
+        Row: {
+          alert_min_hit_score: number
+          brand_key: string
+          brand_terms: string[]
+          cadence_minutes: number
+          capture_pages: boolean
+          competitors: Json
+          country: string | null
+          created_at: string
+          created_by: string | null
+          declared_by: string
+          declared_ref: Json
+          dedupe_key: string
+          deleted_at: string | null
+          exclude_terms: string[]
+          id: string
+          ignore_domains: string[]
+          is_active: boolean
+          language: string | null
+          last_error: string | null
+          last_run_at: string | null
+          last_run_status: string | null
+          max_records: number
+          mention_count: number
+          metadata: Json
+          name: string
+          organization_id: string
+          site_id: string
+          timespan: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          alert_min_hit_score?: number
+          brand_key: string
+          brand_terms?: string[]
+          cadence_minutes?: number
+          capture_pages?: boolean
+          competitors?: Json
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_by?: string
+          declared_ref?: Json
+          dedupe_key: string
+          deleted_at?: string | null
+          exclude_terms?: string[]
+          id?: string
+          ignore_domains?: string[]
+          is_active?: boolean
+          language?: string | null
+          last_error?: string | null
+          last_run_at?: string | null
+          last_run_status?: string | null
+          max_records?: number
+          mention_count?: number
+          metadata?: Json
+          name: string
+          organization_id: string
+          site_id: string
+          timespan?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          alert_min_hit_score?: number
+          brand_key?: string
+          brand_terms?: string[]
+          cadence_minutes?: number
+          capture_pages?: boolean
+          competitors?: Json
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_by?: string
+          declared_ref?: Json
+          dedupe_key?: string
+          deleted_at?: string | null
+          exclude_terms?: string[]
+          id?: string
+          ignore_domains?: string[]
+          is_active?: boolean
+          language?: string | null
+          last_error?: string | null
+          last_run_at?: string | null
+          last_run_status?: string | null
+          max_records?: number
+          mention_count?: number
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          site_id?: string
+          timespan?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       gsc_dig_rule: {
         Row: {
           base_filters: Json
@@ -50508,6 +51075,7 @@ export type Database = {
           created_by: string | null
           display_domain: string
           domain_rank: number | null
+          enriched_at: string | null
           first_seen_at: string | null
           human_ruling: Json
           id: string
@@ -50539,6 +51107,7 @@ export type Database = {
           created_by?: string | null
           display_domain: string
           domain_rank?: number | null
+          enriched_at?: string | null
           first_seen_at?: string | null
           human_ruling?: Json
           id?: string
@@ -50570,6 +51139,7 @@ export type Database = {
           created_by?: string | null
           display_domain?: string
           domain_rank?: number | null
+          enriched_at?: string | null
           first_seen_at?: string | null
           human_ruling?: Json
           id?: string
@@ -51728,6 +52298,7 @@ export type Database = {
           ai_assessment: Json
           analyzed_at: string | null
           best_rank: number | null
+          broken_link_count: number | null
           created_at: string
           created_by: string | null
           display_domain: string
@@ -51736,6 +52307,7 @@ export type Database = {
           human_ruling: Json
           id: string
           latest_run_id: string | null
+          link_checked_at: string | null
           mention_count: number
           metadata: Json
           normalized_domain: string
@@ -51760,6 +52332,7 @@ export type Database = {
           ai_assessment?: Json
           analyzed_at?: string | null
           best_rank?: number | null
+          broken_link_count?: number | null
           created_at?: string
           created_by?: string | null
           display_domain: string
@@ -51768,6 +52341,7 @@ export type Database = {
           human_ruling?: Json
           id?: string
           latest_run_id?: string | null
+          link_checked_at?: string | null
           mention_count?: number
           metadata?: Json
           normalized_domain: string
@@ -51792,6 +52366,7 @@ export type Database = {
           ai_assessment?: Json
           analyzed_at?: string | null
           best_rank?: number | null
+          broken_link_count?: number | null
           created_at?: string
           created_by?: string | null
           display_domain?: string
@@ -51800,6 +52375,7 @@ export type Database = {
           human_ruling?: Json
           id?: string
           latest_run_id?: string | null
+          link_checked_at?: string | null
           mention_count?: number
           metadata?: Json
           normalized_domain?: string
@@ -61518,18 +62094,33 @@ export type Database = {
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wf_checkpoint_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
+          },
         ]
       }
       definition: {
         Row: {
           category: string | null
           channels: Json
+          compiled_at: string | null
+          confirmed_success_count: number
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          demoted_at: string | null
+          demotion_reason: string | null
           description: string | null
           edges: Json
+          engram_counter_since: string | null
+          engram_state: string
+          engram_version_tags: Json | null
           entry_nodes: Json
+          grounding_score: number | null
           id: string
           is_active: boolean
           is_archived: boolean
@@ -61540,6 +62131,7 @@ export type Database = {
           nodes: Json
           organization_id: string
           project_id: string | null
+          promotion_threshold_k: number | null
           source_definition_id: string | null
           source_snapshot_at: string | null
           strict_channels: boolean
@@ -61557,12 +62149,20 @@ export type Database = {
         Insert: {
           category?: string | null
           channels?: Json
+          compiled_at?: string | null
+          confirmed_success_count?: number
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          demoted_at?: string | null
+          demotion_reason?: string | null
           description?: string | null
           edges?: Json
+          engram_counter_since?: string | null
+          engram_state?: string
+          engram_version_tags?: Json | null
           entry_nodes?: Json
+          grounding_score?: number | null
           id?: string
           is_active?: boolean
           is_archived?: boolean
@@ -61573,6 +62173,7 @@ export type Database = {
           nodes?: Json
           organization_id: string
           project_id?: string | null
+          promotion_threshold_k?: number | null
           source_definition_id?: string | null
           source_snapshot_at?: string | null
           strict_channels?: boolean
@@ -61590,12 +62191,20 @@ export type Database = {
         Update: {
           category?: string | null
           channels?: Json
+          compiled_at?: string | null
+          confirmed_success_count?: number
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          demoted_at?: string | null
+          demotion_reason?: string | null
           description?: string | null
           edges?: Json
+          engram_counter_since?: string | null
+          engram_state?: string
+          engram_version_tags?: Json | null
           entry_nodes?: Json
+          grounding_score?: number | null
           id?: string
           is_active?: boolean
           is_archived?: boolean
@@ -61606,6 +62215,7 @@ export type Database = {
           nodes?: Json
           organization_id?: string
           project_id?: string | null
+          promotion_threshold_k?: number | null
           source_definition_id?: string | null
           source_snapshot_at?: string | null
           strict_channels?: boolean
@@ -61813,6 +62423,13 @@ export type Database = {
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wf_idempotency_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
+          },
         ]
       }
       job: {
@@ -61902,6 +62519,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_job_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
           },
         ]
       }
@@ -62064,6 +62688,13 @@ export type Database = {
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wf_node_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
+          },
         ]
       }
       node_outcome: {
@@ -62164,6 +62795,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_node_outcome_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
           },
         ]
       }
@@ -62477,6 +63115,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "wf_recovery_audit_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
+          },
+          {
             foreignKeyName: "wf_recovery_audit_workflow_id_fkey"
             columns: ["workflow_id"]
             isOneToOne: false
@@ -62612,6 +63257,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "run"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_run_parent_run_id_fkey"
+            columns: ["parent_run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
           },
         ]
       }
@@ -62853,6 +63505,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "wf_trigger_fire_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
+          },
+          {
             foreignKeyName: "wf_trigger_fire_trigger_id_fkey"
             columns: ["trigger_id"]
             isOneToOne: false
@@ -62927,6 +63586,13 @@ export type Database = {
             referencedRelation: "run"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "work_item_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_engram_confirmed_run"
+            referencedColumns: ["run_id"]
+          },
         ]
       }
       worker_heartbeat: {
@@ -62961,10 +63627,48 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_engram_confirmed_run: {
+        Row: {
+          completed_at: string | null
+          definition_hash: string | null
+          definition_id: string | null
+          organization_id: string | null
+          run_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          definition_hash?: string | null
+          definition_id?: string | null
+          organization_id?: string | null
+          run_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          definition_hash?: string | null
+          definition_id?: string | null
+          organization_id?: string | null
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wf_run_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
-      [_ in never]: never
+      engram_confirmed_success_count: {
+        Args: { p_definition_id: string }
+        Returns: number
+      }
+      engram_recount_successes: {
+        Args: { p_definition_id: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

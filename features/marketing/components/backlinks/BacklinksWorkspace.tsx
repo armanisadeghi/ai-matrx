@@ -83,6 +83,7 @@ import { BacklinkKpiBand } from "@/features/marketing/components/backlinks/Backl
 import { BacklinkTrendChart } from "@/features/marketing/components/backlinks/BacklinkTrendChart";
 import { BacklinkObservationTable } from "@/features/marketing/components/backlinks/BacklinkObservationTable";
 import { BacklinkChangesTable } from "@/features/marketing/components/backlinks/BacklinkChangesTable";
+import { CoverageTab } from "@/features/marketing/components/backlinks/CoverageTab";
 import { BacklinkDimensionTable } from "@/features/marketing/components/backlinks/BacklinkDimensionTable";
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
 import { BacklinkProspectsTab } from "@/features/marketing/components/backlinks/BacklinkProspectsTab";
@@ -1570,6 +1571,10 @@ export function BacklinksWorkspace() {
           ) : tab === "changes" ? (
             <div className="flex min-h-0 flex-1 flex-col">
               <BacklinkChangesTable siteId={site.id} />
+            </div>
+          ) : tab === "coverage" ? (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <CoverageTab siteId={site.id} />
             </div>
           ) : tab === "prospects" ? (
             <div className="flex min-h-0 flex-1 flex-col gap-2">
