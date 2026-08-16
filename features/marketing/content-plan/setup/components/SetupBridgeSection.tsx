@@ -82,6 +82,7 @@ import {
   type BridgeReport,
   type FillPreviewResult,
   type FillStatus,
+  type FillStepCounts,
 } from "../bridge";
 import { setupKeys } from "../hooks";
 import { useCmsPageMap } from "../../hooks/useCmsPageMap";
@@ -267,6 +268,9 @@ export function SetupBridgeSection({
   const [report, setReport] = useState<BridgeReport | null>(null);
   const [alignResult, setAlignResult] = useState<BridgeAlignResult | null>(null);
   const [fillPreview, setFillPreview] = useState<FillPreviewResult | null>(null);
+  // The review/fact-check pass. ON by default — it has caught invented facts in
+  // production — but it is a real choice, so it is a visible one.
+  const [includeReview, setIncludeReview] = useState(true);
   const [fillStatus, setFillStatus] = useState<FillStatus | null>(null);
   const [publishResult, setPublishResult] = useState<BridgePublishResult | null>(null);
 
@@ -317,11 +321,15 @@ export function SetupBridgeSection({
     void invalidateCms();
     if (fillStatus && (fillStatus.failed > 0 || fillStatus.deadLetter > 0)) {
       toast.error(
-        `Content generation finished: ${fillStatus.succeeded} written, ` +
-          `${fillStatus.failed + fillStatus.deadLetter} failed — see the rows below.`,
+        `Content build finished: ${fillStatus.pagesBuilt} of ${fillStatus.pages} page(s) built, ` +
+          `${fillStatus.failed + fillStatus.deadLetter} step(s) failed — see the rows below.`,
       );
     } else if (current === "completed") {
-      toast.success(`Content generation finished: ${fillStatus?.succeeded ?? 0} page(s) written.`);
+      toast.success(
+        `Content build finished: ${fillStatus?.pagesBuilt ?? 0} page(s) built` +
+          (fillStatus?.costUsd != null ? ` for $${fillStatus.costUsd.toFixed(2)}` : "") +
+          ".",
+      );
     }
   }, [fillStatus?.status]);
 
@@ -477,22 +485,37 @@ export function SetupBridgeSection({
   };
 
   const handleFillStart = async () => {
-    const estimate = report?.matched ?? null;
+    const pages = report?.matched ?? null;
+    // Each page is FOUR AI steps now, so the cost is stated before the run,
+    // not discovered afterwards. `includeReview` is the one choice offered.
+    const calls = pages ? pages * (includeReview ? 4 : 3) : null;
     const ok = await confirm({
-      title: "Generate content for the drafted pages?",
+      title: "Build the content for every drafted page?",
       description:
         `Every unpublished draft page linked to a plan node on CMS site "${cms?.link.cmsSlug ?? ""}" ` +
-        `gets its content written from its brief${estimate ? ` (~${estimate} page(s))` : ""}. ` +
-        "Pages that already have content are skipped; nothing is published. " +
-        "The job is crash-safe and survives restarts — you can leave this page.",
-      confirmLabel: "Generate content",
+        "goes through the whole pipeline: work out what belongs on the page, write it, " +
+        (includeReview ? "review and fact-check it, " : "") +
+        "then build the page." +
+        (calls ? ` That is about ${calls} AI call(s) across ${pages} page(s).` : "") +
+        " Work that is already done is skipped, so re-running resumes rather than repeats. " +
+        "Nothing is published. The job is crash-safe and survives restarts — you can leave this page.",
+      confirmLabel: "Build the content",
     });
     if (!ok) return;
     startBusy("fillStart");
     try {
-      const started = await bridgeFillStart(dispatch, site.id, { cmsSite: knownCmsSite });
+      const started = await bridgeFillStart(dispatch, site.id, {
+        cmsSite: knownCmsSite,
+        includeReview,
+      });
       for (const line of started.skipped) toast.info(line);
-      toast.success(`Generating content for ${started.seeded} page(s)…`);
+      toast.success(
+        `Building ${started.estimate.pages} page(s) — ${started.estimate.calls} AI step(s)` +
+          (started.estimate.usd != null
+            ? `, about $${started.estimate.usd.toFixed(2)}`
+            : "") +
+          "…",
+      );
       setFillStatus(await bridgeFillStatus(dispatch, site.id));
     } catch (error) {
       toast.error(`Content generation failed to start: ${extractErrorMessage(error)}`);
@@ -785,13 +808,18 @@ export function SetupBridgeSection({
               fillStatus.status === "completed" &&
               fillStatus.failed === 0 &&
               fillStatus.deadLetter === 0 &&
-              fillStatus.succeeded > 0,
+              // Built, not "paid to build" — a resumed job skips every step and
+              // still leaves the site finished.
+              fillStatus.pagesBuilt > 0,
           )}
-          label="Write the page content"
-          description="An AI writes each drafted page's actual content from its brief and keyword. Pages that already have content are skipped; nothing is published."
+          label="Build the page content"
+          description="Each drafted page goes through the whole pipeline — work out what belongs on this page and not its siblings, write the content, review and fact-check it, then build the page. Work already done is skipped; nothing is published."
           doneDetail={
             fillStatus && fillStatus.status === "completed"
-              ? `${fillStatus.succeeded} page(s) written`
+              ? `${fillStatus.pagesBuilt} page(s) built` +
+                (fillStatus.costUsd !== null
+                  ? ` · $${fillStatus.costUsd.toFixed(2)}`
+                  : "")
               : null
           }
           blockedReason={linked ? null : "Link a CMS site first (step 1)."}
@@ -807,9 +835,11 @@ export function SetupBridgeSection({
               <>
                 <span className="inline-flex items-center gap-1.5 text-[11px] tabular-nums text-muted-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {fillStatus.succeeded + fillStatus.failed + fillStatus.deadLetter} /{" "}
-                  {fillStatus.total} pages
-                  {fillStatus.inProgress > 0 ? ` · ${fillStatus.inProgress} writing now` : ""}
+                  {fillStatus.pagesBuilt} / {fillStatus.pages} pages built ·{" "}
+                  {fillStatus.succeeded + fillStatus.skipped + fillStatus.failed +
+                    fillStatus.deadLetter}{" "}
+                  / {fillStatus.total} steps
+                  {fillStatus.inProgress > 0 ? ` · ${fillStatus.inProgress} running` : ""}
                 </span>
                 <Button
                   size="sm"
@@ -853,8 +883,18 @@ export function SetupBridgeSection({
                   ) : (
                     <PenLine className="h-3.5 w-3.5" />
                   )}
-                  Write all pages
+                  Build all pages
                 </Button>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    className="h-3 w-3 accent-primary"
+                    checked={includeReview}
+                    disabled={busy !== null}
+                    onChange={(event) => setIncludeReview(event.target.checked)}
+                  />
+                  Review + fact-check each page
+                </label>
                 {fillPreview === null ? (
                   <span className="text-[11px] text-muted-foreground">
                     Preview one page first so you see the writing style before
@@ -1111,10 +1151,44 @@ function FillPreviewPanel({
   );
 }
 
+/**
+ * One per-page step's progress. A site build is now FOUR AI steps per page
+ * (family → write → review → build), so "12 written, 4 reviewed, 2 built" is
+ * the only honest way to show it — a single bar hides three quarters of the
+ * work behind one number.
+ */
+function FillStepRow({ step }: { step: FillStepCounts }) {
+  const settled = step.succeeded + step.skipped + step.failed + step.deadLetter;
+  const failures = step.failed + step.deadLetter;
+  return (
+    <div className="mt-1 grid grid-cols-[7.5rem_1fr_auto] items-center gap-2">
+      <span className="truncate text-foreground">{step.label}</span>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn(
+            "h-full rounded-full transition-all",
+            failures > 0 ? "bg-destructive" : "bg-primary",
+          )}
+          style={{
+            width: `${step.total ? Math.round((settled / step.total) * 100) : 0}%`,
+          }}
+        />
+      </div>
+      <span className="tabular-nums text-muted-foreground">
+        {step.succeeded}/{step.total}
+        {step.inProgress > 0 ? ` · ${step.inProgress} now` : ""}
+        {step.blocked > 0 ? ` · ${step.blocked} waiting` : ""}
+        {step.skipped > 0 ? ` · ${step.skipped} skipped` : ""}
+        {failures > 0 ? ` · ${failures} failed` : ""}
+      </span>
+    </div>
+  );
+}
+
 /** Live fill progress + failures, verbatim from queue counts. */
 function FillStatusSummary({ status }: { status: FillStatus }) {
-  const done = status.succeeded + status.failed + status.deadLetter;
   const failures = status.failed + status.deadLetter;
+  const money = (value: number) => `$${value.toFixed(2)}`;
   return (
     <div
       className={cn(
@@ -1125,24 +1199,43 @@ function FillStatusSummary({ status }: { status: FillStatus }) {
       )}
     >
       <p className="font-medium tabular-nums text-foreground">
-        Content generation {status.status}: {done}/{status.total} pages ·{" "}
-        {status.succeeded} written
-        {status.inProgress > 0 ? ` · ${status.inProgress} writing now` : ""}
+        Content generation {status.status}: {status.pagesBuilt}/{status.pages} page(s)
+        built
+        {status.inProgress > 0 ? ` · ${status.inProgress} step(s) running` : ""}
         {failures > 0 ? ` · ${failures} failed` : ""}
       </p>
-      {status.total > 0 ? (
+      {/* Per step, because a page is four AI steps now. The single bar is the
+        fallback for a job that ran before the steps existed. */}
+      {status.steps.length > 0 ? (
+        status.steps.map((step) => <FillStepRow key={step.step} step={step} />)
+      ) : status.total > 0 ? (
         <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${Math.round((done / status.total) * 100)}%` }}
+            style={{
+              width: `${Math.round(((status.succeeded + failures) / status.total) * 100)}%`,
+            }}
           />
         </div>
       ) : null}
+      {status.estimate || status.costUsd !== null ? (
+        <p className="mt-1.5 tabular-nums text-muted-foreground">
+          {status.estimate ? `${status.estimate.calls} AI call(s)` : null}
+          {status.estimate?.usd != null
+            ? ` · estimated ${money(status.estimate.usd)}`
+            : null}
+          {status.costUsd !== null ? ` · spent ${money(status.costUsd)}` : null}
+        </p>
+      ) : null}
       {status.error ? <p className="mt-0.5 text-warning">{status.error}</p> : null}
       {status.problems.slice(0, 30).map((problem) => (
-        <p key={`${problem.route}-${problem.status}`} className="mt-0.5 text-foreground">
-          {problem.route} — {problem.status} after {problem.attempts} attempt
-          {problem.attempts === 1 ? "" : "s"}
+        <p
+          key={`${problem.route}-${problem.step}-${problem.status}`}
+          className="mt-0.5 text-foreground"
+        >
+          {problem.route}
+          {problem.stepLabel ? ` — ${problem.stepLabel}` : ""} — {problem.status} after{" "}
+          {problem.attempts} attempt{problem.attempts === 1 ? "" : "s"}
           {problem.error ? `: ${problem.error}` : ""}
         </p>
       ))}

@@ -118,29 +118,74 @@ export interface FillPreviewResult {
   footerHtml: string;
 }
 
+/**
+ * What a build is about to cost, priced from what these agents ACTUALLY charged
+ * on their last runs. `usd === null` means "not enough history to say" — never a
+ * guess dressed as a number. `calls` is always exact.
+ */
+export interface FillEstimate {
+  pages: number;
+  calls: number;
+  callsByStep: Record<string, number>;
+  usd: number | null;
+  basis: string;
+}
+
 export interface FillStartResult {
   jobId: string;
+  /** Work ITEMS seeded (pages × steps), not pages. */
   seeded: number;
+  steps: string[];
+  estimate: FillEstimate;
   skipped: string[];
 }
 
 export interface FillProblem {
   route: string;
+  step: string;
+  stepLabel: string;
   status: string;
   attempts: number;
   error: string | null;
+}
+
+/** One per-page pipeline step's live queue counts — the "12 written, 4 reviewed,
+ * 2 built" row. Derived server-side from queue state on every read. */
+export interface FillStepCounts {
+  step: string;
+  label: string;
+  total: number;
+  pending: number;
+  /** Waiting on an earlier step of the SAME page. */
+  blocked: number;
+  inProgress: number;
+  succeeded: number;
+  /** Deliberately not run (already done, or its input does not exist). */
+  skipped: number;
+  failed: number;
+  deadLetter: number;
+  costUsd: number | null;
 }
 
 export interface FillStatus {
   jobId: string | null;
   /** "none" = no fill job has ever run for this site. */
   status: string;
+  /** ITEMS (pages × steps). Use `pages` for the page count. */
   total: number;
   pending: number;
+  blocked: number;
   inProgress: number;
   succeeded: number;
+  skipped: number;
   failed: number;
   deadLetter: number;
+  pages: number;
+  pagesBuilt: number;
+  steps: FillStepCounts[];
+  /** Actual spend so far; null = nothing has reported usage yet. */
+  costUsd: number | null;
+  estimate: FillEstimate | null;
   startedAt: string | null;
   finishedAt: string | null;
   error: string | null;
@@ -406,6 +451,55 @@ export async function bridgePublish(
 
 // ── fill drafts from briefs (the content-generation rung) ───────────────────
 
+function nullableNum(value: unknown): number | null {
+  return typeof value === "number" ? value : null;
+}
+
+function parseFillEstimate(value: unknown): FillEstimate | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const callsByStep: Record<string, number> = {};
+  const raw = record.calls_by_step;
+  if (raw && typeof raw === "object") {
+    for (const [step, count] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof count === "number") callsByStep[step] = count;
+    }
+  }
+  return {
+    pages: typeof record.pages === "number" ? record.pages : 0,
+    calls: typeof record.calls === "number" ? record.calls : 0,
+    callsByStep,
+    usd: nullableNum(record.usd),
+    basis: str(record.basis),
+  };
+}
+
+function parseFillSteps(value: unknown): FillStepCounts[] {
+  const rows: FillStepCounts[] = [];
+  for (const row of Array.isArray(value) ? value : []) {
+    if (!row || typeof row !== "object") continue;
+    const record = row as Record<string, unknown>;
+    const step = str(record.step);
+    if (!step) continue;
+    const num = (key: string): number =>
+      typeof record[key] === "number" ? (record[key] as number) : 0;
+    rows.push({
+      step,
+      label: str(record.label) || step,
+      total: num("total"),
+      pending: num("pending"),
+      blocked: num("blocked"),
+      inProgress: num("in_progress"),
+      succeeded: num("succeeded"),
+      skipped: num("skipped"),
+      failed: num("failed"),
+      deadLetter: num("dead_letter"),
+      costUsd: nullableNum(record.cost_usd),
+    });
+  }
+  return rows;
+}
+
 function parseFillStatus(data: Record<string, unknown>): FillStatus {
   const num = (key: string): number =>
     typeof data[key] === "number" ? (data[key] as number) : 0;
@@ -413,8 +507,11 @@ function parseFillStatus(data: Record<string, unknown>): FillStatus {
   for (const row of Array.isArray(data.problems) ? data.problems : []) {
     if (!row || typeof row !== "object") continue;
     const record = row as Record<string, unknown>;
+    const step = str(record.step);
     problems.push({
       route: str(record.route),
+      step,
+      stepLabel: str(record.step_label) || step,
       status: str(record.status),
       attempts: typeof record.attempts === "number" ? record.attempts : 0,
       error: str(record.error) || null,
@@ -425,10 +522,17 @@ function parseFillStatus(data: Record<string, unknown>): FillStatus {
     status: str(data.status) || "none",
     total: num("total"),
     pending: num("pending"),
+    blocked: num("blocked"),
     inProgress: num("in_progress"),
     succeeded: num("succeeded"),
+    skipped: num("skipped"),
     failed: num("failed"),
     deadLetter: num("dead_letter"),
+    pages: num("pages"),
+    pagesBuilt: num("pages_built"),
+    steps: parseFillSteps(data.steps),
+    costUsd: nullableNum(data.cost_usd),
+    estimate: parseFillEstimate(data.estimate),
     startedAt: str(data.started_at) || null,
     finishedAt: str(data.finished_at) || null,
     error: str(data.error) || null,
@@ -501,7 +605,14 @@ export async function bridgeFillPreview(
 export async function bridgeFillStart(
   dispatch: AppDispatch,
   siteId: string,
-  options: { cmsSite?: string; overwrite?: boolean },
+  options: {
+    cmsSite?: string;
+    overwrite?: boolean;
+    /** Omit = the whole per-page pipeline (family → write → review → build). */
+    steps?: string[];
+    /** The review/fact-check pass. ON unless explicitly turned off. */
+    includeReview?: boolean;
+  },
 ): Promise<FillStartResult> {
   const result = await dispatch(
     callApi({
@@ -510,6 +621,8 @@ export async function bridgeFillStart(
       pathParams: { site_id: siteId },
       body: {
         cms_site: options.cmsSite ?? null,
+        steps: options.steps ?? null,
+        include_review: options.includeReview !== false,
         overwrite: options.overwrite === true,
       },
     }),
@@ -518,6 +631,10 @@ export async function bridgeFillStart(
   return {
     jobId: str(data.job_id),
     seeded: typeof data.seeded === "number" ? data.seeded : 0,
+    steps: Array.isArray(data.steps) ? data.steps.map(String) : [],
+    estimate:
+      parseFillEstimate(data.estimate) ??
+      { pages: 0, calls: 0, callsByStep: {}, usd: null, basis: "" },
     skipped: Array.isArray(data.skipped) ? data.skipped.map(String) : [],
   };
 }
