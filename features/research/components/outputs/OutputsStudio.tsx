@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useTopicContext } from "../../context/ResearchContext";
+import { ResearchUsedBy } from "../shared/ResearchUsedBy";
 import { appendTopicOutput, getDocument, getSynthesis } from "../../service";
 import type { ResearchSynthesis } from "../../types";
 import { normalizeSynthesisScope } from "../../types";
@@ -302,6 +303,12 @@ export default function OutputsStudio() {
           existing={assetsFor(outputs, "seo")}
           onPersisted={(asset) => persistOutput("seo", asset)}
         />
+
+        {/* The topic's AFTER — the sites, plan pages, and canonical pages
+            consuming this research (forward half of research lineage). */}
+        <div className="rounded-xl border border-border/50 bg-card/40 px-3 py-2.5">
+          <ResearchUsedBy token="research_topic" id={topicId} />
+        </div>
       </div>
     </div>
   );

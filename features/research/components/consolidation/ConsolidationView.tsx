@@ -10,6 +10,7 @@ import { useStreamDebug } from '../../context/ResearchContext';
 import MarkdownStream from '@/components/MarkdownStream';
 import { ContentActionBar } from '@/components/content-actions/ContentActionBar';
 import { StoppedEarlyNote } from '../shared/StoppedEarlyNote';
+import { ResearchUsedBy } from '../shared/ResearchUsedBy';
 import type { ResearchSynthesis, ResearchDataEvent } from '../../types';
 
 interface ConsolidationViewProps {
@@ -181,6 +182,12 @@ export default function ConsolidationView({ topicId, tagId }: ConsolidationViewP
                     )}
                 </div>
             )}
+
+            {/* The tag's AFTER — the sites, plan pages, and canonical pages
+                consuming this research tag (forward half of research lineage). */}
+            <div className="rounded-xl border border-border/50 bg-card/40 px-3 py-2.5">
+                <ResearchUsedBy token="research_tag" id={tagId} />
+            </div>
         </div>
     );
 }
