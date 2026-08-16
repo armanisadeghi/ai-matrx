@@ -126,9 +126,9 @@ const values: SurfaceValue[] = [
 
 export const crmOutreachListsManifest: SurfaceManifest = {
   surfaceName: CRM_OUTREACH_LISTS_SURFACE_NAME,
-  readiness: "partial",
+  readiness: "verified",
   readinessNote:
-    "Read vocabulary verified against OutreachListsPage; emitter + assist strip wired; roles declared. Pending: pitch_assistant default agent (not yet authored) and the non-matching-name binding verification pass.",
+    "Binding pass done 2026-08-16 (WP5 round 3). All three roles carry a default agent and were launched live from /crm/outreach-lists: Surface Context reported Live 5/6 supplied, contract honored (load_error correctly absent), and a real pitch_assistant run returned values it could not have guessed — both campaign UUIDs, names, kinds (email/call) and member counts. visible_lists is autoContext:false and ~4000 chars, so it arrives as a DEFERRED item: an agent told not to use tools correctly reports it as unavailable rather than inventing it, and returns it in full once retrieval is allowed. Verify a composite value WITH retrieval allowed. Known mismatch, deliberate: the personalization_writer role points at personalization_line_writer, a STRUCTURED batch agent (variables campaign_context/targets_json) — correct as the role's implementation, which the personalization run resolves through its slot, but it is not a conversational agent and the chat window will ask for its variables. Fix is a conversational front for that role, not a rebinding.",
   label: "Outreach Lists",
   urlPattern: "/crm/outreach-lists",
   intro: `<surface_intro>
