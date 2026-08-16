@@ -450,6 +450,11 @@ const READINESS_NOTE: Record<NodeActionReadiness, string> = {
   failed: "The last run needs attention — try again",
 };
 
+/** executeNode is a PARKED-run verb (step-mode/paused/errored). While the
+ * engine itself is driving the run, firing it would double-execute a node
+ * the scheduler is about to run — actions stay locked with an honest note. */
+const PARKED_RUN_STATUSES: ReadonlySet<string> = new Set(["paused", "errored"]);
+
 /**
  * The Phase 4 action readout: a verb button that UNLOCKS when the node's
  * dependencies are ready (nodeActionReadiness — the blog-post example: the
@@ -476,7 +481,10 @@ function ActionReadout({
   const runStatus = useAppSelector(selectRunStatus(runId));
   const { executeNode } = useWorkflowRunControls();
   const [auto, setAuto] = useState(mode === "auto");
-  const [busy, setBusy] = useState(false);
+  // ONE in-flight guard shared by the click AND the auto effect — without
+  // it, the window between firing and the stream's phase flip left the
+  // button clickable for a duplicate execute.
+  const [inFlight, setInFlight] = useState(false);
   const autoFiredRef = useRef(false);
 
   const readiness: NodeActionReadiness = definition
@@ -488,22 +496,37 @@ function ActionReadout({
         sticky,
       })
     : "waiting";
+  const parked = runStatus !== null && PARKED_RUN_STATUSES.has(runStatus);
 
   const executeRef = useRef(executeNode);
   useEffect(() => {
     executeRef.current = executeNode;
   });
 
-  // Auto mode fires ONCE on the waiting→ready edge. No busy state here —
-  // the node's own "running" readiness is the progress signal.
+  const fire = () => {
+    setInFlight(true);
+    void executeRef.current(runId, nodeId).finally(() => setInFlight(false));
+  };
+  const fireRef = useRef(fire);
   useEffect(() => {
-    if (!auto || readiness !== "ready" || autoFiredRef.current) return;
+    fireRef.current = fire;
+  });
+
+  // Auto mode fires ONCE on the waiting→ready edge — parked runs only (the
+  // engine drives non-parked runs itself). Deferred a microtask so the
+  // in-flight state set happens outside the effect body.
+  useEffect(() => {
+    if (!auto || !parked || readiness !== "ready" || autoFiredRef.current) {
+      return;
+    }
     autoFiredRef.current = true;
-    void executeRef.current(runId, nodeId);
-  }, [auto, readiness, runId, nodeId]);
+    void Promise.resolve().then(() => fireRef.current());
+  }, [auto, parked, readiness]);
 
   const clickable =
-    !busy && (readiness === "ready" || readiness === "done" || readiness === "failed");
+    !inFlight &&
+    parked &&
+    (readiness === "ready" || readiness === "done" || readiness === "failed");
 
   return (
     <div className="space-y-1">
@@ -511,17 +534,14 @@ function ActionReadout({
         <button
           type="button"
           disabled={!clickable}
-          onClick={() => {
-            setBusy(true);
-            void executeRef.current(runId, nodeId).finally(() => setBusy(false));
-          }}
+          onClick={fire}
           className={
             clickable
               ? "rounded-md bg-primary px-3 py-1.5 text-xs text-primary-foreground"
               : "rounded-md border border-border bg-muted px-3 py-1.5 text-xs text-muted-foreground opacity-60"
           }
         >
-          {readiness === "running" || busy
+          {readiness === "running" || inFlight
             ? "Working…"
             : readiness === "failed"
               ? `${label} (try again)`
@@ -541,7 +561,9 @@ function ActionReadout({
         </label>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        {READINESS_NOTE[readiness]}
+        {!parked && readiness === "ready"
+          ? "This workflow runs it automatically"
+          : READINESS_NOTE[readiness]}
       </p>
     </div>
   );

@@ -81,6 +81,11 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-16 — Phase 4 complete: the generated run-start form (`surface/run-form.ts` pure
+  derivation from `io.user_input` nodes' `data.config.fields` → `components/RunStartForm.tsx`
+  → submitted as `node_inputs`, the RunWorkflowRequest contract); demo shows it before
+  Run/Run-step-by-step when a workflow collects inputs. "file" fields are an honest v1 text
+  input (universal file-picker integration tracked in the handoff).
 - 2026-08-16 — Phase 4 core + review fixes: `startStepRun` + `executeNode` verbs on the ONE
   controls hook; `nodeActionReadiness` (sticky-aware upstream-dependency derivation); the
   action readout is REAL — verb button unlocking on readiness, auto mode firing once on the
