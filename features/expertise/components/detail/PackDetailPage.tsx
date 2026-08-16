@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   BookOpen,
   CheckCircle2,
@@ -9,6 +10,7 @@ import {
   Hammer,
   ChevronDown,
   ChevronRight,
+  MessageCircleQuestion,
   Pencil,
   Plus,
   RotateCcw,
@@ -37,6 +39,7 @@ import {
 } from "../../types";
 import { CompileDeskDialog } from "./CompileDeskDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
+import { InterviewButton, PackInterviewPanel } from "./PackInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 
 /**
@@ -185,7 +188,18 @@ export function PackDetailPage({ packId }: { packId: string }) {
   const [confirmActivate, setConfirmActivate] = useState(false);
   const [compileOpen, setCompileOpen] = useState(false);
   const [ingestOpen, setIngestOpen] = useState(false);
+  const searchParams = useSearchParams();
+  // The guided start ("Distill an expert") lands here with ?interview=1 when
+  // the knowledge lives in the expert's head — the interview IS the next step.
+  const [interviewOpen, setInterviewOpen] = useState(
+    searchParams.get("interview") === "1",
+  );
   const userId = useAppSelector(selectUserId);
+
+  const reloadPack = useCallback(async () => {
+    const p = await getPack(packId);
+    if (p) setPack(p);
+  }, [packId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -420,6 +434,10 @@ export function PackDetailPage({ packId }: { packId: string }) {
               <Plus className="mr-1 h-4 w-4" />
               Add rule
             </Button>
+            <InterviewButton
+              className="h-8"
+              onClick={() => setInterviewOpen(true)}
+            />
             <Button
               size="sm"
               variant="outline"
@@ -437,21 +455,35 @@ export function PackDetailPage({ packId }: { packId: string }) {
       {pack.principles.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
-            No rules yet. Add your first rule — say it the way you&apos;d tell a
-            new hire.
+            No rules yet. The fastest way to fill this in: let us interview you
+            — talk about how you work, and rules get written down as you speak.
           </p>
           {canEdit ? (
-            <Button
-              size="sm"
-              className="mt-3"
-              onClick={() => {
-                setEditing(undefined);
-                setEditorOpen(true);
-              }}
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Add the first rule
-            </Button>
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <Button size="sm" onClick={() => setInterviewOpen(true)}>
+                <MessageCircleQuestion className="mr-1 h-4 w-4" />
+                Start the interview
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditing(undefined);
+                  setEditorOpen(true);
+                }}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Add a rule by hand
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIngestOpen(true)}
+              >
+                <FileUp className="mr-1 h-4 w-4" />
+                From a document
+              </Button>
+            </div>
           ) : null}
         </div>
       ) : (
@@ -540,6 +572,12 @@ export function PackDetailPage({ packId }: { packId: string }) {
             })
             .catch(() => undefined);
         }}
+      />
+      <PackInterviewPanel
+        packId={pack.id}
+        open={interviewOpen}
+        onOpenChange={setInterviewOpen}
+        onPackChanged={() => void reloadPack()}
       />
     </div>
   );

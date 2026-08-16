@@ -29,11 +29,24 @@ export async function getPack(id: string): Promise<ExpertisePack | null> {
   return data ? parsePack(data as ExpertisePackRow) : null;
 }
 
+export interface PackIntake {
+  /** "What are you trying to build?" — the only required intake answer. */
+  goal: string;
+  /** Who will actually run this? */
+  who_runs_it?: string;
+  /** Where does the knowledge live? */
+  knowledge_lives?: string;
+  /** What happens if it gets it wrong? Sets guardrail intensity later. */
+  stakes?: string;
+}
+
 export interface CreatePackInput {
   name: string;
   description: string;
   source: PackSource;
   organizationId: string;
+  /** Guided-start answers; stored on metadata.intake — the Interviewer reads them. */
+  intake?: PackIntake;
 }
 
 function slugify(name: string): string {
@@ -64,6 +77,9 @@ export async function createDraftPack(
         principles: [] as never,
         status: "draft",
         organization_id: input.organizationId,
+        ...(input.intake
+          ? { metadata: { intake: input.intake } as never }
+          : {}),
       })
       .select("*")
       .single();

@@ -10,14 +10,23 @@
 ## Status
 
 - **Live:** `/expertise` (entity-list shell), `/expertise/[id]` (rule editor + "Create a desk"
-  compile dialog + "From a source" ingest dialog), `/expertise/[id]/desks` (compiled desks +
-  version-drift flags), `/expertise/admin` (feature map).
-- **Server half:** aidream `services/expertise_desks` (compile, both shapes) + `services/expertise_ingest`
-  (text→draft rules with verbatim quote verification) are live in production aidream SHA
-  `6f567cba8` (verified 2026-08-12).
-- **Next (work order: docs/handoffs/expertise-system-productization.md):** live interview agent,
-  file/PDF ingest via page_extraction, run-history on the desks page, pack version snapshots,
-  the Arman-SEO honest test (pack `arman-seo-method` scaffolded, draft, owned by Arman).
+  compile dialog + "From a source" ingest dialog + "Interview me" side sheet), `/expertise/[id]/desks`
+  (compiled desks + version-drift flags), `/expertise/admin` (feature map).
+- **The guided start (2026-08-15):** "New pack" is now the four-question intake from the
+  distillation vision (goal · who runs it · where the knowledge lives · stakes → stored on
+  `metadata.intake`), then routes by source: knowledge in-head/unsure → `/expertise/[id]?interview=1`
+  (interview sheet auto-opens); written-down/someone-else's → the pack page with the document lane.
+- **The interview lane:** `PackInterviewPanel` (AskTutor pattern — useAgentLauncher +
+  AgentConversationColumn in a Sheet) talks to the **Expertise Interviewer** agent
+  (`4a0b2f8e-18d0-4ade-8b88-7f5610f1d0c8`, Sonnet 5, variable `pack_id`), which holds the
+  server-side `expertise_pack` tool and lands draft rules on the pack AS the expert talks; the
+  panel watches the pack row's `version` while open and refreshes the page behind the sheet.
+- **Server half:** aidream `services/expertise_desks` (compile) + `services/expertise_ingest`
+  (text ingest + the `expertise_pack` tool + one shared CAS write path `pack_writes.py`).
+- **Next (work order: docs/handoffs/expertise-system-productization.md):** exemplar/imitation
+  lane (R2 — distill from best-in-class outputs + backtest), file/PDF ingest via page_extraction,
+  run-history on the desks page, pack version snapshots, the Arman-SEO honest test
+  (pack `arman-seo-method` scaffolded, draft, owned by Arman — the interview lane now unblocks it).
 
 ## Data
 
@@ -70,3 +79,7 @@
   drafts + quote-verification summary).
 - 2026-08-12 — Verified both aidream services in the production SHA and removed the stale
   pre-deploy status.
+- 2026-08-15 — The distillation start: intake-first NewPackDialog (four questions →
+  metadata.intake → lane routing), PackInterviewPanel + InterviewButton (live interview lane,
+  Expertise Interviewer agent + expertise_pack tool), empty state offers interview first;
+  dropped the stale api-types casts; listConfig sourceFeature → "expertise".

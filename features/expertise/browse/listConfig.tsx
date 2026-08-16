@@ -29,7 +29,7 @@ export const expertiseListConfig: EntityListConfig<ExpertisePackListRow> = {
   door: { token: "expertise_pack" },
   // TODO(expertise, phase 2): switch to the dedicated "expertise" slug once it
   // is registered in aidream source_attribution.SOURCE_FEATURES and regenerated.
-  sourceFeature: "agents-other",
+  sourceFeature: "expertise",
   getRowEntity: (row) => ({
     type: "expertise_pack",
     id: row.id,

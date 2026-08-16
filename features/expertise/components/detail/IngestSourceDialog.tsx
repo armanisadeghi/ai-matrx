@@ -28,9 +28,7 @@ import type { ExpertisePack } from "../../types";
  * DRAFTS the expert approves one by one. Never auto-activated (human-first).
  */
 
-// TODO(expertise): drop this cast once aidream's OpenAPI regen lands the path
-// in types/python-generated/api-types.ts.
-const INGEST_PATH = "/expertise-desks/ingest" as unknown as keyof paths;
+const INGEST_PATH = "/expertise-desks/ingest" satisfies keyof paths;
 
 export function IngestSourceDialog({
   open,

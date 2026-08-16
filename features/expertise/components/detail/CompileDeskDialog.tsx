@@ -28,10 +28,7 @@ import type { ExpertisePack } from "../../types";
  * lands on the new desk. Plain language throughout.
  */
 
-// TODO(expertise): drop this cast once aidream's OpenAPI regen lands the path
-// in types/python-generated/api-types.ts (pnpm sync-types after the aidream
-// release that ships /expertise-desks/compile).
-const COMPILE_PATH = "/expertise-desks/compile" as unknown as keyof paths;
+const COMPILE_PATH = "/expertise-desks/compile" satisfies keyof paths;
 
 type DeskKind = "edit" | "generate";
 
