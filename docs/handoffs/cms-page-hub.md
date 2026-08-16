@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-15
+updated: 2026-08-16
 repos: [matrx-frontend, aidream]
 vision: [this doc §Vision — Arman's words, 2026-08-14]
 ---
@@ -123,8 +123,12 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
    schema; no server change needed); the gap was `CmsPageMapEntry` dropping it. Tree badge +
    table Page column now carry `NodeMeasureDoor` (28d clicks → the editor's Measure tab) over a
    single bulk `v_page_list` read (`usePageSearchPerformance` / `usePlanMeasureOverlay`). No
-   join = no badge, never a zero, which is every production row today. Listed, lowest value: CMS components editor has no
-   component→page usage join (that join doesn't exist yet).
+   join = no badge, never a zero, which is every production row today. Independently verified
+   2026-08-16: type-check green, tree renders with zero measure doors and zero errors on a
+   joinless plan (the honest hidden state). Listed, lowest value: CMS components editor has no
+   component→page usage join (that join doesn't exist yet). Chipped 2026-08-16: pre-existing
+   mobile hydration errors on /cms/html-pages (ContextMenuV3's mobile `display:contents` div
+   wrapper is invalid around `<tr>` rows — needs a cloneElement fix in the primitive).
    Verified as NOT gaps: Search Console page rows, marketing PagesTable (both door into
    PageWorkspace, which now carries BEFORE + CMS door); CMS collections (not page-shaped).
 7. **Research tab (later).** When P2 research artifacts flow (`plan.node_artifact

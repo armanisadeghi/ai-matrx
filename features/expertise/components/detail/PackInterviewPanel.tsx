@@ -86,15 +86,20 @@ function InterviewConversation({
   });
 
   // "What did it get wrong?" entry: stage the run context in the composer so
-  // the expert only finishes the sentence. Never clobber an existing draft.
-  const seededRef = useRef(false);
+  // the expert only finishes the sentence. Keyed by the seed text so opening
+  // feedback for a DIFFERENT run re-stages; a draft the expert already typed
+  // (anything that isn't just a previous seed) is never clobbered.
+  const seededForRef = useRef<string | null>(null);
+  const lastSeedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!conversationId || !seedText || seededRef.current) return;
+    if (!conversationId || !seedText || seededForRef.current === seedText)
+      return;
     const existing = selectUserInputText(conversationId)(store.getState());
-    if (!existing.trim()) {
+    if (!existing.trim() || existing === lastSeedRef.current) {
       dispatch(setUserInputText({ conversationId, text: seedText }));
+      lastSeedRef.current = seedText;
     }
-    seededRef.current = true;
+    seededForRef.current = seedText;
   }, [conversationId, seedText, dispatch, store]);
 
   if (!conversationId) return <ChatRoomSkeleton />;
@@ -152,10 +157,14 @@ export function PackInterviewPanel({
   }, [open, packId, onPackChanged]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
+      {/* Non-modal on purpose: the expert watches drafts land in the rule
+          list BESIDE the conversation — dimming and freezing the page would
+          sever the loop's primary feedback (vision doc 02). */}
       <SheetContent
         side="right"
         className="flex w-full flex-col gap-0 p-0 sm:max-w-xl"
+        onInteractOutside={(e) => e.preventDefault()}
       >
         <SheetHeader className="space-y-1 border-b border-border px-4 py-3">
           <SheetTitle className="flex items-center gap-2 text-base">

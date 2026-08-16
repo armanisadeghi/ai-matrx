@@ -88,12 +88,39 @@ duration · summed node cost from `workflow.run`/`node_outcome`, rows open the r
 **"What did it get wrong?" feedback loop** — each completed run row opens the interview panel
 seeded with the run context, so complaints become draft rules through the same tool.
 
-Next, in order: ① the honest test — fill `arman-seo-method` via the interview + compile + judge
-(directive #4; needs Arman himself); ② the R2 backtest harness (known inputs → run the desk →
-compare against the real published work — the outcome stream for exemplar packs); ③ file/PDF/
-audio ingest via content_processing + page_extraction; ④ pack version snapshots + structured
-outputs (Phase 6 tail); ⑤ the distillation→Engram interface (candidate specialists +
-acceptance criteria as pack outputs).
+**2026-08-16 milestone pass (adversarial check + fixes + backtest, all verified):**
+- **The approval loop is CLOSED** — both adversarial reviews found the same CRITICAL: nothing
+  ever cleared `draft:true`, so distilled rules could never power a desk. Now: per-row Approve,
+  Approve-all, edit-and-save approves, Create-a-desk gates on approved count. Browser-verified
+  (v1→v2, badges cleared, Create-a-desk appeared) + DB-confirmed.
+- **R2 backtest harness live:** `POST /expertise-desks/backtest` — comparison judge scores desk
+  output vs the real published exemplar rule-by-rule (verbatim rules, invented ids dropped),
+  gaps land as draft rules (`source_ref.backtest`). In-process verified: correct verdict, real
+  rule citations, gap captured. No FE surface yet (next).
+- **Server hardened** (aidream `147a7c686`): ingest cost caps (600k chars / 80 chunks),
+  word-window chunk fallback + all-chunks-failed fatal, non-Latin-safe dedupe, tool batch/field/
+  read caps, `update_meta` via CAS with `{label}` sections, `load_readable_pack` for reads,
+  fail-closed ownership, retryable CAS-conflict errors.
+- **FE hardened:** non-modal interview sheet (watch drafts land beside the conversation),
+  version-conflict saves self-recover, owner-gated interview/feedback entries, run-id-stamped
+  feedback seeds that re-stage per run.
+
+**Ledgered from the adversarial reviews (real, not yet built):** ① "Try your desk" IN PLACE on
+the desks page — the payoff moment currently exits to workflow studio (MISMATCH RULE violation;
+top vision gap); ② the benchmark intake question ("if you handed this to ChatGPT today, how
+good/what cost?" — doc 20 calls it the highest-value follow-up) + the examples-of-good-output
+early ask; ③ deterministic elicitation chips above the composer (menu moves + the six
+wrong-categories as buttons); ④ stakes → default severity/gate intensity (currently inert);
+⑤ file/PDF/audio lane + intake-aware empty states; ⑥ AccessGate + share-levels on both pages
+(canEdit is owner-only; edit-level sharees read-only silently); ⑦ vocabulary polish (pack vs
+rulebook, compile-speak, code-font rule ids) + a door to the interview conversation from a
+rule's provenance; ⑧ coverage/progress strip on the pack header; ⑨ desks-page toast fires on
+ANY version bump while feedback panel open (false "drafts captured" on unrelated edits).
+
+Next, in order: ① "Try your desk" in place + a backtest FE surface (paste reference → verdict
++ gap drafts); ② benchmark intake question + elicitation chips; ③ the honest test —
+`arman-seo-method` with Arman (needs him); ④ file/PDF/audio ingest via content_processing;
+⑤ pack version snapshots + structured outputs; ⑥ the distillation→Engram interface.
 
 ## PRIOR STATUS (2026-08-10) — Phases 1-3 SHIPPED
 

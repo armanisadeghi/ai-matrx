@@ -10,6 +10,7 @@ import { CMS_SITE_MEMBER_ADD_ACTION } from "@/features/cms/accessGateTokens";
 import type { JsonObject } from "@/types/json";
 
 export const ORG_MODULE_CUSTOM_VALUE_ADD_ACTION = "org_module_custom_value.add";
+export const ORG_CHANGE_POLICY_SET_ACTION = "org_change_policy.set";
 
 interface SettingRequestAction {
   label: string;
@@ -67,6 +68,34 @@ const ACTIONS: Record<string, SettingRequestAction> = {
         requiredString(payload, "namespace"),
         requiredString(payload, "value"),
       );
+    },
+  },
+  [ORG_CHANGE_POLICY_SET_ACTION]: {
+    label: "Set change policy",
+    completedLabel: "Change policy updated",
+    execute: async (payload, context) => {
+      const organizationId = requiredString(payload, "organization_id");
+      if (organizationId !== context.organizationId) {
+        throw new Error(
+          "This setting request does not match its organization.",
+        );
+      }
+      const { setOrgChangePolicy } = await import(
+        "@/features/change-policy/service"
+      );
+      const { CHANGE_HANDLING_MODES } = await import(
+        "@/features/change-policy/catalogue"
+      );
+      const mode = requiredString(payload, "handling_mode");
+      if (!(CHANGE_HANDLING_MODES as readonly string[]).includes(mode)) {
+        throw new Error(`Unknown handling mode: ${mode}`);
+      }
+      // The RPC itself re-checks org admin, human tier, and the row-38 floor.
+      await setOrgChangePolicy({
+        orgId: organizationId,
+        changeTypeKey: requiredString(payload, "change_type_key"),
+        handlingMode: mode as (typeof CHANGE_HANDLING_MODES)[number],
+      });
     },
   },
 };

@@ -50,7 +50,9 @@ export function SettingsSegmented<T extends string = string>({
         role="tablist"
         className={cn(
           "inline-flex p-0.5 bg-muted rounded-md",
-          fullWidth && "w-full",
+          // Labels never shatter mid-word; when the options genuinely don't
+          // fit (many options at mobile widths) the control scrolls instead.
+          fullWidth && "w-full overflow-x-auto",
         )}
       >
         {options.map((opt) => {
@@ -75,7 +77,7 @@ export function SettingsSegmented<T extends string = string>({
               )}
             >
               {opt.icon && <opt.icon className="h-3.5 w-3.5" />}
-              <span>{opt.label}</span>
+              <span className="whitespace-nowrap">{opt.label}</span>
             </button>
           );
         })}

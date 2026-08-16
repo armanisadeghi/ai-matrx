@@ -245,6 +245,7 @@ Phase 1–8 shipped. Phase 9 (this doc + skill) closes the original project.
 
 ## Change log
 
+- `2026-08-16` — `SettingsSegmented`: option labels are `whitespace-nowrap` and a `fullWidth` control scrolls horizontally when its options genuinely don't fit (6-option controls at mobile widths were shattering labels mid-word — found by the change-policy surface, fixed at the primitive).
 - `2026-08-15` — Added the explicit Task reminders SMS family preference to Messaging, backed by caller-scoped direct Supabase RPCs and targeted by the exact setting-door recovery from the Task editor.
 - `2026-08-15` — Added the personal Text assistant section to production Messaging: verified binding and consent visibility, canonical agent/version picker, per-user enable/pause/disconnect, canonical chat door, read-only global health, and a durable safe-test action through direct authenticated RPCs.
 - `2026-08-15` — **Exact setting doors are a platform primitive.** `SettingDoor`

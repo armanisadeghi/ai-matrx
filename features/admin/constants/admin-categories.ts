@@ -810,6 +810,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Change Policy",
+        description:
+          "Platform defaults for every AI-proposed change type (the C-18 catalogue), plus which organizations have diverged from them — each a door to that org's own change-policy page.",
+        iconName: "ShieldCheck",
+        link: "/administration/users/change-policy",
+        isNew: true,
+      },
+      {
         title: "Preferences Drift",
         description:
           "Accounts whose stored preferences still carry a retired shape. Proves the drift-healing system is at zero across all users, with a manual 'Heal now' lever.",

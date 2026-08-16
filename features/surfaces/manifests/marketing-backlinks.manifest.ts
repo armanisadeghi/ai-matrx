@@ -268,6 +268,41 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 620,
   },
 
+  {
+    group: "link_prospects",
+    name: "serp_prospecting_preview",
+    label: "Search-prospecting preview",
+    description:
+      "The no-spend preview of the SECOND prospecting method (search results): { site_domain, queries (each expanded query with its variant and the seed keyword that produced it), estimated_cost_usd, dropped (seed keywords the server could not use) }. It is the exact request the paid run would send — editing the keywords voids it. Populated once the user has pressed Preview on the Prospects tab's Search results method; empty everywhere else.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 1200,
+    sortOrder: 630,
+  },
+  {
+    group: "link_prospects",
+    name: "serp_prospecting_prospects",
+    label: "Search-result prospects on screen",
+    description:
+      "The SERP-prospect rows the user is currently paging through (server-paged, respecting search, filters and sort): domain, how many of the user's searches it already ranks in (mention_count), its best position, the Matrx Authority Score with its band and why, what could NOT be measured, spam score, the provider's own rank kept separate, the human's review status, and whether a CRM record already exists. Same score rules as link_gap_prospects: matrx_authority_score NULL means unmeasured, never zero, never the worst prospect. Empty when the search has never been run or the filter matches nothing.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 6000,
+    autoContext: false,
+    sortOrder: 640,
+  },
+  {
+    group: "link_prospects",
+    name: "serp_prospecting_review_backlog",
+    label: "Search-prospect review backlog",
+    description:
+      "How many SERP prospects sit in each review state for this whole site ({ pending, approved, rejected, snoozed }) — unfiltered, so it always reports the real backlog rather than what the current filter shows. Approving is what makes a prospect eligible to become a CRM record. Empty until the search has produced rows.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 650,
+  },
+
   // ── Collection & refresh ──────────────────────────────────────────────
   {
     group: "collection",
@@ -362,7 +397,7 @@ export const marketingBacklinksManifest: SurfaceManifest = {
 You are on the backlink intelligence workspace of a managed website: provider discovery PLUS first-party source-page capture and analysis. The brand_context and site_context values give you the client and website framing; read them first.
 Keep evidence layers separate. Provider rank/spam values are third-party signals; backlink_rows and referring_domain_opinions carry our page-content judgments, relevance, controllability, risk, and recommended actions; human rulings are explicit ground truth. Never call a link paid, controlled, toxic, or disavow-worthy from a provider score alone.
 The user works here to protect valuable links, reclaim losses, improve controllable listings/placements, and request specific edits. Recommend the stored action and explain its evidence; never invent a relationship, owner, referring domain, anchor, or metric.
-The Prospects tab is the OTHER direction: link_gap_seed / link_gap_prospects / link_gap_review_backlog describe sites that link to the user's confirmed competitors and NOT to them. The Matrx Authority Score is ours, and a null score means UNMEASURED — never zero, never the worst prospect; say "we have not measured it" rather than implying a low value. Approval is a human act and the only thing that makes a prospect a CRM record; never speak as if a machine score approved anything.
+The Prospects tab is the OTHER direction, with two methods on one triage surface. Competitor links: link_gap_seed / link_gap_prospects / link_gap_review_backlog describe sites that link to the user's confirmed competitors and NOT to them. Search results: serp_prospecting_preview / serp_prospecting_prospects / serp_prospecting_review_backlog describe sites already ranking for the searches the user's topics live in. The Matrx Authority Score is ours, and a null score means UNMEASURED — never zero, never the worst prospect; say "we have not measured it" rather than implying a low value. Approval is a human act and the only thing that makes a prospect a CRM record; never speak as if a machine score approved anything.
 Freshness has two clocks: backlink_summary carries when the KPI snapshot was collected, backlinks_collected_at when the individual rows were. The collection values (refresh_schedule, refresh_profile, seo_environment, refresh_receipt) tell you how this evidence is kept current — when data is stale or missing, the right recommendation names the profile to run, not a fabricated number.
 </surface_intro>`,
   groups,
@@ -396,6 +431,18 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
       defaultAgentId: "6a8c6a97-a473-440f-87b1-ab09e02adfa2",
       sortOrder: 110,
     },
+    {
+      name: "keyword_expander",
+      label: "Keyword expander",
+      description:
+        "Expands a topic into the keyword list a prospecting run should search — validated against real search volume before use.",
+      kind: "single",
+      // Deliberately unbound (IC-7 seam): WP5 assigns the platform agent.
+      // Until then the Prospects tab renders the affordance disabled and
+      // manual keyword entry carries the flow — never a dead end.
+      defaultAgentId: null,
+      sortOrder: 120,
+    },
   ],
 };
 
@@ -423,6 +470,9 @@ export function createMarketingBacklinksScope(values: {
   link_gap_seed?: Record<string, unknown>;
   link_gap_prospects?: Array<Record<string, unknown>>;
   link_gap_review_backlog?: Record<string, unknown>;
+  serp_prospecting_preview?: Record<string, unknown>;
+  serp_prospecting_prospects?: Array<Record<string, unknown>>;
+  serp_prospecting_review_backlog?: Record<string, unknown>;
   referring_domain_opinions?: Array<Record<string, unknown>>;
   refresh_schedule?: Record<string, unknown>;
   refresh_profile?: string;

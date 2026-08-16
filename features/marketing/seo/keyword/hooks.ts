@@ -160,12 +160,12 @@ function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
 }
 
 /**
- * Fetch (or force-refresh) provider market data for ONE phrase via the
- * canonical `POST /seo/keywords/volume-refresh` NDJSON command. The server
- * upserts the universal `seo.keyword` row when missing — this is the
- * sanctioned way an unknown phrase enters the library from the UI. On
- * completion every `seoKeywordKeys` cache is invalidated so chips, tabs, and
- * the workbench all see the new market data.
+ * Fetch (or force-refresh) provider market data for one phrase — or a batch
+ * of them — via the canonical `POST /seo/keywords/volume-refresh` NDJSON
+ * command. The server upserts the universal `seo.keyword` row when missing —
+ * this is the sanctioned way an unknown phrase enters the library from the
+ * UI. On completion every `seoKeywordKeys` cache is invalidated so chips,
+ * tabs, and the workbench all see the new market data.
  */
 export function useKeywordVolumeRefresh(organizationId?: string | null) {
   const dispatch = useAppDispatch();
@@ -173,9 +173,11 @@ export function useKeywordVolumeRefresh(organizationId?: string | null) {
   const [state, setState] = useState<VolumeRefreshState>({ status: "idle" });
 
   const run = useCallback(
-    async (phrase: string, forceRefresh = false) => {
-      const trimmed = phrase.trim();
-      if (!trimmed) return;
+    async (phrase: string | string[], forceRefresh = false) => {
+      const phrases = (Array.isArray(phrase) ? phrase : [phrase])
+        .map((value) => value.trim())
+        .filter(Boolean);
+      if (!phrases.length) return;
       setState({ status: "running", stage: "Connecting" });
       let sawResult = false;
       let streamError: string | null = null;
@@ -183,7 +185,7 @@ export function useKeywordVolumeRefresh(organizationId?: string | null) {
         callApi({
           path: "/seo/keywords/volume-refresh",
           method: "POST",
-          body: { phrases: [trimmed], force_refresh: forceRefresh },
+          body: { phrases, force_refresh: forceRefresh },
           scopeOverrides: organizationId
             ? { organization_id: organizationId }
             : undefined,

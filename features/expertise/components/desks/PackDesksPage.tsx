@@ -13,6 +13,8 @@ import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { PackInterviewPanel } from "../detail/PackInterviewPanel";
@@ -106,8 +108,13 @@ export function PackDesksPage({ packId }: { packId: string }) {
   const [error, setError] = useState<string | null>(null);
   // "What did it get wrong?" — the run whose outcome the expert is correcting.
   // Opens the interview panel seeded with the run context; the complaint
-  // becomes draft rules in the pack through the Interviewer's tool.
+  // becomes draft rules in the pack through the Interviewer's tool. Owner-only:
+  // the tool refuses non-owner writes, so inviting a visitor into an interview
+  // that silently captures nothing would be a dead end.
+  const userId = useAppSelector(selectUserId);
   const [feedbackSeed, setFeedbackSeed] = useState<string | null>(null);
+  const isOwner =
+    pack !== null && userId !== null && pack.created_by === userId;
 
   useEffect(() => {
     let cancelled = false;
@@ -266,10 +273,13 @@ export function PackDesksPage({ packId }: { packId: string }) {
                         <DeskRunRow
                           key={run.id}
                           run={run}
-                          onFeedback={() =>
-                            setFeedbackSeed(
-                              `I just looked at a run of the "${desk.name}" desk (${runWhen(run)}) and something came out wrong. Here's what it got wrong: `,
-                            )
+                          onFeedback={
+                            isOwner
+                              ? () =>
+                                  setFeedbackSeed(
+                                    `I just looked at a run of the "${desk.name}" desk (${runWhen(run)}, run ${run.id.slice(0, 8)}) and something came out wrong. Here's what it got wrong: `,
+                                  )
+                              : undefined
                           }
                         />
                       ))}
@@ -281,20 +291,22 @@ export function PackDesksPage({ packId }: { packId: string }) {
           })}
         </div>
       )}
-      <PackInterviewPanel
-        packId={packId}
-        open={feedbackSeed !== null}
-        onOpenChange={(open) => {
-          if (!open) setFeedbackSeed(null);
-        }}
-        seedText={feedbackSeed ?? undefined}
-        onPackChanged={() => {
-          toast.success("New draft rules captured", {
-            description:
-              "Review and approve them on the pack page — then recompile the desk to adopt them.",
-          });
-        }}
-      />
+      {isOwner ? (
+        <PackInterviewPanel
+          packId={packId}
+          open={feedbackSeed !== null}
+          onOpenChange={(open) => {
+            if (!open) setFeedbackSeed(null);
+          }}
+          seedText={feedbackSeed ?? undefined}
+          onPackChanged={() => {
+            toast.success("New draft rules captured", {
+              description:
+                "Review and approve them on the pack page — then recompile the desk to adopt them.",
+            });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

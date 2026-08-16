@@ -131,10 +131,9 @@ per-node tokens the same way.
 
 ## Deferred / open items (v1)
 
-- **`ivw_list_scoped.sql` is written but NOT applied** — orchestrator applies
-  via Supabase MCP + ledgers it; align the `iam.permissions.resource_type`
-  token (`'interview_session'`) with the backend's registry entry first. Until
-  applied, the list page's RPC calls fail loudly (error banner in the shell).
+- **`ivw_list_scoped.sql` is live and ledgered** in the shared database. The
+  list page uses the scoped RPCs directly; migration checks must remain at
+  zero pending before release.
 - **Generated types**: `interview` schema + `ivw_*` RPCs + `/vision-interview/*`
   paths are hand-declared/cast; `pnpm sync-types` (outside this container)
   replaces them — remove the casts in `interviewDb.ts`, `browse/service.ts`,

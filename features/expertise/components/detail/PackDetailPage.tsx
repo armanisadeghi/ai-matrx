@@ -67,11 +67,13 @@ function RuleRow({
   canEdit,
   onEdit,
   onToggleRetired,
+  onApprove,
 }: {
   principle: PackPrinciple;
   canEdit: boolean;
   onEdit: () => void;
   onToggleRetired: () => void;
+  onApprove: () => void;
 }) {
   const [openRow, setOpenRow] = useState(false);
   const retired = principle.retired === true;
@@ -79,45 +81,57 @@ function RuleRow({
     <div
       className={`rounded-md border border-border bg-card ${retired ? "opacity-60" : ""}`}
     >
-      <button
-        type="button"
-        className="flex w-full items-start gap-2 px-3 py-2 text-left"
-        onClick={() => setOpenRow((v) => !v)}
-        aria-expanded={openRow}
-      >
-        {openRow ? (
-          <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-foreground">
-              {principle.name}
-            </span>
-            {severityBadge(principle.severity)}
-            {principle.draft ? (
-              <Badge
-                variant="outline"
-                className="px-1.5 py-0 text-[10px] border-primary/40 text-primary"
-              >
-                Draft — needs your approval
-              </Badge>
-            ) : null}
-            {retired ? (
-              <Badge
-                variant="outline"
-                className="px-1.5 py-0 text-[10px] text-muted-foreground"
-              >
-                Retired
-              </Badge>
-            ) : null}
+      <div className="flex w-full items-start gap-2 px-3 py-2">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-start gap-2 text-left"
+          onClick={() => setOpenRow((v) => !v)}
+          aria-expanded={openRow}
+        >
+          {openRow ? (
+            <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-foreground">
+                {principle.name}
+              </span>
+              {severityBadge(principle.severity)}
+              {principle.draft ? (
+                <Badge
+                  variant="outline"
+                  className="px-1.5 py-0 text-[10px] border-primary/40 text-primary"
+                >
+                  Draft — needs your approval
+                </Badge>
+              ) : null}
+              {retired ? (
+                <Badge
+                  variant="outline"
+                  className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                >
+                  Retired
+                </Badge>
+              ) : null}
+            </div>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {principle.statement}
+            </p>
           </div>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            {principle.statement}
-          </p>
-        </div>
-      </button>
+        </button>
+        {canEdit && principle.draft && !retired ? (
+          <Button
+            size="sm"
+            className="h-7 shrink-0"
+            onClick={onApprove}
+          >
+            <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+            Approve
+          </Button>
+        ) : null}
+      </div>
       {openRow ? (
         <div className="space-y-2 border-t border-border px-9 py-2 text-sm">
           {principle.rationale ? (
@@ -264,30 +278,70 @@ export function PackDetailPage({ packId }: { packId: string }) {
   const persist = useCallback(
     async (next: PackPrinciple[]) => {
       if (!pack) return;
-      const saved = await savePrinciples({
-        packId: pack.id,
-        expectedVersion: pack.version,
-        principles: next,
-      });
-      setPack(saved);
+      try {
+        const saved = await savePrinciples({
+          packId: pack.id,
+          expectedVersion: pack.version,
+          principles: next,
+        });
+        setPack(saved);
+      } catch (err) {
+        // A lost version swap (the interviewer or another tab saved first) is
+        // recoverable: pull the fresh pack so the NEXT save works, then
+        // surface what happened. Without this, every later save 409s forever.
+        void reloadPack();
+        throw err;
+      }
     },
-    [pack],
+    [pack, reloadPack],
   );
 
   const saveRule = useCallback(
     async ({ principle, isNew }: RuleEditorResult) => {
       if (!pack) return;
+      // The expert opening a draft, correcting it, and saving IS approval —
+      // the human-first act the whole distillation loop waits on.
+      const approved = { ...principle, draft: false };
       const next = isNew
-        ? [...pack.principles, principle]
-        : pack.principles.map((p) => (p.id === principle.id ? principle : p));
+        ? [...pack.principles, approved]
+        : pack.principles.map((p) => (p.id === approved.id ? approved : p));
       await persist(next);
       toast.success(
-        isNew ? "Rule added" : "Rule saved",
+        isNew ? "Rule added" : principle.draft ? "Rule approved" : "Rule saved",
         { description: `Pack is now version ${pack.version + 1}.` },
       );
     },
     [pack, persist],
   );
+
+  const approveRule = useCallback(
+    async (rule: PackPrinciple) => {
+      if (!pack) return;
+      const next = pack.principles.map((p) =>
+        p.id === rule.id ? { ...p, draft: false } : p,
+      );
+      try {
+        await persist(next);
+        toast.success(`"${rule.name}" approved`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not approve");
+      }
+    },
+    [pack, persist],
+  );
+
+  const approveAllDrafts = useCallback(async () => {
+    if (!pack) return;
+    const next = pack.principles.map((p) =>
+      p.draft ? { ...p, draft: false } : p,
+    );
+    try {
+      await persist(next);
+      toast.success("All suggested rules approved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not approve");
+    }
+  }, [pack, persist]);
 
   const toggleRetired = useCallback(
     async (rule: PackPrinciple) => {
@@ -342,6 +396,11 @@ export function PackDetailPage({ packId }: { packId: string }) {
 
   const liveRuleCount = pack.principles.filter((p) => p.retired !== true).length;
   const draftCount = pack.principles.filter((p) => p.draft === true).length;
+  // Only approved (non-draft, non-retired) rules power desks — the compiler
+  // excludes drafts, so the button must not promise what it will refuse.
+  const approvedCount = pack.principles.filter(
+    (p) => p.retired !== true && p.draft !== true,
+  ).length;
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6">
@@ -390,7 +449,7 @@ export function PackDetailPage({ packId }: { packId: string }) {
                 Activate
               </Button>
             ) : null}
-            {liveRuleCount > 0 ? (
+            {approvedCount > 0 ? (
               <Button size="sm" onClick={() => setCompileOpen(true)}>
                 <Hammer className="mr-1 h-4 w-4" />
                 Create a desk
@@ -405,10 +464,29 @@ export function PackDetailPage({ packId }: { packId: string }) {
           </div>
         </div>
         {draftCount > 0 ? (
-          <p className="mt-2 text-xs text-primary">
-            {draftCount} suggested {draftCount === 1 ? "rule" : "rules"} awaiting
-            your approval — open each one, correct it, and save.
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="text-xs text-primary">
+              {draftCount} suggested {draftCount === 1 ? "rule" : "rules"}{" "}
+              awaiting your approval — approve each one, or open it to correct
+              it first.
+            </p>
+            {canEdit ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-6 px-2 text-xs"
+                onClick={() => void approveAllDrafts()}
+              >
+                <CheckCircle2 className="mr-1 h-3 w-3" />
+                Approve all
+              </Button>
+            ) : null}
+            {approvedCount === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Approved rules are what power a desk — none yet.
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
 
@@ -526,6 +604,7 @@ export function PackDetailPage({ packId }: { packId: string }) {
                       setEditorOpen(true);
                     }}
                     onToggleRetired={() => void toggleRetired(rule)}
+                    onApprove={() => void approveRule(rule)}
                   />
                 ))}
               </div>
@@ -573,12 +652,14 @@ export function PackDetailPage({ packId }: { packId: string }) {
             .catch(() => undefined);
         }}
       />
-      <PackInterviewPanel
-        packId={pack.id}
-        open={interviewOpen}
-        onOpenChange={setInterviewOpen}
-        onPackChanged={() => void reloadPack()}
-      />
+      {canEdit ? (
+        <PackInterviewPanel
+          packId={pack.id}
+          open={interviewOpen}
+          onOpenChange={setInterviewOpen}
+          onPackChanged={() => void reloadPack()}
+        />
+      ) : null}
     </div>
   );
 }
