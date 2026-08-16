@@ -559,6 +559,10 @@ Every change to a governed unit is stamped with **what KIND of actor** made it, 
 
 ---
 
+## Cross-Repo — Purpose registry ("no purpose, no build")
+
+Every unit of work (agent, workflow, tool) declares WHY it exists: a versioned `platform.purpose` row linked by a `(purpose) -role 'served_by'-> (unit)` edge, tagged **H** (human-authored) / **V** (AI-drafted, human-verified) / **A** (AI-only) per Engram §4.5. **Purpose TEXT lives in the versioned row and NEVER in `associations.metadata`** — the edge carries `role` + `position` only (`position=0` = primary). Write through `purposeService.upsertForUnit` ([`features/purpose/service.ts`](./features/purpose/service.ts)) → the ONE RPC `platform.upsert_unit_purpose`; never write the table or the edge directly, and never add a second implementation of the one-primary or anti-stacking rules — they live in the DB because aidream writes purposes too. **The anti-stacking guard does not error:** an `A` statement offered for a unit whose purpose is `H`/`V` is refused and the EXISTING row comes back, so compare `data.groundingTag` rather than assuming your text landed. `saveMemberMeta` is THE ONE writer of an Orchestra member's characterization and writes BOTH the edge (`label` + `metadata.gap`, which the `<available_agents>` prompt pipeline reads) and the purpose row — never split that into two call sites. Standing grounding debt renders live at `/administration/reporting/grounding`. Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/purpose-registry/FEATURE.md` — read it before touching purposes or grounding in ANY repo.
+
 ## Cross-Repo — protocol + registry system-of-record pointers
 
 - **Matrx Envelope pact** (this repo mirrors aidream's `docs/protocol/MATRX_ENVELOPE.md`/`MATRX_REFERENCES.md` byte-identically; aidream is canonical, `check-protocol-sync.ts --fix` maintains it): `/Users/armanisadeghi/code/common-docs/systems/matrx-envelope/FEATURE.md`.
