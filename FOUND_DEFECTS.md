@@ -17,6 +17,39 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D204 — `lib/deepgram/` holds four hardcoded agent personas in a module with ZERO consumers (2026-08-16)
+
+**Needs Arman's ruling — an agent may not recommend deleting purpose-built work
+(unfinished-work alarm), and there is no live call site to convert.**
+
+Found during the hardcoded-agent-definition purge. `lib/deepgram/constants.ts`,
+`constants-roger.ts`, `constants-audrey.ts`, and `constants copy.ts` each export
+a `systemContent` template literal containing a full agent persona (6.1k–8.9k
+chars): "Ava's AI Assistant" (a tutor for a 13-year-old), "Deepgram AI Persona",
+and "Matrx AI Persona". These are exactly the class Arman's 2026-08-16 ruling
+bans from the codebase.
+
+Why they were not converted with the rest: **nothing imports `lib/deepgram/` at
+all** — no file outside the directory references it (verified by grep for both
+`lib/deepgram` and `@/lib/deepgram`). With no consumer there is no call site to
+point at a slot, and the alarm forbids recommending deletion. `constants copy.ts`
+is byte-identical to `constants.ts` and looks like an accidental Finder copy —
+confirm before touching it.
+
+The directory also holds `helpers.ts`, `types.ts`, `hooks/`, and a 12k
+`analysis.md`, i.e. a real unfinished voice surface, not scratch.
+
+**The two honest options, both Arman's call:**
+1. FINISH it — wire the Deepgram voice surface, move the three distinct personas
+   into `agent.definition` rows, declare slots in aidream `client_slots.py`, and
+   delete the constants (the `voice.intro` conversion is the worked pattern).
+2. Declare the module dead in writing, then it can be removed.
+
+Tracked meanwhile in `scripts/hardcoded-prompts-allowlist.json` with
+`UNRESOLVED:` reasons, so `pnpm check:hardcoded-prompts` prints all four in its
+own loud section on every run rather than letting them read as exonerated.
+
+
 ### D203 — `get_resource_access` grants the row's owner `admin` without asking the authority; on 3 tokens `iam.has_access` grants them less (2026-08-15)
 
 **Needs a product ruling — not fixed unilaterally because it moves access reporting.**
