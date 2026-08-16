@@ -51,13 +51,13 @@ export const SAVED_REQUEST_CATEGORY_ID =
 /**
  * Where a finished run should live. Applied as canonical association edges.
  *
- * Deliberately only the pairs `platform.association_types` actually registers
- * for a conversation: `conversation → task` (via the canonical `assoc_add`) and
- * `conversation → war_room` (via the War Room's own mapper). `conversation →
- * project` is NOT registered, so it is not offered — see FOUND_DEFECTS
- * D-AIWORK-1.
+ * Only the pairs `platform.association_types` actually registers for a
+ * conversation: `conversation → project` and `conversation → task` (via the
+ * canonical `assoc_add`) and `conversation → war_room` (via the War Room's own
+ * mapper). `project` was registered 2026-08-16 on Arman's ruling — a
+ * conversation may belong directly to a project (FOUND_DEFECTS D202).
  */
-export type WorkHomeToken = "task" | "war_room";
+export type WorkHomeToken = "project" | "task" | "war_room";
 
 export interface SavedRequestHome {
   token: WorkHomeToken;
@@ -65,7 +65,7 @@ export interface SavedRequestHome {
   label: string;
 }
 
-const HOME_TOKEN_SET = new Set<string>(["task", "war_room"]);
+const HOME_TOKEN_SET = new Set<string>(["project", "task", "war_room"]);
 
 export interface SavedRequest {
   id: string;

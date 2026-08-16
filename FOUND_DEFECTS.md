@@ -48,30 +48,6 @@ Fix site: `migrations/access_gate_get_resource_access.sql` (the `-- Owner → fu
 control.` block). Context: common-docs
 `systems/access-architecture/FEATURE.md` §7 G16b.
 
-### D202 — `conversation → project` is not a registered association type, so the AI Work inspector's Project picker always fails (2026-08-15)
-
-`platform.association_types` registers `conversation → task` (`container_side
-= target`) and `conversation → war_room` (`none`), but **not** `conversation →
-project`. `assoc_add` therefore raises `23514 Unknown association type:
-conversation -> project`.
-
-`ConversationOrganizationPanel`
-(`features/ai-work/components/ConversationOrganizationPanel.tsx:13`) offers
-`project` in `ORGANIZATION_TOKENS` and routes it through
-`relationships.add({targetType: "project"})` — every Project attach on
-`/work/conversations` and on the provider transcript hits that error. Measured
-live 2026-08-15 while wiring the `/work/new` Home step, which is why that step
-now offers only Task and War Room.
-
-**Arman decides, not an agent:** whether a conversation may belong *directly*
-to a project, or only through one of the project's tasks. Direction and
-conveyance are product semantics. If the answer is yes, the fix is one row in
-`platform.association_types` (`conversation → project`, `container_side =
-target`, matching every other `* → project` pair) plus re-enabling `project` in
-`HOME_TOKENS` (`features/ai-work/compose/components/HomeStep.tsx`). If the
-answer is no, `ORGANIZATION_TOKENS` must drop `project` so the panel stops
-offering a control that cannot work.
-
 ### D201 — `useNodeReality` takes non-null ids that two callers fake with `""` (2026-08-15)
 
 `UseNodeRealityArgs` declares `siteId: string; nodeId: string`
@@ -852,6 +828,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D202 — A conversation can be filed directly under a project (2026-08-16):** Arman ruled direct filing IS allowed; `conversation → project` registered in `platform.association_types` (`container_side=target`, `conveys_max=editor`, matching every other `* → project` pair) and `project` restored to `HOME_TOKENS` / `WorkHomeToken` — `migrations/conversation_project_association_pair.sql`, `features/ai-work/compose/components/HomeStep.tsx`.
 - **D74 — Automatic broken-link evidence and openable report (2026-08-15):** crawl-completion status pass + deterministic findings + canonical Broken Links report; production session `8168bcba-932d-4424-b1a7-5cab7eda53b4` populated 3,761 edges, recorded 85 real external 404 occurrences, opened 20 findings, and produced zero false broken homepage edges — see `features/marketing/FEATURE.md` and aidream `matrx_scraper/web_crawl/FEATURE.md`.
 - **D201 — Guided setup first-run persistence fixed (2026-08-15):** owner-keyed live INSERT policy plus honest create/load reporting and regression coverage — `lib/guided-setup/service.ts`.
 - **D180 — Root-document hydration mismatch on every Marketing route (2026-08-15):** `ChunkRecoveryBootScript` and `SyncBootScript` rendered raw `<script>` children; both now use tracked `next/script` `beforeInteractive` entries.

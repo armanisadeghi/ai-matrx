@@ -21,14 +21,17 @@ import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import type { SavedRequestHome, WorkHomeToken } from "../savedRequests";
 
 /**
- * Only the containers a conversation can ACTUALLY be filed under. `conversation
- * → task` and `conversation → war_room` are registered in
- * `platform.association_types`; `conversation → project` is NOT, so offering it
- * would be a control that always fails. Projects are reached through their
- * tasks — see FOUND_DEFECTS D-AIWORK-1, which is a product-semantics ruling
- * (whether a conversation may belong directly to a project), not a code fix.
+ * The containers a conversation can ACTUALLY be filed under — every one of these
+ * pairs is registered in `platform.association_types`, so no control here can
+ * fail on a `23514 Unknown association type`. `conversation → project` was added
+ * 2026-08-16 on Arman's ruling (FOUND_DEFECTS D202): a conversation may belong
+ * DIRECTLY to a project, not only through one of the project's tasks.
+ *
+ * Adding a token here without its `association_types` row is the D202 defect —
+ * check the pair is live before you widen this list.
  */
 export const HOME_TOKENS = [
+  "project",
   "task",
   "war_room",
 ] as const satisfies readonly EntityTypeToken[];
