@@ -154,8 +154,21 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
    after publish+crawl; `keyword_strategy` and the desired-values link plan are two disconnected
    internal-link prescription systems; the CMS SEO tab reuses none of the canonical SERP verdict
    components). Interim: `SeoPlanSection` now renders inside NodePanel's Targeting section, so
-   the strategy view reaches both the CMS tab and the workspace. **The SEO-planning system
-   design is with Arman for the architecture call** (where the plan is rooted).
+   the strategy view reaches both the CMS tab and the workspace.
+   **ARCHITECTURE RULED 2026-08-16 (Arman): ONE SEO plan per page, on `web.page` —
+   `common-docs/systems/content-planning/FEATURE.md` invariant 9 is the canon.** Desired
+   (plan) / observed (crawl) / served (CMS columns) stay distinct; everything else unifies.
+   The typed contract is live (`PageKeywordPlan` / `desired_values.keyword_plan`,
+   `features/marketing/types.ts`, commit 454fdab2a). Dispatched as two parallel sessions:
+   **(A) storage unification** — planned-status `web.page` rows created at plan/CMS-create
+   time, plan.node SEO fields migrated into `desired_values` (strategy internal links →
+   `outbound_links`, unifying the two link-prescription systems), pipeline + strategist
+   rewired, column drop deferred to a verified follow-up; **(B) the ONE editable SEO-plan
+   component** mounted in the plan workspace, the marketing page workspace, and the CMS SEO
+   tab — no read-only bounce-you-elsewhere views. After both land: the best-in-class layer
+   (SERP-intent targets, entity/heading coverage vs plan, tracking against plan) on top of
+   the one store; any bulk SEO-plan generation follows the effort-tier + estimate-before-
+   the-button doctrine (`content-planning/FEATURE.md` § EFFORT TIERS — never a mid-run kill).
 
 ## Resources
 
