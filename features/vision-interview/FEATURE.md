@@ -28,11 +28,19 @@ from `interview.*`.
   `POST /vision-interview/sessions/{id}/start` (path cast `as never` until
   api-types regenerate) and the typed `POST /runs/{run_id}/resume`
   (`checkpoint_id` from the `run_interrupted` event; `resume_value` carries
-  `message` / `summon_role` / `advance_stage`). Both streams are **adopted**
-  with `adoptForeignStream` (`hooks/useInterviewRun.ts`) — never hand-parsed.
-  The hook's `onEvent` reads only choreography (`node_started` /
+  `message` / `summon_role` / `advance_stage`).
+- **TWO wires, both canonical** (`hooks/useInterviewRun.ts`; verified wire
+  truth 2026-08-16): the start/resume NDJSON responses DETACH immediately by
+  design (`workflow_run_started` → `workflow_run_detached` → `end` — the
+  scheduler survives client disconnect), so they carry no tokens; they are
+  **adopted** with `adoptForeignStream` only to mint the `activeRequests` row
+  and learn the `run_id`. The REAL live wire is the run's SSE events feed
+  (`GET /runs/{run_id}/events/stream`), followed with the execution system's
+  `followWorkflowRunStream`: durable lifecycle events (`node_started` /
   `node_completed` → active speaker via `roleFromNodeId`; `run_interrupted` →
-  composer arms; `run_completed`).
+  composer arms; `run_resumed`; terminals) drive choreography, and the
+  ephemeral typed `node_stream` token frames land in
+  `activeRequests.nodeStreams` keyed by workflow node. Never hand-parsed.
 - **Room state** lives in `redux/vision-interview.slice.ts`
   (`state.visionInterview`): room rows + run choreography + the
   sessionId→requestId adoption map. Streaming content state stays in
@@ -51,18 +59,27 @@ from `interview.*`.
    locally-stamped row, then the server row; failed writes revert through the
    guard-bypassing `questionForced`/`holeForced` only.
 2. **Never hand-render a stream.** Persisted markdown (turns, the living
-   document) renders through `<RichDocument>`; run streams are adopted into
-   `activeRequests`. No `useLiveJsonRegion`, no chunk bucketing.
-3. **The Scribe is the only writer of `session.document`** — the document pane
+   document) renders through `<RichDocument>`; run streams live in
+   `activeRequests` (adopted + SSE-followed). No `useLiveJsonRegion`, no
+   chunk bucketing in feature components.
+3. **Live tokens render per node, no double-render.** While a role node
+   speaks, `TranscriptPane` shows a `LiveTurnCard` off
+   `selectWorkflowNodeStreams(requestId)` — accumulated markdown through
+   `BasicMarkdownContent` (the collab child-stream precedent). The card
+   hides the moment the persisted `interview.turn` for that role lands in
+   the current round OR the node settles (`node_completed` on the feed),
+   whichever arrives first. Reasoning deltas surface only as the subtle
+   "Thinking" state — chain-of-thought is never transcript content.
+4. **The Scribe is the only writer of `session.document`** — the document pane
    is read-only; the FE never writes `document`, `stage`, `current_round`, or
    any turn row (server/realtime-owned). FE writes: session title + soft
    delete, question `state` (defer/reopen), hole
    classification/status/resolution (reclassify keeps provenance via
    `reclassified_by_human=true`; accept-risk behind a ConfirmDialog).
-4. **Stage advancement is human-controlled and rides the resume payload**
+5. **Stage advancement is human-controlled and rides the resume payload**
    (`advance_stage`), so the Advance control arms only while the run waits on
    the human (`waiting_human`).
-5. List page follows lib/entity-list + lib/list-scope: RPCs in
+6. List page follows lib/entity-list + lib/list-scope: RPCs in
    `migrations/ivw_list_scoped.sql` (relevance-ranked search ported from the
    agx/trx scorer; scopes mine/orgs/shared/public; the config declares
    mine/orgs/shared).
@@ -70,23 +87,22 @@ from `interview.*`.
 ## Doctrine (reuse-first)
 
 Consumed, not rebuilt: entity-list shell + list-scope RPC template ·
-`adoptForeignStream` + `activeRequests` · `RichDocument` ·
+`adoptForeignStream` + `activeRequests` + `followWorkflowRunStream` /
+`selectWorkflowNodeStreams` · `RichDocument` · `BasicMarkdownContent` ·
 `readAllRows` · resizable-panels (`ClientGroup`/`Handle`) · `RouteHeader` /
 `PageHeader` · `ConfirmDialog` / `TextInputDialog` / `@/lib/toast` ·
 `uniqueChannelTopic` · per-schema DB helper pattern (`interviewDb`).
-New primitives: none.
+New primitives contributed to the execution system (generic, not
+interview-specific): `ActiveRequest.nodeStreams` +
+`appendWorkflowNodeStream`/`settleWorkflowNodeStream` +
+`followWorkflowRunStream` — any surface adopting a workflow run gets live
+per-node tokens the same way.
 
 ## Deferred / open items (v1)
 
-- **Live token rendering in the transcript** — turns land on node completion
-  via realtime; the adopted stream's `node_stream` tokens are not rendered
-  in-pane yet. Waits on canonical content-ir adoption for workflow node
-  streams (render off `selectKindEnvelope`/`MarkdownStream` keyed by the
-  adopted requestId, split per node). TODO marked in `TranscriptPane.tsx`.
-- **`ivw_list_scoped.sql` is written but NOT applied** — orchestrator applies
-  via Supabase MCP + ledgers it; align the `iam.permissions.resource_type`
-  token (`'interview_session'`) with the backend's registry entry first. Until
-  applied, the list page's RPC calls fail loudly (error banner in the shell).
+- **`ivw_list_scoped.sql` is live and ledgered** in the shared database. The
+  list page uses the scoped RPCs directly; migration checks must remain at
+  zero pending before release.
 - **Generated types**: `interview` schema + `ivw_*` RPCs + `/vision-interview/*`
   paths are hand-declared/cast; `pnpm sync-types` (outside this container)
   replaces them — remove the casts in `interviewDb.ts`, `browse/service.ts`,
@@ -101,6 +117,12 @@ New primitives: none.
 
 ## Change log
 
+- 2026-08-16 — Live token streaming shipped end-to-end: `followWorkflowRunStream`
+  follows the run's SSE events feed into `activeRequests.nodeStreams`;
+  `TranscriptPane` renders per-role `LiveTurnCard`s that resolve seamlessly
+  into the persisted `TurnCard` (no double-render); choreography moved off the
+  detaching inline stream onto the SSE feed (it was previously reading a wire
+  shape that never arrived). Deferred live-token item closed.
 - 2026-08-16 — Feature created: list page (entity-list config + ivw RPC
   migration), room (transcript/document/questions panes, role strip, composer
   with summon + interrupt resume, stage advance), slice + realtime with

@@ -354,6 +354,7 @@ const activeRequestsSlice = createSlice({
         clientMetrics: null,
         routing: null,
         serverRequestId: null,
+        nodeStreams: {},
       };
 
       if (!state.byConversationId[conversationId]) {
@@ -1171,6 +1172,74 @@ const activeRequestsSlice = createSlice({
       request.isReasoningStreaming = false;
     },
 
+    // ── Workflow node streams (adopted workflow runs) ──────────
+    //
+    // Fed by `followWorkflowRunStream` from the run's SSE events feed —
+    // the ONLY producer of per-node live text for adopted workflow runs.
+    // The per-node twin of the collab child-stream pattern: attribution is
+    // explicit (`node_id` on every `node_stream` frame), accumulation is
+    // O(1) string append, ordering rides the server's per-node monotonic
+    // `stream_seq` (duplicate/reordered frames after an SSE reconnect drop).
+
+    appendWorkflowNodeStream(
+      state,
+      action: PayloadAction<{
+        requestId: string;
+        nodeId: string;
+        kind: string;
+        delta: string;
+        streamSeq: number;
+      }>,
+    ) {
+      const { requestId, nodeId, kind, delta, streamSeq } = action.payload;
+      const request = state.byRequestId[requestId];
+      if (!request) return;
+      const entry = (request.nodeStreams[nodeId] ??= {
+        nodeId,
+        text: "",
+        reasoningText: "",
+        phase: null,
+        lastStreamSeq: 0,
+        status: "streaming",
+      });
+      // stream_seq is per-node monotonic from 1; anything at or below the
+      // cursor is a duplicate (SSE reconnect replay) — drop silently.
+      if (streamSeq <= entry.lastStreamSeq) return;
+      entry.lastStreamSeq = streamSeq;
+      // New content after a settle means the node is running again (retry) —
+      // reopen rather than accumulate onto a "done" card invisibly.
+      entry.status = "streaming";
+      if (kind === "chunk") {
+        entry.text += delta;
+      } else if (kind === "reasoning") {
+        entry.reasoningText += delta;
+      } else if (kind === "phase" || kind === "tool") {
+        entry.phase = delta || null;
+      }
+      // Other kinds (warning / record_update / resource_changed) are refetch
+      // hints, not content — they only advance the seq cursor.
+    },
+
+    /**
+     * Mark a node's live stream terminal (node_completed / node_failed on the
+     * SSE feed, or the domain's persisted row arriving — e.g. the Vision
+     * Interview turn landing via Supabase realtime). Idempotent; a no-op for
+     * nodes that never streamed.
+     */
+    settleWorkflowNodeStream(
+      state,
+      action: PayloadAction<{
+        requestId: string;
+        nodeId: string;
+        status: "done" | "failed";
+      }>,
+    ) {
+      const request = state.byRequestId[action.payload.requestId];
+      const entry = request?.nodeStreams[action.payload.nodeId];
+      if (!entry) return;
+      entry.status = action.payload.status;
+    },
+
     // ── Client Metrics ─────────────────────────────────────────
 
     finalizeClientMetrics(
@@ -1334,6 +1403,7 @@ const activeRequestsSlice = createSlice({
           firstChunkAt: null,
           completedAt: row.completedAt,
           clientMetrics: null,
+          nodeStreams: {},
         };
         if (!existingIds.has(row.id)) {
           newIds.push(row.id);
@@ -1402,6 +1472,8 @@ export const {
   upsertReservation,
   appendTimeline,
   appendRawEvent,
+  appendWorkflowNodeStream,
+  settleWorkflowNodeStream,
   markTextStreamStart,
   closeTextRun,
   rewindContentToBoundary,

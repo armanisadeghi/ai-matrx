@@ -229,6 +229,15 @@ const visionInterviewSlice = createSlice({
       state.pendingInterrupt = action.payload;
     },
 
+    /** `run_resumed` on the events feed — the interrupt was answered
+     *  (possibly by an earlier client). Also converges the SSE backlog
+     *  replay: a stale `run_interrupted` replayed from history is cancelled
+     *  by the `run_resumed` that follows it in seq order. */
+    runResumed(state) {
+      state.runPhase = "running";
+      state.pendingInterrupt = null;
+    },
+
     runCompleted(state) {
       state.runPhase = "complete";
       state.activeSpeaker = null;
@@ -266,6 +275,7 @@ export const {
   nodeStarted,
   nodeCompleted,
   runInterrupted,
+  runResumed,
   runCompleted,
   runFailed,
   streamAdopted,

@@ -20,6 +20,7 @@ import type {
   TimelineEntry,
   RawStreamEvent,
   ReservationRecord,
+  WorkflowNodeStreamEntry,
 } from "@/features/agents/types/request.types";
 import type {
   Phase,
@@ -1400,6 +1401,29 @@ export const selectAgentCallChildStream = (requestId: string, callId: string) =>
       };
     },
   );
+
+/**
+ * Per-node live streams of an ADOPTED workflow run, in stable node-id order.
+ * The workflow twin of `selectAgentCallChildStream` — but attribution is
+ * explicit (`node_id` on every `node_stream` SSE frame), so no block-range
+ * walking is needed. Empty array for non-workflow requests.
+ */
+export const selectWorkflowNodeStreams = (requestId: string) =>
+  createSelector(
+    (state: RootState) => state.activeRequests.byRequestId[requestId]?.nodeStreams,
+    (streams): WorkflowNodeStreamEntry[] => {
+      if (!streams) return [];
+      return Object.values(streams).sort((a, b) =>
+        a.nodeId.localeCompare(b.nodeId),
+      );
+    },
+  );
+
+/** One node's live stream entry (undefined until its first frame lands). */
+export const selectWorkflowNodeStream =
+  (requestId: string, nodeId: string) =>
+  (state: RootState): WorkflowNodeStreamEntry | undefined =>
+    state.activeRequests.byRequestId[requestId]?.nodeStreams[nodeId];
 
 /** All persistence results. */
 export const selectPersistenceResults = (requestId: string) =>

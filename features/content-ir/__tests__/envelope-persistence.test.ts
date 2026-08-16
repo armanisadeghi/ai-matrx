@@ -90,6 +90,7 @@ function makeRequest(overrides: Partial<ActiveRequest>): ActiveRequest {
     clientMetrics: null,
     routing: null,
     serverRequestId: null,
+    nodeStreams: {},
     ...overrides,
   };
 }
