@@ -16,9 +16,28 @@ export function cmsSiteHref(cmsSiteId: string): string {
   return `/cms/${cmsSiteId}`;
 }
 
+/**
+ * `tab` deep-links straight into one of the editor's tabs — the editor reads
+ * `?tab=` on mount and writes it on every switch, so a door can open the Plan
+ * or Measure tab directly instead of dropping the user on Code.
+ */
+export type CmsPageEditorTabParam =
+  | "html"
+  | "css"
+  | "js"
+  | "code"
+  | "preview"
+  | "plan"
+  | "seo"
+  | "measure"
+  | "settings"
+  | "versions";
+
 export function cmsPageEditorHref(
   cmsSiteId: string,
   cmsPageId: string,
+  tab?: CmsPageEditorTabParam,
 ): string {
-  return `/cms/${cmsSiteId}/pages/${cmsPageId}`;
+  const base = `/cms/${cmsSiteId}/pages/${cmsPageId}`;
+  return tab ? `${base}?tab=${tab}` : base;
 }

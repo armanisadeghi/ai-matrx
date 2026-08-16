@@ -232,6 +232,11 @@ export function buildMarketingPageScope(input: {
    * CMS card's react-query cache entry), when the card has resolved.
    */
   cmsPush?: Record<string, unknown> | null;
+  /**
+   * The plan node behind this page (`readPlanContextFromCache` over the plan
+   * node's react-query entry) — the BEFORE. Null when nothing planned it.
+   */
+  planContext?: Record<string, unknown> | null;
   /** Backlink evidence bundle, when loaded. */
   backlinks?: Record<string, unknown> | null;
   /** Tasks associated with this page, when loaded. */
@@ -269,6 +274,7 @@ export function buildMarketingPageScope(input: {
     inboundLinks,
     outboundLinks,
     cmsPush,
+    planContext,
     backlinks,
     pageTasks,
     attachedItems,
@@ -625,6 +631,7 @@ export function buildMarketingPageScope(input: {
     link_plan: linkPlan,
     media_inventory: mediaInventory,
     cms_push: cmsPush ?? undefined,
+    plan_context: planContext ?? undefined,
     draft_content: draftContent || undefined,
     keyword_batch:
       keywordBatch && keywordBatch.length > 0 ? [...keywordBatch] : undefined,

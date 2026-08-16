@@ -604,6 +604,28 @@ plan node plus the FULL CMS row (the plan-wide overlay summary carries no
 content, and content LENGTH is the only way to tell an empty shell from an
 authored draft) — never stamped on a column.
 
+**And a planned page that IS real carries its AFTER.** The section under it —
+"What the live page is doing" (`NodeMeasureCard` + `hooks/useNodeMeasurement.ts`)
+— also always renders, per the before/during/after doctrine in
+`docs/handoffs/cms-page-hub.md`: the *during* surface may never forget where the
+page came from or where it went. It follows the SAME durable id join the CMS
+Measure tab uses — `plan.node` → `client_pages.plan_node_id` →
+`client_pages.web_page_id` → `web.page` — reading `web_page_id` off the full CMS
+row `useNodeReality` already fetched (no extra CMS read), then
+`usePageLocation` for the site + brand and `usePageWorkspace` for the numbers —
+the SAME query key the canonical workspace renders from, so the panel and the
+workspace can never disagree. Six measured values (clicks / impressions /
+average position 28d, page score with failing checks, open findings as a door,
+last captured) and, on demand, the whole canonical AFTER surface: **Open
+measurement** mounts `CmsPageMeasure` — i.e. `PageWorkspace` wholesale — in a
+`WindowPanel` beside the panel (lazy, in-gate), with new-tab doors to the page
+workspace and the CMS Measure tab. Nothing here re-implements a card
+(Inventory Law). Every absent-join state says which one it is and offers no fake
+CTA: unbuilt · unpublished · resolving · **live but not joined to a crawled page**
+· loading · read-failed (`InlineQueryError`, never "no data") · measured-but-not-in-GSC-yet.
+The measurement is also in the panel's copy-for-AI payload (`measurement`) and
+its human summary line.
+
 Three rules learned the hard way, all live-verified on datadestruction.com:
 
 - **Ancestors come along.** A deep URL is a real page tree on the CMS side, not
@@ -647,6 +669,32 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-15 — **The node panel no longer forgets what became of the page it
+  planned (cms-page-hub item 6, the AFTER half).** New section "What the live
+  page is doing": `components/NodeMeasureCard.tsx` + `hooks/useNodeMeasurement.ts`
+  follow the durable `plan_node_id → client_pages.web_page_id → web.page` join
+  (read off the CMS row `useNodeReality` already holds — no extra fetch) and
+  render the measured page's Search Console 28d totals, page score + failing
+  checks, open findings (a door) and last capture from `usePageWorkspace`, the
+  same read and query key the canonical `PageWorkspace` uses. **Open
+  measurement** mounts the canonical `CmsPageMeasure` (`PageWorkspace`
+  wholesale) in a lazy `WindowPanel` beside the panel; new-tab doors go to the
+  page workspace and the CMS Measure tab. No card is re-implemented (Inventory
+  Law), and each of the seven states — unbuilt / unpublished / resolving /
+  live-but-unjoined / loading / read-failed / measured — says exactly which one
+  it is with no fake CTA. The measurement joins the panel's copy-for-AI payload
+  and human summary. Verified in the browser against a live measured page
+  (score 93, 9 open findings, no GSC rows yet) and against an unbuilt node.
+- 2026-08-15 — **`PlanContextPanel` is THE plan-context view, shared by both
+  page surfaces.** `components/PlanContextPanel.tsx` (lifted verbatim out of
+  `features/cms/components/PagePlanTab.tsx`) renders a node's BEFORE — label,
+  route, status/type/priority badges, target keyword, the applied
+  `attributes.keyword_strategy` SEO plan, brief, planned search appearance, the
+  `NodeStepRail` — plus the "Open in plan workspace" door and per-section honest
+  empty states. Consumers: the CMS editor's Plan tab and the measured page's
+  workspace (`PagePlanContextCard`, which resolves the node through
+  `client_pages.web_page_id → plan_node_id`). Read-only by design; the ONE
+  editor for a plan node is still `NodePanel`.
 - 2026-08-15 — **Multi-lane AI runs now survive content-plan host remounts.**
   Generate, single/bulk deepen, all three server Setup passes, and every per-node brief writer
   register adopted requests in stable lane-scoped `runSets`. Their floating windows render the

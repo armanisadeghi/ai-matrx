@@ -143,6 +143,10 @@ import {
   type WorkspaceViewMode,
 } from "@/features/marketing/components/pages/WorkspaceViewToggle";
 import { PagePlanNoteCard } from "@/features/marketing/components/pages/cards/PagePlanNoteCard";
+import {
+  PagePlanContextCard,
+  readPlanContextFromCache,
+} from "@/features/marketing/components/pages/cards/PagePlanContextCard";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 
 // THE NAMING LAW: canonical labels for every declared surface value + group —
@@ -490,6 +494,18 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           cmsPushQueryKey(site.id, pageRouteKey(page.path)),
         );
         return facts ? summarizeCmsPushFacts(page, facts) : null;
+      })(),
+      // THE BEFORE, for agents: the plan node this page was realized from,
+      // resolved through the same push-lane cache entry. Trigger-time cache
+      // read — PagePlanContextCard owns both fetches.
+      planContext: (() => {
+        const facts = queryClient.getQueryData<CmsPushFacts>(
+          cmsPushQueryKey(site.id, pageRouteKey(page.path)),
+        );
+        return readPlanContextFromCache(
+          queryClient,
+          facts?.matched?.plan_node_id ?? null,
+        );
       })(),
       backlinks: (backlinks.data as unknown as Record<string, unknown>) ?? null,
       pageTasks: pageTasks as unknown as Record<string, unknown>[],
@@ -1266,6 +1282,15 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
               detail="Search, 28d"
             />
           </section>
+
+          {/* THE BEFORE (docs/handoffs/cms-page-hub.md item 6): a page realized
+              from a plan node is being measured against something — its brief,
+              target keyword, and keyword strategy. It sits ABOVE the split
+              because it belongs to neither lane: it is not the observed page
+              and not the editable plan, it is what the page was asked to be.
+              Renders in every view mode; says so honestly when nothing planned
+              this page. */}
+          <PagePlanContextCard page={page} site={site} />
 
           {/* Every paired row owns one compact disclosure in Studio. Nested
               card disclosures stay open there, so the two lanes can never be

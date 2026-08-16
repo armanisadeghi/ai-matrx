@@ -37,7 +37,10 @@ build plan this feature is part of (project P5).
   `history.replaceState` at the buffer grain (`html`/`css`/`js` while on Code), so any tab is
   deep-linkable and pre-fold `?tab=html|css|js` links land on the right buffer. **Plan**
   (`components/PagePlanTab.tsx`, `React.lazy` in-gate) is the page's BEFORE per
-  `docs/handoffs/cms-page-hub.md`: with `plan_node_id` set it reads the `plan.node` direct from
+  `docs/handoffs/cms-page-hub.md`. The plan context itself is the canonical
+  `features/marketing/content-plan/components/PlanContextPanel` (2026-08-15) — the SAME component
+  the measured page's workspace renders as ITS before; never fork a second one. With
+  `plan_node_id` set it reads the `plan.node` direct from
   Supabase and shows label/route, status, brief, target keyword, the **SEO plan** (the applied
   `attributes.keyword_strategy` — page role, secondary keywords, supported money routes, and the
   strategist's planned internal links with anchor text, each route rendered as a plan-node door

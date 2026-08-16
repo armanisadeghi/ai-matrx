@@ -501,6 +501,27 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-15 — Claude: **The page workspace shows its BEFORE — the plan the page
+  was built from** (`docs/handoffs/cms-page-hub.md` item 6). `PageWorkspace` mounts
+  the new `components/pages/cards/PagePlanContextCard.tsx` full-width above the
+  current/plan split (it belongs to neither lane): it resolves the plan node
+  through the EXISTING push-lane join — `useCmsPushFacts` → `resolvePushTarget`
+  (durable `client_pages.web_page_id`, route key as fallback) → the matched CMS
+  row's `plan_node_id` — sharing one react-query entry with Push to CMS and the
+  header's "Edit in CMS" door, so no second data path appears. The context itself
+  is the canonical `PlanContextPanel`, lifted out of the CMS editor's Plan tab so
+  both surfaces render ONE component (brief, target keyword, the applied
+  `keyword_strategy` SEO plan with plan-node doors per route, planned search
+  appearance, `NodeStepRail`, "Open in plan workspace"). Three honest empty states,
+  each with its door: site not CMS-linked, no CMS page serves this URL, and page
+  authored directly in the CMS (which deep-links the editor's Plan tab where the
+  real adopt lives — `cmsPageEditorHref` gained the optional `tab` argument, and
+  `PageEditor`'s hand-built `?tab=plan` string now goes through it). What the card
+  renders, agents get: the new declared `plan_context` surface value (group
+  `plan_origin`) is a trigger-time cache read, absent rather than invented when
+  nothing planned the page. Browser-verified against live data on both databases:
+  a datadestruction.com page whose 9-line brief now shows in the workspace, a
+  vasaro homepage resolving through `is_home_page`, plus both empty states.
 - 2026-08-15 — Codex: **The public robots.txt tester now answers the actual
   question.** One page URL and crawler produce an explainable allowed/blocked
   verdict, exact matched rule/line, linked live source and sitemaps, syntax

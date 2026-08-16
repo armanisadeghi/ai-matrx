@@ -27,6 +27,7 @@ import {
   type CmsPageAiIntent,
 } from "@/features/cms/components/CmsPageAiActionDialog";
 import { CmsPageService } from "@/features/cms/services/cmsService";
+import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
 import { CMS_PAGE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsPageContextMenuProps";
 import { createCmsPageExtraSections } from "@/features/cms/agent-context/cmsPageExtraSections";
 import {
@@ -1441,8 +1442,8 @@ export default function PageEditor({
             pages={pages}
             components={components}
             page={page}
-            editorHref={`/cms/${siteId}/pages/${page.id}`}
-            planHref={`/cms/${siteId}/pages/${page.id}?tab=plan`}
+            editorHref={cmsPageEditorHref(siteId, page.id)}
+            planHref={cmsPageEditorHref(siteId, page.id, "plan")}
             onPageChanged={onRefetchPage}
           />
         ) : null}

@@ -93,10 +93,29 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
    every tab switch writes `?tab=` via `history.replaceState` at the buffer grain, so tabs are
    deep-linkable both directions and legacy `?tab=html|css|js` links land on the right buffer.
    `CmsPageEditorTab` (agent scope) still speaks the buffer grain — no manifest change.
-6. **Before/during/after audit** — the three named gaps are CHIPPED 2026-08-15 (NodePanel
-   shows its AFTER for published nodes; PageWorkspace shows its BEFORE brief; NodeStepRail on
-   the Measure side). Beyond those, the system-wide sweep of every page-shaped edit/display
-   surface remains open.
+6. **Before/during/after audit** — **PageWorkspace's BEFORE is DONE 2026-08-15**: the measured
+   page now carries `PagePlanContextCard` (full-width above the current/plan split), resolving
+   the plan node through the existing push-lane join (`useCmsPushFacts` → `resolvePushTarget` →
+   the matched `client_pages.plan_node_id`, one shared react-query entry) and rendering the
+   canonical `PlanContextPanel` — the SAME component the Plan tab uses, lifted into
+   `features/marketing/content-plan/components/`. Three honest empty states with doors (no CMS
+   link / no CMS page for this URL / authored directly in the CMS → the editor's Plan tab, where
+   adopt lives). Also emitted to agents as the declared `plan_context` surface value.
+   Browser-verified against live data.
+   **NodePanel's AFTER is DONE 2026-08-15** too: the plan node panel's new "What the live page
+   is doing" section (`content-plan/components/NodeMeasureCard.tsx` +
+   `hooks/useNodeMeasurement.ts`) follows the same durable join the Measure tab uses
+   (`plan_node_id → client_pages.web_page_id → web.page`, read off the full CMS row
+   `useNodeReality` already fetched — no extra read), renders the measured numbers from
+   `usePageWorkspace` (the SAME read and query key `PageWorkspace` uses: GSC 28d clicks /
+   impressions / position, page score + failing checks, open findings as a door, last capture),
+   and opens the canonical `CmsPageMeasure` — `PageWorkspace` wholesale — in a lazy
+   `WindowPanel` beside the panel, with new-tab doors to the page workspace and the CMS Measure
+   tab. Nothing is re-implemented (Inventory Law), and each absent-join state is distinct and
+   honest with no fake CTA (unbuilt / unpublished / resolving / live-but-unjoined / loading /
+   read-failed / measured-but-not-in-GSC-yet). Browser-verified against a live measured page and
+   an unbuilt node. Still chipped: NodeStepRail on the Measure side. Beyond that, the
+   system-wide sweep of every page-shaped edit/display surface remains open.
 7. **Research tab (later).** When P2 research artifacts flow (`plan.node_artifact
    kind='research'`), the page's research distillation + cited sources join the Plan tab; a
    separate tab only if it grows an editor. Blocked on website-factory p3/p4/p5.

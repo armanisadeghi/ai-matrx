@@ -102,6 +102,13 @@ const groups: SurfaceValueGroup[] = [
     description:
       "Where the authored plan ships: the Plan → CMS bridge for this page's route.",
   },
+  {
+    key: "plan_origin",
+    label: "Plan origin",
+    sortOrder: 150,
+    description:
+      "The planning step that produced this page — the brief, target keyword, and site-wide keyword strategy it is measured against.",
+  },
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
@@ -781,6 +788,19 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 860,
     group: "publication",
   },
+
+  // ── Plan origin — the BEFORE (docs/handoffs/cms-page-hub.md item 6) ────
+  {
+    name: "plan_context",
+    label: "Plan behind this page",
+    description:
+      "The plan node this page was realized from, resolved through the CMS page that serves the URL (client_pages.web_page_id → plan_node_id): label, planned route, brief lines, planned meta title/description, primary keyword phrase, and the applied site-wide keyword_strategy (page role, supported money routes, planned internal links). Absent when the page was built directly in the CMS or no CMS page serves this URL — never infer a brief that isn't here.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 900,
+    sortOrder: 155,
+    group: "plan_origin",
+  },
 ];
 
 /**
@@ -968,6 +988,7 @@ The inherited brand_context and site_context values give you the client and webs
 You are on the Marketing page workspace: one canonical URL of a managed website, with the evidence of what it currently serves and the user's editorial intent for what it should become.
 Two kinds of values live here and must never be confused: OBSERVED values (observed_title, observed_description, observed_seo_metrics) are immutable crawl evidence of the live site; DESIRED values (desired_title, desired_description, desired_seo_metrics) are the user's editorial targets stored on the page. When asked to improve metadata, you propose DESIRED values — you never alter or invent observed evidence.
 Beyond metadata, the surface carries complete crawl evidence: page_identity (featured image, CMS/platform identifiers, author/dates), structured_data (all raw and normalized JSON-LD/microdata/RDFa/microformats), resources (the full declared asset inventory), images, and visual captures. Large raw evidence values remain explicitly bindable but are not auto-added to every agent context. It also carries analysis evidence (Page Analyzer keyword picture, page score, open findings + findings rows), performance evidence (Search Console metrics + the default-28d per-query breakdown in gsc_queries, target_performance — SERP rank + AI-answer citation evidence specifically for the target keyword, PageSpeed Insights, GA4, internal links, backlinks), and the user's AUTHORING layer: draft_content (the markdown body the page SHOULD have), desired_values (per-area desired state: social card, canonical/robots, heading-structure plan, image plan — each planned image also carries an optional style preset), the keyword_batch (library keywords attached to this page alongside the primary target_keyword), link_plan (the authored internal-link plan scored live against the observed edges), and page_tasks (work linked to this page). The cms_push value tells you where the authored plan ships: which CMS page this route resolves to and whether a push would update, create, or is blocked.
+When present, plan_context is the page's BEFORE — the plan node it was realized from, carrying the brief, planned meta, primary keyword, and the site-wide keyword strategy (page role, money routes it supports, planned internal links). Treat it as the standard this page is measured against: improvements should satisfy the brief, not replace it. Its absence means the page was built directly in the CMS — never invent a brief that isn't there.
 SEO metrics are deterministic (shared pixel-width table between browser and scraper): trust the provided pixel_width / ok flags instead of estimating lengths, and validate any candidate you generate with the seo tool before presenting it.
 </surface_intro>`,
   groups,
@@ -1088,6 +1109,7 @@ export function createMarketingPageScope(values: {
   link_plan?: Record<string, unknown>;
   media_inventory?: Record<string, unknown>;
   cms_push?: Record<string, unknown>;
+  plan_context?: Record<string, unknown>;
   draft_content?: string;
   keyword_batch?: Array<Record<string, unknown>>;
   image_plan?: Array<Record<string, unknown>>;
