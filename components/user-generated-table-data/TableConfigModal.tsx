@@ -18,6 +18,7 @@ import {
   type ValidationMode,
 } from "@/features/data-tables/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -617,9 +618,18 @@ export default function TableConfigModal({
           sideways inside its own box instead of the page. */}
       <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-[800px] max-h-[90dvh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex min-w-0 items-center gap-2">
             <Settings className="h-5 w-5" />
-            Configure Table: {tableInfo.table_name}
+            <span className="shrink-0">Configure Table:</span>
+            <EntityRef
+              token="dataset"
+              id={tableId}
+              name={tableInfo.table_name}
+              openInNewTab
+              alwaysShowActions
+              className="min-w-0"
+              labelClassName="truncate"
+            />
             {hasChanges && <span className="text-orange-500">*</span>}
           </DialogTitle>
         </DialogHeader>
@@ -679,8 +689,8 @@ export default function TableConfigModal({
                   >
                     <div className="flex items-center gap-2 px-3 py-2">
                       <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <div className="flex min-w-0 flex-1 items-end gap-3">
-                        <div className="min-w-0 flex-1">
+                      <div className="grid min-w-0 flex-1 grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap sm:gap-x-3 sm:gap-y-0">
+                        <div className="col-span-2 min-w-0 sm:col-span-1 sm:flex-1">
                           <div className="flex items-center gap-2">
                             <Input
                               value={field.display_name}
@@ -691,7 +701,7 @@ export default function TableConfigModal({
                                   e.target.value,
                                 )
                               }
-                              className="h-7 text-sm"
+                              className="h-10 text-base sm:h-7 sm:text-sm"
                             />
                           </div>
                           <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
@@ -713,7 +723,7 @@ export default function TableConfigModal({
                               handleFieldChange(field.id, "data_type", value)
                             }
                           >
-                            <SelectTrigger className="h-7 w-28 text-xs">
+                            <SelectTrigger className="h-10 w-full text-xs sm:h-7 sm:w-28">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -733,26 +743,24 @@ export default function TableConfigModal({
                           </Select>
                         </div>
 
-                        <div className="shrink-0">
-                          <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-muted-foreground">
-                            Shows as
-                          </span>
-                          <FieldFormatPicker
-                            triggerClassName="w-32"
-                            dataType={field.data_type}
-                            value={
-                              formatChanges[field.id] ??
-                              resolveFieldFormat(field.data_type, field.metadata)
-                            }
-                            onChange={(next) => {
-                              setFormatChanges((prev) => ({
-                                ...prev,
-                                [field.id]: next,
-                              }));
-                              setHasChanges(true);
-                            }}
-                          />
-                        </div>
+                        <FieldFormatPicker
+                          label="Shows as"
+                          layout="embedded"
+                          optionsClassName="order-last col-span-2 mt-1 w-full border-t border-border/60 pt-2 sm:mt-2 sm:basis-full"
+                          triggerClassName="h-10 w-full sm:h-7 sm:w-32"
+                          dataType={field.data_type}
+                          value={
+                            formatChanges[field.id] ??
+                            resolveFieldFormat(field.data_type, field.metadata)
+                          }
+                          onChange={(next) => {
+                            setFormatChanges((prev) => ({
+                              ...prev,
+                              [field.id]: next,
+                            }));
+                            setHasChanges(true);
+                          }}
+                        />
 
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1.5">
@@ -795,43 +803,44 @@ export default function TableConfigModal({
                           </div>
                         </div>
 
-                        {dataTypeChanges[field.id] && (
-                          <Badge
-                            variant="outline"
-                            className="shrink-0 text-amber-600 border-amber-400"
-                          >
-                            Will convert
-                          </Badge>
-                        )}
-
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleDeleteField(field);
-                          }}
-                          disabled={
-                            loading ||
-                            fields.length <= 1 ||
-                            deletingFieldId === field.id
-                          }
-                          title={
-                            fields.length <= 1
-                              ? "A table must keep at least one column"
-                              : `Remove ${field.display_name}`
-                          }
-                        >
-                          {deletingFieldId === field.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
+                        <div className="flex items-center justify-end gap-2">
+                          {dataTypeChanges[field.id] && (
+                            <Badge
+                              variant="outline"
+                              className="shrink-0 border-amber-400 text-amber-600"
+                            >
+                              Will convert
+                            </Badge>
                           )}
-                        </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 shrink-0 text-muted-foreground hover:text-destructive sm:h-7 sm:w-7"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleDeleteField(field);
+                            }}
+                            disabled={
+                              loading ||
+                              fields.length <= 1 ||
+                              deletingFieldId === field.id
+                            }
+                            title={
+                              fields.length <= 1
+                                ? "A table must keep at least one column"
+                                : `Remove ${field.display_name}`
+                            }
+                          >
+                            {deletingFieldId === field.id ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-3.5 w-3.5" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
-
                   </Card>
                   {/* Drop ghost at the very end of the list. */}
                   {draggedField &&

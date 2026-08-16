@@ -36,7 +36,15 @@ export type FieldFormatPickerProps = {
   onChange: (next: FieldFormatConfig) => void;
   /** Hide the options row (e.g. in a very tight header popover). */
   hideOptions?: boolean;
+  /**
+   * `embedded` lets the primary control and options participate directly in a
+   * parent flex/grid layout. The default keeps them stacked as one form field.
+   */
+  layout?: "stacked" | "embedded";
+  /** Optional caption for the primary format control. */
+  label?: string;
   className?: string;
+  optionsClassName?: string;
   triggerClassName?: string;
 };
 
@@ -59,7 +67,10 @@ export function FieldFormatPicker({
   value,
   onChange,
   hideOptions = false,
+  layout = "stacked",
+  label,
   className,
+  optionsClassName,
   triggerClassName,
 }: FieldFormatPickerProps) {
   const groups = groupedFormatsForBase(dataType);
@@ -79,54 +90,62 @@ export function FieldFormatPicker({
   };
 
   const optionKeys = def?.optionKeys ?? [];
+  const isEmbedded = layout === "embedded";
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <Select
-        value={activeId}
-        onValueChange={(id) => {
-          // Radix fires onValueChange("") when the currently-selected item
-          // leaves the list — which happens every time the storage type
-          // changes and the option set is rebuilt. Writing that "" back
-          // clobbered the format the caller had just set (pick Number as the
-          // type and the format silently became "", rendering as "Text").
-          // Only accept a real, known format id.
-          if (!getFieldFormat(id)) return;
-          onChange({ id: id as FieldFormatConfig["id"], options: {} });
-        }}
-      >
-        <SelectTrigger className={cn("h-7 text-xs", triggerClassName)}>
-          {/* A plain span, NOT <SelectValue>. Radix renders the trigger's text
-              by portaling it out of the matching <SelectItem>, which only
-              exists while the dropdown is open — so changing the storage type
-              (and with it the whole option list) left the trigger BLANK, and
-              the two-line label+description item body truncated to "Text…"
-              even when it did render. The label is ours to draw. */}
-          <span className="truncate">{def?.label ?? "Text"}</span>
-        </SelectTrigger>
-        <SelectContent>
-          {groups.map((group) => (
-            <SelectGroup key={group.group}>
-              <SelectLabel className="text-[11px] uppercase tracking-wide">
-                {group.group}
-              </SelectLabel>
-              {group.formats.map((f) => (
-                <SelectItem key={f.id} value={f.id}>
-                  <div>
-                    <div className="font-medium">{f.label}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {f.description}
+    <div className={cn(isEmbedded ? "contents" : "space-y-2", className)}>
+      <div className="min-w-0">
+        {label && (
+          <Label className="mb-0.5 block text-[10px] uppercase tracking-wide text-muted-foreground">
+            {label}
+          </Label>
+        )}
+        <Select
+          value={activeId}
+          onValueChange={(id) => {
+            // Radix fires onValueChange("") when the currently-selected item
+            // leaves the list — which happens every time the storage type
+            // changes and the option set is rebuilt. Writing that "" back
+            // clobbered the format the caller had just set (pick Number as the
+            // type and the format silently became "", rendering as "Text").
+            // Only accept a real, known format id.
+            if (!getFieldFormat(id)) return;
+            onChange({ id: id as FieldFormatConfig["id"], options: {} });
+          }}
+        >
+          <SelectTrigger className={cn("h-7 text-xs", triggerClassName)}>
+            {/* A plain span, NOT <SelectValue>. Radix renders the trigger's text
+                by portaling it out of the matching <SelectItem>, which only
+                exists while the dropdown is open — so changing the storage type
+                (and with it the whole option list) left the trigger BLANK, and
+                the two-line label+description item body truncated to "Text…"
+                even when it did render. The label is ours to draw. */}
+            <span className="truncate">{def?.label ?? "Text"}</span>
+          </SelectTrigger>
+          <SelectContent>
+            {groups.map((group) => (
+              <SelectGroup key={group.group}>
+                <SelectLabel className="text-[11px] uppercase tracking-wide">
+                  {group.group}
+                </SelectLabel>
+                {group.formats.map((f) => (
+                  <SelectItem key={f.id} value={f.id}>
+                    <div>
+                      <div className="font-medium">{f.label}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {f.description}
+                      </div>
                     </div>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          ))}
-        </SelectContent>
-      </Select>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {!hideOptions && optionKeys.length > 0 && (
-        <div className="flex flex-wrap items-end gap-2">
+        <div className={cn("flex flex-wrap items-end gap-2", optionsClassName)}>
           {optionKeys.includes("currency") && (
             <div className="w-28">
               <Label className="text-[11px] text-muted-foreground">
@@ -206,7 +225,7 @@ export function FieldFormatPicker({
                 type="number"
                 min={0}
                 max={10}
-                className="h-7 text-xs"
+                className="h-10 text-base sm:h-7 sm:text-xs"
                 value={options.precision ?? ""}
                 placeholder="auto"
                 onChange={(e) =>
@@ -221,12 +240,14 @@ export function FieldFormatPicker({
 
           {optionKeys.includes("ratingMax") && (
             <div className="w-20">
-              <Label className="text-[11px] text-muted-foreground">Out of</Label>
+              <Label className="text-[11px] text-muted-foreground">
+                Out of
+              </Label>
               <Input
                 type="number"
                 min={1}
                 max={10}
-                className="h-7 text-xs"
+                className="h-10 text-base sm:h-7 sm:text-xs"
                 value={options.ratingMax ?? 5}
                 onChange={(e) => setOption("ratingMax", Number(e.target.value))}
               />
@@ -256,9 +277,11 @@ export function FieldFormatPicker({
 
           {optionKeys.includes("prefix") && (
             <div className="w-24">
-              <Label className="text-[11px] text-muted-foreground">Prefix</Label>
+              <Label className="text-[11px] text-muted-foreground">
+                Prefix
+              </Label>
               <Input
-                className="h-7 text-xs"
+                className="h-10 text-base sm:h-7 sm:text-xs"
                 value={options.prefix ?? ""}
                 onChange={(e) => setOption("prefix", e.target.value)}
               />
@@ -267,9 +290,11 @@ export function FieldFormatPicker({
 
           {optionKeys.includes("suffix") && (
             <div className="w-24">
-              <Label className="text-[11px] text-muted-foreground">Suffix</Label>
+              <Label className="text-[11px] text-muted-foreground">
+                Suffix
+              </Label>
               <Input
-                className="h-7 text-xs"
+                className="h-10 text-base sm:h-7 sm:text-xs"
                 value={options.suffix ?? ""}
                 placeholder="e.g. kg"
                 onChange={(e) => setOption("suffix", e.target.value)}
