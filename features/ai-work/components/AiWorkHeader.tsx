@@ -1,6 +1,12 @@
 "use client";
 
-import { LayoutDashboard, MessagesSquare, Plug } from "lucide-react";
+import {
+  BookmarkCheck,
+  LayoutDashboard,
+  MessagesSquare,
+  Plug,
+  Sparkles,
+} from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 
@@ -12,9 +18,19 @@ const AI_WORK_NAV_ITEMS = [
     exact: true,
   },
   {
+    name: "Start work",
+    href: "/work/new",
+    icon: Sparkles,
+  },
+  {
     name: "Conversations",
     href: "/work/conversations",
     icon: MessagesSquare,
+  },
+  {
+    name: "Saved requests",
+    href: "/work/requests",
+    icon: BookmarkCheck,
   },
   {
     name: "Connections",

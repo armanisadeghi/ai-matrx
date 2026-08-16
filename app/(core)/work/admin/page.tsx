@@ -17,6 +17,22 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/work/new",
+      label: "Start work (composer)",
+      description:
+        "Eight-step progressive composer: destination, request, expert system, skills, context, home, timing, review. AI Matrx execution only; provider destinations are capability-gated.",
+      filePath: "app/(core)/work/new/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/work/requests",
+      label: "Saved requests",
+      description:
+        "The caller's own saved requests (agent.shortcut rows under the seeded AI Work category). Open reloads the composer; delete soft-deletes.",
+      filePath: "app/(core)/work/requests/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/work/conversations",
       label: "Provider conversation inbox",
       description:
@@ -53,7 +69,28 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
       name: "AiWorkHeader",
       filePath: "features/ai-work/components/AiWorkHeader.tsx",
       description:
-        "Shared responsive Overview / Conversations / Connections route switcher.",
+        "Shared responsive Overview / Start work / Conversations / Saved requests / Connections route switcher.",
+      tier: "internal",
+    },
+    {
+      name: "AiWorkComposer",
+      filePath: "features/ai-work/compose/components/AiWorkComposer.tsx",
+      description:
+        "The /work/new progressive form. Composes launchAgentExecution, RunSkillPicker, the resource picker, ContextLensBar, and UniversalAssociationPicker; floats the run in LiveRunWindow.",
+      tier: "internal",
+    },
+    {
+      name: "SavedRequestsList",
+      filePath: "features/ai-work/compose/components/SavedRequestsList.tsx",
+      description:
+        "Mine-scoped saved requests with open/run/delete doors and an honest empty state.",
+      tier: "internal",
+    },
+    {
+      name: "DestinationStep / HomeStep / ComposerSection",
+      filePath: "features/ai-work/compose/components/DestinationStep.tsx",
+      description:
+        "Composer step primitives. DestinationStep renders every destination with its real availability reason.",
       tier: "internal",
     },
     {

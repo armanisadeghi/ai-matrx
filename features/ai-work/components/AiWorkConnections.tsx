@@ -14,7 +14,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
-import { apiGet } from "@/lib/api/typed-client";
+import {
+  INITIAL_CAPABILITY,
+  readManagedCapability,
+  type ManagedCapability,
+} from "@/features/ai-work/lib/managedClaudeCapability";
 import {
   CODING_SESSION_PROVIDERS,
   CODING_SESSION_PROVIDER_META,
@@ -36,46 +40,6 @@ import {
  */
 const MATRX_LOCAL_DOWNLOAD_URL =
   "https://github.com/armanisadeghi/matrx-local/releases/latest";
-
-type ManagedCapability = {
-  state: "loading" | "ready" | "error";
-  available: boolean;
-  nativeResume: boolean;
-  nativeFork: boolean;
-  reason: string | null;
-};
-
-const INITIAL_CAPABILITY: ManagedCapability = {
-  state: "loading",
-  available: false,
-  nativeResume: false,
-  nativeFork: false,
-  reason: null,
-};
-
-async function readManagedCapability(): Promise<ManagedCapability> {
-  try {
-    const { data } = await apiGet("/coding-sessions/claude/capabilities");
-    return {
-      state: "ready",
-      available: data.available,
-      nativeResume: data.native_resume,
-      nativeFork: data.native_fork,
-      reason: data.reason ?? null,
-    };
-  } catch (capabilityError) {
-    return {
-      state: "error",
-      available: false,
-      nativeResume: false,
-      nativeFork: false,
-      reason:
-        capabilityError instanceof Error
-          ? capabilityError.message
-          : "Capability check failed",
-    };
-  }
-}
 
 interface AccountGroup {
   key: string;
