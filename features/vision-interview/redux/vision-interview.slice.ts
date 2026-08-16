@@ -167,6 +167,19 @@ const visionInterviewSlice = createSlice({
       state.holes[row.id] = row;
     },
 
+    /** Revert of a failed optimistic write — deliberately BYPASSES the
+     *  monotonic guard (the revert target is older than the optimistic row). */
+    questionForced(state, action: PayloadAction<InterviewQuestionRow>) {
+      if (action.payload.session_id !== state.sessionId) return;
+      state.questions[action.payload.id] = action.payload;
+    },
+
+    /** See questionForced. */
+    holeForced(state, action: PayloadAction<InterviewHoleRow>) {
+      if (action.payload.session_id !== state.sessionId) return;
+      state.holes[action.payload.id] = action.payload;
+    },
+
     sessionMerged(state, action: PayloadAction<InterviewSessionRow>) {
       const row = action.payload;
       if (row.id !== state.sessionId) return;
@@ -244,6 +257,8 @@ export const {
   turnMerged,
   questionMerged,
   holeMerged,
+  questionForced,
+  holeForced,
   sessionMerged,
   revisionsLoaded,
   runStarting,
