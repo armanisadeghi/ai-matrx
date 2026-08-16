@@ -41,6 +41,16 @@ from `interview.*`.
   composer arms; `run_resumed`; terminals) drive choreography, and the
   ephemeral typed `node_stream` token frames land in
   `activeRequests.nodeStreams` keyed by workflow node. Never hand-parsed.
+- **The SSE follower arms EXACTLY ONCE per run_id.** Re-arming a live
+  follower aborts its connection and replays the feed from seq 0 into the
+  choreography (PR #145 review). The FIRST adoption of a run owns the
+  `activeRequests` row for the run's whole life — later resume adoptions
+  mint inline rows the room deliberately ignores; the guarded
+  `startFollowing` re-arms only after the previous follower SETTLED
+  (terminal event / reconnects exhausted), and never on a failed resume.
+  `run_errored` is in the thunk's terminal set (pinned by
+  `workflow-node-stream.test.ts`, with the per-requestId selector-instance
+  cache of `selectWorkflowNodeStreams`).
 - **Room state** lives in `redux/vision-interview.slice.ts`
   (`state.visionInterview`): room rows + run choreography + the
   sessionId→requestId adoption map. Streaming content state stays in
@@ -83,6 +93,24 @@ from `interview.*`.
    `migrations/ivw_list_scoped.sql` (relevance-ranked search ported from the
    agx/trx scorer; scopes mine/orgs/shared/public; the config declares
    mine/orgs/shared).
+7. **The flow can never dead-end — the composer is ALIVE in every phase.**
+   Before a run: type/dictate an opening statement; Start appends it to the
+   session's `vision_statement` (`service.ts::appendVisionStatement` — human
+   content, the one session field beyond title the FE writes; the backend
+   seeds turn 0 from it on first start and it stays as durable context for
+   restarts). During a run: the textarea keeps accepting a draft, the status
+   line narrates the real state, and Send arms the moment `run_interrupted`
+   lands. `start`/`resume` return ACCEPTANCE (boolean) — a draft is cleared
+   only on an accepted request, so failures never eat the user's text; every
+   failure path lands in `runFailed`, which re-arms Start. Busy state is
+   per-button; nothing global locks.
+8. **One visual language for everyone in the room:** `RoleAvatar` (chart-token
+   accents on `ROLES[key].accent`, human = primary) is the ONE avatar disc —
+   presence strip, persisted turns, live cards, summon menu. Turns follow the
+   /chat message language (role turns plain, human turns primary-tinted
+   bubble, hover copy); the living document splits the Scribe's H2 sections
+   into an Accordion (string split on PERSISTED markdown — every body still
+   renders through `RichDocument`, never a hand parser).
 
 ## Doctrine (reuse-first)
 
@@ -91,7 +119,10 @@ Consumed, not rebuilt: entity-list shell + list-scope RPC template ·
 `selectWorkflowNodeStreams` · `RichDocument` · `BasicMarkdownContent` ·
 `readAllRows` · resizable-panels (`ClientGroup`/`Handle`) · `RouteHeader` /
 `PageHeader` · `ConfirmDialog` / `TextInputDialog` / `@/lib/toast` ·
-`uniqueChannelTopic` · per-schema DB helper pattern (`interviewDb`).
+`uniqueChannelTopic` · per-schema DB helper pattern (`interviewDb`) ·
+`ProTextarea` (composer body — built-in dictation mic, transcription append,
+overflow menu; the Scribe working-document precedent) · `Accordion`
+(document sections) · chart tokens for role accents.
 New primitives contributed to the execution system (generic, not
 interview-specific): `ActiveRequest.nodeStreams` +
 `appendWorkflowNodeStream`/`settleWorkflowNodeStream` +
@@ -118,6 +149,17 @@ per-node tokens the same way.
 
 ## Change log
 
+- 2026-08-16 — Room surface rebuilt to the /chat + Scribe bar (Arman's
+  rejection of v1): `RoleAvatar` presence language with chart-token role
+  accents (strip, turns, live cards, summon menu); turns in the canonical
+  conversation style (hover copy, human bubble); always-alive composer
+  (pre-start opening statement → `appendVisionStatement`, queued drafts
+  during runs, acceptance-gated clearing, per-button busy — no dead ends);
+  living document as collapsible H2 sections; questions/holes as a dense
+  instrument panel (sticky count headers, state rails, hover controls);
+  stage stepper in the header. PR #145 review fixes: follower armed once
+  per run_id, `run_errored` terminal, `selectWorkflowNodeStreams` factory
+  cache (+ regression tests).
 - 2026-08-16 — Live token streaming shipped end-to-end: `followWorkflowRunStream`
   follows the run's SSE events feed into `activeRequests.nodeStreams`;
   `TranscriptPane` renders per-role `LiveTurnCard`s that resolve seamlessly
