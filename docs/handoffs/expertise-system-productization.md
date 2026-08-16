@@ -120,10 +120,17 @@ inert); ⑤ file/PDF/audio lane + intake-aware empty states; ⑥ AccessGate + sh
 both pages (canEdit is owner-only; edit-level sharees read-only silently); ⑦ vocabulary
 polish + a door to the interview conversation from a rule's provenance; ⑧ coverage/progress
 strip on the pack header; ⑨ desks-page toast fires on ANY version bump while feedback panel
-open (false "drafts captured" on unrelated edits); ⑩ TryDeskBox run recovery after page
-refresh (the run survives server-side and lands in Recent runs, but the in-place stage view
-resets — persist last run_id and re-attach via `GET /runs/{run_id}`); ⑪ prefill the backtest
-candidate from a finished TryDeskBox run (prop exists, not yet wired).
+open (false "drafts captured" on unrelated edits).
+
+**Shipped 2026-08-16 (was ledger ⑩ ⑪):** TryDeskBox survives a refresh — the run id is kept
+per desk in sessionStorage and on mount the run row decides: still going → the new
+`attachWorkflowRun` primitive (execution-system) rejoins the SSE feed, which replays the node
+lifecycle so the stage list rebuilds; finished → the verdict shows directly. A finished run
+offers "Compare to the original" beside the verdict, prefilled with the desk's own output
+(owner-only, one compare entry per desk). `getDeskRunVerdict` now unwraps the editor node's
+JSON envelope, so both the "Corrected text" panel and the backtest candidate are prose.
+Browser-verified on the Strunk desk with a real run (refresh mid-run rejoined; verdict landed;
+dialog opened prefilled).
 
 Next, in order: ① the honest test — `arman-seo-method` with Arman (needs him; review-queue
 row filed with the walkthrough); ② the distillation→Engram interface (emit candidate task
@@ -131,8 +138,8 @@ classes + acceptance criteria alongside rules — spec: common-docs
 `inbox-from-arman-to-be-processed/engram-expert-distillation-runtime.md` §5).
 
 **Dispatched as chips (2026-08-16, may already be in flight — check before duplicating):**
-file/PDF/audio ingest lane (ledger ⑤); run re-attach + backtest prefill (⑩ ⑪); pack version
-snapshots + structured desk outputs (Phase 6). A chip session grooms this ledger when it lands.
+file/PDF/audio ingest lane (ledger ⑤); pack version snapshots + structured desk outputs
+(Phase 6). A chip session grooms this ledger when it lands.
 
 **In-place run verified end-to-end (2026-08-16):** two production runs through TryDeskBox;
 breadcrumbs show the full event flow to `run_completed`, ruling + corrected text render on the
