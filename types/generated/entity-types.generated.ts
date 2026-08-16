@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 380 active entity tokens. A token here is FK-valid for
+// 381 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -262,6 +262,7 @@ export type EntityTypeToken =
   | "scope_type"
   | "seo_ai_visibility_citation"
   | "seo_ai_visibility_claim"
+  | "seo_ai_visibility_panel"
   | "seo_ai_visibility_response"
   | "seo_ai_visibility_signal"
   | "seo_backlink"
@@ -606,6 +607,7 @@ export type ComponentEntityToken =
   | "sch_trigger"
   | "seo_ai_visibility_citation"
   | "seo_ai_visibility_claim"
+  | "seo_ai_visibility_panel"
   | "seo_ai_visibility_response"
   | "seo_ai_visibility_signal"
   | "seo_backlink"
@@ -902,6 +904,7 @@ export type ScopeableEntityToken =
   | "scope_type"
   | "seo_ai_visibility_citation"
   | "seo_ai_visibility_claim"
+  | "seo_ai_visibility_panel"
   | "seo_ai_visibility_response"
   | "seo_ai_visibility_signal"
   | "seo_backlink"
@@ -1326,6 +1329,7 @@ export const ENTITY_TYPE_METADATA = {
   "scope_type": { token: "scope_type", schema: "context", table: "scope_types", label: "Scope Type", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "slug", contentRole: "container", referenceCategory: null },
   "seo_ai_visibility_citation": { token: "seo_ai_visibility_citation", schema: "seo", table: "ai_visibility_citation", label: "AI Visibility Citation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_ai_visibility_claim": { token: "seo_ai_visibility_claim", schema: "seo", table: "ai_visibility_claim", label: "AI Visibility Claim", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_ai_visibility_panel": { token: "seo_ai_visibility_panel", schema: "seo", table: "ai_visibility_panel", label: "AI Visibility Panel", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_ai_visibility_response": { token: "seo_ai_visibility_response", schema: "seo", table: "ai_visibility_response", label: "AI Visibility Response", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_ai_visibility_signal": { token: "seo_ai_visibility_signal", schema: "seo", table: "ai_visibility_signal", label: "AI Visibility Signal", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_backlink": { token: "seo_backlink", schema: "seo", table: "backlink", label: "SEO Backlink", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1710,6 +1714,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "scope_type",
   "seo_ai_visibility_citation",
   "seo_ai_visibility_claim",
+  "seo_ai_visibility_panel",
   "seo_ai_visibility_response",
   "seo_ai_visibility_signal",
   "seo_backlink",
