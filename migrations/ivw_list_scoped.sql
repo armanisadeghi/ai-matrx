@@ -1,8 +1,8 @@
 -- ivw_list_scoped — /vision-interview as ONE scoped, paged, filterable list.
 --
--- NOT YET APPLIED: written by the frontend session; the orchestrator applies
--- it via the Supabase MCP + records it in public._schema_migrations
--- (source='matrx-frontend'). Idempotent (CREATE OR REPLACE throughout).
+-- APPLIED LIVE 2026-08-16 via the Supabase MCP; recorded in
+-- public._schema_migrations (source='matrx-frontend'). All three functions
+-- verified live. Idempotent (CREATE OR REPLACE throughout).
 --
 -- Consumer of the canonical entity-list system (template:
 -- migrations/trx_list_scoped.sql / agx_list_scoped_v3_all_columns.sql; rules:
@@ -17,10 +17,9 @@
 -- Depends on public.agx_escape_regex + public.agx_since_bucket (both live —
 -- shipped with agx_list_scoped_v3_all_columns.sql).
 --
--- ORCHESTRATOR NOTE: the Shared scope keys iam.permissions on
--- resource_type = 'interview_session'. Align this token with the
--- platform.shareable_resource_registry entry the backend registers for
--- interview.session before applying, if the registered token differs.
+-- The Shared scope keys iam.permissions on resource_type =
+-- 'interview_session' — matches the platform.entity_types token AND the
+-- platform.shareable_resource_registry row (registered 2026-08-16).
 
 -- ── Relevance: ported from agx/trx_search_score (tiers identical) ───────────
 CREATE OR REPLACE FUNCTION public.ivw_search_score(
