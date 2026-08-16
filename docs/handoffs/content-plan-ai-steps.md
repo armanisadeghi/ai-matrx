@@ -1,7 +1,7 @@
 ---
 status: active
 updated: 2026-08-16
-chips: [content_plan.review_queue.mobile_headings_pass, content_plan.planned_topics_unread, content_plan.setup_ai_untested_coercers]
+chips: [content_plan.planned_topics_unread, content_plan.setup_ai_untested_coercers]
 repos: [matrx-frontend, aidream]
 vision:
   - /Users/armanisadeghi/code/common-docs/systems/content-planning/FEATURE.md
@@ -121,25 +121,29 @@ research linking: start with the final report (the "Document"), user picks the t
 > keys in the frontmatter) — each opens its own evidence. Delete the chip when
 > you finish the item.
 
-1. **THE BLOCKER — 21 review-queue rows for this feature, 0 approved (12
-   `changes_requested`, 9 `pending`), and the 12 rejections are mostly ONE defect repeated.**
-   Counts re-read from `agent.review_queue` on 2026-08-15; the queue has grown by three
-   `pending` rows since 2026-08-13 and still has no approval on it. Across the 12 rejections:
-   **no semantic page heading (9)**, **mobile controls under
-   40–44px (7)**, **390px clipping / no mobile drill-down (7)**. Verified in code, not inferred
-   (re-run 2026-08-15, both counts unchanged):
-   the entire `features/marketing/content-plan/` tree contains **zero `<h1>`** (and the shell's
-   `PageHeader` supplies none — consumers pass their own, per
-   `features/shell/components/header/variants/USAGE.md`), and exactly **one** file in the whole
-   feature calls `useIsMobile()` (`ContentPlanWorkbench` — **Setup itself uses none**; its mobile
-   story is one CSS-stacked column below `md`, with per-control `h-9 md:h-7` touch fixes and
-   `text-base sm:text-sm` zoom guards). Fix the class once across the feature — list page,
-   workspace, Setup, node panel — then re-submit every row. Skills: `core-route-headers`,
-   `ios-mobile-first`. Two rows are blocked on something else and need a
-   fixture, not code: `8e2e600c` and `f5ecb011` cannot be reviewed because the supplied site has
-   no CMS counterpart, so "Make it real" rungs 2–5 are uninspectable without mutating
-   production — **supply a stable, already-linked review site**. One (`fbf59d2a`) just needs its
-   URL corrected to the current canonical skills route.
+1. ~~**THE BLOCKER — 21 review-queue rows, 0 approved, 12 rejections that were mostly ONE
+   defect repeated.**~~ **DONE 2026-08-16 — fixed as a class and all 12 re-submitted; the
+   queue now holds 21 `pending` rows and 0 `changes_requested`.** The three counted defects
+   (no semantic heading 9, controls under 40–44px 7, 390px clipping 7) were fixed feature-wide
+   rather than screen by screen, and the two missing primitives were BUILT rather than worked
+   around: **`.matrx-touch-targets`** (`app/globals.css`), a subtree 44px floor applying only
+   under `pointer: coarse`, so a newly added file cannot re-break the rule the way ~120
+   per-control edits would; and **`MatrxColumnDef.mobileHidden`**, which lets any table declare
+   an intentional mobile column set (hides the cell, never the data). The workspace header is
+   now the canonical `EntityModeHeader`, and Setup's three columns become work-order-as-main
+   plus two `MobilePanelShell` drawers on a phone. **Measured at 390px across all six views:
+   0 controls under 44px**, inputs at 16px, no horizontal overflow; desktop re-verified
+   unchanged at 1280. The two fixture-blocked rows (`8e2e600c`, `f5ecb011`) now point at
+   Cosmetic Injectables Medspa (`baa61391…`), which carries an explicit `settings.cms.site_id`
+   link, and all five "Make it real" rungs were confirmed inspectable there through the two
+   read-only paths ("Compare plan to CMS", "See what would go live"); `fbf59d2a` now carries
+   the canonical `/administration/agents/skills?open=…` deep link, opened and confirmed.
+   Full detail: `features/marketing/content-plan/FEATURE.md` change log.
+   **One sub-item is deliberately NOT claimed done:** `db624810` also wanted a paired seeded
+   plan demonstrating both the draft and published CMS badge states. Every CMS-linked site
+   currently has 0 pages built, and the CMS is a separate Supabase project this session cannot
+   write to, so no such fixture could be seeded; that row says so explicitly instead of
+   over-claiming. Whoever picks it up needs CMS-project write access.
 2. ~~**The page-template library is built but never seeded.**~~ **DONE 2026-08-16** — aidream
    migration `0371_seed_page_template_library.sql` (applied live) seeded the 17
    `BUILTIN_TEMPLATES` onto `plan.profile.template_map.templates`, so the option can now be
