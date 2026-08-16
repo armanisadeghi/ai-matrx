@@ -24,6 +24,11 @@ import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MediaChaptersBlock from "../../blocks/media-chapters/MediaChaptersBlock";
 import SeoPackageBlock from "../../blocks/seo-package/SeoPackageBlock";
+import PlanPageResearchBlock from "../../blocks/page-pipeline/PlanPageResearchBlock";
+import PlanPageOutlineBlock from "../../blocks/page-pipeline/PlanPageOutlineBlock";
+import PlanPageDraftBlock from "../../blocks/page-pipeline/PlanPageDraftBlock";
+import PlanPageReviewBlock from "../../blocks/page-pipeline/PlanPageReviewBlock";
+import CmsPageBuildBlock from "../../blocks/page-pipeline/CmsPageBuildBlock";
 import MultipleChoiceQuiz from "../../blocks/quiz/MultipleChoiceQuiz";
 import Slideshow from "../../blocks/presentations/Slideshow";
 import RecipeViewer from "../../blocks/cooking-recipes/cookingRecipeDisplay";
@@ -263,6 +268,41 @@ export const BlockComponents = {
   PageBriefBlock: (props: React.ComponentProps<typeof PageBriefBlock>) => (
     <LazyBlockWrapper>
       <PageBriefBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  PlanPageResearchBlock: (
+    props: React.ComponentProps<typeof PlanPageResearchBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <PlanPageResearchBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  PlanPageOutlineBlock: (
+    props: React.ComponentProps<typeof PlanPageOutlineBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <PlanPageOutlineBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  PlanPageDraftBlock: (
+    props: React.ComponentProps<typeof PlanPageDraftBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <PlanPageDraftBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  PlanPageReviewBlock: (
+    props: React.ComponentProps<typeof PlanPageReviewBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <PlanPageReviewBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  CmsPageBuildBlock: (
+    props: React.ComponentProps<typeof CmsPageBuildBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <CmsPageBuildBlock {...props} />
     </LazyBlockWrapper>
   ),
   EpisodeTitleOptionsBlock: (

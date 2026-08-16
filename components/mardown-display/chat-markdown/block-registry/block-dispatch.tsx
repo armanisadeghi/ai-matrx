@@ -273,6 +273,13 @@ export function isBlockLoading(block: {
  *    tag/fence surface); never emitted upstream. STREAMING bridge: the title
  *    lands with its character budget already measured, and `faq` is an array
  *    of a child kind, so questions appear one at a time.
+ *  - `plan_page_research` / `plan_page_outline` / `plan_page_draft` /
+ *    `plan_page_review` / `cms_page_build` — the Website Factory's per-page
+ *    pipeline steps, produced ONLY by `applyIrKindRoute`'s compiled-bridge
+ *    flips for those registered kinds (`__kind` JSON arrival only — no
+ *    tag/fence surface); never emitted upstream. STREAMING bridges: each
+ *    carries at least one child-kind array (sections / issues / sources /
+ *    planned links), so rows appear one at a time.
  */
 export type FeSynthesizedBlockType =
   | "media_block"
@@ -284,6 +291,11 @@ export type FeSynthesizedBlockType =
   | "media_chapters"
   | "episode_title_options"
   | "seo_package"
+  | "plan_page_research"
+  | "plan_page_outline"
+  | "plan_page_draft"
+  | "plan_page_review"
+  | "cms_page_build"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
 
@@ -362,6 +374,11 @@ export type ShapeBlockType =
   | "media_chapters"
   | "episode_title_options"
   | "seo_package"
+  | "plan_page_research"
+  | "plan_page_outline"
+  | "plan_page_draft"
+  | "plan_page_review"
+  | "cms_page_build"
   | "chart"
   | "map"
   | "stats"
@@ -1455,6 +1472,114 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.SeoPackageBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (Website Factory per-page pipeline): STREAMING bridges, same
+  // contract as the block above — each step's sections / issues / sources
+  // appear as they parse, and a partially arrived step is readable, never JSON.
+  plan_page_research: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.PlanPageResearchBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  plan_page_outline: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.PlanPageOutlineBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  plan_page_draft: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.PlanPageDraftBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  plan_page_review: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.PlanPageReviewBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  cms_page_build: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.CmsPageBuildBlock
           key={index}
           serverData={block.serverData}
         />

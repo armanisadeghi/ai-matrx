@@ -74,6 +74,11 @@ import { PAGE_BRIEF_KIND_DEFINITIONS } from "../kinds/page-brief";
 import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-options";
 import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
 import { SEO_PACKAGE_KIND_DEFINITIONS } from "../kinds/seo-package";
+import { PLAN_PAGE_RESEARCH_KIND_DEFINITIONS } from "../kinds/plan-page-research";
+import { PLAN_PAGE_OUTLINE_KIND_DEFINITIONS } from "../kinds/plan-page-outline";
+import { PLAN_PAGE_DRAFT_KIND_DEFINITIONS } from "../kinds/plan-page-draft";
+import { PLAN_PAGE_REVIEW_KIND_DEFINITIONS } from "../kinds/plan-page-review";
+import { CMS_PAGE_BUILD_KIND_DEFINITIONS } from "../kinds/cms-page-build";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
@@ -99,6 +104,14 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS,
   ...MEDIA_CHAPTERS_KIND_DEFINITIONS,
   ...SEO_PACKAGE_KIND_DEFINITIONS,
+  // Website Factory per-page pipeline (`plan.node_artifact`, one kind per
+  // step): research → family placement → draft → review → build. Every one is
+  // persisted by aidream, which is the ONE writer; these render it.
+  ...PLAN_PAGE_RESEARCH_KIND_DEFINITIONS,
+  ...PLAN_PAGE_OUTLINE_KIND_DEFINITIONS,
+  ...PLAN_PAGE_DRAFT_KIND_DEFINITIONS,
+  ...PLAN_PAGE_REVIEW_KIND_DEFINITIONS,
+  ...CMS_PAGE_BUILD_KIND_DEFINITIONS,
   {
     kind: "flashcard_set",
     schemaSource: "system",
