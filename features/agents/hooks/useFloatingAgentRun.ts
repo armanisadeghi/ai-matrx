@@ -18,6 +18,13 @@
  * - `useFloatingRunWindow()` — for a run launched somewhere else (a thunk or
  *   lane taking `onConversationCreated` / `onRequestId`). `start(label)` opens
  *   the window and hands back the binder to pass into the launch.
+ * - `useFloatingRunWindow({ track })` — the same window for a run whose state
+ *   already lives in React (a launcher hook the surface only OBSERVES). The
+ *   window follows `track.running`, and `track.visible` is the gate: while the
+ *   run's own pane is on screen the float is suppressed, because the pane
+ *   already renders it and a second copy is noise. Off screen — a tab pill, a
+ *   collapsed section, a pane the host hid — it floats, so no pass is ever
+ *   represented by a spinner. Omit `visible` for an ungated float.
  *
  * When NOT to use these: a surface whose entire screen at that moment IS the
  * wait (a full-screen "preparing your session…" state) renders `LiveRunDisplay`
@@ -36,6 +43,26 @@ import {
 } from "@/features/agents/hooks/useLiveAgentRun";
 import { useLiveRunHandle } from "@/features/agents/hooks/useLiveRunHandle";
 
+/**
+ * A run this hook only WATCHES — launched and owned elsewhere, its state read
+ * straight out of React. Pass it as `track` and the window follows it; there is
+ * nothing to call.
+ */
+export interface FloatingRunTrackState {
+  /** True while the run is in flight. False closes the window. */
+  running: boolean;
+  conversationId?: string | null;
+  requestId?: string | null;
+  /** What the user is watching, e.g. "Cleaning up · Legal Editor". */
+  label?: string | null;
+  /**
+   * THE VISIBILITY GATE. True when the run's own pane is on screen: the float
+   * is suppressed, because that pane is the better home and a floating copy of
+   * what is already rendered is noise. Omit to float whenever running.
+   */
+  visible?: boolean;
+}
+
 export interface FloatingRunWindowOptions {
   /**
    * Stable window identity. Defaults to one window per hook instance, reused
@@ -52,6 +79,11 @@ export interface FloatingRunWindowOptions {
    * thunk-launched run kept alive with `keepInstance: true`.
    */
   owns?: boolean;
+  /**
+   * Follow a run launched elsewhere instead of calling `start()`. One hook
+   * instance does one or the other, never both — they share the window handle.
+   */
+  track?: FloatingRunTrackState;
 }
 
 /** The binder for one launched run — hand these to the launcher's callbacks. */
@@ -74,7 +106,7 @@ export interface UseFloatingRunWindow {
 export function useFloatingRunWindow(
   options: FloatingRunWindowOptions = {},
 ): UseFloatingRunWindow {
-  const { instanceId, width, height, owns = true } = options;
+  const { instanceId, width, height, owns = true, track } = options;
   const openWindow = useOpenLiveRunWindow();
   const run = useLiveRunHandle();
   // Default identity: ONE window per hook instance, stable for its lifetime, so
@@ -97,6 +129,51 @@ export function useFloatingRunWindow(
     handleRef.current = null;
     if (owns) run.release();
   };
+
+  // Tracked mode: the window is a pure function of the watched run's state.
+  // Nothing here claims or releases the conversation instance — a tracked run
+  // is owned by whoever launched it, and this hook only puts a screen on it.
+  const trackRunning = track?.running ?? false;
+  const trackVisible = track?.visible ?? false;
+  const trackConversationId = track?.conversationId ?? null;
+  const trackRequestId = track?.requestId ?? null;
+  const trackLabel = track?.label ?? null;
+  const tracking = track !== undefined;
+  useEffect(() => {
+    if (!tracking) return;
+    // Not running, or its own pane is on screen → the float has no job.
+    if (!trackRunning || trackVisible) {
+      handleRef.current?.close();
+      handleRef.current = null;
+      return;
+    }
+    const patch = {
+      conversationId: trackConversationId,
+      requestId: trackRequestId,
+      label: trackLabel,
+      // Launched, but no stream handle has landed to bind yet.
+      pending: !trackConversationId && !trackRequestId,
+    };
+    if (handleRef.current) handleRef.current.update(patch);
+    else
+      handleRef.current = openWindow({
+        ...patch,
+        instanceId: windowId,
+        width,
+        height,
+      });
+  }, [
+    tracking,
+    trackRunning,
+    trackVisible,
+    trackConversationId,
+    trackRequestId,
+    trackLabel,
+    openWindow,
+    windowId,
+    width,
+    height,
+  ]);
 
   const start = (label: string): FloatingRun => {
     // The previous run's instance makes way for this one; the window itself is

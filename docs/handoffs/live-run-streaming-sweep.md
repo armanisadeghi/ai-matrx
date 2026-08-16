@@ -39,7 +39,9 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
 ## Resources
 
 - Primitives: **`useFloatingAgentRun` / `useFloatingRunWindow` (start here —
-  they ARE the recipe), `useLiveRunHandle` + `livePosture()` for a
+  they ARE the recipe; `useFloatingRunWindow({ track })` covers a run the
+  surface only WATCHES, with `track.visible` suppressing the float while the
+  run's own pane is on screen), `useLiveRunHandle` + `livePosture()` for a
   thunk-launched run**, and underneath them `useLiveAgentRun`,
   `<LiveRunDisplay>`, `adoptForeignStream`, `useOpenLiveRunWindow()`.
   Recipe + traps: `live-stream-everywhere.md`.
@@ -163,12 +165,6 @@ carry no agent-run import at all. That is the signature to search on next time.
 - **A refresh still kills a cleanup pass.** `useAiPostProcess` holds its
   conversationId in local state; reload mid-run and the output is lost (the
   persist happens client-side on completion). Class D, unchanged by this pass.
-- **Consolidation candidate:** a parallel session landed
-  `features/agents/hooks/useFloatingAgentRun.ts` (`useFloatingRunWindow`) — a
-  *launch-time* float primitive. CleanupPad needed a *visibility-gated* float
-  (float only while the run's own pane is off screen), which that hook does not
-  express, so it carries a local `syncFloatingRun`. Fold one into the other once
-  both are committed.
 
 ## Remaining work — ranked by pain × reach
 

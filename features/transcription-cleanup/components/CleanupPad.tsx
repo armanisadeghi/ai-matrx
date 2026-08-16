@@ -91,9 +91,9 @@ import { ContentActionBar } from "@/components/content-actions/ContentActionBar"
 import { FilesTapButton } from "@/components/icons/tap-buttons";
 import { useOpenDiffViewerWindow } from "@/features/overlays/openers/diffViewerWindow";
 import {
-  useOpenLiveRunWindow,
-  type LiveRunWindowHandle,
-} from "@/features/overlays/openers/liveRunWindow";
+  useFloatingRunWindow,
+  type FloatingRunTrackState,
+} from "@/features/agents/hooks/useFloatingAgentRun";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -1386,97 +1386,51 @@ export default function CleanupPad({
   // window rather than stacking), bound to the run's conversationId so the
   // canonical pipeline renders it. Switching to a pass's own tab closes its
   // window — the pane is the better home when it's actually on screen.
-  const openLiveRunWindow = useOpenLiveRunWindow();
-  const runWindowsRef = useRef<Record<string, LiveRunWindowHandle>>({});
-  useEffect(
-    () => () => {
-      for (const handle of Object.values(runWindowsRef.current)) handle.close();
-      runWindowsRef.current = {};
-    },
-    [],
-  );
+  // The canonical primitive expresses exactly this: `track` follows a run the
+  // surface only watches, and `track.visible` is the gate. One hook instance
+  // per pass (hooks can't be dynamic — same fixed pool as `slotAi0..2`), each
+  // with a stable instanceId so a re-run rebinds its window instead of
+  // stacking. `owns: false` — every one of these runs is owned by its
+  // `useAiPostProcess`, and the window must never tear that instance down.
+  const slotTrack = (idx: number): FloatingRunTrackState => {
+    const slot = slots[idx];
+    const ai = slotAis[idx];
+    const name = slot?.agentId ? agentNames[slot.agentId] : null;
+    return {
+      running: Boolean(slot && ai?.isBusy),
+      conversationId: ai?.conversationId ?? null,
+      label: name ?? slot?.label ?? `Slot ${idx + 1}`,
+      // A slot's pane is on screen only when the Custom section is revealed
+      // AND that slot is the selected tab.
+      visible: showCustom && idx === activeSlotIdx,
+    };
+  };
 
-  /** Float `key`'s run when it is running out of sight; close it otherwise. */
-  const syncFloatingRun = useCallback(
-    (
-      key: string,
-      opts: {
-        visible: boolean;
-        running: boolean;
-        conversationId: string | null;
-        label: string;
-      },
-    ) => {
-      const open = runWindowsRef.current[key];
-      if (opts.visible || !opts.running) {
-        if (open) {
-          open.close();
-          delete runWindowsRef.current[key];
-        }
-        return;
-      }
-      const patch = {
-        conversationId: opts.conversationId,
-        label: opts.label,
-        pending: !opts.conversationId,
-      };
-      if (open) open.update(patch);
-      else {
-        runWindowsRef.current[key] = openLiveRunWindow({
-          ...patch,
-          instanceId: `cleanup-run-${INSTANCE_ID}-${key}`,
-        });
-      }
-    },
-    [openLiveRunWindow, INSTANCE_ID],
-  );
-
-  useEffect(() => {
-    syncFloatingRun("clean", {
-      visible: showClean,
+  useFloatingRunWindow({
+    instanceId: `cleanup-run-${INSTANCE_ID}-clean`,
+    owns: false,
+    track: {
       running: cleanAi.isBusy,
       conversationId: cleanAi.conversationId,
       label: `Cleaning up${cleanAgentId && agentNames[cleanAgentId] ? ` · ${agentNames[cleanAgentId]}` : ""}`,
-    });
-  }, [
-    syncFloatingRun,
-    showClean,
-    cleanAi.isBusy,
-    cleanAi.conversationId,
-    cleanAgentId,
-    agentNames,
-  ]);
-
-  useEffect(() => {
-    slots.forEach((slot, idx) => {
-      const ai = slotAis[idx];
-      if (!ai) return;
-      const name = slot.agentId ? agentNames[slot.agentId] : null;
-      syncFloatingRun(slot.id, {
-        // A slot's pane is on screen only when the Custom section is revealed
-        // AND that slot is the selected tab.
-        visible: showCustom && idx === activeSlotIdx,
-        running: ai.isBusy,
-        conversationId: ai.conversationId,
-        label: name ?? slot.label ?? `Slot ${idx + 1}`,
-      });
-    });
-    // slotAis identities are stable per render position; the phase/conversation
-    // dependencies below are what actually change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    syncFloatingRun,
-    slots,
-    agentNames,
-    showCustom,
-    activeSlotIdx,
-    slotAi0.isBusy,
-    slotAi0.conversationId,
-    slotAi1.isBusy,
-    slotAi1.conversationId,
-    slotAi2.isBusy,
-    slotAi2.conversationId,
-  ]);
+      visible: showClean,
+    },
+  });
+  useFloatingRunWindow({
+    instanceId: `cleanup-run-${INSTANCE_ID}-slot-0`,
+    owns: false,
+    track: slotTrack(0),
+  });
+  useFloatingRunWindow({
+    instanceId: `cleanup-run-${INSTANCE_ID}-slot-1`,
+    owns: false,
+    track: slotTrack(1),
+  });
+  useFloatingRunWindow({
+    instanceId: `cleanup-run-${INSTANCE_ID}-slot-2`,
+    owns: false,
+    track: slotTrack(2),
+  });
 
   // ── Mic ────────────────────────────────────────────────────────────────────
   const clearPendingInserts = useCallback(() => {
