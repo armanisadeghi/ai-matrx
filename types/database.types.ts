@@ -9584,6 +9584,19 @@ export type Database = {
           task_notifications: boolean
         }[]
       }
+      consume_voice_agent_session_reference: {
+        Args: {
+          p_provider: string
+          p_provider_account_id: string
+          p_provider_call_id: string
+          p_provider_session_id: string
+          p_reference_sha256: string
+        }
+        Returns: {
+          binding: Json
+          launch_facts: Json
+        }[]
+      }
       disconnect_my_sms_assistant: {
         Args: { p_program_key: string }
         Returns: {
@@ -9713,6 +9726,28 @@ export type Database = {
       has_exact_sms_task_done_offer: {
         Args: { p_inbound_message_id: string }
         Returns: boolean
+      }
+      issue_voice_agent_session_reference: {
+        Args: {
+          p_agent_version_id: string
+          p_chat_conversation_id: string
+          p_consent_event_id: number
+          p_definition_agent_id: string
+          p_expires_at: string
+          p_interaction_id: string
+          p_reference_sha256: string
+          p_session_id: string
+          p_slot_config_overrides?: Json
+          p_slot_id: string
+          p_slot_key: string
+          p_slot_provenance: string
+          p_transport?: string
+        }
+        Returns: {
+          event_id: number
+          expires_at: string
+          session_id: string
+        }[]
       }
       register_voice_call_interaction: {
         Args: {
