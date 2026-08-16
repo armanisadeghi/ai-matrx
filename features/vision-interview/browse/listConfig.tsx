@@ -25,10 +25,11 @@ import {
 export const sessionListConfig: EntityListConfig<SessionListRow> = {
   surfaceKey: "vision-interview-browse",
   entityLabel: { singular: "interview", plural: "interviews" },
-  // The room runs on the workflow engine; "workflow" is the registered
-  // SourceFeature (FEATURE_META) closest to it. A dedicated
-  // "vision-interview" key is a follow-up that spans the source registry.
-  sourceFeature: "workflow",
+  // "agents-other" — registered in FEATURE_META (registration, not the type
+  // union, is the gate; see the agents listConfig note). A dedicated
+  // "vision-interview" key is a follow-up that spans the backend source union
+  // and the FE source registry together.
+  sourceFeature: "agents-other",
   scopes: SESSION_LIST_SCOPES,
   service: {
     fetchPage: fetchSessionPage,

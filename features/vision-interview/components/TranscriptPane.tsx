@@ -3,9 +3,14 @@
 // features/vision-interview/components/TranscriptPane.tsx
 //
 // The room's left pane: the full shared transcript (interview.turn rows via
-// Supabase realtime — turns land on node completion, not from stream tokens;
-// live token rendering is a documented v1 deferral, see ../FEATURE.md), the
-// role strip, and the human composer at the bottom.
+// Supabase realtime — turns land on node completion, not from stream tokens),
+// the role strip, and the human composer at the bottom.
+//
+// TODO(v1 deferral — see ../FEATURE.md § Deferred): live token rendering.
+// The run stream IS adopted into activeRequests (useInterviewRun), so the
+// canonical render path exists; rendering per-node live tokens in this pane
+// awaits content-ir adoption for workflow node streams. Do NOT bridge the gap
+// with a hand-rolled chunk renderer — that path is banned.
 
 import { useEffect, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";

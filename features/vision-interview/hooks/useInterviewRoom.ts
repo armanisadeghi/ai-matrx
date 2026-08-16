@@ -76,7 +76,7 @@ export function useInterviewRoom(sessionId: string) {
       } catch (err) {
         if (disposed) return;
         captureError({
-          source: "vision-interview-hydrate",
+          source: "supabase-exception",
           message: `[vision-interview] room hydration failed for ${sessionId}: ${
             err instanceof Error ? err.message : String(err)
           }`,
