@@ -1,0 +1,47 @@
+/**
+ * features/review-walk/types.ts
+ *
+ * Every wire shape is DERIVED from the generated OpenAPI contract
+ * (`types/python-generated/api-types.ts`) — never hand-mirrored. When the
+ * backend's `aidream/services/review_descend/types.py` changes and
+ * `pnpm sync-types` regenerates, every drifted consumer here lights up red.
+ */
+import type { components } from "@/types/python-generated/api-types";
+
+export type DescendOut = components["schemas"]["DescendOut"];
+export type DescendUnit = components["schemas"]["DescendUnit"];
+export type DescendProducer = components["schemas"]["DescendProducer"];
+export type DescendInput = components["schemas"]["DescendInput"];
+export type DescendRef = components["schemas"]["DescendRef"];
+export type ProducerRef = components["schemas"]["ProducerRef"];
+export type WalkHop = components["schemas"]["WalkHop"];
+export type FindingFromWalkRequest =
+  components["schemas"]["FindingFromWalkRequest"];
+export type FindingFromWalkOut = components["schemas"]["FindingFromWalkOut"];
+
+/** Unit kinds the walk can descend into today (wf_node_outcome is declared
+ * server-side but returns 422 until S1 per-step capture lands). */
+export type WalkUnitKind = "assistant_message" | "agent_request";
+
+export type WalkLever = NonNullable<FindingFromWalkRequest["lever"]>;
+
+/** One layer of the walk as held in window state. */
+export interface WalkLayer {
+  unitKind: WalkUnitKind;
+  unitId: string;
+  status: "loading" | "loaded" | "error";
+  out: DescendOut | null;
+  /** HTTP status of a failed descend (404 uncapturable, 422 not-yet-walkable). */
+  errorStatus: number | null;
+  /** Human-readable server explanation of why descent stopped. */
+  errorDetail: string | null;
+}
+
+/** One recorded human answer; index in the array IS the hop number. */
+export interface RecordedHop {
+  unitKind: string;
+  unitId: string;
+  answer: "input_wrong" | "inputs_fine";
+  note: string | null;
+  snapshotId: string | null;
+}

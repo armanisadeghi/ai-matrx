@@ -1,3 +1,7 @@
+import type { components } from "@/types/python-generated/api-types";
+
+type ApiSchemas = components["schemas"];
+
 export type JsonValue =
   string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 
@@ -134,13 +138,7 @@ export interface BacklinkRefreshReceipt {
   datasets: BacklinkDatasetReceipt[];
 }
 
-export interface PageLinkGapBody {
-  opportunity_ids: string[];
-  limit?: number;
-  max_spam_score?: number;
-  force_refresh?: boolean;
-  request_id?: string;
-}
+export type PageLinkGapBody = ApiSchemas["PageLinkGapBody"];
 
 export interface PageLinkGapReceipt {
   page_id: string;
@@ -155,24 +153,14 @@ export interface PageLinkGapReceipt {
  * me?". Both the no-spend seed preview and the paid streamed run take this
  * body — one shape, so the preview can never be computed from a different
  * request than the run it previews.
+ *
+ * These are the GENERATED OpenAPI types (never hand-mirror a generated type);
+ * the local names are kept so consumers read naturally.
  */
-export interface SiteLinkGapBody {
-  competitor_ids?: string[];
-  limit?: number;
-  max_spam_score?: number;
-  force_refresh?: boolean;
-  request_id?: string;
-}
+export type SiteLinkGapBody = ApiSchemas["SiteLinkGapBody"];
 
 /** One competitor the run WOULD compare against, with why it qualifies. */
-export interface SeededCompetitor {
-  competitor_id: string;
-  domain: string;
-  entity_role: string | null;
-  business_overlap: string | null;
-  market_overlap: string | null;
-  explicitly_enabled: boolean;
-}
+export type SeededCompetitor = ApiSchemas["SeededCompetitor"];
 
 /**
  * The answer to "what would this cost me and who would it look at?" — returned
@@ -180,17 +168,13 @@ export interface SeededCompetitor {
  * plain-language `reason` written for the user (today: no competitor has been
  * confirmed yet), and the surface renders it as the next step, never an error.
  */
-export interface SiteLinkGapSeedResponse {
-  site_id: string;
-  can_run: boolean;
-  seeded: SeededCompetitor[];
-  excluded: string[];
-  reason: string | null;
-  confirmed_competitors: number;
-  total_competitors: number;
-}
+export type SiteLinkGapSeedResponse = ApiSchemas["SiteLinkGapSeedResponse"];
 
-/** Terminal receipt of the paid site-wide run (`seo.site_link_gap_completed`). */
+/**
+ * Terminal receipt of the paid site-wide run (`seo.site_link_gap_completed`).
+ * Streamed terminal events have no OpenAPI response schema, so this one shape
+ * stays hand-typed against `matrx_seo.domain_link_gap.DomainLinkGapReceipt`.
+ */
 export interface DomainLinkGapReceipt {
   site_id: string;
   site_domain: string;
@@ -200,38 +184,43 @@ export interface DomainLinkGapReceipt {
 }
 
 /** One prospect domain resolved into a CRM organization by the server fold. */
-export interface FoldedLinkGapDomain {
-  domain: string;
-  party_id: string;
-  display_name: string;
-  created: boolean;
-  matched_by: string;
-  provenance_edge: boolean;
-}
+export type FoldedLinkGapDomain = ApiSchemas["FoldedDomain"];
 
 /** A row the fold deliberately did NOT turn into a CRM record, and why. */
-export interface SkippedLinkGapDomain {
-  domain: string;
-  row_id: string;
-  reason: string;
-}
+export type SkippedLinkGapDomain = ApiSchemas["SkippedRow"];
 
 /**
  * What the CRM fold did. Only APPROVED prospects are folded; everything else
  * comes back in `skipped` with its current review state, so the backlog
- * waiting on a human decision is visible instead of silent.
+ * waiting on a human decision is visible instead of silent. (The server calls
+ * this `DomainFoldReport`; it is shared by every SEO→CRM fold.)
  */
-export interface LinkGapFoldReport {
-  source: string;
+export type LinkGapFoldReport = ApiSchemas["DomainFoldReport"];
+
+/**
+ * SERP/keyword prospecting (the second prospecting method): the shared body of
+ * the no-spend `/serp-prospecting/preview` and the paid streamed run.
+ */
+export type SerpProspectingBody = ApiSchemas["SerpProspectingBody"];
+
+/** Every query the run would send + the estimated cost, before any spend. */
+export type SerpProspectingPreview = ApiSchemas["SerpProspectingPreview"];
+
+/** One prospecting query with the variant + seed keyword that produced it. */
+export type SerpProspectQuery = ApiSchemas["ProspectQuery"];
+
+/**
+ * Terminal receipt of the paid prospecting run
+ * (`seo.serp_prospecting_completed`). Streamed — hand-typed against
+ * `matrx_seo.serp_prospecting.SerpProspectingReceipt`.
+ */
+export interface SerpProspectingReceipt {
   site_id: string;
-  organization_id: string;
-  scanned: number;
-  already_linked: number;
-  created: number;
-  matched: number;
-  folded: FoldedLinkGapDomain[];
-  skipped: SkippedLinkGapDomain[];
-  errors: string[];
+  site_domain: string;
+  queries: SerpProspectQuery[];
+  receipt: CollectionReceipt;
+  enriched_domains: number;
+  unmeasured_domains: number;
 }
 
 export interface BacklinkEnrichmentResult {

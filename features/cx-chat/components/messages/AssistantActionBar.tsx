@@ -28,6 +28,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { messageActionsActions } from "@/features/agents/redux/execution-system/message-actions/message-actions.slice";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
+import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
 import { toast } from "@/lib/toast";
 
 const ConversationMessageOptionsMenu = lazy(
@@ -229,6 +230,17 @@ export function AssistantActionBar({
           />
         </div>
       </TapTargetButtonGroup>
+
+      {/* Negative-verdict follow-up strip — same ONE surface as the /chat
+          bar: [Diagnose] opens the drill-down review walk; [Attach your
+          version] captures the O1 correction. Reads the same
+          output-feedback store the thumbs above write. */}
+      <NegativeVerdictFollowUp
+        messageId={messageId}
+        content={content}
+        surfaceName="cx-chat"
+        className="mt-1"
+      />
 
       {showOptionsMenu && (
         <Suspense fallback={null}>

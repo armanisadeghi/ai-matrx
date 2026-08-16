@@ -32903,6 +32903,102 @@ export type Database = {
           },
         ]
       }
+      outcome_event: {
+        Row: {
+          campaign_id: string | null
+          confidence: number
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          dedupe_key: string
+          disposition: string
+          evidence_id: string | null
+          evidence_type: string | null
+          evidence_url: string | null
+          id: string
+          intent_id: string
+          intent_type: string
+          match_detail: Json
+          match_method: string
+          matched_at: string
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          outcome_kind: string
+          party_id: string | null
+          status: string
+          subject_id: string
+          subject_type: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          campaign_id?: string | null
+          confidence: number
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          dedupe_key: string
+          disposition: string
+          evidence_id?: string | null
+          evidence_type?: string | null
+          evidence_url?: string | null
+          id?: string
+          intent_id: string
+          intent_type: string
+          match_detail?: Json
+          match_method: string
+          matched_at?: string
+          metadata?: Json
+          occurred_at: string
+          organization_id: string
+          outcome_kind: string
+          party_id?: string | null
+          status?: string
+          subject_id: string
+          subject_type: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          campaign_id?: string | null
+          confidence?: number
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by?: string | null
+          dedupe_key?: string
+          disposition?: string
+          evidence_id?: string | null
+          evidence_type?: string | null
+          evidence_url?: string | null
+          id?: string
+          intent_id?: string
+          intent_type?: string
+          match_detail?: Json
+          match_method?: string
+          matched_at?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          outcome_kind?: string
+          party_id?: string | null
+          status?: string
+          subject_id?: string
+          subject_type?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       output_feedback: {
         Row: {
           corrected_at: string | null
@@ -33360,6 +33456,46 @@ export type Database = {
       dead_relation_read: {
         Args: { p_new: string; p_old: string }
         Returns: boolean
+      }
+      decide_outcome_event: {
+        Args: { p_note?: string; p_outcome_id: string; p_status: string }
+        Returns: {
+          campaign_id: string | null
+          confidence: number
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by: string | null
+          dedupe_key: string
+          disposition: string
+          evidence_id: string | null
+          evidence_type: string | null
+          evidence_url: string | null
+          id: string
+          intent_id: string
+          intent_type: string
+          match_detail: Json
+          match_method: string
+          matched_at: string
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          outcome_kind: string
+          party_id: string | null
+          status: string
+          subject_id: string
+          subject_type: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "outcome_event"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       deprecate_relation: {
         Args: {
@@ -51384,6 +51520,197 @@ export type Database = {
           {
             foreignKeyName: "search_performance_daily_run_id_fkey"
             columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      serp_mention: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          extras: Json
+          id: string
+          metadata: Json
+          observed_at: string
+          organization_id: string
+          query: string
+          rank: number | null
+          result_type: string
+          run_id: string | null
+          seed_keyword: string | null
+          serp_opportunity_id: string
+          snippet: string | null
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          url: string
+          variant: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          extras?: Json
+          id?: string
+          metadata?: Json
+          observed_at: string
+          organization_id: string
+          query: string
+          rank?: number | null
+          result_type?: string
+          run_id?: string | null
+          seed_keyword?: string | null
+          serp_opportunity_id: string
+          snippet?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url: string
+          variant: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          extras?: Json
+          id?: string
+          metadata?: Json
+          observed_at?: string
+          organization_id?: string
+          query?: string
+          rank?: number | null
+          result_type?: string
+          run_id?: string | null
+          seed_keyword?: string | null
+          serp_opportunity_id?: string
+          snippet?: string | null
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+          variant?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "serp_mention_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "collection_run"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "serp_mention_serp_opportunity_id_fkey"
+            columns: ["serp_opportunity_id"]
+            isOneToOne: false
+            referencedRelation: "serp_opportunity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      serp_opportunity: {
+        Row: {
+          ai_assessment: Json
+          analyzed_at: string | null
+          best_rank: number | null
+          created_at: string
+          created_by: string | null
+          display_domain: string
+          domain_rank: number | null
+          enriched_at: string | null
+          human_ruling: Json
+          id: string
+          latest_run_id: string | null
+          mention_count: number
+          metadata: Json
+          normalized_domain: string
+          observed_at: string | null
+          organization_id: string
+          priority_reason: string | null
+          priority_score: number | null
+          provider_metrics: Json
+          referring_domains: number | null
+          review_status: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          site_id: string
+          spam_score: number | null
+          total_backlinks: number | null
+          updated_at: string
+          updated_by: string | null
+          variants: string[]
+          version: number
+        }
+        Insert: {
+          ai_assessment?: Json
+          analyzed_at?: string | null
+          best_rank?: number | null
+          created_at?: string
+          created_by?: string | null
+          display_domain: string
+          domain_rank?: number | null
+          enriched_at?: string | null
+          human_ruling?: Json
+          id?: string
+          latest_run_id?: string | null
+          mention_count?: number
+          metadata?: Json
+          normalized_domain: string
+          observed_at?: string | null
+          organization_id: string
+          priority_reason?: string | null
+          priority_score?: number | null
+          provider_metrics?: Json
+          referring_domains?: number | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          site_id: string
+          spam_score?: number | null
+          total_backlinks?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          variants?: string[]
+          version?: number
+        }
+        Update: {
+          ai_assessment?: Json
+          analyzed_at?: string | null
+          best_rank?: number | null
+          created_at?: string
+          created_by?: string | null
+          display_domain?: string
+          domain_rank?: number | null
+          enriched_at?: string | null
+          human_ruling?: Json
+          id?: string
+          latest_run_id?: string | null
+          mention_count?: number
+          metadata?: Json
+          normalized_domain?: string
+          observed_at?: string | null
+          organization_id?: string
+          priority_reason?: string | null
+          priority_score?: number | null
+          provider_metrics?: Json
+          referring_domains?: number | null
+          review_status?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          site_id?: string
+          spam_score?: number | null
+          total_backlinks?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          variants?: string[]
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "serp_opportunity_latest_run_id_fkey"
+            columns: ["latest_run_id"]
             isOneToOne: false
             referencedRelation: "collection_run"
             referencedColumns: ["id"]

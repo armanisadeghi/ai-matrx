@@ -38,6 +38,7 @@ import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils"
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { openAssistantMessageEditor } from "../message-options/openAssistantMessageEditor";
 import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
+import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
 import { toast } from "@/lib/toast";
 import {
   selectMessageById,
@@ -45,6 +46,7 @@ import {
   selectIsLatestAssistantMessage,
   extractFlatText,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
+import { selectAgentIdFromInstance } from "@/features/agents/redux/execution-system/conversations/conversations.selectors";
 import type { RootState } from "@/lib/redux/store";
 import {
   selectResponseDensity,
@@ -179,6 +181,7 @@ export function AssistantActionBar({
   const conversationTitle = useAppSelector(
     selectConversationTitle(conversationId),
   );
+  const agentId = useAppSelector(selectAgentIdFromInstance(conversationId));
 
   const content = useMemo(() => extractFlatText(record), [record]);
   // Count of archived versions on this message — surfaces the "Edit
@@ -429,6 +432,18 @@ export function AssistantActionBar({
             </div>
           )}
         </TapTargetButtonGroup>
+
+        {/* Negative-verdict follow-up strip — renders only while a negative
+            verdict exists on this message: [Diagnose] opens the drill-down
+            review walk; [Attach your version] captures the O1 correction.
+            Reads the SAME output-feedback store the thumbs above write. */}
+        <NegativeVerdictFollowUp
+          messageId={messageId}
+          content={content}
+          surfaceName={surfaceKey ?? null}
+          agentId={agentId ?? null}
+          className="mt-1"
+        />
       </div>
 
       {showOptions && showOptionsMenu && (

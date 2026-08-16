@@ -303,6 +303,10 @@ const GscDrilldownWindow = lazyOverlay(
     import("@/features/marketing/search-console/windows/GscDrilldownWindow"),
   { ssr: false },
 );
+const ReviewWalkWindow = lazyOverlay(
+  () => import("@/features/review-walk/components/ReviewWalkWindow"),
+  { ssr: false },
+);
 const BrowserFrameWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/iframe/BrowserFrameWindow"),
   { ssr: false },
@@ -1739,6 +1743,9 @@ export default function OverlayController() {
     ),
     gscDrilldownWindow: useAppSelector((s) =>
       selectOpenInstances(s, "gscDrilldownWindow"),
+    ),
+    reviewWalkWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "reviewWalkWindow"),
     ),
     htmlPreview: useAppSelector((s) => selectOpenInstances(s, "htmlPreview")),
     imageUploaderWindow: useAppSelector((s) =>
@@ -4905,6 +4912,42 @@ export default function OverlayController() {
                 : "none") as import("@/features/marketing/search-console/types").GscCompareMode
             }
             title={typeof data.title === "string" ? data.title : undefined}
+          />
+        );
+      })}
+
+      {/* reviewWalkWindow — multi-instance */}
+      {instancesById.reviewWalkWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const unitKind =
+          data?.unitKind === "assistant_message" ||
+          data?.unitKind === "agent_request"
+            ? data.unitKind
+            : null;
+        if (typeof data?.unitId !== "string" || unitKind === null) {
+          return null;
+        }
+        return (
+          <ReviewWalkWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={
+              typeof data.stackIndex === "number" ? data.stackIndex : 0
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "reviewWalkWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            unitKind={unitKind}
+            unitId={data.unitId}
+            agentId={typeof data.agentId === "string" ? data.agentId : null}
+            agentName={
+              typeof data.agentName === "string" ? data.agentName : null
+            }
           />
         );
       })}

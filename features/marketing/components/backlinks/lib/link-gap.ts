@@ -194,10 +194,10 @@ export function matchCountLabel(matchCount: number): string {
 
 /** How a seeded competitor qualified, in the user's words. */
 export function seededCompetitorLabel(input: {
-  entity_role: string | null;
-  business_overlap: string | null;
-  market_overlap: string | null;
-  explicitly_enabled: boolean;
+  entity_role?: string | null;
+  business_overlap?: string | null;
+  market_overlap?: string | null;
+  explicitly_enabled?: boolean;
 }): string {
   const parts: string[] = [];
   if (input.business_overlap) parts.push(`${input.business_overlap} overlap`);
