@@ -56,6 +56,20 @@ vision:
 
 ## Remaining work (priority order)
 
+00. **🚨 CAPTURE DIED SILENTLY FOR ~24 HOURS AND NOTHING SAID SO (found 2026-08-16 22:30 PT, chipped).**
+    Newest ledger entry anywhere is `2026-08-15 23:02:47`; ZERO sessions created on 08-16 despite a
+    full day of Claude Code use (08-15 created 87). Production aidream is healthy — `/health/version`
+    200, `/api/mcp` 401 — so the server is not the failure. The cause is architectural and documented
+    in the plugin README: every hook rides the already-connected `plugin:matrx:aidream` MCP session,
+    **an MCP hook can never initiate OAuth**, and Claude treats hook failure as **non-blocking**. So a
+    dropped/lapsed MCP connection ends capture permanently and invisibly, recoverable only by the user
+    running `/mcp` and reauthorizing. An empty inbox is indistinguishable from a quiet day, which
+    makes every other feature here untrustworthy. Needs the honest staleness alarm on
+    `/work/conversations` + `/work/connections` (upgrade the passive `bridgeReadHealth()`), a
+    `/matrx:health` that truly proves THIS session is attached, and a decision on whether Claude hooks
+    should spool through Matrx Local's existing durable outbox like Codex/Cursor do — that is a second
+    transport, which the plugin deliberately declined once, so it is Arman's call, argued in one
+    paragraph, not an agent's to build unilaterally.
 0. **🚨 CONVERSATION MANAGEMENT + WAR ROOM INTEGRATION FIRST (Arman, 2026-08-15).** Before VS Code
    and distribution work: "the way they're managed is a disaster… they need to be fully integrated
    into the war room" so war-room agents "have awareness of these conversations and are able to
@@ -103,6 +117,25 @@ vision:
    `2773ac14-a999-4db1-b430-2f5efd9f77c8` has two sessions and two conversations for one Claude
    session. `find_session` reaches only one, so the other can never be titled and permanently wears
    `Auto: Code Editor`. Merging live conversations is Arman's call; see aidream `FOUND_DEFECTS.md`.
+1b. **Titles must sync BOTH ways (Arman, 2026-08-16; chipped).** *"The Claude Code title is what we
+    should use for our label. And when our conversations go to Claude Code, or if I update this,
+    then the Claude Code value should be updated to match."* Inbound is done (above); the return
+    path — an AI Matrx rename writing back to Claude's own session index — is not built. It writes
+    into another application's data, so it is Matrx-Local-only, single-field, atomic, fenced against
+    concurrent Claude writes, allowlisted to bound sessions, and must not fight the server ladder
+    (an AI Matrx rename becomes `title_source=user`, which inbound sync must then respect).
+1c. **The conversations table was unusable for real work (Arman, 2026-08-16; fix in flight).**
+    Three confirmed causes: (a) the "Last activity" column read `chat.conversation.updated_at`, a
+    row-mutation stamp that the 08-16 title-sync rewrote on 232 rows into a 9-second window — so
+    every row read "4 hours ago" and sorting by it was meaningless, while the true activity
+    (`coding_session.last_seen_at`) was correct on all 264 rows. The fix is one honest
+    `last_activity_at` computed in `public.cvx_list_scoped`, in its sort whitelist, as the default
+    sort. **`updated_at` must never again be presented as activity.** (b) the favorite/star column
+    declares `width: 40` yet renders wide — the waste is in the canonical table primitive's
+    padding/header chrome, and the fix belongs THERE as real compact-icon-column support that stays
+    sortable and filterable. (c) a per-row "Claude Code title" badge duplicated the app and provider
+    columns — *"We don't need a stupid chip that tells us it's a Claude Code title. The title is the
+    title."* Provenance belongs in the optional `title_source` column, not on every row.
 2. **Managed-Claude launch and continuation (`TASK-006`).** Backend is production-CERTIFIED
    (start/stream/resume/cancel/fork). Consume capabilities + NDJSON + cancel in `/work/new` and
    conversation detail. Native Resume/Fork strictly capability-gated; everything else is a labeled
