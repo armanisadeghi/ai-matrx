@@ -440,6 +440,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  reviewWalkWindow: {
+    label: "Review Walk",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   hierarchyCreationWindow: {
     label: "Hierarchy Creation Window",
     instanceMode: "singleton",

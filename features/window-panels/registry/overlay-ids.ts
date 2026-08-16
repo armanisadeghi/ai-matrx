@@ -121,6 +121,7 @@ export const OVERLAY_IDS = [
   "newsWindow",
   "noteInfoWindow",
   "researchContextPreviewWindow",
+  "reviewWalkWindow",
   "noteKnowledgePanel",
   "notesWindow",
   "observationalMemoryWindow",
