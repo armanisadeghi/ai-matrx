@@ -33,8 +33,16 @@ export interface UseWorkflowRunResult {
    * Promote a node invocation to a streaming lane. Returns the lane's
    * requestId (for `<MarkdownStream requestId/>` / `<LiveRunDisplay/>`) or
    * null when the lane budget refuses. Idempotent per invocation.
+   *
+   * `targetRunId` may be any run in this adoption's tree (the root or a
+   * linked child — the lane budget spans the tree). `seedText` starts a NEW
+   * lane with the tracked tail so promotion keeps the visible history.
    */
-  ensureLane: (invocationKey: string) => string | null;
+  ensureLane: (
+    targetRunId: string,
+    invocationKey: string,
+    seedText?: string,
+  ) => string | null;
 }
 
 export function useWorkflowRun(runId: string | null): UseWorkflowRunResult {
@@ -65,9 +73,8 @@ export function useWorkflowRun(runId: string | null): UseWorkflowRunResult {
   }, [runId, dispatch]);
 
   return {
-    ensureLane: (invocationKey: string) => {
-      if (!runId) return null;
-      return handleRef.current?.ensureLane(runId, invocationKey) ?? null;
-    },
+    ensureLane: (targetRunId: string, invocationKey: string, seedText?: string) =>
+      handleRef.current?.ensureLane(targetRunId, invocationKey, seedText) ??
+      null,
   };
 }

@@ -3,12 +3,14 @@
 /**
  * SurfaceBuilder — the Phase 2 simple builder over a RunSurfaceConfig.
  *
- * Functional, not drag-and-drop yet: one dense row per readout (title,
- * source summary, position steppers, multi-run / prefer / visibility /
- * empty-state selects, remove), an add-readout row (node or
- * progressRail/static, placed via findFreeSlot), reset-to-auto-layout, and
- * a CAS save through saveSurfaceConfig (conflict = toast + reload, never a
- * silent overwrite). Edits are pure immutable config updates in local state.
+ * A drag-to-place layout preview (SurfaceLayoutPreview → applyPlacement) sits
+ * above one dense row per readout (title, source summary, position steppers
+ * for size, multi-run / prefer / visibility / empty-state selects, remove),
+ * an add-readout row (node or progressRail/static, placed via findFreeSlot),
+ * surface metadata editors (name / audience / profile — saved in the same
+ * CAS write), reset-to-auto-layout, and a CAS save through saveSurfaceConfig
+ * (conflict = toast + reload, never a silent overwrite). Edits are pure
+ * immutable config updates in local state.
  */
 
 import { useState } from "react";
@@ -21,18 +23,22 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import {
   GRID_COLUMNS,
+  describeSource,
   type GridPos,
   type MultiRunMode,
   type Readout,
   type ReadoutSource,
   type RunSurfaceConfig,
 } from "../surface/config";
-import { autoLayoutSurface, findFreeSlot } from "../surface/layout";
+import { applyPlacement, autoLayoutSurface, findFreeSlot } from "../surface/layout";
 import {
   createSurface,
   saveSurfaceConfig,
   type RuntimeSurfaceRow,
+  type SurfaceAudience,
+  type SurfaceProfile,
 } from "../surface/service";
+import { SurfaceLayoutPreview } from "./SurfaceLayoutPreview";
 import {
   deriveTriggerPoints,
   type WorkflowDefinitionLike,
@@ -51,25 +57,6 @@ function nodeLabel(node: WorkflowDefinitionLike["nodes"][number]): string {
   const specType = node.data?.spec_type;
   if (typeof specType === "string" && specType) return `${specType} (${node.id})`;
   return node.id;
-}
-
-function sourceSummary(source: ReadoutSource): string {
-  switch (source.kind) {
-    case "node":
-      return `Node: ${source.nodeId}`;
-    case "childRun":
-      return `Child run: ${source.nodeId}`;
-    case "group":
-      return `Group: ${source.label} (${source.nodeIds.length} nodes)`;
-    case "progressRail":
-      return source.nodeIds?.length
-        ? `Progress rail (${source.nodeIds.length} nodes)`
-        : "Progress rail (all nodes)";
-    case "static":
-      return "Static content";
-    case "action":
-      return `Action: ${source.label} → ${source.nodeId}`;
-  }
 }
 
 const inputClass =
@@ -121,6 +108,15 @@ export function SurfaceBuilder({
   const [config, setConfig] = useState<RunSurfaceConfig | null>(
     surface ? surface.config : null,
   );
+  const [meta, setMeta] = useState<{
+    name: string;
+    audience: SurfaceAudience;
+    profile: SurfaceProfile;
+  }>(
+    surface
+      ? { name: surface.name, audience: surface.audience, profile: surface.profile }
+      : { name: "Default", audience: "consumer", profile: "full" },
+  );
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<Readout | null>(null);
@@ -141,6 +137,29 @@ export function SurfaceBuilder({
       readouts: config.readouts.map((r) =>
         r.id === id ? { ...r, ...patch } : r,
       ),
+    });
+  };
+
+  const updateMeta = (patch: Partial<typeof meta>) => {
+    setMeta((prev) => ({ ...prev, ...patch }));
+    setDirty(true);
+  };
+
+  /** Drag-drop placement from the layout preview — the ONE layout authority
+   * (applyPlacement: moved item wins, others shove down, then compaction). */
+  const place = (id: string, pos: GridPos) => {
+    if (!config) return;
+    const placed = applyPlacement(
+      config.readouts.map((r) => ({ id: r.id, pos: r.pos })),
+      { id, pos },
+    );
+    const posById = new Map(placed.map((p) => [p.id, p.pos]));
+    update({
+      ...config,
+      readouts: config.readouts.map((r) => {
+        const nextPos = posById.get(r.id);
+        return nextPos ? { ...r, pos: nextPos } : r;
+      }),
     });
   };
 
@@ -194,6 +213,7 @@ export function SurfaceBuilder({
         id: surface.id,
         expectedVersion: surface.version,
         config,
+        meta,
       });
       if (outcome === "conflict") {
         toast.error(
@@ -203,6 +223,7 @@ export function SurfaceBuilder({
       }
       const saved: RuntimeSurfaceRow = {
         ...surface,
+        ...meta,
         config,
         warnings: [],
         version: surface.version + 1,
@@ -264,13 +285,48 @@ export function SurfaceBuilder({
 
   return (
     <div className="space-y-2 rounded-xl border border-border bg-card p-3">
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-semibold text-foreground">
-          {surface.name}
-          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-            {surface.audience} · {surface.profile}
-          </span>
-        </h2>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={meta.name}
+          onChange={(e) => updateMeta({ name: e.target.value })}
+          className={`${inputClass} w-40 font-semibold`}
+          aria-label="Surface name"
+        />
+        <label className="flex items-center gap-1">
+          <span className={labelClass}>audience</span>
+          <select
+            value={meta.audience}
+            onChange={(e) =>
+              updateMeta({
+                audience: e.target.value === "creator" ? "creator" : "consumer",
+              })
+            }
+            className={selectClass}
+          >
+            <option value="consumer">consumer</option>
+            <option value="creator">creator</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-1">
+          <span className={labelClass}>profile</span>
+          <select
+            value={meta.profile}
+            onChange={(e) =>
+              updateMeta({
+                profile:
+                  e.target.value === "compact" || e.target.value === "summary"
+                    ? e.target.value
+                    : "full",
+              })
+            }
+            className={selectClass}
+          >
+            <option value="full">full</option>
+            <option value="compact">compact</option>
+            <option value="summary">summary</option>
+          </select>
+        </label>
         <div className="ml-auto flex items-center gap-1.5">
           <button
             type="button"
@@ -297,13 +353,15 @@ export function SurfaceBuilder({
         </p>
       ) : null}
 
+      <SurfaceLayoutPreview config={config} onPlace={place} />
+
       <ul className="divide-y divide-border">
         {config.readouts.map((r) => (
           <li key={r.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
             <input
               type="text"
               value={r.title ?? ""}
-              placeholder={sourceSummary(r.source)}
+              placeholder={describeSource(r.source)}
               onChange={(e) =>
                 updateReadout(r.id, {
                   title: e.target.value ? e.target.value : undefined,
@@ -313,7 +371,7 @@ export function SurfaceBuilder({
               aria-label="Readout title"
             />
             <span className="text-xs text-muted-foreground">
-              {sourceSummary(r.source)}
+              {describeSource(r.source)}
             </span>
             <span className="flex items-center gap-2">
               <PosStepper label="x" value={r.pos.x} min={0} max={GRID_COLUMNS - 1} onChange={(v) => updatePos(r.id, { x: v })} />
@@ -458,7 +516,7 @@ export function SurfaceBuilder({
         title="Remove this readout?"
         description={
           removeTarget
-            ? `"${removeTarget.title ?? sourceSummary(removeTarget.source)}" will be removed from the surface. This takes effect when you save.`
+            ? `"${removeTarget.title ?? describeSource(removeTarget.source)}" will be removed from the surface. This takes effect when you save.`
             : undefined
         }
         confirmLabel="Remove"

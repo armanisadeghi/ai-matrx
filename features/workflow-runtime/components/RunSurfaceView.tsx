@@ -76,10 +76,12 @@ function ReadoutCell({
   runId,
   item,
   mobile,
+  ensureLane,
 }: {
   runId: string;
   item: ReadoutRender;
   mobile: boolean;
+  ensureLane?: (invocationKey: string, seedText?: string) => string | null;
 }) {
   const { readout, mode } = item;
   const title = deriveTitle(readout);
@@ -109,7 +111,7 @@ function ReadoutCell({
         {mode === "placeholder" ? (
           <div className="h-full min-h-6 w-full animate-pulse rounded-md bg-muted" />
         ) : (
-          <ReadoutView runId={runId} readout={readout} />
+          <ReadoutView runId={runId} readout={readout} ensureLane={ensureLane} />
         )}
       </div>
     </div>
@@ -128,7 +130,14 @@ export function RunSurfaceView({
   /** A parent adapter already following this run passes false. */
   adopt?: boolean;
 }) {
-  useWorkflowRun(adopt !== false ? runId : null);
+  const { ensureLane } = useWorkflowRun(adopt !== false ? runId : null);
+  // Bound to THIS surface's run for the readouts below. A non-adopting
+  // surface (nested child) has no handle — promotion stays parent-owned.
+  const promoteLane =
+    adopt !== false
+      ? (invocationKey: string, seedText?: string) =>
+          ensureLane(runId, invocationKey, seedText)
+      : undefined;
   const isMobile = useIsMobile();
   const runStatus = useAppSelector(selectRunStatus(runId));
   const nodePhases = useAppSelector(selectNodeAggregatePhases(runId));
@@ -234,6 +243,7 @@ export function RunSurfaceView({
               runId={runId}
               item={item}
               mobile
+              ensureLane={promoteLane}
             />
           ))}
         </div>
@@ -251,6 +261,7 @@ export function RunSurfaceView({
               runId={runId}
               item={item}
               mobile={false}
+              ensureLane={promoteLane}
             />
           ))}
         </div>

@@ -27,16 +27,15 @@ ONE builder/AI config document — R1/R6/R7) · `surface/layout.ts` (compaction,
 readout renderers (`readout-parts` / `ProgressRailReadout` with synthetic sub-steps /
 `ReadoutView` with R8 modes / `RunSurfaceView` with trigger visibility + pages) ·
 `SurfaceBuilder` (dense config editor) · demo Board/Surface/Builder views. 90 tests.
+Tail shipped same day: drag-to-place layout preview (dnd-kit over `applyPlacement`),
+surface name/audience/profile editable in the builder (same CAS write), R9 compact
+child-run render (child's own compact surface, summary+expand fallback), real "table"
+multi-run mode (`MatrxDataTable`), viewer-driven lane promotion (viewport →
+`ensureLane`, text-tail seeded).
 
 ## Remaining (this repo)
 
-1. **Phase 2 tail:** drag-and-drop placement in the builder (position steppers today;
-   `applyPlacement` is ready for dnd-kit wiring), the compact child-run profile render
-   (childRun readouts nest the full board today — R9 says render the child's compact surface),
-   lazy-render↔lane-budget wiring (`ensureLane` on viewport entry), display profiles + audience
-   variants surfaced in the builder (the table already models them), and the "table" multi-run
-   mode's real table.
-2. **Phase 3 — data plumbing:** `record_update`/`resource_changed` → the skills-style
+1. **Phase 3 — data plumbing:** `record_update`/`resource_changed` → the skills-style
    signal→refetch pump; Supabase realtime backstop (`useRunListRealtime` pattern);
    `link_kind`/`link_id` doors.
 3. **Phase 4 — actions + HITL surface:** step-mode `input-status` "ready" action readouts,
