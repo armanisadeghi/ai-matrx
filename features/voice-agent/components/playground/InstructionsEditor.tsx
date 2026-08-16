@@ -3,13 +3,21 @@
 //
 // Free-form instructions for the playground variant. The intro route locks
 // these and never renders this component.
+//
+// "Reset" restores the instructions of the agent the `voice.intro` slot
+// resolves to — read live from its agent record. It used to reset to a
+// hardcoded copy of that prompt, which meant Reset could hand the user a
+// persona the real agent no longer had. Until the slot's agent has loaded
+// there is nothing to reset TO, so the button stays disabled rather than
+// offering a stale default.
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { INTRO_INSTRUCTIONS } from "../../constants";
+import { VOICE_INTRO_SLOT_KEY } from "../../constants";
+import { useSlotAgentInstructions } from "../../agentInstructions";
 import { updateConfig } from "../../state/voiceAgentSlice";
 import { selectVoiceInstructions } from "../../state/selectors";
 
@@ -24,6 +32,14 @@ export function InstructionsEditor({
 }: InstructionsEditorProps) {
   const dispatch = useAppDispatch();
   const value = useAppSelector((s) => selectVoiceInstructions(s, instanceId));
+  const {
+    instructions: defaultInstructions,
+    loading,
+    error,
+  } = useSlotAgentInstructions(VOICE_INTRO_SLOT_KEY);
+
+  const canReset =
+    !disabled && !!defaultInstructions && value !== defaultInstructions;
 
   return (
     <div className="space-y-2">
@@ -35,12 +51,20 @@ export function InstructionsEditor({
           type="button"
           variant="ghost"
           size="sm"
-          disabled={disabled || value === INTRO_INSTRUCTIONS}
-          onClick={() =>
-            dispatch(
-              updateConfig({ instanceId, instructions: INTRO_INSTRUCTIONS }),
-            )
+          disabled={!canReset}
+          title={
+            error
+              ? `Default unavailable — ${error}`
+              : loading
+                ? "Loading the default agent's instructions…"
+                : "Reset to the default voice agent's instructions"
           }
+          onClick={() => {
+            if (!defaultInstructions) return;
+            dispatch(
+              updateConfig({ instanceId, instructions: defaultInstructions }),
+            );
+          }}
         >
           <RotateCcw className="h-3.5 w-3.5 mr-1" />
           Reset
@@ -50,9 +74,7 @@ export function InstructionsEditor({
         id="instructions"
         value={value}
         onChange={(e) =>
-          dispatch(
-            updateConfig({ instanceId, instructions: e.target.value }),
-          )
+          dispatch(updateConfig({ instanceId, instructions: e.target.value }))
         }
         disabled={disabled}
         rows={14}

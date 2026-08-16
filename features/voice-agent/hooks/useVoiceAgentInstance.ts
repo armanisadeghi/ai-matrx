@@ -15,32 +15,36 @@
 //
 //   2. `voiceId` / `instructions` / `tools` props (playground path) —
 //      explicit per-mount overrides for users iterating on voice
-//      config without writing it back to an agent record. Falls back
-//      to hardcoded intro defaults in `constants.ts` when no agentId
-//      and no override is provided.
+//      config without writing it back to an agent record.
+//
+// 🚨 THERE IS NO HARDCODED PERSONA. An agent's instructions are its
+//   DEFINITION and live in the database — the code holds only the
+//   connection. Until 2026-08-16 this hook seeded `INTRO_INSTRUCTIONS`,
+//   a byte-identical copy of the intro agent's own system message, as a
+//   "so the mic never bricks" fallback; that made a stale code constant
+//   the silent authority whenever the agent row failed to load. The
+//   constant is deleted. A mount with neither an agentId nor explicit
+//   instructions seeds an EMPTY persona, and `useXaiVoiceSession.start()`
+//   refuses to open a session on empty instructions with a visible error.
 //
 // Avoiding the async-init race:
-//   `initInstance` runs SYNCHRONOUSLY on mount with hardcoded fallback
-//   values, so consumers like `useXaiVoiceSession` that subscribe to
-//   `voiceId` / `instructions` / `tools` via selectors always see a
-//   real instance. The agent record then loads in the background and
-//   `applyAgentConfig` swaps the values in. Mic-click timing makes the
-//   race largely theoretical (agent load is ~one supabase query while
-//   the user is still reading the surface), but seeding with fallbacks
-//   removes any possibility of a session starting on `EMPTY_INSTANCE`
-//   defaults.
+//   `initInstance` still runs SYNCHRONOUSLY on mount so consumers like
+//   `useXaiVoiceSession` that subscribe to `voiceId` / `instructions` /
+//   `tools` via selectors always see a real instance. The agent record
+//   loads in the background and `applyAgentConfig` swaps the real
+//   instructions in. Mic-click timing makes the race largely theoretical
+//   (agent load is ~one supabase query while the user is still reading the
+//   surface); if the user does beat it, they get the refusal above, never a
+//   session running someone else's prompt.
 
 import { useEffect, useMemo, useRef } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
-import {
-  DEFAULT_INTRO_TOOLS,
-  DEFAULT_INTRO_VOICE,
-  INTRO_INSTRUCTIONS,
-} from "../constants";
+import { DEFAULT_INTRO_TOOLS, DEFAULT_INTRO_VOICE } from "../constants";
 import {
   applyAgentConfig,
   disposeInstance,
   initInstance,
+  setError,
 } from "../state/voiceAgentSlice";
 import type {
   RealtimeToolSet,
@@ -49,6 +53,7 @@ import type {
 } from "../types";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import type { RootState } from "@/lib/redux/store";
+import { readInstructionsFromAgent } from "../agentInstructions";
 
 interface UseVoiceAgentInstanceOpts {
   preset: VoiceAgentPreset;
@@ -76,24 +81,6 @@ interface UseVoiceAgentInstanceOpts {
   persist?: boolean;
 }
 
-function asString(x: unknown): string | null {
-  return typeof x === "string" ? x : null;
-}
-
-function readInstructionsFromAgent(
-  messages: unknown,
-  fallback: string,
-): string {
-  if (!Array.isArray(messages) || messages.length === 0) return fallback;
-  const sys = (messages as Array<{ role?: string; content?: unknown }>).find(
-    (m) => m?.role === "system",
-  );
-  if (!sys || !Array.isArray(sys.content)) return fallback;
-  const text = (sys.content as Array<{ type?: string; text?: unknown }>).find(
-    (b) => b?.type === "text",
-  )?.text;
-  return asString(text) ?? fallback;
-}
 
 function readVoiceIdFromAgent(settings: unknown): VoiceId {
   if (settings && typeof settings === "object") {
@@ -142,7 +129,9 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
       initInstance({
         instanceId,
         voiceId: o.voiceId ?? DEFAULT_INTRO_VOICE,
-        instructions: o.instructions ?? INTRO_INSTRUCTIONS,
+        // No persona until the DB says what it is (agentId path), or the
+        // caller supplied one explicitly (playground path).
+        instructions: o.instructions ?? "",
         tools: o.tools ?? DEFAULT_INTRO_TOOLS,
         preset: o.preset,
         persist: o.persist ?? true,
@@ -154,17 +143,42 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
     if (o.agentId) {
       void (async () => {
         const state0 = store.getState() as RootState;
+        let fetchFailed = false;
         if (!state0.agentDefinition.agents?.[o.agentId!]) {
-          await dispatch(fetchFullAgent(o.agentId!)).unwrap().catch(() => {
-            // Errors are surfaced via the agent-definition slice's own
-            // error path; we keep the constants-seeded fallback so the
-            // mic never bricks on a transient fetch failure.
-          });
+          await dispatch(fetchFullAgent(o.agentId!))
+            .unwrap()
+            .catch(() => {
+              fetchFailed = true;
+            });
         }
         if (cancelled) return;
         const state1 = store.getState() as RootState;
         const agent = state1.agentDefinition.agents?.[o.agentId!];
-        if (!agent) return;
+        const instructions = agent
+          ? readInstructionsFromAgent(agent.messages)
+          : "";
+        if (!instructions) {
+          // Loud recovery: there is nothing to recover TO. Say which agent and
+          // why rather than opening a session on an empty or borrowed persona.
+          const why = fetchFailed
+            ? "could not be loaded"
+            : agent
+              ? "has no system message"
+              : "was not found";
+          console.error(
+            `[voice-agent] agent ${o.agentId} ${why} — the voice session has no instructions and will refuse to start.`,
+          );
+          dispatch(
+            setError({
+              instanceId,
+              error: {
+                code: "agent-instructions-missing",
+                message: `This voice agent ${why}. Its instructions live in the agent record, so the session cannot start until that resolves.`,
+              },
+            }),
+          );
+          return;
+        }
         // Write ONLY voice + instructions here. `tools` is owned by
         // useRealtimeAgentConfig (the authoritative backend resolve); writing
         // tools from this late agent-fetch would clobber the resolved set in a
@@ -173,11 +187,8 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
         dispatch(
           applyAgentConfig({
             instanceId,
-            voiceId: readVoiceIdFromAgent(agent.settings),
-            instructions: readInstructionsFromAgent(
-              agent.messages,
-              INTRO_INSTRUCTIONS,
-            ),
+            voiceId: readVoiceIdFromAgent(agent!.settings),
+            instructions,
           }),
         );
       })();

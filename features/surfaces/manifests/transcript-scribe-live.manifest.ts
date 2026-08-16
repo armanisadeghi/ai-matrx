@@ -112,7 +112,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "live_agent_id",
     label: "Live agent ID",
     description:
-      "UUID of the built-in Scribe Live agent whose realtime tool set drives this conversation. Always populated — this surface runs one fixed agent (it is not user-selectable today).",
+      "UUID of the agent whose realtime tool set and instructions drive this conversation — whatever the `transcript_studio.scribe_live` slot resolved to, so a user or org binding can change it. Empty only while the slot is still resolving (the mic refuses to start until then).",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 36,

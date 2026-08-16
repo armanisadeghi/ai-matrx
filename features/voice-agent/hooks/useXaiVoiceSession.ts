@@ -885,6 +885,32 @@ export function useXaiVoiceSession(
   const start = useCallback(async (): Promise<void> => {
     voiceDebugLog(instanceId, "info", "start", "user tapped mic");
     voiceDebugIncr(instanceId, "startCount");
+
+    // THE DEFINITION LIVES IN THE DATABASE. `instructions` reaches this hook
+    // from the agent record the slot resolved to (or, in the playground, from
+    // what the user typed). There is deliberately no hardcoded persona to fall
+    // back on — a session opened with empty instructions would be an agent with
+    // no identity, so refuse loudly instead.
+    if (!instructionsRef.current.trim()) {
+      voiceDebugLog(
+        instanceId,
+        "error",
+        "start.no-instructions",
+        "refused: the agent's instructions have not resolved",
+      );
+      dispatch(
+        setError({
+          instanceId,
+          error: {
+            code: "agent-unresolved",
+            message:
+              "This voice agent's instructions could not be loaded, so the session was not started. Reload the page; if it persists, check the agent slot's pinned agent.",
+          },
+        }),
+      );
+      return;
+    }
+
     ensureModules();
     const client = xaiClientRef.current!;
     const capture = captureRef.current!;

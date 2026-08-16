@@ -21,7 +21,8 @@ import { useVoiceAgentInstance } from "@/features/voice-agent/hooks/useVoiceAgen
 import { useRealtimeAgentConfig } from "@/features/voice-agent/hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession } from "@/features/voice-agent/hooks/useXaiVoiceSession";
 import { usePersistVoiceTranscript } from "@/features/voice-agent/hooks/usePersistVoiceTranscript";
-import { SCRIBE_LIVE_AGENT_ID } from "@/features/voice-agent/constants";
+import { SCRIBE_LIVE_SLOT_KEY } from "@/features/voice-agent/constants";
+import { useSlotAgentInstructions } from "@/features/voice-agent/agentInstructions";
 // Side-effect import: registers the working-document mutator client tools into
 // the shared realtime client-tool registry so `execution:"client"` calls for
 // them resolve to a runner. Phase 2 of the realtime tool bridge.
@@ -64,24 +65,22 @@ interface ScribeLiveScreenProps {
   sessionId: string;
 }
 
-const LIVE_BASE_INSTRUCTIONS = `# Live Studio Collaborator
-
-You are a live, voice-based collaborator working alongside the user inside a transcription studio session. The user is capturing recordings and building a single "working document" from them.
-
-## Your role
-- Talk through the material conversationally — help the user think, draft, refine, and reorganize the working document.
-- Answer questions about what has been captured so far.
-- Be concise and natural; this is a spoken conversation, not an essay.
-
-## Pronunciation
-- "Matrx" is spoken as the English word "Matrix". Never spell the letters.
-
-## The working document
-The current working document is provided below. Treat it as the source of truth for what the user has built so far. If it is empty, help the user get started. You cannot edit it directly in this live mode — when the user wants changes written in, tell them you'll note it and they can apply it, or suggest switching to the Agent tab where edits are saved.`;
-
-function buildLiveInstructions(docContent: string): string {
+/**
+ * 🚨 THE AGENT'S PERSONA IS NOT IN THIS FILE. It is the system message of the
+ * agent row `transcript_studio.scribe_live` resolves to; `base` below arrives
+ * from that record. Until 2026-08-16 a `LIVE_BASE_INSTRUCTIONS` constant here
+ * REPLACED the agent's own prompt, and the two had already diverged — the code
+ * copy still told the agent "you cannot edit the working document directly in
+ * this live mode" long after the agent was given the working-document mutator
+ * tools it now uses every session.
+ *
+ * What stays in code is the CONNECTION: the current working document is
+ * per-session runtime data, so we append it as clearly-labelled context under
+ * the agent's own instructions. That is data injection, not a definition.
+ */
+function withWorkingDocument(base: string, docContent: string): string {
   const doc = docContent.trim();
-  return `${LIVE_BASE_INSTRUCTIONS}
+  return `${base}
 
 ---
 
@@ -94,13 +93,25 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   const assistant = useStudioAssistant(sessionId);
   const docContent = assistant.workingDocument?.content ?? "";
 
+  // The agent — and its instructions — come from the slot. `agentId` drives
+  // the realtime tool resolve below; `baseInstructions` is the agent record's
+  // own system message, which nothing in this repo may substitute for.
+  const {
+    agentId: liveAgentId,
+    instructions: baseInstructions,
+    error: agentError,
+  } = useSlotAgentInstructions(SCRIBE_LIVE_SLOT_KEY);
+
   // Playground preset → `updateConfig` is permitted, so we can refresh the
   // injected working document between sessions. Ephemeral (persist=false):
   // the studio is the system of record; we don't want stray voice
   // conversations cluttering chat history.
   const instanceId = useVoiceAgentInstance({
     preset: "playground",
-    instructions: buildLiveInstructions(docContent),
+    // Empty until the agent record resolves. `useXaiVoiceSession.start()`
+    // refuses to open a session on empty instructions, so the mic reports the
+    // real problem instead of running a persona this file made up.
+    instructions: "",
     // Seed with the xAI Realtime built-ins (web + X search) for live look-ups.
     // `useRealtimeAgentConfig` overwrites this with the backend-resolved set
     // (incl. the working-doc mutator client tools) when a scribe-live agent id
@@ -123,20 +134,19 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     persist: false,
   });
 
-  // Resolve the realtime tool set for the scribe-live surface from the built-in
-  // Scribe Live agent — the backend classifies its inline working-doc mutators
-  // as `client` (declared to xAI, run locally via the shared registry) and the
+  // Resolve the realtime tool set for the scribe-live surface from the slot's
+  // agent — the backend classifies its inline working-doc mutators as `client`
+  // (declared to xAI, run locally via the shared registry) and the
   // auto-injected data/data_action as `server`. This OVERWRITES the seeded
-  // builtins above with the full resolved set; instructions stay locally owned
-  // (the working document is injected via buildLiveInstructions, not the agent).
+  // builtins above with the full resolved set.
   useRealtimeAgentConfig({
     instanceId,
-    agentId: SCRIBE_LIVE_AGENT_ID,
+    agentId: liveAgentId ?? undefined,
     surface: SCRIBE_LIVE_SURFACE,
   });
   const { status, error, micMuted, toggle, toggleMute } = useXaiVoiceSession({
     instanceId,
-    agentId: SCRIBE_LIVE_AGENT_ID,
+    agentId: liveAgentId ?? undefined,
     surface: SCRIBE_LIVE_SURFACE,
     sessionId,
   });
@@ -167,7 +177,10 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     const doc = docContent.trim();
     return createTranscriptScribeLiveScope({
       session_id: sessionId,
-      live_agent_id: SCRIBE_LIVE_AGENT_ID,
+      // The agent the slot ACTUALLY resolved to — a user or org binding can
+      // swap it, so reporting a fixed id here would be a lie. Empty while it
+      // is still resolving.
+      live_agent_id: liveAgentId ?? "",
       // The persisted studio_documents body is the durable truth here — the
       // spoken chatter about it is not.
       working_document_word_count: doc ? doc.split(/\s+/).length : 0,
@@ -198,17 +211,31 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   // deliberately no live-session guard here.
   const getSurfaceWriteHandlers = useScribeLiveWriteHandlers(sessionId);
 
-  // Keep the injected document fresh. The orchestrator reads instructions
-  // from the slice at session start (`session.update`), so the next time the
-  // user taps the mic the agent sees the latest document.
+  // Keep the agent's instructions current: its own system message from the DB,
+  // plus the latest working document appended as context. The orchestrator
+  // reads instructions from the slice at session start (`session.update`), so
+  // the next time the user taps the mic the agent sees both. Stays EMPTY until
+  // the agent record resolves — never a locally-authored stand-in.
   useEffect(() => {
     dispatch(
       updateConfig({
         instanceId,
-        instructions: buildLiveInstructions(docContent),
+        instructions: baseInstructions
+          ? withWorkingDocument(baseInstructions, docContent)
+          : "",
       }),
     );
-  }, [dispatch, instanceId, docContent]);
+  }, [dispatch, instanceId, docContent, baseInstructions]);
+
+  // The agent record is the only source of this surface's instructions, so a
+  // failure to read it is a real dead end — say so instead of letting the mic
+  // fail with a generic message.
+  useEffect(() => {
+    if (!agentError) return;
+    toast.error("The live assistant is unavailable", {
+      description: `${agentError} Live voice cannot start until it resolves.`,
+    });
+  }, [agentError]);
 
   // Surface the common, actionable failures as toasts (the inline banner
   // shows the rest). Mirrors VoiceAgentSurface's handling for the codes a
