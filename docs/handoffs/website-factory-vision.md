@@ -38,10 +38,20 @@ with P1/P2 research-artifact wiring here; sync when either lands.
 > individual agents who are building each part and the parts coming together… In order for us to
 > use it for real, we need to build a website properly from the ground up, and that means creating
 > all of the reusable components, making sure that the CSS is solid, making sure that we have core
-> structures, making sure that **no page is created without a prebuilt template**. It doesn't mean
+> structures, making sure that ~~no page is created without a prebuilt template~~. It doesn't mean
 > you can't have custom pages — it means you build your service pages on some sort of a template,
 > and you have your headers, your footers, your menus, your colors — all that stuff needs to be
 > predetermined so that we're not just vibecoding some little crappy website."
+
+> 🚨 **The struck sentence above was RETRACTED by Arman on 2026-08-16 — read the retraction before
+> acting on anything template-shaped.** He was using "template" to mean a **themed page** (shared
+> global CSS, header, menu, footer/sidebar, optionally reusable components like a consistently
+> sized banner) — *not* a required template entity. **Templates are an OPTION and are never
+> required; there is nothing to opt out of and no flag to build.** The standing requirement is the
+> THEME. Canonical ruling, in his own words:
+> `common-docs/systems/content-planning/FEATURE.md` § TEMPLATES ARE AN OPTION, NEVER A REQUIREMENT.
+> The quote is kept here struck rather than deleted so nobody re-derives the mistake from the
+> original chat.
 
 > "You don't always have to have primitives — some companies would rather each page use the core
 > theme but be slightly different — so that can happen too."
@@ -81,7 +91,7 @@ Per SITE (once, "the starting thing"):
 | S1. Content plan (tree of pages, briefs, keywords) | ✅ works | `/marketing/content-plan/[siteId]`; `plan.node` (821 live nodes); generator `aidream/aidream/services/content_plan/generator.py` |
 | S2. Site shell: theme CSS, header+menu, footer | ✅ works | `starter_kit` seeds all three; human Install button on `/cms/[siteId]/settings` (WF-7) and real theme/nav/footer editors with in-place AI (WF-6 + AI-everywhere). Renderer theme wiring fixed (WF-1). |
 | S3. Design system: curated section/block library (hero, cards, CTA, FAQ, pricing…) per site | ❌ none | New: block library the starter kit installs (site CSS + reference markup); consumed by S4 and P6 |
-| S4. ~~Page templates: no page created without a prebuilt template~~ **RETIRED (Arman, 2026-08-07):** *"my comments were silly … figure it out and remove that from the vision."* The real goal behind it was **a non-technical way for the user to edit a page's TEXT without knowing HTML** — in the AI age the page itself can be the template. Replacement direction: smart per-case paths (block library where it helps, free-form where it doesn't) + an easy text-edit surface for humans. The structured-content draft in the P4 record (below) is what makes that surface possible — edit the structured sections, the builder re-renders. | — | No template entity. `client_pages.page_type`/`layout_type` stay labels. |
+| S4. Page templates — **AN OPTION, NEVER A REQUIREMENT.** Retired as a requirement twice: 2026-08-07 (*"my comments were silly … figure it out and remove that from the vision"*) and definitively 2026-08-16, where Arman explained that "template" had always meant a **themed page** — shared global CSS, header, menu, footer/sidebar, optionally reusable components like a consistently sized banner. **Never build a required/opt-out flag; there is nothing to opt out of.** Canonical ruling: `common-docs/systems/content-planning/FEATURE.md` § TEMPLATES ARE AN OPTION. The real goal underneath was **a non-technical way to edit a page's TEXT without knowing HTML** — served by the P4 structured draft, not by templates. | ✅ optional, built | `aidream/services/content_plan/templates.py` — convention-based resolution over `plan.profile.template_map`, pure data, `default` floor, no enforcement. A site with no `templates` key is CORRECT. `client_pages.page_type`/`layout_type` stay labels. |
 
 Per PAGE (× 25 pages ⇒ the 200–300 calls):
 
@@ -197,7 +207,7 @@ before/during/after all captured. Work order: [cms-page-hub.md](./cms-page-hub.m
 2. ~~Fix `theme_config` → CSS in my-matrx~~ **DONE** (WF-1: renderer was already wired; the starter kit's token bake — which shadowed later theme edits — was removed and 4 baked sites migrated + prod-verified).
 3. ~~Design + build the per-node content record (P4)~~ **DONE 2026-08-12** (see the P4 section — tables, writer, producers, FE rail all live; review the shape).
 4. ~~**Decompose `cms_fill` into explicit pipeline steps**~~ **DONE 2026-08-15** — p3/p4/p5 are real producers, p6 renders their output, the one button is unchanged. **What remains is the FAN-OUT:** the whole-site fill still runs the single author call per page; teach `cms_fill`'s durable queue to run the four steps as separate item types so a 25-page site is ~100 calls, not 25. The queue, the artifacts, and the steps all exist — this is wiring, not design.
-5. **Site design system (S3) + page templates (S4)**: template/block entities in the CMS DB, starter kit installs a default set, `page_type` binds node → template, per-site "templates required vs theme-only" setting. Page build step consumes them.
+5. **Site design system (S3) — the reusable block library.** Curated section/blocks (hero, cards, CTA, FAQ, pricing) the starter kit installs as site CSS + reference markup, which the build step may reach for. **Offered, never imposed** — same rule as templates (§ S4): a site that uses none of them is a correct site. There is NO "templates required vs theme-only" setting to build; that idea came from the retracted quote and is deleted.
 6. **Plan UI shows the pipeline**: linked CMS pages DONE (2026-08-07, WF-11); NodePanel rail DONE (2026-08-12); tree/table progress badges DONE (2026-08-13); per-node run-step actions DONE (2026-08-15). Remaining: a whole-page "run the rest of the pipeline" action, and bulk run-step across a selection (the tree already has multi-select).
 7. **First specialist agents on the rails.** The rails are now built and carrying traffic — `page_pipeline.py` calls `llm_to_pydantic` with in-code prompts (same as `cms_fill` next door). Swap each call site for `run_slot` against saved agents (family analyst, writer, reviewer/fact-checker, page-builder), then specialize by page type — the expert location-page builder, blog builder, etc. The module contract (steps, artifacts, records, endpoint) does not change.
 8. Wire per-node keyword research (P1) to store an artifact; connect `features/research/` as a richer P2 engine (Deepen already writes the `research` artifact p4 reads).
@@ -211,5 +221,7 @@ before/during/after all captured. Work order: [cms-page-hub.md](./cms-page-hub.m
 
 ## Decisions needed (Arman)
 
-1. ~~Where does per-page content live?~~ **Ruled (a) 2026-08-07 and BUILT 2026-08-12** as the P4 section's exact shape. Open for review, not decision: sanity-check the shape on the live tables (`plan.node_artifact` / `plan.node_step`); adjustments are cheap while nothing downstream depends on them.
-2. **Templates: how strict?** Situation: the vision says "no page created without a prebuilt template" but also allows theme-only free-form sites. Decide: is template-required the default for new sites with an explicit per-site opt-out, or opt-in? Recommendation: required by default, `client_sites.settings` flag to relax.
+*Nothing is waiting on Arman. Both former items are ruled.*
+
+1. ~~Where does per-page content live?~~ **Ruled 2026-08-07, BUILT 2026-08-12** — the P4 section's exact shape (`plan.node_artifact` / `plan.node_step`), now carrying real traffic.
+2. ~~Templates: how strict?~~ **RULED 2026-08-16: they are an OPTION and are never required — the question itself was the mistake.** It came from one sentence of Arman's taken out of context; he meant a *themed* page (shared global CSS, header, menu, footer/sidebar, optionally reusable components), not a template entity. Do not build a required-flag, an opt-out, or a per-site strictness setting — there is nothing to opt out of. Canonical, in his own words: `common-docs/systems/content-planning/FEATURE.md` § TEMPLATES ARE AN OPTION, NEVER A REQUIREMENT.

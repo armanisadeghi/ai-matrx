@@ -140,11 +140,15 @@ research linking: start with the final report (the "Document"), user picks the t
    no CMS counterpart, so "Make it real" rungs 2–5 are uninspectable without mutating
    production — **supply a stable, already-linked review site**. One (`fbf59d2a`) just needs its
    URL corrected to the current canonical skills route.
-2. **The page-template system shipped but is INERT in production** — built, paid for, and
-   switched off: no `plan.profile` row carries a `templates` key and nothing seeds one, so
-   realize still writes empty page bodies. Evidence + the seed-then-verify fix, plus its missing
-   docs and tests: `FOUND_DEFECTS.md` **D194** (renumbered from D183 after an ID collision —
-   the entry now numbered D183 is a different, unrelated SEO defect). Live chip.
+2. **The page-template library is built but never seeded, so nobody can take the option.**
+   🚨 **Templates are an OPTION and are NEVER required (Arman, 2026-08-16 —
+   `common-docs/systems/content-planning/FEATURE.md` § TEMPLATES ARE AN OPTION).** A site with
+   no template library is CORRECT and realize writing an empty body is the free-form path
+   working; do not "fix" this by making templates required, default-on, or flag-gated. What is
+   unfinished is that no `plan.profile` row carries a `templates` key and nothing seeds one, so
+   the option cannot be *chosen*. Evidence + the seed-then-verify fix, plus its missing docs and
+   tests: `FOUND_DEFECTS.md` **D194** (renumbered from D183 after an ID collision — the entry
+   now numbered D183 is a different, unrelated SEO defect). Live chip.
 3. **Generalize the grounding strip beyond research.** Still missing as grounding inputs:
    **competitor URLs**, **pasted content/notes**, **free-text guidance**. Persist each in
    `setup_draft` (`setup/draft.ts`), resolve to text at the call site (research-bundle pattern),
