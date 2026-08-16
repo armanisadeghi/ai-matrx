@@ -101,14 +101,6 @@ begin
     'voice-owner-beta',
     'system'
   );
-  -- The live conversation trigger materializes a version for floating agents.
-  -- This proof targets the applied v1 contract, whose null version snapshot
-  -- requires a null conversation version. A follow-up migration covers the
-  -- floating-slot trigger interaction without changing these applied bytes.
-  update chat.conversation
-  set initial_agent_version_id = null
-  where id = v_conversation_id;
-
   select * into strict v_issued
   from communication.issue_voice_agent_session_reference(
     v_hash,
