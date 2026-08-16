@@ -26,8 +26,11 @@ import { deleteOrchestra, saveOrchestraConfig } from "@/features/agents/redux/or
 import { accentClasses } from "./accents";
 import {
   DEFAULT_ORCHESTRA_ACCENT,
+  DEFAULT_ORCHESTRA_DEPTH_BUDGET,
   DEFAULT_ORCHESTRA_MODE,
   ORCHESTRA_ACCENTS,
+  ORCHESTRA_DEPTH_BUDGET_MAX,
+  ORCHESTRA_DEPTH_BUDGET_MIN,
   ORCHESTRA_MODES,
   ORCHESTRA_MODE_META,
   type OrchestraAccent,
@@ -58,6 +61,7 @@ function SettingsForm({
   const [tagline, setTagline] = useState(config.tagline ?? "");
   const [accent, setAccent] = useState<OrchestraAccent>(config.accent ?? DEFAULT_ORCHESTRA_ACCENT);
   const [mode, setMode] = useState<OrchestraMode>(config.mode ?? DEFAULT_ORCHESTRA_MODE);
+  const [depthBudget, setDepthBudget] = useState<number | undefined>(config.depthBudget);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -66,7 +70,7 @@ function SettingsForm({
       saveOrchestraConfig({
         orchestratorId,
         label: name.trim() || null,
-        config: { ...config, accent, mode, tagline: tagline.trim() || undefined },
+        config: { ...config, accent, mode, depthBudget, tagline: tagline.trim() || undefined },
       }),
     );
     setSaving(false);
@@ -143,6 +147,38 @@ function SettingsForm({
               );
             })}
           </div>
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">Delegation depth</label>
+          <div className="flex items-center gap-1.5">
+            {Array.from(
+              { length: ORCHESTRA_DEPTH_BUDGET_MAX - ORCHESTRA_DEPTH_BUDGET_MIN + 1 },
+              (_, i) => ORCHESTRA_DEPTH_BUDGET_MIN + i,
+            ).map((n) => {
+              const selected = (depthBudget ?? DEFAULT_ORCHESTRA_DEPTH_BUDGET) === n;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setDepthBudget(n)}
+                  aria-pressed={selected}
+                  className={cn(
+                    "h-7 w-9 rounded-md border text-xs font-medium transition-colors",
+                    selected
+                      ? "border-primary/50 bg-accent text-foreground"
+                      : "border-border text-muted-foreground hover:bg-muted/50",
+                  )}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] leading-snug text-muted-foreground">
+            How many levels deep members may bring in their own helpers. Standard is{" "}
+            {DEFAULT_ORCHESTRA_DEPTH_BUDGET} — raise it only if members need helpers of
+            their own; lower it to keep every answer first-hand.
+          </p>
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Accent</label>

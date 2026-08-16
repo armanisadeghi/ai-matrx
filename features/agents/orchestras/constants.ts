@@ -85,6 +85,29 @@ export const ORCHESTRA_MODE_META: Record<OrchestraMode, { label: string; descrip
   },
 };
 
+/**
+ * Delegation depth (D-39): how many levels deep team members may bring in
+ * their own helper agents. Stored as `depth_budget` on the marker edge's
+ * metadata jsonb — the aidream runtime enforces it per run. Absent = the
+ * platform standard. Bounds mirror the server
+ * (aidream/services/orchestras/models.py DEPTH_BUDGET_MIN/MAX); change in
+ * lockstep.
+ */
+export const ORCHESTRA_DEPTH_BUDGET_MIN = 1;
+export const ORCHESTRA_DEPTH_BUDGET_MAX = 5;
+/** The platform standard when the Orchestra declares nothing (mirrors
+ * matrx-ai's PROJECTED_AGENT_MAX_RECURSION_DEPTH). */
+export const DEFAULT_ORCHESTRA_DEPTH_BUDGET = 2;
+
+export function isOrchestraDepthBudget(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= ORCHESTRA_DEPTH_BUDGET_MIN &&
+    value <= ORCHESTRA_DEPTH_BUDGET_MAX
+  );
+}
+
 export function isOrchestraMode(value: unknown): value is OrchestraMode {
   return typeof value === "string" && (ORCHESTRA_MODES as readonly string[]).includes(value);
 }

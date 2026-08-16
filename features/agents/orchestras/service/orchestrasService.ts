@@ -27,6 +27,7 @@ import {
   MEMBER_ROLE,
   ORCHESTRA_MARKER_ROLE,
   isOrchestraMarkerRole,
+  isOrchestraDepthBudget,
   isOrchestraMode,
 } from "../constants";
 import type {
@@ -52,6 +53,13 @@ function metaToConfig(meta: Json | null | undefined): OrchestraConfig {
   if (typeof m.accent === "string") cfg.accent = m.accent as OrchestraConfig["accent"];
   if (typeof m.tagline === "string") cfg.tagline = m.tagline;
   if (isOrchestraMode(m.mode)) cfg.mode = m.mode;
+  // Wire key is snake_case (the server reads metadata.depth_budget); tolerate
+  // jsonb float widening, ignore anything the server would reject.
+  const rawBudget =
+    typeof m.depth_budget === "number" && Number.isInteger(m.depth_budget)
+      ? m.depth_budget
+      : undefined;
+  if (isOrchestraDepthBudget(rawBudget)) cfg.depthBudget = rawBudget;
   if (m.orchestratorPos && typeof m.orchestratorPos === "object") {
     const p = m.orchestratorPos as Record<string, unknown>;
     if (typeof p.x === "number" && typeof p.y === "number") {
@@ -59,6 +67,17 @@ function metaToConfig(meta: Json | null | undefined): OrchestraConfig {
     }
   }
   return cfg;
+}
+
+// The ONE OrchestraConfig -> marker-metadata serializer. camelCase fields ride
+// verbatim; server-read keys keep their wire names (`depth_budget` — the
+// aidream runtime strict-parses it, so an out-of-range value is never written).
+function configToMeta(cfg: OrchestraConfig): Json {
+  const { depthBudget, ...rest } = cfg;
+  return {
+    ...rest,
+    ...(isOrchestraDepthBudget(depthBudget) ? { depth_budget: depthBudget } : {}),
+  } as Json;
 }
 
 // Per-member metadata jsonb holds ONLY gap + saved position. The member's role
@@ -157,7 +176,7 @@ export const orchestrasService = {
       targetId: orchestratorId,
       role: ORCHESTRA_MARKER_ROLE,
       label: opts?.label,
-      metadata: opts?.config ?? {},
+      metadata: configToMeta(opts?.config ?? {}),
     });
   },
 
@@ -173,7 +192,7 @@ export const orchestrasService = {
       targetId: orchestratorId,
       role: ORCHESTRA_MARKER_ROLE,
       label: args.label,
-      metadata: args.config ?? {},
+      metadata: configToMeta(args.config ?? {}),
     });
   },
 

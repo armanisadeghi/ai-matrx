@@ -29,6 +29,13 @@ export interface OrchestraConfig {
    * compiled modes (sequential/parallel/dag) run as a deterministic plan.
    */
   mode?: OrchestraMode;
+  /**
+   * Delegation depth (D-39): how many levels deep members may bring in their
+   * own helper agents. Absent = the platform standard (2). Written to the
+   * marker metadata as `depth_budget`; the aidream runtime validates the
+   * declared value loudly and enforces it per run.
+   */
+  depthBudget?: number;
 }
 
 /**
