@@ -631,6 +631,22 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-16 — **The loop is closed on the campaign workspace: attribution
+  outcomes (WP4, IC-5).** `features/crm/outcomes/` reads `platform.outcome_event`
+  directly (schema-scoped supabase-js, server-paged) and surfaces it as the
+  "Outcomes" view on `/crm/outreach-lists/[listId]` (`?view=outcomes&outcome=<id>`
+  is the deep link the attribution assists emit). The evidence drawer shows EVERY
+  signal the matcher checked — fired and not fired — because credit is taken on
+  Arman's low bar and the drawer is the defence. The ONE write path is
+  `platform.decide_outcome_event` (SECURITY DEFINER; stamps decided_by, completes
+  a reputation-case subject on confirm) via `decideOutcomeEvent()` — never a raw
+  row update; only the aidream attribution pass inserts rows. `match_detail` is
+  read only through `lib.ts` narrowers (jsonb-narrower convention), pinned by
+  `lib.test.ts`. Proven in-browser: seeded proposed row rendered, "Confirm the
+  win" wrote a real confirmed decision through the RPC with the session user
+  stamped; seed removed. Server contract:
+  `aidream/services/outcome_attribution/FEATURE.md`.
+
 - 2026-08-15 — **"(record unavailable)" is gone from the outreach roster; the
   platform now has an inline door for a reference it cannot resolve.** A member
   of "Phase 4 — first governed send" rendered a bare italic string for a party

@@ -9,10 +9,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Bookmark,
   ListPlus,
+  Award,
   Megaphone,
   MoreVertical,
   Pause,
@@ -64,6 +65,7 @@ import type {
 import { MEMBER_STATUSES } from "../../outreach-lists/types";
 import { ListKindBadge, ListStatusBadge, MemberStatusBadge } from "./badges";
 import { AddMembersDialog } from "./AddMembersDialog";
+import { OutcomesPanel } from "../../outcomes/OutcomesPanel";
 import { SingleSendDialog } from "./SingleSendDialog";
 import { listSendingIdentities } from "../../sending-identities/service";
 import type { SendingIdentityView } from "../../sending-identities/types";
@@ -72,6 +74,12 @@ const PAGE_SIZE = 50;
 
 export function OutreachListDetailPage({ listId }: { listId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // ?view=outcomes is the attribution feed's deep link — the assist chips the
+  // nightly attribution pass raises land here with their row preselected.
+  const [activeView, setActiveView] = useState<"members" | "outcomes">(
+    searchParams.get("view") === "outcomes" ? "outcomes" : "members",
+  );
   const ctx = useCrmContext();
   const [list, setOutreachList] = useState<OutreachListRow | null>(null);
   const [counts, setCounts] = useState<MemberStatusCounts | null>(null);
@@ -616,6 +624,18 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                   Chasebox
                 </Link>
               </Button>
+              {/* The loop closed: links our crawl credited to this campaign. */}
+              <Button
+                size="sm"
+                variant={activeView === "outcomes" ? "secondary" : "ghost"}
+                className="h-7 gap-1 px-2 text-xs"
+                onClick={() =>
+                  setActiveView(activeView === "outcomes" ? "members" : "outcomes")
+                }
+              >
+                <Award className="h-3.5 w-3.5" />
+                Outcomes
+              </Button>
               {lifecycleButton}
               <Button
                 size="sm"
@@ -699,6 +719,11 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         )}
       </div>
 
+      {activeView === "outcomes" ? (
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-2">
+          <OutcomesPanel campaignId={listId} />
+        </div>
+      ) : (
       <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
         <MatrxDataTable<OutreachListMemberWithParty>
           data={members}
@@ -773,6 +798,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
           }}
         />
       </div>
+      )}
 
       {list && ctx && (
         <AddMembersDialog
