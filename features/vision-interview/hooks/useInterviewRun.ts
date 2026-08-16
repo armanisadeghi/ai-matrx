@@ -266,18 +266,26 @@ export function useInterviewRun(sessionId: string) {
    * `openingMessage` is the pre-start composer draft: it is appended to the
    * session's vision statement BEFORE the run starts (the backend seeds
    * turn 0 from it on a fresh session, and it stays on the session as
-   * durable context for restarts). Returns true when the draft was consumed
+   * durable context for restarts). Returns true when the draft was CONSUMED
    * — false means keep it in the composer.
+   *
+   * Consumption == the append landing, NOT the run starting. Once the
+   * statement is durably on the session row, the composer must clear even if
+   * the run then fails to start — otherwise "Try again" re-appends the same
+   * text and corrupts the vision statement (Bugbot, PR #146). A run-start
+   * failure after a successful append surfaces via `runFailed` as usual.
    */
   const start = async (openingMessage?: string): Promise<boolean> => {
     if (inFlightRef.current) return false;
     const message = openingMessage?.trim();
+    let draftConsumed = false;
     if (message) {
       try {
         const saved = await appendVisionStatement(sessionId, message);
         // Merge the fresh row now; the realtime echo is dropped by the
         // slice's monotonic guard.
         dispatch(sessionMerged(saved));
+        draftConsumed = true;
       } catch (err) {
         toast.error(
           err instanceof Error
@@ -288,7 +296,7 @@ export function useInterviewRun(sessionId: string) {
       }
     }
     const consume = adopt();
-    return runStream(() =>
+    const started = await runStream(() =>
       callApi({
         path: "/vision-interview/sessions/{session_id}/start" as never,
         method: "POST",
@@ -298,6 +306,12 @@ export function useInterviewRun(sessionId: string) {
         consumeStream: consume,
       }),
     );
+    if (draftConsumed && !started) {
+      toast.info(
+        "Your statement is saved on the session — starting the room failed; try Start again.",
+      );
+    }
+    return draftConsumed || started;
   };
 
   /** Answer the pending human-input interrupt (and/or send controls).
