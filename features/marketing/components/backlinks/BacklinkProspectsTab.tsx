@@ -665,7 +665,7 @@ export function BacklinkProspectsTab({
           Last run: {prospects.foldReport.created} created,{" "}
           {prospects.foldReport.matched} matched,{" "}
           {prospects.foldReport.already_linked} already had a record
-          {prospects.foldReport.skipped.length
+          {prospects.foldReport.skipped?.length
             ? ` · ${prospects.foldReport.skipped.length} skipped (${prospects.foldReport.skipped[0].reason})`
             : ""}
           .
