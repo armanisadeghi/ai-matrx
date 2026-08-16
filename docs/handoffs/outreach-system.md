@@ -240,8 +240,10 @@ bounce, and cannot measure anything. **The reply-opt-out seam is already waiting
 emit one `InboundReply`; the shared detector immediately writes permanent suppression through
 `crm.honor_reply_opt_out()`. G6 must deliver replies into that seam, not duplicate it. **This is not
 optional polish — it is what separates outreach from spam,** and it is legally load-bearing (§5).
-Needs: provider webhooks (delivered/bounced/complained), reply ingestion, and threading so a reply
-lands on the party's `crm.interaction` timeline as a real conversation.
+Needs: provider webhooks (delivered/bounced/complained) and reply ingestion. ✅ Threading is DONE
+in both directions (2026-08-16): an inbound reply lands on the party's `crm.interaction` timeline
+as a real conversation, and an outbound reply now continues that same conversation in the
+recipient's inbox instead of opening a new one.
 
 ### G7 — Compliance, built into the send primitive. *Arman's ruling: "follow the law."*
 Commercial email carries obligations (CAN-SPAM/CASL/GDPR-class): a working one-click unsubscribe,
@@ -292,8 +294,11 @@ generic, and wanted by several features that are already built.
    unresolved-variable = hard fail. Wanted by: outreach, notifications, assists, agent messages, SMS.
 2. **Cadence/sequence runner** (G4) — "do this series of steps over time, on these conditions,
    stop when X." Wanted by: outreach, nurture, follow-up tasks, growth-loop stages, scheduled agents.
-3. **Inbound message ingestion + threading** (G6) — the platform is currently write-only across
-   every channel. Wanted by: outreach, SMS, support, any two-way agent conversation with a human.
+3. **Inbound message ingestion + threading** (G6) — the platform was write-only across every
+   channel. Threading is now a primitive on the send side too (`MessageThread` on the one gate,
+   provider-native id + RFC822 chain), so any future channel inherits "continue this conversation"
+   rather than reinventing it. Wanted by: outreach, SMS, support, any two-way agent conversation
+   with a human.
 4. **Sending identity registry** (G5) — which mailbox/number/domain speaks for an org, with rate
    and warmup state. Wanted by: email, SMS, and every future channel.
 5. **One consent & suppression authority** (G7) — already ruled; make it real and make it
@@ -834,6 +839,14 @@ pinning that every status ingestion writes is terminal to the runner. G6:
 detector → OOO with return-date parsing → interest) feeding BOTH suppression and branching, with
 Gmail `threadId` correlation (naive `In-Reply-To` matching would silently never match, because
 `sending_event.provider_message_id` holds the Gmail API id, not the RFC822 Message-ID).
+✅ **REPLYING is threaded end to end as of 2026-08-16 (D-W1-16).** The ONE send authority takes a
+`MessageThread`: the provider thread id keeps the message in the customer's own conversation, and
+`In-Reply-To`/`References` are what thread it in the RECIPIENT's client — neither substitutes for
+the other, and the send primitive OWNS both headers. **The same id trap runs the other way and is
+now closed on both sides:** the ingester stamps the RFC822 ids at
+`attributes.outreach_inbound.rfc822_message_id`/`.rfc822_references`, the reply path reads only
+those, and a provider id offered as `In-Reply-To` raises rather than shipping a header that threads
+nothing.
 ✅ **RULED BY ARMAN 2026-08-15: `gmail.readonly` is added AFTER the current Google verification
 round closes, as its own focused campaign** (queued in
 `common-docs/projects/google-oauth-verification/PLAN.md` — status header, frozen scope table,
