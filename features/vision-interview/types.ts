@@ -167,6 +167,12 @@ export interface RoleMeta {
   /** One line, from the design doc — what this role does in the room. */
   description: string;
   icon: LucideIcon;
+  /**
+   * Theme-aware accent classes (chart tokens — semantic, defined for light
+   * AND dark in globals.css). `avatar` styles the presence/turn avatar disc;
+   * `text` colors the speaker name; `ring` is the active-speaker halo.
+   */
+  accent: { avatar: string; text: string; ring: string };
 }
 
 export const ROLE_ORDER: RoleKey[] = [
@@ -185,6 +191,11 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     description:
       "Pushes the vision further — surfaces what you haven't articulated yet.",
     icon: Megaphone,
+    accent: {
+      avatar: "bg-chart-1/15 text-chart-1",
+      text: "text-chart-1",
+      ring: "ring-chart-1/60",
+    },
   },
   cartographer: {
     key: "cartographer",
@@ -192,24 +203,44 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     description:
       "Maps the terrain — names what exists, and states what the name fails to capture.",
     icon: MapIcon,
+    accent: {
+      avatar: "bg-chart-2/15 text-chart-2",
+      text: "text-chart-2",
+      ring: "ring-chart-2/60",
+    },
   },
   archaeologist: {
     key: "archaeologist",
     name: "Archaeologist",
     description: "Digs for buried assumptions and unstated constraints.",
     icon: Landmark,
+    accent: {
+      avatar: "bg-chart-3/15 text-chart-3",
+      text: "text-chart-3",
+      ring: "ring-chart-3/60",
+    },
   },
   adversary: {
     key: "adversary",
     name: "Adversary",
     description: "Attacks claims to find where the vision breaks.",
     icon: Swords,
+    accent: {
+      avatar: "bg-chart-5/15 text-chart-5",
+      text: "text-chart-5",
+      ring: "ring-chart-5/60",
+    },
   },
   architect: {
     key: "architect",
     name: "Architect",
     description: "Shapes the vision into a buildable structure.",
     icon: DraftingCompass,
+    accent: {
+      avatar: "bg-chart-4/15 text-chart-4",
+      text: "text-chart-4",
+      ring: "ring-chart-4/60",
+    },
   },
   scribe: {
     key: "scribe",
@@ -217,6 +248,11 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     description:
       "The only writer — keeps the living document and the question ledger.",
     icon: PenLine,
+    accent: {
+      avatar: "bg-primary/15 text-primary",
+      text: "text-primary",
+      ring: "ring-primary/60",
+    },
   },
 };
 

@@ -2,11 +2,14 @@
 
 // features/vision-interview/components/OpenQuestionsPanel.tsx
 //
-// The right pane: the living Open Questions ledger + the Adversary's holes.
+// The right pane — the room's instrument panel: the living Open Questions
+// ledger + the Adversary's holes. Dense, hierarchical, semantic-token only
+// (war-room bar): sticky section headers with live counts, compact rows with
+// a left state rail instead of boxed cards, controls quiet until hover.
 //
-//   Questions — state chip (semantic tokens), age in ROUNDS (older = louder,
-//   stronger treatment past 3 rounds), dodge-count badge when > 1, missing-part
-//   callout for partials, defer / reopen controls.
+//   Questions — state chip, age in ROUNDS (older = louder, strongest past 3),
+//   dodge-count badge when > 1, missing-part callout for partials,
+//   defer / reopen controls.
 //
 //   Holes — needs_human_arbitration rows surface at the top with distinct
 //   treatment (the selector orders them first), classification chip with a
@@ -21,6 +24,7 @@ import {
   AlertTriangle,
   ChevronDown,
   CircleHelp,
+  ListTodo,
   ShieldAlert,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +47,8 @@ import {
   questionForced,
   questionMerged,
   selectHolesOrdered,
+  selectOpenHoleCount,
+  selectOpenQuestionCount,
   selectQuestionsOrdered,
   selectRoomHydrated,
   selectRoomSession,
@@ -50,7 +56,6 @@ import {
 import {
   acceptHoleAsRisk,
   reclassifyHole,
-  updateHole,
   updateQuestionState,
 } from "../service";
 import {
@@ -65,7 +70,7 @@ import {
   type RoleKey,
 } from "../types";
 
-// ── Question card ───────────────────────────────────────────────────────────
+// ── Question row ────────────────────────────────────────────────────────────
 
 const STATE_CHIP: Record<QuestionState, string> = {
   open: "border-border bg-muted text-foreground",
@@ -73,6 +78,15 @@ const STATE_CHIP: Record<QuestionState, string> = {
   partially_answered: "border-primary/40 bg-primary/10 text-primary",
   dodged: "border-destructive/40 bg-destructive/10 text-destructive",
   deferred: "border-border bg-background text-muted-foreground",
+};
+
+/** Left rail color — the row's one-glance state. */
+const STATE_RAIL: Record<QuestionState, string> = {
+  open: "bg-border",
+  answered: "bg-border/50",
+  partially_answered: "bg-primary/50",
+  dodged: "bg-destructive/60",
+  deferred: "bg-border/50",
 };
 
 function QuestionCard({
@@ -88,6 +102,7 @@ function QuestionCard({
   const age = Math.max(0, currentRound - question.round_raised);
   const isLive = question.state !== "answered" && question.state !== "deferred";
   const loud = isLive && age >= 3;
+  const settled = !isLive;
   const raisedBy =
     question.raised_by && question.raised_by !== "human"
       ? ROLES[question.raised_by as RoleKey]?.name
@@ -123,26 +138,29 @@ function QuestionCard({
   return (
     <div
       className={cn(
-        "rounded-md border px-2.5 py-2",
-        loud
-          ? "border-destructive/50 bg-destructive/5"
-          : "border-border bg-card",
+        "group relative rounded-md py-1.5 pl-3 pr-2 hover:bg-accent/40",
+        settled && "opacity-60",
       )}
     >
-      <div className="flex items-start gap-1.5">
-        <p
-          className={cn(
-            "min-w-0 flex-1 text-sm text-foreground",
-            loud && "font-medium",
-          )}
-        >
-          {question.question}
-        </p>
-      </div>
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <span
+        className={cn(
+          "absolute bottom-1 left-0 top-1 w-0.5 rounded-full",
+          loud ? "bg-destructive" : STATE_RAIL[question.state],
+        )}
+        aria-hidden
+      />
+      <p
+        className={cn(
+          "text-[13px] leading-snug text-foreground",
+          loud && "font-medium",
+        )}
+      >
+        {question.question}
+      </p>
+      <div className="mt-1 flex flex-wrap items-center gap-1.5">
         <span
           className={cn(
-            "inline-flex items-center rounded-full border px-1.5 py-0.5 text-[11px] font-medium",
+            "inline-flex items-center rounded-full border px-1.5 py-px text-[10px] font-medium",
             STATE_CHIP[question.state],
           )}
         >
@@ -151,7 +169,7 @@ function QuestionCard({
         {isLive && (
           <span
             className={cn(
-              "text-[11px]",
+              "text-[10px]",
               loud
                 ? "font-semibold text-destructive"
                 : age >= 2
@@ -163,21 +181,21 @@ function QuestionCard({
           </span>
         )}
         {question.dodge_count > 1 && (
-          <Badge variant="destructive" className="px-1.5 py-0 text-[11px]">
+          <Badge variant="destructive" className="px-1.5 py-0 text-[10px]">
             dodged ×{question.dodge_count}
           </Badge>
         )}
         {raisedBy && (
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[10px] text-muted-foreground">
             raised by {raisedBy}
           </span>
         )}
-        <span className="ml-auto inline-flex gap-1">
+        <span className="ml-auto inline-flex opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
           {question.state === "deferred" ? (
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-xs"
+              className="h-5 px-1.5 text-[11px]"
               disabled={busy}
               onClick={() => void setState("open")}
             >
@@ -187,7 +205,7 @@ function QuestionCard({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-xs"
+              className="h-5 px-1.5 text-[11px]"
               disabled={busy}
               onClick={() => void setState("deferred")}
             >
@@ -197,7 +215,7 @@ function QuestionCard({
         </span>
       </div>
       {question.state === "partially_answered" && question.missing_part && (
-        <p className="mt-1.5 rounded border border-primary/30 bg-primary/5 px-2 py-1 text-xs text-foreground">
+        <p className="mt-1 rounded border border-primary/25 bg-primary/5 px-2 py-1 text-[11px] text-foreground">
           <CircleHelp
             className="mr-1 inline h-3 w-3 text-primary"
             aria-hidden
@@ -206,7 +224,7 @@ function QuestionCard({
         </p>
       )}
       {question.answer_note && (
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
           {question.answer_note}
         </p>
       )}
@@ -214,7 +232,7 @@ function QuestionCard({
   );
 }
 
-// ── Hole card ───────────────────────────────────────────────────────────────
+// ── Hole row ────────────────────────────────────────────────────────────────
 
 const CLASSIFICATION_CHIP: Record<HoleClassification, string> = {
   fatal: "border-destructive/50 bg-destructive/10 text-destructive",
@@ -228,8 +246,7 @@ function HoleCard({ hole }: { hole: InterviewHoleRow }) {
   const [confirmRisk, setConfirmRisk] = useState(false);
 
   const needsArbitration = hole.status === "needs_human_arbitration";
-  const settled =
-    hole.status === "patched" || hole.status === "accepted_risk";
+  const settled = hole.status === "patched" || hole.status === "accepted_risk";
 
   const applyPatch = async (
     optimistic: Partial<InterviewHoleRow>,
@@ -266,35 +283,48 @@ function HoleCard({ hole }: { hole: InterviewHoleRow }) {
   return (
     <div
       className={cn(
-        "rounded-md border px-2.5 py-2",
+        "group relative rounded-md py-1.5 pl-3 pr-2",
         needsArbitration
-          ? "border-destructive bg-destructive/5"
-          : "border-border bg-card",
-        settled && "opacity-70",
+          ? "border border-destructive/40 bg-destructive/5"
+          : "hover:bg-accent/40",
+        settled && "opacity-60",
       )}
     >
+      {!needsArbitration && (
+        <span
+          className={cn(
+            "absolute bottom-1 left-0 top-1 w-0.5 rounded-full",
+            hole.classification === "fatal"
+              ? "bg-destructive/60"
+              : hole.classification === "unknown"
+                ? "bg-primary/50"
+                : "bg-border",
+          )}
+          aria-hidden
+        />
+      )}
       {needsArbitration && (
-        <p className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-destructive">
+        <p className="mb-1 inline-flex items-center gap-1 text-[11px] font-semibold text-destructive">
           <ShieldAlert className="h-3.5 w-3.5" aria-hidden />
           Needs your call — the room deadlocked on this one
         </p>
       )}
-      <p className="text-sm font-medium text-foreground">
+      <p className="text-[13px] font-medium leading-snug text-foreground">
         {hole.claim_attacked}
       </p>
       {hole.why_it_breaks && (
-        <p className="mt-0.5 text-xs text-muted-foreground">
+        <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
           {hole.why_it_breaks}
         </p>
       )}
-      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <div className="mt-1 flex flex-wrap items-center gap-1.5">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
               disabled={busy}
               className={cn(
-                "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-[11px] font-medium",
+                "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-px text-[10px] font-medium",
                 CLASSIFICATION_CHIP[hole.classification],
               )}
               title="Reclassify"
@@ -318,24 +348,29 @@ function HoleCard({ hole }: { hole: InterviewHoleRow }) {
             )}
           </DropdownMenuContent>
         </DropdownMenu>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-[10px] text-muted-foreground">
           {HOLE_STATUS_LABELS[hole.status]}
         </span>
         {hole.reclassified_by_human && (
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-[10px] text-muted-foreground">
             reclassified by you
           </span>
         )}
         {hole.roundtrip_count > 0 && (
-          <span className="text-[11px] text-muted-foreground">
-            {hole.roundtrip_count} round-trip{hole.roundtrip_count === 1 ? "" : "s"}
+          <span className="text-[10px] text-muted-foreground">
+            {hole.roundtrip_count} round-trip
+            {hole.roundtrip_count === 1 ? "" : "s"}
           </span>
         )}
         {!settled && (
           <Button
             variant="ghost"
             size="sm"
-            className="ml-auto h-6 px-2 text-xs"
+            className={cn(
+              "ml-auto h-5 px-1.5 text-[11px]",
+              !needsArbitration &&
+                "opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100",
+            )}
             disabled={busy}
             onClick={() => setConfirmRisk(true)}
           >
@@ -344,7 +379,9 @@ function HoleCard({ hole }: { hole: InterviewHoleRow }) {
         )}
       </div>
       {hole.resolution && (
-        <p className="mt-1 text-xs text-muted-foreground">{hole.resolution}</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground">
+          {hole.resolution}
+        </p>
       )}
       <ConfirmDialog
         open={confirmRisk}
@@ -367,51 +404,89 @@ function HoleCard({ hole }: { hole: InterviewHoleRow }) {
 
 // ── Panel ───────────────────────────────────────────────────────────────────
 
+function SectionHeader({
+  icon: Icon,
+  label,
+  openCount,
+  total,
+}: {
+  icon: typeof ListTodo;
+  label: string;
+  openCount: number;
+  total: number;
+}) {
+  return (
+    <div className="sticky top-0 z-10 -mx-2 flex items-center gap-1.5 border-b border-border/60 bg-background/95 px-2.5 py-1.5 backdrop-blur">
+      <Icon className="h-3 w-3 text-muted-foreground" aria-hidden />
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </span>
+      {total > 0 && (
+        <span
+          className={cn(
+            "ml-auto rounded-full px-1.5 py-px text-[10px] font-medium",
+            openCount > 0
+              ? "bg-primary/10 text-primary"
+              : "bg-muted text-muted-foreground",
+          )}
+        >
+          {openCount} open · {total}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function OpenQuestionsPanel() {
   const questions = useAppSelector(selectQuestionsOrdered);
   const holes = useAppSelector(selectHolesOrdered);
   const session = useAppSelector(selectRoomSession);
   const hydrated = useAppSelector(selectRoomHydrated);
+  const openQuestions = useAppSelector(selectOpenQuestionCount);
+  const openHoles = useAppSelector(selectOpenHoleCount);
   const currentRound = session?.current_round ?? 0;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto p-2">
-      <p className="px-0.5 pb-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Open questions
-      </p>
+    <div className="h-full min-h-0 overflow-y-auto px-2 pb-2">
+      <SectionHeader
+        icon={ListTodo}
+        label="Open questions"
+        openCount={openQuestions}
+        total={questions.length}
+      />
       {!hydrated ? (
-        <div className="space-y-2">
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-14 w-full" />
+        <div className="mt-2 space-y-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-12 w-full" />
         </div>
       ) : questions.length === 0 ? (
-        <p className="px-0.5 text-sm text-muted-foreground">
-          No questions raised yet.
+        <p className="px-1 py-2 text-xs text-muted-foreground">
+          No questions raised yet — the room files them here as it works.
         </p>
       ) : (
-        <div className="space-y-1.5">
+        <div className="mt-1 space-y-0.5">
           {questions.map((q) => (
-            <QuestionCard
-              key={q.id}
-              question={q}
-              currentRound={currentRound}
-            />
+            <QuestionCard key={q.id} question={q} currentRound={currentRound} />
           ))}
         </div>
       )}
 
-      <p className="flex items-center gap-1 px-0.5 pb-1.5 pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        <AlertTriangle className="h-3 w-3" aria-hidden />
-        Holes
-      </p>
+      <div className="pt-3">
+        <SectionHeader
+          icon={AlertTriangle}
+          label="Holes"
+          openCount={openHoles}
+          total={holes.length}
+        />
+      </div>
       {!hydrated ? (
-        <Skeleton className="h-14 w-full" />
+        <Skeleton className="mt-2 h-12 w-full" />
       ) : holes.length === 0 ? (
-        <p className="px-0.5 text-sm text-muted-foreground">
+        <p className="px-1 py-2 text-xs text-muted-foreground">
           The Adversary has not opened any holes.
         </p>
       ) : (
-        <div className="space-y-1.5">
+        <div className="mt-1 space-y-0.5">
           {holes.map((h) => (
             <HoleCard key={h.id} hole={h} />
           ))}

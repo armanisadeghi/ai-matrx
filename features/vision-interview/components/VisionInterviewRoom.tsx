@@ -34,7 +34,9 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
   const isMobile = useIsMobile();
   const [mobilePane, setMobilePane] = useState<MobilePane>("room");
 
-  const advanceStage = () => resume({ message: "", advanceStage: true });
+  const advanceStage = async () => {
+    await resume({ message: "", advanceStage: true });
+  };
 
   return (
     <>

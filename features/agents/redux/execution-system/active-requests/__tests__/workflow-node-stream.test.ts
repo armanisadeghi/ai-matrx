@@ -26,6 +26,7 @@ import {
   selectWorkflowNodeStream,
   selectWorkflowNodeStreams,
 } from "../active-requests.selectors";
+import { TERMINAL_RUN_EVENTS } from "../../thunks/follow-workflow-run-stream";
 
 const REQ = "req_wf_run_1";
 const CONV = "conv_wf_run_1";
@@ -131,6 +132,41 @@ test("node_completed settles the entry; a later frame (retry) reopens it", () =>
   const entry = selectWorkflowNodeStream(REQ, "role_scribe")(state() as never);
   expect(entry?.status).toBe("streaming");
   expect(entry?.text).toBe("Draft. More.");
+});
+
+test("selectWorkflowNodeStreams is factory-cached per requestId and memoized", () => {
+  const { frame, state } = setup();
+  frame("role_amplifier", "chunk", "hello", 1);
+
+  // Same requestId → the SAME selector instance (inline useAppSelector calls
+  // must hit the memo, not rebuild a createSelector every render).
+  const a = selectWorkflowNodeStreams(REQ);
+  const b = selectWorkflowNodeStreams(REQ);
+  expect(a).toBe(b);
+
+  // Memoized result: same input state → the SAME array reference.
+  const first = a(state() as never);
+  const second = b(state() as never);
+  expect(first).toBe(second);
+
+  // A frame for ANOTHER node changes the result — memo invalidates correctly.
+  frame("role_scribe", "chunk", "draft", 1);
+  const third = a(state() as never);
+  expect(third).not.toBe(first);
+  expect(third.map((s) => s.nodeId)).toEqual(["role_amplifier", "role_scribe"]);
+});
+
+test("the SSE follow loop's terminal set covers every run-death event", () => {
+  // run_errored was missing (PR #145 review): the follower kept
+  // reading/reconnecting after the run died and could replay choreography.
+  for (const event of [
+    "run_completed",
+    "run_failed",
+    "run_errored",
+    "run_cancelled",
+  ]) {
+    expect(TERMINAL_RUN_EVENTS.has(event)).toBe(true);
+  }
 });
 
 test("node_failed settles as failed; settling an unknown node is a no-op", () => {

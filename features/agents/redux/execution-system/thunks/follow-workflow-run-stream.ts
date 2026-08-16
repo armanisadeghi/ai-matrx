@@ -65,7 +65,10 @@ export interface WorkflowRunWireEvent {
   [key: string]: unknown;
 }
 
-const TERMINAL_RUN_EVENTS = new Set([
+/** Events that END the SSE follow loop. Exported for the regression test —
+ *  omitting one (run_errored was missing) leaves the follower reconnecting
+ *  forever after the run has already died. */
+export const TERMINAL_RUN_EVENTS = new Set([
   "run_completed",
   "run_failed",
   "run_errored",
