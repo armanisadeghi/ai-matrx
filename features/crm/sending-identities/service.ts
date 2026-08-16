@@ -15,7 +15,9 @@
 // gate (`send_through_identity`), never an endpoint a client can aim.
 
 import { apiDelete, apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed-client";
+import { getJson } from "@/lib/python-client";
 import type {
+  BringUpReadiness,
   CheckReport,
   ConnectableMailbox,
   SendingEventRecord,
@@ -167,5 +169,23 @@ export async function setSendingPolicy(
     reason: reason ?? null,
     organization_id: organizationId ?? null,
   });
+  return data;
+}
+
+/**
+ * Server-only facts for the production bring-up checklist — deployment config,
+ * vendor-key presence (booleans, never values), gmail.readonly state.
+ *
+ * Uses the raw client because the generated spec does not carry this route yet
+ * (see the BringUpReadiness note in types.ts); switch to `apiGet` when it does.
+ */
+export async function getBringUpReadiness(
+  organizationId?: string,
+): Promise<BringUpReadiness> {
+  const { data } = await getJson<BringUpReadiness>(
+    organizationId
+      ? `/sending-identities/bring-up-readiness?organization_id=${encodeURIComponent(organizationId)}`
+      : "/sending-identities/bring-up-readiness",
+  );
   return data;
 }

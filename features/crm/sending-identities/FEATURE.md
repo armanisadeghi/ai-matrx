@@ -90,3 +90,26 @@ contract via `@/lib/api/typed-client` so a backend rename is a compile error.
 - **The from-address is never a free-text field.** The server only accepts the
   address the OAuth account actually authenticated as, so a text input would
   only manufacture refusals.
+
+## The org-level production bring-up checklist (2026-08-15)
+
+`outreach.production_bring_up` ([bringUpChecklist.tsx](./bringUpChecklist.tsx),
+mounted by `features/crm/components/sending-identities/OutreachBringUpSection.tsx`
+on `/crm/sending-identities`) answers the question ABOVE the per-mailbox
+checklist: what still stands between this ORGANIZATION and its first real
+outreach message. Six steps: named mailbox on a proven domain (verified) ·
+the Google Cloud reply pipe (confirmed, exact copy-paste values) · server
+listening for replies (verified against `GET
+/sending-identities/bring-up-readiness`, hand-typed shape in types.ts until the
+generated spec carries it) · sending rules accepted (verified against
+`crm.outreach_acceptance`; the fix opens `AcceptSendingRulesDialog` — the FIRST
+caller of `acceptOutreachPolicy`, full text on screen, exact words recorded) ·
+vendor keys present (verified, booleans only) · gmail.readonly (verified +
+OPTIONAL — queued behind Google's review; no user action can hurry it, so it
+must not block the done verdict).
+
+Traps: the readiness endpoint on a server that predates it falls into
+`/{identity_id}` and answers 400 — the checks map ANY readiness failure to
+`unknown`, never `fail`, so a stale deployment reads as "couldn't check", not
+"you broke something". Dialog fixes resolve their promise on CLOSE (accepted or
+not) so the re-check fires either way and reads the truth from the DB.

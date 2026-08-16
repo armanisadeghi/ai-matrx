@@ -208,6 +208,17 @@ you believe it.
 
 ## Change log
 
+- 2026-08-15 — Fifth consumer: `outreach.production_bring_up` on
+  `/crm/sending-identities` (org-level, singleton per org — no `targetKey`),
+  the five outreach production gates as one guided flow beside the per-mailbox
+  `outreach.sending_identity`. New patterns it proved: a step's fix may open a
+  DIALOG through a promise that resolves on close, so the settle-time re-check
+  reads the truth (the sending-rules acceptance flipped live in-browser); and a
+  step whose fact nobody on the surface can act on (`gmail.readonly`, queued
+  behind Google's review) is `optional` with the honest reason, not a required
+  step that nags forever. Server-side facts arrive as booleans from one
+  readiness endpoint; any fetch failure maps to `unknown`, never `fail`.
+
 - 2026-08-15 — Fixed first-run persistence: owner-keyed live INSERT policy,
   create-vs-load error reporting, and create/re-read regression coverage.
 

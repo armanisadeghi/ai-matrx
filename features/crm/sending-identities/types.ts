@@ -109,3 +109,24 @@ export const FIX_COPY: Record<
 
 /** Events that count as a problem when they show up in the audit trail. */
 export const NEGATIVE_EVENTS = new Set(["bounced", "complained", "failed", "unsubscribed"]);
+
+/**
+ * Server-side facts for the org's production bring-up checklist.
+ *
+ * HAND-TYPED next to the generated shapes because the deployed OpenAPI spec
+ * does not carry `/sending-identities/bring-up-readiness` yet — same honest
+ * gap WP2 recorded for the link-gap routes. Replace with
+ * `components["schemas"]["BringUpReadiness"]` via `pnpm sync-types` once the
+ * spec catches up. Source of truth:
+ * aidream/aidream/services/sending_identity/bring_up.py
+ */
+export interface BringUpReadiness {
+  organization_id: string;
+  pubsub_topic_configured: boolean;
+  push_token_configured: boolean;
+  hunter_key_present: boolean;
+  prospeo_key_present: boolean;
+  millionverifier_key_present: boolean;
+  gmail_readonly_granted: boolean;
+  connected_mailboxes: number;
+}

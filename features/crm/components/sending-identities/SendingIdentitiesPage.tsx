@@ -35,6 +35,7 @@ import { setSendingPolicy } from "@/features/crm/sending-identities/service";
 import { STATUS_COPY } from "@/features/crm/sending-identities/types";
 import type { SendingIdentityView } from "@/features/crm/sending-identities/types";
 import { ConnectMailboxDialog } from "./ConnectMailboxDialog";
+import { OutreachBringUpSection } from "./OutreachBringUpSection";
 
 function StatusBadge({ status }: { status: SendingIdentityView["status"] }) {
   const copy = STATUS_COPY[status];
@@ -209,6 +210,19 @@ export function SendingIdentitiesPage() {
 
         {policyError ? (
           <p className="text-sm text-destructive">{policyError}</p>
+        ) : null}
+
+        {/*
+          The org-level bring-up checklist — everything between here and the
+          first real outreach message, machine-checked where checkable. Mounted
+          once the policy row has resolved the org (the checklist run persists
+          per org, so it cannot mount against a guess).
+        */}
+        {policy ? (
+          <OutreachBringUpSection
+            organizationId={policy.organization_id}
+            onIdentitiesChanged={reload}
+          />
         ) : null}
 
         {loading ? (
