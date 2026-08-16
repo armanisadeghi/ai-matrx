@@ -18,6 +18,7 @@
 // recording survives route/tab changes.
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { isTransportFailure } from "@/lib/net/errors";
 import { toast } from "@/lib/toast";
 import {
   useVoiceCapture,
@@ -149,16 +150,23 @@ export function useMicField(options: UseMicFieldOptions): UseMicFieldResult {
       cbRef.current.onTranscriptionComplete?.(finalText);
     },
     onError: (message, code) => {
-      setLastError({ message, code: code || "UNKNOWN_ERROR" });
+      // A transport-level failure (Safari's "Load failed") means the server
+      // never answered — usually a deploy restart. Say that instead of the
+      // browser's cryptic wording (Arman hit 7 of these in one session,
+      // 2026-08-16, all inside one deploy window).
+      const friendly = isTransportFailure({ message })
+        ? "The transcription server could not be reached — it may be restarting for an update. Wait a moment and try again."
+        : message;
+      setLastError({ message: friendly, code: code || "UNKNOWN_ERROR" });
       toast.error("Voice input failed", {
-        description: message,
+        description: friendly,
         duration: 10000,
         action: {
           label: "Get Help",
           onClick: () => setShowTroubleshooting(true),
         },
       });
-      cbRef.current.onTranscriptionError?.(message);
+      cbRef.current.onTranscriptionError?.(friendly);
     },
   });
 

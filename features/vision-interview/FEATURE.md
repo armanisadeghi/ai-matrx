@@ -159,6 +159,16 @@ per-node tokens the same way.
   stage stepper in the header. PR #145 review fixes: follower armed once
   per run_id, `run_errored` terminal, `selectWorkflowNodeStreams` factory
   cache (+ regression tests).
+- 2026-08-16 — Mobile breakage pass (Arman's screenshots) + honest network
+  errors: RoomHeader mobile chip is stage-label-only and Advance is icon-only
+  on xs (title no longer collides); composer drops the pinned text-stats bar
+  (`enableTextStats={false}`); `ProTextarea` (canonical) reserves a
+  `pointer-coarse:` right gutter and keeps its mic/menu cluster visible on
+  touch, and its stats bar is desktop-only; `ErrorInspectorBadge`/`AssistsDock`
+  lifted above the mobile bottom band. Transport failures (Safari "Load
+  failed" — the 11-error burst was a deploy swap window on the server) now
+  surface as "server may be restarting" copy via `isTransportFailure` in
+  `useInterviewRun` and `useMicField` instead of the browser's wording.
 - 2026-08-16 — Live token streaming shipped end-to-end: `followWorkflowRunStream`
   follows the run's SSE events feed into `activeRequests.nodeStreams`;
   `TranscriptPane` renders per-role `LiveTurnCard`s that resolve seamlessly

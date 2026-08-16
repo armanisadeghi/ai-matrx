@@ -50,7 +50,9 @@ export default function AssistsDock() {
   const overflow = strong.length - visible.length + weak.length;
 
   return (
-    <div className="fixed bottom-14 right-3 z-40 flex flex-col items-end gap-1.5 pb-safe">
+    // Mobile sits ABOVE the bottom band where composers/action bars live —
+    // at bottom-14 the launcher pill covered a composer's input (2026-08-16).
+    <div className="fixed bottom-32 right-3 z-40 flex flex-col items-end gap-1.5 pb-safe sm:bottom-14">
       {open && (
         <div className="flex max-h-[50dvh] w-72 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
           {visible.map((assist) => (

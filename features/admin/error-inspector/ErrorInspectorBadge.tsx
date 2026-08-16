@@ -34,7 +34,9 @@ export default function ErrorInspectorBadge() {
         onClick={toggle}
         title={`${red} error${red === 1 ? "" : "s"} captured — open Error Inspector`}
         className={cn(
-          "fixed bottom-4 left-4 z-[60] flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 shadow-lg",
+          // Mobile sits ABOVE the bottom band where composers/action bars live
+          // — at bottom-4 it covered a composer's controls (2026-08-16).
+          "fixed bottom-24 left-3 z-[60] flex items-center gap-1.5 rounded-full border px-2.5 py-1.5 shadow-lg sm:bottom-4 sm:left-4",
           "bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-colors",
           unseenRed > 0
             ? "border-destructive/50 text-destructive animate-pulse"
@@ -62,7 +64,7 @@ export default function ErrorInspectorBadge() {
         onClick={toggle}
         title={`${orange} minor issue${orange === 1 ? "" : "s"} — open Error Inspector`}
         aria-label="Open Error Inspector"
-        className="fixed bottom-4 left-4 z-[60] flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-transform hover:scale-110"
+        className="fixed bottom-24 left-3 z-[60] flex h-5 w-5 items-center justify-center rounded-full border border-border bg-card/95 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-transform hover:scale-110 sm:bottom-4 sm:left-4"
       >
         <span
           className={cn(

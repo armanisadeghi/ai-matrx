@@ -181,6 +181,10 @@ export function Composer({ onResume, onStart }: ComposerProps) {
           autoGrow
           minHeight={44}
           maxHeight={240}
+          // A chat composer is not a document field — the pinned stats bar
+          // ("0 c 0 w…") is pure clutter here, worst on mobile where it ate a
+          // full row under the composer (Arman's screenshots, 2026-08-16).
+          enableTextStats={false}
           wrapperClassName="w-full"
           className="border-0 bg-transparent text-base shadow-none focus-visible:ring-0 sm:text-sm"
         />

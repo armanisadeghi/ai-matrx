@@ -846,6 +846,14 @@ export const ProTextarea = React.forwardRef<
       (showCopyButton ||
         enabledAgentActionIds.length > 0 ||
         showBoundAgentsMenu);
+    // Touch devices have no hover, so the top-right cluster is ALWAYS visible
+    // there (pointer-coarse) — which means the textarea must reserve a right
+    // gutter for it, or the buttons sit on the placeholder/text (Arman's
+    // mobile screenshots, 2026-08-16). Fine pointers keep the hover-reveal +
+    // zero-gutter float.
+    const coarseControlCount =
+      (enableVoice && isAudioAvailable && !disabled ? 1 : 0) +
+      (showMenu ? 1 : 0);
     const showTextStats = enableTextStats && showMenu;
     const showPinnedTextStatsBar = showTextStats && showTextStatsBar;
     const fillHeight = wantsFillHeight(className, wrapperClassName);
@@ -890,8 +898,10 @@ export const ProTextarea = React.forwardRef<
               placeholder={floatingLabel ? undefined : placeholder}
               className={cn(
                 "flex w-full border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-neutral-500 dark:placeholder:text-neutral-400",
+                // The pinned stats bar is desktop-only (see its render below),
+                // so the flat bottom edge that pairs with it is sm+ only too.
                 showPinnedTextStatsBar
-                  ? "rounded-t-md border-b-0"
+                  ? "rounded-md sm:rounded-b-none sm:border-b-0"
                   : "rounded-md",
                 "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
                 "disabled:cursor-not-allowed disabled:opacity-50",
@@ -905,9 +915,11 @@ export const ProTextarea = React.forwardRef<
                 // no scrollbar shows; it only appears once capped at maxHeight.
                 autoGrow && "resize-none overflow-y-auto",
                 // The top-right controls float OVER the text — no reserved right
-                // gutter. They're hidden while typing (hover-only) so they never
-                // sit on top of text the user is actively editing.
+                // gutter on fine pointers (hidden while typing, hover-only). On
+                // coarse pointers they are always visible, so reserve the gutter.
                 "pr-3",
+                coarseControlCount === 2 && "pointer-coarse:pr-24",
+                coarseControlCount === 1 && "pointer-coarse:pr-14",
                 // Bottom padding for the submit button — TapTargetButtonSolid is
                 // 44px tall (h-11), so reserve enough vertical clearance.
                 onSubmit && "pb-14",
@@ -954,6 +966,9 @@ export const ProTextarea = React.forwardRef<
             <div
               className={cn(
                 "absolute right-0 top-0 flex items-center transition-opacity duration-200 z-10 focus-within:opacity-100 focus-within:pointer-events-auto",
+                // Coarse pointers can't hover — the cluster stays visible (the
+                // textarea reserves a matching right gutter above).
+                "pointer-coarse:opacity-100 pointer-coarse:pointer-events-auto",
                 showControls || menuOpen
                   ? "opacity-100"
                   : "opacity-0 pointer-events-none",
@@ -1278,8 +1293,13 @@ export const ProTextarea = React.forwardRef<
             </AlertDialogContent>
           </AlertDialog>
 
+          {/* Desktop-only: on a phone the counts row is clutter under every
+              field (Arman's mobile screenshots, 2026-08-16). The "Text stats"
+              menu view still works everywhere. */}
           {showPinnedTextStatsBar && (
-            <ProTextFieldStatsBar text={valueAsString} />
+            <div className="hidden sm:block">
+              <ProTextFieldStatsBar text={valueAsString} />
+            </div>
           )}
         </div>
       </div>

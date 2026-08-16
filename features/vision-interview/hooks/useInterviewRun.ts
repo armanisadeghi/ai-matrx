@@ -36,6 +36,7 @@ import {
   type WorkflowRunWireEvent,
 } from "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
+import { isTransportFailure } from "@/lib/net/errors";
 import { toast } from "@/lib/toast";
 import { appendVisionStatement } from "../service";
 import { roleFromNodeId, type RoleKey } from "../types";
@@ -249,8 +250,14 @@ export function useInterviewRun(sessionId: string) {
       }
       return true;
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "The interview run failed.";
+      // A network-level failure (Safari's "Load failed") means the request
+      // never got an answer — most often the server is mid-deploy for a
+      // minute or two. Say THAT, not the browser's cryptic wording.
+      const message = isTransportFailure(err)
+        ? "The server could not be reached — it may be restarting for an update. Wait a moment and try again; nothing you typed is lost."
+        : err instanceof Error
+          ? err.message
+          : "The interview run failed.";
       dispatch(runFailed({ message }));
       toast.error(message);
       return false;
@@ -288,9 +295,11 @@ export function useInterviewRun(sessionId: string) {
         draftConsumed = true;
       } catch (err) {
         toast.error(
-          err instanceof Error
-            ? err.message
-            : "Could not save your statement — nothing was started.",
+          isTransportFailure(err)
+            ? "Could not reach the database — check your connection and try again. Your draft is still here."
+            : err instanceof Error
+              ? err.message
+              : "Could not save your statement — nothing was started.",
         );
         return false; // Draft stays in the composer; Start stays armed.
       }
