@@ -36,6 +36,12 @@ export interface OrchestraMemberMeta {
   gap?: string;
   /** Saved member node position on the builder canvas. */
   pos?: CanvasPos;
+  /**
+   * Designated member (C-26): the orchestrator MUST successfully consult this
+   * member before finishing. Enforced by the server runtime (course-correction
+   * + a forced turn; a run that still skips it is never marked complete).
+   */
+  required?: boolean;
 }
 
 /** A Orchestra summary as returned by the `orchestra_list()` RPC (resolved/camelCased). */
@@ -61,6 +67,8 @@ export interface OrchestraMember {
   roleTitle: string | null;
   gap: string | null;
   pos: CanvasPos | null;
+  /** Designated member (C-26): must be consulted before the orchestrator finishes. */
+  required: boolean;
 }
 
 /** Full builder state for a single Orchestra: marker config + ordered members. */

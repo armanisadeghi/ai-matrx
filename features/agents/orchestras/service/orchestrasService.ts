@@ -61,10 +61,14 @@ function metaToConfig(meta: Json | null | undefined): OrchestraConfig {
 
 // Per-member metadata jsonb holds ONLY gap + saved position. The member's role
 // title lives in the association's `label` column (see load()/addMember()).
-function metaToMemberMeta(meta: Json | null | undefined): Pick<OrchestraMemberMeta, "gap" | "pos"> {
+function metaToMemberMeta(
+  meta: Json | null | undefined,
+): Pick<OrchestraMemberMeta, "gap" | "pos" | "required"> {
   const m = asRecord(meta);
-  const out: Pick<OrchestraMemberMeta, "gap" | "pos"> = {};
+  const out: Pick<OrchestraMemberMeta, "gap" | "pos" | "required"> = {};
   if (typeof m.gap === "string") out.gap = m.gap;
+  // Strict bool — mirrors the server's strict parse (a string "true" is not a declaration).
+  if (m.required === true) out.required = true;
   if (m.pos && typeof m.pos === "object") {
     const p = m.pos as Record<string, unknown>;
     if (typeof p.x === "number" && typeof p.y === "number") out.pos = { x: p.x, y: p.y };
@@ -126,6 +130,7 @@ export const orchestrasService = {
           roleTitle: e.label ?? null, // role title = the association's label column
           gap: meta.gap ?? null,
           pos: meta.pos ?? null,
+          required: meta.required === true,
         };
       });
 
@@ -186,7 +191,9 @@ export const orchestrasService = {
       // role title → the canonical `label` column; only gap + saved position ride metadata
       label: meta.roleTitle,
       position: args?.position,
-      metadata: { gap: meta.gap, pos: meta.pos } as Json,
+      // `required` is written ONLY as a JSON true — the server (and this
+      // service's reader) strict-parse it, so no false/undefined noise on edges.
+      metadata: { gap: meta.gap, pos: meta.pos, ...(meta.required === true ? { required: true } : {}) } as Json,
     });
   },
 

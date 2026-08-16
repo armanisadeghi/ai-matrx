@@ -145,10 +145,11 @@ const slice = createSlice({
       if (!entry) return;
       const m = entry.members.find((x) => x.agentId === action.payload.agentId);
       if (!m) return;
-      const { roleTitle, gap, pos } = action.payload.meta;
+      const { roleTitle, gap, pos, required } = action.payload.meta;
       if (roleTitle !== undefined) m.roleTitle = roleTitle || null;
       if (gap !== undefined) m.gap = gap || null;
       if (pos !== undefined) m.pos = pos;
+      if (required !== undefined) m.required = required;
     },
     configSet(
       state,

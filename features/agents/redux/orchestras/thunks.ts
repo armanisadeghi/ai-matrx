@@ -179,6 +179,7 @@ export function addAgentToOrchestra(args: {
       roleTitle: args.meta?.roleTitle ?? null,
       gap: args.meta?.gap ?? null,
       pos: args.meta?.pos ?? null,
+      required: args.meta?.required === true,
     };
     dispatch(orchestrasActions.memberAdded({ orchestratorId: args.orchestratorId, member }));
 
@@ -231,6 +232,9 @@ export function reorderOrchestraMembers(args: {
             roleTitle: m.roleTitle ?? undefined,
             gap: m.gap ?? undefined,
             pos: m.pos ?? undefined,
+            // Reorder is a full-metadata upsert — carrying the flag through is
+            // what keeps a reorder from silently un-designating a member.
+            required: m.required === true,
           },
         }),
       ),
@@ -261,6 +265,7 @@ export function saveMemberMeta(args: {
         roleTitle: m?.roleTitle ?? undefined,
         gap: m?.gap ?? undefined,
         pos: m?.pos ?? undefined,
+        required: m?.required === true,
       },
     });
     if (isScopesRpcErr(res)) {

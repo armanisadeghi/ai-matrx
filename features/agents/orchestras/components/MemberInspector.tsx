@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { removeAgentFromOrchestra, saveMemberMeta } from "@/features/agents/redux/orchestras/thunks";
@@ -39,9 +40,13 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
   // when a different member is selected, so no setState-in-effect re-seed.
   const [roleTitle, setRoleTitle] = useState(member.roleTitle ?? "");
   const [gap, setGap] = useState(member.gap ?? "");
+  const [required, setRequired] = useState(member.required === true);
   const [saving, setSaving] = useState(false);
 
-  const dirty = roleTitle !== (member.roleTitle ?? "") || gap !== (member.gap ?? "");
+  const dirty =
+    roleTitle !== (member.roleTitle ?? "") ||
+    gap !== (member.gap ?? "") ||
+    required !== (member.required === true);
 
   const handleSave = async () => {
     setSaving(true);
@@ -49,7 +54,12 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
       saveMemberMeta({
         orchestratorId,
         agentId: member.agentId,
-        meta: { roleTitle: roleTitle.trim(), gap: gap.trim(), pos: member.pos ?? undefined },
+        meta: {
+          roleTitle: roleTitle.trim(),
+          gap: gap.trim(),
+          pos: member.pos ?? undefined,
+          required,
+        },
       }),
     );
     setSaving(false);
@@ -114,6 +124,22 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
             rows={5}
             className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           />
+        </div>
+
+        {/* Designated member (C-26): runtime-enforced — the orchestrator cannot
+            finish cleanly without successfully consulting this member. */}
+        <div className="flex items-start justify-between gap-3 rounded-md border border-border bg-background p-3">
+          <div className="min-w-0 space-y-0.5">
+            <label htmlFor="member-required" className="text-xs font-medium text-foreground">
+              Must be consulted
+            </label>
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              The orchestrator has to bring this member in before it can finish.
+              If it tries to skip them, it is corrected automatically — and a run
+              that still skips them is never marked complete.
+            </p>
+          </div>
+          <Switch id="member-required" checked={required} onCheckedChange={setRequired} />
         </div>
 
         {/* Agent I/O — what this member consumes + produces (lazy-loaded full def) */}
