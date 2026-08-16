@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { createSession } from "../service";
 
@@ -70,12 +70,14 @@ export function NewInterviewDialog({
             aria-label="Interview title"
             className="text-base sm:text-sm"
           />
-          <Textarea
+          <ProTextarea
             value={vision}
             onChange={(e) => setVision(e.target.value)}
             placeholder="What's the vision? A paragraph is plenty — say it the way you'd say it out loud."
             aria-label="Vision statement"
-            rows={5}
+            autoGrow
+            minHeight={120}
+            maxHeight={320}
             className="text-base sm:text-sm"
           />
         </div>
