@@ -166,6 +166,26 @@ export interface MatrxColumnDef<T> {
   headerClassName?: string;
   width?: string | number;
   align?: "left" | "center" | "right";
+  /**
+   * ICON COLUMN. A column whose whole content is one glyph — a star, a lock, a
+   * status dot — and whose `width` is therefore a lie without this flag.
+   *
+   * `width` is only a hint on a table cell: min-content wins. A 40px star column
+   * still rendered ~70px wide because the HEADER carried three separate
+   * controls beside the glyph (the sort button, its arrow, the filter funnel),
+   * and the cell carried the default `px-2` on both sides. Every surface that
+   * wanted a tight icon column was paying for chrome it never used.
+   *
+   * `compact` fixes it AT THE PRIMITIVE, and does NOT cost the column anything:
+   * horizontal padding drops to `px-1`, and the header collapses its three
+   * controls into ONE popover trigger that still offers Sort ascending / Sort
+   * descending / Clear sort / the full filter body. The column stays fully
+   * sortable and filterable — the affordances moved into the menu, they did not
+   * disappear. Active sort/filter still show, as a 2px dot on the trigger.
+   *
+   * Pair it with `width` and `align: "center"`.
+   */
+  compact?: boolean;
   /** Hide from the table (still available in column picker when we add it). */
   hidden?: boolean;
 }

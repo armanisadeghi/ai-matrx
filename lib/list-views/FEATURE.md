@@ -54,6 +54,18 @@ A surface passes `surfaceDefaults` for what IT wants absent a stored preference;
 from an older version is re-seeded from the defaults — view / density / sort /
 favorites-first survive, column selection resets.
 
+**The ONE exception, and why it exists: a surface that declares its own `sort`
+in `surfaceDefaults` retires a stale blob's sort.** Sort is normally the user's
+choice, not the shape — but `/work/conversations` shipped a default sort key
+(`updated`) whose column turned out to be a row-mutation stamp being sold as
+"Last activity", and fixing the surface would have changed nothing for anyone
+who already had a stored blob: their `sort: "updated"` outranked the fix, and
+they would have kept the meaningless order forever. So declaring a `sort`
+override is how a surface says "this shape's correct starting point changed" —
+and it takes `direction` with it, because a sort key and its direction are one
+choice. A surface that does NOT declare a sort still preserves the user's.
+Covered by `__tests__/defaults.test.ts`.
+
 **Bump the surface's `version` in the same change that adds or removes a
 column.** Without it, every user with ANY stored blob keeps their old
 `hiddenColumns` forever, so each newly added column arrives switched ON for

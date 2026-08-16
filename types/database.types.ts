@@ -39588,6 +39588,7 @@ export type Database = {
           is_archived: boolean
           is_favorite: boolean
           is_owner: boolean
+          last_activity_at: string
           message_count: number
           organization_id: string
           organization_name: string

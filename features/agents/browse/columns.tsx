@@ -21,7 +21,7 @@
 // buckets) live in lib/entity-list/columns — this file is only the AGENT
 // column registry.
 
-import { Archive } from "lucide-react";
+import { Archive, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cleanMarkdownPreview } from "@/utils/markdown-processors/clean-markdown-to-text";
@@ -42,8 +42,13 @@ export const BROWSE_COLUMNS: EntityColumnSpec<AgentBrowseRow>[] = [
     column: {
       id: "favorite",
       accessorKey: "is_favorite",
-      header: <span className="sr-only">Favorite</span>,
+      header: <Star className="h-3.5 w-3.5" aria-hidden />,
       filter: "boolean",
+      // ICON COLUMN: `width: 40` alone was a wish — the header's sort button,
+      // sort arrow and filter funnel set the real min-content width, and this
+      // column measured 106px. `compact` collapses them into the star, which
+      // stays sortable and filterable from its header menu.
+      compact: true,
       width: 40,
       align: "center",
       // The interactive star is injected by EntityListTable, which owns the

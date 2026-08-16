@@ -60,7 +60,14 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
   },
   columns: CONVERSATION_COLUMNS,
   // Bump whenever CONVERSATION_COLUMNS gains or loses a column.
-  prefsVersion: 1,
+  // v2: `last_activity` replaced `updated` as the visible activity column, and
+  // `updated` became the hidden "Last modified".
+  prefsVersion: 2,
+  // The default sort is the HONEST activity stamp, not the row-mutation stamp.
+  // Declaring it here also retires every stored `sort: "updated"` on the v1
+  // shape (lib/list-views/defaults.ts) — otherwise the surface would ship the
+  // fix and every existing user would keep the meaningless order.
+  prefsDefaults: { sort: "last_activity", direction: "desc" },
   getRowId: (row) => row.id,
   getRowName: (row) => row.title?.trim() || "Untitled conversation",
   // THE DOOR LAW: the title cell is a real anchor. A provider mirror is
@@ -154,7 +161,7 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
         row.conversation_type,
       )}${row.workspace_name ? ` in ${row.workspace_name}` : ""}, ${
         row.message_count
-      } messages, updated ${relativeTime(row.updated_at)}`,
+      } messages, last active ${relativeTime(row.last_activity_at)}`,
     showRow: false,
     showToolbar: true,
   },

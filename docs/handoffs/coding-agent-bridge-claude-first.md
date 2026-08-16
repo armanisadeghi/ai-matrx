@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-15
+updated: 2026-08-16
 repos: [matrx-frontend, aidream, matrx-local, matrx-claude-plugin, matrx-codex-plugin, matrx-cursor-plugin, matrx-vscode, matrx-sandbox, common-docs]
 vision:
   - /Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md
@@ -138,18 +138,6 @@ vision:
     into another application's data, so it is Matrx-Local-only, single-field, atomic, fenced against
     concurrent Claude writes, allowlisted to bound sessions, and must not fight the server ladder
     (an AI Matrx rename becomes `title_source=user`, which inbound sync must then respect).
-1c. **The conversations table was unusable for real work (Arman, 2026-08-16; fix in flight).**
-    Three confirmed causes: (a) the "Last activity" column read `chat.conversation.updated_at`, a
-    row-mutation stamp that the 08-16 title-sync rewrote on 232 rows into a 9-second window — so
-    every row read "4 hours ago" and sorting by it was meaningless, while the true activity
-    (`coding_session.last_seen_at`) was correct on all 264 rows. The fix is one honest
-    `last_activity_at` computed in `public.cvx_list_scoped`, in its sort whitelist, as the default
-    sort. **`updated_at` must never again be presented as activity.** (b) the favorite/star column
-    declares `width: 40` yet renders wide — the waste is in the canonical table primitive's
-    padding/header chrome, and the fix belongs THERE as real compact-icon-column support that stays
-    sortable and filterable. (c) a per-row "Claude Code title" badge duplicated the app and provider
-    columns — *"We don't need a stupid chip that tells us it's a Claude Code title. The title is the
-    title."* Provenance belongs in the optional `title_source` column, not on every row.
 2. **Managed-Claude launch and continuation (`TASK-006`).** Backend is production-CERTIFIED
    (start/stream/resume/cancel/fork). Consume capabilities + NDJSON + cancel in `/work/new` and
    conversation detail. Native Resume/Fork strictly capability-gated; everything else is a labeled
@@ -186,6 +174,23 @@ vision:
 
 ## Done
 
+- **The conversations table is usable for real work (2026-08-16).** Three confirmed blockers, all
+  fixed and verified live. (a) **"Last activity" was `chat.conversation.updated_at`** — a
+  row-mutation stamp the title-sync passes rewrote in bulk (12,103 rows to `2026-08-12 14:42:58`;
+  another batch to `2026-08-16 18:13:1x`), so the whole list claimed to have happened at once and
+  sorting by it produced no order. `public.cvx_list_scoped` now returns `last_activity_at` =
+  GREATEST(newest visible `chat.message.created_at`, binding `last_seen_at`, `created_at`), computed
+  after the filters against a new partial index `cx_message_conversation_recent_idx`; it is in the
+  sort whitelist, is the DEFAULT sort, and owns the column + its date filter (page ~103ms).
+  `updated_at` survives as the hidden **"Last modified"** column — **it must never again be
+  presented as activity.** Because sort persists per user, a surface declaring its own default sort
+  now retires a stale-shape blob's sort (`lib/list-views/defaults.ts`), or the fix would have
+  reached nobody who had already used the page. (b) **The star column** is fixed at the primitive:
+  `MatrxColumnDef.compact` collapses an icon column's three header controls into one popover trigger
+  with the same sort actions + filter body and tightens padding — still sortable, still filterable.
+  66px → 26px here, 106px → 52px on `/agents/all` (converted too). (c) **The "Claude Code title"
+  chip is gone** — *"The title is the title."* Provenance stays on the optional `title_source`
+  column and the provenance panel.
 - **Silent-capture detection + loud recovery (2026-08-16).** `captureGapVerdict()`
   (`features/agent-connections/coding-sessions/captureGap.ts`) grades the gap since the last delivery
   against the owner's OWN cadence — calibrated on the real production series, where the 23.5h outage
@@ -235,7 +240,11 @@ duplicates predated it and are merged).
 - **/work/conversations overhaul — DONE 2026-08-16.** Honest default (machine runs excluded by a
   visible, counted, clearable filter), canonical entity-list table on the new `cvx_list_scoped` RPC
   family, URL state for scope/search/filters/sort/page, provenance-labeled detail for EVERY
-  conversation (not just mirrors), and a per-account sync-state panel. See
+  conversation (not just mirrors), and a per-account sync-state panel. **Table notes (2026-08-16
+  follow-up):** the activity column is `last_activity_at`, never `updated_at` (which is a
+  row-mutation stamp and is now the hidden "Last modified"); the default sort is `last_activity`;
+  the star is a `compact` icon column owned by the table primitive; and there is no per-row title
+  provenance chip. See
   `features/ai-work/FEATURE.md`. **The one thing NOT done is a real Sync-now**, and the reason is
   structural, not cosmetic: matrx-local's `/coding-session/claude/history/*` routes are (a) on a
   locally scanned port (`MATRX_PORT_BASE` 22140+) the browser cannot discover, (b) unreachable

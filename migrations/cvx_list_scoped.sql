@@ -17,6 +17,16 @@
 --   * `title_source` is projected because a derived title must never be
 --     mistaken for the provider's own label. `first_prompt` (or absent) means
 --     AI Matrx derived it; anything else names the provider that supplied it.
+--   * `last_activity_at` is the ONE honest "when did this last move" stamp:
+--     GREATEST(newest VISIBLE message, the binding's `last_seen_at`,
+--     `created_at`). `updated_at` is a ROW-MUTATION stamp and must never be
+--     sold as activity — one backfill pass rewrites thousands of rows to the
+--     same second and the column then swears every conversation happened at
+--     once. It did: a title-sync pass stamped 12,103 rows at
+--     2026-08-12 14:42:58, so "Last activity" read "4 hours ago" on every row
+--     and sorting by it produced an arbitrary order. `updated_at` is STILL
+--     returned, under its true name ("Last modified"), because silently
+--     redefining a column's meaning is how the next agent gets lied to.
 --   * `conversation_type` is the honesty axis. ~4.6k rows are
 --     `conversation_type='subagent'` internal machine runs (batch derivations,
 --     sweeps, meta-builder calls). The DEFAULT list narrows to the
@@ -27,7 +37,7 @@
 --   {"title":             {"kind":"text",   "value":"seo"}}
 --   {"conversation_type": {"kind":"select", "values":["standard","workflow"]}}
 --   {"favorite":          {"kind":"boolean","value":true}}
---   {"updated":           {"kind":"select", "values":["7d"]}}
+--   {"last_activity":     {"kind":"select", "values":["7d"]}}
 -- '__none__' is the sentinel for "has no value".
 --
 -- Date buckets reuse `public.agx_since_bucket` deliberately: it is a generic
@@ -170,7 +180,7 @@ CREATE OR REPLACE FUNCTION public.cvx_list_scoped(
   p_org_id          uuid    DEFAULT NULL,
   p_search          text    DEFAULT NULL,
   p_deep            boolean DEFAULT false,
-  p_sort            text    DEFAULT 'updated',
+  p_sort            text    DEFAULT 'last_activity',
   p_dir             text    DEFAULT 'desc',
   p_favorites_first boolean DEFAULT true,
   p_archived        text    DEFAULT 'active',
@@ -206,6 +216,7 @@ RETURNS TABLE(
   initial_agent_id uuid,
   created_at timestamptz,
   updated_at timestamptz,
+  last_activity_at timestamptz,
   is_owner boolean,
   access_level text,
   total_count bigint
@@ -216,7 +227,7 @@ DECLARE
   v_uid uuid := auth.uid();
   v_scope text := lower(coalesce(p_scope, 'mine'));
   v_dir text := CASE WHEN lower(coalesce(p_dir,'desc'))='asc' THEN 'asc' ELSE 'desc' END;
-  v_sort text := lower(coalesce(p_sort, 'updated'));
+  v_sort text := lower(coalesce(p_sort, 'last_activity'));
   v_search text := nullif(btrim(coalesce(p_search, '')), '');
   v_f jsonb := coalesce(p_filters, '{}'::jsonb);
 BEGIN
@@ -225,12 +236,13 @@ BEGIN
     RAISE EXCEPTION 'cvx_list_scoped: unknown scope %', v_scope; END IF;
   -- Whitelist covers EVERY column the table can show. Anything else falls back
   -- rather than erroring, so a stale client can never break the page.
-  IF v_sort NOT IN ('updated','created','title','conversation_type','origin_class',
-                    'source_app','source_feature','message_count','provider',
-                    'workspace_name','provider_account','title_source','fidelity',
-                    'binding_status','binding_last_seen_at','organization_name',
-                    'owner_email','visibility','favorite','archived') THEN
-    v_sort := 'updated';
+  IF v_sort NOT IN ('last_activity','updated','created','title','conversation_type',
+                    'origin_class','source_app','source_feature','message_count',
+                    'provider','workspace_name','provider_account','title_source',
+                    'fidelity','binding_status','binding_last_seen_at',
+                    'organization_name','owner_email','visibility','favorite',
+                    'archived') THEN
+    v_sort := 'last_activity';
   END IF;
 
   RETURN QUERY
@@ -378,6 +390,41 @@ BEGIN
       AND (NOT v_f ? 'archived'
            OR (j.status = 'archived') IS NOT DISTINCT FROM (v_f->'archived'->>'value')::boolean)
   ),
+  -- THE HONEST ACTIVITY STAMP. Computed AFTER `filtered` on purpose: it is one
+  -- index probe per surviving row (cx_message_conversation_recent_idx), so
+  -- paying it before the filters would charge the whole corpus for a page.
+  --
+  -- GREATEST over three real events — the newest visible message, the last time
+  -- the provider binding delivered, and the conversation's own birth — so a
+  -- conversation with no messages yet still reports something true instead of
+  -- NULL, and a mirrored provider session that has delivered but not yet
+  -- imported messages does not read as dead.
+  activity AS (
+    SELECT
+      f.*,
+      greatest(
+        coalesce(lm.last_at, f.created_at),
+        coalesce(f.s_binding_last_seen_at, f.created_at),
+        f.created_at
+      ) AS s_last_activity
+    FROM filtered f
+    LEFT JOIN LATERAL (
+      SELECT m.created_at AS last_at
+      FROM chat.message m
+      WHERE m.conversation_id = f.id
+        AND m.deleted_at IS NULL
+        AND m.is_visible_to_user = true
+      ORDER BY m.created_at DESC
+      LIMIT 1
+    ) lm ON true
+  ),
+  -- The date filter for the column lives here rather than in `filtered`,
+  -- because this is the first place the value exists.
+  activity_filtered AS (
+    SELECT a.* FROM activity a
+    WHERE (NOT v_f ? 'last_activity'
+           OR a.s_last_activity >= public.agx_since_bucket(v_f->'last_activity'->'values'->>0))
+  ),
   scored AS (
     SELECT f.*, public.cvx_search_score(
       v_search, f.id, f.title, f.description, f.s_workspace_name,
@@ -392,7 +439,7 @@ BEGIN
           AND m.content::text ILIKE '%'||v_search||'%')
       ELSE false END
     ) AS s_score
-    FROM filtered f
+    FROM activity_filtered f
   ),
   counted AS (SELECT s.*, count(*) OVER () AS s_total FROM scored s)
   SELECT
@@ -403,7 +450,7 @@ BEGIN
     c.s_provider_account, c.s_title_source, c.s_fidelity,
     c.s_binding_status, c.s_binding_origin, c.s_binding_last_seen_at,
     c.organization_id, c.s_org_name, c.s_owner_email, c.created_by,
-    c.initial_agent_id, c.created_at, c.updated_at,
+    c.initial_agent_id, c.created_at, c.updated_at, c.s_last_activity,
     c.s_is_owner, c.s_access, c.s_total
   FROM counted c
   ORDER BY
@@ -413,6 +460,8 @@ BEGIN
     -- the chosen column sort behave exactly as before.
     CASE WHEN v_search IS NOT NULL THEN c.s_score END DESC NULLS LAST,
     CASE WHEN p_favorites_first THEN c.is_favorite END DESC NULLS LAST,
+    CASE WHEN v_sort='last_activity' AND v_dir='desc' THEN c.s_last_activity END DESC,
+    CASE WHEN v_sort='last_activity' AND v_dir='asc' THEN c.s_last_activity END ASC,
     CASE WHEN v_sort='updated' AND v_dir='desc' THEN c.updated_at END DESC,
     CASE WHEN v_sort='updated' AND v_dir='asc' THEN c.updated_at END ASC,
     CASE WHEN v_sort='created' AND v_dir='desc' THEN c.created_at END DESC,

@@ -139,7 +139,11 @@ in the same commit.**
 
 **Prefs shape.** Bump the config's `prefsVersion` in the same change that adds
 or removes a column, or existing users keep their old `hiddenColumns` forever
-and every new column arrives switched ON for them.
+and every new column arrives switched ON for them. **When the change also means
+the old default SORT was wrong** — not merely a different taste, but a key that
+was measuring the wrong thing — declare the new one in `prefsDefaults.sort`:
+that is the ONE way a stale blob's stored sort gets retired instead of
+outranking the fix. See `lib/list-views/FEATURE.md` § Shape versioning.
 
 ## Verifying a list surface
 

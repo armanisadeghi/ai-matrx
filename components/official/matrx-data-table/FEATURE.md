@@ -98,6 +98,35 @@ rather than raw overflow.
 - The first visible column is the identity column — order columns so the
   row's name/title/id comes first.
 
+## Icon columns — `compact: true`, never a per-consumer override
+
+A column whose whole content is one glyph (a favorite star, a lock, a status
+dot) sets `compact: true` beside its `width` and `align: "center"`.
+
+**Why the primitive owns this.** `width` is only a hint on a table cell —
+min-content wins — and the min-content of a header was three separate controls
+beside the glyph: the sort button, its sort arrow, and the filter funnel, plus
+`px-2` on both sides of the cell. A star column declaring `width: 40` measured
+**66px** on `/work/conversations` and **106px** on `/agents/all`. Every surface
+that wanted a tight icon column was paying for chrome it never used, and the
+tempting fix — a one-off `headerClassName` in the feature — would have been the
+fourth copy of the same override.
+
+`compact` does two things and **costs the column nothing**:
+
+- horizontal padding on `<th>` and `<td>` drops to `px-1`;
+- the header's three controls collapse into **ONE popover trigger** — the glyph
+  itself — whose menu is the same `Sort ascending` / `Sort descending` /
+  `Clear sort` / filter body every other column gets. The column stays fully
+  sortable and filterable; the affordances moved into the menu, they did not
+  disappear. Active sort shows as a 8px arrow and an active filter as a 6px dot
+  on the trigger, and `aria-sort` is still on the `<th>`.
+
+Measured after: 26px and 52px respectively.
+
+**Do not** reach for `compact` on a column with a text header — the collapsed
+trigger hides the column NAME, which is the one thing a text header is for.
+
 ## Accessible names — every icon-only control MUST have `aria-label`
 
 `title` alone is not an accessible name contract — every icon-only interactive
@@ -161,6 +190,7 @@ expose `aria-sort` on the `<th>` automatically.
 | Inline edit | `editable` on col; string in-cell; else popover; Save/Cancel pill                 |
 | Window      | Sidebar View / Edit tabs; Edit = `renderEdit` ?? `detail.render`                  |
 | UUID / FK   | `MatrxUuidCell` via `cellKind` or auto-detect; `fk.onOpen` / `href` / `forbidden` |
+| Icon column | `compact: true` + `width` + `align: "center"` — tight padding, one header menu    |
 
 ## AI Models cutover checklist (parity)
 
@@ -183,6 +213,15 @@ Do not drop these when replacing `AiModelTable`:
 
 ## Change log
 
+- 2026-08-16 — **`MatrxColumnDef.compact` — real support for an icon column.** A star
+  column declaring `width: 40` actually rendered 66px (`/work/conversations`) and 106px
+  (`/agents/all`), because the header's sort button + sort arrow + filter funnel set the
+  real min-content width and `px-2` sat on both sides of every cell. `compact` tightens
+  padding to `px-1` and collapses the three header controls into ONE popover trigger
+  carrying the identical sort actions and filter body — sortable and filterable are
+  unchanged, and active state renders as a marker on the trigger. Both consumers
+  converted (26px / 52px). The popover BODY is now built once and shared by the wide and
+  compact headers, so the two can never drift apart. See "Icon columns" above.
 - 2026-08-15 — Selected rows inherit the canonical copy contract. Any table configured with
   both `selection` and `copy` now gets bulk-bar Copy, JSON, and XML-wrapped Copy for AI without
   consumer wiring; the agent envelope marks `scope="selected"`.

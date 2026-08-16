@@ -50,8 +50,13 @@ export const CONVERSATION_COLUMNS: EntityColumnSpec<ConversationBrowseRow>[] = [
     column: {
       id: "favorite",
       accessorKey: "is_favorite",
-      header: <Star className="mx-auto h-3.5 w-3.5" aria-label="Favorite" />,
+      header: <Star className="h-3.5 w-3.5" aria-hidden />,
       filter: "boolean",
+      // ICON COLUMN. `width: 40` alone was a wish: the header's three separate
+      // controls (sort button, sort arrow, filter funnel) set the real
+      // min-content width to ~70px. `compact` collapses them into the star
+      // itself — still sortable, still filterable, from the header menu.
+      compact: true,
       width: 40,
       align: "center",
       // The interactive star is injected by EntityListTable, which owns the
@@ -71,8 +76,14 @@ export const CONVERSATION_COLUMNS: EntityColumnSpec<ConversationBrowseRow>[] = [
       editTrigger: "pencil",
       width: 420,
       className: "max-w-[26rem] overflow-hidden",
+      // THE TITLE IS THE TITLE. (Arman, 2026-08-16.) There used to be a
+      // provenance chip here for provider-supplied titles — on a corpus that is
+      // almost entirely Claude Code, it fired on nearly every row, next to an
+      // App column reading "Claude Code" and a Provider column reading "Claude
+      // Code". Triple redundancy that cost the title its width. Provenance
+      // still ships, in the one place it belongs: the optional `title_source`
+      // column (and the provenance panel), where it is also filterable.
       cell: (row) => {
-        const provenance = titleProvenance(row.title_source, row.provider);
         return (
           <div className="flex min-w-0 items-center gap-2">
             <span
@@ -81,19 +92,6 @@ export const CONVERSATION_COLUMNS: EntityColumnSpec<ConversationBrowseRow>[] = [
             >
               {row.title?.trim() || "Untitled conversation"}
             </span>
-            {/* Never let a derived title pass as the provider's own label.
-                Only the provider-supplied case earns a chip — an "AI Matrx
-                title" badge on every single row would be the same wasted
-                space as the old per-row Subagent pill. */}
-            {provenance.fromProvider && (
-              <Badge
-                variant="secondary"
-                className="shrink-0 py-0 text-[10px] font-normal"
-                title={provenance.detail}
-              >
-                {provenance.chip}
-              </Badge>
-            )}
             {row.is_archived && (
               <Badge variant="outline" className="shrink-0 py-0 text-[10px]">
                 <Archive className="mr-1 h-2.5 w-2.5" />
@@ -200,18 +198,25 @@ export const CONVERSATION_COLUMNS: EntityColumnSpec<ConversationBrowseRow>[] = [
       ),
     },
   },
+  // THE HONEST ACTIVITY COLUMN. `updated_at` is a ROW-MUTATION stamp and was
+  // shown here as "Last activity" until 2026-08-16, when a title-sync pass
+  // rewrote 12,103 rows to the same second and every conversation in the list
+  // started claiming it had been touched minutes ago — with sort order to
+  // match, which is to say no order at all. `last_activity_at` is computed in
+  // cvx_list_scoped as GREATEST(newest visible message, binding last_seen_at,
+  // created_at). `updated_at` is still available, under its real name, below.
   {
-    id: "updated",
+    id: "last_activity",
     label: "Last activity",
     column: {
-      id: "updated",
-      accessorKey: "updated_at",
+      id: "last_activity",
+      accessorKey: "last_activity_at",
       header: "Last activity",
       filter: "select",
       filterOptions: DATE_FILTER_OPTIONS,
       width: 130,
       align: "right",
-      cell: (row) => timeCell(row.updated_at),
+      cell: (row) => timeCell(row.last_activity_at),
     },
   },
   {
@@ -373,6 +378,25 @@ export const CONVERSATION_COLUMNS: EntityColumnSpec<ConversationBrowseRow>[] = [
         ) : (
           <Muted>—</Muted>
         ),
+    },
+  },
+  {
+    // NOT "Last activity" — this is when the ROW last changed, which includes
+    // every backfill, title sync and metadata sweep the platform runs. Kept
+    // because renaming a column's meaning in place is how the next reader gets
+    // lied to; hidden because almost nobody wants it.
+    id: "updated",
+    label: "Last modified",
+    defaultHidden: true,
+    column: {
+      id: "updated",
+      accessorKey: "updated_at",
+      header: "Last modified",
+      filter: "select",
+      filterOptions: DATE_FILTER_OPTIONS,
+      width: 130,
+      align: "right",
+      cell: (row) => timeCell(row.updated_at),
     },
   },
   {

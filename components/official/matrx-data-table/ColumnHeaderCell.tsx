@@ -54,6 +54,12 @@ interface ColumnHeaderCellProps {
   selectOptions?: Array<{ value: string; label: string }>;
   align?: "left" | "center" | "right";
   className?: string;
+  /**
+   * ICON COLUMN header (MatrxColumnDef.compact): the label IS the glyph, so the
+   * three controls collapse into ONE popover trigger carrying the same sort
+   * actions and the same filter body. Nothing is lost — see the field's doc.
+   */
+  compact?: boolean;
 }
 
 export function ColumnHeaderCell({
@@ -72,8 +78,123 @@ export function ColumnHeaderCell({
   selectOptions = [],
   align = "left",
   className,
+  compact = false,
 }: ColumnHeaderCellProps) {
   const filterActive = isColumnFilterActive(filterValue);
+  const menuLabel = labelText
+    ? `Sort or filter ${labelText}`
+    : "Sort or filter column";
+
+  // ONE menu, rendered from ONE place, so the wide header and the icon header
+  // can never end up offering different actions.
+  const menuContent = (
+    <PopoverContent
+      align="start"
+      className="w-64 p-2"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {sortable ? (
+        <>
+          <div className="flex flex-col gap-0.5 pb-2">
+            <Button
+              variant={isSorted && sortDirection === "asc" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+              onClick={onSortAsc}
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+              Sort ascending
+            </Button>
+            <Button
+              variant={isSorted && sortDirection === "desc" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8 justify-start gap-2 px-2 text-xs font-normal"
+              onClick={onSortDesc}
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+              Sort descending
+            </Button>
+            {isSorted ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 justify-start gap-2 px-2 text-xs font-normal text-muted-foreground"
+                onClick={onClearSort}
+              >
+                <ListX className="h-3.5 w-3.5" />
+                Clear sort
+              </Button>
+            ) : null}
+          </div>
+          {filterKind ? <div className="mb-2 h-px bg-border" /> : null}
+        </>
+      ) : null}
+      {filterKind ? (
+        <FilterBody
+          kind={filterKind}
+          value={filterValue}
+          onChange={onFilterChange}
+          selectOptions={selectOptions}
+        />
+      ) : null}
+    </PopoverContent>
+  );
+
+  // ICON COLUMN. A star/lock/dot column is 40px of glyph wrapped in ~30px of
+  // header chrome, so the chrome collapses into the glyph itself: the label IS
+  // the popover trigger, and the menu above still carries every sort action and
+  // the whole filter body. Active state is a 2px marker, not a second control.
+  if (compact) {
+    if (!sortable && !filterKind) {
+      return (
+        <div className={cn("flex items-center justify-center", className)}>
+          {label}
+        </div>
+      );
+    }
+    return (
+      <div
+        className={cn(
+          "flex items-center",
+          align === "right" ? "justify-end" : "justify-center",
+          className,
+        )}
+      >
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={menuLabel}
+              title={menuLabel}
+              onClick={(e) => e.stopPropagation()}
+              className={cn(
+                "relative inline-flex items-center justify-center rounded p-0.5 transition-colors",
+                isSorted || filterActive
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+              {isSorted ? (
+                sortDirection === "asc" ? (
+                  <ArrowUp className="absolute -top-1 right-0 h-2 w-2 text-primary" />
+                ) : (
+                  <ArrowDown className="absolute -top-1 right-0 h-2 w-2 text-primary" />
+                )
+              ) : null}
+              {filterActive ? (
+                <span
+                  aria-hidden
+                  className="absolute -bottom-0.5 right-0 h-1.5 w-1.5 rounded-full bg-primary"
+                />
+              ) : null}
+            </button>
+          </PopoverTrigger>
+          {menuContent}
+        </Popover>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -118,11 +239,7 @@ export function ColumnHeaderCell({
             <PopoverTrigger asChild>
               <button
                 type="button"
-                aria-label={
-                  labelText
-                    ? `Sort or filter ${labelText}`
-                    : "Sort or filter column"
-                }
+                aria-label={menuLabel}
                 title="Sort or filter column"
                 onClick={(e) => e.stopPropagation()}
                 className={cn(
@@ -137,62 +254,7 @@ export function ColumnHeaderCell({
                 />
               </button>
             </PopoverTrigger>
-            <PopoverContent
-              align="start"
-              className="w-64 p-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {sortable ? (
-                <>
-                  <div className="flex flex-col gap-0.5 pb-2">
-                    <Button
-                      variant={
-                        isSorted && sortDirection === "asc"
-                          ? "secondary"
-                          : "ghost"
-                      }
-                      size="sm"
-                      className="h-8 justify-start gap-2 px-2 text-xs font-normal"
-                      onClick={onSortAsc}
-                    >
-                      <ArrowUp className="h-3.5 w-3.5" />
-                      Sort ascending
-                    </Button>
-                    <Button
-                      variant={
-                        isSorted && sortDirection === "desc"
-                          ? "secondary"
-                          : "ghost"
-                      }
-                      size="sm"
-                      className="h-8 justify-start gap-2 px-2 text-xs font-normal"
-                      onClick={onSortDesc}
-                    >
-                      <ArrowDown className="h-3.5 w-3.5" />
-                      Sort descending
-                    </Button>
-                    {isSorted ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 justify-start gap-2 px-2 text-xs font-normal text-muted-foreground"
-                        onClick={onClearSort}
-                      >
-                        <ListX className="h-3.5 w-3.5" />
-                        Clear sort
-                      </Button>
-                    ) : null}
-                  </div>
-                  <div className="mb-2 h-px bg-border" />
-                </>
-              ) : null}
-              <FilterBody
-                kind={filterKind}
-                value={filterValue}
-                onChange={onFilterChange}
-                selectOptions={selectOptions}
-              />
-            </PopoverContent>
+            {menuContent}
           </Popover>
           {filterActive ? (
             <button

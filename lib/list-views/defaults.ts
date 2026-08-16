@@ -34,6 +34,15 @@ export const LIST_VIEW_PAGE_SIZES = [25, 50, 100, 200] as const;
  * the backfill. Without it, adding a column to a surface means every existing
  * user gets it switched on, because their stored `hiddenColumns: []` predates
  * the column existing and still wins the merge.
+ *
+ * SORT is normally preserved across a shape bump (it is the user's choice, not
+ * the shape). The ONE exception: a surface that declares its own `sort` in
+ * `surfaceDefaults` is asserting the correct starting point for the NEW shape,
+ * so a stale blob's sort does not survive. That exception exists because
+ * /work/conversations shipped a sort key whose column turned out to be a lie
+ * (`updated_at`, a row-mutation stamp, sold as "Last activity"); without this,
+ * the fix would have landed and every existing user would have kept the broken
+ * order forever, because their stored `sort: "updated"` outranked it.
  */
 export function resolveListViewPrefs(
   surfaceDefaults: Partial<ListViewPrefs> | undefined,
@@ -46,7 +55,10 @@ export function resolveListViewPrefs(
       console.warn(
         `[list-views] stored prefs are shape v${stored.version ?? "0"} but the ` +
           `surface declares v${base.version} — re-seeding from defaults. ` +
-          "The user's view choice is preserved; column selection is reset.",
+          "The user's view choice is preserved; column selection is reset" +
+          (surfaceDefaults?.sort
+            ? `, and sort is reset to the surface's declared "${surfaceDefaults.sort}".`
+            : "."),
       );
       // Preserve the choices that survive a shape change; reset the ones tied
       // to the shape itself (columns).
@@ -54,8 +66,10 @@ export function resolveListViewPrefs(
         ...base,
         view: stored.view ?? base.view,
         density: stored.density ?? base.density,
-        sort: stored.sort ?? base.sort,
-        direction: stored.direction ?? base.direction,
+        sort: surfaceDefaults?.sort ?? stored.sort ?? base.sort,
+        direction: surfaceDefaults?.sort
+          ? base.direction
+          : (stored.direction ?? base.direction),
         favoritesFirst: stored.favoritesFirst ?? base.favoritesFirst,
       };
     }

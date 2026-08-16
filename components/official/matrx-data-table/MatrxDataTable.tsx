@@ -1015,7 +1015,11 @@ function MatrxDataTableCore<T>({
                           : undefined
                       }
                       className={cn(
-                        "h-9 px-2 text-left align-middle max-sm:whitespace-nowrap",
+                        "h-9 text-left align-middle max-sm:whitespace-nowrap",
+                        // ICON COLUMN (MatrxColumnDef.compact): a 40px star
+                        // column cannot honor `width: 40` while paying 16px of
+                        // padding for a 14px glyph.
+                        col.compact ? "px-1" : "px-2",
                         // An intentional mobile column set (see
                         // MatrxColumnDef.mobileHidden). CSS, not a JS
                         // breakpoint — no hydration mismatch, and the column
@@ -1064,6 +1068,7 @@ function MatrxDataTableCore<T>({
                         onFilterChange={(next) => setColumnFilter(id, next)}
                         selectOptions={meta?.options}
                         align={col.align}
+                        compact={col.compact}
                       />
                     </th>
                   );
@@ -1088,7 +1093,8 @@ function MatrxDataTableCore<T>({
                       <td
                         key={columnId(col)}
                         className={cn(
-                          "px-2 py-2",
+                          "py-2",
+                          col.compact ? "px-1" : "px-2",
                           col.mobileHidden && "max-sm:hidden",
                         )}
                       >
@@ -1199,7 +1205,8 @@ function MatrxDataTableCore<T>({
                           <td
                             key={columnId(col)}
                             className={cn(
-                              "px-2 py-1.5 align-middle",
+                              "py-1.5 align-middle",
+                              col.compact ? "px-1" : "px-2",
                               // nowrap (NOT truncate — truncate clips the cell and
                               // defeats w-max, killing the horizontal scroll).
                               "max-sm:whitespace-nowrap",
