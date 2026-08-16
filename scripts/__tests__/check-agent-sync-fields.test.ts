@@ -43,6 +43,8 @@ describe("parseSyncSetClause — the real live function", () => {
       "mcp_servers",
       "tool_config",
       "skill_config",
+      "matrx_actions",
+      "ui_gates",
       "default_rag_boost",
       "rag_awareness_mode",
     ]);
@@ -52,7 +54,7 @@ describe("parseSyncSetClause — the real live function", () => {
     const parsed = parseSyncSetClause(REAL_DEFINITION);
     const identity = parsed.columns.filter((c) => c.group === "identity").map((c) => c.column);
     expect(identity).toEqual(["name", "description", "category", "tags"]);
-    expect(parsed.columns.filter((c) => c.group === "behavior")).toHaveLength(14);
+    expect(parsed.columns.filter((c) => c.group === "behavior")).toHaveLength(16);
   });
 
   it("ignores the bookkeeping assignment and the second, unrelated UPDATE", () => {
@@ -72,15 +74,15 @@ describe("diffSyncFields — mutated function definitions", () => {
   it("reports a column the RPC gained but TS does not list", () => {
     const mutated = REAL_DEFINITION.replace(
       "    tools                = v_from.tools,",
-      "    tools                = v_from.tools,\n    ui_gates             = v_from.ui_gates,",
+      "    tools                = v_from.tools,\n    surprise_config      = v_from.surprise_config,",
     );
     const parsed = parseSyncSetClause(mutated);
     expect(parsed.problems).toEqual([]);
-    expect(parsed.columns.map((c) => c.column)).toContain("ui_gates");
+    expect(parsed.columns.map((c) => c.column)).toContain("surprise_config");
 
     const issues = diffSyncFields(parsed.columns, AGENT_SYNC_FIELDS);
     expect(issues).toHaveLength(1);
-    expect(issues[0].column).toBe("ui_gates");
+    expect(issues[0].column).toBe("surprise_config");
     expect(issues[0].detail).toContain("the RPC's UPDATE writes it (behavior)");
     expect(issues[0].detail).toContain("absent from AGENT_SYNC_FIELDS");
   });

@@ -91,6 +91,8 @@ function productionRow(
     mcp_servers: [],
     tool_config: { excluded_tools: [], auto_tools_disabled: false },
     skill_config: {},
+    matrx_actions: {},
+    ui_gates: {},
     default_rag_boost: 0,
     rag_awareness_mode: "none",
     ...overrides,
@@ -122,13 +124,12 @@ describe("toAgentSyncSnapshot", () => {
     expect(snap.ragAwarenessMode).toBe("none");
   });
 
-  it("never carries a column the sync does not write", () => {
-    // ui_gates / matrx_actions are real config columns the RPC skips.
+  it("includes the portable UI and Matrx Actions configuration the sync writes", () => {
     const snap = toAgentSyncSnapshot(
       productionRow({ ui_gates: { file_urls: true }, matrx_actions: { a: 1 } }),
     );
-    expect(snap.uiGates).toBeUndefined();
-    expect(snap.matrxActions).toBeUndefined();
+    expect(snap.uiGates).toEqual({ file_urls: true });
+    expect(snap.matrxActions).toEqual({ a: 1 });
   });
 
   it("normalizes a missing column to null on both sides equally", () => {

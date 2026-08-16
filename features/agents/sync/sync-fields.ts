@@ -1,10 +1,11 @@
 /**
  * The canonical field set for linked-agent sync.
  *
- * THIS IS THE CONTRACT. `public.agx_sync_linked_agents(p_from_id, p_to_id,
- * p_include_identity)` copies exactly these `agent.definition` columns from the
- * source row onto the target row — the identity group only when
- * `p_include_identity` is true, the behavior group always.
+ * THIS IS THE CONTRACT. `public.agx_sync_linked_agents(...)` delegates to
+ * `public.agx_sync_linked_agents_reviewed(...)`, which copies exactly these
+ * `agent.definition` columns from the source row onto the target row — the
+ * identity group only when `p_include_identity` is true, the behavior group
+ * always.
  *
  * Every consumer that answers "are these two agents the same?" or "what will
  * Pull/Push overwrite?" derives its answer from this list, so a verdict can
@@ -17,10 +18,9 @@
  * change — otherwise the sync silently overwrites a field the comparison swore
  * was identical.
  *
- * KNOWN GAP (not a bug in this file): `ui_gates` and `matrx_actions` are real
- * config columns on `agent.definition` that the RPC does NOT copy. They are
- * deliberately absent below because the comparison must describe the sync as
- * it is, not as it should be. Tracked in FOUND_DEFECTS.md.
+ * `matrx_actions` and `ui_gates` are part of the portable behavior contract;
+ * omitting either would let sync overwrite visible configuration that the
+ * comparison never disclosed.
  */
 
 /** Identity = name/description/category/tags — only copied when the caller opts in. */
@@ -104,6 +104,18 @@ export const AGENT_SYNC_FIELDS: readonly AgentSyncField[] = [
     column: "skill_config",
     field: "skillConfig",
     label: "Skills",
+    group: "behavior",
+  },
+  {
+    column: "matrx_actions",
+    field: "matrxActions",
+    label: "Matrx Actions",
+    group: "behavior",
+  },
+  {
+    column: "ui_gates",
+    field: "uiGates",
+    label: "UI gates",
     group: "behavior",
   },
   {

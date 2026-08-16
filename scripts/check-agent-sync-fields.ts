@@ -1,14 +1,15 @@
 #!/usr/bin/env npx tsx
 /**
- * Agent-sync field drift gate — the sync RPC's `UPDATE ... SET` vs CODE
+ * Agent-sync field drift gate — the sync implementation's `UPDATE ... SET` vs CODE
  * (`AGENT_SYNC_FIELDS` in features/agents/sync/sync-fields.ts).
  *
- * `public.agx_sync_linked_agents(p_from_id, p_to_id, p_include_identity)` owns
- * ONE `UPDATE agent.definition SET ...` that copies the source agent's columns
- * onto the target — the identity group behind `CASE WHEN v_identity`, the
- * behavior group unconditionally. The TypeScript list is what every "are these
- * two agents the same?" / "what will Pull overwrite?" surface derives its
- * verdict from.
+ * `public.agx_sync_linked_agents(...)` is the compatibility entrypoint and
+ * delegates to `public.agx_sync_linked_agents_reviewed(...)`. The reviewed
+ * implementation owns ONE `UPDATE agent.definition SET ...` that copies the
+ * source agent's columns onto the target — the identity group behind
+ * `CASE WHEN v_identity`, the behavior group unconditionally. The TypeScript
+ * list is what every "are these two agents the same?" / "what will Pull
+ * overwrite?" surface derives its verdict from.
  *
  * If the two disagree there is NO compile error and NO runtime error — the UI
  * simply lies: a column the RPC writes but TS omits makes the comparison swear
@@ -60,7 +61,7 @@ const SNAPSHOT_REL = "scripts/agent-sync-fields-snapshot.json";
 
 // ── What the function looks like. Constants, not env, not magic strings. ─────
 const FUNCTION_SCHEMA = "public";
-const FUNCTION_NAME = "agx_sync_linked_agents";
+const FUNCTION_NAME = "agx_sync_linked_agents_reviewed";
 /** The plpgsql record variable holding the SOURCE agent's row. */
 const SOURCE_RECORD = "v_from";
 /** The plpgsql boolean gating the identity group. */

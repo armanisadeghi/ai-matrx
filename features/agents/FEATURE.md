@@ -132,7 +132,7 @@ A user agent and its system (`builtin`) twin are linked by `source_agent_id` on 
 - **The full-diff link is offered as a WIDER view, not the same list.** `/agents/compare` diffs converted `AgentDefinition` values with `AGENT_DIFF_OPTIONS` over all fields; the panel's chips remain the authority on what sync would write, and the link says so.
 - **The verdict is direction- and option-aware** (`agentSyncImpact`). A pair can be identical for everything a default Pull copies while still differing in name/description — the real 2026-08-09 state of the canonical pair. So Pull and Push each report their own impact, and a direction with nothing to write is **disabled and labelled "Nothing to pull/push"** instead of inviting a no-op overwrite.
 - **Doors:** the pair card renders each side through `EntityRef` (open / new tab / peek), and a differing verdict links to the full field-by-field diff at `/agents/compare?left=<userId>&right=<systemId>` — the existing `AgentComparisonPage`, which now preselects both sides from those params. No second diff view was built.
-- **Known gap:** `ui_gates` and `matrx_actions` are real config columns the RPC does **not** copy, so sync silently leaves them divergent. `AGENT_SYNC_FIELDS` omits them on purpose (it describes the sync as it is). Tracked in [FOUND_DEFECTS.md](../../FOUND_DEFECTS.md).
+- **Portable behavior is complete:** `ui_gates` and `matrx_actions` are copied by the reviewed sync RPC and included in `AGENT_SYNC_FIELDS`, so the comparison discloses both before Pull/Push overwrites them.
 
 ### Find Usages & Drift
 

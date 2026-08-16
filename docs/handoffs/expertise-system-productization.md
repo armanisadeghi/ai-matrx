@@ -65,7 +65,7 @@ is the PROCESS — a button an expert clicks, a guided intake, an interviewer th
 whatever the human gives (helpful, terse, or difficult), document ingestion when there's a book,
 and (next) imitation from best-in-class exemplar outputs when there's no human at all (the
 news-writer case). Every remaining phase serves that. The Engram runtime doc
-(`common-docs/inbox-from-arman-to-be-processed/engram-expert-distillation-runtime.md`) §5 defines
+(`/Users/armanisadeghi/code/common-docs/systems/engram/VISION.md`) §5 defines
 what distillation must eventually produce for the runtime: candidate specialists, contracts,
 class taxonomy, acceptance criteria, across regimes R1 (dialogue+artifacts) / R2 (artifacts
 only) / R3 (dialogue only).
