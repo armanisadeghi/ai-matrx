@@ -79,7 +79,47 @@ export function TryDeskBox({
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Backstop: the SSE follower is the primary signal, but a run is durable
+  // server work — if the stream dies silently (proxy restart, dropped
+  // reconnect), the run row is still truth. While running, check it every
+  // 20s; a terminal status the stream never delivered recovers the verdict
+  // AND screams, because a firing backstop means the stream path failed.
+  useEffect(() => {
+    if (phase !== "running") return;
+    const timer = setInterval(() => {
+      const runId = runIdRef.current;
+      if (!runId) return;
+      void getDeskRunVerdict(runId)
+        .then((result) => {
+          if (!result) return;
+          if (["completed", "failed", "cancelled"].includes(result.status)) {
+            console.error(
+              "[TryDeskBox] run reached a terminal state but the event stream never delivered it — recovered from the run row",
+              { runId, status: result.status },
+            );
+            abortRef.current?.abort();
+            if (result.status === "completed") {
+              setVerdict(result);
+              setPhase("done");
+            } else {
+              setPhase("failed");
+              setFailureMessage(
+                "The run didn't finish — its details are in Past runs.",
+              );
+            }
+            onRunFinished();
+          }
+        })
+        .catch(() => undefined);
+    }, 20_000);
+    return () => clearInterval(timer);
+  }, [phase, onRunFinished]);
+
   const handleRunEvent = (event: WorkflowRunWireEvent) => {
+    // Breadcrumb for the missed-terminal-event investigation (see the
+    // backstop below): if the backstop ever fires, this trail shows exactly
+    // which event the stream died after.
+    console.debug("[TryDeskBox] run event", event.event, event.node_id ?? "");
     const nodeId = typeof event.node_id === "string" ? event.node_id : null;
     if (nodeId && event.event === "node_started") {
       setStages((prev) =>
