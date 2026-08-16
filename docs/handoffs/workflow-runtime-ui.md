@@ -33,11 +33,23 @@ child-run render (child's own compact surface, summary+expand fallback), real "t
 multi-run mode (`MatrxDataTable`), viewer-driven lane promotion (viewport →
 `ensureLane`, text-tail seeded).
 
+## Shipped (Phase 3 core + adversarial hardening, 2026-08-16)
+
+Signal→refetch pump: adapter parses `record_update`/`resource_changed` frames (run-level
+included) into bounded per-run signals + coarse/per-table revisions; consumers subscribe via
+`useRunRecordSignal` and refetch themselves. Server half (aidream `workflow_events.py`) emits
+parseable summaries instead of truncated JSON. Eleven adversarial-review findings fixed —
+fan-out tracked-tier streaming, lane release on dispose, viewport-promotion attach, dup-start
+lane guard, poller terminal stop, monotonic (sticky) triggers, meta batching, seeded lane
+creation, mobile order scales, child status mapping.
+
 ## Remaining (this repo)
 
-1. **Phase 3 — data plumbing:** `record_update`/`resource_changed` → the skills-style
-   signal→refetch pump; Supabase realtime backstop (`useRunListRealtime` pattern);
-   `link_kind`/`link_id` doors.
+1. **Phase 3 tail:** Supabase realtime backstop — `hooks/useRunListRealtime.ts` is the
+   primitive; consume it when the first runs-LIST surface lands (Phase 5 studio); verify
+   `workflow.run` is in the `supabase_realtime` publication first. `link_kind`/`link_id`
+   doors: signals carry table+record_id — render doors (EntityRef) on the first surface that
+   lists signals. First real pump consumer lands with the Study Pack surface.
 3. **Phase 4 — actions + HITL surface:** step-mode `input-status` "ready" action readouts,
    automate toggles, schema-driven interrupt form (the Phase 1 card is textarea-only), run-form
    start dialog (generated, port the studio's seeding rules).

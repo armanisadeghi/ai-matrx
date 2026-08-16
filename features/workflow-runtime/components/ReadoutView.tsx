@@ -77,6 +77,11 @@ function useViewportLanePromotion(
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
 
+  // The host div only mounts once invocations exist (the empty state renders
+  // without it) — the observer effect must RE-RUN when that flips, or a
+  // readout that first rendered before its node started never attaches an
+  // observer and never promotes (adversarial finding 3).
+  const hasHost = invocations.length > 0;
   useEffect(() => {
     const el = hostRef.current;
     if (!el || !ensureLane) return;
@@ -85,7 +90,7 @@ function useViewportLanePromotion(
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [ensureLane]);
+  }, [ensureLane, hasHost]);
 
   useEffect(() => {
     if (!inView || !ensureLane) return;
@@ -288,6 +293,36 @@ function GroupMemberReadout({
   );
 }
 
+/** Run status → node-phase vocabulary for PhaseIcon, + human labels. The
+ * child summary renders a RUN's status; PhaseIcon/PHASE_LABEL are keyed on
+ * node phases — unmapped, a completed child showed the idle circle and raw
+ * status text (adversarial finding 10). */
+const RUN_STATUS_PHASE: Record<string, string> = {
+  pending: "idle",
+  running: "running",
+  cancelling: "running",
+  pausing: "running",
+  paused: "waiting",
+  interrupted: "waiting",
+  errored: "failed",
+  completed: "settled",
+  failed: "failed",
+  cancelled: "skipped",
+};
+
+const RUN_STATUS_LABEL: Record<string, string> = {
+  pending: "Not started",
+  running: "Working",
+  cancelling: "Stopping",
+  pausing: "Pausing",
+  paused: "Paused",
+  interrupted: "Waiting for input",
+  errored: "Needs attention",
+  completed: "Done",
+  failed: "Needs attention",
+  cancelled: "Stopped",
+};
+
 interface CompactChildSurface {
   /** Which child definition this was loaded for (guards stale results). */
   definitionId: string;
@@ -378,10 +413,10 @@ function ChildRunReadout({
         ) : (
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         )}
-        <PhaseIcon phase={childStatus ?? "idle"} />
+        <PhaseIcon phase={RUN_STATUS_PHASE[childStatus ?? ""] ?? "idle"} />
         <span className="font-medium">Sub-workflow</span>
         <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
-          {PHASE_LABEL[childStatus ?? ""] ?? childStatus ?? "…"}
+          {RUN_STATUS_LABEL[childStatus ?? ""] ?? childStatus ?? "…"}
         </span>
       </button>
       {expanded ? <WorkflowRunBoard runId={childRunId} adopt={false} /> : null}

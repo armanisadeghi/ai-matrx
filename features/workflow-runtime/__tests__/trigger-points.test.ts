@@ -265,3 +265,58 @@ describe("parseTriggerPointId", () => {
     });
   });
 });
+
+describe("sticky (monotonic) trigger facts", () => {
+  const sticky = (
+    overrides: Partial<NonNullable<TriggerResolutionState["sticky"]>> = {},
+  ): NonNullable<TriggerResolutionState["sticky"]> => ({
+    pausedOnce: false,
+    interruptedOnce: false,
+    startedNodes: {},
+    completedNodes: {},
+    failedNodes: {},
+    ...overrides,
+  });
+
+  it("run:paused stays fired after resume via pausedOnce", () => {
+    const resumed = state({
+      runStatus: "running",
+      sticky: sticky({ pausedOnce: true }),
+    });
+    expect(hasTriggerFired("run:paused", def, resumed)).toBe(true);
+  });
+
+  it("node:completed stays fired while a retry regresses the live phase", () => {
+    const retrying = state({
+      runStatus: "running",
+      nodePhases: { n1: "running" },
+      sticky: sticky({ completedNodes: { n1: true } }),
+    });
+    expect(hasTriggerFired("node:n1:completed", def, retrying)).toBe(true);
+  });
+
+  it("edge traversal survives a source retry via sticky facts", () => {
+    const s = state({
+      runStatus: "running",
+      nodePhases: { n1: "running", n2: "idle" },
+      sticky: sticky({ completedNodes: { n1: true }, startedNodes: { n2: true } }),
+    });
+    expect(hasTriggerFired("edge:e1:traversed", def, s)).toBe(true);
+  });
+
+  it("deliverable:ready stays fired when the deliverable node retries", () => {
+    const s = state({
+      runStatus: "running",
+      deliverableNodeId: "n3",
+      nodePhases: { n3: "running" },
+      sticky: sticky({ completedNodes: { n3: true } }),
+    });
+    expect(hasTriggerFired("deliverable:ready", def, s)).toBe(true);
+  });
+
+  it("without sticky facts, resolution from live phases is unchanged", () => {
+    const s = state({ runStatus: "running", nodePhases: { n1: "settled" } });
+    expect(hasTriggerFired("node:n1:completed", def, s)).toBe(true);
+    expect(hasTriggerFired("run:paused", def, s)).toBe(false);
+  });
+});

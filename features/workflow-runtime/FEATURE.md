@@ -48,8 +48,10 @@ that is the exit-test surface.
    viewer-driven (`ensureLane`).
 3. **One flush timer per run tree.** Never reintroduce a per-lane/per-stream timer.
 4. **`invocationKeyOf` is the only lane identity.** Fan-out siblings are separate invocations;
-   the wire's `node_stream` deltas carry `node_id` only, so token deltas multiplex onto the
-   node's root lane until the server grows per-invocation stream identity (tracked in the plan).
+   the wire's `node_stream` deltas carry `node_id` only, so a FAN-OUT node's deltas stay in the
+   TRACKED tier (single-target invocation, one bounded copy) — no lane is opened for fan-out
+   (a root lane registers to no invocation and sibling lanes can receive no content; both
+   burned budget on invisible panes) until the server grows per-invocation stream identity.
 5. **Cursor discipline:** `after_seq` only, monotonic, shared by SSE and poller; ephemeral frames
    never advance it.
 6. **A refresh never re-streams tokens.** Replay rebuilds node states + outputs (including
@@ -58,6 +60,13 @@ that is the exit-test surface.
 7. **Child adoption is bounded** (depth 3 / 10 runs) and shares the parent's lane budget.
 8. **Lifecycle verbs live in `useWorkflowRunControls` only** — no surface calls the endpoints
    directly.
+9. **Triggers fire monotonically (R2).** Live phases regress (retry, resume) but a fired
+   trigger never unfires — resolution reads the slice's `sticky` facts, never live phase alone.
+10. **The pump never refetches.** `record_update`/`resource_changed` frames become bounded
+   per-run signals + revisions in the slice; consumers subscribe via `useRunRecordSignal` and
+   refetch themselves (side effect colocated with its consumer).
+11. **Transports stop at terminal.** SSE ends via the `end` frame; the poller stops on the
+   terminal run event — a finished run never keeps polling.
 
 ## Doctrine
 
@@ -72,6 +81,17 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-16 — Phase 3 pump + adversarial-review fixes: `record_update`/`resource_changed`
+  frames parse into bounded per-run signals with coarse + per-table revisions
+  (`parseSignalDelta`, `applyRunSignal`, `useRunRecordSignal`; run-level frames no longer
+  dropped; server emits parseable summaries — aidream `workflow_events.py`). Eleven
+  adversarial findings fixed: fan-out streams stay tracked-tier single-target (no invisible
+  root/sibling lanes), `disposeRun` releases `laneRequestId` (no dead LiveRunDisplay
+  shadowing outputs), viewport promotion re-attaches when invocations appear, duplicate
+  `node_started` can't re-open a settled lane, the poller stops on terminal run events,
+  triggers are monotonic via slice `sticky` facts, tracked-tier meta batches on a 100 ms
+  coalescing timer, lane creation seeds from the flushed tail, mobile ordering never mixes
+  explicit/derived scales, child summary maps run status to icon/label.
 - 2026-08-16 — Phase 2 tail: drag-to-place layout preview in the builder
   (`SurfaceLayoutPreview` over `applyPlacement`); surface metadata (name /
   audience / profile) editable in the builder and saved in the same CAS write;
