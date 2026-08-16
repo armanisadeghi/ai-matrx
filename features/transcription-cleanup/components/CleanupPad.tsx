@@ -1509,7 +1509,7 @@ export default function CleanupPad({
             setEditedResponse(visible);
             await sessionRefs.current.persistCleanRun(
               visible,
-              run.shortcutId ?? "",
+              run.shortcutId,
               run.conversationId,
               run.id,
             );
@@ -1520,7 +1520,7 @@ export default function CleanupPad({
               setEditedBySlot((prev) => ({ ...prev, [slot.id]: visible }));
               await sessionRefs.current.persistCustomRun(
                 visible,
-                run.shortcutId ?? "",
+                run.shortcutId,
                 run.conversationId,
                 slot.docKind,
                 run.id,

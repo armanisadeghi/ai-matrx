@@ -135,6 +135,17 @@ interface AgentSelections {
   customSlots: CleanupCustomSlot[];
 }
 
+/**
+ * A run row records WHICH agent produced it. There is no honest empty-string
+ * agent, so a new row without one is a bug, not a value to paper over.
+ */
+function requireAgentId(agentId: string | null): string {
+  if (!agentId) {
+    throw new Error("[cleanup] cannot record a run with no agent");
+  }
+  return agentId;
+}
+
 function isCleanupPlaceholderTitle(title: string | null | undefined): boolean {
   return CLEANUP_PLACEHOLDER_TITLES.has((title ?? "").trim().toLowerCase());
 }
@@ -693,7 +704,8 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
   const persistCleanRun = useCallback(
     async (
       text: string,
-      agentId: string,
+      /** Null only when the row already exists — a NEW row must name its agent. */
+      agentId: string | null,
       conversationId: string | null,
       /** The row `beginRun` opened for this pass; a new one is opened without it. */
       existingRunId?: string | null,
@@ -706,7 +718,7 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
           : await insertAgentRun({
               sessionId,
               columnIdx: 2,
-              shortcutId: agentId,
+              shortcutId: requireAgentId(agentId),
               triggerCause: "manual",
               metadata: { surface: "cleanup", target: "clean" },
             });
@@ -780,7 +792,8 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
   const persistCustomRun = useCallback(
     async (
       text: string,
-      agentId: string,
+      /** Null only when the row already exists — a NEW row must name its agent. */
+      agentId: string | null,
       conversationId: string | null,
       docKind: string,
       /** The row `beginRun` opened for this pass; a new one is opened without it. */
@@ -794,7 +807,7 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
           : await insertAgentRun({
               sessionId,
               columnIdx: 4,
-              shortcutId: agentId,
+              shortcutId: requireAgentId(agentId),
               triggerCause: "manual",
               metadata: { surface: "cleanup", target: docKind },
             });
