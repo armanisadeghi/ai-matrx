@@ -8,8 +8,8 @@
 // sort/filter over the loaded set.
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Megaphone, MoreVertical, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BarChart3, ListChecks, Megaphone, MoreVertical, Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxDataTable";
@@ -37,6 +37,7 @@ import {
   ListStatusBadge,
 } from "./badges";
 import { OutreachListCreateDialog } from "./OutreachListCreateDialog";
+import { OrgOutreachReportPanel } from "../../analytics/OrgOutreachReportPanel";
 
 function memberCount(row: OutreachListWithCount): number {
   return row.members?.[0]?.count ?? 0;
@@ -44,7 +45,12 @@ function memberCount(row: OutreachListWithCount): number {
 
 export function OutreachListsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const ctx = useCrmContext();
+  // ?view=report is the org-wide reporting layer over every campaign below.
+  const [activeView, setActiveView] = useState<"lists" | "report">(
+    searchParams.get("view") === "report" ? "report" : "lists",
+  );
   const [rows, setRows] = useState<OutreachListWithCount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -281,7 +287,24 @@ export function OutreachListsPage() {
           <span className="text-xs text-muted-foreground">
             Outreach lists you created or that live in your organizations.
           </span>
-          <div className="ml-auto">{newButton}</div>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={activeView === "report" ? "secondary" : "ghost"}
+              className="h-7 gap-1 px-2 text-xs"
+              onClick={() =>
+                setActiveView(activeView === "report" ? "lists" : "report")
+              }
+            >
+              {activeView === "report" ? (
+                <ListChecks className="h-3.5 w-3.5" />
+              ) : (
+                <BarChart3 className="h-3.5 w-3.5" />
+              )}
+              {activeView === "report" ? "Lists" : "Report"}
+            </Button>
+            {newButton}
+          </div>
         </div>
         {error && (
           <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
@@ -296,6 +319,19 @@ export function OutreachListsPage() {
         />
       </div>
 
+      {activeView === "report" ? (
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-2">
+          {/* One org's outreach, rolled up from the SAME pure functions the
+              per-campaign panel uses — the totals and the rows cannot drift. */}
+          {ctx?.orgIds[0] ? (
+            <OrgOutreachReportPanel organizationId={ctx.orgIds[0]} />
+          ) : (
+            <p className="px-1 py-4 text-xs text-muted-foreground">
+              This report is per organization, and you are not in one yet.
+            </p>
+          )}
+        </div>
+      ) : (
       <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
         <MatrxDataTable<OutreachListWithCount>
           data={rows}
@@ -339,6 +375,7 @@ export function OutreachListsPage() {
           }}
         />
       </div>
+      )}
 
       <OutreachListCreateDialog
         open={createOpen}

@@ -14,6 +14,7 @@ import {
   Bookmark,
   ListPlus,
   Award,
+  BarChart3,
   Megaphone,
   MoreVertical,
   Pause,
@@ -72,20 +73,28 @@ import {
 import { ListKindBadge, ListStatusBadge, MemberStatusBadge } from "./badges";
 import { AddMembersDialog } from "./AddMembersDialog";
 import { OutcomesPanel } from "../../outcomes/OutcomesPanel";
+import { CampaignPerformancePanel } from "../../analytics/CampaignPerformancePanel";
 import { SingleSendDialog } from "./SingleSendDialog";
 import { listSendingIdentities } from "../../sending-identities/service";
 import type { SendingIdentityView } from "../../sending-identities/types";
 
 const PAGE_SIZE = 50;
 
+/** The three things this workspace can BE. `?view=` carries it. */
+type CampaignView = "members" | "outcomes" | "performance";
+
 export function OutreachListDetailPage({ listId }: { listId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   // ?view=outcomes is the attribution feed's deep link — the assist chips the
   // nightly attribution pass raises land here with their row preselected.
-  const [activeView, setActiveView] = useState<"members" | "outcomes">(
-    searchParams.get("view") === "outcomes" ? "outcomes" : "members",
-  );
+  // ?view=performance is the reporting layer over everything below it.
+  const [activeView, setActiveView] = useState<CampaignView>(() => {
+    const requested = searchParams.get("view");
+    return requested === "outcomes" || requested === "performance"
+      ? requested
+      : "members";
+  });
   const ctx = useCrmContext();
   const [list, setOutreachList] = useState<OutreachListRow | null>(null);
   const [counts, setCounts] = useState<MemberStatusCounts | null>(null);
@@ -686,6 +695,20 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                 <Award className="h-3.5 w-3.5" />
                 Outcomes
               </Button>
+              {/* Is this campaign working? Every number opens to its rows. */}
+              <Button
+                size="sm"
+                variant={activeView === "performance" ? "secondary" : "ghost"}
+                className="h-7 gap-1 px-2 text-xs"
+                onClick={() =>
+                  setActiveView(
+                    activeView === "performance" ? "members" : "performance",
+                  )
+                }
+              >
+                <BarChart3 className="h-3.5 w-3.5" />
+                Performance
+              </Button>
               {lifecycleButton}
               <Button
                 size="sm"
@@ -776,7 +799,11 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         )}
       </div>
 
-      {activeView === "outcomes" ? (
+      {activeView === "performance" ? (
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-2">
+          <CampaignPerformancePanel campaignId={listId} />
+        </div>
+      ) : activeView === "outcomes" ? (
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-2">
           <OutcomesPanel campaignId={listId} />
         </div>
