@@ -9502,6 +9502,35 @@ export type Database = {
           interaction_id: string
         }[]
       }
+      claim_voice_recording_custody_work: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit?: number
+          p_max_attempts?: number
+          p_worker_id: string
+        }
+        Returns: {
+          attempt_count: number
+          channels: number
+          claim_event_id: number
+          claim_token: string
+          duration_seconds: number
+          interaction_id: string
+          lease_expires_at: string
+          organization_id: string
+          program_key: string
+          provider: string
+          provider_account_id: string
+          provider_call_id: string
+          provider_media_url: string
+          provider_recording_id: string
+          recording_owner_id: string
+          recording_source: string
+          recording_track: string
+          source_event_id: number
+          source_event_key: string
+        }[]
+      }
       claim_voice_recording_lifecycle_event: {
         Args: {
           p_channels?: number
@@ -9646,6 +9675,21 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      fail_voice_recording_custody_work: {
+        Args: {
+          p_canonical_file_id?: string
+          p_claim_token: string
+          p_cleanup_required?: boolean
+          p_error_code: string
+          p_max_attempts?: number
+          p_operator_detail?: string
+          p_retry_after_seconds?: number
+          p_retryable: boolean
+          p_source_event_id: number
+          p_worker_id: string
+        }
+        Returns: boolean
       }
       finalize_sms_agent_turn: {
         Args: {
