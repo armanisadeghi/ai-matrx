@@ -89,6 +89,35 @@ function isRecordAttemptResult(
   );
 }
 
+const REVIEW_RUN_STATUSES = new Set<SessionReviewRun["status"]>([
+  "running",
+  "complete",
+  "failed",
+]);
+
+/** Read the durable coach-review handle, or undefined when it isn't one. */
+function readReviewRun(value: Json | null): SessionReviewRun | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return undefined;
+  }
+  const { conversationId, startedAt, finishedAt, status } = value as Record<
+    string,
+    unknown
+  >;
+  if (typeof conversationId !== "string" || typeof startedAt !== "string") {
+    return undefined;
+  }
+  if (!REVIEW_RUN_STATUSES.has(status as SessionReviewRun["status"])) {
+    return undefined;
+  }
+  return {
+    conversationId,
+    startedAt,
+    ...(typeof finishedAt === "string" ? { finishedAt } : {}),
+    status: status as SessionReviewRun["status"],
+  };
+}
+
 /** Shape the `study_override_attempt` RPC returns: `{ attempt, mastery }`. */
 interface OverrideAttemptRpcResult {
   attempt: StudyAttemptRow;
@@ -412,14 +441,9 @@ export const studyService = {
         ai.progressNarrative && typeof ai.progressNarrative === "object"
           ? (ai.progressNarrative as unknown as SessionProgressNarrative)
           : undefined,
-      reviewRun:
-        ai.reviewRun &&
-        typeof ai.reviewRun === "object" &&
-        !Array.isArray(ai.reviewRun) &&
-        typeof (ai.reviewRun as { conversationId?: unknown }).conversationId ===
-          "string"
-          ? (ai.reviewRun as unknown as SessionReviewRun)
-          : undefined,
+      // Built field-by-field, not cast: a page decides whether to REATTACH to a
+      // live agent run from this, so a half-written handle must read as absent.
+      reviewRun: readReviewRun(ai.reviewRun as Json | null),
     };
   },
 
