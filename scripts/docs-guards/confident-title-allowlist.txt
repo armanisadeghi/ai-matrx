@@ -24,3 +24,6 @@ docs/official/
 features/artifacts/docs/ARTIFACT_VISION_AND_DESIGN.md
 # Preserves Arman's verbatim vision quote containing the SEO term "canonical pages".
 docs/MARKETING_PROGRAM_BOARD.md
+# False positive: the one-liner describes "canonical CRM/chat linkage" — the
+# platform's canonical-relationship concept — not a claim that the doc is canonical.
+docs/db_rebuild/proposals/communications_p0_foundation.md
