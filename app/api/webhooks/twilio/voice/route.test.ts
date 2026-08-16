@@ -400,6 +400,34 @@ describe("POST /api/webhooks/twilio/voice", () => {
       },
     });
     expect(body.consent.persistence).toBe("durable_activity_ledger_ready");
+    expect(body.conversationRelay).toMatchObject({
+      enabled: false,
+      mode: "disabled_unmounted",
+      durableSystemOfRecord: "crm.interaction + platform.activity_log",
+      readiness: {
+        ready: false,
+        passedGateCount: 7,
+        totalGateCount: 14,
+      },
+    });
+    expect(body.conversationRelay.readiness.gates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "provider_playback_decoder_ready",
+          passed: false,
+        }),
+        expect.objectContaining({
+          key: "canonical_call_lifecycle_ready",
+          passed: true,
+        }),
+        expect.objectContaining({
+          key: "playback_activity_persistence_ready",
+          passed: false,
+        }),
+        expect.objectContaining({ key: "public_route_mounted", passed: false }),
+        expect.objectContaining({ key: "code_switch_enabled", passed: false }),
+      ]),
+    );
     expect(body.recording.storageCanary).toEqual({
       ready: false,
       status: "missing",
@@ -464,6 +492,29 @@ describe("POST /api/webhooks/twilio/voice", () => {
         expect.objectContaining({
           key: "retention_access_deletion_ready",
           passed: true,
+        }),
+      ]),
+    );
+  });
+
+  test("fails relay lifecycle visibility closed when persistence proof is unavailable", async () => {
+    jest
+      .mocked(getVoiceRecordingPersistenceReadiness)
+      .mockRejectedValueOnce(new Error("database unavailable"));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.conversationRelay.readiness).toMatchObject({
+      ready: false,
+      passedGateCount: 6,
+      totalGateCount: 14,
+    });
+    expect(body.conversationRelay.readiness.gates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "canonical_call_lifecycle_ready",
+          passed: false,
         }),
       ]),
     );

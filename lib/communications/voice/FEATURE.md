@@ -71,8 +71,18 @@ readiness from the durable canary receipt; it still reports recording disabled r
 receipt because provider verification, external configuration, and disclosure proof are separate
 gates.
 
+The main Voice GET also exposes the ConversationRelay launch inventory through the same readiness
+primitive. It reports the six inert aidream foundations plus the already-live canonical call
+lifecycle (`crm.interaction` + uniquely keyed `platform.activity_log`) as ready, while the exact
+provider playback decoder, playback-activity claim, public route, owned-number routing, and all
+three launch switches remain false. This is readiness only: no token/transcript/audio content,
+phone, provider URL, session reference, signature, or credential is returned.
+
 ## Change log
 
+- **2026-08-16** — Added fail-closed ConversationRelay readiness to the existing Voice GET. The
+  response reuses live canonical call-lifecycle proof, exposes the inert gateway inventory, and
+  keeps provider evidence decoding, playback persistence, routing, and all launch switches false.
 - **2026-08-16** — Wired the durable non-recording storage-canary receipt into the Voice readiness
   GET. Exact fresh evidence now derives the dedicated-writer, canary, canonical-file, and governed
   retention/access/delete gates without exposing credentials or enabling storage/recording.

@@ -32,6 +32,7 @@ import {
   resolveVoiceOwnerCallContext,
 } from "@/lib/communications/voice/persistence";
 import { evaluateVoiceRecordingReadiness } from "@/lib/communications/voice/recording-readiness";
+import { evaluateConversationRelayReadiness } from "@/lib/communications/voice/conversation-relay-readiness";
 import {
   getVoiceStorageCanaryReadiness,
   type VoiceStorageCanaryReadiness,
@@ -276,11 +277,18 @@ export async function GET(): Promise<NextResponse> {
     ownerBeta = { status: "unavailable", ready: false };
   }
   let lifecyclePersistenceReady = false;
+  let callLifecyclePersistenceReady = false;
   try {
-    lifecyclePersistenceReady = (await getVoiceRecordingPersistenceReadiness())
-      .ready;
+    const persistence = await getVoiceRecordingPersistenceReadiness();
+    lifecyclePersistenceReady = persistence.ready;
+    callLifecyclePersistenceReady =
+      persistence.call_claim_ready &&
+      persistence.event_idempotency_ready &&
+      persistence.provider_identity_unique &&
+      persistence.ambiguous_call_count === 0;
   } catch {
     lifecyclePersistenceReady = false;
+    callLifecyclePersistenceReady = false;
   }
   let consentPersistenceReady = false;
   try {
@@ -318,6 +326,22 @@ export async function GET(): Promise<NextResponse> {
     canonical_file_ingest_ready: storageCanary.ready,
     retention_access_deletion_ready: storageCanary.ready,
   });
+  const conversationRelayReadiness = evaluateConversationRelayReadiness({
+    strict_wire_contract_ready: true,
+    signed_admission_ready: true,
+    one_time_reference_ready: true,
+    canonical_runtime_ready: true,
+    bounded_session_host_ready: true,
+    secret_free_telemetry_ready: true,
+    provider_playback_decoder_ready: false,
+    canonical_call_lifecycle_ready: callLifecyclePersistenceReady,
+    playback_activity_persistence_ready: false,
+    public_route_mounted: false,
+    owned_number_routed: false,
+    code_switch_enabled: false,
+    provider_switch_enabled: false,
+    program_switch_enabled: false,
+  });
 
   return NextResponse.json({
     webhook: "AI Matrx Inbound Voice",
@@ -326,6 +350,12 @@ export async function GET(): Promise<NextResponse> {
     contentType: "application/x-www-form-urlencoded",
     recordingStarted: false,
     conversationRelayConnected: false,
+    conversationRelay: {
+      enabled: false,
+      mode: "disabled_unmounted",
+      durableSystemOfRecord: "crm.interaction + platform.activity_log",
+      readiness: conversationRelayReadiness,
+    },
     ownerBeta,
     consent: {
       required: true,
