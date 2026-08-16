@@ -11,9 +11,13 @@ export function ContentPlanListHeader() {
   return (
     <div className="flex w-full min-w-0 items-center gap-2">
       <ActiveContextLensChip className="shrink-0" />
-      <span className="truncate text-sm font-medium text-foreground">
+      {/* THE page heading for this route — the documented (core) convention
+        (features/shell/components/header/variants/USAGE.md): a real <h1> in
+        the header center, not a <span>. Nine review-queue rejections on this
+        feature were "no semantic page heading". */}
+      <h1 className="truncate text-sm font-medium text-foreground">
         Content Plan
-      </span>
+      </h1>
       <span className="hidden text-xs text-muted-foreground sm:inline">
         Every URL a site should have — pick a site to plan it.
       </span>

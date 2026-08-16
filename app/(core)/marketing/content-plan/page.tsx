@@ -42,7 +42,7 @@ export default async function ContentPlanListPage({
       <PageHeader>
         <ContentPlanListHeader />
       </PageHeader>
-      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
+      <div className="matrx-touch-targets h-full overflow-hidden pt-[var(--shell-header-h)]">
         <PlanSitesList />
       </div>
     </>

@@ -9,6 +9,7 @@
 import { Check } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMobilePanelClose } from "@/features/shell/components/header/templates/MobilePanelShell";
 import { cn } from "@/lib/utils";
 
 import { humanizeKey, type Archetype, type ExpandedArchetype } from "../archetypes";
@@ -37,9 +38,10 @@ export function SetupShapeColumn({
   shadowed: string[];
   onSelect: (key: string) => void;
 }) {
+  const closeMobilePanel = useMobilePanelClose();
   return (
     <div className="flex flex-col gap-3 p-3 md:h-full md:min-h-0 md:overflow-y-auto">
-      <SetupSection title="Site shape">
+      <SetupSection title="Site shape" level={2}>
         <p className="text-xs leading-relaxed text-muted-foreground">
           A shape is concepts and counts — not a design. Pick the one closest to
           this site, then tune the counts.
@@ -88,7 +90,13 @@ export function SetupShapeColumn({
               <li key={archetype.key}>
                 <button
                   type="button"
-                  onClick={() => onSelect(archetype.key)}
+                  onClick={() => {
+                    onSelect(archetype.key);
+                    // Picking a shape is an ACTION, not navigation: on a phone
+                    // this column is a drawer, and leaving it open would hide
+                    // the work order the pick just rewrote. No-op on desktop.
+                    closeMobilePanel();
+                  }}
                   aria-pressed={selected}
                   className={cn(
                     "w-full rounded-md border border-l-2 px-2.5 py-2 text-left transition-colors",

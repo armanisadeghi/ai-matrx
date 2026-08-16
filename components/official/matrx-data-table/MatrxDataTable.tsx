@@ -1016,6 +1016,11 @@ function MatrxDataTableCore<T>({
                       }
                       className={cn(
                         "h-9 px-2 text-left align-middle max-sm:whitespace-nowrap",
+                        // An intentional mobile column set (see
+                        // MatrxColumnDef.mobileHidden). CSS, not a JS
+                        // breakpoint — no hydration mismatch, and the column
+                        // stays sortable/filterable from the toolbar.
+                        col.mobileHidden && "max-sm:hidden",
                         // bg-inherit picks up the thead's translucent bg-muted/90
                         // but NOT its backdrop-filter — re-apply the blur so
                         // scrolled-under header text can't ghost through.
@@ -1080,7 +1085,13 @@ function MatrxDataTableCore<T>({
                       </td>
                     ) : null}
                     {visibleColumns.map((col) => (
-                      <td key={columnId(col)} className="px-2 py-2">
+                      <td
+                        key={columnId(col)}
+                        className={cn(
+                          "px-2 py-2",
+                          col.mobileHidden && "max-sm:hidden",
+                        )}
+                      >
                         <Skeleton className="h-5 w-full" />
                       </td>
                     ))}
@@ -1192,6 +1203,7 @@ function MatrxDataTableCore<T>({
                               // nowrap (NOT truncate — truncate clips the cell and
                               // defeats w-max, killing the horizontal scroll).
                               "max-sm:whitespace-nowrap",
+                              col.mobileHidden && "max-sm:hidden",
                               mobileScroll &&
                                 colIdx === 0 &&
                                 "max-sm:sticky max-sm:left-0 max-sm:z-10 max-sm:bg-inherit",

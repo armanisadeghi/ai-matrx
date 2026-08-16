@@ -13,19 +13,29 @@ export function SetupSection({
   title,
   action,
   className,
+  level = 3,
   children,
 }: {
   title: string;
   action?: ReactNode;
   className?: string;
+  /**
+   * Heading rank. A column's ROOT section is `2` (it sits directly under the
+   * workspace's h1); everything nested inside a column stays `3`. Setup used
+   * to start at `h4` with nothing above it, which is precisely what four
+   * review rejections meant by "no useful H1/H2/H3 structure" — the rank is
+   * the outline, so it has to be stated, not styled.
+   */
+  level?: 2 | 3;
   children: ReactNode;
 }) {
+  const Heading = level === 2 ? "h2" : "h3";
   return (
     <section className={cn("space-y-2.5", className)}>
       <div className="flex min-h-6 items-center justify-between gap-2">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+        <Heading className="text-xs font-semibold uppercase tracking-wider text-foreground">
           {title}
-        </h4>
+        </Heading>
         {action}
       </div>
       {children}

@@ -81,6 +81,7 @@ import {
 import { NodeRealityCard } from "./NodeRealityCard";
 import { NodeMeasureCard } from "./NodeMeasureCard";
 import { NodeStepRail } from "./NodeStepRail";
+import { PageDraftEditor } from "./PageDraftEditor";
 import { NodeSeoIntentEditor } from "./NodeSeoIntentEditor";
 import { planNodeHref, SeoPlanSection } from "./PlanContextPanel";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
@@ -923,6 +924,29 @@ export function NodePanel({
                 siteId={siteId}
                 pageLabel={node.route ?? node.label}
                 progress={pipelineProgress ?? null}
+              />
+            </PanelSection>
+
+            {/* The page's WORDS, editable without HTML — the promise the P4
+          record was built to keep (docs/handoffs/website-factory-vision.md
+          § S4). Directly under the pipeline, because the step that produced
+          these words is the thing above it, and "Build the page" turns them
+          into the website page through the SAME seam the reality card uses
+          (`useNodeReality.write`) — never a second build path. */}
+            <PanelSection title="Page content">
+              <PageDraftEditor
+                nodeId={node.id}
+                siteId={siteId}
+                pageLabel={node.route ?? node.label}
+                onBuild={cmsSiteId ? () => reality.write() : undefined}
+                buildBusy={reality.busy === "write"}
+                buildDisabledReason={
+                  cmsSiteId
+                    ? cmsPage
+                      ? null
+                      : "This page does not exist on the website yet — create it from the page card below, then build it."
+                    : "This plan has no website linked yet. Link one in Setup and this button will build the page."
+                }
               />
             </PanelSection>
 

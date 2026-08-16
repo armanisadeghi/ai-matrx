@@ -1361,6 +1361,68 @@
   .matrx-tap-pill-inline-sm .matrx-tap-label {
     font-size: 0.625rem;
   }
+
+  /* =========================================================================
+     .matrx-touch-targets — SUBTREE touch-target floor (iOS 44px).
+
+     WHY THIS EXISTS: a data-dense surface is built desktop-first out of
+     h-6/h-7/h-8 controls (24/28/32px). Every one of them is a review failure
+     on a phone, and fixing them one `h-10 md:h-7` at a time does not hold —
+     the next component added to the feature re-breaks the rule, which is
+     exactly how the content-plan review queue accumulated seven "controls
+     under 40-44px" rejections. Put this class on a feature/section root and
+     the floor applies to everything inside it, including files written later.
+
+     Applies ONLY under `pointer: coarse` (a real touch device or the browser's
+     mobile emulation), so desktop density is completely untouched.
+
+     Deliberately NOT covered:
+       - checkbox / radio / switch inputs — a min-height would distort the
+         control itself; their LABEL is the tap target and it is a <label>.
+       - inline anchors — prose links must not become 44px blocks. An anchor
+         that IS a control opts in with `data-tap-target`.
+     A control that must stay small inside an opted-in subtree sets
+     `data-touch-exempt` and states why at the callsite.
+     ========================================================================= */
+  @media (pointer: coarse) {
+    .matrx-touch-targets
+      :is(
+        button,
+        summary,
+        select,
+        [role="button"],
+        [role="combobox"],
+        [role="tab"],
+        [role="menuitem"],
+        [role="option"],
+        a[data-tap-target]
+      ):not([data-touch-exempt]) {
+      min-height: 2.75rem; /* 44px */
+    }
+
+    /* Width is the DANGEROUS half: a blanket `min-width: 44px` squeezes a
+       narrow TEXT button inside a flex row down to 44px and wraps its label
+       one word per line (measured on the plan-vs-reality bar). So width is
+       raised only for icon-only controls, whose convention in this codebase
+       is an `aria-label` carrying the name the icon can't say. A text button
+       that also has one is already wider than 44px, so this is a no-op there. */
+    .matrx-touch-targets
+      :is(button, [role="button"], a[data-tap-target])[aria-label]:not(
+        [data-touch-exempt]
+      ) {
+      min-width: 2.75rem;
+    }
+
+    /* Text fields: 44px tall, and >=16px text so iOS does not zoom on focus. */
+    .matrx-touch-targets
+      :is(
+        input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+        textarea
+      ):not([data-touch-exempt]) {
+      min-height: 2.75rem;
+      font-size: max(1rem, 100%);
+    }
+  }
 }
 
 @layer utilities {

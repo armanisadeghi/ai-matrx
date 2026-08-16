@@ -65,7 +65,10 @@ export function PlanDriftBar({
   return (
     <div
       className={cn(
-        "group/drift flex items-center gap-2 border-b px-3 py-1.5 text-xs",
+        // Phone: the counts sentence and its two actions cannot share one
+        // row — the buttons don't shrink, so the sentence was starved to
+        // ~66px and wrapped one word per line. Stack below `sm`.
+        "group/drift flex flex-col items-stretch gap-2 border-b px-3 py-1.5 text-xs sm:flex-row sm:items-center",
         inSync
           ? "border-border bg-muted/30"
           : "border-amber-500/30 bg-amber-500/5",
@@ -119,6 +122,9 @@ export function PlanDriftBar({
         ) : null}
       </span>
 
+      {/* Actions: their own row on a phone (see the stacking note above),
+        inline from `sm`. */}
+      <span className="flex shrink-0 items-center justify-end gap-2">
       {isRefreshing ? (
         <Loader2
           className="h-3.5 w-3.5 shrink-0 animate-spin text-muted-foreground"
@@ -129,7 +135,9 @@ export function PlanDriftBar({
         bar survives. Carries the verdict SENTENCE, not just the counts. */}
       <CopyButtons
         size="xs"
-        className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover/drift:opacity-100"
+        // opacity-0 + group-hover keeps the bar dense on a desktop, but a
+        // touch device has no hover, so this was permanently invisible there.
+        className="shrink-0 opacity-100 transition-opacity focus-within:opacity-100 group-hover/drift:opacity-100 [@media(hover:hover)]:opacity-0"
         label="Plan vs. the live site"
         human={() =>
           [
@@ -190,6 +198,7 @@ export function PlanDriftBar({
       >
         {inSync ? "Details" : "Review & fix"}
       </Button>
+      </span>
     </div>
   );
 }

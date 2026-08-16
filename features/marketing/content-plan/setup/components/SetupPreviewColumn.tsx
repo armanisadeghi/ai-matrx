@@ -110,9 +110,9 @@ export function SetupPreviewColumn({
   return (
     <div className="flex flex-col md:h-full md:min-h-0">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
           Pages that will exist
-        </h4>
+        </h2>
         <div className="flex items-center rounded-md border border-border p-0.5">
           {filters.map(([key, label, count]) => (
             <button
@@ -161,9 +161,9 @@ export function SetupPreviewColumn({
         ) : (
           groups.map(([key, groupRows]) => (
             <section key={key}>
-              <h5 className="relative border-b border-border bg-muted/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur-sm md:sticky md:top-0 md:z-10">
+              <h3 className="relative border-b border-border bg-muted/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground backdrop-blur-sm md:sticky md:top-0 md:z-10">
                 {groupLabel(key)} · {groupRows.length}
-              </h5>
+              </h3>
               <ul>
                 {groupRows.map((row) => (
                   <li

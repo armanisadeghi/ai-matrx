@@ -22,6 +22,9 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { LayoutTemplate, ListChecks } from "lucide-react";
+
+import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
@@ -1967,15 +1970,8 @@ export function SetupView() {
           />
         ) : null}
 
-        {/* Mobile: ONE page scroll, panels stacked at natural height. md+: a
-        fixed grid where each column owns its own scroll. */}
-        <div
-          className={
-            "flex min-h-0 flex-1 flex-col gap-px overflow-y-auto bg-border " +
-            "md:grid md:grid-cols-[16rem_minmax(0,1fr)] md:grid-rows-[minmax(0,auto)_minmax(0,1fr)] md:overflow-hidden " +
-            "xl:grid-cols-[17rem_minmax(0,1fr)_25rem] xl:grid-rows-1"
-          }
-        >
+        {(() => {
+        const shapeColumn = (
           <div className="bg-card md:row-span-2 md:min-h-0 xl:row-span-1">
             {loading ? (
               <ColumnSkeleton rows={4} />
@@ -1994,7 +1990,9 @@ export function SetupView() {
               />
             )}
           </div>
+        );
 
+        const workOrderColumn = (
           <div className="bg-card md:min-h-0">
             {loading ? (
               <ColumnSkeleton rows={6} />
@@ -2152,7 +2150,9 @@ export function SetupView() {
               />
             )}
           </div>
+        );
 
+        const previewColumn = (
           <div className="bg-card md:col-start-2 md:min-h-0 xl:col-start-3 xl:row-start-1">
             {loading ? (
               <ColumnSkeleton rows={8} />
@@ -2174,7 +2174,54 @@ export function SetupView() {
               />
             )}
           </div>
-        </div>
+        );
+
+        return (
+          <MobilePanelShell
+            // Desktop is the EXISTING grid, verbatim — each column owns its
+            // own scroll. Zero change above md.
+            desktop={
+              <div
+                className={
+                  "grid min-h-0 flex-1 grid-cols-[16rem_minmax(0,1fr)] grid-rows-[minmax(0,auto)_minmax(0,1fr)] gap-px overflow-hidden bg-border " +
+                  "xl:grid-cols-[17rem_minmax(0,1fr)_25rem] xl:grid-rows-1"
+                }
+              >
+                {shapeColumn}
+                {workOrderColumn}
+                {previewColumn}
+              </div>
+            }
+            // Phone: the work order IS the workhorse, so it is the main
+            // column; the shape chooser and the preview/"Make it real" rungs
+            // become one-tap drawers. Before this, all three were stacked in
+            // one endless scroll and reviewers reported the work order, page
+            // list, lint and Make It Real as simply missing (2ca8190e).
+            main={<div className="bg-card">{workOrderColumn}</div>}
+            panels={[
+              // Drawer content renders in a PORTAL, outside the workbench
+              // root — so the touch-target floor has to ride the panel
+              // itself or it silently stops applying inside the sheet.
+              {
+                id: "shape",
+                label: "Site shape",
+                icon: LayoutTemplate,
+                content: (
+                  <div className="matrx-touch-targets">{shapeColumn}</div>
+                ),
+              },
+              {
+                id: "preview",
+                label: "Pages that will exist",
+                icon: ListChecks,
+                content: (
+                  <div className="matrx-touch-targets">{previewColumn}</div>
+                ),
+              },
+            ]}
+          />
+        );
+        })()}
       </div>
     </SurfaceRuntimeProvider>
   );

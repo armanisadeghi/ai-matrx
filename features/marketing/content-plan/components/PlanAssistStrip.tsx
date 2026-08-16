@@ -64,14 +64,18 @@ export function PlanAssistStrip({
   const siteFilter = (a: Assist) => (siteId ? isPlanAssist(a, siteId) : false);
 
   useEffect(() => {
-    if (!enabled || !siteId || !userId) return;
+    // `siteLabel` arrives with the site row, one tick after `siteId`. Producing
+    // before it lands stamped the raw UUID into the assist's TITLE — and the
+    // dedupe key means that row is then never rewritten, so the user reads an
+    // id forever. An assist waits for the name; it never falls back to an id.
+    if (!enabled || !siteId || !userId || !siteLabel) return;
     if (sweptSites.has(siteId)) return;
     // Latch synchronously (no concurrent double-run), un-latch when no gap
     // exists so nodes planned later in the session are still noticed.
     sweptSites.add(siteId);
     void producePlanAssists({
       siteId,
-      siteLabel: siteLabel ?? siteId,
+      siteLabel,
       nodeRows,
       pagesByNodeId,
       userId,
@@ -82,12 +86,12 @@ export function PlanAssistStrip({
   }, [enabled, siteId, siteLabel, nodeRows, pagesByNodeId, userId, dispatch]);
 
   useEffect(() => {
-    if (!keywordSweepEnabled || !siteId || !userId) return;
+    if (!keywordSweepEnabled || !siteId || !userId || !siteLabel) return;
     if (keywordSweptSites.has(siteId)) return;
     keywordSweptSites.add(siteId);
     void produceKeywordAssists({
       siteId,
-      siteLabel: siteLabel ?? siteId,
+      siteLabel,
       nodeRows,
       userId,
       dispatch,

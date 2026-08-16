@@ -114,6 +114,20 @@ export interface MatrxColumnDef<T> {
   /** The id `entityToken` refers to. Defaults to the table's `getRowId(row)`. */
   entityId?: (row: T) => string | undefined;
   /**
+   * Drop this column below `sm` (the phone breakpoint).
+   *
+   * A wide table on a phone becomes a horizontal scroller: the frozen
+   * identity column stays, and everything after the second column sits off
+   * the right edge where a reviewer will never find it. Marking the columns
+   * that do NOT earn their width on a phone is how a surface declares an
+   * INTENTIONAL mobile column set instead of an accidental one.
+   *
+   * The column is still fully sortable/filterable from the toolbar and still
+   * rides every copy/export payload — this hides the CELL, not the data.
+   * Default `false` = today's behavior everywhere.
+   */
+  mobileHidden?: boolean;
+  /**
    * Built-in cell kinds. `"uuid"` / `"fk"` use MatrxUuidCell (short + copy +
    * optional open). `"auto"` (default) detects UUID-shaped strings.
    */

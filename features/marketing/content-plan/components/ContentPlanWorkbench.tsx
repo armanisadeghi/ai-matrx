@@ -126,6 +126,16 @@ const SURFACE_NAME = "matrx-user/content-plan";
  */
 const NODE_PANEL_VIEWS: readonly PlanView[] = ["tree", "map"];
 
+/** Human names for the `?view=` values, used by the page heading. */
+const VIEW_HEADINGS: Record<PlanView, string> = {
+  setup: "Site setup",
+  tree: "Plan tree",
+  table: "Plan table",
+  map: "Pillar map",
+  entities: "People, companies and sources",
+  "ai-runs": "AI runs",
+};
+
 export function ContentPlanWorkbench({
   defaultLayout,
   layoutCookieName,
@@ -728,7 +738,16 @@ export function ContentPlanWorkbench({
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
-      <div className="flex h-full flex-col pt-[var(--shell-header-h)]">
+      <div className="matrx-touch-targets flex h-full flex-col pt-[var(--shell-header-h)]">
+        {/* THE page heading. The visible identity is the header's site
+          dropdown (a template that documents its label as "never an h1"), so
+          the semantic heading lives here and names both the record and the
+          view — the thing nine review rejections asked for. */}
+        <h1 className="sr-only">
+          Content plan for{" "}
+          {site ? (site.domain ?? site.name) : "no site selected"} —{" "}
+          {VIEW_HEADINGS[view]}
+        </h1>
         <RunSetWindowController
           setKey={generate.runSetKey}
           instanceId={`content-plan-generate:${siteId ?? "none"}`}
@@ -1055,6 +1074,9 @@ export function ContentPlanWorkbench({
             defaultWidth={620}
             onClose={() => setSelectedNodeId(null)}
           >
+            {/* The mobile presentation is a portaled Drawer, so it sits
+              outside this body's touch-target root and needs its own. */}
+            <div className="matrx-touch-targets h-full min-h-0">
             <NodePanel
               key={selectedNode.id}
               node={selectedNode}
@@ -1071,6 +1093,7 @@ export function ContentPlanWorkbench({
               pageKpis={pageKpis}
               hosted
             />
+            </div>
           </SidePanelSurface>
         ) : null}
 

@@ -8,10 +8,9 @@
  * page has its own quieter header (ContentPlanListHeader).
  */
 import { useMemo } from "react";
-import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  ChevronLeft,
+  type LucideIcon,
   History,
   LayoutTemplate,
   ListTree,
@@ -23,15 +22,13 @@ import {
   Users,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  EntityModeHeader,
+  type EntityHeaderAction,
+  type EntityOption,
+} from "@/features/shell/components/header/templates/EntityModeHeader";
+import type { RouteNavItem } from "@/features/shell/components/header/RouteModeNav";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -44,26 +41,20 @@ import {
   type PlanView,
 } from "../hooks/usePlanWorkspaceParams";
 
-const VIEW_ITEMS: { view: PlanView; label: string; icon: React.ReactNode }[] = [
-  {
-    view: "setup",
-    label: "Setup",
-    icon: <LayoutTemplate className="h-3.5 w-3.5" />,
-  },
-  { view: "tree", label: "Tree", icon: <ListTree className="h-3.5 w-3.5" /> },
-  { view: "table", label: "Table", icon: <Table2 className="h-3.5 w-3.5" /> },
-  { view: "map", label: "Map", icon: <MapIcon className="h-3.5 w-3.5" /> },
-  {
-    view: "entities",
-    label: "Entities",
-    icon: <Users className="h-3.5 w-3.5" />,
-  },
+/**
+ * The view vocabulary as RouteModeNav items carry it: an icon COMPONENT, not
+ * an element. Every item has one — RouteModeNav skips its icon-only stage
+ * entirely if even one is missing, which is how a nav jumps straight from
+ * full text to a dropdown.
+ */
+const VIEW_ITEMS: { view: PlanView; label: string; icon: LucideIcon }[] = [
+  { view: "setup", label: "Setup", icon: LayoutTemplate },
+  { view: "tree", label: "Tree", icon: ListTree },
+  { view: "table", label: "Table", icon: Table2 },
+  { view: "map", label: "Map", icon: MapIcon },
+  { view: "entities", label: "Entities", icon: Users },
   // Every paid AI run this site has ever had, openable in full.
-  {
-    view: "ai-runs",
-    label: "AI runs",
-    icon: <History className="h-3.5 w-3.5" />,
-  },
+  { view: "ai-runs", label: "AI runs", icon: History },
 ];
 
 /**
@@ -90,7 +81,7 @@ export function useContentPlanSites() {
 }
 
 export function ContentPlanHeader() {
-  const { siteId, view, setSiteId, setView } = usePlanWorkspaceParams();
+  const { siteId, view } = usePlanWorkspaceParams();
   const { sites, orgSites } = useContentPlanSites();
   const queryClient = useQueryClient();
   // Shares the workbench's query-cache entry — running here lights up the
@@ -98,7 +89,7 @@ export function ContentPlanHeader() {
   const reality = usePlanReality(siteId);
 
   // Keep a ?site= target in the list even if options are still loading /
-  // briefly empty so the Select doesn't blank out.
+  // briefly empty so the picker doesn't blank out.
   const pickerSites = useMemo(() => {
     if (!siteId) return orgSites;
     if (orgSites.some((site) => site.id === siteId)) return orgSites;
@@ -106,85 +97,78 @@ export function ContentPlanHeader() {
     return orphan ? [orphan, ...orgSites] : orgSites;
   }, [orgSites, siteId, sites.data]);
 
-  return (
-    <div className="flex w-full min-w-0 items-center gap-1.5">
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        className="h-7 shrink-0 gap-1 px-1.5 text-xs text-muted-foreground"
-      >
-        <Link href={marketingRoutes.contentPlan()} aria-label="All plans">
-          <ChevronLeft className="h-3.5 w-3.5" />
-          <span className="hidden md:inline">Plans</span>
-        </Link>
-      </Button>
-      <ActiveContextLensChip className="shrink-0" />
-      <Select value={siteId ?? ""} onValueChange={setSiteId}>
-        <SelectTrigger
-          data-surface-value="site_domain"
-          className="h-7 w-48 truncate border-none bg-transparent text-sm font-medium shadow-none sm:w-64"
-        >
-          <SelectValue
-            placeholder={sites.isLoading ? "Loading sites…" : "Pick a site"}
-          />
-        </SelectTrigger>
-        <SelectContent>
-          {pickerSites.map((site) => (
-            <SelectItem key={site.id} value={site.id}>
-              {site.domain ?? site.name}
-              {!site.brand_id ? " — no brand" : ""}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+  const activeSite = pickerSites.find((site) => site.id === siteId) ?? null;
 
-      {/* Five views + refresh do not fit beside the site picker at 375px.
-        The group scrolls rather than crushing every button to zero width —
-        shrink-0 is what stops the flex parent from doing that. */}
-      <div
-        data-surface-value="view"
-        className="ml-auto flex min-w-0 items-center overflow-x-auto scrollbar-none"
-      >
-        {VIEW_ITEMS.map((item) => (
-          <Button
-            key={item.view}
-            variant={view === item.view ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7 shrink-0 gap-1.5 px-2 text-xs"
-            onClick={() => setView(item.view)}
-          >
-            {item.icon}
-            <span className="hidden sm:inline">{item.label}</span>
-          </Button>
-        ))}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 shrink-0 p-0"
-          aria-label="Reality check — compare the plan against the crawled site"
-          title="Reality check: which planned pages are actually live?"
-          disabled={reality.isRunning}
-          onClick={() => void reality.run()}
-        >
-          {reality.isRunning ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Radar className="h-3.5 w-3.5" />
-          )}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 shrink-0 p-0"
-          aria-label="Refresh plan"
-          onClick={() =>
-            void queryClient.invalidateQueries({ queryKey: planKeys.all })
-          }
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-        </Button>
-      </div>
-    </div>
+  // Sibling sites as REAL hrefs — the template's dropdown navigates, so a
+  // site is reachable by keyboard, cmd-click and share, not just by a
+  // controlled Select. Each keeps the current view.
+  const entityOptions = useMemo<EntityOption[]>(
+    () =>
+      pickerSites.map((site) => ({
+        label: `${site.domain ?? site.name}${site.brand_id ? "" : " — no brand"}`,
+        href: marketingRoutes.contentPlanSite(site.id, view),
+        active: site.id === siteId,
+      })),
+    [pickerSites, siteId, view],
+  );
+
+  const modes = useMemo<RouteNavItem[]>(
+    () =>
+      siteId
+        ? VIEW_ITEMS.map((item) => ({
+            name: item.label,
+            href: marketingRoutes.contentPlanSite(siteId, item.view),
+            icon: item.icon,
+          }))
+        : [],
+    [siteId],
+  );
+
+  // Both actions ride the template's action list, so below `sm` they collapse
+  // into the SAME one-tap drawer as the views instead of clipping off the
+  // right edge (review rejection 681d0da9) or vanishing.
+  const actions = useMemo<EntityHeaderAction[]>(
+    () => [
+      {
+        label: reality.isRunning
+          ? "Reality check running…"
+          : "Reality check — which planned pages are actually live?",
+        icon: reality.isRunning ? Loader2 : Radar,
+        disabled: reality.isRunning,
+        onPress: () => void reality.run(),
+      },
+      {
+        label: "Refresh plan",
+        icon: RefreshCw,
+        onPress: () =>
+          void queryClient.invalidateQueries({ queryKey: planKeys.all }),
+      },
+    ],
+    [queryClient, reality],
+  );
+
+  return (
+    <EntityModeHeader
+      backHref={marketingRoutes.contentPlan()}
+      entityLabel={
+        activeSite
+          ? (activeSite.domain ?? activeSite.name)
+          : sites.isLoading
+            ? "Loading sites…"
+            : "Pick a site"
+      }
+      // NOT `entityStatus`: that renders INSIDE the entity dropdown's trigger
+      // button, and the lens chip is itself a button — React reported the
+      // nested-button hydration error immediately. `right` is a sibling slot.
+      right={<ActiveContextLensChip className="shrink-0" />}
+      entityOptions={entityOptions}
+      modes={modes}
+      // The views differ ONLY by `?view=` — pathname matching cannot tell them
+      // apart, which is exactly what this prop exists for.
+      activeModeHref={
+        siteId ? marketingRoutes.contentPlanSite(siteId, view) : undefined
+      }
+      actions={actions}
+    />
   );
 }

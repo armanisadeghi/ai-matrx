@@ -278,6 +278,12 @@ export function PlanSitesList() {
         header: "Site",
         accessorFn: (row) => `${row.site.name ?? ""} ${row.site.domain ?? ""}`,
         filter: "text",
+        // The frozen identity column sizes to its longest domain, which on a
+        // phone took 290 of 372px and pushed every number off-screen — the
+        // measured cause of the "clips the useful context" rejection. Clamp
+        // it so the counts are visible at rest; both lines already truncate.
+        className: "max-sm:max-w-[44vw]",
+        headerClassName: "max-sm:max-w-[44vw]",
         // Real link (keyboard / SR / cmd-click) — row click stays a mouse
         // convenience (D112).
         href: (row) =>
@@ -310,6 +316,13 @@ export function PlanSitesList() {
           ],
           brandCounts,
         ),
+        // THE MOBILE COLUMN SET (review rejection 06837d19: at 390px the
+        // table clipped Brand/Vertical while hiding Pages/Keywords/Statuses
+        // off the right edge). On a phone the questions that matter are "how
+        // big is this plan and how far along is it" — brand/vertical/updated
+        // are desk work, and stay one tap away in the row menu and every
+        // copy payload.
+        mobileHidden: true,
         cell: (row) =>
           row.site.brand_id ? (
             <Badge variant="secondary" className="px-1.5 text-[11px]">
@@ -336,6 +349,7 @@ export function PlanSitesList() {
             .map((value) => ({ value, label: value })),
           verticalCounts,
         ),
+        mobileHidden: true,
         cell: (row) => {
           const vertical = verticalLabel(row);
           return vertical ? (
@@ -446,6 +460,7 @@ export function PlanSitesList() {
       {
         id: "updated",
         header: "Updated",
+        mobileHidden: true,
         // ISO string: lexicographic sort IS chronological.
         accessorFn: (row) => row.stats?.lastUpdatedAt ?? "",
         filter: "text",

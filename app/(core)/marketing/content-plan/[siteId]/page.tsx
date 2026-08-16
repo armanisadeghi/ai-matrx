@@ -9,7 +9,6 @@
 import { redirect } from "next/navigation";
 
 import { readLayoutCookie } from "@/features/resizable-panels/readLayoutCookie";
-import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ContentPlanHeader } from "@/features/marketing/content-plan/components/ContentPlanHeader";
 import { ContentPlanWorkbench } from "@/features/marketing/content-plan/components/ContentPlanWorkbench";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
@@ -33,9 +32,10 @@ export default async function ContentPlanSitePage({
 
   return (
     <>
-      <PageHeader>
-        <ContentPlanHeader />
-      </PageHeader>
+      {/* ContentPlanHeader is an EntityModeHeader, which injects itself
+        through RouteHeader -> PageHeader. Wrapping it in a second PageHeader
+        nests one portal inside another and the header renders EMPTY. */}
+      <ContentPlanHeader />
       <div className="h-full overflow-hidden">
         <ContentPlanWorkbench
           defaultLayout={defaultLayout}

@@ -138,7 +138,7 @@ export function SetupWorkOrderColumn({
 
   return (
     <div className="flex flex-col gap-5 p-4 md:h-full md:min-h-0 md:overflow-y-auto">
-      <SetupSection title="Work order">
+      <SetupSection title="Work order" level={2}>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-stretch">
           <Stat value={expanded.pageCount} label="pages in shape" tone="primary" />
           <Stat value={readiness.planNodesLive} label="pages planned" />
