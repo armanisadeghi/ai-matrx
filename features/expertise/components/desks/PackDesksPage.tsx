@@ -6,9 +6,65 @@ import { AlertTriangle, ExternalLink, Play, Workflow } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { cn } from "@/lib/utils";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
-import { getPack, listDesksForPack } from "../../service";
+import {
+  getPack,
+  listDesksForPack,
+  listRecentRunsForDesks,
+  type DeskRun,
+} from "../../service";
 import type { ExpertisePack, PackDesk } from "../../types";
+
+function runDuration(run: DeskRun): string | null {
+  if (!run.started_at || !run.completed_at) return null;
+  const seconds =
+    (new Date(run.completed_at).getTime() - new Date(run.started_at).getTime()) /
+    1000;
+  if (!Number.isFinite(seconds) || seconds < 0) return null;
+  return seconds < 90 ? `${Math.round(seconds)}s` : `${Math.round(seconds / 60)}m`;
+}
+
+function runWhen(run: DeskRun): string {
+  const ms = Date.now() - new Date(run.created_at).getTime();
+  const minutes = Math.round(ms / 60000);
+  if (minutes < 60) return `${Math.max(minutes, 1)}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+const RUN_STATUS_STYLES: Record<string, string> = {
+  completed: "bg-primary",
+  failed: "bg-destructive",
+  cancelled: "bg-muted-foreground",
+};
+
+function DeskRunRow({ run }: { run: DeskRun }) {
+  const duration = runDuration(run);
+  return (
+    <a
+      href={`${WORKFLOWS_APP_URL}/runs/${run.id}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center gap-2 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+    >
+      <span
+        className={cn(
+          "h-1.5 w-1.5 shrink-0 rounded-full",
+          RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
+        )}
+      />
+      <span className="capitalize">{run.status}</span>
+      <span>· {runWhen(run)}</span>
+      {duration ? <span>· {duration}</span> : null}
+      {run.cost_usd !== null ? (
+        <span>· ${run.cost_usd < 0.01 ? run.cost_usd.toFixed(4) : run.cost_usd.toFixed(2)}</span>
+      ) : null}
+      <ExternalLink className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+    </a>
+  );
+}
 
 /**
  * Desks compiled from this pack: each is a working AI checker (a workflow)
@@ -18,6 +74,7 @@ import type { ExpertisePack, PackDesk } from "../../types";
 export function PackDesksPage({ packId }: { packId: string }) {
   const [pack, setPack] = useState<ExpertisePack | null>(null);
   const [desks, setDesks] = useState<PackDesk[]>([]);
+  const [runsByDesk, setRunsByDesk] = useState<Record<string, DeskRun[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,6 +90,14 @@ export function PackDesksPage({ packId }: { packId: string }) {
         setPack(p);
         setDesks(d);
         if (!p) setError("This pack doesn't exist, or you don't have access.");
+        if (d.length > 0) {
+          // Run history is enrichment — its failure never blanks the page.
+          listRecentRunsForDesks(d.map((desk) => desk.id))
+            .then((runs) => {
+              if (!cancelled) setRunsByDesk(runs);
+            })
+            .catch(() => undefined);
+        }
       } catch (err) {
         if (!cancelled)
           setError(err instanceof Error ? err.message : "Could not load desks");
@@ -160,6 +225,18 @@ export function PackDesksPage({ packId }: { packId: string }) {
                     </Button>
                   </div>
                 </div>
+                {(runsByDesk[desk.id] ?? []).length > 0 ? (
+                  <div className="mt-3 border-t border-border pt-2">
+                    <p className="px-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Recent runs
+                    </p>
+                    <div className="mt-1">
+                      {(runsByDesk[desk.id] ?? []).map((run) => (
+                        <DeskRunRow key={run.id} run={run} />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             );
           })}

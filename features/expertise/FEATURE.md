@@ -83,3 +83,4 @@
   metadata.intake → lane routing), PackInterviewPanel + InterviewButton (live interview lane,
   Expertise Interviewer agent + expertise_pack tool), empty state offers interview first;
   dropped the stale api-types casts; listConfig sourceFeature → "expertise".
+- 2026-08-16 — Desks page: per-desk recent-run history (status, age, duration, summed node cost; each row opens the run in the studio).

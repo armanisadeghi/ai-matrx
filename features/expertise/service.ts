@@ -150,6 +150,87 @@ export async function softDeletePack(packId: string): Promise<void> {
   if (error) throw error;
 }
 
+export interface DeskRun {
+  id: string;
+  status: string;
+  created_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+  steps_executed: number | null;
+  /** Summed node cost (workflow.node_outcome output.usage.cost_usd); null when unpriced. */
+  cost_usd: number | null;
+}
+
+const RUNS_PER_DESK = 5;
+
+/**
+ * Recent runs per desk, with per-run cost summed from node outcomes. Two
+ * bounded reads (runs, then their node costs) — a preview surface, so a bare
+ * select with limits is correct here, never a completeness read.
+ */
+export async function listRecentRunsForDesks(
+  deskIds: string[],
+): Promise<Record<string, DeskRun[]>> {
+  if (deskIds.length === 0) return {};
+  const { data: runs, error } = await supabase
+    .schema("workflow")
+    .from("run")
+    .select(
+      "id,definition_id,status,created_at,started_at,completed_at,steps_executed",
+    )
+    .in("definition_id", deskIds)
+    .order("created_at", { ascending: false })
+    .limit(RUNS_PER_DESK * deskIds.length);
+  if (error) throw error;
+
+  const byDesk: Record<string, DeskRun[]> = {};
+  const kept: { id: string; definition_id: string }[] = [];
+  for (const row of runs ?? []) {
+    const deskId = String(row.definition_id);
+    const bucket = (byDesk[deskId] ??= []);
+    if (bucket.length >= RUNS_PER_DESK) continue;
+    bucket.push({
+      id: row.id,
+      status: String(row.status),
+      created_at: row.created_at,
+      started_at: row.started_at,
+      completed_at: row.completed_at,
+      steps_executed: row.steps_executed,
+      cost_usd: null,
+    });
+    kept.push({ id: row.id, definition_id: deskId });
+  }
+  if (kept.length === 0) return byDesk;
+
+  const { data: outcomes, error: outcomeError } = await supabase
+    .schema("workflow")
+    .from("node_outcome")
+    // Widened to `string` because the JSON-path alias sends the literal-type
+    // parser into TS2589; `.returns<>()` states the row shape at the boundary
+    // (the catalog.ts-sanctioned pattern).
+    .select("run_id, cost:output->usage->>cost_usd" as string)
+    .in(
+      "run_id",
+      kept.map((r) => r.id),
+    )
+    .returns<{ run_id: string; cost: string | null }[]>();
+  if (outcomeError) throw outcomeError;
+  const costByRun = new Map<string, number>();
+  for (const row of outcomes ?? []) {
+    const cost = row.cost === null ? NaN : Number(row.cost);
+    if (Number.isFinite(cost)) {
+      costByRun.set(row.run_id, (costByRun.get(row.run_id) ?? 0) + cost);
+    }
+  }
+  for (const bucket of Object.values(byDesk)) {
+    for (const run of bucket) {
+      const total = costByRun.get(run.id);
+      if (total !== undefined) run.cost_usd = total;
+    }
+  }
+  return byDesk;
+}
+
 /**
  * Desks compiled from a pack — workflow.definition rows whose metadata is
  * stamped `compiled_from_pack` by the compiler (pack_to_desk contract).
