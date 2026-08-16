@@ -471,7 +471,25 @@ Remaining durability defects from that incident:
   and nothing dispatches a resume on it — against the repo's own
   `detach_on_disconnect` doctrine.
 
-### D194 (was a second D183) — The page-template library is built but never seeded, so nobody can take the option (2026-08-13; **rescoped 2026-08-16**)
+### D194 (was a second D183) — ~~The page-template library is built but never seeded~~ **FIXED 2026-08-16** (2026-08-13; rescoped 2026-08-16)
+
+✅ **Seeded.** aidream migration `0371_seed_page_template_library.sql` (applied live, verified
+against the DB) wrote the 17 `BUILTIN_TEMPLATES` into
+`plan.profile.template_map.templates` on the system-org `platform-archetypes` row, beside
+`archetypes` / `concepts` — machine-derived, pure data, no `Literal`, no CHECK, no registry.
+**Templates remain an OPTION and are NEVER required: no flag, gate, setting, or default-on
+behaviour was added.** Proved end to end on the throwaway site `d194-template-proof`:
+realize stored `data-matrx-scaffold` / `data-matrx-section` bodies (matched by `page_type`
+and by `attributes.template`, each reporting `matched_by`), a real fill returned authored
+HTML with every marker stripped, and a realize with an EMPTY library created an empty body
+and filled normally. Also closed: `aidream/services/content_plan/FEATURE.md` § Page templates
++ a Change Log entry, and `tests/test_templates.py` (30 tests — there was none).
+**One open product question, for Arman, deliberately NOT invented as machinery:** the builtin
+library lives on the shared system-org row, so every site's realize now resolves a scaffold
+(the `default` floor always matches). If a site should instead have to *choose* the library
+before realize applies it, that is a ruling, not an agent's call — see the note below.
+
+<details><summary>Original entry</summary>
 
 🚨 **Read the scope correction first: TEMPLATES ARE AN OPTION AND ARE NEVER REQUIRED**
 (Arman, 2026-08-16 — `common-docs/systems/content-planning/FEATURE.md` § TEMPLATES ARE AN
@@ -494,6 +512,8 @@ registration map, and **no test file** for `templates.py`.
 Fix: seed the library from `BUILTIN_TEMPLATES` so a site that WANTS templates can opt in,
 verify one realize writes a scaffold (`data-matrx-scaffold` markers present), then document
 it — as an option, in those words. Owner: whoever owns the CMS realize path.
+
+</details>
 
 ### D179 — Keyword Research workbench: remaining UI debt (2026-08-13, Arman review)
 

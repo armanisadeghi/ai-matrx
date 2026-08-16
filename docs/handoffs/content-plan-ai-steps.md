@@ -1,7 +1,7 @@
 ---
 status: active
-updated: 2026-08-15
-chips: [content_plan.review_queue.mobile_headings_pass, content_plan.templates_library_unseeded, content_plan.planned_topics_unread, content_plan.setup_ai_untested_coercers]
+updated: 2026-08-16
+chips: [content_plan.review_queue.mobile_headings_pass, content_plan.planned_topics_unread, content_plan.setup_ai_untested_coercers]
 repos: [matrx-frontend, aidream]
 vision:
   - /Users/armanisadeghi/code/common-docs/systems/content-planning/FEATURE.md
@@ -140,15 +140,14 @@ research linking: start with the final report (the "Document"), user picks the t
    no CMS counterpart, so "Make it real" rungs 2–5 are uninspectable without mutating
    production — **supply a stable, already-linked review site**. One (`fbf59d2a`) just needs its
    URL corrected to the current canonical skills route.
-2. **The page-template library is built but never seeded, so nobody can take the option.**
-   🚨 **Templates are an OPTION and are NEVER required (Arman, 2026-08-16 —
-   `common-docs/systems/content-planning/FEATURE.md` § TEMPLATES ARE AN OPTION).** A site with
-   no template library is CORRECT and realize writing an empty body is the free-form path
-   working; do not "fix" this by making templates required, default-on, or flag-gated. What is
-   unfinished is that no `plan.profile` row carries a `templates` key and nothing seeds one, so
-   the option cannot be *chosen*. Evidence + the seed-then-verify fix, plus its missing docs and
-   tests: `FOUND_DEFECTS.md` **D194** (renumbered from D183 after an ID collision — the entry
-   now numbered D183 is a different, unrelated SEO defect). Live chip.
+2. ~~**The page-template library is built but never seeded.**~~ **DONE 2026-08-16** — aidream
+   migration `0371_seed_page_template_library.sql` (applied live) seeded the 17
+   `BUILTIN_TEMPLATES` onto `plan.profile.template_map.templates`, so the option can now be
+   chosen. **Templates remain an OPTION and are NEVER required** — no flag, gate, or default-on
+   behaviour was added, and a profile with no `templates` key still realizes an empty body.
+   Proved end to end on the throwaway site `d194-template-proof`; docs in
+   `aidream/services/content_plan/FEATURE.md` § Page templates; 30 tests in
+   `aidream/services/content_plan/tests/test_templates.py`. Chip resolved.
 3. **Generalize the grounding strip beyond research.** Still missing as grounding inputs:
    **competitor URLs**, **pasted content/notes**, **free-text guidance**. Persist each in
    `setup_draft` (`setup/draft.ts`), resolve to text at the call site (research-bundle pattern),
