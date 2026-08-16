@@ -27281,6 +27281,110 @@ export type Database = {
           },
         ]
       }
+      regression_case: {
+        Row: {
+          agent_definition_version: string | null
+          consecutive_failures: number
+          conversation_id: string | null
+          corrected_output_ref: string | null
+          created_at: string
+          created_by: string | null
+          cx_request_id: string | null
+          deleted_at: string | null
+          expectation: Json
+          id: string
+          last_checked_at: string | null
+          last_cost_usd: number | null
+          last_reason: string | null
+          last_replay_group_id: string | null
+          last_result: string | null
+          last_verdict: string | null
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          origin: string
+          origin_finding_id: string | null
+          snapshot_id: string
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          workflow_definition_version: string | null
+        }
+        Insert: {
+          agent_definition_version?: string | null
+          consecutive_failures?: number
+          conversation_id?: string | null
+          corrected_output_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          cx_request_id?: string | null
+          deleted_at?: string | null
+          expectation?: Json
+          id?: string
+          last_checked_at?: string | null
+          last_cost_usd?: number | null
+          last_reason?: string | null
+          last_replay_group_id?: string | null
+          last_result?: string | null
+          last_verdict?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          origin?: string
+          origin_finding_id?: string | null
+          snapshot_id: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_definition_version?: string | null
+        }
+        Update: {
+          agent_definition_version?: string | null
+          consecutive_failures?: number
+          conversation_id?: string | null
+          corrected_output_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          cx_request_id?: string | null
+          deleted_at?: string | null
+          expectation?: Json
+          id?: string
+          last_checked_at?: string | null
+          last_cost_usd?: number | null
+          last_reason?: string | null
+          last_replay_group_id?: string | null
+          last_result?: string | null
+          last_verdict?: string | null
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          origin?: string
+          origin_finding_id?: string | null
+          snapshot_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_definition_version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regression_case_origin_finding_id_fkey"
+            columns: ["origin_finding_id"]
+            isOneToOne: false
+            referencedRelation: "finding"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       replay: {
         Row: {
           batch_id: string | null
@@ -39331,6 +39435,82 @@ export type Database = {
       ctx_seed_template: { Args: { p_template: Json }; Returns: string }
       curatable_processed_document_ids: { Args: never; Returns: string[] }
       current_personal_org_id: { Args: never; Returns: string }
+      cvx_list_facets: {
+        Args: {
+          p_archived?: string
+          p_deep?: boolean
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+        }
+        Returns: {
+          kind: string
+          total: number
+          value: string
+        }[]
+      }
+      cvx_list_scope_counts: {
+        Args: {
+          p_archived?: string
+          p_deep?: boolean
+          p_filters?: Json
+          p_search?: string
+        }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      cvx_list_scoped: {
+        Args: {
+          p_archived?: string
+          p_deep?: boolean
+          p_dir?: string
+          p_favorites_first?: boolean
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          access_level: string
+          binding_last_seen_at: string
+          binding_origin: string
+          binding_status: string
+          conversation_type: string
+          created_at: string
+          created_by: string
+          fidelity: string
+          id: string
+          initial_agent_id: string
+          is_archived: boolean
+          is_favorite: boolean
+          is_owner: boolean
+          message_count: number
+          organization_id: string
+          organization_name: string
+          origin_class: string
+          owner_email: string
+          provider: string
+          provider_account: string
+          provider_session_id: string
+          source_app: string
+          source_feature: string
+          status: string
+          title: string
+          title_source: string
+          total_count: number
+          updated_at: string
+          visibility: string
+          workspace_name: string
+        }[]
+      }
+      cvx_size_band: { Args: { p_count: number }; Returns: string }
       cx_canvas_archive: {
         Args: { p_canvas_id: string; p_include_versions?: boolean }
         Returns: undefined

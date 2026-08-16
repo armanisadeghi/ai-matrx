@@ -10,8 +10,52 @@ density persistence, inline edit commit, and the error banner.
 **Consumers:** `/agents/all` (`features/agents/browse/listConfig.tsx` — the
 proving ground) · `/transcripts` (`features/transcripts/browse/listConfig.tsx`
 — the heterogeneous-rows test: five source shapes collapsed to one row type
-with a `kind` column) · `features/expertise/browse/` · marketing cross-site
-ranks · `features/canvas/maps/`. CRM consumes `EntityScopeTabs` directly.
+with a `kind` column) · `/work/conversations`
+(`features/ai-work/conversations/listConfig.tsx` — the URL-state + honest-default
+test) · `features/expertise/browse/` · marketing cross-site ranks ·
+`features/canvas/maps/`. CRM consumes `EntityScopeTabs` directly.
+
+## The URL is the query (`config.urlState`)
+
+Opt-in per surface. On, `useEntityList` holds NO query state of its own: scope,
+search, filters, archived, deep and page are parsed from the query string on
+every render (via `lib/url-state`'s `useUrlSearchParams`, a
+`useSyncExternalStore`), and every setter commits back through
+`commitUrlParams`. Back/Forward therefore work with no effect and no mirror
+state, and a pasted link reproduces the list exactly.
+
+- Encoding lives in `urlQuery.ts` — one param per axis, `filters` as one JSON
+  blob (the filter bag is already the one vocabulary headers and the panel
+  share; splitting it here would be a second encoding to drift).
+- **A value equal to the surface default is ABSENT.** A clean page has a clean
+  address bar. `?filters={}` present-but-empty is a real, deliberate state
+  (show everything, including what the surface hides by default) and must not
+  collapse back to the default.
+- **Sort is the one STYLE axis the URL carries.** "Look at this list, newest
+  first" is worthless if the recipient's stored preference re-sorts it, so the
+  URL wins when present and a sort change writes BOTH the URL and the
+  preference. Everything else (view, density, page size, columns) stays
+  prefs-only.
+- Typing in search commits with `replace`, so one search is one history entry,
+  not forty.
+
+## Honest defaults (`config.defaultFilters`)
+
+A corpus is not always the list. `/work/conversations` holds ~4,613
+`conversation_type='subagent'` internal machine runs; showing them by default
+buries every conversation a person had. The surface declares its default
+narrowing as a REAL entry in the filter bag, so the rows are one click away
+with their true count in the facet — where a hidden SQL predicate would be a
+silent lie. `resetFilters` returns to the surface default, not to the empty
+query: "Clear filters" meaning "now show me 4,613 machine runs" is a trap.
+
+## Naming raw facet values
+
+`EntityColumnSpec.formatFacetValue` (column headers) and
+`EntityFacetSection.formatValue` (the Filters panel) turn a stored value into
+the words a person reads — `subagent` → "Subagent run" — without costing the
+option its count. Pass the SAME function to both so one value never has two
+names on one page.
 
 ## Ratified decisions — do not re-litigate
 
@@ -119,6 +163,16 @@ runs. Restructure if it ever shows up in timings.
 
 ## Change log
 
+- 2026-08-16 — Three generic additions, all driven by `/work/conversations`
+  (its third consumer): `config.urlState` (the query lives in the URL — see
+  above; `urlQuery.ts` + `useEntityList`'s `useQueryState`),
+  `config.defaultFilters` (a surface whose honest default is a subset of its
+  corpus), and value formatters for raw facet values
+  (`EntityColumnSpec.formatFacetValue` / `EntityFacetSection.formatValue`).
+  `notice` also accepts a function of the live controller so a surface can put
+  a first-class query control above the tabs. **The setters in `useEntityList`
+  are no longer `useCallback([])`** — a URL-backed `setQuery` is re-created per
+  render, so an empty dep array froze the first commit function.
 - 2026-08-15 — Extraction CLOSED; its handoff doc deleted and the durable half
   (ratified decisions, the relevance lesson, parity contracts, verification)
   absorbed here. Remaining follow-ups are independent chips in

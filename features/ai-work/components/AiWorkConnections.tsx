@@ -31,6 +31,7 @@ import {
   providerAccountIdentity,
   workspaceName,
 } from "@/features/ai-work/lib/codingSessionPresentation";
+import { SyncStatePanel } from "@/features/ai-work/conversations/components/SyncStatePanel";
 
 /**
  * Matrx Local ships the explicit Claude local-history importer (v1.4.22+,
@@ -395,6 +396,12 @@ export function AiWorkConnections() {
               </button>
             </div>
           </article>
+
+          {/* The answer to "is my history actually arriving?", from binding
+              facts that already existed and that nothing rendered. Same reader
+              as the compact indicator on /work/conversations, so the two
+              surfaces cannot disagree. */}
+          <SyncStatePanel />
 
           <article className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start gap-3">

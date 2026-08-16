@@ -85,10 +85,14 @@ interface Props<TRow> {
 function toOptions(
   values: { value: string; count: number }[] | undefined,
   noneLabel: string,
+  formatValue?: (value: string) => string,
 ): FacetOption[] {
   return (values ?? []).map((v) => ({
     value: v.value,
-    label: v.value === NONE_SENTINEL ? noneLabel : v.value,
+    label:
+      v.value === NONE_SENTINEL
+        ? noneLabel
+        : (formatValue?.(v.value) ?? v.value),
     count: v.count,
   }));
 }
@@ -304,7 +308,7 @@ export function EntityFilterPanel<TRow>({
                 active={selectedOf(section.filterId).length > 0}
               >
                 <FacetChips
-                  options={toOptions(values, section.noneLabel)}
+                  options={toOptions(values, section.noneLabel, section.formatValue)}
                   selected={selectedOf(section.filterId)}
                   onChange={(v) => setSelect(section.filterId, v)}
                   searchPlaceholder={

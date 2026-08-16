@@ -41,6 +41,7 @@ import {
 import type { ProviderConversationMessage } from "../lib/providerConversationMessage";
 import { buildProviderTimeline } from "../lib/providerTimeline";
 import { ConversationAnalyzePanel } from "../analysis/ConversationAnalyzePanel";
+import { ConversationProvenancePanel } from "../conversations/components/ConversationProvenancePanel";
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
 
 /** Tool activity page loaded per request — a mirror can hold thousands. */
@@ -291,6 +292,13 @@ export function ProviderConversationTranscript({
             <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </Button>
+      </section>
+
+      {/* Every field this page shows, grouped by the system that produced it.
+          Without it a title AI Matrx derived reads exactly like the label
+          Claude Code shows, and no gap analysis is possible. */}
+      <section className="rounded-xl border border-border bg-card p-4">
+        <ConversationProvenancePanel conversation={conversation} />
       </section>
 
       <ConversationAnalyzePanel

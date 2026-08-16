@@ -40,6 +40,13 @@ export interface EntityColumnSpec<TRow> {
   locked?: boolean;
   /** Facet kind that supplies this column's filter options, when finite. */
   facet?: string;
+  /**
+   * Human label for one raw facet VALUE, when the stored value is not what a
+   * person should read. `conversation_type='subagent'` filters correctly and
+   * means nothing to our user; "Subagent run" means something. The count is
+   * still appended by the shell, so this never costs the option its number.
+   */
+  formatFacetValue?: (value: string) => string;
   column: MatrxColumnDef<TRow>;
 }
 

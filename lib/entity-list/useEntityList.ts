@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
+import { useUrlSearchParams } from "@/lib/url-state/useUrlState";
 import type { EntityListController, EntityListService } from "./config";
 import {
   DEFAULT_ENTITY_LIST_QUERY,
@@ -23,6 +24,12 @@ import {
   type EntityListQuery,
   type EntityScopeCounts,
 } from "./types";
+import {
+  commitUrlParams,
+  historyModeFor,
+  queryToParamPatch,
+  readQueryFromParams,
+} from "./urlQuery";
 import type { ListScope } from "@/lib/list-scope/types";
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -36,6 +43,57 @@ export interface UseEntityListArgs<TRow> {
     ListViewPrefs,
     "sort" | "direction" | "pageSize" | "favoritesFirst"
   >;
+  /**
+   * The surface's own starting query — where "no filters applied" lands and
+   * where `resetFilters` returns to. A surface whose honest default is a SUBSET
+   * of its corpus (conversations hide ~4.6k internal machine runs) declares it
+   * here so the default is one visible, clearable filter instead of a predicate
+   * buried in SQL that the user can never see or undo.
+   */
+  defaultFilters?: EntityFilters;
+  /**
+   * Put the query in the URL (scope / search / filters / archived / deep /
+   * page). Off by default so existing surfaces are untouched; on, the URL is
+   * the source of truth and Back/Forward/refresh/deep-link all work.
+   */
+  urlState?: boolean;
+}
+
+/**
+ * The query, held either in React state or in the URL. Same interface either
+ * way, so nothing downstream of here knows which surface opted in.
+ */
+function useQueryState(
+  urlState: boolean,
+  defaults: EntityListQuery,
+): [EntityListQuery, (updater: (prev: EntityListQuery) => EntityListQuery) => void] {
+  const [localQuery, setLocalQuery] = useState<EntityListQuery>(defaults);
+  const searchParams = useUrlSearchParams();
+
+  // useSyncExternalStore already re-renders on popstate, so a URL-backed query
+  // needs no effect and no mirror state: Back/Forward simply re-parses.
+  const urlQuery = readQueryFromParams(searchParams, defaults);
+  const query = urlState ? urlQuery : localQuery;
+
+  const setQuery = (updater: (prev: EntityListQuery) => EntityListQuery) => {
+    if (!urlState) {
+      setLocalQuery(updater);
+      return;
+    }
+    // Re-read at commit time rather than trusting the render-time snapshot —
+    // two updates in one tick would otherwise clobber each other.
+    const current = readQueryFromParams(
+      new URLSearchParams(window.location.search),
+      defaults,
+    );
+    const next = updater(current);
+    commitUrlParams(
+      queryToParamPatch(next, defaults),
+      historyModeFor(current, next),
+    );
+  };
+
+  return [query, setQuery];
 }
 
 export function useEntityList<TRow>({
@@ -43,9 +101,17 @@ export function useEntityList<TRow>({
   getRowId,
   entityLabelPlural,
   view,
+  defaultFilters,
+  urlState = false,
 }: UseEntityListArgs<TRow>): EntityListController<TRow> {
-  const [query, setQuery] = useState<EntityListQuery>(DEFAULT_ENTITY_LIST_QUERY);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const defaultQuery: EntityListQuery = defaultFilters
+    ? { ...DEFAULT_ENTITY_LIST_QUERY, filters: defaultFilters }
+    : DEFAULT_ENTITY_LIST_QUERY;
+  const [query, setQuery] = useQueryState(urlState, defaultQuery);
+  // Seeded from the query, not from "" — a URL-backed surface opened at
+  // `?q=seo` must not fire one throwaway unfiltered fetch before the debounce
+  // catches up.
+  const [debouncedSearch, setDebouncedSearch] = useState(() => query.search);
   const [rows, setRows] = useState<TRow[]>([]);
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState<EntityScopeCounts>(EMPTY_SCOPE_COUNTS);
@@ -178,7 +244,11 @@ export function useEntityList<TRow>({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- facetsKey is the serialized dep set
   }, [facetsKey]);
 
-  const patchQuery = useCallback((patch: Partial<EntityListQuery>) => {
+  // Plain functions, NOT useCallback: `setQuery` is re-created per render for a
+  // URL-backed surface, so an empty dep array here would freeze the very first
+  // commit function and every later change would write against a stale URL.
+  // The React Compiler owns memoization (CLAUDE.md core invariant).
+  const patchQuery = (patch: Partial<EntityListQuery>) => {
     setQuery((prev) => ({
       ...prev,
       ...patch,
@@ -186,38 +256,24 @@ export function useEntityList<TRow>({
       // you land on page 7 of a 2-page result and see nothing.
       page: patch.page ?? 1,
     }));
-  }, []);
+  };
 
-  const setScope = useCallback(
-    (scope: ListScope) => patchQuery({ scope }),
-    [patchQuery],
-  );
-  const setFilters = useCallback(
-    (filters: EntityFilters) => patchQuery({ filters }),
-    [patchQuery],
-  );
-  const setSearch = useCallback(
-    (search: string) => patchQuery({ search }),
-    [patchQuery],
-  );
-  const setDeep = useCallback(
-    (deep: boolean) => patchQuery({ deep }),
-    [patchQuery],
-  );
-  const setPage = useCallback(
-    (page: number) => setQuery((prev) => ({ ...prev, page })),
-    [],
-  );
-  const resetFilters = useCallback(
-    () =>
-      setQuery((prev) => ({
-        ...prev,
-        archived: DEFAULT_ENTITY_LIST_QUERY.archived,
-        filters: {},
-        page: 1,
-      })),
-    [],
-  );
+  const setScope = (scope: ListScope) => patchQuery({ scope });
+  const setFilters = (filters: EntityFilters) => patchQuery({ filters });
+  const setSearch = (search: string) => patchQuery({ search });
+  const setDeep = (deep: boolean) => patchQuery({ deep });
+  const setPage = (page: number) => setQuery((prev) => ({ ...prev, page }));
+  // Back to the SURFACE's default, not to the empty query. On a surface with
+  // `defaultFilters`, "Clear filters" meaning "now show me the 4,613 internal
+  // machine runs too" would be a trap; the explicit door to those is its own
+  // control.
+  const resetFilters = () =>
+    setQuery((prev) => ({
+      ...prev,
+      archived: defaultQuery.archived,
+      filters: defaultQuery.filters,
+      page: 1,
+    }));
   const refresh = useCallback(() => setRefreshToken((n) => n + 1), []);
 
   const removeRow = useCallback(

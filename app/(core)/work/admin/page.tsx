@@ -34,9 +34,9 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/work/conversations",
-      label: "Provider conversation inbox",
+      label: "Conversations",
       description:
-        "Paginated canonical AI Matrx and provider conversations with exact selected binding facts and work associations.",
+        "Canonical entity-list table over every accessible conversation: every column sorts and filters server-side, true scope counts, URL-backed scope/search/filters/sort/page, and a visible door to the internal machine runs the default excludes.",
       filePath: "app/(core)/work/conversations/page.tsx",
       status: "Live",
     },
@@ -50,9 +50,9 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       url: "/work/conversations/[conversationId]",
-      label: "Provider conversation transcript",
+      label: "Conversation provenance and transcript",
       description:
-        "Read-only normalized transcript for agentless provider mirrors, with task attachment and an honest new-chat door.",
+        "One detail route for every conversation: provider mirrors get the read-only transcript, AI Matrx conversations get the provenance view with a door to chat. Both group every field by the system that produced it.",
       filePath: "app/(core)/work/conversations/[conversationId]/page.tsx",
       status: "Live",
     },
@@ -94,11 +94,44 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
-      name: "AiWorkConversationsInbox",
-      filePath: "features/ai-work/components/AiWorkConversationsInbox.tsx",
+      name: "ConversationsBrowse",
+      filePath:
+        "features/ai-work/conversations/components/ConversationsBrowse.tsx",
       description:
-        "Unified canonical history with selected provider facts and Project/Task/War Room organization.",
+        "/work/conversations on the canonical entity-list shell: sortable + server-filterable table, true scope counts, URL-backed query, the audience door to internal machine runs, and the compact sync indicator.",
+      tier: "official",
+    },
+    {
+      name: "ConversationAudienceFilter",
+      filePath:
+        "features/ai-work/conversations/components/ConversationAudienceFilter.tsx",
+      description:
+        "Your work / Internal machine runs / Everything — the visible, counted door to the ~4.6k subagent conversations the default list excludes.",
       tier: "internal",
+    },
+    {
+      name: "ConversationProvenancePanel",
+      filePath:
+        "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
+      description:
+        "Every displayed field grouped by the system that produced it: the coding provider, AI Matrx, and the sync layer. States title_source beside the title so a derived title is never read as the provider's own.",
+      tier: "official",
+    },
+    {
+      name: "MatrxConversationDetail",
+      filePath:
+        "features/ai-work/conversations/components/MatrxConversationDetail.tsx",
+      description:
+        "Provenance view for a non-provider AI Matrx conversation, with a door to runnable chat. Replaced the redirect that made this surface unreachable for most conversations.",
+      tier: "internal",
+    },
+    {
+      name: "SyncStatePanel / SyncStateIndicator",
+      filePath:
+        "features/ai-work/conversations/components/SyncStatePanel.tsx",
+      description:
+        "Per-provider-account sync verdict from chat.coding_session facts, plus the honest Sync-now door. One reader (conversations/syncState.ts) feeds both /work/connections and /work/conversations.",
+      tier: "official",
     },
     {
       name: "AiWorkConnections",

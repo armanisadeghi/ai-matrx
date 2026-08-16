@@ -114,6 +114,12 @@ export interface EntityFacetSection {
   countInLabel?: boolean;
   /** Chip-search placeholder. Default derives from the label. */
   searchPlaceholder?: string;
+  /**
+   * Human label for one raw facet value. Same reason as
+   * `EntityColumnSpec.formatFacetValue`, and a surface should pass the SAME
+   * function to both so a chip and a column header never name one value twice.
+   */
+  formatValue?: (value: string) => string;
 }
 
 export interface EntityListConfig<TRow> {
@@ -161,6 +167,34 @@ export interface EntityListConfig<TRow> {
   getRowEntity?: (row: TRow) => ContextMenuEntityRef | undefined;
   /** Surface-specific style defaults beyond version/hiddenColumns. */
   prefsDefaults?: Partial<ListViewPrefs>;
+
+  /**
+   * The surface's HONEST default narrowing — where an untouched page starts and
+   * where "Clear filters" returns to.
+   *
+   * This exists because a corpus is not always the list. `/work/conversations`
+   * holds ~4,613 `conversation_type='subagent'` internal machine runs; showing
+   * them by default buries every conversation a person had. Declaring the
+   * default as a real, visible, clearable entry in the filter bag keeps THE
+   * DOOR LAW intact — the rows are one click away with their true count in the
+   * facet — where a hidden SQL predicate would be a silent lie.
+   *
+   * Generic on purpose: any surface whose corpus contains a machine-generated
+   * majority has the same problem.
+   */
+  defaultFilters?: EntityFilters;
+
+  /**
+   * Put the query in the URL: scope, search, filters, archived, deep, page,
+   * plus sort/direction. Off by default so existing surfaces are untouched.
+   *
+   * On, the URL is the source of truth — refresh, a pasted link and browser
+   * Back/Forward all reproduce the list. Encoding lives in ./urlQuery.ts over
+   * the canonical `lib/url-state` primitive; STYLE still persists through
+   * `useListViewPrefs`, with the URL winning for the one style axis (sort) that
+   * a shared link has to carry.
+   */
+  urlState?: boolean;
 
   /**
    * The feature's row-actions hook. Called by the shell as a hook (top level,

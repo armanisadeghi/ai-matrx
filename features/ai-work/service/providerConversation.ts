@@ -23,7 +23,22 @@ export type ProviderConversation = Pick<
   | "exclude_from_kg"
   | "created_at"
   | "updated_at"
+  // Provenance columns. Read here because the detail view has to SAY where
+  // every field came from — a gap analysis is impossible while "AI Matrx
+  // derived this" and "Claude Code reported this" look identical.
+  | "conversation_type"
+  | "origin_class"
+  | "visibility"
+  | "is_favorite"
+  | "created_by"
+  | "organization_id"
+  | "task_id"
 >;
+
+// One literal, not a concatenation: supabase-js infers the row type from the
+// select STRING, and a `+`-built value degrades it to GenericStringError.
+const CONVERSATION_COLUMNS =
+  "id, title, description, source_app, source_feature, status, message_count, initial_agent_id, exclude_from_kg, created_at, updated_at, conversation_type, origin_class, visibility, is_favorite, created_by, organization_id, task_id" as const;
 
 export type { ProviderConversationMessage };
 
@@ -41,9 +56,19 @@ export type ProviderConversationRead =
       error: null;
     }
   | {
+      /**
+       * A real, readable AI Matrx conversation that is NOT a provider mirror.
+       *
+       * It used to REDIRECT to /chat, which meant the one surface that explains
+       * where a conversation's data comes from was unreachable for the majority
+       * of conversations. It now renders the provenance view with a door to
+       * runnable chat — the transcript stays provider-only because a mirror is
+       * the only kind that has no chat home.
+       */
       state: "not-provider";
       detail: null;
       error: null;
+      conversation: ProviderConversation;
       initialAgentId: string | null;
     }
   | {
@@ -64,9 +89,7 @@ export async function readProviderConversation(
   const conversationResult = await supabase
     .schema("chat")
     .from("conversation")
-    .select(
-      "id, title, description, source_app, source_feature, status, message_count, initial_agent_id, exclude_from_kg, created_at, updated_at",
-    )
+    .select(CONVERSATION_COLUMNS)
     .eq("id", conversationId)
     .is("deleted_at", null)
     .maybeSingle();
@@ -84,6 +107,7 @@ export async function readProviderConversation(
       state: "not-provider",
       detail: null,
       error: null,
+      conversation: conversationResult.data,
       initialAgentId: conversationResult.data.initial_agent_id,
     };
   }

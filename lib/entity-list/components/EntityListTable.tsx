@@ -182,7 +182,7 @@ export function EntityListTable<TRow>({
             label:
               v.value === NONE_VALUE
                 ? (noneLabels[spec.id] ?? "None")
-                : `${v.value} (${v.count})`,
+                : `${spec.formatFacetValue?.(v.value) ?? v.value} (${v.count})`,
           })),
         editOptions:
           spec.column.editable === "select" || spec.column.editable === "tags"
