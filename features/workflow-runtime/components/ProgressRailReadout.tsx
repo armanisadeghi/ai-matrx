@@ -108,7 +108,7 @@ function RailNodeRow({
   syntheticLabels?: string[];
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
-  const { phase, invocations, expectedCount, settledCount } = aggregate;
+  const { phase, invocations, specType, expectedCount, settledCount } = aggregate;
   const fanOut = expectedCount > 1 || invocations.length > 1;
   const nodeRunning = phase === "running";
   const nodeStarted = phase !== "idle" && phase !== "waiting";
@@ -117,7 +117,9 @@ function RailNodeRow({
     <div className="space-y-0.5">
       <div className="flex items-center gap-1.5">
         <PhaseIcon phase={phase} />
-        <span className="truncate text-xs font-medium">{nodeId}</span>
+        <span className="truncate text-xs font-medium">
+          {specType ?? "Workflow step"}
+        </span>
         <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
           {fanOut
             ? `${settledCount}/${Math.max(expectedCount, invocations.length)} · `

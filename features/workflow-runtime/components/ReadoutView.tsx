@@ -146,13 +146,15 @@ function GroupMemberReadout({
   nodeId: string;
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
-  const { phase, invocations } = aggregate;
+  const { phase, invocations, specType } = aggregate;
   const withBody = invocations.filter(invocationHasBody);
   return (
     <div className="space-y-1">
       <div className="flex items-center gap-1.5 text-xs">
         <PhaseIcon phase={phase} />
-        <span className="truncate font-medium">{nodeId}</span>
+        <span className="truncate font-medium">
+          {specType ?? "Workflow step"}
+        </span>
         <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
           {PHASE_LABEL[phase] ?? phase}
         </span>
