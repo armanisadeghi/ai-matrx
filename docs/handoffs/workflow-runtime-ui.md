@@ -57,8 +57,15 @@ creation, mobile order scales, child status mapping.
    form (`io.user_input` fields → `node_inputs`), step-mode path in the demo. **Small tail:**
    "file" form fields are a text input — wire the universal file handler picker; executeNode
    per-node `inputs` collection UI.
-4. **Phase 5 — parity proof:** Study Pack surface, then the podcast rebuild (the acceptance
-   test), then research-lite.
+4. **Phase 5 — parity proof (Study Pack surface SHIPPED 2026-08-16):** the authored Study
+   Pack surface is LIVE data — `workflow.runtime_surface` row
+   `c797a1c1-4396-411c-973e-cacc12555e60` on "Study Pack v1" (3 pages with auto-advance,
+   two rails with synthetic sub-steps, four streaming writer readouts, deliverable page),
+   pinned by the fixture test `surface/__tests__/study-pack-surface.test.ts` (parse
+   warning-free, validate clean, trigger ids + node ids checked against the graph).
+   **Remaining:** the podcast rebuild (BLOCKED on a podcast workflow DEFINITION — the
+   pipeline lives as a bespoke aidream service today, no `workflow.definition` row exists;
+   authoring it is server-side work, see the aidream server handoff), then research-lite.
 5. **Known Phase-1 limits to close:** `node_stream` deltas carry `node_id` only, so fan-out
    siblings multiplex onto the node's root lane (server contract addition tracked in the aidream
    handoff); `useWorkflowRunControls` casts its callApi configs (`as never`) — replace with

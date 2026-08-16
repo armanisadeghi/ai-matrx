@@ -81,6 +81,11 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-16 — Phase 5 first proof: the Study Pack authored surface shipped as LIVE data
+  (`workflow.runtime_surface` c797a1c1… on "Study Pack v1" — 3 auto-advancing pages, rails
+  with synthetic sub-steps, four streaming writer readouts, persisted deliverable page),
+  pinned by `surface/__tests__/study-pack-surface.test.ts` (parse/validate/trigger-vocabulary
+  forcing test over the verbatim stored config).
 - 2026-08-16 — Phase 4 complete: the generated run-start form (`surface/run-form.ts` pure
   derivation from `io.user_input` nodes' `data.config.fields` → `components/RunStartForm.tsx`
   → submitted as `node_inputs`, the RunWorkflowRequest contract); demo shows it before
