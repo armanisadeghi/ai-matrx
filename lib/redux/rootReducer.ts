@@ -150,6 +150,7 @@ import chatIncognitoReducer from "@/features/agents/components/chat/chat-incogni
 import chatRouteReducer from "@/features/agents/components/chat/chat-route.slice";
 import { default as activeRequestsReducer } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { default as runSetsReducer } from "@/features/agents/redux/execution-system/run-sets/run-sets.slice";
+import { default as workflowRunsReducer } from "@/features/workflow-runtime/redux/workflow-runs.slice";
 import { default as observabilityReducer } from "@/features/agents/redux/execution-system/observability/observability.slice";
 import { default as contextStateReducer } from "@/features/agents/redux/execution-system/context-state/context-state.slice";
 import { default as observationalMemoryReducer } from "@/features/agents/redux/execution-system/observational-memory/observational-memory.slice";
@@ -338,6 +339,7 @@ export const slimReducerMap = {
 
   activeRequests: activeRequestsReducer,
   runSets: runSetsReducer,
+  workflowRuns: workflowRunsReducer,
   netRequests: netRequestsReducer,
   netHealth: netHealthReducer,
   messages: messagesReducer,
