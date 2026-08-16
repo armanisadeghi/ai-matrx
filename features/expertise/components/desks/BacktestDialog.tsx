@@ -13,7 +13,7 @@
 // event `expertise_backtest_verdict`). Owner-only mount: gap capture writes
 // draft rules through the pack's one write path.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,16 @@ export function BacktestDialog({
   const [contextNote, setContextNote] = useState("");
   const [running, setRunning] = useState(false);
   const [verdict, setVerdict] = useState<BacktestVerdict | null>(null);
+
+  // Opened from a finished run: the desk's own output IS the candidate, so
+  // adopt it each time the dialog opens with one. Opening with no prefill
+  // (the plain "Compare" entry) leaves whatever the expert already typed —
+  // and a prefill never silently overwrites a verdict from a prior compare.
+  useEffect(() => {
+    if (!open || !initialCandidate) return;
+    setCandidate(initialCandidate);
+    setVerdict(null);
+  }, [open, initialCandidate]);
 
   const compare = async () => {
     if (candidate.trim().length < 50 || reference.trim().length < 50) {

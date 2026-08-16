@@ -52,7 +52,16 @@
 - `components/detail/PackDetailPage.tsx` + `RuleEditorDialog.tsx` — the expert surface. Plain language
   only: "rules", "how to spot a violation", "how bad is breaking it". Zero jargon is a requirement,
   not a style choice (THE MISMATCH RULE).
-- `components/desks/PackDesksPage.tsx` — desks list, run links into workflows.aimatrx.com.
+- `components/desks/PackDesksPage.tsx` — desks list, run links into workflows.aimatrx.com,
+  recent-run history, and the owner-only backtest + feedback doors.
+- `components/desks/TryDeskBox.tsx` — "Try your desk" in place: starts the run (adoptForeignStream +
+  followWorkflowRunStream), narrates real node stages, renders the verdict through RichDocument.
+  **A refresh rejoins the run** — the run id is kept per desk in sessionStorage
+  (`matrx.expertise.desk-run.<deskId>`), and on mount the run row decides: still going →
+  `attachWorkflowRun` (the execution system's rejoin primitive; the SSE feed replays the node
+  lifecycle so the stage list rebuilds), finished → the verdict shows directly.
+- `components/desks/BacktestDialog.tsx` — "Compare to the original" (R2 outcome signal). Opens
+  prefilled with a finished run's own output when launched from the verdict, empty from the card.
 
 ## Registration
 
@@ -84,3 +93,6 @@
   Expertise Interviewer agent + expertise_pack tool), empty state offers interview first;
   dropped the stale api-types casts; listConfig sourceFeature → "expertise".
 - 2026-08-16 — Desks page: per-desk recent-run history (status, age, duration, summed node cost; each row opens the run in the studio).
+- 2026-08-16 — TryDeskBox survives a page refresh (remembered run id + `attachWorkflowRun` rejoin,
+  or the verdict it reached while away), and a finished run offers "Compare to the original" beside
+  the verdict with the desk's own output prefilled into the backtest (owner-only).

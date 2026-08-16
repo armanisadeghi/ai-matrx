@@ -290,8 +290,36 @@ export interface DeskRunVerdict {
   status: string;
   /** The chief's ruling (edit + generate shapes both end on node "chief"). */
   chiefText: string | null;
-  /** The editor's corrected text (edit shape only). */
+  /** The editor's corrected text (edit shape only) — prose, never the envelope. */
   editorText: string | null;
+}
+
+/**
+ * The editor node answers with a JSON envelope — `{edited_text, edits:[…]}` —
+ * because the auditors' corrections travel with it. The corrected PROSE is the
+ * only part a human (or a backtest comparing against a published original)
+ * wants, so it is unwrapped here, at the one read boundary, rather than in
+ * every surface. A node that answered in plain prose passes through untouched.
+ */
+function correctedProse(raw: string | null): string | null {
+  if (!raw) return null;
+  // Models fence their JSON as often as they emit it bare — accept both.
+  const fenced = /^```(?:json)?\s*\n([\s\S]*?)\n?```$/.exec(raw.trim());
+  const trimmed = (fenced ? fenced[1] : raw).trim();
+  if (!trimmed.startsWith("{")) return raw;
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      typeof (parsed as { edited_text?: unknown }).edited_text === "string"
+    ) {
+      return (parsed as { edited_text: string }).edited_text;
+    }
+  } catch {
+    // Not JSON after all (a brace-opening sentence) — keep what we were given.
+  }
+  return raw;
 }
 
 /**
@@ -324,7 +352,7 @@ export async function getDeskRunVerdict(
   return {
     status: String(run.status),
     chiefText: byNode.get("chief") ?? null,
-    editorText: byNode.get("editor") ?? null,
+    editorText: correctedProse(byNode.get("editor") ?? null),
   };
 }
 

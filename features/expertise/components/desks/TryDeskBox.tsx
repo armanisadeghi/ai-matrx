@@ -14,15 +14,21 @@
 // durable SSE (reconnects, stall detection), and the final markdown renders
 // through RichDocument (the one pipeline). The run itself is durable server
 // work — closing the page loses nothing; the run lands in Past runs.
+//
+// And a refresh loses nothing EITHER: the run id is remembered per desk for
+// the tab's lifetime, so on mount we read the run row and either rejoin the
+// live run (attachWorkflowRun replays the node lifecycle we missed) or show
+// the verdict it reached while the expert was away.
 
 import { useEffect, useRef, useState } from "react";
-import { CircleCheck, CircleDashed, CircleX, Play } from "lucide-react";
+import { CircleCheck, CircleDashed, CircleX, Play, Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { attachWorkflowRun } from "@/features/agents/redux/execution-system/thunks/attach-workflow-run";
 import {
   followWorkflowRunStream,
   type WorkflowRunWireEvent,
@@ -41,6 +47,40 @@ interface StageRow {
   status: "running" | "done" | "failed";
 }
 
+const TERMINAL_STATUSES = ["completed", "failed", "cancelled"];
+
+/**
+ * The last run started for this desk, remembered for the tab's lifetime so a
+ * refresh rejoins it instead of dropping the expert back to an empty box.
+ * sessionStorage (not local): a run is a "what am I watching right now",
+ * scoped to this tab, and it must never resurrect weeks later.
+ */
+const runKey = (deskId: string) => `matrx.expertise.desk-run.${deskId}`;
+
+function rememberRun(deskId: string, runId: string): void {
+  try {
+    sessionStorage.setItem(runKey(deskId), runId);
+  } catch {
+    // Private mode / quota — losing re-attach is a downgrade, never a failure.
+  }
+}
+
+function recallRun(deskId: string): string | null {
+  try {
+    return sessionStorage.getItem(runKey(deskId));
+  } catch {
+    return null;
+  }
+}
+
+function forgetRun(deskId: string): void {
+  try {
+    sessionStorage.removeItem(runKey(deskId));
+  } catch {
+    /* see rememberRun */
+  }
+}
+
 /** Node-id → plain language. Auditors are per-section (audit_X). */
 function stageLabel(nodeId: string): string {
   if (nodeId === "ask") return "Reading your submission";
@@ -56,12 +96,19 @@ export function TryDeskBox({
   deskId,
   deskKind,
   onRunFinished,
+  onCompare,
 }: {
   deskId: string;
   /** From the desk's compiled_from_pack metadata: "edit" | "generate". */
   deskKind: string | null;
   /** Fired when a run reaches a terminal state (refresh Past runs). */
   onRunFinished: () => void;
+  /**
+   * Owner-only door beside the verdict: hand the desk's own output to the
+   * backtest, prefilled, so "is this actually as good as the real thing?" is
+   * one click from the answer instead of a copy-paste. Omit to hide it.
+   */
+  onCompare?: (candidateText: string) => void;
 }) {
   const dispatch = useAppDispatch();
   const [text, setText] = useState("");
@@ -70,6 +117,8 @@ export function TryDeskBox({
   const [stages, setStages] = useState<StageRow[]>([]);
   const [verdict, setVerdict] = useState<DeskRunVerdict | null>(null);
   const [failureMessage, setFailureMessage] = useState<string | null>(null);
+  /** True while showing a run recovered on mount rather than started here. */
+  const [rejoined, setRejoined] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const runIdRef = useRef<string | null>(null);
   const adoptedRef = useRef<{ requestId: string; conversationId: string } | null>(
@@ -92,7 +141,7 @@ export function TryDeskBox({
       void getDeskRunVerdict(runId)
         .then((result) => {
           if (!result) return;
-          if (["completed", "failed", "cancelled"].includes(result.status)) {
+          if (TERMINAL_STATUSES.includes(result.status)) {
             console.error(
               "[TryDeskBox] run reached a terminal state but the event stream never delivered it — recovered from the run row",
               { runId, status: result.status },
@@ -153,6 +202,9 @@ export function TryDeskBox({
           const result = runId ? await getDeskRunVerdict(runId) : null;
           setVerdict(result);
           setPhase("done");
+          // We watched this one land, whether or not we rejoined mid-run —
+          // so drop the "finished while you were away" note.
+          setRejoined(false);
         } catch {
           // The run finished; the verdict read failing is recoverable via
           // Past runs — say so instead of pretending the run failed.
@@ -167,6 +219,72 @@ export function TryDeskBox({
     }
   };
 
+  // The event handler is re-created every render (it closes over the latest
+  // onRunFinished); the mount-time re-attach must run ONCE, so it reaches the
+  // handler through a ref instead of taking it as a dependency.
+  const handleRunEventRef = useRef(handleRunEvent);
+  handleRunEventRef.current = handleRunEvent;
+
+  // ── Re-attach after a refresh ──────────────────────────────────────────
+  // The run is durable server work; only this view was ephemeral. On mount,
+  // if this desk has a remembered run: still going → rejoin its event feed
+  // (the feed replays the node lifecycle from the start, so the stage list
+  // rebuilds itself); already finished → show what it decided while we were
+  // away. A run row that no longer reads is forgotten rather than nagged at.
+  useEffect(() => {
+    const runId = recallRun(deskId);
+    if (!runId) return;
+    let cancelled = false;
+    const controller = new AbortController();
+
+    void getDeskRunVerdict(runId)
+      .then((result) => {
+        if (cancelled) return;
+        if (!result) {
+          forgetRun(deskId);
+          return;
+        }
+        runIdRef.current = runId;
+        setRejoined(true);
+        if (result.status === "completed") {
+          setVerdict(result);
+          setPhase("done");
+          return;
+        }
+        if (TERMINAL_STATUSES.includes(result.status)) {
+          setPhase("failed");
+          setFailureMessage(
+            "That run didn't finish — its details are in Past runs.",
+          );
+          return;
+        }
+        // Still running: rejoin the live feed. abortRef is this box's single
+        // teardown handle — the unmount effect and any new run both abort it.
+        abortRef.current?.abort();
+        abortRef.current = controller;
+        setPhase("running");
+        void dispatch(
+          attachWorkflowRun({
+            runId,
+            signal: controller.signal,
+            onEvent: (event) => handleRunEventRef.current(event),
+          }),
+        );
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [deskId, dispatch]);
+
+  /** What a finished run produced — the backtest's candidate, when there is one. */
+  const candidateText =
+    phase === "done" && verdict
+      ? (verdict.editorText ?? verdict.chiefText)
+      : null;
+
   const start = async () => {
     if (!text.trim()) {
       toast.error(
@@ -178,7 +296,9 @@ export function TryDeskBox({
     setStages([]);
     setVerdict(null);
     setFailureMessage(null);
+    setRejoined(false);
     runIdRef.current = null;
+    forgetRun(deskId);
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -201,6 +321,9 @@ export function TryDeskBox({
             const adopted = adoptedRef.current;
             if (!adopted) return;
             runIdRef.current = wire.data.run_id;
+            // Remembered before the first node event: a refresh one second
+            // into a four-minute run must still find its way back.
+            rememberRun(deskId, wire.data.run_id);
             setPhase("running");
             void dispatch(
               followWorkflowRunStream({
@@ -278,9 +401,24 @@ export function TryDeskBox({
               ? "Working…"
               : "Run it"}
         </Button>
+        {/* One compare entry per desk: it moves to the verdict (prefilled)
+            the moment there is output to compare, so the two never stack. */}
+        {onCompare && !candidateText ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-xs text-muted-foreground"
+            onClick={() => onCompare("")}
+          >
+            <Scale className="mr-1 h-3.5 w-3.5" />
+            Compare to the original
+          </Button>
+        ) : null}
         {(phase === "running" || phase === "starting") && (
           <span className="text-xs text-muted-foreground">
-            Takes a few minutes — safe to leave; it lands under Past runs.
+            {rejoined
+              ? "Picking this run back up where it was — it kept going while you were away."
+              : "Takes a few minutes — safe to leave; it lands under Past runs."}
           </span>
         )}
       </div>
@@ -311,6 +449,11 @@ export function TryDeskBox({
 
       {phase === "done" && verdict ? (
         <div className="space-y-3 border-t border-border pt-2">
+          {rejoined ? (
+            <p className="text-xs text-muted-foreground">
+              This finished while you were away — here&apos;s what it decided.
+            </p>
+          ) : null}
           {verdict.editorText ? (
             <div>
               <h4 className="mb-1 text-xs font-semibold text-foreground">
@@ -332,6 +475,16 @@ export function TryDeskBox({
               </p>
             )}
           </div>
+          {onCompare && candidateText ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onCompare(candidateText)}
+            >
+              <Scale className="mr-1 h-3.5 w-3.5" />
+              Compare to the original
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </div>
