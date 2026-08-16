@@ -101,13 +101,18 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
   const [beat, setBeat] = useState<BeatProfile | null>(null);
   const [checking, setChecking] = useState(false);
   const [deriving, setDeriving] = useState(false);
+  const [unreachable, setUnreachable] = useState(false);
 
   const loadBeat = useCallback(async () => {
     try {
       setBeat(await fetchJournalistBeat(partyId));
+      setUnreachable(false);
     } catch {
-      // A missing beat profile is the normal state, not an error worth a toast.
+      // A missing beat profile is the normal state and deserves no toast — but
+      // "we could not ask" must NOT read as "there is nothing to know". They
+      // look identical to a user and only one of them is their problem.
       setBeat(null);
+      setUnreachable(true);
     }
   }, [partyId]);
 
@@ -225,7 +230,14 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
             </Button>
           </div>
 
-          {!beat && (
+          {!beat && unreachable && (
+            <p className="text-xs text-muted-foreground">
+              We could not reach the service that works this out just now, so we
+              cannot say whether we know their beat. Try again shortly.
+            </p>
+          )}
+
+          {!beat && !unreachable && (
             <p className="text-xs text-muted-foreground">
               We have not worked out this person&apos;s beat yet. It reads the
               articles of theirs we have already collected — no new searching.
