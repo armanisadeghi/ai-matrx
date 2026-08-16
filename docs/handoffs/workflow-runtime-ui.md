@@ -1,6 +1,6 @@
 # Workflow Runtime UI — the surface where workflows RUN
 
-**status:** Phase 1 (the plumbing) SHIPPED 2026-08-16 — Phases 2+ open
+**status:** Phases 1 (plumbing) and 2 (Run Surfaces: config table + Grafana grid + readouts + rail + builder) SHIPPED 2026-08-16 — Phases 3+ open
 **canonical plan (cross-repo, read it first):** `common-docs/systems/workflow-runtime-ui/PLAN.md`
 (all rulings R1–R12 settled; Readouts, Grafana layout model, dual-source, trigger points)
 **code contract:** `features/workflow-runtime/FEATURE.md`
@@ -19,14 +19,23 @@ lanes), the trigger-point registry, lifecycle-controls hook, the zero-config
 `WorkflowRunBoard`, and the exit-test page `/demos/workflow-runtime` (`?run=` refresh
 survival). StreamProfiler gated off (CAPS). 51 jest tests; repo typecheck + eslint clean.
 
+## Shipped (Phase 2, 2026-08-16)
+
+`workflow.runtime_surface` (canonical entity table, live + ledgered) · `surface/config.ts` (the
+ONE builder/AI config document — R1/R6/R7) · `surface/layout.ts` (compaction, placement,
+`autoLayoutSurface` Tier-0 generator) · `surface/service.ts` (direct supabase-js, CAS saves) ·
+readout renderers (`readout-parts` / `ProgressRailReadout` with synthetic sub-steps /
+`ReadoutView` with R8 modes / `RunSurfaceView` with trigger visibility + pages) ·
+`SurfaceBuilder` (dense config editor) · demo Board/Surface/Builder views. 90 tests.
+
 ## Remaining (this repo)
 
-1. **Phase 2 — surface config + shell + builder** (plan §7): the Grafana-model grid engine
-   (extend `lib/layout/galleryLayout.ts` with authored `{x,y,w,h}` placements + vertical
-   compaction), readout display modes (R8 stack/latest/table), display profiles (R9), the
-   `workflow.runtime_surface` config table (R1 — definition-scoped, direct supabase-js), the
-   builder UI, pages/tabs via trigger points, lazy-render↔lane-budget wiring
-   (`ensureLane` on viewport entry — the hook API already exists).
+1. **Phase 2 tail:** drag-and-drop placement in the builder (position steppers today;
+   `applyPlacement` is ready for dnd-kit wiring), the compact child-run profile render
+   (childRun readouts nest the full board today — R9 says render the child's compact surface),
+   lazy-render↔lane-budget wiring (`ensureLane` on viewport entry), display profiles + audience
+   variants surfaced in the builder (the table already models them), and the "table" multi-run
+   mode's real table.
 2. **Phase 3 — data plumbing:** `record_update`/`resource_changed` → the skills-style
    signal→refetch pump; Supabase realtime backstop (`useRunListRealtime` pattern);
    `link_kind`/`link_id` doors.

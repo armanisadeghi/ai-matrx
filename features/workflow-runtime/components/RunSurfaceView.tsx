@@ -181,7 +181,10 @@ export function RunSurfaceView({
       visibility?.appearOn &&
       !hasTriggerFired(visibility.appearOn, definition, triggerState)
     ) {
-      if (visibility.empty === "placeholder") {
+      // Absent `empty` means "placeholder" (config.ts default) — the builder
+      // encodes the placeholder choice by OMITTING the key, so only an
+      // explicit "hidden" may collapse the box (zero page shift).
+      if (visibility.empty !== "hidden") {
         rendered.push({ readout, mode: "placeholder" });
       }
       continue;

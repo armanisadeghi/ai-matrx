@@ -74,6 +74,11 @@ that is the exit-test surface.
 - 2026-08-16 — Phase 1 initial build: types, transport (SSE+poller), workflowRuns slice +
   selectors, lane manager (budget + shared flush), adoptWorkflowRun adapter (replay + live +
   child runs), trigger points, hooks, zero-config board, demo page, StreamProfiler gate.
+- 2026-08-16 — Review fixes (PR #149 Bugbot): absent `visibility.empty` now reads as
+  "placeholder" in `RunSurfaceView` (the builder omits the key for that choice — only explicit
+  "hidden" collapses the box, zero page shift); `Readout.prefer` is now threaded through
+  `ReadoutView` into `InvocationBody`, so "persisted" renders the settled output even while a
+  lane is attached.
 - 2026-08-16 — Phase 2 surface renderers: extracted shared `readout-parts.tsx` from the board;
   added `ProgressRailReadout` / `ReadoutView` / `RunSurfaceView`; slice gained
   `childRunsByNode` (subgraph_run_linked node→child map) + selectors

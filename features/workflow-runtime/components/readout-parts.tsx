@@ -57,11 +57,21 @@ export function PhaseIcon({ phase }: { phase: string }) {
 export function InvocationBody({
   runId,
   invocation,
+  prefer = "live",
 }: {
   runId: string;
   invocation: NodeInvocationState;
+  /**
+   * R3 dual-source preference (Readout.prefer): "live" keeps the streaming
+   * lane while one is attached; "persisted" renders the settled output the
+   * moment it exists, even if a lane is still attached (a formatted document
+   * usually wants this). Default "live".
+   */
+  prefer?: "live" | "persisted";
 }) {
-  if (invocation.laneRequestId) {
+  const settledOutput =
+    invocation.phase === "settled" && invocation.output !== null;
+  if (invocation.laneRequestId && !(prefer === "persisted" && settledOutput)) {
     return (
       <LiveRunDisplay
         requestId={invocation.laneRequestId}

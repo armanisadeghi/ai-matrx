@@ -1,12 +1,14 @@
 "use client";
 
 /**
- * Workflow Runtime — Phase 1 exit-test page.
+ * Workflow Runtime — Phase 1 exit-test page, extended for Phase 2.
  *
- * Pick any workflow, run it, and watch every node live on the zero-config
- * board. The run id rides the URL (?run=), so a mid-run refresh re-adopts the
- * same run and resumes exactly where it was (replay + live follow) — that is
- * the acceptance bar for the plumbing (PLAN.md Phase 1).
+ * Pick any workflow, run it, and watch it live — on the zero-config board
+ * ("Board"), on the authored Run Surface ("Surface"), or edit the surface in
+ * the simple builder ("Builder"). The run id rides the URL (?run=), so a
+ * mid-run refresh re-adopts the same run and resumes exactly where it was
+ * (replay + live follow). With ?run= and an existing surface, the Surface
+ * view is the default.
  */
 
 import { Suspense, useEffect, useState } from "react";
@@ -17,7 +19,15 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 import { WorkflowRunBoard } from "@/features/workflow-runtime/components/WorkflowRunBoard";
+import { RunSurfaceView } from "@/features/workflow-runtime/components/RunSurfaceView";
+import { SurfaceBuilder } from "@/features/workflow-runtime/components/SurfaceBuilder";
 import { useWorkflowRunControls } from "@/features/workflow-runtime/hooks/useWorkflowRunControls";
+import {
+  fetchWorkflowDefinition,
+  getDefaultSurface,
+  type RuntimeSurfaceRow,
+} from "@/features/workflow-runtime/surface/service";
+import type { WorkflowDefinitionLike } from "@/features/workflow-runtime/trigger-points";
 
 interface WorkflowListItem {
   id: string;
@@ -52,6 +62,8 @@ function extractWorkflowList(data: unknown): WorkflowListItem[] {
   return list;
 }
 
+type ViewMode = "board" | "surface" | "builder";
+
 function WorkflowRuntimeDemo() {
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -60,6 +72,13 @@ function WorkflowRuntimeDemo() {
 
   const [workflows, setWorkflows] = useState<WorkflowListItem[] | null>(null);
   const [selected, setSelected] = useState<string>("");
+  const [definition, setDefinition] = useState<WorkflowDefinitionLike | null>(
+    null,
+  );
+  const [surface, setSurface] = useState<RuntimeSurfaceRow | null>(null);
+  const [surfaceLoaded, setSurfaceLoaded] = useState(false);
+  const [view, setView] = useState<ViewMode>("board");
+  const [viewChosen, setViewChosen] = useState(false);
   const { startRun, starting } = useWorkflowRunControls();
 
   useEffect(() => {
@@ -79,6 +98,48 @@ function WorkflowRuntimeDemo() {
     };
   }, [dispatch]);
 
+  // The synchronous resets live in the select handler (an event handler may
+  // set state; a sync set inside an effect cascades renders — compiler lint).
+  const handleSelect = (value: string) => {
+    setSelected(value);
+    setDefinition(null);
+    setSurface(null);
+    setSurfaceLoaded(false);
+  };
+
+  // Load the definition graph + default surface for the selected workflow.
+  useEffect(() => {
+    if (!selected) return;
+    let cancelled = false;
+    void Promise.all([
+      fetchWorkflowDefinition(selected),
+      getDefaultSurface(selected),
+    ])
+      .then(([def, surf]) => {
+        if (cancelled) return;
+        setDefinition(def?.definition ?? null);
+        setSurface(surf);
+        setSurfaceLoaded(true);
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setSurfaceLoaded(true);
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Loading the workflow definition failed.",
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selected]);
+
+  // Running with a surface available? Default to the Surface view — DERIVED,
+  // not set in an effect: the user's explicit choice wins once made.
+  const effectiveView: ViewMode =
+    !viewChosen && surfaceLoaded && runId && surface ? "surface" : view;
+
   const begin = async () => {
     if (!selected) return;
     const newRunId = await startRun({ definitionId: selected });
@@ -87,8 +148,27 @@ function WorkflowRuntimeDemo() {
     router.replace(`/demos/workflow-runtime?run=${newRunId}`);
   };
 
+  const pickView = (mode: ViewMode) => {
+    setView(mode);
+    setViewChosen(true);
+  };
+
+  const viewButton = (mode: ViewMode, label: string) => (
+    <button
+      type="button"
+      onClick={() => pickView(mode)}
+      className={
+        effectiveView === mode
+          ? "rounded-md bg-primary px-2.5 py-1 text-xs text-primary-foreground"
+          : "rounded-md border border-border px-2.5 py-1 text-xs text-foreground"
+      }
+    >
+      {label}
+    </button>
+  );
+
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-4">
+    <div className="mx-auto max-w-5xl space-y-4 p-4">
       <h1 className="text-lg font-semibold">Workflow Runtime — live run board</h1>
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
@@ -100,7 +180,7 @@ function WorkflowRuntimeDemo() {
           <>
             <select
               value={selected}
-              onChange={(e) => setSelected(e.target.value)}
+              onChange={(e) => handleSelect(e.target.value)}
               className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-base"
             >
               <option value="">Choose a workflow…</option>
@@ -123,14 +203,75 @@ function WorkflowRuntimeDemo() {
         )}
       </div>
 
-      {runId ? (
-        <WorkflowRunBoard runId={runId} />
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Start a workflow (or open this page with ?run=&lt;run_id&gt;) to watch
-          it live. Refreshing mid-run resumes from the durable log.
-        </p>
-      )}
+      {selected ? (
+        <div className="flex items-center gap-1.5">
+          {viewButton("board", "Board")}
+          {viewButton("surface", "Surface")}
+          {viewButton("builder", "Builder")}
+          {!surfaceLoaded ? (
+            <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+          ) : null}
+        </div>
+      ) : null}
+
+      {selected && surfaceLoaded && effectiveView === "builder" ? (
+        definition ? (
+          <SurfaceBuilder
+            definitionId={selected}
+            definition={definition}
+            surface={surface}
+            onSaved={setSurface}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            The workflow definition could not be loaded, so the builder has
+            nothing to edit.
+          </p>
+        )
+      ) : null}
+
+      {selected && surfaceLoaded && effectiveView === "surface" ? (
+        surface && definition ? (
+          runId ? (
+            <RunSurfaceView
+              runId={runId}
+              definition={definition}
+              config={surface.config}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Start a run to watch it on this surface.
+            </p>
+          )
+        ) : (
+          definition ? (
+            // No surface yet: the builder's null-surface state IS the hint +
+            // one-click create card — render it bare, no second wrapper.
+            <SurfaceBuilder
+              definitionId={selected}
+              definition={definition}
+              surface={null}
+              onSaved={setSurface}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              This workflow has no run surface yet, and its definition could
+              not be loaded to generate one.
+            </p>
+          )
+        )
+      ) : null}
+
+      {effectiveView === "board" || !selected ? (
+        runId ? (
+          <WorkflowRunBoard runId={runId} />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Start a workflow (or open this page with ?run=&lt;run_id&gt;) to
+            watch it live. Refreshing mid-run resumes from the durable log.
+          </p>
+        )
+      ) : null}
     </div>
   );
 }
