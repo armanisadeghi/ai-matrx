@@ -14,26 +14,55 @@
 
 import type { ReactNode } from "react";
 import { toast } from "@/lib/toast";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUrlSearchParams } from "@/lib/url-state/useUrlState";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { defaultHiddenColumns } from "../columns";
-import type { EntityListConfig } from "../config";
+import type { EntityListConfig, EntityListController } from "../config";
 import { useEntityList } from "../useEntityList";
+import { commitUrlParams, readSortFromParams, sortToParamPatch } from "../urlQuery";
 import { entityListRowHref } from "../doors";
 import { countActiveFilters } from "../types";
 import { EntityScopeTabs } from "./EntityScopeTabs";
 import { EntityListToolbar } from "./EntityListToolbar";
 import { EntityListTable } from "./EntityListTable";
 
+/**
+ * Bind an agent surface to a list page.
+ *
+ * A list surface has exactly one honest set of values — what is on screen, in
+ * which scope, out of what total — and every list page would otherwise hand-roll
+ * a `SurfaceRuntimeProvider` around a copy of state the shell already holds and
+ * the page does not. So the shell offers it: name the surface, map the live
+ * controller to its manifest values, done. The scope is built at Run time only
+ * (never on mount), so this costs a page that never launches an agent nothing.
+ */
+export interface EntityListSurface<TRow> {
+  /** Canonical `ui_surface.name`, from the feature's manifest. */
+  surfaceName: string;
+  /** Live manifest values, read from the same controller the list renders. */
+  getScope: (list: EntityListController<TRow>) => SurfaceScopePayload;
+}
+
 export interface EntityListPageProps<TRow> {
   config: EntityListConfig<TRow>;
-  /** Banner slot above the tabs (e.g. a dismissible migration notice). */
-  notice?: ReactNode;
+  /**
+   * Banner slot above the tabs (a dismissible migration notice, or a control
+   * that narrows the list). A function receives the live controller, so a
+   * surface can put a first-class query control up there — /work/conversations
+   * uses it for the door to the internal machine runs its default hides —
+   * without hand-rolling a second copy of the query state.
+   */
+  notice?: ReactNode | ((list: EntityListController<TRow>) => ReactNode);
   /** Buttons on the right of the scope tabs (New, secondary destinations). */
   headerActions?: ReactNode;
   /** Action rendered inside the empty state (usually the New button again). */
   emptyAction?: ReactNode;
+  /** Agent surface this list emits its live values to (manifest-backed). */
+  surface?: EntityListSurface<TRow>;
 }
 
 export function EntityListPage<TRow>({
@@ -41,6 +70,7 @@ export function EntityListPage<TRow>({
   notice,
   headerActions,
   emptyAction,
+  surface,
 }: EntityListPageProps<TRow>) {
   const defaultHidden = defaultHiddenColumns(config.columns);
   const { prefs, setPrefs, reset } = useListViewPrefs(config.surfaceKey, {
@@ -48,6 +78,24 @@ export function EntityListPage<TRow>({
     hiddenColumns: defaultHidden,
     ...config.prefsDefaults,
   });
+
+  // Sort is STYLE (persisted per user), but it is also the one style axis a
+  // SHARED LINK has to carry — "look at this list, newest first" is worthless
+  // if the recipient's stored preference silently re-sorts it. So on a
+  // URL-backed surface the URL wins when present, and writing a sort updates
+  // both: the link stays truthful and the preference still persists.
+  const urlParams = useUrlSearchParams();
+  const prefsSort = { sort: prefs.sort, direction: prefs.direction };
+  const effectiveSort = config.urlState
+    ? readSortFromParams(urlParams, prefsSort)
+    : prefsSort;
+
+  const commitSort = (next: { sort: string; direction: "asc" | "desc" }) => {
+    setPrefs(next);
+    if (config.urlState) {
+      commitUrlParams(sortToParamPatch(next, prefsSort), "push");
+    }
+  };
 
   // An empty RESULT is not an empty LIST. Saying "Nothing here yet — create
   // your first one" to someone who has 117 rows and mistyped a search is a lie,
@@ -57,9 +105,11 @@ export function EntityListPage<TRow>({
     service: config.service,
     getRowId: config.getRowId,
     entityLabelPlural: config.entityLabel.plural,
+    defaultFilters: config.defaultFilters,
+    urlState: config.urlState,
     view: {
-      sort: prefs.sort,
-      direction: prefs.direction,
+      sort: effectiveSort.sort,
+      direction: effectiveSort.direction,
       favoritesFirst: prefs.favoritesFirst,
       pageSize: prefs.pageSize,
     },
@@ -145,7 +195,7 @@ export function EntityListPage<TRow>({
     hrefFor: (row: TRow) => entityListRowHref(config, row),
   };
 
-  return (
+  const page = (
     <div className="flex h-full flex-col overflow-hidden">
       {/*
         The scope tabs and toolbar are STATIC interactive content at the top, so
@@ -154,7 +204,7 @@ export function EntityListPage<TRow>({
         below scrolls behind the glass.
       */}
       <div className="shrink-0 space-y-1.5 px-3 pt-[calc(var(--shell-header-h)+0.5rem)] pb-2 sm:space-y-2">
-        {notice}
+        {typeof notice === "function" ? notice(list) : notice}
         <div className="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
           <div className="min-w-0 flex-1 sm:flex-none">
             <EntityScopeTabs
@@ -175,7 +225,7 @@ export function EntityListPage<TRow>({
           query={list.query}
           facets={list.facets}
           isFetching={list.isFetching}
-          prefs={prefs}
+          prefs={{ ...prefs, ...effectiveSort }}
           showSharedColumns={showSharedColumns}
           columns={config.columns}
           defaultHidden={defaultHidden}
@@ -188,7 +238,18 @@ export function EntityListPage<TRow>({
           hasRows={Boolean(rowsView)}
           onSearch={list.setSearch}
           onPatchQuery={list.patchQuery}
-          onPatchPrefs={setPrefs}
+          // Sort changes route through commitSort so the panel's sort and the
+          // table header's sort write the same two places (prefs + URL).
+          onPatchPrefs={(patch) => {
+            const { sort, direction, ...rest } = patch;
+            if (sort !== undefined || direction !== undefined) {
+              commitSort({
+                sort: sort ?? effectiveSort.sort,
+                direction: direction ?? effectiveSort.direction,
+              });
+            }
+            if (Object.keys(rest).length > 0) setPrefs(rest);
+          }}
           onResetFilters={list.resetFilters}
           onResetView={reset}
         />
@@ -213,8 +274,8 @@ export function EntityListPage<TRow>({
             total={list.total}
             page={list.query.page}
             pageSize={prefs.pageSize}
-            sort={prefs.sort}
-            direction={prefs.direction}
+            sort={effectiveSort.sort}
+            direction={effectiveSort.direction}
             filters={list.query.filters}
             facets={list.facets}
             isLoading={list.isLoading}
@@ -226,15 +287,13 @@ export function EntityListPage<TRow>({
             emptyState={resolvedEmptyState}
             onQueryChange={(next) => {
               if (
-                next.sort !== prefs.sort ||
-                next.direction !== prefs.direction ||
-                next.pageSize !== prefs.pageSize
+                next.sort !== effectiveSort.sort ||
+                next.direction !== effectiveSort.direction
               ) {
-                setPrefs({
-                  sort: next.sort,
-                  direction: next.direction,
-                  pageSize: next.pageSize,
-                });
+                commitSort({ sort: next.sort, direction: next.direction });
+              }
+              if (next.pageSize !== prefs.pageSize) {
+                setPrefs({ pageSize: next.pageSize });
               }
               if (
                 JSON.stringify(next.filters) !==
@@ -270,6 +329,16 @@ export function EntityListPage<TRow>({
 
       {modals}
     </div>
+  );
+
+  if (!surface) return page;
+  return (
+    <SurfaceRuntimeProvider
+      surfaceName={surface.surfaceName}
+      getScope={() => surface.getScope(list)}
+    >
+      {page}
+    </SurfaceRuntimeProvider>
   );
 }
 

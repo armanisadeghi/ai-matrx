@@ -206,6 +206,74 @@ export function readPersonalizationProvenance(
 }
 
 /**
+ * WHY THIS REPLY SAYS WHAT IT SAYS.
+ *
+ * `attributes.outreach_single_send.reply` is stamped at draft time from the
+ * member's stored reply record (WP5's `reply_agent` over the member's real
+ * `crm.interaction` thread). Where personalization evidence answers "where did
+ * that claim come from", reply evidence answers a different question — *what is
+ * this message answering, and what does it stand on* — so the Chasebox renders
+ * it as its own panel beside the draft rather than folding it into the
+ * personalization list.
+ *
+ * Provenance only: never bound into the rendered message. A reply with no traced
+ * claims is declined server-side and never becomes a draft at all, so an empty
+ * `groundedOn` here means an older generation, not an untraced message.
+ */
+export interface ReplyProvenance {
+  /** What the agent set out to do: answer a question, propose a call, decline. */
+  intent: string | null;
+  /** The claims it stands on, each already tagged with where it came from. */
+  groundedOn: string[];
+  /** The inbound message this reply answers — the row it continues. */
+  replyingToInteractionId: string | null;
+  /** The classifier's verdict on that inbound message. */
+  latestInboundLabel: InboundLabel | null;
+  /** How many messages the conversation held when this was written. */
+  threadMessageCount: number | null;
+  /** Identity of the exact conversation state it was written against. */
+  threadHash: string | null;
+  version: string | null;
+  generatedAt: string | null;
+}
+
+/** Human-readable intents. An unknown intent renders as its raw name rather than
+ * being dropped — a reply with an intent we do not recognize is still a reply. */
+const REPLY_INTENT_LABELS: Record<string, string> = {
+  answer_question: "Answers their question",
+  propose_call: "Proposes a call",
+  share_resource: "Shares a resource",
+  acknowledge: "Acknowledges their reply",
+  decline: "Declines politely",
+  none: "No stated intent",
+};
+
+export function replyIntentLabel(intent: string | null): string {
+  if (!intent) return "No stated intent";
+  return REPLY_INTENT_LABELS[intent] ?? intent.replace(/_/g, " ");
+}
+
+export function readReplyProvenance(attributes: unknown): ReplyProvenance | null {
+  const block = readObject(readObject(attributes, "outreach_single_send"), "reply");
+  if (!block) return null;
+  const count = block.thread_message_count;
+  return {
+    intent: readString(block, "intent"),
+    groundedOn: Array.isArray(block.grounded_on)
+      ? block.grounded_on.filter(
+          (claim): claim is string => typeof claim === "string" && claim.trim().length > 0,
+        )
+      : [],
+    replyingToInteractionId: readString(block, "replying_to_interaction_id"),
+    latestInboundLabel: toInboundLabel(readString(block, "latest_inbound_label")),
+    threadMessageCount: typeof count === "number" ? count : null,
+    threadHash: readString(block, "thread_hash"),
+    version: readString(block, "version"),
+    generatedAt: readString(block, "generated_at"),
+  };
+}
+
+/**
  * The id the `/outreach/single/drafts/{draft_id}/…` endpoints expect for a
  * draft that is sitting on a `crm.interaction` row.
  *

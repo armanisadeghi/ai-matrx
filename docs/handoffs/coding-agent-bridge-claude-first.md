@@ -45,10 +45,12 @@ vision:
 - **Deploy:** aidream `./scripts/release.sh` (commit unrelated dirty files scoped first); verify
   `https://server.app.matrxserver.com/health/version` against origin/main. Frontend auto-deploys on push.
 - **DB probes:** asyncpg + aidream `.env` (`SUPABASE_MATRIX_*`), `statement_cache_size=0` (pgbouncer).
-- **Live state 2026-08-15:** 258 bindings / 307 mirrored conversations / 2 owners; workspace labels
-  populate (208 matrx-frontend, 29 at the code root); `claude_title`, `git_branch`, and account
-  fingerprint are all still NULL on every live row; 9 conversations keep the `Auto:` placeholder and
-  all 9 have zero projected user messages.
+- **Live state 2026-08-16:** 266 bindings (237 Claude, 29 Codex, all `event_mirror`) / 2 owners;
+  workspace labels populate; **232 Claude rows now carry `claude_title` with
+  `title_source=provider`, and the conversation title equals Claude's own sidebar label exactly on
+  all 232**; `git_branch` and account fingerprint are still NULL on every live row (no bound session
+  is a worktree run; event-mirror hooks cannot read the account — item 6). One `Auto:` placeholder
+  remains and it is the stale half of a duplicate binding, not a missing title.
 - **Operator checklists:** VS Code `matrx-vscode/OPERATOR_CHECKLIST.md` (+ `PUBLISHING.md`);
   managed Codex design `matrx-codex-plugin/docs/MANAGED_RUNTIME_PLAN.md`.
 
@@ -72,14 +74,35 @@ vision:
    registry or row actions); thread-level conversation placement from the Hub (PLAN.md Lane 3);
    FTS/tsvector on `chat.message` when ILIKE stops scaling; persisting analysis outputs somewhere
    durable (note/association on the conversation) instead of one-off run output.
-1. **Claude-native titles/branches — Matrx Local producer (`TASK-003`, chip fired).** The whole
-   server side is live, deployed and tested (`SessionMetadata` observation + user > provider >
-   first_prompt > placeholder precedence); the plugin ships the transcript locator; Matrx Local
-   already READS Claude's `customTitle`/`aiTitle`/`gitBranch` and then discards them into the
-   preview screen only. ~5 files to join them, plus carrying the same fields on the `append_native`
-   import path. Backfill the existing sessions afterward and report whether the 9 promptless
-   placeholder rows have a Claude-side title (if not, choose an honest fallback label — the
-   placeholder is the exact string Arman called a lie).
+1. **~~Claude-native titles — Matrx Local producer (`TASK-003`)~~ — DONE 2026-08-16.** Arman's
+   ruling: *"Those labels cannot be different. They must be exactly the same, and they must remain
+   in sync. So if it's changed in Claude Code, we are able to update it in our system."* The join is
+   Claude's own desktop session index
+   (`Application Support/Claude/claude-code-sessions/<account>/<org>/local_*.json`), whose
+   `cliSessionId` is the exact UUID the bridge already binds and whose `title` is the exact sidebar
+   label — better than any JSONL-derived title. Shipped: `claude_session_index.py` (labels only, no
+   raw path, newest-`lastActivityAt` wins across the cross-account union),
+   `title_sync.py` + `POST /coding-session/claude/labels/sync` (aidream's owner-scoped identity list
+   is the ALLOWLIST — an unmirrored session's label never leaves the machine; both binding forms
+   resolve; V20 send-ledger makes an unchanged label free and a rename detected next pass), the
+   import path preferring the index labels and queueing them behind the batches that mint the
+   binding, and a desktop **Sync titles now** card. aidream now also observes `worktree_name` +
+   `is_archived` (`provider_archived`) on `SessionMetadata`.
+   **Live proof:** the shipped reconciler + durable outbox against production —
+   235 bound sessions, **232 matched and delivered, 0 failed, 0 remaining**, second pass fully
+   idempotent (`queued: 0, unchanged: 232`). Live DB: 232 rows carry `claude_title` with
+   `title_source=provider`, and `chat.conversation.title` equals Claude's label **exactly on all
+   232**. The 9 `Auto:` placeholder rows are down to **1**, and that one is the stale half of a
+   duplicate binding (below), not a missing title. The 5 remaining untitled rows are 4 hosted-sandbox
+   certification sessions that never ran on this Mac plus that duplicate — no local Claude record
+   exists for any of them, which is honest, not a gap. `git_branch`/`worktree_name` stayed empty
+   because zero of the 232 bound sessions are worktree runs; 234/234 carry a real `isArchived`
+   (8 archived), which lands on the first shipped sync pass after the server change is live.
+   **Follow-up filed (decision-gated, NOT done):** `chat.coding_session` has no unique constraint on
+   `(created_by, provider, provider_session_id)` and one live pair exists —
+   `2773ac14-a999-4db1-b430-2f5efd9f77c8` has two sessions and two conversations for one Claude
+   session. `find_session` reaches only one, so the other can never be titled and permanently wears
+   `Auto: Code Editor`. Merging live conversations is Arman's call; see aidream `FOUND_DEFECTS.md`.
 2. **Managed-Claude launch and continuation (`TASK-006`).** Backend is production-CERTIFIED
    (start/stream/resume/cancel/fork). Consume capabilities + NDJSON + cancel in `/work/new` and
    conversation detail. Native Resume/Fork strictly capability-gated; everything else is a labeled

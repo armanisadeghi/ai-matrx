@@ -71,6 +71,44 @@ export async function sendOutreachDraft(
   return data;
 }
 
+/** What happened to ONE draft in a batch approval, in the reviewer's terms. */
+export interface OutreachDraftOutcome {
+  draft_id: string;
+  approved: boolean;
+  code: string | null;
+  message: string | null;
+  fix: string | null;
+}
+
+export interface OutreachApproveBatchResult {
+  requested: number;
+  approved: number;
+  outcomes: OutreachDraftOutcome[];
+}
+
+/**
+ * Approve the rest of a queue the reviewer has ALREADY STEPPED THROUGH.
+ *
+ * Ids only, never a filter — "approve everything in this queue" would approve
+ * messages nobody has read, which is the exact failure the trust ladder exists
+ * to prevent. Server-side each draft goes through the SAME `approve_draft`, so
+ * one whose binding changed mid-review is still refused as `draft_changed`, and
+ * a refusal comes back per draft with its fix rather than discarding the
+ * approvals earned beside it.
+ *
+ * Raw client: the deployed OpenAPI spec does not carry this route yet. Source of
+ * truth: aidream `outreach_single_send/service.py::approve_drafts`.
+ */
+export async function approveOutreachDrafts(
+  draftIds: string[],
+): Promise<OutreachApproveBatchResult> {
+  const { data } = await postJson<OutreachApproveBatchResult>(
+    "/outreach/single/drafts/approve",
+    { draft_ids: draftIds },
+  );
+  return data;
+}
+
 /**
  * Reword the AI-written personalization line(s) and re-render this exact draft.
  *

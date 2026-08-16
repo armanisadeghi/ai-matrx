@@ -153,6 +153,7 @@ export function ChaseboxPage() {
           draft_subject: reviewedDraft?.subject ?? undefined,
           draft_body: reviewedDraft?.body ?? undefined,
           draft_personalization: reviewedDraft?.personalization ?? undefined,
+          draft_reply: reviewedDraft?.reply ?? undefined,
           draft_approved: reviewedDraft?.approved ?? undefined,
         })
       }

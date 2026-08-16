@@ -59,7 +59,17 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/notes", surface: "matrx-user/notes" },
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
+  // The three outreach work surfaces sit UNDER /crm and must be listed before
+  // it — first match wins, so a bare `/crm` row would swallow them and the
+  // panel would resolve the CRM manager on a page that registered its own
+  // runtime. That is not cosmetic: `primaryName` discards a registered runtime
+  // whose name disagrees with the route, so the page's live values, its assist
+  // strip's surface and its declared roles all become unreachable from the
+  // header. (Found 2026-08-16 registering crm-inbox; it had been true of
+  // crm-chasebox since the day that surface was registered.)
   { prefix: "/crm/outreach-lists", surface: "matrx-user/crm-outreach-lists" },
+  { prefix: "/crm/chasebox", surface: "matrx-user/crm-chasebox" },
+  { prefix: "/crm/inbox", surface: "matrx-user/crm-inbox" },
   { prefix: "/crm", surface: "matrx-user/crm" },
   // Images family. The my-cloud tab is the library; the four studio tools
   // each carry their own surface. The static /images/studio landing maps to

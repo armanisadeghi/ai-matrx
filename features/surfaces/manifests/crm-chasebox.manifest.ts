@@ -87,7 +87,13 @@ const values: SurfaceValue[] = [
     description:
       "The rows on screen in the open queue: contact, campaign, step, the problem it names and the fix it offers. Empty array when the queue is clear.",
     valueType: "array",
-    alwaysAvailable: true,
+    // `false` even though the emitter writes it on EVERY build. The platform
+    // judges presence with `hasValue()` in SurfaceContextWindow.tsx, where an
+    // empty array counts as ABSENT — so declaring `true` made a CLEAR queue
+    // (the good state) report "1 required missing" and the surface look broken.
+    // Same call, same reasoning, as admin-users.manifest.ts. Scalars are
+    // unaffected — `total_items` stays `true` because `hasValue` passes 0.
+    alwaysAvailable: false,
     typicalCharCount: 4000,
     autoContext: false,
     group: "queue",
@@ -139,6 +145,17 @@ const values: SurfaceValue[] = [
     sortOrder: 220,
   },
   {
+    name: "draft_reply",
+    label: "Reply evidence",
+    description:
+      "Present only when the open draft is a REPLY: what it sets out to do, the traced claims it stands on (each tagged with where it came from — what they wrote, the campaign, or their record), how the inbound message it answers was classified, and how many messages the conversation holds. Empty when the draft is a first touch.",
+    valueType: "object",
+    alwaysAvailable: false,
+    typicalCharCount: 900,
+    group: "draft",
+    sortOrder: 225,
+  },
+  {
     name: "draft_approved",
     label: "Draft already approved",
     description:
@@ -168,6 +185,11 @@ WHAT YOU MAY DO HERE: explain a queue item, compare a draft against the evidence
 shown beside it, and suggest better wording for the AI-written lines. Say plainly
 when a personalization line is not supported by the fact quoted under it — that
 is the single most useful thing you can do on this surface.
+
+When the open draft is a REPLY, the same job has a second half: say whether it
+actually answers what the person asked, and whether every claim it makes is one
+of the traced claims listed beside it. A reply that answers a question nobody
+asked is worse than no reply.
 
 WHAT YOU MAY NOT DO: approve, send, reject, or edit anything. Every one of those
 is a human keystroke through the one governed send path. Never suggest working
@@ -208,6 +230,12 @@ export function createCrmChaseboxScope(values: {
     fact: string | null;
     source_url: string | null;
   }>;
+  draft_reply?: {
+    intent: string;
+    grounded_on: string[];
+    answering_label: string | null;
+    thread_message_count: number | null;
+  };
   draft_approved?: boolean;
 }): SurfaceScopePayload {
   return values as SurfaceScopePayload;
