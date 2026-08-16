@@ -99,6 +99,7 @@ const { verdict, setVerdict, captureCorrection } = useOutputFeedback({
 | `cx-chat` `AssistantActionBar` | `message` | surface `cx-chat` |
 | `rich-document` `thumbs-up`/`thumbs-down` | resolved by `features/rich-document/outputFeedbackSubject.ts` | hidden when the source has no registered entity token — a thumb that writes nowhere is worse than no thumb |
 | `editMessage` thunk (assistant messages) | `message` | **corrected-output capture**: fire-and-forget after a successful edit, loud on failure |
+| `review-walk` `NegativeVerdictFollowUp` (rendered by BOTH `AssistantActionBar`s above) | `message` | negative-verdict follow-up strip: "Diagnose" opens the drill-down review walk; "Attach your version" calls `captureCorrection` (O1). Reads this store via `skipFetch` — never a second fetch or parallel state. See `features/review-walk/FEATURE.md` |
 
 ### Adding a new subject type
 
