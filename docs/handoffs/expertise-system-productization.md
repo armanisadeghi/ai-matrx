@@ -125,9 +125,19 @@ refresh (the run survives server-side and lands in Recent runs, but the in-place
 resets — persist last run_id and re-attach via `GET /runs/{run_id}`); ⑪ prefill the backtest
 candidate from a finished TryDeskBox run (prop exists, not yet wired).
 
-Next, in order: ① the honest test — `arman-seo-method` with Arman (needs him); ② file/PDF/
-audio ingest via content_processing; ③ pack version snapshots + structured outputs; ④ the
-distillation→Engram interface (candidate task classes + acceptance criteria alongside rules).
+Next, in order: ① the honest test — `arman-seo-method` with Arman (needs him; review-queue
+row filed with the walkthrough); ② the distillation→Engram interface (emit candidate task
+classes + acceptance criteria alongside rules — spec: common-docs
+`inbox-from-arman-to-be-processed/engram-expert-distillation-runtime.md` §5).
+
+**Dispatched as chips (2026-08-16, may already be in flight — check before duplicating):**
+file/PDF/audio ingest lane (ledger ⑤); run re-attach + backtest prefill (⑩ ⑪); pack version
+snapshots + structured desk outputs (Phase 6). A chip session grooms this ledger when it lands.
+
+**In-place run verified end-to-end (2026-08-16):** two production runs through TryDeskBox;
+breadcrumbs show the full event flow to `run_completed`, ruling + corrected text render on the
+card. One earlier run was killed by a mid-flight server deploy (recorded `cancelled`) — the
+class is covered by the run-row terminal backstop (loud when it fires).
 
 ## PRIOR STATUS (2026-08-10) — Phases 1-3 SHIPPED
 
