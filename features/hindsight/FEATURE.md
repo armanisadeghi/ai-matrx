@@ -62,7 +62,7 @@ platform admin, not in a backend-repo dashboard. Do not re-create a second copy.
 |---|---|
 | Page | `components/HindsightPage.tsx` — list + platform spend + detail pane |
 | Detail | `components/EnrollmentDetailPanel.tsx` — subject, spend, cadence, findings, reviews |
-| Enroll | `components/EnrollDialog.tsx` — all four kinds, real pickers |
+| Enroll | `components/EnrollDialog.tsx` — five enrollable kinds (agent · **orchestra** · workflow · tool · environment), real pickers, and the **lens** (which runs the reviewer reads + how much of each it sees) |
 | Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, Apply / Reject / **Guide** / **Revert** (applied state) |
 | Revert | `components/RevertButton.tsx` — the ONE revert affordance (button + confirm naming "returns to v{n}" + version-diff door + receipt toast), shared by `FindingCard` and `VersionLadder`. Renders only on `status='applied'` findings; the ladder shows it only on the CURRENT `from review` row (reverting a non-current version is meaningless, so the door is hidden, not disabled). Server contract: `POST /hindsight/findings/{id}/revert` re-promotes the pre-apply version as a NEW version row — see aidream's hindsight `FEATURE.md` |
 | Discuss (admin) | `components/DiscussPanel.tsx` — the reviewer's thread + the reply box; product uses `workspace/ReviewerChat.tsx` |
@@ -179,6 +179,31 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- **2026-08-16** — **Lenses + orchestra subjects.** The enroll form gained the
+  two lens knobs (`window_mode` + `window_n`, `lens_visibility`) and an
+  `orchestra` kind; both lens defaults are the pre-lens behaviour, so an
+  enrollment created without touching them is unchanged.
+  - **Written for a Creator, not an engineer.** The options read "Everything new
+    since the last review" / "The most recent runs, every time" and "The full
+    picture" / "Only what it was asked and what it produced", each with the
+    trade underneath. `since_watermark` / `unit_only` never reach the screen.
+  - **The run count only exists for the mode that uses it**, and warns before
+    submit when `max_examples_per_review` would clip it — the server logs the
+    same clip, so neither side can report "we read the last 60 runs" when 25
+    were read.
+  - **`workflow_node` keeps a label and icon but is NOT offered** (`ENROLLABLE_KINDS`
+    in `components/tokens.ts`): the server refuses it until per-step capture
+    exists, so a picker entry would be a dead end that fails on submit.
+  - **Door Law:** an orchestra subject opens `/agents/orchestras/{id}`, not the
+    plain agent page — the members are the reason the kind exists. The picker
+    lists agents carrying the `orchestra` marker edge (there is no orchestra
+    table), which is exactly what the server validates.
+  - The detail panel now STATES the lens; it decides what the reviewer saw, and
+    invisible afterwards a reader cannot tell why a review looked at 10 runs or
+    never mentioned a tool call.
+  - **`lens_visibility` is not `visibility`** — the latter is the canonical
+    access enum on every entity row. Server contract: aidream's hindsight
+    `FEATURE.md` § Lenses.
 - **2026-08-16** — Queued/mirror replays render honestly: `replayInFlight`
   (`types.ts`) marks `pending`/`processing` rows and `ReplaysTable` shows a
   neutral "queued"/"running" badge + "still in flight" copy instead of the red
