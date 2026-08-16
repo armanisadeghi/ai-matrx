@@ -17,6 +17,45 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D206 — 🚨 SECURITY: `/api/deepgram/authenticate` is a LIVE, UNAUTHENTICATED token-minting endpoint, and can return the raw API key (2026-08-16)
+
+**Fix regardless of how D204 is ruled — this is not a code-cleanliness item.**
+
+`app/api/deepgram/authenticate/route.ts` is a deployed Next.js `GET` route with
+**no auth check of any kind**. Any anonymous caller receives a Deepgram access
+token minted from our `DEEPGRAM_API_KEY`:
+
+```ts
+export async function GET(request: NextRequest) {
+  if (process.env.DEEPGRAM_ENV === "development") {
+    return NextResponse.json({ access_token: process.env.DEEPGRAM_API_KEY ?? "", ... });
+  }
+  const deepgram = new DeepgramClient({ apiKey: process.env.DEEPGRAM_API_KEY ?? "" });
+  const tokenData = await deepgram.auth.v1.tokens.grant();
+```
+
+Two distinct exposures:
+1. **Unauthenticated token grant** — anyone who knows the URL can mint tokens and
+   spend against our Deepgram account.
+2. **Raw key disclosure** — if `DEEPGRAM_ENV` is ever set to `"development"` on a
+   deployed host, the endpoint returns **the API key itself** in the response
+   body. An env var is the only thing standing between a public URL and our key.
+
+**Nothing in the app calls it** — a grep for `api/deepgram` across all `.ts`/`.tsx`
+returns zero hits. There is a second route, `app/api/deepgram/speak/route.ts`,
+which passes the key as an `Authorization: token …` header.
+
+**Exploitability depends on whether `DEEPGRAM_API_KEY` is actually set in
+production** — `.env.example` ships it blank. If unset, the grant call fails and
+the exposure is latent rather than live. **Verify the deployed value before
+deciding urgency; rotate the key if it is set.**
+
+**Fix:** delete both routes and the `@deepgram/sdk` dependency (nothing consumes
+either). If Deepgram is ever revived, the platform already has the right pattern
+for this — the **token broker** (`lib/api/broker/`, cross-repo SoR
+`common-docs/systems/token-broker/FEATURE.md`), which exists precisely so a
+client gets a scoped short-lived credential instead of a hand-rolled mint route.
+
 ### D205 — the committed `openapi.json` is AHEAD of the committed `api-types.ts`; regenerating breaks 48 files (2026-08-16)
 
 `pnpm sync-types` writes both `types/python-generated/openapi.json` and
@@ -75,6 +114,29 @@ The directory also holds `helpers.ts`, `types.ts`, `hooks/`, and a 12k
 Tracked meanwhile in `scripts/hardcoded-prompts-allowlist.json` with
 `UNRESOLVED:` reasons, so `pnpm check:hardcoded-prompts` prints all four in its
 own loud section on every run rather than letting them read as exonerated.
+
+**UPDATE 2026-08-16 — forensics done; option 1 ("finish it") is almost certainly
+the wrong branch.** Evidence gathered since the filing:
+
+- **Git history:** all four landed in ONE commit on **2024-09-29** (`373b97673`);
+  the last intentional edit was **2024-10-06** (`134a163ec "fixed layout"`, and
+  only to `-roger`/`-audrey`). `constants.ts` and its copy have never been
+  touched since the day they landed. Every commit since is dependency churn or
+  fleet sweeps. **~22 months with no human intent.**
+- **It was superseded, not abandoned mid-build.** `features/voice-agent/` is
+  Tier 1, `active`, updated 2026-08-15, on xAI Realtime + Google Live API, with
+  personas already in the DB via slots `voice.intro` /
+  `transcript_studio.scribe_live`. The Deepgram path is the earlier attempt at
+  the same capability.
+- **The personas are not reusable assets even if the surface were rebuilt.** Two
+  are the same flirtatious character twice; all three instruct the model to deny
+  being an AI — one of them to a stated 13-year-old. That is not shippable
+  content, and the current system stores personas in the DB anyway.
+
+So the "real unfinished voice surface" reading in the original filing looks
+wrong: this is a superseded experiment, and the capability it reached for is
+live and better elsewhere. **Still Arman's call to name it dead** — this update
+is the brief. See also **D206**, which must be fixed regardless of this ruling.
 
 
 ### D203 — `get_resource_access` grants the row's owner `admin` without asking the authority; on 3 tokens `iam.has_access` grants them less (2026-08-15)
