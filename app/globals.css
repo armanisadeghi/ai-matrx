@@ -72,13 +72,11 @@
 
   /* Font families */
   --font-sans:
-    var(--font-inter), var(--font-opensans), var(--font-roboto),
     var(--typography-fontFamily-sans), ui-sans-serif, system-ui, -apple-system,
-    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-    "Noto Sans", sans-serif;
-  --font-heading:
-    var(--font-montserrat), var(--font-inter), ui-sans-serif, system-ui,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
     sans-serif;
+  --font-heading:
+    var(--typography-fontFamily-heading), ui-sans-serif, system-ui, sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
@@ -884,13 +882,12 @@
     --scrollbar-thumb-active: 240 6% 60%; /* zinc-500 - active state */
 
     --typography-fontFamily-sans:
-      var(--font-inter), var(--font-opensans), var(--font-roboto),
-      var(--font-montserrat), ui-sans-serif, system-ui, -apple-system,
-      BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-      "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
-      "Segoe UI Symbol", "Noto Color Emoji";
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
+      "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+      "Noto Color Emoji";
     --typography-fontFamily-heading:
-      var(--font-montserrat), var(--font-inter), ui-sans-serif, system-ui,
+      ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
       sans-serif;
     --typography-fontFamily-mono:
       ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",

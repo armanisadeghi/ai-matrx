@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
-import { Inter } from "next/font/google";
 import { AlertCircle, AlignLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
@@ -27,12 +26,6 @@ import ConfigJSONViewer from "./ConfigJSONViewer";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
-const inter = Inter({
-    subsets: ["latin"],
-    weight: ["200", "300", "400", "500"],
-    display: "swap",
-});
-
 type ConfigValue = string | number | boolean | object | any[];
 type ConfigType = "string" | "number" | "boolean" | "object" | "list";
 type KeyDownField = "field" | "type" | "value";
@@ -291,7 +284,7 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
     return (
         <div
             className={cn(
-                `border rounded-lg bg-card text-card-foreground shadow-sm ${inter.className} text-sm font-extralight tracking-tight antialiased h-full`,
+                "border rounded-lg bg-card text-card-foreground shadow-sm font-sans text-sm font-extralight tracking-tight antialiased h-full",
                 className
             )}
         >

@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { metadata } from "./config/metadata";
 import { viewport } from "./config/viewport";
-import { inter, montserrat, openSans, roboto } from "@/styles/themes/fonts";
 import { SyncBootScript } from "@/lib/sync/components/SyncBootScript";
 import { syncPolicies } from "@/lib/sync/registry";
 import { ChunkRecoveryBootScript } from "@/components/errors/ChunkRecoveryBootScript";
@@ -39,13 +38,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={cn(
-        inter.variable,
-        montserrat.variable,
-        openSans.variable,
-        roboto.variable,
-        isDark && "dark",
-      )}
+      className={cn(isDark && "dark")}
       data-theme={dataTheme}
       suppressHydrationWarning
     >

@@ -34,7 +34,9 @@ File Descriptions:
 6. `/styles/themes/ThemeProvider.tsx`: React context provider for themes
 7. `/styles/themes/themeSlice.ts`: Redux slice for theme state management
 8. `/styles/themes/ThemeSwitcher.tsx`: Component for switching themes
-9. `/styles/themes/fonts.ts`: Font definitions and imports
+9. Font families are defined in `/app/globals.css` using local system stacks.
+   Production builds must not fetch remote fonts: a network dependency during
+   `next build` can prevent an otherwise valid release from shipping.
 10. `/styles/themes/utils.ts`: Utility functions related to theming (like `cn`)
 11. `/app/Providers.tsx`: React component wrapping the application with necessary providers
 12. `/next.config.js`: Next.js configuration file (in root directory)
