@@ -222,7 +222,7 @@ export function adoptWorkflowRun(
       let cursor: number | null = null;
       let total = 0;
       for (;;) {
-        const page = await fetchJson<RunEventRecord[]>(
+        const page: RunEventRecord[] = await fetchJson<RunEventRecord[]>(
           `/runs/${runId}/events?after_seq=${cursor ?? 0}&limit=${REPLAY_PAGE_SIZE}`,
         );
         for (const record of page) {
