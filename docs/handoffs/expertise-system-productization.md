@@ -46,7 +46,7 @@
 | Pack #1: Hopkins (advertising) | 115 principles, sections A/B/C, verbatim-verified quotes | slug `hopkins-scientific-advertising`, id `f6267bca-30c6-43cd-8e8e-64606af9b20f` |
 | Pack #2: Strunk (editing) | 97 rules, sections U/C/W | slug `strunk-elements-of-style`, id `e492a07f-a1d4-4a4b-98e7-bc929a0f40fd` |
 | Hopkins Copy Desk workflow (generate-shape) | workflows.aimatrx.com | `0001b1ba-24b6-4f97-8f58-8fc6671bbf23` |
-| Strunk Edit Desk workflow (edit-shape) | workflows.aimatrx.com, COMPILED from pack #2 | `4b21a75f-0b6a-4d87-987d-e8e404355f15` |
+| Strunk Edit Desk workflow (edit-shape) | workflows.aimatrx.com, COMPILED from pack #2 by compiler v3 | `bf711bce-78a9-41b4-b8fd-2a5a047c31de` (the v1-compiler desk `4b21a75f…` was soft-deleted 2026-08-16 when this replaced it; restore with `deleted_at = null` if ever needed) |
 | Generic Pack Auditor agent (cheap tier, works for ANY pack) | agent catalog | `7c3a0689-d075-4c9f-8a7b-f023ced6a87c` |
 | 7 desk-specific agents (Hopkins ×5, Strunk editor + chief) | agent catalog, search "Hopkins"/"Strunk" | ids in common-docs `projects/sme-poc-hopkins/build/agents_registry.json` |
 | pack→desk compiler (script v1) | common-docs `projects/sme-poc-hopkins/build/pack_to_desk.py` | fetches pack via PostgREST, authors agents, emits workflow stamped `compiled_from_pack`+`pack_version` |
@@ -116,7 +116,8 @@ rule findings + gap drafts, owner-only); the benchmark intake band
 backtest path.
 
 **Ledger (real, not yet built):** ④ stakes → default severity/gate intensity (currently
-inert); ⑤ file/PDF/audio lane + intake-aware empty states; ⑥ AccessGate + share-levels on
+inert); ⑤ ~~file/PDF/audio lane~~ **SHIPPED 2026-08-16** (see below) — the intake-aware
+empty states half of that row is still open; ⑥ AccessGate + share-levels on
 both pages (canEdit is owner-only; edit-level sharees read-only silently); ⑦ vocabulary
 polish + a door to the interview conversation from a rule's provenance; ⑧ coverage/progress
 strip on the pack header; ⑨ desks-page toast fires on ANY version bump while feedback panel
@@ -137,9 +138,54 @@ row filed with the walkthrough); ② the distillation→Engram interface (emit c
 classes + acceptance criteria alongside rules — spec: common-docs
 `inbox-from-arman-to-be-processed/engram-expert-distillation-runtime.md` §5).
 
-**Dispatched as chips (2026-08-16, may already be in flight — check before duplicating):**
-file/PDF/audio ingest lane (ledger ⑤); pack version snapshots + structured desk outputs
-(Phase 6). A chip session grooms this ledger when it lands.
+**Shipped 2026-08-16 (was ledger ⑤) — the file/PDF/audio lane.** `POST
+/expertise-desks/ingest-file` (aidream `services/expertise_ingest/file_ingest.py`) + the
+"Upload a file" option in `IngestSourceDialog`. NOT a parallel pipeline, exactly as the design
+said: a document runs through content_processing (processed_documents + pages) and a
+`docproc.page_extraction_jobs` row pointing the SAME distiller slots
+(`expertise.source_distiller` / `expertise.exemplar_distiller`, re-resolved and re-stamped on
+every run) at the pages, so every rule lands with real `source_ref.source_pages`; audio/video
+transcribes first (`transcribe_managed_file`) and takes the text lane unchanged. Rule
+construction now lives once in `distill.build_draft_rules`, shared by every lane; the
+page-extraction fan-out runs under `SubPipelineEmitter`, promoted out of
+`graph_actions/_shared.py` into `aidream/context/` so a non-workflow caller can drive a
+streaming pipeline as one step (it now CAPTURES a swallowed `fatal_error` instead of dropping
+it). FE uploads through the canonical `useFileUpload`; the new `RuleProvenance` turns the
+anchors into doors — pages, a link to the source file, a link to the extraction that read it —
+and a stream `fatal_error` finally reaches the user instead of "the ingestion reported a
+problem" (that was swallowed on BOTH lanes). Verified end-to-end against the live DB with a
+real 2-page PDF, in-process and again through the browser dialog: 4 page-anchored draft rules,
+every quote verbatim, nothing auto-activated.
+
+**Phase 6 hardening DONE (2026-08-16) — both items, verified:**
+- **Pack version snapshots — NO new table.** `platform.expertise_pack` declared `is_versioned`
+  from day one but its hand-written create migration (pre `create_entity_table`) never attached
+  `platform._version_capture`, so it bumped `version` on every save while nothing recorded the
+  prior state. It is now enrolled in the SAME store 138 other tables use (`history.row_versions`),
+  with one BASELINE row per live pack; two SECURITY DEFINER RPCs
+  (`expertise_pack_versions`/`expertise_pack_snapshot`) expose ONE pack's history to the browser
+  behind a gate that mirrors the table's `std_select` RLS predicate (the `history` schema is not
+  exposed to `authenticated`, and widening it platform-wide is a far bigger decision than this
+  feature). `_touch_row` was deliberately NOT attached — it bumps `version` on every update and
+  would fight the app's CAS on that column. The desks-page drift flag now carries
+  **"See what changed"** → `PackDriftDialog` + the pure `packDiff.ts`: rules gained, rules
+  retired, rules reworded field by field, counting only what a desk actually compiles (drafts are
+  listed separately, never as drift). A version older than capture says so instead of inventing a
+  diff. Browser-verified on a desk built from v3 of a live pack, in both states.
+- **Structured outputs + the citation gate (compiler v3).** Auditor / Editor / Maker moved to
+  `output_schema` (json_schema) — that column is what engages provider-native structured output,
+  and the schema gate inside `update_agent` validates it, so a bad contract fails COMPILATION not
+  a paid run. `ai.util.parse_llm_json` is deleted from the generate shape. "Cited principle ids ⊆
+  the section passed" is no longer prompt-only: per section the compiler emits `cite_<code>`
+  (`data.filter` over `structured_output.verdicts`, allowed ids inlined as a literal — the graph
+  sandbox has no calls) + `gate_<code>` (`data.assert`, count == 0), and the audit sheet is routed
+  THROUGH the assert node so no Editor, Chief or gather can receive a sheet the gate has not
+  cleared. Both shapes proven offline (`validate_definition` + `compile_graph` + `dry_run`);
+  8 new tests in `aidream/services/expertise_desks/tests/test_citation_gate.py`.
+  **Strunk recompiled and run end-to-end against production** (run
+  `aa4ced76-031e-494c-b6cb-e0be9487933d`, $0.2163, completed): 3 auditors × structured output =
+  97 verdicts for 97 rules, all three `cite_` filters `kept=0`, all three gates `passed=true`,
+  Editor structured (9 edits), Chief ruling real and citing real rule ids.
 
 **In-place run verified end-to-end (2026-08-16):** two production runs through TryDeskBox;
 breadcrumbs show the full event flow to `run_completed`, ruling + corrected text render on the
@@ -182,21 +228,18 @@ class is covered by the run-row terminal backstop (loud when it fires).
   account here lacked admin; the compile service's canonical prompt in
   `aidream/services/expertise_desks/prompts.py::PACK_AUDITOR_PROMPT` is the text to apply), fill the
   SEO pack with Arman, compile, run, judge.
-- **Phase 6 remaining:** ORM model regen was ALREADY DONE (db/models/platform.py::ExpertisePack —
-  strike that item). Still open: structured outputs (json_schema) for auditor/editor/maker; pack
-  version snapshots (diff view); run-history surface on the desks page (workflow.run/node_outcome);
-  file/PDF ingest via content_processing + page_extraction jobs (deliberately NOT a parallel
-  pipeline — see aidream/services/expertise_ingest/FEATURE.md). Path casts, sourceFeature slug,
-  Hopkins recompile, and run-history are all done.
+- **Phase 6 — DONE.** ORM model regen was already done; run-history, file/PDF ingest, path casts,
+  sourceFeature slug and the Hopkins recompile all shipped earlier; structured outputs + the
+  citation gate and pack version snapshots landed 2026-08-16 (details in STATUS above). Nothing
+  remains under Phase 6 except the incidental aidream defects it listed, which stay filed in
+  aidream `FOUND_DEFECTS.md` on their own merits.
 - **2026-08-16:** Hopkins recompiled onto the generate shape via the production compiler —
   desk `b0865c3b-774c-44a3-91e4-ddaef205ae67`, pack-stamped v1 (old unstamped desk
   `0001b1ba…` left as history). Exemplar ingest mode shipped + prod-verified; desk
   run-history and the "what did it get wrong" feedback loop shipped + browser-verified
   (see STATUS above).
 - **First actions for the next agent:** ① run the honest test — open `arman-seo-method`
-  with Arman and fill it through the interview lane, ② the R2 backtest harness (exemplar
-  outputs + known inputs → run the desk on the same inputs → compare against the real
-  published work), ③ file/PDF/audio ingest via content_processing.
+  with Arman and fill it through the interview lane, ② the distillation→Engram interface.
 
 ---
 
@@ -277,22 +320,19 @@ wins; flag the conflict, don't smooth it over" clause to the Pack Auditor + Chie
 templates, and add a per-run "conflicts with model priors" section to the Chief's output
 so we can SEE it holding the line.
 
-### Phase 6 — Hardening (parallel-friendly small tasks)
+### Phase 6 — Hardening — COMPLETE (2026-08-16)
 
-- Structured outputs: move auditor/generator/editor agents to `response_format=json_schema`
-  (schema gate exists) instead of fence-parsing; enforce "cited principle ids ⊆ passed
-  section" mechanically in the workflow (data.assert node) — today it's prompt-only.
-- Regenerate aidream ORM model for `expertise_pack` (`python db/generate.py` on a machine
-  with DB env) — tracked in aidream FOUND_DEFECTS, plus these other filed defects worth
-  fixing en route: workflow validation should catch registered-literal failures pre-run;
-  `source_feature` should be data not a code tuple; agent variables render dicts as
-  Python repr (`str(value)` in matrx_ai/agents/variables.py); `iam.apply_rls` doesn't
-  GRANT (new tables 42501 until granted by hand); a `register_entity()` helper for the
-  entity_types + sharing-registry + apply_rls + grants four-step.
-- Pack versioning UX: immutable version snapshots (add `expertise_pack_version` sibling
-  table or JSONB history) so a desk can show a diff between its compiled version and head.
-- Run-history surface on the desk page: cost, duration, verdicts per run (all in
-  `workflow.run` + `workflow.node_outcome` already — just render it).
+Structured outputs + the mechanical citation gate, pack version snapshots + the drift diff,
+run-history, and the ORM regen have all shipped; see STATUS above for what was built and how it
+was verified. **Note for anyone re-reading the original plan:** it proposed an
+`expertise_pack_version` sibling table — that was the WRONG answer. The platform already has one
+version store (`history.row_versions`) and the pack table simply had never been enrolled in it.
+
+The incidental aidream defects this phase listed are unrelated to expertise and stay filed in
+aidream `FOUND_DEFECTS.md` on their own merits: workflow validation should catch
+registered-literal failures pre-run; `source_feature` should be data not a code tuple; agent
+variables render dicts as Python repr (`str(value)` in `matrx_ai/agents/variables.py`);
+`iam.apply_rls` doesn't GRANT; a `register_entity()` helper for the four-step registration.
 
 ## Working notes that will save you hours
 
