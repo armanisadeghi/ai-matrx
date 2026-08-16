@@ -39510,6 +39510,21 @@ export type Database = {
           workspace_name: string
         }[]
       }
+      cvx_search_score: {
+        Args: {
+          p_deep_hit?: boolean
+          p_description: string
+          p_id: string
+          p_provider_account: string
+          p_provider_session: string
+          p_query: string
+          p_source_app: string
+          p_source_feature: string
+          p_title: string
+          p_workspace: string
+        }
+        Returns: number
+      }
       cvx_size_band: { Args: { p_count: number }; Returns: string }
       cx_canvas_archive: {
         Args: { p_canvas_id: string; p_include_versions?: boolean }
@@ -63186,6 +63201,8 @@ export type Database = {
           emissions: Json
           error: Json | null
           id: string
+          input: Json | null
+          input_kind: string | null
           item_index: number
           metadata: Json
           node_id: string
@@ -63216,6 +63233,8 @@ export type Database = {
           emissions?: Json
           error?: Json | null
           id?: string
+          input?: Json | null
+          input_kind?: string | null
           item_index?: number
           metadata?: Json
           node_id: string
@@ -63246,6 +63265,8 @@ export type Database = {
           emissions?: Json
           error?: Json | null
           id?: string
+          input?: Json | null
+          input_kind?: string | null
           item_index?: number
           metadata?: Json
           node_id?: string

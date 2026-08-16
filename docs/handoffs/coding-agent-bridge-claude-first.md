@@ -172,7 +172,16 @@ duplicates predated it and are merged).
   the 2 cross-account duplicate provider sessions merged (richer copy kept, thin copy soft-deleted).
   Live: 264 sessions, ONE owner, zero duplicate provider_session_ids.
 - Chips fired 2026-08-16: Claude-native title sync from the desktop session index (supersedes the
-  old TASK-003 framing — the index `title` is the source, backfill + pull-sync cadence), and the
-  /work/conversations overhaul (default list excludes the 4,613 `conversation_type='subagent'`
-  internal machine runs, canonical table view, URL state for selection/sort/filter,
-  provenance-labeled detail view, sync-state panel + Sync-now).
+  old TASK-003 framing — the index `title` is the source, backfill + pull-sync cadence).
+- **/work/conversations overhaul — DONE 2026-08-16.** Honest default (machine runs excluded by a
+  visible, counted, clearable filter), canonical entity-list table on the new `cvx_list_scoped` RPC
+  family, URL state for scope/search/filters/sort/page, provenance-labeled detail for EVERY
+  conversation (not just mirrors), and a per-account sync-state panel. See
+  `features/ai-work/FEATURE.md`. **The one thing NOT done is a real Sync-now**, and the reason is
+  structural, not cosmetic: matrx-local's `/coding-session/claude/history/*` routes are (a) on a
+  locally scanned port (`MATRX_PORT_BASE` 22140+) the browser cannot discover, (b) unreachable
+  through the only web→desktop relay we run — aidream `/api/local-proxy/{app_instance_id}/{path}`
+  hard-rewrites to `{tunnel_url}/sandbox/{path}` — and (c) carry no auth guard, so exposing them
+  over the tunnel as-is would be wrong. TASK-007 is therefore: add a `/coding-session/*` lane to
+  the local-proxy (or a dedicated aidream endpoint) AND authenticate those desktop routes; the web
+  button is already in place and states this exact boundary.

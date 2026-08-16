@@ -55,6 +55,116 @@ AS $band$
 $band$;
 GRANT EXECUTE ON FUNCTION public.cvx_size_band(integer) TO authenticated;
 
+-- ── RELEVANCE ───────────────────────────────────────────────────────────────
+--
+-- Rule 4 of lib/entity-list/FEATURE.md, learned the hard way on /agents/all:
+-- NEVER ship a flat `ILIKE OR` ordered by `updated_at`. A title match has to
+-- outrank a passing mention in a description, and ranking must happen BEFORE
+-- LIMIT, which only the server can do.
+--
+-- Same tier SHAPE as `public.agx_search_score` (the proven implementation) with
+-- the conversation's own fields substituted. It is NOT a second copy of that
+-- function and is deliberately not in its parity fixture: agents rank on
+-- name/category/tags, conversations rank on title/workspace/provider session.
+--
+--   id exact                100000   paste a conversation id and land on it
+--   provider session exact   20000   paste a Claude Code session id, same deal
+--   title exact              10000
+--   title starts-with         5000
+--   id partial                5000
+--   provider session partial  4000
+--   title word-boundary       3000   "seo" beats "seoul"
+--   title contains            2000
+--   description exact         1000
+--   description contains       500
+--   workspace                  300
+--   source feature / app       200
+--   provider account           200
+--   message body                50   deep hits sort below every metadata hit
+
+CREATE OR REPLACE FUNCTION public.cvx_search_score(
+  p_query            text,
+  p_id               uuid,
+  p_title            text,
+  p_description      text,
+  p_workspace        text,
+  p_source_feature   text,
+  p_source_app       text,
+  p_provider_account text,
+  p_provider_session text,
+  p_deep_hit         boolean DEFAULT false
+)
+RETURNS integer
+LANGUAGE plpgsql IMMUTABLE
+AS $function$
+DECLARE
+  q     text := btrim(lower(coalesce(p_query, '')));
+  score integer := 0;
+  ti    text := lower(coalesce(p_title, ''));
+  ds    text := lower(coalesce(p_description, ''));
+  idt   text := lower(p_id::text);
+  ses   text := lower(coalesce(p_provider_session, ''));
+  qesc  text;
+  term  text;
+  terms text[];
+  term_hits integer := 0;
+BEGIN
+  IF q = '' THEN RETURN 0; END IF;
+  -- Reused, not re-implemented: the escaper is generic regex hygiene with no
+  -- agent semantics in it.
+  qesc := public.agx_escape_regex(q);
+
+  IF ti = q THEN score := score + 10000;
+  ELSIF ti LIKE q || '%' THEN score := score + 5000;
+  ELSIF ti ~ ('\m' || qesc || '\M') THEN score := score + 3000;
+  ELSIF position(q in ti) > 0 THEN score := score + 2000;
+  END IF;
+
+  IF ds = q THEN score := score + 1000;
+  ELSIF position(q in ds) > 0 THEN score := score + 500;
+  END IF;
+
+  IF position(q in lower(coalesce(p_workspace, ''))) > 0 THEN score := score + 300; END IF;
+  IF position(q in lower(coalesce(p_source_feature, ''))) > 0 THEN score := score + 200; END IF;
+  IF position(q in lower(coalesce(p_source_app, ''))) > 0 THEN score := score + 200; END IF;
+  IF position(q in lower(coalesce(p_provider_account, ''))) > 0 THEN score := score + 200; END IF;
+
+  IF ses = q THEN score := score + 20000;
+  ELSIF ses <> '' AND position(q in ses) > 0 THEN score := score + 4000;
+  END IF;
+
+  IF idt = q THEN score := score + 100000;
+  ELSIF position(q in idt) > 0 THEN score := score + 5000;
+  END IF;
+
+  -- Multi-term: every term must land somewhere, so "seo audit" does not
+  -- degrade into a loose OR that returns every audit and every SEO row.
+  IF score = 0 AND position(' ' in q) > 0 THEN
+    terms := regexp_split_to_array(q, '\s+');
+    FOREACH term IN ARRAY terms LOOP
+      IF term <> '' AND (
+           position(term in ti) > 0
+        OR position(term in ds) > 0
+        OR position(term in lower(coalesce(p_workspace, ''))) > 0
+        OR position(term in lower(coalesce(p_source_feature, ''))) > 0
+      ) THEN
+        term_hits := term_hits + 1;
+        IF position(term in ti) > 0 THEN score := score + 400;
+        ELSE score := score + 100;
+        END IF;
+      END IF;
+    END LOOP;
+    IF term_hits < array_length(terms, 1) THEN score := 0; END IF;
+  END IF;
+
+  IF score = 0 AND p_deep_hit THEN score := 50; END IF;
+
+  RETURN score;
+END;
+$function$;
+
+GRANT EXECUTE ON FUNCTION public.cvx_search_score(text,uuid,text,text,text,text,text,text,text,boolean) TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.cvx_list_scoped(
   p_scope           text    DEFAULT 'mine',
   p_org_id          uuid    DEFAULT NULL,
@@ -268,7 +378,23 @@ BEGIN
       AND (NOT v_f ? 'archived'
            OR (j.status = 'archived') IS NOT DISTINCT FROM (v_f->'archived'->>'value')::boolean)
   ),
-  counted AS (SELECT f.*, count(*) OVER () AS s_total FROM filtered f)
+  scored AS (
+    SELECT f.*, public.cvx_search_score(
+      v_search, f.id, f.title, f.description, f.s_workspace_name,
+      f.source_feature, f.source_app, f.s_provider_account,
+      f.s_provider_session_id,
+      -- CASE, not AND: CASE is the only construct Postgres guarantees will
+      -- short-circuit, and this EXISTS scans messages.
+      CASE WHEN p_deep AND v_search IS NOT NULL THEN EXISTS (
+        SELECT 1 FROM chat.message m
+        WHERE m.conversation_id = f.id AND m.deleted_at IS NULL
+          AND m.is_visible_to_user IS TRUE
+          AND m.content::text ILIKE '%'||v_search||'%')
+      ELSE false END
+    ) AS s_score
+    FROM filtered f
+  ),
+  counted AS (SELECT s.*, count(*) OVER () AS s_total FROM scored s)
   SELECT
     c.id, c.title, c.conversation_type, c.origin_class, c.source_app,
     c.source_feature, c.status, c.message_count, c.is_favorite,
@@ -281,6 +407,11 @@ BEGIN
     c.s_is_owner, c.s_access, c.s_total
   FROM counted c
   ORDER BY
+    -- RELEVANCE LEADS while searching. Ordering a search by updated_at buries
+    -- the thing you asked for (lib/entity-list/FEATURE.md rule 4). With no
+    -- search every score is 0, so this clause is inert and favorites-first +
+    -- the chosen column sort behave exactly as before.
+    CASE WHEN v_search IS NOT NULL THEN c.s_score END DESC NULLS LAST,
     CASE WHEN p_favorites_first THEN c.is_favorite END DESC NULLS LAST,
     CASE WHEN v_sort='updated' AND v_dir='desc' THEN c.updated_at END DESC,
     CASE WHEN v_sort='updated' AND v_dir='asc' THEN c.updated_at END ASC,
