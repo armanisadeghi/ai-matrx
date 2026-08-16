@@ -13,6 +13,9 @@ import type {
   LinkGapFoldReport,
   RunEvidence,
   SeoStreamEvent,
+  SerpProspectingBody,
+  SerpProspectingPreview,
+  SerpProspectingReceipt,
   SiteLinkGapBody,
   SiteLinkGapSeedResponse,
 } from "./types";
@@ -270,6 +273,74 @@ export function foldLinkGapDomainsToCrm(
     serverUrl,
     accessToken,
     `/seo/sites/${encodeURIComponent(siteId)}/crm/link-gap-domains`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+/**
+ * The SECOND prospecting method's free preview: every query the run would
+ * send (per keyword, per variant) plus the estimated provider cost. No
+ * provider call, no rows written — the user sees exactly what would be
+ * searched and what it would cost BEFORE choosing to pay. HTTP 400 carries a
+ * sentence about the input (too many keywords, nothing usable) — render it
+ * inline at the form, never as a toast-only failure.
+ */
+export function previewSerpProspecting(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: SerpProspectingBody,
+): Promise<SerpProspectingPreview> {
+  return seoRequest(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/serp-prospecting/preview`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+/**
+ * The paid SERP prospecting run: search every expanded query, fold the
+ * results into `seo.serp_opportunity` rows with per-query mention evidence,
+ * then bulk-measure authority so the triage list lands scored. Same review +
+ * CRM-fold path as the competitor link gap — one triage surface.
+ */
+export function collectSerpProspects(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: SerpProspectingBody,
+  onEvent?: (event: SeoStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<SerpProspectingReceipt> {
+  return seoStreamTerminal(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/serp-prospecting`,
+    { ...body },
+    "seo.serp_prospecting_completed",
+    (data) => (data.receipt as SerpProspectingReceipt | undefined) ?? null,
+    onEvent,
+    signal,
+  );
+}
+
+/**
+ * THE OUTREACH DOOR for SERP prospects: resolve this site's APPROVED
+ * `seo.serp_opportunity` rows into `crm.party` organizations — the same fold
+ * contract as `foldLinkGapDomainsToCrm`, and the same rule: approval is the
+ * only gate, everything else comes back in `skipped` with its reason.
+ */
+export function foldSerpProspectsToCrm(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: { limit?: number; refold?: boolean } = {},
+): Promise<LinkGapFoldReport> {
+  return seoRequest(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/crm/serp-prospects`,
     { method: "POST", body: JSON.stringify(body) },
   );
 }
