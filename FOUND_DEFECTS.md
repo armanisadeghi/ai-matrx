@@ -17,6 +17,25 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D207 — Surface Context reports an empty-but-REAL value as "required missing" (2026-08-16)
+
+`hasValue` in `features/window-panels/windows/surfaces/SurfaceContextWindow.tsx` (twin in
+`windows/admin/SurfaceContextInspectorWindow.tsx`) treats `""`, `[]` and `{}` as absent, so a
+surface that honestly emits an empty search box, no active filters and an empty result list is
+reported as **"3 required missing"** with a red warning triangle. Seen on `matrx-user/crm-inbox`
+with a genuinely empty inbox: 2/5 supplied, 3 required missing, every one of them correct.
+
+Why it is filed rather than fixed: the counter is a platform-wide readiness display used by every
+surface, and "the page declared this but did not fill it" is a real thing it may be trying to
+say — I cannot tell from here whether some surfaces rely on empties reading as missing.
+
+The decision: does `alwaysAvailable` mean *the key is always emitted* (then an empty value is
+SUPPLIED, and only `undefined`/`null` is missing) or *the value is always meaningful*? If the
+former — the reading that matches "absence is never loss" — the fix is to split `hasValue` into
+`isPresent` (key emitted, not null) for the supplied/missing counters and keep the emptiness test
+only for display. Whoever decides should also say what a legitimate `0`, `false` and `""` mean,
+since `0` and `false` already count as supplied and `""` does not.
+
 ### D206 — 🚨 SECURITY: `/api/deepgram/authenticate` is a LIVE, UNAUTHENTICATED token-minting endpoint, and can return the raw API key (2026-08-16)
 
 **Fix regardless of how D204 is ruled — this is not a code-cleanliness item.**
