@@ -36,6 +36,7 @@ import {
   type PackDesk,
   type PackPrinciple,
   type PrincipleSeverity,
+  type PrincipleSourceRef,
 } from "../../types";
 import { CompileDeskDialog } from "./CompileDeskDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
@@ -59,6 +60,77 @@ function severityBadge(severity: PrincipleSeverity) {
     <Badge variant="outline" className={`px-1.5 py-0 text-[10px] ${cls}`}>
       {SEVERITY_LABELS[severity]}
     </Badge>
+  );
+}
+
+/** Format `[11, 12, 13, 20]` as "pages 11-13, 20". */
+function formatPages(pages: number[]): string {
+  const sorted = [...new Set(pages)].sort((a, b) => a - b);
+  const groups: string[] = [];
+  let start = sorted[0];
+  let prev = start;
+  for (const n of sorted.slice(1)) {
+    if (n === prev + 1) {
+      prev = n;
+      continue;
+    }
+    groups.push(start === prev ? `${start}` : `${start}-${prev}`);
+    start = n;
+    prev = n;
+  }
+  groups.push(start === prev ? `${start}` : `${start}-${prev}`);
+  return `${sorted.length === 1 ? "page" : "pages"} ${groups.join(", ")}`;
+}
+
+/**
+ * Where a rule came from — and THE DOOR back to it. Every id we can resolve is
+ * rendered AND linked: the uploaded document opens in the file viewer, the
+ * extraction that read it opens in the extraction workspace. A rule whose
+ * quote could not be machine-verified says so here, because that is the one
+ * thing the expert must check by eye.
+ */
+function RuleProvenance({ sourceRef }: { sourceRef: PrincipleSourceRef }) {
+  const pages = sourceRef.source_pages?.length
+    ? formatPages(sourceRef.source_pages)
+    : sourceRef.pages
+      ? `page ${sourceRef.pages}`
+      : null;
+  const label = sourceRef.note ?? (sourceRef.interview ? "your interview" : "ingested");
+
+  return (
+    <div className="space-y-1 text-xs text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+        <span>From the source:</span>
+        {sourceRef.file_id ? (
+          <Link
+            href={`/files/f/${sourceRef.file_id}`}
+            target="_blank"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            {label}
+          </Link>
+        ) : (
+          <span>{label}</span>
+        )}
+        {pages ? <span>· {pages}</span> : null}
+        {sourceRef.exemplar ? <span>· worked out from an example</span> : null}
+        {sourceRef.page_extraction_job_id ? (
+          <Link
+            href={`/knowledge/extractions/${sourceRef.page_extraction_job_id}`}
+            target="_blank"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            · see everything it found
+          </Link>
+        ) : null}
+      </div>
+      {sourceRef.quote_unverified ? (
+        <p className="text-amber-600 dark:text-amber-500">
+          The wording above could not be matched word-for-word to the source —
+          check it against the original before you approve this rule.
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -161,12 +233,7 @@ function RuleRow({
             </div>
           ) : null}
           {principle.source_ref ? (
-            <div className="text-xs text-muted-foreground">
-              From the source:{" "}
-              {principle.source_ref.pages
-                ? `page ${principle.source_ref.pages}`
-                : (principle.source_ref.note ?? "ingested")}
-            </div>
+            <RuleProvenance sourceRef={principle.source_ref} />
           ) : null}
           <div className="text-xs text-muted-foreground">
             Rule id: <code className="font-mono">{principle.id}</code> — audits

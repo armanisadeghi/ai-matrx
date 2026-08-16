@@ -21,12 +21,30 @@ export type PrincipleSeverity = "critical" | "major" | "minor";
 export interface PrincipleSourceRef {
   /** Page number(s) in the source document, e.g. "12" or "12-14". */
   pages?: string;
+  /**
+   * Real page anchors from the file lane — the pages of the uploaded document
+   * this rule was extracted from (`/expertise-desks/ingest-file`).
+   */
+  source_pages?: number[];
+  /** The uploaded source file (`files.files` id) — openable at /files/f/{id}. */
+  file_id?: string;
+  /** The extraction template that read the document, openable in the studio. */
+  page_extraction_job_id?: string;
+  /** The extraction run that produced this rule. */
+  page_extraction_run_id?: string;
   /** Chunk index in the ingestion run that produced this rule. */
   chunk?: number;
   /** Ingestion run id (docproc / extraction run) for full traceability. */
   run_id?: string;
   /** Free-form pointer ("Chapter 6", timestamp for audio, etc.). */
   note?: string;
+  /** True when the source was reverse-engineered exemplar work (R2). */
+  exemplar?: boolean;
+  /** The quote could not be machine-verified verbatim — needs a human look. */
+  quote_unverified?: boolean;
+  /** Set by the interview lane. */
+  interview?: boolean;
+  conversation_id?: string;
 }
 
 /** One rule of the pack. `id` is the citable handle every audit verdict points at. */
