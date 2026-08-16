@@ -1527,6 +1527,7 @@ export function SlotDetail({
             baselineLabel={baselineLabel}
             presetLatestCandidate={row.drift != null}
             autoRunSignal={benchFocus}
+            passesUserInput={row.codeTruth?.passes_user_input ?? false}
           />
         </Section>
       </div>

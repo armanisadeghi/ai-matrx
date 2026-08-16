@@ -61,6 +61,7 @@ import {
   selectSettingsOverridesForApi,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
+import { TryItNowPanel } from "./TryItNowPanel";
 import {
   clearSlotBenchSnapshot,
   nextSlotBenchId,
@@ -576,8 +577,12 @@ export function SlotTestBench({
   baselineLabel = "Current — what users get now",
   presetLatestCandidate = false,
   autoRunSignal = 0,
+  passesUserInput = false,
 }: {
   slot: SlotDefinitionRow;
+  /** Code truth: some call site sends this slot a user message, so the
+   * ad-hoc runner offers one. */
+  passesUserInput?: boolean;
   /** Names the baseline column after the slot's actual pin state. */
   baselineLabel?: string;
   /** Version-drift slots start armed with a pinned-vs-latest comparison. */
@@ -712,6 +717,12 @@ export function SlotTestBench({
     if (exemplars.length === 0) {
       toast.info(
         "Add a test case first — the comparison needs sample inputs to run.",
+      );
+      return;
+    }
+    if (candidates.length === 0) {
+      toast.info(
+        "Add a comparison first — a batch runs the current setup against something.",
       );
       return;
     }
@@ -967,6 +978,13 @@ export function SlotTestBench({
         </div>
       )}
 
+      <TryItNowPanel
+        slot={slot}
+        defaultAgentId={defaultAgentId}
+        passesUserInput={passesUserInput}
+        onSavedTestCase={() => void loadExemplars()}
+      />
+
       <div className="space-y-2">
         {candidates.map((candidate) => (
           <CandidateEditor
@@ -997,11 +1015,17 @@ export function SlotTestBench({
       <Button
         size="sm"
         className="h-9 gap-1.5"
-        disabled={running || exemplars.length === 0}
+        // A batch is a COMPARISON: the server requires at least one column
+        // beside the baseline. Without this the click reached the API and
+        // came back as a raw "body.candidates: List should have at least 1
+        // item" validation error.
+        disabled={running || exemplars.length === 0 || candidates.length === 0}
         title={
           exemplars.length === 0
             ? "Add a test case first — there is nothing to run yet."
-            : undefined
+            : candidates.length === 0
+              ? "Add a comparison first — a batch runs your current setup against something. To run the current setup on its own, use “Try it now”."
+              : undefined
         }
         onClick={() => void runAll()}
       >
@@ -1021,8 +1045,10 @@ export function SlotTestBench({
         </div>
       ) : exemplars.length === 0 ? (
         <div className="rounded-md border border-dashed border-border p-3 text-xs text-muted-foreground">
-          No test cases yet — add one with &ldquo;+ Test case&rdquo; above.
-          Production runs also save real examples automatically over time.
+          No test cases yet — run the slot once with &ldquo;Try it now&rdquo;
+          above and save that run, or write one by hand with &ldquo;+ Test
+          case&rdquo;. Production runs also save real examples automatically
+          over time.
         </div>
       ) : (
         exemplars.map((exemplar) => {

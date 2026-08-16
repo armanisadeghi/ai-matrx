@@ -19,7 +19,7 @@ import {
 } from "@/features/agents/redux/agent-definition/converters";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import type { Database } from "@/types/database.types";
-import { isJsonObject, type JsonObject } from "@/types/json";
+import { isJsonObject, toJsonRecord, type JsonObject } from "@/types/json";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
@@ -367,6 +367,71 @@ export async function createSlotExemplar(input: {
   return data;
 }
 
+/**
+ * Save one ad-hoc bench run as a brand-new test case: the inputs that produced
+ * it become the exemplar, and the run itself becomes the reference — in ONE
+ * insert, so a cold slot goes from "cannot be benched" to "has a bar to beat"
+ * in a single click.
+ *
+ * The run is written into `metadata.test_bench_results` in the SAME shape the
+ * server persists (`SlotTestResult`), carrying its new `exemplar_id` and a
+ * `promoted_to_reference_at` stamp — so it reads identically to a promoted
+ * batch result in the history list and in the server's promote endpoint.
+ */
+export async function saveAdHocResultAsExemplar(input: {
+  slotId: string;
+  label: string;
+  variables: JsonObject;
+  userInput?: string | null;
+  result: SlotTestResponse;
+}): Promise<SlotExemplarRow> {
+  if (input.result.error) {
+    throw new Error(
+      "This run failed, so it cannot become a test case's reference output.",
+    );
+  }
+  const supabase = createClient();
+  const exemplarId = crypto.randomUUID();
+  const promotedAt = new Date().toISOString();
+  const persistedResult: JsonObject = {
+    ...structuredCloneJson(input.result),
+    exemplar_id: exemplarId,
+    promoted_to_reference_at: promotedAt,
+  };
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("slot_exemplar")
+    .insert({
+      id: exemplarId,
+      slot_id: input.slotId,
+      label: input.label,
+      variables: input.variables,
+      user_input: input.userInput ?? null,
+      source: "manual",
+      visibility: "internal",
+      organization_id: SYSTEM_ORGANIZATION_ID,
+      reference_output: input.result.output ?? "",
+      reference_artifact: input.result.artifact ?? null,
+      captured_agent_id:
+        input.result.definition_agent_id ?? input.result.agent_id ?? null,
+      captured_model_id: input.result.model_id ?? null,
+      metadata: { test_bench_results: [persistedResult] },
+    })
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/** JSON round-trip so a generated response object lands in JSONB as data. */
+function structuredCloneJson(value: unknown): JsonObject {
+  const parsed: unknown = JSON.parse(JSON.stringify(value));
+  if (!isJsonObject(parsed)) {
+    throw new Error("This run could not be serialized into a test case.");
+  }
+  return parsed;
+}
+
 export async function deleteSlotExemplar(id: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase
@@ -384,6 +449,7 @@ export type SlotTestBatchRequest =
 export type SlotTestBatchResponse =
   components["schemas"]["SlotTestBatchResponse"];
 export type SlotTestResponse = components["schemas"]["SlotTestResult"];
+export type SlotTestRequest = components["schemas"]["SlotTestRequest"];
 export type SlotCodeTruth = components["schemas"]["SlotCodeTruth"];
 export type SlotCodeTruthReport =
   components["schemas"]["SlotCodeTruthReport"];
@@ -581,6 +647,46 @@ export async function runSlotTests(
   return response.data;
 }
 
+/**
+ * Run ONE candidate against inputs typed right now, with no stored test case —
+ * the "Try it now" path that makes a cold slot (no exemplars) benchable at all.
+ * The server persists nothing for an ad-hoc run; `saveAdHocResultAsExemplar`
+ * turns a good one into the slot's first real test case.
+ */
+export async function runSlotAdHocTest(
+  dispatch: AppDispatch,
+  slotKey: string,
+  input: {
+    variables: JsonObject;
+    userInput?: string | null;
+    candidate?: SlotTestCandidate;
+  },
+): Promise<SlotTestResponse> {
+  const body: SlotTestRequest = {
+    variables: toJsonRecord(input.variables),
+    user_input: input.userInput?.trim() ? input.userInput : null,
+    candidate: input.candidate,
+  };
+  const response = await dispatch(
+    callApi({
+      path: "/agent-slots/{slot_key}/test",
+      method: "POST",
+      pathParams: { slot_key: slotKey },
+      body,
+      // One agent run, not a batch — but a slow model on a long prompt still
+      // outruns the default connect deadline, and this endpoint sends no
+      // headers until the run has finished.
+      connectTimeoutMs: 5 * 60_000,
+      totalTimeoutMs: null,
+    }),
+  );
+  if (response.error) throw new Error(response.error.message);
+  if (!isSlotTestResult(response.data)) {
+    throw new Error("Agent slot bench returned an invalid run result.");
+  }
+  return response.data;
+}
+
 function isStructuralVerdict(value: unknown): boolean {
   if (!isJsonObject(value)) return false;
   return (
@@ -590,14 +696,16 @@ function isStructuralVerdict(value: unknown): boolean {
   );
 }
 
-/** Runtime boundary for generated test results stored inside open JSONB. */
+/** Runtime boundary for generated test results stored inside open JSONB.
+ * `exemplar_id` is null on an AD-HOC run (a "Try it now" run that has no
+ * stored test case yet) and a string on every persisted one. */
 export function isSlotTestResult(value: unknown): value is SlotTestResponse {
   if (!isJsonObject(value)) return false;
   return (
     typeof value.id === "string" &&
     typeof value.created_at === "string" &&
     typeof value.slot_key === "string" &&
-    typeof value.exemplar_id === "string" &&
+    (typeof value.exemplar_id === "string" || value.exemplar_id == null) &&
     typeof value.candidate_id === "string" &&
     typeof value.candidate_label === "string" &&
     typeof value.provenance === "string" &&
