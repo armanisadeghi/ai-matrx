@@ -141,20 +141,29 @@ rail runs them one click per step per page (`usePageStepRun` → `NodeStepRail`)
 the floating run window. Only `p1_keywords` has no producer — Deepen and the Setup keyword pass
 write the keyword itself, so the step row stays pending by design.
 
-**Still open here:** formal content-ir kind registration for the envelope shapes
-(`plan_page_research`, `cms_page_build`, and the three new `plan_page_outline|draft|review`) so
-the artifact dialog renders components instead of raw JSON; a human EDIT surface over the
-`draft` sections (the whole point of P4 being structured); and swapping the in-code prompts for
-slot-bound specialist agents (item 7 below) — the module contract does not change when that
-happens.
+**The five envelope shapes are REGISTERED KINDS (2026-08-16).** `plan_page_research`,
+`plan_page_outline`, `plan_page_draft`, `plan_page_review`, `cms_page_build` — plus their five
+nested children — live in `features/content-ir/kinds/` with converter-emitted schemas mirroring
+`page_pipeline.py`'s pydantic models, canonical examples, and components under
+`components/mardown-display/blocks/page-pipeline/`. The five roots passed the dual gate and are
+active; the children are nested-only (no component, inactive) like `media_chapter`. The rail's
+artifact dialog renders through `KindInstanceRender` → the canonical route; the `JSON.stringify`
+dump is gone. `plan_page_review.revised` is DECLARED a `plan_page_draft`, so the review composes
+the draft component's exported parts — never a second draft renderer.
+
+**Still open here:** swapping the in-code prompts for slot-bound specialist agents (item 7
+below) — the module contract does not change when that happens.
 
 **Known soft edges:**
 - Concurrent writers racing `record_artifact` on the same `(node, kind)` can lose the losing
   record to the unique index (logged loudly; the work itself is unaffected).
 - `draft` and `review` supersede INDEPENDENTLY, so re-running the writer leaves a review the new
-  draft never saw. `approved_content` resolves this correctly (recency wins, tested) — but the
-  RAIL still shows both steps green, so the user has no signal that the review is stale. The fix
-  is UI: mark a step stale when a newer upstream artifact exists.
+  draft never saw. `approved_content` resolves this correctly (recency wins, tested), and since
+  2026-08-16 the RAIL says so too: `lib/pipeline-staleness.ts` derives staleness from the
+  artifact timestamps the client already reads (no round-trip, no writes) and renders the step
+  amber — stale, never failed — with the re-run button it already had as the one-click fix.
+  Verified live: re-running Write turns the Review chip amber with "Review ran before Write did.
+  Run that step again to catch up."
 
 ## Resources
 

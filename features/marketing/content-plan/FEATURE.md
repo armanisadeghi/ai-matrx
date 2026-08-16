@@ -175,6 +175,28 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   client still writes NEITHER table: the server persists the artifact and the
   step before it streams, and the rail refetches. Each step is a verb-labeled
   button beside its status chip, never a chip that executes on click.
+  **Every artifact renders as its REGISTERED KIND** (2026-08-16) — each step's
+  `content` is a `__kind` envelope, and all five are registered
+  (`features/content-ir/kinds/plan-page-{research,outline,draft,review}.ts` +
+  `cms-page-build.ts`, components under
+  `components/mardown-display/blocks/page-pipeline/`). The dialog hands the
+  value to `KindInstanceRender`, the SAME canonical path chat and a live run
+  use; it hand-rendered `JSON.stringify(content)` until then, which was both
+  useless to a non-technical page owner and a second renderer for shapes the
+  platform owns. **If a step's payload looks wrong here, fix its kind
+  component** — never add a renderer to this rail. `plan_page_review.revised`
+  is declared a `plan_page_draft`, so the review composes the draft
+  component's exported parts (THE CANONICAL COMPONENT LAW's parent/child
+  escape hatch).
+  **A step can be STALE, and the rail says so** (2026-08-16) —
+  `lib/pipeline-staleness.ts` (pure, no round-trip, no writes) marks a step
+  whose current artifact predates an upstream step's current artifact. Stale
+  is amber and NOT failed: nothing went wrong, the record is just older than
+  what it was derived from, and its one-click fix is the re-run button already
+  beside it. This exists because `draft` and `review` supersede independently:
+  aidream's `page_pipeline.approved_content` prefers recency (tested) while
+  the rail showed both steps green, so a re-written page kept a review that
+  never saw it and nothing told the user.
 - `plan.entity` — **source/media citations only** per site. Person/org rows
   folded into `crm.party` (2026-08-13; DB guard `plan._entity_kind_guard`
   rejects new live person/org rows, loudly). People/companies on a site's
@@ -678,6 +700,57 @@ No new server capability was added: `cms-align` always took a node-id array,
 always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
+
+- 2026-08-16 — **The five page-pipeline shapes became registered kinds, and the
+  rail learned STALENESS.** Every step's artifact carried a `__kind` envelope
+  and none were registered, so `NodeStepRail` opened all of them as
+  `JSON.stringify(content)` — useless to a non-technical page owner and a
+  second renderer for shapes the platform should own. Registered
+  `plan_page_research` / `plan_page_outline` / `plan_page_draft` /
+  `plan_page_review` / `cms_page_build` plus five nested children
+  (converter-emitted schemas mirroring aidream's pydantic models, canonical +
+  minimal examples with trigger-derived validation, components under
+  `blocks/page-pipeline/`); the roots passed the dual gate, the children stay
+  nested-only. The review's issues — the pass that has caught fabricated office
+  hours and invented locations in production — read as plain-language severity
+  ("Must fix" / "Worth fixing" / "Minor") with what to do, and its `revised`
+  draft renders through the DRAFT component's parts, not a twin. Separately,
+  `lib/pipeline-staleness.ts` derives from artifact timestamps the client
+  already reads: a step older than an upstream step goes amber with the re-run
+  button as its fix. Verified live at desktop and 390px on real artifacts.
+- 2026-08-16 — **The review-queue blocker fixed as a CLASS: semantic headings
+  and a real mobile treatment across the whole feature.** 12 of 21 review rows
+  were rejected on presentation, mostly one defect repeated — no semantic page
+  heading (9), controls under 40–44px (7), 390px clipping with no drill-down
+  (7). Two primitives were missing and were built rather than worked around:
+  **`.matrx-touch-targets`** (`app/globals.css`), a subtree 44px touch floor
+  that applies only under `pointer: coarse`, so a new file added to this
+  feature cannot re-break the rule the way per-control `h-10 md:h-7` edits
+  do; and **`MatrxColumnDef.mobileHidden`**, which lets a table declare an
+  intentional mobile column set (hides the cell, never the data — the column
+  still sorts, filters, and rides every copy payload). Headings: the list
+  title is a real `<h1>`, the workspace has an `<h1>` naming record AND view,
+  and Setup's outline (which started at `<h4>` under nothing) is now
+  h1 → h2 (column roots, via `SetupSection`'s new `level`) → h3. Mobile: the
+  workspace header is the canonical `EntityModeHeader` (back + site dropdown
+  + views + actions, one drawer below `sm`), and Setup's three columns become
+  work-order-as-main plus two `MobilePanelShell` drawers, with
+  `useMobilePanelClose()` dismissing the shape drawer on pick.
+  **Measured at 390px, all six views: 0 controls under 44px** (setup 43,
+  table 87, tree 44, map 31, entities 9, ai-runs 13), inputs at 16px, no
+  horizontal page overflow; desktop re-verified unchanged at 1280.
+  Three bugs surfaced by that verification and fixed here: `PlanDriftBar`
+  starved its sentence to ~66px beside two non-shrinking buttons (now stacks)
+  and hid its copy buttons behind `group-hover`, which a touch device can
+  never trigger; and `PlanAssistStrip` produced assists before the site name
+  loaded, stamping a raw UUID into the assist TITLE that dedupe then froze
+  forever (it now waits for the name and never falls back to an id — one
+  persisted row repaired). **Two header rules learned the hard way, both
+  verified in the browser:** an `EntityModeHeader` injects itself through
+  `RouteHeader` → `PageHeader`, so wrapping it in a second `PageHeader`
+  renders the header EMPTY; and its `entityStatus` slot lives inside the
+  dropdown's trigger `<button>`, so a button-shaped chip (the
+  `ActiveContextLensChip`) belongs in `right`, not there.
 
 - 2026-08-16 — **The plan TREE and TABLE now show the AFTER, not just the
   DURING (cms-page-hub item 6, last leg).** The overlay was the data gap:
