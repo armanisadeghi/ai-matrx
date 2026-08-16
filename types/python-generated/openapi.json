@@ -51898,6 +51898,60 @@
           }
         }
       }
+    },
+    "/content-plan/nodes/{node_id}/draft": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Save Page Draft Route",
+        "description": "Save a HUMAN-edited revision of this page's content.\n\nThe whole point of P4 being structured: a non-technical owner reads their\npage, changes the words, and saves — no HTML, no agent. Append-only like\nevery agent revision (supersession IS the history), and stamped as\nhuman-authored so provenance never claims an agent wrote these words.",
+        "operationId": "save_page_draft_route_content_plan_nodes__node_id__draft_post",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveDraftBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SaveDraftResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -144449,6 +144503,157 @@
           "running"
         ],
         "title": "ScannerStatusResponse"
+      },
+      "SaveDraftBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "h1": {
+            "type": "string",
+            "title": "H1"
+          },
+          "intro": {
+            "type": "string",
+            "title": "Intro",
+            "default": ""
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/SaveDraftSectionBody"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "call_to_action": {
+            "type": "string",
+            "title": "Call To Action",
+            "default": ""
+          },
+          "meta_title": {
+            "type": "string",
+            "title": "Meta Title",
+            "default": ""
+          },
+          "meta_description": {
+            "type": "string",
+            "title": "Meta Description",
+            "default": ""
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "h1"
+        ],
+        "title": "SaveDraftBody",
+        "description": "A human's own revision of the page's words.\n\nField-for-field the writer's `PageDraft` — the same record, a different\nauthor. Declared here rather than reusing the pydantic model directly so the\ngenerated OpenAPI (and therefore the typed frontend client) shows the editor\nexactly what a page draft is."
+      },
+      "SaveDraftSectionBody": {
+        "properties": {
+          "heading": {
+            "type": "string",
+            "title": "Heading"
+          },
+          "level": {
+            "type": "integer",
+            "maximum": 3.0,
+            "minimum": 2.0,
+            "title": "Level",
+            "default": 2
+          },
+          "intent": {
+            "type": "string",
+            "title": "Intent",
+            "default": ""
+          },
+          "body": {
+            "type": "string",
+            "title": "Body",
+            "default": ""
+          },
+          "bullets": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Bullets"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "heading"
+        ],
+        "title": "SaveDraftSectionBody"
+      },
+      "SaveDraftResult": {
+        "properties": {
+          "node_id": {
+            "type": "string",
+            "title": "Node Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route",
+            "default": ""
+          },
+          "artifact_id": {
+            "type": "string",
+            "title": "Artifact Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "superseded_review": {
+            "type": "boolean",
+            "title": "Superseded Review",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "node_id",
+          "artifact_id",
+          "summary"
+        ],
+        "title": "SaveDraftResult"
       }
     }
   }

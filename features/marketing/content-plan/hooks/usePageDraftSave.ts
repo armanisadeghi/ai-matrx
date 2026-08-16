@@ -77,7 +77,15 @@ export function usePageDraftSave(args: {
         return false;
       }
 
-      const supersededReview = result.data?.superseded_review === true;
+      // `callApi` hands back an untyped body by design (the generated response
+      // type is not carried through the thunk), so the one field this hook acts
+      // on is read defensively — a body without it simply means "no review was
+      // superseded", never a crash.
+      const body =
+        result.data && typeof result.data === "object"
+          ? (result.data as Record<string, unknown>)
+          : null;
+      const supersededReview = body?.superseded_review === true;
       setState({ status: "saved", supersededReview });
       toast.success(
         supersededReview

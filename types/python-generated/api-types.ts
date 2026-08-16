@@ -5861,6 +5861,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/nodes/{node_id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Save Page Draft Route
+         * @description Save a HUMAN-edited revision of this page's content.
+         *
+         *     The whole point of P4 being structured: a non-technical owner reads their
+         *     page, changes the words, and saves — no HTML, no agent. Append-only like
+         *     every agent revision (supersession IS the history), and stamped as
+         *     human-authored so provenance never claims an agent wrote these words.
+         */
+        post: operations["save_page_draft_route_content_plan_nodes__node_id__draft_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-plan/sites/{site_id}/keyword-strategy": {
         parameters: {
             query?: never;
@@ -23062,6 +23087,82 @@ export interface components {
          */
         BlockerKind: "human_decision" | "approval" | "rate_limit" | "quota" | "external_data" | "schedule" | "upstream_failure" | "dependency" | "manual_hold";
         /** Body_add_attachment_vault_items__item_id__attachments_post */
+        SaveDraftBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** H1 */
+            h1: string;
+            /**
+             * Intro
+             * @default
+             */
+            intro: string;
+            /** Sections */
+            sections?: components["schemas"]["SaveDraftSectionBody"][];
+            /**
+             * Call To Action
+             * @default
+             */
+            call_to_action: string;
+            /**
+             * Meta Title
+             * @default
+             */
+            meta_title: string;
+            /**
+             * Meta Description
+             * @default
+             */
+            meta_description: string;
+            /**
+             * Note
+             * @default
+             */
+            note: string;
+        };
+        SaveDraftResult: {
+            /** Node Id */
+            node_id: string;
+            /**
+             * Route
+             * @default
+             */
+            route: string;
+            /** Artifact Id */
+            artifact_id: string;
+            /** Summary */
+            summary: string;
+            /**
+             * Superseded Review
+             * @default false
+             */
+            superseded_review: boolean;
+        };
+        SaveDraftSectionBody: {
+            /** Heading */
+            heading: string;
+            /**
+             * Level
+             * @default 2
+             */
+            level: number;
+            /**
+             * Intent
+             * @default
+             */
+            intent: string;
+            /**
+             * Body
+             * @default
+             */
+            body: string;
+            /** Bullets */
+            bullets?: string[];
+        };
         Body_add_attachment_vault_items__item_id__attachments_post: {
             /** File */
             file: string;
@@ -89321,6 +89422,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabelMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_page_draft_route_content_plan_nodes__node_id__draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveDraftBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveDraftResult"];
                 };
             };
             /** @description Validation Error */
