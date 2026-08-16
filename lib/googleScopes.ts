@@ -74,8 +74,15 @@ export const GOOGLE_DEFERRED_SENSITIVE_SCOPES = [
 ] as const;
 
 /**
- * 🚨 NOT REQUESTED FROM ANY USER YET — and adding it is ARMAN'S CALL, not an
- * agent's.
+ * 🚨 NOT REQUESTED FROM ANY USER YET — and it is SCHEDULED, not optional.
+ *
+ * RULED BY ARMAN 2026-08-15: `gmail.readonly` is added AFTER the current Google
+ * verification round closes, as its own focused campaign. Do NOT move it into
+ * `GOOGLE_FIRST_CAMPAIGN_CLOUD_SCOPES` before that round closes; do NOT quietly
+ * drop it either — outreach reply ingestion is already built and deployed and
+ * reads nothing without it. Queued in
+ * `common-docs/projects/google-oauth-verification/PLAN.md` (status header,
+ * frozen scope table, § "Later restricted access", execution row 12).
  *
  * Outreach reply ingestion (G6) is built and live server-side
  * (`aidream/services/outreach_inbound/`), and it needs `gmail.readonly` on the

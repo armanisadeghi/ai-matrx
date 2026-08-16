@@ -827,9 +827,13 @@ pinning that every status ingestion writes is terminal to the runner. G6:
 detector → OOO with return-date parsing → interest) feeding BOTH suppression and branching, with
 Gmail `threadId` correlation (naive `In-Reply-To` matching would silently never match, because
 `sending_event.provider_message_id` holds the Gmail API id, not the RFC822 Message-ID).
-**Ingestion cannot RUN in production until the `gmail.readonly` grant is ruled on** — that
-decision collides with the in-flight Google verification campaign and belongs to Arman; see
-`common-docs/projects/outreach-system/DECISION_LOG.md` D-W1-10. Until then the system fails
+✅ **RULED BY ARMAN 2026-08-15: `gmail.readonly` is added AFTER the current Google verification
+round closes, as its own focused campaign** (queued in
+`common-docs/projects/google-oauth-verification/PLAN.md` — status header, frozen scope table,
+§ "Later restricted access", execution row 12; ruling in
+`common-docs/projects/outreach-system/DECISION_LOG.md` D-W1-10). **Until it lands, outreach
+cannot send at all** — the runner refuses to run un-listened. That is the designed failure, not
+a defect: do not "fix" it by letting the cadence send without ingestion. Until then the system fails
 correctly: the cadence refuses to run un-listened rather than sending blind.
 
 **Phase 6 — prove it.** G8 attribution: close the loop against our own crawl. This is the payoff
@@ -862,9 +866,11 @@ a customer spam strangers from their real mailbox."
    `common-docs/systems/outreach-compliance/ENGINEERING_GAPS.md` § "Still open". FLOOR items:
    no tier and no trust level buys past them.
 3. ~~Phase 5 — sequences + inbound~~ ✅ **BUILT 2026-08-15 (WP1), together.** Remaining is a
-   HUMAN gate, not engineering: the `gmail.readonly` grant (Arman — it collides with the live
-   Google verification campaign, DECISION_LOG D-W1-10), the Pub/Sub topic + subscription, and the
-   two env vars. Until then the cadence refuses to run un-listened.
+   HUMAN gate, not engineering: **`gmail.readonly` — RULED 2026-08-15, added after the current
+   Google verification round closes as its own campaign** (queued in
+   `common-docs/projects/google-oauth-verification/PLAN.md`); the Pub/Sub topic + subscription;
+   the two env vars; and the AUP acceptance (`crm.outreach_acceptance` is empty, so every send
+   returns `aup_not_accepted`). Until the scope lands the cadence refuses to run un-listened.
 4. **Phase 6 — attribution (G8).** The differentiator (§1): our own crawl closes the loop and
    proves the link appeared. Nobody else in the category can do this. **Owned by WP4**, whose
    IC-5 shape is `platform.outcome_event` (attribution PROPOSES, a human CONFIRMS).
