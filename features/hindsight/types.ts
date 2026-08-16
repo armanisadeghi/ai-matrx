@@ -29,6 +29,15 @@ export type ReviewThread = components["schemas"]["ReviewThreadOut"];
 export type ThreadMessage = components["schemas"]["ThreadMessageOut"];
 export type DiscussResult = components["schemas"]["DiscussOut"];
 
+// Internal Affairs (C-19) — the change-history + effectiveness substrate.
+export type ChangeHistoryRow = components["schemas"]["ChangeHistoryRow"];
+export type ChangeHistory = components["schemas"]["ChangeHistoryOut"];
+export type FindingEffectiveness =
+  components["schemas"]["FindingEffectivenessRow"];
+export type ChangeRole = ChangeHistoryRow["change_role"];
+export type ActorTier = NonNullable<ChangeHistoryRow["actor_tier"]>;
+export type UnitToken = ChangeHistoryRow["unit_token"];
+
 export type SubjectKind = Enrollment["subject_kind"];
 export type Lever = Finding["lever"];
 export type Verdict = NonNullable<Replay["verdict"]>;
@@ -113,4 +122,26 @@ export function splitEvidenceIds(
   }
   if (cursor < line.length) parts.push({ text: line.slice(cursor) });
   return parts.length > 0 ? parts : [{ text: line }];
+}
+
+/**
+ * A `version_from` the view INFERRED from the previous version row, rather than
+ * one recorded at apply/revert time. Correct whenever no version promote
+ * intervened — and wrong when one did, because `agx_promote_version` rolls the
+ * live definition back without writing a version row. Rendering an inferred
+ * number identically to a recorded one turns a guess into an audit claim, so
+ * every surface that shows `version_from` must show this too.
+ */
+export function versionFromIsInferred(row: ChangeHistoryRow): boolean {
+  return row.version_from_confidence === "inferred";
+}
+
+/**
+ * A NULL rate or cost is NO SIGNAL, never zero. `revert_rate === null` means
+ * nothing has been applied yet; `revert_rate === 0` means things were applied
+ * and none were undone. Collapsing the two destroys the only number that says
+ * "stop trusting this lever on this unit".
+ */
+export function hasSignal(value: number | null | undefined): value is number {
+  return typeof value === "number";
 }

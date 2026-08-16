@@ -19,8 +19,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 import { getCosts, listEnrollments } from "../api";
+import { ChangeHistoryPanel } from "./ChangeHistoryPanel";
 import { EnrollDialog } from "./EnrollDialog";
 import { EnrollmentDetailPanel } from "./EnrollmentDetailPanel";
+import { FindingEffectivenessPanel } from "./FindingEffectivenessPanel";
 import { fmtCost, KIND_COLOR, KIND_ICON } from "./tokens";
 
 export function HindsightPage() {
@@ -160,6 +162,17 @@ export function HindsightPage() {
           )}
         </div>
       </div>
+
+      {/*
+        Internal Affairs (C-19). Not a separate system — a view of the SAME
+        substrate: what the platform changed about itself, and whether that
+        advice held up. It sits below the enrollments because it is the
+        cross-cutting read; the panel above is per-enrollment.
+      */}
+      <section className="space-y-4">
+        <FindingEffectivenessPanel />
+        <ChangeHistoryPanel />
+      </section>
 
       <EnrollDialog
         open={enrollOpen}

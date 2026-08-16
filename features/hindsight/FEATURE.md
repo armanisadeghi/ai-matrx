@@ -62,6 +62,7 @@ platform admin, not in a backend-repo dashboard. Do not re-create a second copy.
 |---|---|
 | Page | `components/HindsightPage.tsx` — list + platform spend + detail pane |
 | Detail | `components/EnrollmentDetailPanel.tsx` — subject, spend, cadence, findings, reviews |
+| **Internal Affairs (C-19)** | `components/ChangeHistoryPanel.tsx` (every applied change to a governed agent/tool/workflow — version from→to, provenance tier, the finding that caused it, a door on both) + `components/FindingEffectivenessPanel.tsx` (per lever per unit: proposed/applied/rejected/**reverted**, accept + revert rates, time-to-decision, cost movement). Both mounted at the bottom of `HindsightPage`; API `getChangeHistory` / `getFindingEffectiveness`; server views in aidream migration `0375`. Read-only — Internal Affairs never writes. |
 | Enroll | `components/EnrollDialog.tsx` — five enrollable kinds (agent · **orchestra** · workflow · tool · environment), real pickers, and the **lens** (which runs the reviewer reads + how much of each it sees) |
 | Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, Apply / Reject / **Guide** / **Revert** (applied state) |
 | Revert | `components/RevertButton.tsx` — the ONE revert affordance (button + confirm naming "returns to v{n}" + version-diff door + receipt toast), shared by `FindingCard` and `VersionLadder`. Renders only on `status='applied'` findings; the ladder shows it only on the CURRENT `from review` row (reverting a non-current version is meaningless, so the door is hidden, not disabled). Server contract: `POST /hindsight/findings/{id}/revert` re-promotes the pre-apply version as a NEW version row — see aidream's hindsight `FEATURE.md` |
@@ -132,6 +133,28 @@ aidream (`services/hindsight/discuss.py`) splits it out — for the discuss
 result AND for every assistant turn in `/thread`. Render both directly. JSON
 appearing here again is a SERVER regression; fix it there, never re-add a
 client-side fallback.
+
+## Internal Affairs — two ways to lie with these numbers
+
+Both are enforced by helpers in `types.ts`; route through them rather than
+reading the raw field.
+
+- **`versionFromIsInferred(row)` — an inferred `version_from` is NOT a fact.**
+  The server sets `version_from_confidence` to `'recorded'` only when the number
+  was stamped at apply/revert time; `'inferred'` means "the previous version
+  row", which is wrong whenever a version promote rolled a definition back
+  without writing a row. `ChangeHistoryPanel` prefixes inferred values with `~`
+  and explains on hover. Rendering the two identically turns a guess into an
+  audit claim in a surface whose entire job is accountability.
+- **`hasSignal(value)` — a null rate or cost is NO SIGNAL, never zero.**
+  `revert_rate === null` means nothing has been applied on that lever;
+  `revert_rate === 0` means changes were applied and none were undone. Rendering
+  null as `0%` invents a measurement and hides the one number
+  (`revert_rate > 0`) that says "stop trusting this lever on this unit".
+- **A null `actor_tier` is the pre-provenance era, not an unknown author.** The
+  platform reads an unstamped change as human and never backfills it, so the
+  panel shows "Human (unstamped)" rather than inventing a mystery or asserting a
+  clean fact.
 
 ## The three things that are easy to get wrong
 
@@ -223,3 +246,4 @@ findings list refreshed itself, and the original finding was deprioritized to
   `FindingCard` gained the optional `onGuide` seam; deleted
   `AgentHindsightPanel.tsx`; toasts moved off bare `sonner`; `Bot`/`Sparkles`
   icons replaced (banned). Admin console unchanged.
+- 2026-08-16 — Internal Affairs (C-19): change-history + finding-effectiveness panels added to the admin page, reading the two new `hindsight.*` views. Inferred version numbers are marked `~`; no-signal rates render `—`, never `0%`.

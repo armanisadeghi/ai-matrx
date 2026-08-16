@@ -20429,6 +20429,252 @@
         }
       }
     },
+    "/hindsight/change-history": {
+      "get": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Get Change History",
+        "description": "Recent applied changes to governed units, newest first.\n\n``version_from_confidence`` must be rendered wherever ``version_from`` is:\n``recorded`` is a fact stamped at apply/revert time, ``inferred`` is the\nprevious version row and can be wrong if a promote intervened.",
+        "operationId": "get_change_history_hindsight_change_history_get",
+        "parameters": [
+          {
+            "name": "unit_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "agent",
+                    "tool",
+                    "workflow"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Unit Token"
+            }
+          },
+          {
+            "name": "unit_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Unit Id"
+            }
+          },
+          {
+            "name": "change_role",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "apply",
+                    "revert",
+                    "edit"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Change Role"
+            }
+          },
+          {
+            "name": "actor_tier",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "code",
+                    "ai",
+                    "human"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Actor Tier"
+            }
+          },
+          {
+            "name": "with_findings_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Only changes a Hindsight finding caused.",
+              "default": false,
+              "title": "With Findings Only"
+            },
+            "description": "Only changes a Hindsight finding caused."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeHistoryOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/finding-effectiveness": {
+      "get": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Get Finding Effectiveness",
+        "description": "Per lever per unit: accept/revert rates, time-to-decision, cost movement.\n\nWorst first (most reverts). A NULL rate or cost is NO SIGNAL, never zero —\nrender \"no signal yet\", never 0%.",
+        "operationId": "get_finding_effectiveness_hindsight_finding_effectiveness_get",
+        "parameters": [
+          {
+            "name": "unit_token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "agent",
+                    "tool",
+                    "workflow"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Unit Token"
+            }
+          },
+          {
+            "name": "unit_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Unit Id"
+            }
+          },
+          {
+            "name": "lever",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "instructions",
+                    "resources",
+                    "tools",
+                    "architecture",
+                    "stopping_condition"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lever"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FindingEffectivenessRow"
+                  },
+                  "title": "Response Get Finding Effectiveness Hindsight Finding Effectiveness Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/hindsight/subjects/tools": {
       "get": {
         "tags": [
@@ -20462,6 +20708,153 @@
                     "$ref": "#/components/schemas/ToolSubjectOut"
                   },
                   "title": "Response List Tool Subjects Hindsight Subjects Tools Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/snapshots/{snapshot_id}/wire-replay": {
+      "post": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Trigger Wire Replay",
+        "description": "Re-issue ONE recorded model call, N times per arm, and rank the answers.\n\nADMIN-ONLY, deliberately: every sample is a fully-billed provider call, and\na snapshot is reachable across conversations, so this is an operator\ndiagnostic rather than a product surface. The CAPS ceilings in\n`hindsight/types.py` bound the spend of any single request; this gate bounds\nwho can spend it.",
+        "operationId": "trigger_wire_replay_hindsight_snapshots__snapshot_id__wire_replay_post",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Snapshot Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WireReplayIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WireReplayResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/snapshots/{snapshot_id}/wire-replays": {
+      "get": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "List Wire Replays",
+        "description": "Every arm ever replayed from this snapshot, newest group first.\n\nTHE DOOR (no-dead-ends): the snapshot viewer names replays, so it must be\nable to reach them — and an arm is only readable NEXT TO its siblings, which\nis why this returns whole groups rather than one row.",
+        "operationId": "list_wire_replays_hindsight_snapshots__snapshot_id__wire_replays_get",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Snapshot Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WireReplayStepOut"
+                  },
+                  "title": "Response List Wire Replays Hindsight Snapshots  Snapshot Id  Wire Replays Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/wire-replays/{replay_group_id}": {
+      "get": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Get Wire Replay Group",
+        "description": "One replay's arms, control first — the arm-comparison view's data.",
+        "operationId": "get_wire_replay_group_hindsight_wire_replays__replay_group_id__get",
+        "parameters": [
+          {
+            "name": "replay_group_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Replay Group Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WireReplayStepOut"
+                  },
+                  "title": "Response Get Wire Replay Group Hindsight Wire Replays  Replay Group Id  Get"
                 }
               }
             }
@@ -20749,6 +21142,46 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/IngestSourceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/expertise-desks/ingest-file": {
+      "post": {
+        "tags": [
+          "Expertise Desks"
+        ],
+        "summary": "Ingest Pack File",
+        "description": "Distill an uploaded document (through content_processing + a page\nextraction job, so rules carry page anchors) or a recording (transcribed\nfirst, then the text lane) into DRAFT rules.",
+        "operationId": "ingest_pack_file_expertise_desks_ingest_file_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestFileRequest"
               }
             }
           },
@@ -67150,6 +67583,286 @@
         ],
         "title": "CategoryRow"
       },
+      "ChangeHistoryOut": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ChangeHistoryRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset"
+          },
+          "has_more": {
+            "type": "boolean",
+            "title": "Has More",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "limit",
+          "offset"
+        ],
+        "title": "ChangeHistoryOut",
+        "description": "A page of change history, plus the counts the panel headlines."
+      },
+      "ChangeHistoryRow": {
+        "properties": {
+          "change_id": {
+            "type": "string",
+            "title": "Change Id"
+          },
+          "unit_token": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "tool",
+              "workflow"
+            ],
+            "title": "Unit Token"
+          },
+          "unit_id": {
+            "type": "string",
+            "title": "Unit Id"
+          },
+          "unit_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Name"
+          },
+          "version_to": {
+            "type": "integer",
+            "title": "Version To"
+          },
+          "version_from": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version From"
+          },
+          "version_from_confidence": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "recorded",
+                  "inferred"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version From Confidence"
+          },
+          "restored_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restored Version"
+          },
+          "change_role": {
+            "type": "string",
+            "enum": [
+              "apply",
+              "revert",
+              "edit"
+            ],
+            "title": "Change Role"
+          },
+          "actor_tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "code",
+                  "ai",
+                  "human"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Tier"
+          },
+          "actor_system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor System"
+          },
+          "actor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Id"
+          },
+          "finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Id"
+          },
+          "finding_lever": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "instructions",
+                  "resources",
+                  "tools",
+                  "architecture",
+                  "stopping_condition"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Lever"
+          },
+          "finding_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Title"
+          },
+          "finding_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Status"
+          },
+          "finding_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Confidence"
+          },
+          "review_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Review Id"
+          },
+          "enrollment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enrollment Id"
+          },
+          "change_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Note"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "changed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Changed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "change_id",
+          "unit_token",
+          "unit_id",
+          "version_to",
+          "change_role"
+        ],
+        "title": "ChangeHistoryRow",
+        "description": "One applied change to one governed unit — Internal Affairs' window.\n\nReads ``hindsight.v_change_history``. The client must render\n``version_from_confidence`` wherever it renders ``version_from``: an\n``inferred`` number is the view's best adjacency guess, not a recorded fact,\nand presenting the two identically is how a guess becomes an audit claim."
+      },
       "ChannelSpec": {
         "properties": {
           "name": {
@@ -91141,6 +91854,270 @@
         ],
         "title": "FindingDraftFixBody"
       },
+      "FindingEffectivenessRow": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "unit_token": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "tool",
+              "workflow"
+            ],
+            "title": "Unit Token"
+          },
+          "unit_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Id"
+          },
+          "unit_display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Display Name"
+          },
+          "lever": {
+            "type": "string",
+            "enum": [
+              "instructions",
+              "resources",
+              "tools",
+              "architecture",
+              "stopping_condition"
+            ],
+            "title": "Lever"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "findings_total": {
+            "type": "integer",
+            "title": "Findings Total",
+            "default": 0
+          },
+          "proposed_count": {
+            "type": "integer",
+            "title": "Proposed Count",
+            "default": 0
+          },
+          "evidencing_count": {
+            "type": "integer",
+            "title": "Evidencing Count",
+            "default": 0
+          },
+          "ready_count": {
+            "type": "integer",
+            "title": "Ready Count",
+            "default": 0
+          },
+          "approved_count": {
+            "type": "integer",
+            "title": "Approved Count",
+            "default": 0
+          },
+          "applied_count": {
+            "type": "integer",
+            "title": "Applied Count",
+            "default": 0
+          },
+          "rejected_count": {
+            "type": "integer",
+            "title": "Rejected Count",
+            "default": 0
+          },
+          "reverted_count": {
+            "type": "integer",
+            "title": "Reverted Count",
+            "default": 0
+          },
+          "superseded_count": {
+            "type": "integer",
+            "title": "Superseded Count",
+            "default": 0
+          },
+          "undecided_count": {
+            "type": "integer",
+            "title": "Undecided Count",
+            "default": 0
+          },
+          "machine_applicable_count": {
+            "type": "integer",
+            "title": "Machine Applicable Count",
+            "default": 0
+          },
+          "accept_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accept Rate"
+          },
+          "revert_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revert Rate"
+          },
+          "avg_confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Confidence"
+          },
+          "time_to_decision_seconds_avg": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time To Decision Seconds Avg"
+          },
+          "time_to_decision_seconds_p50": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time To Decision Seconds P50"
+          },
+          "time_to_revert_seconds_avg": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time To Revert Seconds Avg"
+          },
+          "cost_delta_usd_avg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Delta Usd Avg"
+          },
+          "cost_signal_findings": {
+            "type": "integer",
+            "title": "Cost Signal Findings",
+            "default": 0
+          },
+          "pre_apply_request_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pre Apply Request Count"
+          },
+          "post_apply_request_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Apply Request Count"
+          },
+          "first_finding_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Finding At"
+          },
+          "last_finding_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Finding At"
+          },
+          "last_decision_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Decision At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "unit_token",
+          "lever"
+        ],
+        "title": "FindingEffectivenessRow",
+        "description": "Per lever per governed unit: is Hindsight's advice on this unit good?\n\nReads ``hindsight.v_finding_effectiveness``. Every rate and every cost field\nis nullable ON PURPOSE — a lever with no decisions has no accept rate, and a\nchange whose versions served no traffic has no cost delta. Rendering a null\nas ``0`` invents a measurement; render \"no signal yet\"."
+      },
       "FindingFixResult": {
         "properties": {
           "result_kind": {
@@ -91384,7 +92361,8 @@
               "instructions",
               "resources",
               "tools",
-              "architecture"
+              "architecture",
+              "stopping_condition"
             ],
             "title": "Lever"
           },
@@ -95318,6 +96296,96 @@
         ],
         "title": "InfluentialUnverifiedClaim",
         "description": "A decision-driving claim an assistant repeated without verifying it."
+      },
+      "IngestFileRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "pack_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Pack Id"
+          },
+          "file_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "File Id",
+            "description": "cld_files id from the canonical file handler upload."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "instructional",
+              "exemplar"
+            ],
+            "title": "Mode",
+            "description": "instructional = the source teaches; exemplar = the source IS examples of great finished work.",
+            "default": "instructional"
+          },
+          "source_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Note",
+            "description": "Where this came from ('Chapter 3', 'the 2024 handbook')."
+          },
+          "pages_per_chunk": {
+            "type": "integer",
+            "maximum": 25,
+            "minimum": 1,
+            "title": "Pages Per Chunk",
+            "description": "Pages handed to the distiller per extraction chunk (documents only).",
+            "default": 6
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pack_id",
+          "file_id"
+        ],
+        "title": "IngestFileRequest",
+        "description": "Distill an UPLOADED FILE into DRAFT rules on an existing pack.\n\nThe same two modes as the text lane, but the source is a real file the\nuser uploaded through the canonical file handler:\n\n- a document (pdf / docx / …) runs through content_processing\n  (processed_documents + pages) and a `docproc.page_extraction_jobs`\n  row that points the distiller at the pages, so every rule comes back\n  with REAL page anchors (`source_ref.source_pages`) the expert can\n  click back to. Deliberately not a parallel pipeline.\n- audio / video is transcribed first (the existing transcription\n  feature), then goes down the text lane unchanged.\n\nHuman-first invariant, identical to every other lane: draft only."
       },
       "IngestReport": {
         "properties": {
@@ -145933,6 +147001,359 @@
           "email"
         ],
         "title": "WhoamiResponse"
+      },
+      "WireReplayArmIn": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Key",
+            "default": "candidate"
+          },
+          "delta": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Delta"
+          }
+        },
+        "type": "object",
+        "title": "WireReplayArmIn"
+      },
+      "WireReplayArmResult": {
+        "properties": {
+          "replay_step_id": {
+            "type": "string",
+            "title": "Replay Step Id"
+          },
+          "arm_key": {
+            "type": "string",
+            "title": "Arm Key"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "default": 0
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0
+          },
+          "pinned_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Model"
+          },
+          "faithful": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Faithful"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "replay_step_id",
+          "arm_key",
+          "status"
+        ],
+        "title": "WireReplayArmResult"
+      },
+      "WireReplayIn": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "arms": {
+            "items": {
+              "$ref": "#/components/schemas/WireReplayArmIn"
+            },
+            "type": "array",
+            "title": "Arms"
+          },
+          "samples": {
+            "type": "integer",
+            "title": "Samples",
+            "default": 3
+          },
+          "finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finding Id"
+          },
+          "judge": {
+            "type": "boolean",
+            "title": "Judge",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "WireReplayIn",
+        "description": "The control arm is added by the service and always runs — a caller\ncannot opt out of the baseline its own verdict is read against."
+      },
+      "WireReplayResult": {
+        "properties": {
+          "replay_group_id": {
+            "type": "string",
+            "title": "Replay Group Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "title": "Snapshot Id"
+          },
+          "arms": {
+            "items": {
+              "$ref": "#/components/schemas/WireReplayArmResult"
+            },
+            "type": "array",
+            "title": "Arms"
+          },
+          "total_cost_usd": {
+            "type": "number",
+            "title": "Total Cost Usd",
+            "default": 0
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "replay_group_id",
+          "snapshot_id"
+        ],
+        "title": "WireReplayResult"
+      },
+      "WireReplayStepOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "replay_group_id": {
+            "type": "string",
+            "title": "Replay Group Id"
+          },
+          "arm_key": {
+            "type": "string",
+            "title": "Arm Key"
+          },
+          "delta": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Delta"
+          },
+          "pinned_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Model"
+          },
+          "pinned_params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Pinned Params"
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "default": 0
+          },
+          "samples": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Samples"
+          },
+          "output_kind": {
+            "type": "string",
+            "title": "Output Kind",
+            "default": "text"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0
+          },
+          "fidelity": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Fidelity"
+          },
+          "verdicts": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Verdicts"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "replay_group_id",
+          "arm_key",
+          "delta",
+          "pinned_params",
+          "samples",
+          "fidelity",
+          "verdicts",
+          "status"
+        ],
+        "title": "WireReplayStepOut",
+        "description": "One ARM of a Level-1 wire replay (`hindsight.replay_step`, C-16).\n\nArms of one replay share `replay_group_id`; the control arm (empty `delta`)\nis the baseline every candidate's verdict is read against, so a client must\nrender the group, never a single row."
       },
       "WorkbookInputPart": {
         "properties": {

@@ -13,6 +13,8 @@ import { apiDelete, apiGet, apiPatch, apiPost, buildPath } from "@/lib/api/typed
 import { postJson } from "@/lib/python-client";
 
 import type {
+  ChangeHistory,
+  ChangeRole,
   DiscussResult,
   DrainResult,
   Enrollment,
@@ -20,6 +22,7 @@ import type {
   EnrollmentUpdateRequest,
   EnrollRequest,
   FindingDecision,
+  FindingEffectiveness,
   FindingRevert,
   HindsightCosts,
   Replay,
@@ -28,6 +31,7 @@ import type {
   ReviewRunResult,
   ReviewThread,
   ToolSubject,
+  UnitToken,
 } from "./types";
 
 export async function listEnrollments(status?: string): Promise<Enrollment[]> {
@@ -202,5 +206,46 @@ export async function triggerDrain(): Promise<DrainResult> {
     "/hindsight/drain",
     undefined,
   );
+  return data;
+}
+
+// ── Internal Affairs (C-19) ────────────────────────────────────────────────
+// Two read-only views behind two admin-gated endpoints. There is deliberately
+// no write here: a governed unit is changed only through the agent write path,
+// and a finding is decided only through apply / reject / revert above.
+
+export async function getChangeHistory(params: {
+  unitToken?: UnitToken;
+  unitId?: string;
+  changeRole?: ChangeRole;
+  actorTier?: "code" | "ai" | "human";
+  withFindingsOnly?: boolean;
+  limit?: number;
+  offset?: number;
+} = {}): Promise<ChangeHistory> {
+  const { data } = await apiGet("/hindsight/change-history", {
+    query: {
+      ...(params.unitToken ? { unit_token: params.unitToken } : {}),
+      ...(params.unitId ? { unit_id: params.unitId } : {}),
+      ...(params.changeRole ? { change_role: params.changeRole } : {}),
+      ...(params.actorTier ? { actor_tier: params.actorTier } : {}),
+      ...(params.withFindingsOnly ? { with_findings_only: true } : {}),
+      ...(params.limit != null ? { limit: params.limit } : {}),
+      ...(params.offset != null ? { offset: params.offset } : {}),
+    },
+  });
+  return data;
+}
+
+export async function getFindingEffectiveness(params: {
+  unitToken?: UnitToken;
+  unitId?: string;
+} = {}): Promise<FindingEffectiveness[]> {
+  const { data } = await apiGet("/hindsight/finding-effectiveness", {
+    query: {
+      ...(params.unitToken ? { unit_token: params.unitToken } : {}),
+      ...(params.unitId ? { unit_id: params.unitId } : {}),
+    },
+  });
   return data;
 }
