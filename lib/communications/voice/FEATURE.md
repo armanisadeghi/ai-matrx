@@ -54,16 +54,28 @@ long-lived media and agent execution stay in aidream.
   `crm.interaction.recording_url` or as playback identity.
 - The static Voice TwiML remains non-recording. External storage configuration is an account-wide
   provider mutation and stays off until the readiness response reports every gate passed.
+- `storage-canary-readiness.ts` reads the latest owner-program pass/fail receipt from the existing
+  `platform.activity_log` ledger and validates the exact bucket, prefix, writer ARN, retention
+  policy, deny checks, application HEAD/read/hash, canonical index/access/delete receipts, and a
+  24-hour freshness window. A fresh exact pass derives the four storage/custody gates; a missing,
+  failed, malformed, future-dated, or stale receipt fails closed. Visibility exposes only event
+  identity and expiry—not credential fingerprints, object paths, storage URIs, or secrets.
 
 ## Visibility
 
 `GET /api/webhooks/twilio/voice`, `/status`, and `/recording` derive persistence visibility from
 the installed schema, unique indexes, service RPCs, exact CRM identity count, ambiguity count, and
 provider-URL violation count. They contain no phone number, provider credential, or storage secret
-and fail closed if the database proof is unavailable.
+and fail closed if the database proof is unavailable. The main Voice GET also derives storage
+readiness from the durable canary receipt; it still reports recording disabled regardless of that
+receipt because provider verification, external configuration, and disclosure proof are separate
+gates.
 
 ## Change log
 
+- **2026-08-16** — Wired the durable non-recording storage-canary receipt into the Voice readiness
+  GET. Exact fresh evidence now derives the dedicated-writer, canary, canonical-file, and governed
+  retention/access/delete gates without exposing credentials or enabling storage/recording.
 - **2026-08-15** — Wired the admitted owner call to one pre-existing AI Matrx-tenant CRM party and
   verified phone point, idempotently registered its canonical interaction, and durably claimed
   affirmative consent into the interaction plus activity ledger before accepted TwiML. Resolver,

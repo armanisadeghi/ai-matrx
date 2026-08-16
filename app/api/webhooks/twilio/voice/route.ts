@@ -32,6 +32,10 @@ import {
   resolveVoiceOwnerCallContext,
 } from "@/lib/communications/voice/persistence";
 import { evaluateVoiceRecordingReadiness } from "@/lib/communications/voice/recording-readiness";
+import {
+  getVoiceStorageCanaryReadiness,
+  type VoiceStorageCanaryReadiness,
+} from "@/lib/communications/voice/storage-canary-readiness";
 
 export const runtime = "nodejs";
 
@@ -59,7 +63,10 @@ function buildConsentActionUrl(input: {
   action.searchParams.set("stage", CONSENT_STAGE);
   action.searchParams.set("call", input.callSid);
   action.searchParams.set("disclosed_at", input.disclosedAt);
-  action.searchParams.set("disclosure_version", OWNER_BETA_VOICE_DISCLOSURE_VERSION);
+  action.searchParams.set(
+    "disclosure_version",
+    OWNER_BETA_VOICE_DISCLOSURE_VERSION,
+  );
   return action.toString();
 }
 
@@ -74,7 +81,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   const parsed = parseTwilioInboundVoiceRequest(validation.params);
   if (!parsed.ok) {
-    console.error("Twilio Voice webhook payload rejected", { error: parsed.error });
+    console.error("Twilio Voice webhook payload rejected", {
+      error: parsed.error,
+    });
     return new NextResponse("Bad Request", { status: 400 });
   }
 
@@ -190,9 +199,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
   const decision = parseTwilioVoiceConsentDecision(validation.params);
   if (!contextValid || !decision.consented) {
-    const reason = contextValid && !decision.consented
-      ? decision.reason
-      : "invalid_consent_context";
+    const reason =
+      contextValid && !decision.consented
+        ? decision.reason
+        : "invalid_consent_context";
     console.info("Twilio Voice owner beta consent not received", {
       provider: "twilio",
       providerAccountId: parsed.value.accountSid,
@@ -267,30 +277,46 @@ export async function GET(): Promise<NextResponse> {
   }
   let lifecyclePersistenceReady = false;
   try {
-    lifecyclePersistenceReady = (
-      await getVoiceRecordingPersistenceReadiness()
-    ).ready;
+    lifecyclePersistenceReady = (await getVoiceRecordingPersistenceReadiness())
+      .ready;
   } catch {
     lifecyclePersistenceReady = false;
   }
   let consentPersistenceReady = false;
   try {
-    consentPersistenceReady = (
-      await getVoiceCallConsentPersistenceReadiness()
-    ).ready;
+    consentPersistenceReady = (await getVoiceCallConsentPersistenceReadiness())
+      .ready;
   } catch {
     consentPersistenceReady = false;
+  }
+  let storageCanary: VoiceStorageCanaryReadiness = {
+    ready: false,
+    status: "missing",
+    evidenceId: null,
+    completedAt: null,
+    validUntil: null,
+  };
+  try {
+    storageCanary = await getVoiceStorageCanaryReadiness();
+  } catch {
+    storageCanary = {
+      ready: false,
+      status: "missing",
+      evidenceId: null,
+      completedAt: null,
+      validUntil: null,
+    };
   }
   const recordingReadiness = evaluateVoiceRecordingReadiness({
     owner_only_program_bound: ownerBeta.ready,
     disclosure_and_consent_verified: false,
     provider_email_verification_current: false,
-    dedicated_storage_identity_ready: false,
+    dedicated_storage_identity_ready: storageCanary.ready,
     external_storage_configured: false,
-    external_storage_canary_passed: false,
+    external_storage_canary_passed: storageCanary.ready,
     lifecycle_persistence_ready: lifecyclePersistenceReady,
-    canonical_file_ingest_ready: false,
-    retention_access_deletion_ready: false,
+    canonical_file_ingest_ready: storageCanary.ready,
+    retention_access_deletion_ready: storageCanary.ready,
   });
 
   return NextResponse.json({
@@ -316,6 +342,7 @@ export async function GET(): Promise<NextResponse> {
       durableSystemOfRecord: "AI Matrx canonical file storage",
       plannedStatusCallback:
         "https://www.aimatrx.com/api/webhooks/twilio/voice/recording",
+      storageCanary,
       readiness: recordingReadiness,
     },
   });
