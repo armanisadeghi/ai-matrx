@@ -9502,6 +9502,24 @@ export type Database = {
           interaction_id: string
         }[]
       }
+      claim_voice_playback_activity: {
+        Args: {
+          p_interaction_id: string
+          p_organization_id: string
+          p_playback: Json
+          p_program_key: string
+          p_provider_payload_verified: boolean
+          p_provider_session_id: string
+          p_session_id: string
+          p_source_event_key_sha256: string
+        }
+        Returns: {
+          disposition: string
+          event_id: number
+          interaction_id: string
+          source_event_key_sha256: string
+        }[]
+      }
       claim_voice_recording_custody_work: {
         Args: {
           p_lease_seconds?: number

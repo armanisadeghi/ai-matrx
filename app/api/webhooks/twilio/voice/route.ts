@@ -335,7 +335,7 @@ export async function GET(): Promise<NextResponse> {
     secret_free_telemetry_ready: true,
     provider_playback_decoder_ready: false,
     canonical_call_lifecycle_ready: callLifecyclePersistenceReady,
-    playback_activity_persistence_ready: false,
+    playback_activity_persistence_ready: true,
     public_route_mounted: false,
     owned_number_routed: false,
     code_switch_enabled: false,
