@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-15
+updated: 2026-08-16
 repos: [matrx-frontend, aidream, my-matrx]
 vision: [this doc §Vision — Arman's words, 2026-07-30 chat]
 ---
@@ -218,6 +218,32 @@ before/during/after all captured. Work order: [cms-page-hub.md](./cms-page-hub.m
 - Content plan feature built (5 views, generator, deepen, reconciler, signals) — see `features/marketing/content-plan/` + `aidream/services/content_plan/`
 - CMS authoring stack built (sites/pages/components/collections, drafts/versions/publish, agent tools + write policy + activity feed) — see `features/cms/` + `aidream/services/cms/`
 - Plan↔CMS bridge + durable fill queue built (unexercised) — see `cms_fill.py`, `cms_reconciler.py`, `setup/bridge.ts`
+
+## Effort tiers + pre-estimation — the shape of the cost controls (Arman, 2026-08-16)
+
+Canonical, in his words: `common-docs/systems/content-planning/FEATURE.md` § EFFORT TIERS AND
+PRE-ESTIMATION. The three things that bind anyone building here:
+
+- **Effort is a PATHWAY, not a cap.** A cheap tier MERGES steps into fewer calls; the top tier
+  runs every step and spends what quality costs. **The one-shot `cms_fill` authoring call is not
+  legacy — it IS the cheapest tier** and must keep working.
+- **Set per PAGE and per SITE** (site default, page override).
+- 🚨 **Estimate before the button; never enforce mid-run.** A runtime budget abort spends the
+  money AND loses the result, and presents as a crash. Show the whole job's projected cost (300
+  pages included) before the user commits, gate there, and let a started run finish. No hidden
+  ceilings.
+
+Status: directive recorded, not built. The per-step fan-out (item 4) is its first consumer.
+
+## The models each step runs (Arman's binding, 2026-08-16)
+
+`Gemini 3.7 Flash` is the default workhorse — best Google model on all three axes at once, so an
+agent on any older Gemini is drift. Escalate to `Claude Opus` only when a step is both highly
+agentic AND consequential for MULTIPLE downstream things. Applied here: **p3_family → Claude Opus
+5** (it constrains the writer, the builder and every sibling page's territory); **p4_write /
+p5_review / p6_build → Gemini 3.7 Flash** (each produces one artifact for one page). Policy:
+`common-docs/systems/agent-design/MODEL-AND-TASK-PLAYBOOKS.md` § THE MATRX DEFAULT BINDING.
+Rebinding is a database edit — never a code change.
 
 ## Decisions needed (Arman)
 
