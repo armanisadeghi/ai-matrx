@@ -25,27 +25,27 @@ const ALLOWED_FUNNEL_SITES = ["app/(core)/dashboard/layout.tsx"];
 /** Files that legitimately mention the helpers without performing a redirect. */
 const DEFINITION_FILES = ["utils/onboarding.ts"];
 
+/**
+ * Search EVERY tracked source file, not a hand-listed set of directories.
+ *
+ * The first version of this guard listed `app`, `features`, `utils`, `lib`,
+ * `components` — which silently excluded `actions/` and the root `proxy.ts`,
+ * the exact two layers the rule warns about. A guard with a blind spot over
+ * the thing it guards is worse than no guard: it reports safety it cannot
+ * deliver. `git grep` walks the whole repo, so a new top-level directory is
+ * covered the day it appears. `--untracked` catches a violation that has not
+ * been committed yet.
+ */
 function grepFiles(pattern: string): string[] {
   let out = "";
   try {
     out = execFileSync(
-      "grep",
-      [
-        "-rl",
-        "--include=*.ts",
-        "--include=*.tsx",
-        "-E",
-        pattern,
-        "app",
-        "features",
-        "utils",
-        "lib",
-        "components",
-      ],
+      "git",
+      ["grep", "-l", "--untracked", "-E", pattern, "--", "*.ts", "*.tsx"],
       { cwd: REPO_ROOT, encoding: "utf8" },
     );
   } catch (err: unknown) {
-    // grep exits 1 when there are no matches — that is a valid empty result.
+    // git grep exits 1 when there are no matches — a valid empty result.
     const status = (err as { status?: number }).status;
     if (status === 1) return [];
     throw err;
