@@ -5,7 +5,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 **Rules**
 
 - File only defects you can't fully fix in the moment, and only UNRELATED findings — a bug related to your current task gets **fixed**, not filed. Enough context to act cold: what, where, the fix.
-- **Claim the next free ID by grepping `^### D` first.** Duplicate IDs have collided four times (two D138s, two D150s, two D167s, two D183s, two D184s) — an entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered.
+- **Claim the next free ID by grepping `^### D-new: No guard catches "schema referenced by `.schema(\"X\")` but not PostgREST-exposed" (2026-08-16)
+First live test of /vision-interview failed with PGRST106: the `interview` schema existed, was granted, had RLS — but was missing from `pgrst.db_schemas` on `authenticator`, a list nothing in code or checks knows about. Fixed live for `interview`. The CLASS fix: `pnpm check:schema` (scripts/schema-check/) should compare every schema used in `.schema("…")` calls against the exposed list (readable via `pg_roles.rolconfig` for `authenticator` — needs the snapshot RPC to include it). Until then, every new browser-read schema will 406 on its first live call with zero build-time signal.
+
+### D` first.** Duplicate IDs have collided four times (two D138s, two D150s, two D167s, two D183s, two D184s) — an entry other docs cite by number must keep its number, so the LATER filing is the one that gets renumbered.
 - **When you fix one: collapse it to a one-line bullet in Resolved (title + date + commit/file pointer) — or delete it outright.** No histories, no verification narratives, no journeys. An entry earns lines only while it is open.
 - Keep open entries compressed to load-bearing facts: what's broken, exact paths, the fix, who decides. A partially-fixed entry keeps only the open remainder.
 - CLAUDE.md links here. Read both before touching files, media, or persistence.

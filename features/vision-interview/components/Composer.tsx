@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { Play, Send, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,7 +68,7 @@ export function Composer({ onResume, onStart }: ComposerProps) {
         </p>
       )}
       <div className="flex items-end gap-2">
-        <Textarea
+        <ProTextarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
@@ -85,8 +85,11 @@ export function Composer({ onResume, onStart }: ComposerProps) {
                 : "The room is working…"
           }
           disabled={!canAnswer || busy}
-          rows={2}
-          className="min-h-[44px] flex-1 resize-none text-base sm:text-sm"
+          autoGrow
+          minHeight={44}
+          maxHeight={240}
+          wrapperClassName="flex-1"
+          className="text-base sm:text-sm"
         />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
