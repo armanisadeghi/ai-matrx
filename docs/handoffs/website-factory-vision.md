@@ -89,10 +89,10 @@ Per PAGE (× 25 pages ⇒ the 200–300 calls):
 |---|---|---|
 | P1. Keyword research for this page | ⚠️ site-level exists, per-node link is a bare FK | `seo.*` schema + `/marketing/keyword-research` work; `plan.node.primary_keyword_id` + `secondary_keyword` edges exist; no per-node research ARTIFACT is stored |
 | P2. Content research (web/competitor/brand facts) | ❌ not persisted | `deepen_node` (generator.py:501) does research but discards evidence, keeping only brief bullets + `cites` edges; research pipeline exists in `features/research/` + aidream `research/` but isn't wired to plan nodes |
-| P3. Family comparison (what goes on THIS page vs its siblings) | ❌ none | New step; sibling context partially assembled today inside `cms_fill._build_site_context()` — extract into its own persisted step |
-| P4. Write the content (structured content, NOT HTML) | ✅ record layer BUILT 2026-08-12 (see § P4 below) | `plan.node_artifact` + `plan.node_step` live; the p4_write specialist step itself is still unwired (steps p2/p6/p7 record today) |
-| P5. Improve → fact-check → optimize (review loop, revisions) | ❌ none | Operates on the P4 content record; each pass = its own agent + persisted revision |
-| P6. Build the page from final content, using the site's template + blocks | ⚠️ conflated | Today `cms_fill._author_page()` does P1–P6 in ONE fixed-prompt LLM call. Becomes: template + blocks + final content → HTML into `client_pages.*_draft` via existing guarded `page_service` |
+| P3. Family comparison (what goes on THIS page vs its siblings) | ✅ **BUILT + PROVEN 2026-08-15** | `page_pipeline.py::_run_family` → `outline` artifact. Reads the family hub's `planned_topics` + the node's `keyword_strategy`; reports `uncovered_gaps` a plan has no page for |
+| P4. Write the content (structured content, NOT HTML) | ✅ **BUILT + PROVEN 2026-08-15** | `page_pipeline.py::_run_write` → `draft` artifact (`PageDraft`: h1 / intro / sections{heading,intent,body,bullets} / CTA / meta). This IS the non-technical text-edit record — HTML is a rendering of it, never the master copy |
+| P5. Improve → fact-check → optimize (review loop, revisions) | ✅ **BUILT + PROVEN 2026-08-15** | `page_pipeline.py::_run_review` → `review` artifact (issues in plain language + the COMPLETE revised draft). Proven on the first live run: it caught an invented physician name and an unsupported ISHRS statistic and removed both |
+| P6. Build the page from final content, using the site's template + blocks | ✅ renders P4/P5 output | `cms_fill._author_page()` reads `page_pipeline.approved_content(node)` (review's revised draft ⇒ draft ⇒ none) and is told to RENDER it faithfully + link per the placement's `internal_links`. No draft ⇒ it composes from the brief exactly as before, so the one button never stops working. Blocks/templates (S3) still absent |
 | P7. Verify / publish | ✅ mostly | `cms_verify/` (browser verification), `publish_many`, plan↔CMS link `client_pages.plan_node_id`, `cms_align` status writeback — built, barely exercised (0 fill jobs ever run) |
 
 **Orchestration vehicle (the "manager agents"):** the AgentPlan mini-workflow system
@@ -123,10 +123,20 @@ loud-open so a record failure never fails the paid work). FE reads direct under 
 `p2_research` 2 done (+2 research artifacts), `p6_build` 2 done (+2 `final` artifacts),
 `p7_publish` 3 done; all artifacts current with summaries. 2 fill jobs, 8 items succeeded.
 
-**Deliberately not done:** `p1_keywords` / `p3_family` / `p4_write` / `p5_review` have no
-producer yet — a pending step VISIBLE in data is the point (steps exist even while the one-shot
-fill skips them). Also open: formal content-ir kind registration for the two envelope shapes
-(`plan_page_research`, `cms_page_build`), and per-node "run this step" actions.
+**The producers now exist (2026-08-15).** `p3_family` / `p4_write` / `p5_review` are
+`aidream/services/content_plan/page_pipeline.py`, each independently re-runnable via
+`POST /content-plan/nodes/{id}/steps/{step}`, each superseding its own artifact, each opening a
+`chat.agent_run` row before the paid call and stamping `failed` with the reason if it dies. The
+rail runs them one click per step per page (`usePageStepRun` → `NodeStepRail`), streaming into
+the floating run window. Only `p1_keywords` has no producer — Deepen and the Setup keyword pass
+write the keyword itself, so the step row stays pending by design.
+
+**Still open here:** formal content-ir kind registration for the envelope shapes
+(`plan_page_research`, `cms_page_build`, and the three new `plan_page_outline|draft|review`) so
+the artifact dialog renders components instead of raw JSON; a human EDIT surface over the
+`draft` sections (the whole point of P4 being structured); and swapping the in-code prompts for
+slot-bound specialist agents (item 7 below) — the module contract does not change when that
+happens.
 
 **Known soft edge:** concurrent writers racing `record_artifact` on the same `(node, kind)` can
 lose the losing record to the unique index (logged loudly; the work itself is unaffected).
@@ -181,11 +191,12 @@ before/during/after all captured. Work order: [cms-page-hub.md](./cms-page-hub.m
 1. **Prove the loop at SCALE.** The small loop is proven (2026-08-14 live: 2 fill jobs, 8 items succeeded, publish verified on mymatrx.com) — what has never been run is a real site end-to-end: starter kit → fill ~25 nodes → review → bulk publish → verify every URL. Do it on a throwaway or `cosmeticinjectables`, never `iopbm`/`prp-injection-md`, and surface every failure.
 2. ~~Fix `theme_config` → CSS in my-matrx~~ **DONE** (WF-1: renderer was already wired; the starter kit's token bake — which shadowed later theme edits — was removed and 4 baked sites migrated + prod-verified).
 3. ~~Design + build the per-node content record (P4)~~ **DONE 2026-08-12** (see the P4 section — tables, writer, producers, FE rail all live; review the shape).
-4. **Decompose `cms_fill` into explicit pipeline steps** behind the SAME button. STARTED 2026-08-12: fill/deepen/publish now persist step state + artifacts (the steps exist in data); still monolithic per page — the author call is one prompt. Next: split context-assembly (`p3_family`), structured write (`p4_write`), review (`p5_review`) into separately re-runnable item types on the same durable queue.
+4. ~~**Decompose `cms_fill` into explicit pipeline steps**~~ **DONE 2026-08-15** — p3/p4/p5 are real producers, p6 renders their output, the one button is unchanged. **What remains is the FAN-OUT:** the whole-site fill still runs the single author call per page; teach `cms_fill`'s durable queue to run the four steps as separate item types so a 25-page site is ~100 calls, not 25. The queue, the artifacts, and the steps all exist — this is wiring, not design.
 5. **Site design system (S3) + page templates (S4)**: template/block entities in the CMS DB, starter kit installs a default set, `page_type` binds node → template, per-site "templates required vs theme-only" setting. Page build step consumes them.
-6. **Plan UI shows the pipeline**: linked CMS pages DONE (2026-08-07, WF-11); NodePanel rail DONE (2026-08-12); tree/table progress badges DONE (2026-08-13 — one site-wide query, sortable/filterable table milestone, untouched nodes silent). Remaining: per-node "run step / generate this page" actions.
-7. **First specialist agents on the rails**: writer, reviewer/fact-checker, page-builder as saved agents; orchestrate per-page via AgentPlan; `cms_fill`'s inline prompt becomes the page-builder's starting prompt.
-8. Wire per-node keyword/content research (P1/P2) to store artifacts on the content record; connect `features/research/` pipeline as the P2 engine.
+6. **Plan UI shows the pipeline**: linked CMS pages DONE (2026-08-07, WF-11); NodePanel rail DONE (2026-08-12); tree/table progress badges DONE (2026-08-13); per-node run-step actions DONE (2026-08-15). Remaining: a whole-page "run the rest of the pipeline" action, and bulk run-step across a selection (the tree already has multi-select).
+7. **First specialist agents on the rails.** The rails are now built and carrying traffic — `page_pipeline.py` calls `llm_to_pydantic` with in-code prompts (same as `cms_fill` next door). Swap each call site for `run_slot` against saved agents (family analyst, writer, reviewer/fact-checker, page-builder), then specialize by page type — the expert location-page builder, blog builder, etc. The module contract (steps, artifacts, records, endpoint) does not change.
+8. Wire per-node keyword research (P1) to store an artifact; connect `features/research/` as a richer P2 engine (Deepen already writes the `research` artifact p4 reads).
+9. **A human EDIT surface over the `draft` artifact.** P4 exists precisely so a non-technical owner can change the page's words without touching HTML — today the rail only VIEWS it as JSON. Edit the sections, re-run the build. This is the retired-S4 promise, and it is the highest-value thing left on this doc.
 
 ## Done
 

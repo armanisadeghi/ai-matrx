@@ -165,6 +165,16 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   while tree/table badges reuse the same per-node summary. A missing step row
   means "never run"; nodes with no rows render no badge. Distinct from the
   editorial `plan_status`.
+  **Three of the seven steps are RUNNABLE from the rail** (2026-08-15) —
+  `p3_family` / `p4_write` / `p5_review`, listed once in
+  `types.ts RUNNABLE_PIPELINE_STEPS` (lockstep with aidream
+  `page_pipeline.RUNNABLE_STEPS`; the server 404s anything else and names the
+  valid set). `usePageStepRun` posts to
+  `/content-plan/nodes/{id}/steps/{step}`, adopts the stream, and lets the
+  FLOATING `RunSetWindowController` render it — never a block in the rail. The
+  client still writes NEITHER table: the server persists the artifact and the
+  step before it streams, and the rail refetches. Each step is a verb-labeled
+  button beside its status chip, never a chip that executes on click.
 - `plan.entity` — **source/media citations only** per site. Person/org rows
   folded into `crm.party` (2026-08-13; DB guard `plan._entity_kind_guard`
   rejects new live person/org rows, loudly). People/companies on a site's
@@ -669,6 +679,19 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-15 — **The pipeline rail can RUN its steps, and the Setup chain's
+  output is finally read.** `hooks/usePageStepRun.ts` +
+  `types.ts RUNNABLE_PIPELINE_STEPS` / `RUNNABLE_STEP_ACTIONS` +
+  `NodeStepRail` run buttons, against the new aidream
+  `services/content_plan/page_pipeline.py` (p3 family comparison → `outline`,
+  p4 structured write → `draft`, p5 review + fact-check → `review`). p6's
+  author call now RENDERS `approved_content()` instead of inventing a page from
+  the brief, and every step reads `attributes.planned_topics` +
+  `attributes.keyword_strategy` — which the frontend had been writing and
+  nothing had been reading. Proven live on `/hair-restoration`
+  (prpinjectionmd): all three steps ran, persisted and superseded correctly,
+  and the review caught an invented physician name and an unsupported ISHRS
+  statistic and removed both.
 - 2026-08-15 — **The node panel no longer forgets what became of the page it
   planned (cms-page-hub item 6, the AFTER half).** New section "What the live
   page is doing": `components/NodeMeasureCard.tsx` + `hooks/useNodeMeasurement.ts`

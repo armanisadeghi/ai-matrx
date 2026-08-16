@@ -155,12 +155,14 @@ research linking: start with the final report (the "Document"), user picks the t
    (agx agent + `coerceFamilyNames` + `required_output_keys` in `client_slots.py`), stage the
    note as the child node's `brief` seed so it persists on commit. Keep coercion
    backward-tolerant (plain strings still accepted).
-5. **Nothing downstream READS `attributes.planned_topics` / `attributes.keyword_strategy`.**
-   Re-verified 2026-08-15: the frontend writes both (`setup/service.ts`,
-   `setup/keyword-strategy.ts`); a full-repo search of aidream returns **zero** matches for
-   `planned_topics` in any Python file. The AI already decided what each page should be about
-   and the answer is sitting in the database — wiring these into the cms-fill / writer stage is
-   the payoff step for the whole Setup chain. Live chip.
+5. ~~**Nothing downstream READS `attributes.planned_topics` / `attributes.keyword_strategy`.**~~
+   **DONE 2026-08-15.** `aidream/services/content_plan/page_pipeline.py` reads both: the family
+   analyst (p3) reads the hub's `planned_topics` as the family's work order and the node's
+   `keyword_strategy` for page role + planned internal links; the writer (p4) obeys the resulting
+   placement; the builder (p6) renders the planned links with their anchor text. Proven live on
+   `/hair-restoration` (prpinjectionmd). **Delete the chip.** Remaining slice: the whole-site
+   `cms_fill` fan-out still authors in one call per page — see
+   `website-factory-vision.md` item 4.
 6. **Web-search fallback grounding** for the "no research, no website" case — arm the
    shape/namer agents with web search via `agent_author`. See the open decision below first.
 7. **Harden the quick-research chain — the one live FLOATING-LAW remainder here.**
