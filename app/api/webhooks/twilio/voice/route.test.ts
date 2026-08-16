@@ -402,11 +402,11 @@ describe("POST /api/webhooks/twilio/voice", () => {
     expect(body.consent.persistence).toBe("durable_activity_ledger_ready");
     expect(body.conversationRelay).toMatchObject({
       enabled: false,
-      mode: "disabled_unmounted",
+      mode: "mounted_hard_disabled",
       durableSystemOfRecord: "crm.interaction + platform.activity_log",
       readiness: {
         ready: false,
-        passedGateCount: 8,
+        passedGateCount: 9,
         totalGateCount: 14,
       },
     });
@@ -424,7 +424,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
           key: "playback_activity_persistence_ready",
           passed: true,
         }),
-        expect.objectContaining({ key: "public_route_mounted", passed: false }),
+        expect.objectContaining({ key: "public_route_mounted", passed: true }),
         expect.objectContaining({ key: "code_switch_enabled", passed: false }),
       ]),
     );
@@ -507,7 +507,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
 
     expect(body.conversationRelay.readiness).toMatchObject({
       ready: false,
-      passedGateCount: 7,
+      passedGateCount: 8,
       totalGateCount: 14,
     });
     expect(body.conversationRelay.readiness.gates).toEqual(

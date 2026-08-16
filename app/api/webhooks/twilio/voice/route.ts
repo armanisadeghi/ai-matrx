@@ -336,7 +336,7 @@ export async function GET(): Promise<NextResponse> {
     provider_playback_decoder_ready: false,
     canonical_call_lifecycle_ready: callLifecyclePersistenceReady,
     playback_activity_persistence_ready: true,
-    public_route_mounted: false,
+    public_route_mounted: true,
     owned_number_routed: false,
     code_switch_enabled: false,
     provider_switch_enabled: false,
@@ -352,7 +352,7 @@ export async function GET(): Promise<NextResponse> {
     conversationRelayConnected: false,
     conversationRelay: {
       enabled: false,
-      mode: "disabled_unmounted",
+      mode: "mounted_hard_disabled",
       durableSystemOfRecord: "crm.interaction + platform.activity_log",
       readiness: conversationRelayReadiness,
     },

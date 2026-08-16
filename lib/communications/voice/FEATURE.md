@@ -72,14 +72,17 @@ receipt because provider verification, external configuration, and disclosure pr
 gates.
 
 The main Voice GET also exposes the ConversationRelay launch inventory through the same readiness
-primitive. It reports the six inert aidream foundations plus the already-live canonical call
-lifecycle (`crm.interaction` + uniquely keyed `platform.activity_log`) as ready, while the exact
-provider playback decoder, playback-activity claim, public route, owned-number routing, and all
-three launch switches remain false. This is readiness only: no token/transcript/audio content,
-phone, provider URL, session reference, signature, or credential is returned.
+primitive. It reports the six inert aidream foundations, canonical call lifecycle, durable bounded
+playback-activity claim, and hard-disabled public WSS mount as ready. Exact provider playback
+decoding, owned-number routing, and all three launch switches remain false, so the route refuses
+before reference consumption or paid execution. This is readiness only: no token/transcript/audio
+content, phone, provider URL, session reference, signature, or credential is returned.
 
 ## Change log
 
+- **2026-08-16** — Marked the reviewed aidream public WSS mount ready while preserving separate
+  false owned-number, code, provider, program, and provider-decoder gates. Voice readiness is nine
+  of fourteen and remains disabled.
 - **2026-08-16** — Added fail-closed ConversationRelay readiness to the existing Voice GET. The
   response reuses live canonical call-lifecycle proof, exposes the inert gateway inventory, and
   keeps provider evidence decoding, playback persistence, routing, and all launch switches false.
