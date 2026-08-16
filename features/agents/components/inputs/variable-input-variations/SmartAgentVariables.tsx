@@ -45,6 +45,9 @@ export function SmartAgentVariables({
   const style = styleOverride ?? reduxStyle;
 
   switch (style) {
+    case "hidden":
+      // The hosting surface supplies variables programmatically.
+      return null;
     case "form":
       return <AgentVariableInputForm conversationId={conversationId} />;
     case "inline":

@@ -229,6 +229,11 @@ export const VARIABLE_PANEL_STYLES = [
   "compact",
   "guided",
   "cards",
+  // Variables are supplied programmatically by the hosting surface (e.g. the
+  // expertise interview panel passes pack_id) — render no inputs at all.
+  // Deliberately absent from VARIABLE_PANEL_STYLE_OPTIONS: it is a surface
+  // decision, never a user preference.
+  "hidden",
 ] as const;
 
 export type VariablesPanelStyle = (typeof VARIABLE_PANEL_STYLES)[number];

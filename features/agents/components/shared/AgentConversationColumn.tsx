@@ -12,6 +12,7 @@ import { ArrowDown } from "lucide-react";
 import { motion } from "motion/react";
 import { AgentConversationDisplay } from "../messages-display/AgentConversationDisplay";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
+import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
 import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
@@ -65,6 +66,12 @@ interface SmartInputForwardProps {
   placeholder?: string;
   compact?: boolean;
   extraRightControls?: React.ReactNode;
+  /**
+   * Override the variables panel presentation. Surfaces that wire variables
+   * programmatically (e.g. the expertise interview panel) pass "hidden" so
+   * the user never sees raw ids in the composer.
+   */
+  variablesPanelStyle?: VariablesPanelStyle;
   /**
    * Disable sending (button + Enter-to-submit). Surfaces gate on this for
    * pre-visible limits — e.g. the AI Tutor blocks the composer once the

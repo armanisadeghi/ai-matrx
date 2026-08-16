@@ -78,6 +78,8 @@ function InterviewConversation({ packId }: { packId: string }) {
       edgeToEdgeScroll
       smartInputProps={{
         showSubmitOnEnterToggle: false,
+        // pack_id is wired by this panel — the expert must never see a UUID.
+        variablesPanelStyle: "hidden",
         placeholder: "Answer in your own words — typing or rambling both work…",
       }}
     />
