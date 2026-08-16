@@ -51,6 +51,9 @@ vision:
   all 232**; `git_branch` and account fingerprint are still NULL on every live row (no bound session
   is a worktree run; event-mirror hooks cannot read the account — item 6). One `Auto:` placeholder
   remains and it is the stale half of a duplicate binding, not a missing title.
+  **Ingestion stopped `2026-08-15 23:02:47` and had produced nothing for ~23.5h when the outage was
+  found — always check the newest `chat.coding_session_entry.created_at` before trusting this
+  section, and treat a quiet inbox as suspect until the capture-gap alert says otherwise.**
 - **Operator checklists:** VS Code `matrx-vscode/OPERATOR_CHECKLIST.md` (+ `PUBLISHING.md`);
   managed Codex design `matrx-codex-plugin/docs/MANAGED_RUNTIME_PLAN.md`.
 
@@ -102,35 +105,13 @@ vision:
    registry or row actions); thread-level conversation placement from the Hub (PLAN.md Lane 3);
    FTS/tsvector on `chat.message` when ILIKE stops scaling; persisting analysis outputs somewhere
    durable (note/association on the conversation) instead of one-off run output.
-1. **~~Claude-native titles — Matrx Local producer (`TASK-003`)~~ — DONE 2026-08-16.** Arman's
-   ruling: *"Those labels cannot be different. They must be exactly the same, and they must remain
-   in sync. So if it's changed in Claude Code, we are able to update it in our system."* The join is
-   Claude's own desktop session index
-   (`Application Support/Claude/claude-code-sessions/<account>/<org>/local_*.json`), whose
-   `cliSessionId` is the exact UUID the bridge already binds and whose `title` is the exact sidebar
-   label — better than any JSONL-derived title. Shipped: `claude_session_index.py` (labels only, no
-   raw path, newest-`lastActivityAt` wins across the cross-account union),
-   `title_sync.py` + `POST /coding-session/claude/labels/sync` (aidream's owner-scoped identity list
-   is the ALLOWLIST — an unmirrored session's label never leaves the machine; both binding forms
-   resolve; V20 send-ledger makes an unchanged label free and a rename detected next pass), the
-   import path preferring the index labels and queueing them behind the batches that mint the
-   binding, and a desktop **Sync titles now** card. aidream now also observes `worktree_name` +
-   `is_archived` (`provider_archived`) on `SessionMetadata`.
-   **Live proof:** the shipped reconciler + durable outbox against production —
-   235 bound sessions, **232 matched and delivered, 0 failed, 0 remaining**, second pass fully
-   idempotent (`queued: 0, unchanged: 232`). Live DB: 232 rows carry `claude_title` with
-   `title_source=provider`, and `chat.conversation.title` equals Claude's label **exactly on all
-   232**. The 9 `Auto:` placeholder rows are down to **1**, and that one is the stale half of a
-   duplicate binding (below), not a missing title. The 5 remaining untitled rows are 4 hosted-sandbox
-   certification sessions that never ran on this Mac plus that duplicate — no local Claude record
-   exists for any of them, which is honest, not a gap. `git_branch`/`worktree_name` stayed empty
-   because zero of the 232 bound sessions are worktree runs; 234/234 carry a real `isArchived`
-   (8 archived), which lands on the first shipped sync pass after the server change is live.
-   **Follow-up filed (decision-gated, NOT done):** `chat.coding_session` has no unique constraint on
-   `(created_by, provider, provider_session_id)` and one live pair exists —
-   `2773ac14-a999-4db1-b430-2f5efd9f77c8` has two sessions and two conversations for one Claude
-   session. `find_session` reaches only one, so the other can never be titled and permanently wears
-   `Auto: Code Editor`. Merging live conversations is Arman's call; see aidream `FOUND_DEFECTS.md`.
+1. **One Claude session wears two bindings, and one half can never be titled (decision-gated).**
+   `chat.coding_session` has no unique constraint on `(created_by, provider, provider_session_id)`,
+   and one live pair exists: `2773ac14-a999-4db1-b430-2f5efd9f77c8` has two sessions and two
+   conversations for a single Claude session. `find_session` reaches only one, so the other is
+   permanently stuck on `Auto: Code Editor` — it is the last placeholder row in the system. Adding
+   the constraint is mechanical; **merging two live conversations is Arman's call.** See aidream
+   `FOUND_DEFECTS.md`.
 1b. **Titles must sync BOTH ways (Arman, 2026-08-16; chipped).** *"The Claude Code title is what we
     should use for our label. And when our conversations go to Claude Code, or if I update this,
     then the Claude Code value should be updated to match."* Inbound is done (above); the return
@@ -142,11 +123,10 @@ vision:
    (start/stream/resume/cancel/fork). Consume capabilities + NDJSON + cancel in `/work/new` and
    conversation detail. Native Resume/Fork strictly capability-gated; everything else is a labeled
    seeded handoff, never a generic "Resume".
-3. **~~AI Work composer + Saved Requests (`TASK-005`)~~ — DONE 2026-08-15.** `/work/new` ships the
-   eight-step composer on real AI Matrx execution; `/work/requests` ships Saved Requests as
-   `agent.shortcut` rows under one seeded category (no new table). The composer's destination slot
-   exists and is capability-gated — item 2 is what makes a provider destination selectable.
-   `/work/automations` and a workflow handoff are still absent; Timing doors into `/schedules/new`.
+3. **`/work/automations` and the workflow handoff are still absent.** The composer and Saved
+   Requests shipped (see Done); Timing currently doors into `/schedules/new`, and a Saved Request
+   cannot yet be attached to a workflow or an app event. Reuse the existing durable workers and
+   triggers — never a second automation engine.
 4. **One-click installed history reconciliation (`TASK-007`).** Certify installed Matrx Local
    `v1.4.26`, then make **Sync Claude Code now** reach preview/import/status/retry/discard and
    report exact inspected/imported/updated/duplicate/conflict/unsupported counts.
@@ -174,46 +154,30 @@ vision:
 
 ## Done
 
-- **The conversations table is usable for real work (2026-08-16).** Three confirmed blockers, all
-  fixed and verified live. (a) **"Last activity" was `chat.conversation.updated_at`** — a
-  row-mutation stamp the title-sync passes rewrote in bulk (12,103 rows to `2026-08-12 14:42:58`;
-  another batch to `2026-08-16 18:13:1x`), so the whole list claimed to have happened at once and
-  sorting by it produced no order. `public.cvx_list_scoped` now returns `last_activity_at` =
-  GREATEST(newest visible `chat.message.created_at`, binding `last_seen_at`, `created_at`), computed
-  after the filters against a new partial index `cx_message_conversation_recent_idx`; it is in the
-  sort whitelist, is the DEFAULT sort, and owns the column + its date filter (page ~103ms).
-  `updated_at` survives as the hidden **"Last modified"** column — **it must never again be
-  presented as activity.** Because sort persists per user, a surface declaring its own default sort
-  now retires a stale-shape blob's sort (`lib/list-views/defaults.ts`), or the fix would have
-  reached nobody who had already used the page. (b) **The star column** is fixed at the primitive:
-  `MatrxColumnDef.compact` collapses an icon column's three header controls into one popover trigger
-  with the same sort actions + filter body and tightens padding — still sortable, still filterable.
-  66px → 26px here, 106px → 52px on `/agents/all` (converted too). (c) **The "Claude Code title"
-  chip is gone** — *"The title is the title."* Provenance stays on the optional `title_source`
-  column and the provenance panel.
-- **Silent-capture detection + loud recovery (2026-08-16).** `captureGapVerdict()`
-  (`features/agent-connections/coding-sessions/captureGap.ts`) grades the gap since the last delivery
-  against the owner's OWN cadence — calibrated on the real production series, where the 23.5h outage
-  sat inside the 31.5h longest recorded quiet period, so neither "longer than ever" nor a flat
-  threshold would have worked. `<CaptureGapAlert>` is mounted on `/work/conversations`,
-  `/work/connections`, and `/agent-connections/plugins`, renders nothing while healthy/quiet, and
-  names the recovery (`/mcp`, reconnect aidream). Fixed the contributing lie: `freshnessOf()`'s
-  `live` window was 24h behind the present-tense label "Delivering", so a green *Delivering* pill
-  showed throughout the outage; now 1h. `/matrx:health` previously could NOT detect this — it called
-  the bridge `health` action without `provider_session_id`, the only input that resolves a session —
-  and now reads the attach receipt the bridge injects into the model's context on every successful
-  `UserPromptSubmit`. Verified end-to-end against the live DB with a seeded 23.5h fixture, removed after.
+- Conversations table made usable — honest `last_activity_at` in `cvx_list_scoped` (default sort,
+  indexed), compact icon columns at the table primitive, title chip removed. Doctrine + measurements:
+  `features/ai-work/FEATURE.md`, `components/official/matrx-data-table/FEATURE.md`,
+  `lib/list-views/FEATURE.md`. **`updated_at` is a row-mutation stamp, never activity.**
+- Silent-capture detection + loud recovery — `captureGapVerdict()` / `<CaptureGapAlert>` graded
+  against the owner's own cadence, plus a `/matrx:health` that actually proves attachment; see
+  `features/agent-connections/coding-sessions/` and matrx-claude-plugin.
+- `/work/conversations` overhaul: honest default scope, provider/app columns, organization panel.
+- Claude-native titles inbound — Matrx Local reads Claude's desktop session index and delivers labels
+  through the bridge; 232 rows match Claude's sidebar exactly. See
+  `matrx-local/app/services/coding_sessions/` (`claude_session_index.py`, `title_sync.py`).
+- Durable title ladder (user > provider > first_prompt > placeholder) + `workspace_name` — aidream
+  `services/coding_session_bridge/titles.py`.
+- AI Work composer `/work/new` + Saved Requests `/work/requests` on `agent.shortcut` (no new table).
+- Conversation management + War Room: registered `conversations` tool, War Room agents armed, five
+  conversation-analysis agents — `aidream/tools/conversations_tool.py`.
+- Ownership consolidation executed (Arman's ruling): all 68 admin@admin.com sessions moved.
 - Contract + two `chat` tables + owner-only RLS + four-provider event mirror — contract FEATURE.md.
-- Claude plugin `0.2.0-alpha.6` (OAuth hooks, transcript locator, 16-partition asset sync), installed.
-- Codex `v0.2.0-alpha.3` transport certified; Cursor `v0.2.0-alpha.2` real installed-release E2E to
-  production certified; VS Code `v0.1.1` VSIX + Marketplace listing prepared.
-- Matrx Local Claude history import + durable outbox + v2 cross-machine account identity, signed `v1.4.26`.
-- `conversations` MCP tool live (list/search/get_summary/get_messages; `/matrx:conversations`).
-- Managed Claude runtime production-CERTIFIED incl. the broker gzip/content-encoding fix — PLAN.md Lane 5.
-- Durable session titles: first-prompt derivation + provider precedence ladder + `workspace_name`,
-  with the historical placeholder backfill — aidream `titles.py`, `service.py`.
-- AI Work Hub live: unified inbox, provider transcript with tool calls + load-earlier, associations,
-  account grouping, capability facts, workspace chips — `features/ai-work/FEATURE.md`.
+- Claude plugin `0.2.0-alpha.6`; Codex `v0.2.0-alpha.3` transport certified; Cursor `v0.2.0-alpha.2`
+  real installed-release E2E; VS Code `v0.1.1` packaged and listing-ready.
+- `conversations` MCP tool live (`/matrx:conversations`) — aidream.
+- Managed Claude runtime production-CERTIFIED incl. the broker gzip fix — ai-work-hub PLAN.md Lane 5.
+- AI Work Hub live: unified inbox, provider transcript with tool calls, associations, account
+  grouping, capability facts — `features/ai-work/FEATURE.md`.
 
 ## Ground truth about Claude Code's local store (measured 2026-08-16 — cite this, stop re-asking)
 
