@@ -223,6 +223,77 @@ export interface SerpProspectingReceipt {
   unmeasured_domains: number;
 }
 
+/**
+ * Broken-link prospecting (the THIRD method): open the resource pages and
+ * best-of lists SERP prospecting already found, and check every link they
+ * point at. The prospect is the page's OWNER — the pitch is "the page you link
+ * to no longer exists, here is a replacement", which is why this method
+ * converts. It discovers nothing of its own and spends no provider money.
+ */
+export type BrokenLinkProspectingBody = ApiSchemas["BrokenLinkProspectingBody"];
+
+/** How many candidate pages a pass would open, before it opens any. */
+export type BrokenLinkProspectingPreview =
+  ApiSchemas["BrokenLinkProspectingPreview"];
+
+/**
+ * Terminal report of a broken-link pass
+ * (`seo.broken_link_prospecting_completed`). Streamed — hand-typed against
+ * `aidream.services.seo.broken_link_prospecting.BrokenLinkProspectingReport`.
+ *
+ * 🚨 `dead_links` counts ONLY 404/410. `unverifiable_links` counts everything
+ * we were not allowed to check (bot walls, paywalls, rate limits, timeouts) —
+ * those are almost always healthy pages and must NEVER be shown as broken or
+ * pitched, or the user emails a stranger a falsehood in their own name.
+ */
+export interface BrokenLinkProspectingReport {
+  site_id: string;
+  pages_checked: number;
+  pages_failed: number;
+  outbound_checked: number;
+  dead_links: number;
+  unverifiable_links: number;
+  opportunities_updated: number;
+  counts_healed: number;
+  pages: BrokenLinkCheckedPage[];
+  skipped: { page_url: string; domain: string; reason: string }[];
+  errors: string[];
+}
+
+export interface BrokenLinkCheckedPage {
+  serp_opportunity_id: string;
+  serp_mention_id: string;
+  domain: string;
+  page_url: string;
+  outbound_checked: number;
+  dead: { dead_url: string; http_status: number; anchor_text: string | null }[];
+  unverifiable: { url: string; http_status: number; why: string }[];
+}
+
+/**
+ * List / CSV import (the FOURTH method): a list the user already has becomes
+ * ordinary prospects in the same triage surface. The preview is a real dry-run
+ * — every entry carries a verdict and a sentence BEFORE anything is written.
+ */
+export type ProspectImportBody = ApiSchemas["ProspectImportBody"];
+export type ProspectImportPreview = ApiSchemas["ProspectImportPreview"];
+export type ProspectImportEntry = ApiSchemas["ImportEntryPlan"];
+
+/**
+ * Terminal report of an import (`seo.prospect_import_completed`). Streamed —
+ * hand-typed against `aidream.services.seo.prospect_import.ProspectImportReport`.
+ */
+export interface ProspectImportReport {
+  site_id: string;
+  created: number;
+  matched: number;
+  skipped: number;
+  enriched: number;
+  unmeasured: number;
+  entries: ProspectImportEntry[];
+  errors: string[];
+}
+
 export interface BacklinkEnrichmentResult {
   result_kind: "backlinks.enrich";
   site_id: string;

@@ -52,6 +52,7 @@ export const LEVER_LABEL: Record<Lever, string> = {
   resources: "Resources",
   tools: "Tool / Interface",
   architecture: "Architecture",
+  stopping_condition: "Stopping condition",
 };
 
 export const LEVER_COLOR: Record<Lever, string> = {
@@ -59,6 +60,7 @@ export const LEVER_COLOR: Record<Lever, string> = {
   resources: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   tools: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   architecture: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+  stopping_condition: "bg-rose-500/15 text-rose-600 dark:text-rose-400",
 };
 
 export const VERDICT_COLOR: Record<Verdict, string> = {

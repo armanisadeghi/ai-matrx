@@ -42,13 +42,19 @@ import {
   type SerpOpportunityRow,
 } from "@/features/marketing/data/serp-prospects";
 import {
+  collectBrokenLinkProspects,
   collectSerpProspects,
   foldSerpProspectsToCrm,
+  previewProspectImport,
   previewSerpProspecting,
+  runProspectImport,
   SeoApiError,
 } from "@/features/marketing/seo/dataforseo/client";
 import type {
+  BrokenLinkProspectingReport,
   LinkGapFoldReport,
+  ProspectImportPreview,
+  ProspectImportReport,
   SeoStreamEvent,
   SerpProspectingPreview,
   SerpProspectingReceipt,
@@ -78,6 +84,22 @@ export interface SerpProspectingRunState {
   error?: string;
   /** HTTP 400 — the server's sentence about the INPUT, rendered at the form. */
   inputError?: string;
+}
+
+export interface SerpBrokenLinkRunState {
+  status: "idle" | "running" | "done" | "error";
+  /** The page the pass is on, in the server's own words. */
+  stage?: string;
+  report?: BrokenLinkProspectingReport;
+  error?: string;
+}
+
+export interface SerpImportState {
+  status: "idle" | "previewing" | "previewed" | "running" | "done" | "error";
+  /** The dry-run: every entry's verdict and reason, before any write. */
+  preview?: ProspectImportPreview;
+  report?: ProspectImportReport;
+  error?: string;
 }
 
 export interface SerpKeywordVolume {
@@ -128,6 +150,14 @@ export interface SerpProspects {
   volumesLoading: boolean;
   volumesError: string | null;
   checkVolumes: () => Promise<void>;
+  /** The THIRD method: check the outbound links on this site's candidate pages. */
+  brokenLinkRun: SerpBrokenLinkRunState;
+  checkBrokenLinks: () => Promise<void>;
+  /** The FOURTH method: import a list the user already has. */
+  importState: SerpImportState;
+  previewImport: (entries: string[], sourceLabel: string) => Promise<void>;
+  runImport: (entries: string[], sourceLabel: string) => Promise<void>;
+  resetImport: () => void;
 }
 
 export function useSerpProspects(input: {
@@ -188,6 +218,13 @@ export function useSerpProspects(input: {
   const [reviewing, setReviewing] = useState(false);
   const [folding, setFolding] = useState(false);
   const [foldReport, setFoldReport] = useState<LinkGapFoldReport | null>(null);
+  const [brokenLinkRun, setBrokenLinkRun] = useState<SerpBrokenLinkRunState>({
+    status: "idle",
+  });
+  const [importState, setImportState] = useState<SerpImportState>({
+    status: "idle",
+  });
+  const resetImport = useCallback(() => setImportState({ status: "idle" }), []);
   const [volumes, setVolumes] = useState<Record<string, SerpKeywordVolume>>(
     {},
   );
@@ -409,6 +446,109 @@ export function useSerpProspects(input: {
   }, [accessToken, queryClient, serverUrl, siteId]);
 
   /**
+   * The THIRD method, run over the rows the SECOND one already produced: open
+   * this site's resource pages and best-of lists and check every link they
+   * point at. No provider money — it crawls, so the preview shows the page
+   * count before anything is opened.
+   */
+  const checkBrokenLinks = useCallback(async () => {
+    if (!serverUrl) {
+      toast.error("Checking links is unavailable right now.");
+      return;
+    }
+    setBrokenLinkRun({ status: "running" });
+    try {
+      const token = await accessToken();
+      const report = await collectBrokenLinkProspects(
+        serverUrl,
+        token,
+        siteId,
+        {},
+        (event) => {
+          const payload = event.data as { message?: unknown } | undefined;
+          if (typeof payload?.message === "string") {
+            setBrokenLinkRun({ status: "running", stage: payload.message });
+          }
+        },
+      );
+      await queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.site(siteId), "backlinks"],
+      });
+      setBrokenLinkRun({ status: "done", report });
+      toast.success(
+        report.dead_links === 0
+          ? `Checked ${report.outbound_checked} links on ${report.pages_checked} page${report.pages_checked === 1 ? "" : "s"} — nothing broken this time.`
+          : `${report.dead_links} broken link${report.dead_links === 1 ? "" : "s"} found across ${report.opportunities_updated} site${report.opportunities_updated === 1 ? "" : "s"} — each one is a reason to write.`,
+      );
+    } catch (error) {
+      const message = backlinkAnalysisErrorMessage(error);
+      setBrokenLinkRun({ status: "error", error: message });
+      toast.error(message);
+    }
+  }, [accessToken, queryClient, serverUrl, siteId]);
+
+  /**
+   * The FOURTH method: a list the user already has. The preview is a real
+   * dry-run — every entry comes back with a verdict and a sentence BEFORE
+   * anything is written, so nobody learns what an import did afterwards.
+   */
+  const previewImport = useCallback(
+    async (entries: string[], sourceLabel: string) => {
+      if (!serverUrl) {
+        toast.error("Importing is unavailable right now.");
+        return;
+      }
+      setImportState({ status: "previewing" });
+      try {
+        const token = await accessToken();
+        const plan = await previewProspectImport(serverUrl, token, siteId, {
+          entries,
+          source_label: sourceLabel,
+        });
+        setImportState({ status: "previewed", preview: plan });
+      } catch (error) {
+        setImportState({
+          status: "error",
+          error: backlinkAnalysisErrorMessage(error),
+        });
+      }
+    },
+    [accessToken, serverUrl, siteId],
+  );
+
+  const runImport = useCallback(
+    async (entries: string[], sourceLabel: string) => {
+      if (!serverUrl) {
+        toast.error("Importing is unavailable right now.");
+        return;
+      }
+      setImportState({ status: "running" });
+      try {
+        const token = await accessToken();
+        const report = await runProspectImport(serverUrl, token, siteId, {
+          entries,
+          source_label: sourceLabel,
+        });
+        await queryClient.invalidateQueries({
+          queryKey: [...marketingKeys.site(siteId), "backlinks"],
+        });
+        setImportState({ status: "done", report });
+        toast.success(
+          `${report.created} new prospect${report.created === 1 ? "" : "s"} added` +
+            (report.matched ? `, ${report.matched} you already had` : "") +
+            (report.skipped ? `, ${report.skipped} skipped` : "") +
+            ".",
+        );
+      } catch (error) {
+        const message = backlinkAnalysisErrorMessage(error);
+        setImportState({ status: "error", error: message });
+        toast.error(message);
+      }
+    },
+    [accessToken, queryClient, serverUrl, siteId],
+  );
+
+  /**
    * Search-volume annotation, in two canonical steps: the volume-refresh
    * command (which also upserts unknown phrases into the universal keyword
    * library), then a direct read of the market rows. A phrase with no market
@@ -482,5 +622,11 @@ export function useSerpProspects(input: {
     volumesLoading,
     volumesError,
     checkVolumes,
+    brokenLinkRun,
+    checkBrokenLinks,
+    importState,
+    previewImport,
+    runImport,
+    resetImport,
   };
 }

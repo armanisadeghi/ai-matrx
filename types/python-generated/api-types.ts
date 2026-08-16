@@ -8101,6 +8101,53 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hindsight/change-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Change History
+         * @description Recent applied changes to governed units, newest first.
+         *
+         *     ``version_from_confidence`` must be rendered wherever ``version_from`` is:
+         *     ``recorded`` is a fact stamped at apply/revert time, ``inferred`` is the
+         *     previous version row and can be wrong if a promote intervened.
+         */
+        get: operations["get_change_history_hindsight_change_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/finding-effectiveness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Finding Effectiveness
+         * @description Per lever per unit: accept/revert rates, time-to-decision, cost movement.
+         *
+         *     Worst first (most reverts). A NULL rate or cost is NO SIGNAL, never zero —
+         *     render "no signal yet", never 0%.
+         */
+        get: operations["get_finding_effectiveness_hindsight_finding_effectiveness_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hindsight/subjects/tools": {
         parameters: {
             query?: never;
@@ -8113,6 +8160,76 @@ export interface paths {
          * @description Tools ranked by recent dispatch volume + failure ratio — the enroll picker.
          */
         get: operations["list_tool_subjects_hindsight_subjects_tools_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/snapshots/{snapshot_id}/wire-replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Wire Replay
+         * @description Re-issue ONE recorded model call, N times per arm, and rank the answers.
+         *
+         *     ADMIN-ONLY, deliberately: every sample is a fully-billed provider call, and
+         *     a snapshot is reachable across conversations, so this is an operator
+         *     diagnostic rather than a product surface. The CAPS ceilings in
+         *     `hindsight/types.py` bound the spend of any single request; this gate bounds
+         *     who can spend it.
+         */
+        post: operations["trigger_wire_replay_hindsight_snapshots__snapshot_id__wire_replay_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/snapshots/{snapshot_id}/wire-replays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Wire Replays
+         * @description Every arm ever replayed from this snapshot, newest group first.
+         *
+         *     THE DOOR (no-dead-ends): the snapshot viewer names replays, so it must be
+         *     able to reach them — and an arm is only readable NEXT TO its siblings, which
+         *     is why this returns whole groups rather than one row.
+         */
+        get: operations["list_wire_replays_hindsight_snapshots__snapshot_id__wire_replays_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/wire-replays/{replay_group_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Wire Replay Group
+         * @description One replay's arms, control first — the arm-comparison view's data.
+         */
+        get: operations["get_wire_replay_group_hindsight_wire_replays__replay_group_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8237,6 +8354,28 @@ export interface paths {
         put?: never;
         /** Ingest Pack Source */
         post: operations["ingest_pack_source_expertise_desks_ingest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/expertise-desks/ingest-file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Pack File
+         * @description Distill an uploaded document (through content_processing + a page
+         *     extraction job, so rules carry page anchors) or a recording (transcribed
+         *     first, then the text lane) into DRAFT rules.
+         */
+        post: operations["ingest_pack_file_expertise_desks_ingest_file_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -25475,6 +25614,84 @@ export interface components {
             is_active?: boolean;
         };
         /**
+         * ChangeHistoryOut
+         * @description A page of change history, plus the counts the panel headlines.
+         */
+        ChangeHistoryOut: {
+            /** Rows */
+            rows?: components["schemas"]["ChangeHistoryRow"][];
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /**
+             * Has More
+             * @default false
+             */
+            has_more?: boolean;
+        };
+        /**
+         * ChangeHistoryRow
+         * @description One applied change to one governed unit — Internal Affairs' window.
+         *
+         *     Reads ``hindsight.v_change_history``. The client must render
+         *     ``version_from_confidence`` wherever it renders ``version_from``: an
+         *     ``inferred`` number is the view's best adjacency guess, not a recorded fact,
+         *     and presenting the two identically is how a guess becomes an audit claim.
+         */
+        ChangeHistoryRow: {
+            /** Change Id */
+            change_id: string;
+            /**
+             * Unit Token
+             * @enum {string}
+             */
+            unit_token: "agent" | "tool" | "workflow";
+            /** Unit Id */
+            unit_id: string;
+            /** Unit Name */
+            unit_name?: string | null;
+            /** Version To */
+            version_to: number;
+            /** Version From */
+            version_from?: number | null;
+            /** Version From Confidence */
+            version_from_confidence?: ("recorded" | "inferred") | null;
+            /** Restored Version */
+            restored_version?: number | null;
+            /**
+             * Change Role
+             * @enum {string}
+             */
+            change_role: "apply" | "revert" | "edit";
+            /** Actor Tier */
+            actor_tier?: ("code" | "ai" | "human") | null;
+            /** Actor System */
+            actor_system?: string | null;
+            /** Actor Id */
+            actor_id?: string | null;
+            /** Finding Id */
+            finding_id?: string | null;
+            /** Finding Lever */
+            finding_lever?: ("instructions" | "resources" | "tools" | "architecture" | "stopping_condition") | null;
+            /** Finding Title */
+            finding_title?: string | null;
+            /** Finding Status */
+            finding_status?: string | null;
+            /** Finding Confidence */
+            finding_confidence?: number | null;
+            /** Review Id */
+            review_id?: string | null;
+            /** Enrollment Id */
+            enrollment_id?: string | null;
+            /** Change Note */
+            change_note?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Changed At */
+            changed_at?: string | null;
+        };
+        /**
          * ChannelSpec
          * @description Declarative spec for a channel in a workflow definition.
          *
@@ -34300,6 +34517,119 @@ export interface components {
              */
             force_refresh?: boolean;
         };
+        /**
+         * FindingEffectivenessRow
+         * @description Per lever per governed unit: is Hindsight's advice on this unit good?
+         *
+         *     Reads ``hindsight.v_finding_effectiveness``. Every rate and every cost field
+         *     is nullable ON PURPOSE — a lever with no decisions has no accept rate, and a
+         *     change whose versions served no traffic has no cost delta. Rendering a null
+         *     as ``0`` invents a measurement; render "no signal yet".
+         */
+        FindingEffectivenessRow: {
+            /** Id */
+            id: string;
+            /**
+             * Unit Token
+             * @enum {string}
+             */
+            unit_token: "agent" | "tool" | "workflow";
+            /** Unit Id */
+            unit_id?: string | null;
+            /** Unit Display Name */
+            unit_display_name?: string | null;
+            /**
+             * Lever
+             * @enum {string}
+             */
+            lever: "instructions" | "resources" | "tools" | "architecture" | "stopping_condition";
+            /** Organization Id */
+            organization_id?: string | null;
+            /**
+             * Findings Total
+             * @default 0
+             */
+            findings_total?: number;
+            /**
+             * Proposed Count
+             * @default 0
+             */
+            proposed_count?: number;
+            /**
+             * Evidencing Count
+             * @default 0
+             */
+            evidencing_count?: number;
+            /**
+             * Ready Count
+             * @default 0
+             */
+            ready_count?: number;
+            /**
+             * Approved Count
+             * @default 0
+             */
+            approved_count?: number;
+            /**
+             * Applied Count
+             * @default 0
+             */
+            applied_count?: number;
+            /**
+             * Rejected Count
+             * @default 0
+             */
+            rejected_count?: number;
+            /**
+             * Reverted Count
+             * @default 0
+             */
+            reverted_count?: number;
+            /**
+             * Superseded Count
+             * @default 0
+             */
+            superseded_count?: number;
+            /**
+             * Undecided Count
+             * @default 0
+             */
+            undecided_count?: number;
+            /**
+             * Machine Applicable Count
+             * @default 0
+             */
+            machine_applicable_count?: number;
+            /** Accept Rate */
+            accept_rate?: number | null;
+            /** Revert Rate */
+            revert_rate?: number | null;
+            /** Avg Confidence */
+            avg_confidence?: number | null;
+            /** Time To Decision Seconds Avg */
+            time_to_decision_seconds_avg?: number | null;
+            /** Time To Decision Seconds P50 */
+            time_to_decision_seconds_p50?: number | null;
+            /** Time To Revert Seconds Avg */
+            time_to_revert_seconds_avg?: number | null;
+            /** Cost Delta Usd Avg */
+            cost_delta_usd_avg?: number | null;
+            /**
+             * Cost Signal Findings
+             * @default 0
+             */
+            cost_signal_findings?: number;
+            /** Pre Apply Request Count */
+            pre_apply_request_count?: number | null;
+            /** Post Apply Request Count */
+            post_apply_request_count?: number | null;
+            /** First Finding At */
+            first_finding_at?: string | null;
+            /** Last Finding At */
+            last_finding_at?: string | null;
+            /** Last Decision At */
+            last_decision_at?: string | null;
+        };
         /** FindingFixResult */
         FindingFixResult: {
             /**
@@ -34410,7 +34740,7 @@ export interface components {
              * Lever
              * @enum {string}
              */
-            lever: "instructions" | "resources" | "tools" | "architecture";
+            lever: "instructions" | "resources" | "tools" | "architecture" | "stopping_condition";
             /** Title */
             title: string;
             /** Reasoning */
@@ -36140,6 +36470,65 @@ export interface components {
              * @default
              */
             claim?: string;
+        };
+        /**
+         * IngestFileRequest
+         * @description Distill an UPLOADED FILE into DRAFT rules on an existing pack.
+         *
+         *     The same two modes as the text lane, but the source is a real file the
+         *     user uploaded through the canonical file handler:
+         *
+         *     - a document (pdf / docx / …) runs through content_processing
+         *       (processed_documents + pages) and a `docproc.page_extraction_jobs`
+         *       row that points the distiller at the pages, so every rule comes back
+         *       with REAL page anchors (`source_ref.source_pages`) the expert can
+         *       click back to. Deliberately not a parallel pipeline.
+         *     - audio / video is transcribed first (the existing transcription
+         *       feature), then goes down the text lane unchanged.
+         *
+         *     Human-first invariant, identical to every other lane: draft only.
+         */
+        IngestFileRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Pack Id */
+            pack_id: string;
+            /**
+             * File Id
+             * @description cld_files id from the canonical file handler upload.
+             */
+            file_id: string;
+            /**
+             * Mode
+             * @description instructional = the source teaches; exemplar = the source IS examples of great finished work.
+             * @default instructional
+             * @enum {string}
+             */
+            mode?: "instructional" | "exemplar";
+            /**
+             * Source Note
+             * @description Where this came from ('Chapter 3', 'the 2024 handbook').
+             */
+            source_note?: string | null;
+            /**
+             * Pages Per Chunk
+             * @description Pages handed to the distiller per extraction chunk (documents only).
+             * @default 6
+             */
+            pages_per_chunk?: number;
         };
         /** IngestReport */
         IngestReport: {
@@ -55780,6 +56169,164 @@ export interface components {
             /** Email */
             email: string | null;
         };
+        /** WireReplayArmIn */
+        WireReplayArmIn: {
+            /**
+             * Key
+             * @default candidate
+             */
+            key?: string;
+            /** Delta */
+            delta?: {
+                [key: string]: unknown;
+            };
+        };
+        /** WireReplayArmResult */
+        WireReplayArmResult: {
+            /** Replay Step Id */
+            replay_step_id: string;
+            /** Arm Key */
+            arm_key: string;
+            /** Status */
+            status: string;
+            /** Verdict */
+            verdict?: string | null;
+            /**
+             * Sample Count
+             * @default 0
+             */
+            sample_count?: number;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
+            /** Pinned Model */
+            pinned_model?: string | null;
+            /** Faithful */
+            faithful?: boolean | null;
+            /** Error */
+            error?: string | null;
+        };
+        /**
+         * WireReplayIn
+         * @description The control arm is added by the service and always runs — a caller
+         *     cannot opt out of the baseline its own verdict is read against.
+         */
+        WireReplayIn: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Arms */
+            arms?: components["schemas"]["WireReplayArmIn"][];
+            /**
+             * Samples
+             * @default 3
+             */
+            samples?: number;
+            /** Finding Id */
+            finding_id?: string | null;
+            /**
+             * Judge
+             * @default true
+             */
+            judge?: boolean;
+        };
+        /** WireReplayResult */
+        WireReplayResult: {
+            /** Replay Group Id */
+            replay_group_id: string;
+            /** Snapshot Id */
+            snapshot_id: string;
+            /** Arms */
+            arms?: components["schemas"]["WireReplayArmResult"][];
+            /**
+             * Total Cost Usd
+             * @default 0
+             */
+            total_cost_usd?: number;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * WireReplayStepOut
+         * @description One ARM of a Level-1 wire replay (`hindsight.replay_step`, C-16).
+         *
+         *     Arms of one replay share `replay_group_id`; the control arm (empty `delta`)
+         *     is the baseline every candidate's verdict is read against, so a client must
+         *     render the group, never a single row.
+         */
+        WireReplayStepOut: {
+            /** Id */
+            id: string;
+            /** Replay Group Id */
+            replay_group_id: string;
+            /** Arm Key */
+            arm_key: string;
+            /** Delta */
+            delta: {
+                [key: string]: unknown;
+            };
+            /** Pinned Model */
+            pinned_model?: string | null;
+            /** Pinned Params */
+            pinned_params: {
+                [key: string]: unknown;
+            };
+            /**
+             * Sample Count
+             * @default 0
+             */
+            sample_count?: number;
+            /** Samples */
+            samples: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Output Kind
+             * @default text
+             */
+            output_kind?: string;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
+            /** Fidelity */
+            fidelity: {
+                [key: string]: unknown;
+            };
+            /** Verdicts */
+            verdicts: {
+                [key: string]: unknown;
+            };
+            /** Verdict */
+            verdict?: string | null;
+            /** Status */
+            status: string;
+            /** Error */
+            error?: {
+                [key: string]: unknown;
+            } | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+        };
         /** WorkbookInputPart */
         WorkbookInputPart: {
             /** Metadata */
@@ -70720,6 +71267,77 @@ export interface operations {
             };
         };
     };
+    get_change_history_hindsight_change_history_get: {
+        parameters: {
+            query?: {
+                unit_token?: ("agent" | "tool" | "workflow") | null;
+                unit_id?: string | null;
+                change_role?: ("apply" | "revert" | "edit") | null;
+                actor_tier?: ("code" | "ai" | "human") | null;
+                /** @description Only changes a Hindsight finding caused. */
+                with_findings_only?: boolean;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangeHistoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_finding_effectiveness_hindsight_finding_effectiveness_get: {
+        parameters: {
+            query?: {
+                unit_token?: ("agent" | "tool" | "workflow") | null;
+                unit_id?: string | null;
+                lever?: ("instructions" | "resources" | "tools" | "architecture" | "stopping_condition") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingEffectivenessRow"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_tool_subjects_hindsight_subjects_tools_get: {
         parameters: {
             query?: {
@@ -70738,6 +71356,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolSubjectOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_wire_replay_hindsight_snapshots__snapshot_id__wire_replay_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                snapshot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WireReplayIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WireReplayResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_wire_replays_hindsight_snapshots__snapshot_id__wire_replays_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                snapshot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WireReplayStepOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_wire_replay_group_hindsight_wire_replays__replay_group_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                replay_group_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WireReplayStepOut"][];
                 };
             };
             /** @description Validation Error */
@@ -70947,6 +71662,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["IngestSourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_pack_file_expertise_desks_ingest_file_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestFileRequest"];
             };
         };
         responses: {

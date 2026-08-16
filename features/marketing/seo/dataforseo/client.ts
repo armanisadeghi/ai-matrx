@@ -1,4 +1,10 @@
 import type {
+  BrokenLinkProspectingBody,
+  BrokenLinkProspectingPreview,
+  BrokenLinkProspectingReport,
+  ProspectImportBody,
+  ProspectImportPreview,
+  ProspectImportReport,
   BacklinkRefreshBody,
   BacklinkRefreshReceipt,
   BacklinkEnrichmentResult,
@@ -342,6 +348,95 @@ export function foldSerpProspectsToCrm(
     accessToken,
     `/seo/sites/${encodeURIComponent(siteId)}/crm/serp-prospects`,
     { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+/**
+ * What a broken-link pass would open, before it opens anything. Free — no
+ * provider call — but crawling other people's pages is a real cost to them, so
+ * the count is shown first, and an empty run explains what to do instead.
+ */
+export function previewBrokenLinkProspecting(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: BrokenLinkProspectingBody = {},
+): Promise<BrokenLinkProspectingPreview> {
+  return seoRequest(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/broken-link-prospecting/preview`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+/**
+ * Run the broken-link pass: open the candidate pages, check every outbound
+ * link, and record the dead ones against the prospect that carries them.
+ * Resumable — each page's evidence is written the moment it is checked, so a
+ * disconnect costs a delay, never a page.
+ */
+export function collectBrokenLinkProspects(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: BrokenLinkProspectingBody = {},
+  onEvent?: (event: SeoStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<BrokenLinkProspectingReport> {
+  return seoStreamTerminal(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/broken-link-prospecting`,
+    { ...body },
+    "seo.broken_link_prospecting_completed",
+    (data) => (data.receipt as BrokenLinkProspectingReport | undefined) ?? null,
+    onEvent,
+    signal,
+  );
+}
+
+/**
+ * A real dry-run of a pasted/imported list: every entry comes back with a
+ * verdict (`new` / `existing` / `duplicate_in_list` / `blocklisted` /
+ * `unusable`) and a sentence, plus the flat price of scoring what is new.
+ * Nothing is written.
+ */
+export function previewProspectImport(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: ProspectImportBody,
+): Promise<ProspectImportPreview> {
+  return seoRequest(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/prospect-import/preview`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+}
+
+/**
+ * Commit the list into the SAME triage surface every other method feeds. The
+ * blocklist is enforced at ingestion, so a forbidden domain never arrives.
+ */
+export function runProspectImport(
+  serverUrl: string,
+  accessToken: string,
+  siteId: string,
+  body: ProspectImportBody,
+  onEvent?: (event: SeoStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<ProspectImportReport> {
+  return seoStreamTerminal(
+    serverUrl,
+    accessToken,
+    `/seo/sites/${encodeURIComponent(siteId)}/prospect-import`,
+    { ...body },
+    "seo.prospect_import_completed",
+    (data) => (data.receipt as ProspectImportReport | undefined) ?? null,
+    onEvent,
+    signal,
   );
 }
 

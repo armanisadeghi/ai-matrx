@@ -51,6 +51,13 @@ export interface SerpOpportunityRow {
   reviewed_by: string | null;
   priority_score: number | null;
   priority_reason: string | null;
+  /**
+   * Dead outbound links found on this prospect's pages. 🚨 `null` means NEVER
+   * CHECKED — it is not `0`, which means "checked, and every link is alive".
+   * Rendering the two the same way tells the user we looked when we did not.
+   */
+  broken_link_count: number | null;
+  link_checked_at: string | null;
   metadata: Json;
 }
 
@@ -67,6 +74,53 @@ export interface SerpMentionRow {
   rank: number | null;
   result_type: string;
   observed_at: string;
+  /**
+   * Server-written evidence. Read it through `mentionLinkCheck` /
+   * `mentionBrokenLinks` rather than reaching into the JSON at a call site —
+   * the shape is the server's and there is one place that knows it.
+   */
+  extras: Json;
+}
+
+/** One dead outbound link on a candidate page — the broken-link pitch. */
+export interface SerpBrokenLink {
+  dead_url: string;
+  http_status: number;
+  anchor_text: string | null;
+}
+
+export interface SerpLinkCheck {
+  outcome: "checked" | "unreachable";
+  checked_at: string;
+  attempts: number;
+  outbound_checked?: number;
+  dead_count?: number;
+  unverifiable_count?: number;
+  http_status?: number | null;
+}
+
+function extrasObject(extras: Json): Record<string, Json> {
+  return extras && typeof extras === "object" && !Array.isArray(extras)
+    ? (extras as Record<string, Json>)
+    : {};
+}
+
+/** Whether (and how) this page's outbound links were checked. */
+export function mentionLinkCheck(mention: SerpMentionRow): SerpLinkCheck | null {
+  const value = extrasObject(mention.extras).link_check;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as unknown as SerpLinkCheck;
+}
+
+/**
+ * The dead links on this page. 🚨 Only 404/410 land here — a bot wall, paywall
+ * or timeout is recorded separately as `unverifiable` and must never be shown
+ * as broken, because the pitch built on it would be a falsehood sent in the
+ * user's name.
+ */
+export function mentionBrokenLinks(mention: SerpMentionRow): SerpBrokenLink[] {
+  const value = extrasObject(mention.extras).broken_links;
+  return Array.isArray(value) ? (value as unknown as SerpBrokenLink[]) : [];
 }
 
 export interface SerpOpportunityPage {
@@ -77,10 +131,10 @@ export interface SerpOpportunityPage {
 }
 
 const SERP_OPPORTUNITY_SELECT =
-  "id, site_id, normalized_domain, display_domain, mention_count, best_rank, variants, domain_rank, spam_score, referring_domains, total_backlinks, observed_at, enriched_at, review_status, reviewed_at, reviewed_by, priority_score, priority_reason, metadata";
+  "id, site_id, normalized_domain, display_domain, mention_count, best_rank, variants, domain_rank, spam_score, referring_domains, total_backlinks, observed_at, enriched_at, review_status, reviewed_at, reviewed_by, priority_score, priority_reason, broken_link_count, link_checked_at, metadata";
 
 const SERP_MENTION_SELECT =
-  "id, serp_opportunity_id, query, variant, seed_keyword, url, title, snippet, rank, result_type, observed_at";
+  "id, serp_opportunity_id, query, variant, seed_keyword, url, title, snippet, rank, result_type, observed_at, extras";
 
 /** Columns the triage table may sort on, server-side. */
 const SERP_OPPORTUNITY_SORT_COLUMNS = new Set([
@@ -93,6 +147,7 @@ const SERP_OPPORTUNITY_SORT_COLUMNS = new Set([
   "total_backlinks",
   "review_status",
   "observed_at",
+  "broken_link_count",
 ]);
 
 function selectedFilterValues(filter: unknown): string[] {
