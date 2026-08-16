@@ -22,7 +22,7 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutTemplate, ListChecks } from "lucide-react";
+import { LayoutTemplate, ListChecks, PanelsTopLeft } from "lucide-react";
 
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 
@@ -2178,6 +2178,11 @@ export function SetupView() {
 
         return (
           <MobilePanelShell
+            // The workspace header is an EntityModeHeader, which already owns
+            // a "…" for views/actions. A second identical glyph beside it
+            // tells the user nothing, so this one is named.
+            menuIcon={PanelsTopLeft}
+            menuLabel="Setup sections"
             // Desktop is the EXISTING grid, verbatim — each column owns its
             // own scroll. Zero change above md.
             desktop={

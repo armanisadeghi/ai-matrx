@@ -78,6 +78,16 @@ export interface MobilePanelShellProps {
   panels?: MobileShellPanel[];
   /** Extra class on the mobile main column. */
   mainClassName?: string;
+  /**
+   * Icon for the panels trigger. Defaults to the "…" glyph, which is right
+   * when this shell owns the only overflow control on the route — but a route
+   * whose header is an `EntityModeHeader` ALREADY shows a "…" for its modes
+   * and actions, and two identical glyphs side by side say nothing about
+   * which is which. Such a route passes its own icon.
+   */
+  menuIcon?: LucideIcon;
+  /** Accessible name + sheet title for the panels trigger. Default "Panels". */
+  menuLabel?: string;
 }
 
 export function MobilePanelShell({
@@ -85,6 +95,8 @@ export function MobilePanelShell({
   main,
   panels,
   mainClassName,
+  menuIcon: MenuIcon = MoreHorizontal,
+  menuLabel = "Panels",
 }: MobilePanelShellProps) {
   const isMobile = useIsMobile();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -126,8 +138,8 @@ export function MobilePanelShell({
       {hasPanels && (
         <PageHeaderRightPortal>
           <TapTargetButton
-            icon={<MoreHorizontal className="h-4 w-4" />}
-            ariaLabel="Panels"
+            icon={<MenuIcon className="h-4 w-4" />}
+            ariaLabel={menuLabel}
             onClick={() => setMenuOpen(true)}
           />
         </PageHeaderRightPortal>
@@ -150,9 +162,9 @@ export function MobilePanelShell({
 
       {/* Panel picker */}
       {hasPanels && (
-        <BottomSheet open={menuOpen} onOpenChange={setMenuOpen} title="Panels">
+        <BottomSheet open={menuOpen} onOpenChange={setMenuOpen} title={menuLabel}>
           <BottomSheetHeader
-            title="Panels"
+            title={menuLabel}
             trailing={
               <button
                 onClick={() => setMenuOpen(false)}
