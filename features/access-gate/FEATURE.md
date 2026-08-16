@@ -171,11 +171,13 @@ surface means importing them too, never reimplementing the RPC call.
 ## Open
 
 - **The sweep.** `pnpm check:access-errors` (advisory, in the release gates)
-  measures it. **543 → 353** as the conversion waves landed: education, files,
+  measures it. **543 → 319** as the conversion waves landed: education, files,
   rag, `features/marketing` and every `app/(core)` route are at ZERO. The
   `lib` bucket lost its ~45 `lib/redux/app-builder/**` findings when the applet
   feature was deleted (2026-08-13). The leaders now are `features/agents` (34)
-  and a long tail of 6–16 per feature.
+  and a long tail of 6–16 per feature. Forward-looking worklist (the open
+  resolver bug, the two sweep blind spots, the remaining gaps):
+  [`docs/handoffs/access-gate.md`](../../docs/handoffs/access-gate.md).
   **A line the regexes genuinely cannot judge** — a keyword absent from page
   text, an HTTP 404 our crawler observed on someone else's site — takes
   `// access-errors: ok — <reason>`; the reason is required, and the summary
