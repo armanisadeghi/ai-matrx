@@ -20514,6 +20514,45 @@
         }
       }
     },
+    "/expertise-desks/backtest": {
+      "post": {
+        "tags": [
+          "Expertise Desks"
+        ],
+        "summary": "Backtest Desk Output",
+        "operationId": "backtest_desk_output_expertise_desks_backtest_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BacktestCompareRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/sending-identities": {
       "get": {
         "tags": [
@@ -22053,66 +22092,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -60350,6 +60329,91 @@
         "type": "object",
         "title": "BacklinkRefreshBody"
       },
+      "BacktestCompareRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "pack_id": {
+            "type": "string",
+            "minLength": 32,
+            "title": "Pack Id"
+          },
+          "candidate_text": {
+            "type": "string",
+            "minLength": 50,
+            "title": "Candidate Text",
+            "description": "Our desk's output for the shared inputs."
+          },
+          "reference_text": {
+            "type": "string",
+            "minLength": 50,
+            "title": "Reference Text",
+            "description": "The real published work for the same inputs."
+          },
+          "context_note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Note",
+            "description": "What the shared inputs were ('the Aug 14 newswire')."
+          },
+          "capture_gaps": {
+            "type": "boolean",
+            "title": "Capture Gaps",
+            "description": "Land reference-only strengths as draft rules on the pack.",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "pack_id",
+          "candidate_text",
+          "reference_text"
+        ],
+        "title": "BacktestCompareRequest",
+        "description": "Judge a desk's output against the real published exemplar (the R2\noutcome signal). Comparison verdict cites pack rule ids; gaps the\nreference exposes optionally land as DRAFT rules (never auto-activated)."
+      },
       "BatchDeleteRequest": {
         "properties": {
           "organization_id": {
@@ -79355,61 +79419,6 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
-      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -92837,6 +92846,7 @@
           },
           "text": {
             "type": "string",
+            "maxLength": 600000,
             "minLength": 200,
             "title": "Text",
             "description": "The source material, verbatim."
@@ -115306,8 +115316,26 @@
             "title": "Finding Id"
           },
           "source_conversation_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Conversation Id"
+          },
+          "source_wf_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Wf Run Id"
           },
           "replay_conversation_id": {
             "anyOf": [
@@ -115319,6 +115347,17 @@
               }
             ],
             "title": "Replay Conversation Id"
+          },
+          "replay_wf_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replay Wf Run Id"
           },
           "variant": {
             "type": "string",
@@ -115408,7 +115447,6 @@
         "required": [
           "id",
           "enrollment_id",
-          "source_conversation_id",
           "variant",
           "status"
         ],
@@ -115454,8 +115492,26 @@
             "description": "Optional associated task selected by the caller."
           },
           "source_conversation_id": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Source Conversation Id"
+          },
+          "source_wf_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Wf Run Id"
           },
           "overrides": {
             "additionalProperties": true,
@@ -115480,10 +115536,8 @@
           }
         },
         "type": "object",
-        "required": [
-          "source_conversation_id"
-        ],
-        "title": "ReplayRequest"
+        "title": "ReplayRequest",
+        "description": "Kind-shaped source: an agent replay sends `source_conversation_id`, a\nworkflow replay sends `source_wf_run_id` (a real historical workflow.run).\nExactly one — the service (and the DB CHECK) enforce it."
       },
       "ReplayResponse": {
         "properties": {

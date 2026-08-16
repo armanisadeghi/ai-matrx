@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
   ExternalLink,
   MessageCircleQuestion,
-  Play,
+  Scale,
   Workflow,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -18,6 +18,8 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { PackInterviewPanel } from "../detail/PackInterviewPanel";
+import { BacktestDialog } from "./BacktestDialog";
+import { TryDeskBox } from "./TryDeskBox";
 import {
   getPack,
   listDesksForPack,
@@ -113,8 +115,18 @@ export function PackDesksPage({ packId }: { packId: string }) {
   // that silently captures nothing would be a dead end.
   const userId = useAppSelector(selectUserId);
   const [feedbackSeed, setFeedbackSeed] = useState<string | null>(null);
+  const [backtestOpen, setBacktestOpen] = useState(false);
   const isOwner =
     pack !== null && userId !== null && pack.created_by === userId;
+
+  const refreshRuns = useCallback(async () => {
+    if (desks.length === 0) return;
+    try {
+      setRunsByDesk(await listRecentRunsForDesks(desks.map((d) => d.id)));
+    } catch {
+      // Run history is enrichment — a failed refresh keeps the stale list.
+    }
+  }, [desks]);
 
   useEffect(() => {
     let cancelled = false;
@@ -241,14 +253,14 @@ export function PackDesksPage({ packId }: { packId: string }) {
                     ) : null}
                   </div>
                   <div className="flex shrink-0 gap-2">
-                    <Button asChild size="sm">
+                    <Button asChild size="sm" variant="outline">
                       <a
                         href={`${WORKFLOWS_APP_URL}/workflows/${desk.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        <Play className="mr-1 h-4 w-4" />
-                        Run
+                        <ExternalLink className="mr-1 h-4 w-4" />
+                        Open in studio
                       </a>
                     </Button>
                     <Button asChild size="sm" variant="outline">
@@ -262,6 +274,26 @@ export function PackDesksPage({ packId }: { packId: string }) {
                       </a>
                     </Button>
                   </div>
+                </div>
+                {/* Try it right here — the desk is a working checker, not a
+                    link to another app. Runs land in Recent runs below. */}
+                <div className="mt-3 border-t border-border pt-3">
+                  <TryDeskBox
+                    deskId={desk.id}
+                    deskKind={desk.desk_kind}
+                    onRunFinished={() => void refreshRuns()}
+                  />
+                  {isOwner ? (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="mt-2 text-xs text-muted-foreground"
+                      onClick={() => setBacktestOpen(true)}
+                    >
+                      <Scale className="mr-1 h-3.5 w-3.5" />
+                      Compare to the original
+                    </Button>
+                  ) : null}
                 </div>
                 {(runsByDesk[desk.id] ?? []).length > 0 ? (
                   <div className="mt-3 border-t border-border pt-2">
@@ -291,6 +323,13 @@ export function PackDesksPage({ packId }: { packId: string }) {
           })}
         </div>
       )}
+      {isOwner ? (
+        <BacktestDialog
+          open={backtestOpen}
+          onOpenChange={setBacktestOpen}
+          packId={packId}
+        />
+      ) : null}
       {isOwner ? (
         <PackInterviewPanel
           packId={packId}

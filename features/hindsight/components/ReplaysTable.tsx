@@ -68,7 +68,10 @@ export function ReplaysTable({ replays }: { replays: Replay[] }) {
               const inFlight = replayInFlight(r);
               const spend = replaySpend(r);
               const baseline = replayBaseline(r);
-              const sourceDoor = exampleDoor("conversation", r.source_conversation_id, audience);
+              // Workflow replays carry no source conversation — no door then.
+              const sourceDoor = r.source_conversation_id
+                ? exampleDoor("conversation", r.source_conversation_id, audience)
+                : null;
               return (
                 <TableRow key={r.id} className={cn(!ran && "opacity-80")}>
                   <TableCell>

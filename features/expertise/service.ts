@@ -38,6 +38,8 @@ export interface PackIntake {
   knowledge_lives?: string;
   /** What happens if it gets it wrong? Sets guardrail intensity later. */
   stakes?: string;
+  /** "If you handed this to ChatGPT today…" — the baseline we're beating. */
+  benchmark?: string;
 }
 
 export interface CreatePackInput {
@@ -229,6 +231,48 @@ export async function listRecentRunsForDesks(
     }
   }
   return byDesk;
+}
+
+export interface DeskRunVerdict {
+  status: string;
+  /** The chief's ruling (edit + generate shapes both end on node "chief"). */
+  chiefText: string | null;
+  /** The editor's corrected text (edit shape only). */
+  editorText: string | null;
+}
+
+/**
+ * A finished run's human-facing result: the chief's ruling + (edit shape)
+ * the corrected text, read straight off the terminal node outcomes.
+ */
+export async function getDeskRunVerdict(
+  runId: string,
+): Promise<DeskRunVerdict | null> {
+  const [{ data: run, error: runError }, { data: outcomes, error }] =
+    await Promise.all([
+      supabase
+        .schema("workflow")
+        .from("run")
+        .select("id,status")
+        .eq("id", runId)
+        .maybeSingle(),
+      supabase
+        .schema("workflow")
+        .from("node_outcome")
+        .select("node_id, text:output->>final_text" as string)
+        .eq("run_id", runId)
+        .in("node_id", ["chief", "editor"])
+        .returns<{ node_id: string; text: string | null }[]>(),
+    ]);
+  if (runError) throw runError;
+  if (error) throw error;
+  if (!run) return null;
+  const byNode = new Map((outcomes ?? []).map((o) => [o.node_id, o.text]));
+  return {
+    status: String(run.status),
+    chiefText: byNode.get("chief") ?? null,
+    editorText: byNode.get("editor") ?? null,
+  };
 }
 
 /**

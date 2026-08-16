@@ -567,6 +567,23 @@ export interface QuestionnaireDisplayData {
   questions?: QuestionnaireQuestion[];
 }
 
+export interface BacktestRuleFinding {
+  rule_id: string;
+  winner: string;
+  note?: string;
+}
+
+export interface ExpertiseBacktestVerdictData {
+  type?: "expertise_backtest_verdict";
+  pack_id: string;
+  verdict: string;
+  summary: string;
+  findings?: BacktestRuleFinding[];
+  gaps?: string[];
+  gaps_captured?: number;
+  pack_version?: number | null;
+}
+
 export interface ExpertiseIngestCompleteData {
   type?: "expertise_ingest_complete";
   pack_id: string;
@@ -1537,6 +1554,7 @@ export type TypedDataPayload =
   | DeskCompileCompleteData
   | DeskCompileProgressData
   | DictionaryPublishCompleteData
+  | ExpertiseBacktestVerdictData
   | ExpertiseIngestCompleteData
   | ExpertiseIngestProgressData
   | ExtractionIndexCompleteData

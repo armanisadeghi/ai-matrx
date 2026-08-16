@@ -8112,6 +8112,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/expertise-desks/backtest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Backtest Desk Output */
+        post: operations["backtest_desk_output_expertise_desks_backtest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/sending-identities": {
         parameters: {
             query?: never;
@@ -8642,30 +8659,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -22714,6 +22707,52 @@ export interface components {
              */
             enrichment_limit?: number;
         };
+        /**
+         * BacktestCompareRequest
+         * @description Judge a desk's output against the real published exemplar (the R2
+         *     outcome signal). Comparison verdict cites pack rule ids; gaps the
+         *     reference exposes optionally land as DRAFT rules (never auto-activated).
+         */
+        BacktestCompareRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Pack Id */
+            pack_id: string;
+            /**
+             * Candidate Text
+             * @description Our desk's output for the shared inputs.
+             */
+            candidate_text: string;
+            /**
+             * Reference Text
+             * @description The real published work for the same inputs.
+             */
+            reference_text: string;
+            /**
+             * Context Note
+             * @description What the shared inputs were ('the Aug 14 newswire').
+             */
+            context_note?: string | null;
+            /**
+             * Capture Gaps
+             * @description Land reference-only strengths as draft rules on the pack.
+             * @default true
+             */
+            capture_gaps?: boolean;
+        };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
             /**
@@ -29678,33 +29717,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -43932,9 +43944,13 @@ export interface components {
             /** Finding Id */
             finding_id?: string | null;
             /** Source Conversation Id */
-            source_conversation_id: string;
+            source_conversation_id?: string | null;
+            /** Source Wf Run Id */
+            source_wf_run_id?: string | null;
             /** Replay Conversation Id */
             replay_conversation_id?: string | null;
+            /** Replay Wf Run Id */
+            replay_wf_run_id?: string | null;
             /** Variant */
             variant: string;
             /** Status */
@@ -43962,7 +43978,12 @@ export interface components {
             /** Completed At */
             completed_at?: string | null;
         };
-        /** ReplayRequest */
+        /**
+         * ReplayRequest
+         * @description Kind-shaped source: an agent replay sends `source_conversation_id`, a
+         *     workflow replay sends `source_wf_run_id` (a real historical workflow.run).
+         *     Exactly one — the service (and the DB CHECK) enforce it.
+         */
         ReplayRequest: {
             /**
              * Organization Id
@@ -43980,7 +44001,9 @@ export interface components {
              */
             task_id?: string | null;
             /** Source Conversation Id */
-            source_conversation_id: string;
+            source_conversation_id?: string | null;
+            /** Source Wf Run Id */
+            source_wf_run_id?: string | null;
             /** Overrides */
             overrides?: {
                 [key: string]: unknown;
@@ -69117,6 +69140,39 @@ export interface operations {
             };
         };
     };
+    backtest_desk_output_expertise_desks_backtest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BacktestCompareRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_sending_identities_sending_identities_get: {
         parameters: {
             query?: {
@@ -70151,41 +70207,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

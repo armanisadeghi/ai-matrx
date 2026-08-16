@@ -53,6 +53,17 @@ const STAKES_OPTIONS = [
   "Serious harm",
 ] as const;
 
+// The benchmark question (intake doc 20): fills the baseline row of the
+// cost/quality scoreboard on day one, in the expert's own words — the floor
+// we're beating, not the target. The BRANCH matters more than the score.
+const BENCHMARK_OPTIONS = [
+  "It can't do it",
+  "It does it badly",
+  "It takes several chats",
+  "It doesn't have my context",
+  "Haven't tried",
+] as const;
+
 function BandPicker({
   label,
   options,
@@ -102,6 +113,7 @@ export function NewPackDialog({
   const [who, setWho] = useState<string | null>(null);
   const [knowledge, setKnowledge] = useState<string | null>(null);
   const [stakes, setStakes] = useState<string | null>(null);
+  const [benchmark, setBenchmark] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -130,6 +142,7 @@ export function NewPackDialog({
           who_runs_it: who ?? undefined,
           knowledge_lives: knowledge ?? undefined,
           stakes: stakes ?? undefined,
+          benchmark: benchmark ?? undefined,
         },
       });
       onOpenChange(false);
@@ -201,6 +214,12 @@ export function NewPackDialog({
             options={STAKES_OPTIONS}
             value={stakes}
             onChange={setStakes}
+          />
+          <BandPicker
+            label="If you handed this to ChatGPT today, how would it do?"
+            options={BENCHMARK_OPTIONS}
+            value={benchmark}
+            onChange={setBenchmark}
           />
           <div className="space-y-1.5">
             <Label htmlFor="pack-name">

@@ -66,6 +66,32 @@ export interface PackInterviewPanelProps {
   seedText?: string;
 }
 
+// The five elicitation moves (doc 15), phrased as things the EXPERT says.
+// Struggling to articulate a rule is normal — these turn "I don't know" into
+// a concrete next step the expert chooses.
+const ELICITATION_CHIPS = [
+  {
+    label: "Show me a draft to critique",
+    message:
+      "Write your best attempt at this task, and I'll tell you what's wrong with it.",
+  },
+  {
+    label: "Draft my rule — I'll correct it",
+    message:
+      "Draft what you think my rule is here, and I'll correct it.",
+  },
+  {
+    label: "Give me two options",
+    message:
+      "Give me two different versions to choose between — I'll pick one and tell you why.",
+  },
+  {
+    label: "I have an example of good work",
+    message:
+      "I have an example of past work that came out exactly right. Here's what it was: ",
+  },
+] as const;
+
 function InterviewConversation({
   packId,
   seedText,
@@ -102,6 +128,19 @@ function InterviewConversation({
     seededForRef.current = seedText;
   }, [conversationId, seedText, dispatch, store]);
 
+  // The elicitation menu as one-tap chips (doc 15: a menu, not a method — and
+  // the EXPERT picks the move). Tapping stages the request in the composer;
+  // the expert still presses send, and can edit first. Never clobbers a draft
+  // the expert typed themselves.
+  const lastChipRef = useRef<string | null>(null);
+  const stageChip = (text: string) => {
+    if (!conversationId) return;
+    const existing = selectUserInputText(conversationId)(store.getState());
+    if (existing.trim() && existing !== lastChipRef.current) return;
+    dispatch(setUserInputText({ conversationId, text }));
+    lastChipRef.current = text;
+  };
+
   if (!conversationId) return <ChatRoomSkeleton />;
   return (
     <AgentConversationColumn
@@ -115,6 +154,21 @@ function InterviewConversation({
         variablesPanelStyle: "hidden",
         placeholder: "Answer in your own words — typing or rambling both work…",
       }}
+      afterMessages={
+        <div className="flex flex-wrap gap-1.5 px-1 pt-2">
+          {ELICITATION_CHIPS.map((chip) => (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={() => stageChip(chip.message)}
+              className="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+              title="Puts the request in the message box — you can edit it before sending."
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      }
     />
   );
 }

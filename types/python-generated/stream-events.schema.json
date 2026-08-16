@@ -7290,6 +7290,96 @@
     "title": "ExpertiseIngestCompleteData",
     "type": "object"
   },
+  "ExpertiseBacktestVerdictData": {
+    "$defs": {
+      "BacktestRuleFinding": {
+        "description": "One rule's comparison verdict inside a backtest.",
+        "properties": {
+          "rule_id": {
+            "title": "Rule Id",
+            "type": "string"
+          },
+          "winner": {
+            "title": "Winner",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          }
+        },
+        "required": [
+          "rule_id",
+          "winner"
+        ],
+        "title": "BacktestRuleFinding",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /expertise-desks/backtest — the R2 outcome\nsignal: desk output vs the real published exemplar, judged rule-by-rule\nagainst the pack.",
+    "properties": {
+      "type": {
+        "const": "expertise_backtest_verdict",
+        "default": "expertise_backtest_verdict",
+        "title": "Type",
+        "type": "string"
+      },
+      "pack_id": {
+        "title": "Pack Id",
+        "type": "string"
+      },
+      "verdict": {
+        "title": "Verdict",
+        "type": "string"
+      },
+      "summary": {
+        "title": "Summary",
+        "type": "string"
+      },
+      "findings": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/BacktestRuleFinding"
+        },
+        "title": "Findings",
+        "type": "array"
+      },
+      "gaps": {
+        "default": [],
+        "items": {
+          "type": "string"
+        },
+        "title": "Gaps",
+        "type": "array"
+      },
+      "gaps_captured": {
+        "default": 0,
+        "title": "Gaps Captured",
+        "type": "integer"
+      },
+      "pack_version": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Pack Version"
+      }
+    },
+    "required": [
+      "pack_id",
+      "verdict",
+      "summary"
+    ],
+    "title": "ExpertiseBacktestVerdictData",
+    "type": "object"
+  },
   "PdfExtractStartedData": {
     "additionalProperties": false,
     "description": "Extraction began — the document is open and the page count is known.",
