@@ -79,7 +79,7 @@ function WorkflowRuntimeDemo() {
   const [surfaceLoaded, setSurfaceLoaded] = useState(false);
   const [view, setView] = useState<ViewMode>("board");
   const [viewChosen, setViewChosen] = useState(false);
-  const { startRun, starting } = useWorkflowRunControls();
+  const { startRun, startStepRun, starting } = useWorkflowRunControls();
 
   useEffect(() => {
     let cancelled = false;
@@ -140,11 +140,17 @@ function WorkflowRuntimeDemo() {
   const effectiveView: ViewMode =
     !viewChosen && surfaceLoaded && runId && surface ? "surface" : view;
 
-  const begin = async () => {
+  const begin = async (stepMode: boolean) => {
     if (!selected) return;
-    const newRunId = await startRun({ definitionId: selected });
+    const newRunId = stepMode
+      ? await startStepRun({ definitionId: selected })
+      : await startRun({ definitionId: selected });
     if (!newRunId) return;
-    toast.success("Workflow started.");
+    toast.success(
+      stepMode
+        ? "Run prepared — use the action buttons to run each step."
+        : "Workflow started.",
+    );
     router.replace(`/demos/workflow-runtime?run=${newRunId}`);
   };
 
@@ -194,10 +200,18 @@ function WorkflowRuntimeDemo() {
             <button
               type="button"
               disabled={!selected || starting}
-              onClick={() => void begin()}
+              onClick={() => void begin(false)}
               className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
             >
               {starting ? "Starting…" : "Run"}
+            </button>
+            <button
+              type="button"
+              disabled={!selected || starting}
+              onClick={() => void begin(true)}
+              className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground disabled:opacity-50"
+            >
+              Run step-by-step
             </button>
           </>
         )}
