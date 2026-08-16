@@ -113,10 +113,14 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
    Site measurement doors (gated on `web_site_id`), page editor Plan-tab Origin section
    (quick-publish page / artifact / conversation doors, all three plan states), and the
    html-pages editor's lineage panel (raw uuids replaced with BEFORE doors + a
-   `context_metadata.promotions[]` AFTER door per promoted CMS page). Chipped (large):
-   plan tree/table AFTER (needs `webPageId` in aidream's cms-pages payload) and research
-   forward doors ("used by" over the same associations read). Listed, lowest value: CMS
-   components editor has no component→page usage join (that join doesn't exist yet).
+   `context_metadata.promotions[]` AFTER door per promoted CMS page). Research forward doors
+   DONE 2026-08-15: `ResearchUsedBy` (features/research/components/shared/) inverts the same
+   associations read and lists a topic/tag's consuming sites, plan pages, and canonical pages
+   as doors — mounted on the topic Outputs studio + tag consolidation view, verified against
+   live edges; remaining leg is the CMS-array reverse filter (`client_pages.research_topic_ids`
+   in the separate CMS DB). Still chipped (large): plan tree/table AFTER (needs `webPageId` in
+   aidream's cms-pages payload). Listed, lowest value: CMS components editor has no
+   component→page usage join (that join doesn't exist yet).
    Verified as NOT gaps: Search Console page rows, marketing PagesTable (both door into
    PageWorkspace, which now carries BEFORE + CMS door); CMS collections (not page-shaped).
 7. **Research tab (later).** When P2 research artifacts flow (`plan.node_artifact
