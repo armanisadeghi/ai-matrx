@@ -30,6 +30,7 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Slot } from "@radix-ui/react-slot";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -177,9 +178,10 @@ export function ContextMenuV3({
   const capturedSelection = useRef<CapturedSelection | null>(null);
   const selectionLocked = useRef(false);
   const lastMousePos = useRef<{ x: number; y: number } | null>(null);
-  // The DOM element this instance wraps (the asChild trigger child on
-  // desktop, the display:contents wrapper on mobile). Selection tracking is
-  // scoped to it — see handleSelection.
+  // The DOM element this instance wraps — the child element itself on both
+  // desktop (Radix `ContextMenuTrigger asChild`) and mobile (`Slot`), falling
+  // back to the display:contents wrapper only when mobile cannot slot onto a
+  // single child. Selection tracking is scoped to it — see handleSelection.
   const selectionOwnerRef = useRef<HTMLElement | null>(null);
   const setSelectionOwner = useCallback((node: HTMLElement | null) => {
     selectionOwnerRef.current = node;
@@ -616,32 +618,59 @@ export function ContextMenuV3({
 
   // ── Mobile: a 70dvh bottom-sheet drill-down (long-press / floating icon) ──
   if (isMobile) {
+    // The mobile trigger props. Attached WITHOUT a wrapper element whenever we
+    // can (see below); the props themselves are identical either way.
+    const mobileTriggerProps = {
+      onContextMenu: (e: React.MouseEvent<HTMLElement>) => {
+        if (suppressed) return; // native menu shows
+        // Same rule as the desktop capture guard below: a read-only menu
+        // never steals a live text field's native menu.
+        if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
+        e.preventDefault();
+        captureContext(e.target as HTMLElement, e.currentTarget);
+        setSheetOpen(true);
+      },
+      onTouchStart: handleTouchStart,
+      onTouchMove: handleTouchMove,
+      onTouchEnd: handleTouchEnd,
+      onTouchCancel: handleTouchEnd,
+    };
+
+    // A WRAPPER ELEMENT IS NOT ALWAYS LEGAL. `display:contents` costs no layout
+    // box, but it is still a `<div>` in the DOM — and when the wrapped child is
+    // a `<tr>` (the canonical list shell wraps every row) that div sits between
+    // `<tbody>` and `<tr>`, which no element may do: React logs hydration
+    // errors and the browser reparents the table. So when `children` is a
+    // single element we merge the handlers and the selection-owner ref ONTO
+    // that element via Radix `Slot` — exactly what the desktop branch already
+    // gets from `ContextMenuTrigger asChild`, and it composes (never clobbers)
+    // any handler/ref the child already has. Slot throws on anything but a
+    // single element, and cloning props onto a Fragment is invalid, so both
+    // fall back to the wrapper — where a `<div>` was always going to be legal
+    // anyway, since a Fragment/multi-child payload cannot be a lone `<tr>`.
+    const canSlot =
+      React.Children.count(children) === 1 &&
+      React.isValidElement(children) &&
+      children.type !== React.Fragment;
+
     return (
       <>
-        {/* display:contents → no layout box, but still receives bubbled touch
-            events from the wrapped children (preserves the surface's layout). */}
-        <div
-          ref={setSelectionOwner}
-          style={{ display: "contents" }}
-          onContextMenu={(e) => {
-            if (suppressed) return; // native menu shows
-            // Same rule as the desktop capture guard below: a read-only menu
-            // never steals a live text field's native menu.
-            if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
-            e.preventDefault();
-            captureContext(
-              e.target as HTMLElement,
-              e.currentTarget as HTMLElement,
-            );
-            setSheetOpen(true);
-          }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
-        >
-          {children}
-        </div>
+        {canSlot ? (
+          <Slot ref={setSelectionOwner} {...mobileTriggerProps}>
+            {children}
+          </Slot>
+        ) : (
+          // Multi-children / Fragment fallback: display:contents → no layout
+          // box, but still receives bubbled touch events from the wrapped
+          // children (preserves the surface's layout).
+          <div
+            ref={setSelectionOwner}
+            style={{ display: "contents" }}
+            {...mobileTriggerProps}
+          >
+            {children}
+          </div>
+        )}
 
         {enableFloatingIcon &&
           shouldRenderFloatingIcon(

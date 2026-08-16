@@ -26,6 +26,8 @@ On a mobile viewport (`useIsMobile()`) the shell renders a vaul `Drawer` instead
 
 Both renderers consume ONE `useContextMenuActions` hook (extracted 2026-07-21) — desktop and mobile behavior cannot drift; a launch-path or handler change lands in the hook once.
 
+**The mobile shell attaches its handlers with NO wrapper element.** Desktop has always merged onto the child (Radix `ContextMenuTrigger asChild`); mobile now does the same through Radix `Slot` whenever `children` is a single non-Fragment element, composing (never clobbering) the child's own handlers and ref. The `display:contents` `<div>` survives ONLY as the multi-children/Fragment fallback. **A wrapper element is not always legal:** `display:contents` costs no layout box but is still a `<div>` in the DOM, and when the child is a `<tr>` (the canonical list shell wraps every row) that div sits between `<tbody>` and `<tr>` — which no element may do. React logged hydration errors on `/cms/html-pages` at mobile widths until the wrapper went away. The fallback is safe by construction: a Fragment or multi-child payload can never be a lone `<tr>`.
+
 ## Inline agent editing — the WidgetHandle wire
 
 Every **editable** surface gets streaming in-place agent edits with ZERO extra wiring. The shell (`ContextMenuV3.tsx`) derives a `WidgetHandle` from the SAME callbacks the surface already passes (`buildEditableWidgetHandle` in `utils/widget-handle.ts`: `onTextReplace` / `onTextInsertBefore|After` / `getTextarea`, reading current content from the field or `getApplicationScope().content`), registers it via `useOptionalWidgetHandle` (the null-tolerant variant of the canonical `useWidgetHandle`), and both launch handlers pass `runtime.widgetHandleId`. An agent launched from the menu can then stream `widget_text_replace / patch / insert_before|after / prepend / append` client-tool calls that edit the surface live (the same channel `SmartCodeEditor` uses — see `features/agents/types/widget-handle.types.ts` + `CLIENT_SIDE_TOOLS.md`).
@@ -265,6 +267,7 @@ v3 is the only UNIVERSAL menu, but these independent right-click implementations
 
 ## Change Log
 
+- `2026-08-16` — **The mobile shell stopped inserting an illegal wrapper.** The MOBILE branch wrapped children in a `display:contents` `<div>` to carry the touch/contextmenu handlers; wrapping a `<tr>` put that div between `<tbody>` and `<tr>`, so `/cms/html-pages` logged hydration errors at mobile widths ("`<div>` cannot be a child of `<tbody>`"). No element is legal there, so the handlers now merge onto the child itself via Radix `Slot` — the same mechanism desktop already gets from `ContextMenuTrigger asChild`, composing the child's existing handlers and ref rather than replacing them, with the wrapper kept only for the multi-children/Fragment fallback. Verified at 375px on `/cms/html-pages`: 169 `<tr>` directly under `<tbody>`, zero wrapper divs, the row's own `onClick` still present alongside the merged touch handlers, zero hydration errors, and long-press still opens the bottom sheet with the correct per-row scope.
 - `2026-08-14` — **Visual Maps adopted v3 as its node-aware right-click seam.**
   The single wrapper surrounds the XYFlow workspace with
   `surfaceName="matrx-user/maps"` and its live full-document scope; per-open node
