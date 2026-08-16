@@ -50,12 +50,13 @@ creation, mobile order scales, child status mapping.
    `workflow.run` is in the `supabase_realtime` publication first. `link_kind`/`link_id`
    doors: signals carry table+record_id — render doors (EntityRef) on the first surface that
    lists signals. First real pump consumer lands with the Study Pack surface.
-3. **Phase 4 — actions + HITL (core SHIPPED 2026-08-16):** `startStepRun`/`executeNode`
-   controls verbs, `nodeActionReadiness`, real action readouts (unlock-on-ready button +
-   auto-run toggle), schema-driven interrupt form (`schema_hint` → typed fields, text
-   fallback). **Remaining:** the generated run-form start dialog (port the studio's
-   `io.user_input` seeding rules → `node_inputs`), a step-mode path in the demo page
-   (Run step-by-step button → `startStepRun`), and executeNode `inputs` collection UI.
+3. **Phase 4 — actions + HITL (SHIPPED 2026-08-16):** `startStepRun`/`executeNode` controls
+   verbs, `nodeActionReadiness` (parked-run gated), real action readouts (unlock-on-ready
+   button + auto-run toggle, shared in-flight guard), schema-driven interrupt form
+   (checkpoint-keyed; `schema_hint` → typed fields, text fallback), the generated run-start
+   form (`io.user_input` fields → `node_inputs`), step-mode path in the demo. **Small tail:**
+   "file" form fields are a text input — wire the universal file handler picker; executeNode
+   per-node `inputs` collection UI.
 4. **Phase 5 — parity proof:** Study Pack surface, then the podcast rebuild (the acceptance
    test), then research-lite.
 5. **Known Phase-1 limits to close:** `node_stream` deltas carry `node_id` only, so fan-out

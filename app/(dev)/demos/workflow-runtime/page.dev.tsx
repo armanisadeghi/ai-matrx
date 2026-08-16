@@ -19,6 +19,8 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 import { WorkflowRunBoard } from "@/features/workflow-runtime/components/WorkflowRunBoard";
+import { RunStartForm } from "@/features/workflow-runtime/components/RunStartForm";
+import { deriveRunForm } from "@/features/workflow-runtime/surface/run-form";
 import { RunSurfaceView } from "@/features/workflow-runtime/components/RunSurfaceView";
 import { SurfaceBuilder } from "@/features/workflow-runtime/components/SurfaceBuilder";
 import { useWorkflowRunControls } from "@/features/workflow-runtime/hooks/useWorkflowRunControls";
@@ -105,6 +107,7 @@ function WorkflowRuntimeDemo() {
     setDefinition(null);
     setSurface(null);
     setSurfaceLoaded(false);
+    setPendingStart(null);
   };
 
   // Load the definition graph + default surface for the selected workflow.
@@ -140,11 +143,25 @@ function WorkflowRuntimeDemo() {
   const effectiveView: ViewMode =
     !viewChosen && surfaceLoaded && runId && surface ? "surface" : view;
 
-  const begin = async (stepMode: boolean) => {
+  const [pendingStart, setPendingStart] = useState<{
+    stepMode: boolean;
+  } | null>(null);
+
+  const launch = async (
+    stepMode: boolean,
+    nodeInputs?: Record<string, Record<string, unknown>>,
+  ) => {
     if (!selected) return;
+    setPendingStart(null);
+    const args = {
+      definitionId: selected,
+      ...(nodeInputs && Object.keys(nodeInputs).length > 0
+        ? { nodeInputs }
+        : {}),
+    };
     const newRunId = stepMode
-      ? await startStepRun({ definitionId: selected })
-      : await startRun({ definitionId: selected });
+      ? await startStepRun(args)
+      : await startRun(args);
     if (!newRunId) return;
     toast.success(
       stepMode
@@ -152,6 +169,17 @@ function WorkflowRuntimeDemo() {
         : "Workflow started.",
     );
     router.replace(`/demos/workflow-runtime?run=${newRunId}`);
+  };
+
+  const begin = async (stepMode: boolean) => {
+    if (!selected) return;
+    // Workflows that collect inputs (io.user_input) get the generated form
+    // first; everything else starts immediately.
+    if (definition && deriveRunForm(definition).length > 0) {
+      setPendingStart({ stepMode });
+      return;
+    }
+    await launch(stepMode);
   };
 
   const pickView = (mode: ViewMode) => {
@@ -216,6 +244,16 @@ function WorkflowRuntimeDemo() {
           </>
         )}
       </div>
+
+      {pendingStart && definition ? (
+        <RunStartForm
+          definition={definition}
+          starting={starting}
+          startLabel={pendingStart.stepMode ? "Run step-by-step" : "Run"}
+          onStart={(nodeInputs) => void launch(pendingStart.stepMode, nodeInputs)}
+          onCancel={() => setPendingStart(null)}
+        />
+      ) : null}
 
       {selected ? (
         <div className="flex items-center gap-1.5">
