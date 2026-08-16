@@ -46,27 +46,34 @@ export function useDurableDraft(key: string): {
 } {
   const storageKey = PREFIX + key;
   const [draft, setDraftState] = useState("");
-  // Tracks whether the user typed before the restore effect ran — their live
-  // keystrokes always beat a stale saved copy.
-  const touchedRef = useRef(false);
+  // Which key the user's live keystrokes belong to. Their typing beats a
+  // stale saved copy ONLY for the same key — a key CHANGE always adopts the
+  // new key's saved value (or empty), so a swapped entity id can never show
+  // or send the previous entity's text.
+  const touchedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Restore runs on mount AND on every key change (localStorage is
+    // unavailable during SSR, hence effect not render).
+    let saved: string | null = null;
     try {
-      const saved = window.localStorage.getItem(storageKey);
-      if (saved && !touchedRef.current) setDraftState(saved);
+      saved = window.localStorage.getItem(storageKey);
     } catch {
       // Restore is best-effort; the write path warns once (above).
     }
+    setDraftState((current) =>
+      touchedKeyRef.current === storageKey && current ? current : (saved ?? ""),
+    );
   }, [storageKey]);
 
   const setDraft = (value: string) => {
-    touchedRef.current = true;
+    touchedKeyRef.current = storageKey;
     setDraftState(value);
     storageWrite(storageKey, value);
   };
 
   const clearDraft = () => {
-    touchedRef.current = true;
+    touchedKeyRef.current = storageKey;
     setDraftState("");
     storageWrite(storageKey, "");
   };

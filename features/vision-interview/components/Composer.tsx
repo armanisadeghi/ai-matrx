@@ -42,7 +42,6 @@ import { useDurableDraft } from "@/hooks/useDurableDraft";
 import {
   selectActiveSpeaker,
   selectPendingInterrupt,
-  selectRoomSession,
   selectRunError,
   selectRunPhase,
 } from "../redux/vision-interview.slice";
@@ -51,16 +50,18 @@ import type { ResumeInput } from "../hooks/useInterviewRun";
 import { RoleAvatar } from "./RoleAvatar";
 
 interface ComposerProps {
+  /** From the route — stable on first render, so the durable-draft key can
+   *  never wobble through a pre-hydration window (Bugbot, PR #152). */
+  sessionId: string;
   onResume: (input: ResumeInput) => Promise<boolean>;
   onStart: (openingMessage?: string) => Promise<boolean>;
 }
 
-export function Composer({ onResume, onStart }: ComposerProps) {
+export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
   const runPhase = useAppSelector(selectRunPhase);
   const pendingInterrupt = useAppSelector(selectPendingInterrupt);
   const activeSpeaker = useAppSelector(selectActiveSpeaker);
   const runError = useAppSelector(selectRunError);
-  const sessionId = useAppSelector(selectRoomSession)?.id;
   // NEVER-LOSE-CONTENT: the draft survives reloads, crashes, and error
   // storms — it is cleared ONLY after the room durably accepted it
   // (Arman's ruling, 2026-08-16, after a dictated vision was lost).
@@ -68,7 +69,7 @@ export function Composer({ onResume, onStart }: ComposerProps) {
     draft: text,
     setDraft: setText,
     clearDraft,
-  } = useDurableDraft(`vision-interview:${sessionId ?? "pending"}`);
+  } = useDurableDraft(`vision-interview:${sessionId}`);
   const [summon, setSummon] = useState<RoleKey | null>(null);
   const [sending, setSending] = useState(false);
   const [starting, setStarting] = useState(false);

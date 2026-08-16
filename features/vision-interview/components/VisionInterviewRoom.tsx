@@ -73,7 +73,7 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
             </div>
             <div className="min-h-0 flex-1">
               {mobilePane === "room" ? (
-                <TranscriptPane onResume={resume} onStart={start} />
+                <TranscriptPane sessionId={sessionId} onResume={resume} onStart={start} />
               ) : mobilePane === "document" ? (
                 <DocumentPane />
               ) : (
@@ -90,7 +90,7 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
           >
             <Panel id="transcript" defaultSize="40%" minSize="25%">
               <div className="h-full overflow-hidden border-r border-border">
-                <TranscriptPane onResume={resume} onStart={start} />
+                <TranscriptPane sessionId={sessionId} onResume={resume} onStart={start} />
               </div>
             </Panel>
             <Handle />

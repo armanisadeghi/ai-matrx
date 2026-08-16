@@ -41,11 +41,16 @@ const EMPTY_NODE_STREAMS: WorkflowNodeStreamEntry[] = [];
 const NO_NODE_STREAMS = () => EMPTY_NODE_STREAMS;
 
 interface TranscriptPaneProps {
+  sessionId: string;
   onResume: (input: ResumeInput) => Promise<boolean>;
   onStart: (openingMessage?: string) => Promise<boolean>;
 }
 
-export function TranscriptPane({ onResume, onStart }: TranscriptPaneProps) {
+export function TranscriptPane({
+  sessionId,
+  onResume,
+  onStart,
+}: TranscriptPaneProps) {
   const turns = useAppSelector(selectTurnsOrdered);
   const hydrated = useAppSelector(selectRoomHydrated);
   const session = useAppSelector(selectRoomSession);
@@ -149,7 +154,7 @@ export function TranscriptPane({ onResume, onStart }: TranscriptPaneProps) {
           </div>
         )}
       </div>
-      <Composer onResume={onResume} onStart={onStart} />
+      <Composer sessionId={sessionId} onResume={onResume} onStart={onStart} />
     </div>
   );
 }
