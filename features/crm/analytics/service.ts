@@ -16,6 +16,7 @@ import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { MEMBER_STATUSES } from "../outreach-lists/types";
 import type { MemberStatus } from "../outreach-lists/types";
+import type { CrmQueryContext } from "../types";
 import {
   buildCampaignRollup,
   buildExits,
@@ -174,38 +175,63 @@ export interface OrgOutreachReport {
 }
 
 /**
- * Every campaign in the org, rolled up.
+ * Every campaign THIS USER CAN SEE, rolled up.
+ *
+ * Scoped exactly like the list page beside it (`fetchOutreachLists`: mine, plus
+ * every org I belong to) rather than to one arbitrarily-chosen organization.
+ * A report whose scope differs from the list it sits next to is a report that
+ * silently contradicts the screen — and picking `orgIds[0]` would do exactly
+ * that for anyone in more than one org.
  *
  * Counts are per campaign because that is the only way a row can be a DOOR —
  * a single grouped query would produce numbers nobody could click into. The
  * campaign list is capped and any remainder is reported.
  */
 export async function fetchOrgOutreachReport(
-  organizationId: string,
+  ctx: CrmQueryContext,
 ): Promise<OrgOutreachReport> {
   const db = await crm();
   const platformDb = await platform();
 
+  const scoped = <T extends { or: (f: string) => T; eq: (c: string, v: string) => T }>(
+    query: T,
+  ): T =>
+    ctx.orgIds.length
+      ? query.or(
+          `created_by.eq.${ctx.userId},organization_id.in.(${ctx.orgIds.join(",")})`,
+        )
+      : query.eq("created_by", ctx.userId);
+
   const [lists, total, outcomes] = await Promise.all([
-    db
-      .from("outreach_list")
-      .select("id,name,status")
-      .eq("organization_id", organizationId)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(MAX_REPORTED_CAMPAIGNS),
-    db
-      .from("outreach_list")
-      .select("id", { count: "exact", head: true })
-      .eq("organization_id", organizationId)
-      .is("deleted_at", null),
-    platformDb
-      .from("outcome_event")
-      .select("matched_at,status")
-      .eq("organization_id", organizationId)
-      .gte("matched_at", sinceIso(TREND_DAYS))
-      .order("matched_at", { ascending: true })
-      .limit(MAX_TREND_ROWS),
+    scoped(
+      db
+        .from("outreach_list")
+        .select("id,name,status")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(MAX_REPORTED_CAMPAIGNS),
+    ),
+    scoped(
+      db
+        .from("outreach_list")
+        .select("id", { count: "exact", head: true })
+        .is("deleted_at", null),
+    ),
+    ctx.orgIds.length
+      ? platformDb
+          .from("outcome_event")
+          .select("matched_at,status")
+          .in("organization_id", ctx.orgIds)
+          .gte("matched_at", sinceIso(TREND_DAYS))
+          .order("matched_at", { ascending: true })
+          .limit(MAX_TREND_ROWS)
+      : platformDb
+          .from("outcome_event")
+          .select("matched_at,status")
+          .eq("created_by", ctx.userId)
+          .gte("matched_at", sinceIso(TREND_DAYS))
+          .order("matched_at", { ascending: true })
+          .limit(MAX_TREND_ROWS),
   ]);
   if (lists.error) throw pgError(lists.error);
   if (total.error) throw pgError(total.error);

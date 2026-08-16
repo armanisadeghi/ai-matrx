@@ -24,6 +24,7 @@ import {
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import { cn } from "@/lib/utils";
+import type { CrmQueryContext } from "../types";
 import { formatRate } from "./lib";
 import {
   fetchOrgOutreachReport,
@@ -77,11 +78,7 @@ function CampaignRow({
   );
 }
 
-export function OrgOutreachReportPanel({
-  organizationId,
-}: {
-  organizationId: string;
-}) {
+export function OrgOutreachReportPanel({ ctx }: { ctx: CrmQueryContext }) {
   const [data, setData] = useState<OrgOutreachReport | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,13 +87,13 @@ export function OrgOutreachReportPanel({
     setIsLoading(true);
     setError(null);
     try {
-      setData(await fetchOrgOutreachReport(organizationId));
+      setData(await fetchOrgOutreachReport(ctx));
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
       setIsLoading(false);
     }
-  }, [organizationId]);
+  }, [ctx]);
 
   useEffect(() => {
     void load();

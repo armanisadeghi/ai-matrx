@@ -5,8 +5,6 @@
 // sent a message reads as failure and gets a working campaign cancelled — by
 // exactly the non-technical expert this platform is built for.
 
-import { describe, expect, it } from "vitest";
-
 import {
   buildCampaignRollup,
   buildExits,

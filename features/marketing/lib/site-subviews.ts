@@ -47,6 +47,12 @@ export const AI_VISIBILITY_SUBVIEWS = [
   { id: "sources", label: "Sources" },
   { id: "signals", label: "Decision signals" },
   { id: "history", label: "History" },
+  // A saved SET of buyer questions, asked on a cadence (seo.ai_visibility_panel).
+  // Overview answers "what did an assistant say when I asked just now";
+  // Panels answers "are we showing up over time, and is that getting better".
+  // A different question, a different table, and its own recurring spend — so a
+  // sub-view, not a filter over the one-off runs.
+  { id: "panels", label: "Panels" },
 ] as const satisfies readonly MarketingSubView[];
 
 export const MARKETING_SITE_SUBVIEWS = [

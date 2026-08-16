@@ -48516,6 +48516,107 @@ export type Database = {
           },
         ]
       }
+      ai_visibility_panel: {
+        Row: {
+          cadence_days: number
+          city: string | null
+          country_iso: string
+          coverage_tracker_id: string | null
+          created_at: string
+          created_by: string | null
+          declared_by: string
+          declared_ref: Json
+          dedupe_key: string
+          deleted_at: string | null
+          engines: string[]
+          id: string
+          is_active: boolean
+          key_messages: Json
+          last_error: string | null
+          last_run_at: string | null
+          last_run_cost_usd: number | null
+          last_run_status: string | null
+          max_prompts_per_run: number
+          metadata: Json
+          name: string
+          organization_id: string
+          prompts: Json
+          run_count: number
+          site_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          cadence_days?: number
+          city?: string | null
+          country_iso?: string
+          coverage_tracker_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_by?: string
+          declared_ref?: Json
+          dedupe_key: string
+          deleted_at?: string | null
+          engines?: string[]
+          id?: string
+          is_active?: boolean
+          key_messages?: Json
+          last_error?: string | null
+          last_run_at?: string | null
+          last_run_cost_usd?: number | null
+          last_run_status?: string | null
+          max_prompts_per_run?: number
+          metadata?: Json
+          name: string
+          organization_id: string
+          prompts?: Json
+          run_count?: number
+          site_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          cadence_days?: number
+          city?: string | null
+          country_iso?: string
+          coverage_tracker_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_by?: string
+          declared_ref?: Json
+          dedupe_key?: string
+          deleted_at?: string | null
+          engines?: string[]
+          id?: string
+          is_active?: boolean
+          key_messages?: Json
+          last_error?: string | null
+          last_run_at?: string | null
+          last_run_cost_usd?: number | null
+          last_run_status?: string | null
+          max_prompts_per_run?: number
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          prompts?: Json
+          run_count?: number
+          site_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_visibility_panel_coverage_tracker_id_fkey"
+            columns: ["coverage_tracker_id"]
+            isOneToOne: false
+            referencedRelation: "coverage_tracker"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_visibility_response: {
         Row: {
           analysis: Json

@@ -38,6 +38,7 @@ import {
 } from "./badges";
 import { OutreachListCreateDialog } from "./OutreachListCreateDialog";
 import { OrgOutreachReportPanel } from "../../analytics/OrgOutreachReportPanel";
+import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 
 function memberCount(row: OutreachListWithCount): number {
   return row.members?.[0]?.count ?? 0;
@@ -323,12 +324,10 @@ export function OutreachListsPage() {
         <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-2">
           {/* One org's outreach, rolled up from the SAME pure functions the
               per-campaign panel uses — the totals and the rows cannot drift. */}
-          {ctx?.orgIds[0] ? (
-            <OrgOutreachReportPanel organizationId={ctx.orgIds[0]} />
+          {ctx ? (
+            <OrgOutreachReportPanel ctx={ctx} />
           ) : (
-            <p className="px-1 py-4 text-xs text-muted-foreground">
-              This report is per organization, and you are not in one yet.
-            </p>
+            <LoadingSurface label="Loading your campaigns…" />
           )}
         </div>
       ) : (
