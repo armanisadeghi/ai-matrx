@@ -85,9 +85,11 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
    `readNodeKeywordStrategy`: page role, secondary keywords, supported money routes, and the
    planned internal links with anchor text — every route resolved through `usePlanNodes` to a
    plan-node door when the plan knows it, plain text when it doesn't. Honest empty state links
-   the plan workspace. Browser-verified with a live strategy record. NOTE: no live `plan.node`
-   row carries `keyword_strategy` yet — the strategist has never been applied in production, so
-   the empty state is currently what every page shows.
+   the plan workspace. Browser-verified with a live strategy record. NOTE (data, not code): no
+   live `plan.node` row carries `keyword_strategy` yet (strategist never applied in
+   production), and no `client_pages` row carries `web_page_id` yet (the publish+crawl join has
+   never landed) — so today every SEO plan section AND every Measure surface shows its empty
+   state. The first strategist apply and the first crawled CMS page light them up.
 5. ~~Tab governance~~ — **DONE 2026-08-15** (fold built as recommended; Arman can still switch
    to an overflow menu). html/css/js are one **Code** tab with an inner switcher (7-tab strip);
    every tab switch writes `?tab=` via `history.replaceState` at the buffer grain, so tabs are
@@ -104,8 +106,19 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
      `CmsPageMeasure` in a lazy `WindowPanel`, seven distinct honest absent-join states.
    - NodeStepRail on the Measure side: carried by `PlanContextPanel` inside
      `PagePlanContextCard` (`showPipeline` defaults on) — no separate build needed.
-   Beyond these, the system-wide sweep of every page-shaped edit/display surface remains open
-   (sweep run 2026-08-15, results being worked).
+   **The system-wide sweep ran 2026-08-15.** Five small gaps found and CLOSED same day
+   (browser-verified): artifact detail's broken "Open HTML Editor" (now the real
+   `/cms/html-pages/{externalId}` route; metadata rows are doors), page-list "Open measurement"
+   action (off `web_page_id`, via the one menu builder), CMS site hub header Content plan +
+   Site measurement doors (gated on `web_site_id`), page editor Plan-tab Origin section
+   (quick-publish page / artifact / conversation doors, all three plan states), and the
+   html-pages editor's lineage panel (raw uuids replaced with BEFORE doors + a
+   `context_metadata.promotions[]` AFTER door per promoted CMS page). Chipped (large):
+   plan tree/table AFTER (needs `webPageId` in aidream's cms-pages payload) and research
+   forward doors ("used by" over the same associations read). Listed, lowest value: CMS
+   components editor has no component→page usage join (that join doesn't exist yet).
+   Verified as NOT gaps: Search Console page rows, marketing PagesTable (both door into
+   PageWorkspace, which now carries BEFORE + CMS door); CMS collections (not page-shaped).
 7. **Research tab (later).** When P2 research artifacts flow (`plan.node_artifact
    kind='research'`), the page's research distillation + cited sources join the Plan tab; a
    separate tab only if it grows an editor. Blocked on website-factory p3/p4/p5.
