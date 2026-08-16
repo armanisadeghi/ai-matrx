@@ -35,7 +35,7 @@
  * execution path, and nothing runs without a verb-labeled click.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ChevronDown,
@@ -43,13 +43,15 @@ import {
   Hammer,
   History,
   Loader2,
+  MessageSquareQuote,
+  PenLine,
   Plus,
   RotateCcw,
   Save,
-  Sparkles,
+  Scissors,
+  ShieldCheck,
   Trash2,
   User,
-  Wand2,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -97,11 +99,13 @@ import {
 const GUIDED_REVISIONS: {
   key: string;
   label: string;
+  Icon: typeof ShieldCheck;
   explains: string;
   guidance: string;
 }[] = [
   {
     key: "check",
+    Icon: ShieldCheck,
     label: "Check the facts",
     explains:
       "Reads this page against its brief and research, tells you what it found in plain language, and fixes what it can.",
@@ -109,6 +113,7 @@ const GUIDED_REVISIONS: {
   },
   {
     key: "tighten",
+    Icon: Scissors,
     label: "Tighten it",
     explains:
       "Says the same thing in fewer words. Nothing is dropped — the meaning and the structure stay.",
@@ -117,6 +122,7 @@ const GUIDED_REVISIONS: {
   },
   {
     key: "warmer",
+    Icon: MessageSquareQuote,
     label: "Make it warmer",
     explains:
       "Rewrites the tone to sound like a person talking to the reader, keeping the same facts and structure.",
@@ -195,7 +201,7 @@ function SectionCard({
             {reviseBusy ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Wand2 className="h-3.5 w-3.5" />
+              <PenLine className="h-3.5 w-3.5" />
             )}
           </Button>
           <Button
@@ -369,15 +375,15 @@ export function PageDraftEditor({
   const [busyGuidance, setBusyGuidance] = useState<string | null>(null);
 
   // A NEW revision arriving (an AI step finished, or another tab saved) loads
-  // itself — unless the user has unsaved words, which are never overwritten by
-  // a background refresh. In that case the banner below offers the choice.
+  // itself — unless the user has unsaved words, which a background refresh must
+  // never overwrite. Adjusted DURING RENDER, the React-sanctioned way to derive
+  // state from props (an effect would render the stale draft once, then flash
+  // the new one; it is also what NodePanel does for its own field draft).
   const incomingId = resolved?.artifact.id ?? null;
-  useEffect(() => {
-    if (incomingId === loadedArtifactId) return;
-    if (dirty) return;
+  if (incomingId !== loadedArtifactId && !dirty) {
     setValue(resolved?.draft ?? EMPTY_PAGE_DRAFT);
     setLoadedArtifactId(incomingId);
-  }, [incomingId, loadedArtifactId, dirty, resolved]);
+  }
 
   const patch = useCallback((next: Partial<PageDraft>) => {
     setValue((current) => ({ ...current, ...next }));
@@ -523,7 +529,7 @@ export function PageDraftEditor({
               {resolved.humanAuthored ? (
                 <User className="h-3 w-3" aria-hidden />
               ) : (
-                <Sparkles className="h-3 w-3" aria-hidden />
+                <PenLine className="h-3 w-3" aria-hidden />
               )}
               {resolved.humanAuthored
                 ? "Your edit"
@@ -816,7 +822,7 @@ export function PageDraftEditor({
                   {busyGuidance === option.key ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <Sparkles className="h-3 w-3" />
+                    <option.Icon className="h-3 w-3" />
                   )}
                   {option.label}
                 </Button>

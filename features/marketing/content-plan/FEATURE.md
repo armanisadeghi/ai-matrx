@@ -578,6 +578,42 @@ instantiated_at}` — byte-identical to what aidream's `_record_site_archetype`
   children whose label round-trips to their slug), which is what makes
   re-opening Setup idempotent without a second source of truth.
 
+### The page's words — what the editor shows is what the builder renders
+
+The P4 record (`plan.node_artifact` kinds `draft` / `review`) exists so a
+non-technical owner can change a page's TEXT without touching HTML. Four rules
+keep that honest:
+
+1. **`lib/page-draft.ts` is the client mirror of aidream's
+   `page_pipeline.approved_content` — newest of the current draft/review wins.**
+   Not "prefer the review": preferring it would hide every re-write, including
+   a person's own edit, while the build rendered the stale one. Change the rule
+   and you change BOTH files in the same unit of work, or the editor starts
+   lying about what ships. Pinned by `lib/page-draft.test.ts`.
+2. **A save is a REVISION.** The client never writes `plan.node_artifact` —
+   `POST /content-plan/nodes/{id}/draft` supersedes and inserts, stamping
+   `produced_by.authored_by = "human"` with the acting user. That stamp is what
+   lets the editor say "Your edit" instead of guessing, and no `chat.agent_run`
+   row is opened for typing.
+3. **A human edit makes an existing review stale, and the UI SAYS so** — in the
+   editor's banner and on the rail's amber Review chip
+   (`lib/pipeline-staleness.ts`), with the re-run button as the fix. Two green
+   steps over unreviewed words is the failure this prevents.
+4. **Editing ≠ rendering.** `plan_page_draft` has exactly ONE renderer, its kind
+   component (`blocks/page-pipeline/PlanPageDraftBlock.tsx`), used wherever a
+   value appears without a record identity — chat, a live run, the artifact
+   dialog's read view. `PageDraftEditor` is the EDIT surface at the one place
+   that knows *which* page this is and can therefore save. Never add a second
+   read-only draft renderer; extend the kind component instead.
+
+**Open gap (deliberate):** the guided AI actions are verb-labeled buttons, not
+assist chips, because an assist action runs through `AssistActionContext`,
+which can POST but cannot adopt a STREAM — a chip would therefore have to spin
+silently through a minute-long model call, and a spinner is never the answer
+while AI works. Closing it means a streaming-capable assist capability
+(`features/assists/runtime/assist-action-registry.ts`), which is a platform
+decision, not a content-plan one.
+
 ### General
 
 - **DB trigger errors are the contract.** Brandless site, slug shape,
@@ -700,6 +736,23 @@ No new server capability was added: `cms-align` always took a node-id array,
 always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
+
+- 2026-08-16 — **The page's words became editable (P4's whole reason for
+  existing).** `components/PageDraftEditor.tsx` renders the `draft`/`review`
+  artifact as a PAGE — heading, opening, sections (heading, a subdued
+  purpose note, prose, bullets, reorder / add / remove), the ask, and the
+  search title+description measured against the ONE SEO limit source
+  (`features/marketing/seo/serp/metrics.ts`) — with the revision history and
+  who wrote each version. Mounted as NodePanel's "Page content" section and
+  behind "Edit these words" in the rail's artifact dialog. Saving POSTs
+  `/content-plan/nodes/{id}/draft` (`hooks/usePageDraftSave.ts` → aidream
+  `page_pipeline.save_human_draft`): a new human-stamped REVISION, never a
+  mutation, because the client may not write `plan.node_artifact` (one writer,
+  on the server). "Build the page" reuses `useNodeReality.write`; the guided
+  AI actions re-run the REVIEW step with guidance through `usePageStepRun`,
+  saving unsaved edits first so the agent never reviews the previous version.
+  `lib/page-draft.ts` is the client mirror of `approved_content` (recency
+  wins), so the editor shows exactly what the builder will render.
 
 - 2026-08-16 — **The five page-pipeline shapes became registered kinds, and the
   rail learned STALENESS.** Every step's artifact carried a `__kind` envelope

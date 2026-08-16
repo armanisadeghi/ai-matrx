@@ -938,7 +938,10 @@ export function NodePanel({
                 nodeId={node.id}
                 siteId={siteId}
                 pageLabel={node.route ?? node.label}
-                onBuild={cmsSiteId ? () => reality.write() : undefined}
+                // Always offered, never hidden: a missing website is a state to
+                // explain, not a button to remove (NO DEAD ENDS). The reason
+                // below disables it and says what to do instead.
+                onBuild={() => reality.write()}
                 buildBusy={reality.busy === "write"}
                 buildDisabledReason={
                   cmsSiteId

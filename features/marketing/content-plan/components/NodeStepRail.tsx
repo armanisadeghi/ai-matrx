@@ -30,7 +30,7 @@
  *
  * STALENESS is derived, not stamped — see `lib/pipeline-staleness.ts`.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertCircle,
   Check,
@@ -149,10 +149,15 @@ function ArtifactDialog({
     artifact !== null &&
     artifact.valid_to === null &&
     EDITABLE_ARTIFACT_KINDS.has(artifact.kind);
+  // Opening a different artifact starts in READ mode. Adjusted during render
+  // (the React-sanctioned derive-from-props pattern) — an effect would flash the
+  // previous artifact's editor for one frame.
   const artifactId = artifact?.id ?? null;
-  useEffect(() => {
+  const [editingFor, setEditingFor] = useState<string | null>(artifactId);
+  if (editingFor !== artifactId) {
+    setEditingFor(artifactId);
     setEditing(false);
-  }, [artifactId]);
+  }
   return (
     <Dialog
       open={artifact !== null}

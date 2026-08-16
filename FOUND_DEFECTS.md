@@ -17,6 +17,33 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D205 — the committed `openapi.json` is AHEAD of the committed `api-types.ts`; regenerating breaks 48 files (2026-08-16)
+
+`pnpm sync-types` writes both `types/python-generated/openapi.json` and
+`api-types.ts` from the same backend spec, so they should always agree. They do
+not: running `openapi-typescript types/python-generated/openapi.json` today
+produces a file that differs from the committed `api-types.ts` by ~6,280 lines,
+and type-checking against it yields **94 errors across 48 files** (fields that
+became REQUIRED server-side — `clear_notes` in `features/secrets/*`, `store` in
+`features/voice-agent/services/realtimeToolService.ts`, `country_code`/
+`search_type` in the scraper pages, `max_chars`/`top_n`/`debug` in
+`features/transcripts/service/autoLabelTranscript.ts`, `passes_user_input` and
+`blocking` in `features/admin/agent-slots/*`, and more).
+
+So the spec says the backend already demands values these callsites never send:
+each error is a live 422 waiting to happen, hidden only because the TS mirror is
+stale. **`pnpm type-check` is green today purely because api-types.ts was not
+regenerated with the spec it was committed beside.**
+
+Found while adding `/content-plan/nodes/{node_id}/draft`: a full regeneration
+would have dumped 94 unrelated errors into an unrelated commit, so that commit
+carries only the generated blocks for the new endpoint (spec spliced, file
+regenerated, the new blocks inserted verbatim).
+
+The fix is one sitting: regenerate both from the live backend, then fix the
+callsites the new required fields expose — each is a real missing request field,
+not a typing nuisance.
+
 ### D204 — `lib/deepgram/` holds four hardcoded agent personas in a module with ZERO consumers (2026-08-16)
 
 **Needs Arman's ruling — an agent may not recommend deleting purpose-built work
