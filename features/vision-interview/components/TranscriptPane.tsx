@@ -3,11 +3,13 @@
 // features/vision-interview/components/TranscriptPane.tsx
 //
 // The room's left pane: the full shared transcript (interview.turn rows via
-// Supabase realtime — turns land on node completion), the role strip, and the
-// human composer at the bottom — PLUS the live in-flight layer: while a role
-// node is speaking, its tokens render token-by-token in a LiveTurnCard, read
-// from the canonical execution system (activeRequests.nodeStreams, fed by
-// followWorkflowRunStream off the run's SSE events feed).
+// Supabase realtime — turns land on node completion), the presence strip,
+// and the always-alive composer at the bottom — PLUS the live in-flight
+// layer: while a role node is speaking, its tokens render token-by-token in
+// a LiveTurnCard, read from the canonical execution system
+// (activeRequests.nodeStreams, fed by followWorkflowRunStream off the run's
+// SSE events feed; selector instances are factory-cached, so the inline call
+// below is stable).
 //
 // No-double-render rule: a node's live card hides the moment its persisted
 // turn lands (same role, current round) OR its node settles — the persisted
@@ -21,13 +23,13 @@ import {
   selectRoomHydrated,
   selectRoomRequestId,
   selectRoomSession,
-  selectRunError,
   selectTurnsOrdered,
 } from "../redux/vision-interview.slice";
 import type { ResumeInput } from "../hooks/useInterviewRun";
-import { roleFromNodeId } from "../types";
+import { ROLE_ORDER, roleFromNodeId } from "../types";
 import { Composer } from "./Composer";
 import { LiveTurnCard } from "./LiveTurnCard";
+import { RoleAvatar } from "./RoleAvatar";
 import { RoleStrip } from "./RoleStrip";
 import { TurnCard } from "./TurnCard";
 
@@ -39,14 +41,13 @@ const EMPTY_NODE_STREAMS: WorkflowNodeStreamEntry[] = [];
 const NO_NODE_STREAMS = () => EMPTY_NODE_STREAMS;
 
 interface TranscriptPaneProps {
-  onResume: (input: ResumeInput) => Promise<void>;
-  onStart: () => Promise<void>;
+  onResume: (input: ResumeInput) => Promise<boolean>;
+  onStart: (openingMessage?: string) => Promise<boolean>;
 }
 
 export function TranscriptPane({ onResume, onStart }: TranscriptPaneProps) {
   const turns = useAppSelector(selectTurnsOrdered);
   const hydrated = useAppSelector(selectRoomHydrated);
-  const runError = useAppSelector(selectRunError);
   const session = useAppSelector(selectRoomSession);
   const requestId = useAppSelector(selectRoomRequestId);
   const nodeStreams = useAppSelector(
@@ -85,9 +86,9 @@ export function TranscriptPane({ onResume, onStart }: TranscriptPaneProps) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <RoleStrip />
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-2">
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-2 py-1">
         {!hydrated ? (
-          <div className="space-y-2">
+          <div className="space-y-2 p-1">
             <Skeleton className="h-16 w-full" />
             <Skeleton className="h-16 w-5/6" />
             <Skeleton className="h-16 w-full" />
@@ -95,17 +96,23 @@ export function TranscriptPane({ onResume, onStart }: TranscriptPaneProps) {
         ) : turns.length === 0 && liveCards.length === 0 ? (
           <div className="flex h-full items-center justify-center p-6">
             <div className="max-w-sm text-center">
+              <div className="mb-3 flex items-center justify-center gap-1.5">
+                {ROLE_ORDER.map((key) => (
+                  <RoleAvatar key={key} role={key} size="sm" />
+                ))}
+              </div>
               <p className="text-sm font-medium text-foreground">
-                The room is ready
+                Six roles are waiting for your vision
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Start the interview — the Amplifier and Cartographer open the
-                Expand stage from your vision statement.
+                Type or dictate an opening statement below — or press Start
+                and the room opens from your saved vision. The Amplifier and
+                Cartographer lead the Expand stage.
               </p>
             </div>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {turns.map((turn) => (
               <TurnCard key={turn.id} turn={turn} />
             ))}
@@ -118,11 +125,6 @@ export function TranscriptPane({ onResume, onStart }: TranscriptPaneProps) {
               />
             ))}
           </div>
-        )}
-        {runError && (
-          <p className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {runError}
-          </p>
         )}
       </div>
       <Composer onResume={onResume} onStart={onStart} />

@@ -37,6 +37,7 @@ import {
 } from "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { toast } from "@/lib/toast";
+import { appendVisionStatement } from "../service";
 import { roleFromNodeId, type RoleKey } from "../types";
 import {
   nodeCompleted,
@@ -50,6 +51,7 @@ import {
   selectPendingInterrupt,
   selectRunId,
   selectRunPhase,
+  sessionMerged,
   streamAdopted,
 } from "../redux/vision-interview.slice";
 
@@ -69,9 +71,14 @@ export function useInterviewRun(sessionId: string) {
   const pendingInterrupt = useAppSelector(selectPendingInterrupt);
   // A second click while a call is in flight must not start a second run.
   const inFlightRef = useRef(false);
-  // The SSE follower for the current run — one at a time; aborted on
-  // restart (a resume adopts a fresh requestId) and on unmount.
+  // The SSE follower for the current run — armed EXACTLY ONCE per run_id and
+  // aborted only on unmount or a genuine new run. Re-arming a live follower
+  // aborts its SSE connection and replays the feed from seq 0, pushing stale
+  // lifecycle events back through the choreography — never do it.
   const followAbortRef = useRef<AbortController | null>(null);
+  // The run_id the current live follower is on; cleared when the follower
+  // settles (terminal event / gave up / aborted) so a later start can re-arm.
+  const followingRunIdRef = useRef<string | null>(null);
   // Ids of the latest adoption, so the follower can start the moment the
   // run_id becomes known (either order: adoption first, run_id event later).
   const adoptedRef = useRef<{ requestId: string; conversationId: string } | null>(
@@ -144,9 +151,20 @@ export function useInterviewRun(sessionId: string) {
   const startFollowing = (followRunId: string) => {
     const adopted = adoptedRef.current;
     if (!adopted) return;
+    // Once per run: a live follower on this run_id is left alone. (It only
+    // needs re-arming after it SETTLED — terminal event or reconnects
+    // exhausted — which clears followingRunIdRef below.)
+    if (
+      followingRunIdRef.current === followRunId &&
+      followAbortRef.current &&
+      !followAbortRef.current.signal.aborted
+    ) {
+      return;
+    }
     followAbortRef.current?.abort();
     const controller = new AbortController();
     followAbortRef.current = controller;
+    followingRunIdRef.current = followRunId;
     void dispatch(
       followWorkflowRunStream({
         runId: followRunId,
@@ -155,7 +173,11 @@ export function useInterviewRun(sessionId: string) {
         signal: controller.signal,
         onEvent: handleRunEvent,
       }),
-    );
+    ).finally(() => {
+      if (followAbortRef.current === controller) {
+        followingRunIdRef.current = null;
+      }
+    });
   };
 
   /**
@@ -184,6 +206,19 @@ export function useInterviewRun(sessionId: string) {
     dispatch(
       adoptForeignStream({
         onAdopted: ({ requestId, conversationId }) => {
+          // FIRST adoption of a run wins: the follower routes node streams
+          // into that row for the run's whole life (armed once — see
+          // startFollowing). Later resume adoptions mint inline rows we
+          // deliberately ignore so the room keeps reading the row the
+          // follower actually writes.
+          if (
+            followingRunIdRef.current &&
+            followAbortRef.current &&
+            !followAbortRef.current.signal.aborted &&
+            adoptedRef.current
+          ) {
+            return;
+          }
           adoptedRef.current = { requestId, conversationId };
           dispatch(streamAdopted({ sessionId, requestId }));
         },
@@ -191,10 +226,15 @@ export function useInterviewRun(sessionId: string) {
       }),
     );
 
+  /** Runs one start/resume request. Returns true when the request was
+   *  ACCEPTED (stream consumed without an error envelope) — the caller uses
+   *  this to decide whether the composer draft may be cleared. Every failure
+   *  path lands in `runFailed`, which returns the surface to an actionable
+   *  state (Start re-arms); nothing here can leave a stuck busy flag. */
   const runStream = async (
     call: () => ReturnType<typeof callApi>,
-  ): Promise<void> => {
-    if (inFlightRef.current) return;
+  ): Promise<boolean> => {
+    if (inFlightRef.current) return false;
     inFlightRef.current = true;
     dispatch(runStarting());
     try {
@@ -205,22 +245,58 @@ export function useInterviewRun(sessionId: string) {
           runFailed({ message: error.message ?? "The run request failed." }),
         );
         toast.error(error.message ?? "The interview run could not start.");
+        return false;
       }
+      return true;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "The interview run failed.";
       dispatch(runFailed({ message }));
       toast.error(message);
+      return false;
     } finally {
       inFlightRef.current = false;
     }
   };
 
-  /** Start (or restart — the tables are truth, a new run re-hydrates) the
-   *  session's workflow run. */
-  const start = async (): Promise<void> => {
+  /**
+   * Start (or restart — the tables are truth, a new run re-hydrates) the
+   * session's workflow run.
+   *
+   * `openingMessage` is the pre-start composer draft: it is appended to the
+   * session's vision statement BEFORE the run starts (the backend seeds
+   * turn 0 from it on a fresh session, and it stays on the session as
+   * durable context for restarts). Returns true when the draft was CONSUMED
+   * — false means keep it in the composer.
+   *
+   * Consumption == the append landing, NOT the run starting. Once the
+   * statement is durably on the session row, the composer must clear even if
+   * the run then fails to start — otherwise "Try again" re-appends the same
+   * text and corrupts the vision statement (Bugbot, PR #146). A run-start
+   * failure after a successful append surfaces via `runFailed` as usual.
+   */
+  const start = async (openingMessage?: string): Promise<boolean> => {
+    if (inFlightRef.current) return false;
+    const message = openingMessage?.trim();
+    let draftConsumed = false;
+    if (message) {
+      try {
+        const saved = await appendVisionStatement(sessionId, message);
+        // Merge the fresh row now; the realtime echo is dropped by the
+        // slice's monotonic guard.
+        dispatch(sessionMerged(saved));
+        draftConsumed = true;
+      } catch (err) {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Could not save your statement — nothing was started.",
+        );
+        return false; // Draft stays in the composer; Start stays armed.
+      }
+    }
     const consume = adopt();
-    await runStream(() =>
+    const started = await runStream(() =>
       callApi({
         path: "/vision-interview/sessions/{session_id}/start" as never,
         method: "POST",
@@ -230,21 +306,28 @@ export function useInterviewRun(sessionId: string) {
         consumeStream: consume,
       }),
     );
+    if (draftConsumed && !started) {
+      toast.info(
+        "Your statement is saved on the session — starting the room failed; try Start again.",
+      );
+    }
+    return draftConsumed || started;
   };
 
-  /** Answer the pending human-input interrupt (and/or send controls). */
-  const resume = async (input: ResumeInput): Promise<void> => {
+  /** Answer the pending human-input interrupt (and/or send controls).
+   *  Returns true when the answer was accepted (draft may clear). */
+  const resume = async (input: ResumeInput): Promise<boolean> => {
     if (!runId) {
       toast.error("There is no active run to answer — start the interview first.");
-      return;
+      return false;
     }
     const checkpointId = pendingInterrupt?.checkpointId;
     if (!checkpointId) {
       toast.error("The run is not waiting for input right now.");
-      return;
+      return false;
     }
     const consume = adopt();
-    await runStream(() =>
+    const accepted = await runStream(() =>
       callApi({
         path: "/runs/{run_id}/resume",
         method: "POST",
@@ -262,9 +345,13 @@ export function useInterviewRun(sessionId: string) {
         consumeStream: consume,
       }),
     );
-    // The resume adopted a fresh requestId; re-arm the follower on it so
-    // the next round's node streams land in the row the room now reads.
-    startFollowing(runId);
+    // NO unconditional re-arm: the follower armed at run start stays live
+    // across resumes (aborting it here replayed the feed from seq 0 into the
+    // choreography). This call is a guarded no-op while it is live — it only
+    // arms a fresh follower if the previous one already settled (e.g. its
+    // reconnects were exhausted), and never on a failed resume request.
+    if (accepted) startFollowing(runId);
+    return accepted;
   };
 
   return { runPhase, runId, pendingInterrupt, start, resume };
