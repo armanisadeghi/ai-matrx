@@ -2,12 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ExternalLink, Play, Workflow } from "lucide-react";
+import {
+  AlertTriangle,
+  ExternalLink,
+  MessageCircleQuestion,
+  Play,
+  Workflow,
+} from "lucide-react";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
+import { PackInterviewPanel } from "../detail/PackInterviewPanel";
 import {
   getPack,
   listDesksForPack,
@@ -40,29 +48,48 @@ const RUN_STATUS_STYLES: Record<string, string> = {
   cancelled: "bg-muted-foreground",
 };
 
-function DeskRunRow({ run }: { run: DeskRun }) {
+function DeskRunRow({
+  run,
+  onFeedback,
+}: {
+  run: DeskRun;
+  onFeedback?: (run: DeskRun) => void;
+}) {
   const duration = runDuration(run);
   return (
-    <a
-      href={`${WORKFLOWS_APP_URL}/runs/${run.id}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex items-center gap-2 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-    >
-      <span
-        className={cn(
-          "h-1.5 w-1.5 shrink-0 rounded-full",
-          RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
-        )}
-      />
-      <span className="capitalize">{run.status}</span>
-      <span>· {runWhen(run)}</span>
-      {duration ? <span>· {duration}</span> : null}
-      {run.cost_usd !== null ? (
-        <span>· ${run.cost_usd < 0.01 ? run.cost_usd.toFixed(4) : run.cost_usd.toFixed(2)}</span>
+    <div className="group flex items-center gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50">
+      <a
+        href={`${WORKFLOWS_APP_URL}/runs/${run.id}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex min-w-0 flex-1 items-center gap-2 hover:text-foreground"
+      >
+        <span
+          className={cn(
+            "h-1.5 w-1.5 shrink-0 rounded-full",
+            RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
+          )}
+        />
+        <span className="capitalize">{run.status}</span>
+        <span>· {runWhen(run)}</span>
+        {duration ? <span>· {duration}</span> : null}
+        {run.cost_usd !== null ? (
+          <span>· ${run.cost_usd < 0.01 ? run.cost_usd.toFixed(4) : run.cost_usd.toFixed(2)}</span>
+        ) : null}
+        <ExternalLink className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+      </a>
+      {onFeedback && run.status === "completed" ? (
+        <button
+          type="button"
+          onClick={() => onFeedback(run)}
+          className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground opacity-0 transition-opacity hover:border-primary/40 hover:text-primary group-hover:opacity-100"
+          title="Turn what went wrong into new rules"
+        >
+          <MessageCircleQuestion className="mr-0.5 inline h-3 w-3" />
+          What did it get wrong?
+        </button>
       ) : null}
-      <ExternalLink className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-    </a>
+    </div>
   );
 }
 
@@ -77,6 +104,10 @@ export function PackDesksPage({ packId }: { packId: string }) {
   const [runsByDesk, setRunsByDesk] = useState<Record<string, DeskRun[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // "What did it get wrong?" — the run whose outcome the expert is correcting.
+  // Opens the interview panel seeded with the run context; the complaint
+  // becomes draft rules in the pack through the Interviewer's tool.
+  const [feedbackSeed, setFeedbackSeed] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -232,7 +263,15 @@ export function PackDesksPage({ packId }: { packId: string }) {
                     </p>
                     <div className="mt-1">
                       {(runsByDesk[desk.id] ?? []).map((run) => (
-                        <DeskRunRow key={run.id} run={run} />
+                        <DeskRunRow
+                          key={run.id}
+                          run={run}
+                          onFeedback={() =>
+                            setFeedbackSeed(
+                              `I just looked at a run of the "${desk.name}" desk (${runWhen(run)}) and something came out wrong. Here's what it got wrong: `,
+                            )
+                          }
+                        />
                       ))}
                     </div>
                   </div>
@@ -242,6 +281,20 @@ export function PackDesksPage({ packId }: { packId: string }) {
           })}
         </div>
       )}
+      <PackInterviewPanel
+        packId={packId}
+        open={feedbackSeed !== null}
+        onOpenChange={(open) => {
+          if (!open) setFeedbackSeed(null);
+        }}
+        seedText={feedbackSeed ?? undefined}
+        onPackChanged={() => {
+          toast.success("New draft rules captured", {
+            description:
+              "Review and approve them on the pack page — then recompile the desk to adopt them.",
+          });
+        }}
+      />
     </div>
   );
 }

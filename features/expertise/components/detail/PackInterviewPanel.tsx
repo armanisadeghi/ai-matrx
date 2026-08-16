@@ -27,6 +27,9 @@ import {
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
 import { EXPERTISE_INTERVIEWER_AGENT_ID } from "../../agents";
 
@@ -56,10 +59,23 @@ export interface PackInterviewPanelProps {
   onOpenChange: (open: boolean) => void;
   /** Called when the pack row changed on the server (new drafts landed). */
   onPackChanged: () => void;
+  /**
+   * Optional composer prefill for context-seeded entries ("What did it get
+   * wrong?" from a desk run). The expert finishes the sentence and sends.
+   */
+  seedText?: string;
 }
 
-function InterviewConversation({ packId }: { packId: string }) {
+function InterviewConversation({
+  packId,
+  seedText,
+}: {
+  packId: string;
+  seedText?: string;
+}) {
   const surfaceKey = `expertise-interview:${packId}`;
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
   const { conversationId } = useAgentLauncher(EXPERTISE_INTERVIEWER_AGENT_ID, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
@@ -68,6 +84,18 @@ function InterviewConversation({ packId }: { packId: string }) {
     // The panel can be closed/reopened while a reply streams — keep it alive.
     retainOnUnmount: true,
   });
+
+  // "What did it get wrong?" entry: stage the run context in the composer so
+  // the expert only finishes the sentence. Never clobber an existing draft.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (!conversationId || !seedText || seededRef.current) return;
+    const existing = selectUserInputText(conversationId)(store.getState());
+    if (!existing.trim()) {
+      dispatch(setUserInputText({ conversationId, text: seedText }));
+    }
+    seededRef.current = true;
+  }, [conversationId, seedText, dispatch, store]);
 
   if (!conversationId) return <ChatRoomSkeleton />;
   return (
@@ -91,6 +119,7 @@ export function PackInterviewPanel({
   open,
   onOpenChange,
   onPackChanged,
+  seedText,
 }: PackInterviewPanelProps) {
   // Watch the pack's version while the panel is open: the interviewer writes
   // drafts server-side (through its tool), so the page has no local signal.
@@ -139,7 +168,9 @@ export function PackInterviewPanel({
           </SheetDescription>
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-hidden">
-          {open ? <InterviewConversation packId={packId} /> : null}
+          {open ? (
+            <InterviewConversation packId={packId} seedText={seedText} />
+          ) : null}
         </div>
       </SheetContent>
     </Sheet>
