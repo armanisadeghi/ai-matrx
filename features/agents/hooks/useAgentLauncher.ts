@@ -95,6 +95,21 @@ interface ImperativeMethods {
     options?: ManagedAgentOptions,
   ) => Promise<LaunchResult>;
 
+  /**
+   * Launch by AGENT SLOT — the preferred form whenever the surface knows WHICH
+   * STEP it is running rather than which agent should run it. The thunk
+   * resolves the slot (system default → the caller's own binding) and applies
+   * BOTH halves of the binding, agent AND `config_overrides`; resolving
+   * yourself and calling `launchAgent` silently drops the settings half.
+   *
+   * A hardcoded agent UUID in a component is the thing the slot system exists
+   * to prevent — reach for this instead.
+   */
+  launchSlot: (
+    slotKey: string,
+    options?: ManagedAgentOptions,
+  ) => Promise<LaunchResult>;
+
   launchShortcut: (
     shortcutId: string,
     applicationScope: ApplicationScope,
@@ -198,6 +213,33 @@ export function useAgentLauncher(
         agentId: id,
         conversationId: opts?.conversationId,
         surfaceKey: opts?.surfaceKey ?? `agent:${id}`,
+        sourceFeature: opts?.sourceFeature ?? "agent-runner",
+        config: opts?.config,
+        runtime: opts?.runtime,
+        apiEndpointMode: opts?.apiEndpointMode,
+        showAutoClearToggle: opts?.showAutoClearToggle,
+        autoClearConversation: opts?.autoClearConversation,
+        ready: opts?.ready,
+        isEphemeral: opts?.isEphemeral,
+        jsonExtraction: opts?.jsonExtraction,
+        onConversationCreated: opts?.onConversationCreated,
+      };
+      return dispatch(launchAgentExecution(payload)).unwrap();
+    },
+    [dispatch],
+  );
+
+  const launchSlot = useCallback(
+    async (
+      slotKey: string,
+      opts?: ManagedAgentOptions,
+    ): Promise<LaunchResult> => {
+      // `slotKey` is mutually exclusive with agentId/shortcutId in the thunk,
+      // so it is passed alone and the thunk owns the resolution.
+      const payload: ManagedAgentOptions = {
+        slotKey,
+        conversationId: opts?.conversationId,
+        surfaceKey: opts?.surfaceKey ?? `slot:${slotKey}`,
         sourceFeature: opts?.sourceFeature ?? "agent-runner",
         config: opts?.config,
         runtime: opts?.runtime,
@@ -418,13 +460,14 @@ export function useAgentLauncher(
       inputConversationId: conversationId,
       displayConversationId: displayConversationId ?? conversationId,
       launchAgent,
+      launchSlot,
       launchShortcut,
       launchChat,
       close,
     };
   }
 
-  return { launchAgent, launchShortcut, launchChat, close };
+  return { launchAgent, launchSlot, launchShortcut, launchChat, close };
 }
 
 // =============================================================================

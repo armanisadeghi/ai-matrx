@@ -16,6 +16,12 @@
  *   - `onConversationCreated` callback — the conversationId lands before
  *     the stream starts so the streaming selectors mount in time.
  *   - `destroyInstanceIfAllowed` on unmount AND on every new execute.
+ *
+ * 🚨 WHICH agent generates the component is decided by the
+ * `tool_viz.component_generator` SLOT, resolved inside `launchSlot` — not by
+ * the caller and not by this file. Callers pass data, never an agent id. A raw
+ * UUID lived in both consumers until 2026-08-16, beside a stale duplicate of
+ * the agent's own system prompt; both are gone.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -31,15 +37,11 @@ import {
   type StreamPhase,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
+import { TOOL_UI_COMPONENT_GENERATOR_SLOT_KEY } from "../tool-ui-generator-prompt";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ExecuteParams {
-  /**
-   * Agent UUID to run. Defaults to `COMPONENT_GENERATOR_AGENT_ID` exported
-   * from `tool-ui-generator-prompt.ts`. Callers may override for testing.
-   */
-  agentId: string;
   variables: Record<string, string>;
   userInput?: string;
 }
@@ -70,7 +72,7 @@ function settleExecuteResolve(
 
 export function useToolComponentAgent(): UseToolComponentAgentReturn {
   const dispatch = useAppDispatch();
-  const { launchAgent } = useAgentLauncher();
+  const { launchSlot } = useAgentLauncher();
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -147,11 +149,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
   }, [conversationId]);
 
   const execute = useCallback(
-    async ({
-      agentId,
-      variables,
-      userInput,
-    }: ExecuteParams): Promise<string | null> => {
+    async ({ variables, userInput }: ExecuteParams): Promise<string | null> => {
       // Reset prior run — destroy the previous instance, clear local state,
       // and reject any in-flight promise to keep callers consistent.
       if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
@@ -168,7 +166,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
           };
         });
 
-        await launchAgent(agentId, {
+        await launchSlot(TOOL_UI_COMPONENT_GENERATOR_SLOT_KEY, {
           surfaceKey: "tool-component-generator",
           sourceFeature: "tool-call-visualization",
           // Direct mode — no overlay; this hook owns the streaming UI via
@@ -199,7 +197,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
         return null;
       }
     },
-    [conversationId, dispatch, launchAgent],
+    [conversationId, dispatch, launchSlot],
   );
 
   return {

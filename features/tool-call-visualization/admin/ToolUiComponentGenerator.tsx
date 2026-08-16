@@ -48,7 +48,6 @@ import { supabase } from "@/utils/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useToolComponentAgent } from "./hooks/useToolComponentAgent";
-import { COMPONENT_GENERATOR_PROMPT_ID } from "./tool-ui-generator-prompt";
 
 import type {
   ToolLifecycleEntry,
@@ -814,7 +813,6 @@ export function ToolUiComponentGenerator({
     };
 
     const fullText = await agent.execute({
-      agentId: COMPONENT_GENERATOR_PROMPT_ID,
       variables,
       userInput: userInstructions.trim() || undefined,
     });

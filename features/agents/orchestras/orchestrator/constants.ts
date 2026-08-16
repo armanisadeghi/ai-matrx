@@ -11,18 +11,21 @@
 export const ORCHESTRATOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
 
 /**
- * The "Orchestra Role Describer" builtin system agent. "Sync agent listings" runs
- * it once per click over the WHOLE set: it reads every member's current config
+ * The slot for the "Orchestra Role Describer". "Sync agent listings" runs it
+ * once per click over the WHOLE set: it reads every member's current config
  * (name, description, system prompt, inputs, output) AND its current set role
  * (`current_role_title` / `current_gap`), then returns a strict JSON array of
- * `{id,role_title,gap}` for EVERY member — filling the ones that are blank, fixing
- * the ones that are wrong, and confirming/keeping the ones already accurate. The
- * result is written to each member EDGE (not the agent) and is the source of truth
- * for the `<available_agents>` listing. Run headlessly via `launchAgentExecution`
- * (raw UUID; not in the FE SYSTEM_AGENTS registry). Seeded by
- * `migrations/agent_set_role_describer_builtin.sql`.
+ * `{id,role_title,gap}` for EVERY member — filling the ones that are blank,
+ * fixing the ones that are wrong, and confirming/keeping the ones already
+ * accurate. The result is written to each member EDGE (not the agent) and is
+ * the source of truth for the `<available_agents>` listing.
+ *
+ * Run headlessly via `launchAgentExecution({ slotKey })`. A raw UUID lived here
+ * until 2026-08-16; the slot is declared in aidream
+ * `services/agent_slots/client_slots.py` and is the only sanctioned way to name
+ * this agent from code.
  */
-export const ORCHESTRA_ROLE_DESCRIBER_ID = "a3e9d1c4-7b62-4f08-9c5a-2d6e8f0b1a37";
+export const ORCHESTRA_ROLE_DESCRIBER_SLOT_KEY = "orchestras.role_describer";
 
 /** The variable the Orchestra Role Describer reads (the members dump JSON). */
 export const ROLE_DESCRIBER_INPUT_VAR = "agent_config";
@@ -46,43 +49,19 @@ export const AVAILABLE_AGENTS_OPEN = "<available_agents>";
 export const AVAILABLE_AGENTS_CLOSE = "</available_agents>";
 
 /**
- * The supervisor system prompt applied to a GENERATED orchestrator (replaces the
- * template's planner prompt). Runtime delegation (aidream) projects the Orchestra's
- * members as callable TOOLS, so the orchestrator must be told to CALL them — a
- * planner that only emits a JSON plan never delegates. Keeps the
- * `<available_agents>` marker so "Sync agent listings" fills it. The user's
- * template `b06689e3` is left untouched. See features/agents/docs/ORCHESTRAS.md.
+ * 🚨 THE ORCHESTRATOR'S DEFINITION IS THE TEMPLATE, NOT THIS FILE.
+ *
+ * Until 2026-08-16 two constants lived here — ORCHESTRATOR_SUPERVISOR_PROMPT
+ * and ORCHESTRATOR_USER_TEMPLATE — and `useCreateOrchestrator` wrote them over
+ * the system + user messages of every orchestrator it created, because the
+ * template above still shipped an obsolete "emit a JSON dispatch plan" planner
+ * prompt that never delegated. The codebase was therefore the real definition
+ * of every orchestrator in the product, and the template row was decorative: a
+ * user editing it saw no effect.
+ *
+ * The template itself was corrected in the live DB instead (supervisor prompt,
+ * `<available_agents>` marker intact, {{task}} / {{additional_context}} user
+ * message), so a fresh copy is right at birth and editing the template is once
+ * again how you change what orchestrators say. The constants are deleted; do
+ * not reintroduce a code-side prompt override.
  */
-export const ORCHESTRATOR_SUPERVISOR_PROMPT = `You are an Orchestration Agent — a supervisor that coordinates a team of specialist agents to accomplish the user's task.
-
-Your specialist agents are available to you as **tools**. Each is described below with its purpose, inputs, and outputs. This list is kept in sync with your team.
-
-<available_agents>
-
-</available_agents>
-
-# How you work
-1. Understand the task deeply — the user's goal, constraints, and what a great result looks like.
-2. Decide which specialists to use and in what order. You may call a single specialist, call several in sequence (feeding one's output into the next), or call several and combine their results.
-3. Call each specialist as a tool, giving it precise inputs drawn from the task and from earlier specialists' outputs.
-4. Read each result and decide the next step. Loop until the task is done.
-5. Synthesize the specialists' outputs into ONE clear, complete final answer for the user — integrate their work, don't just relay raw tool outputs.
-
-# Rules
-- Prefer calling your specialists over doing their work yourself — that is why they exist.
-- If no specialist fits part of the task, say so and do what you can with the rest.
-- If the task is ambiguous, make the most reasonable interpretation and note your assumption.
-- Your final message is the answer the user sees — make it polished and self-contained.`;
-
-/**
- * The orchestrator's user-message template (replaces the template's planner
- * "produce a dispatch plan" user message). Keeps the `task` + `additional_context`
- * variables so the runner form still works.
- */
-export const ORCHESTRATOR_USER_TEMPLATE = `## Task
-{{task}}
-
-## Additional context & constraints
-{{additional_context}}
-
-Coordinate your specialist agents to complete this task, then give me one clear, complete final answer.`;

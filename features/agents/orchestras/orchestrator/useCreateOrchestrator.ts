@@ -10,14 +10,12 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { toast } from "@/lib/toast-service";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { createOrchestra } from "@/features/agents/redux/orchestras/thunks";
 import type { OrchestraAccent } from "../constants";
 import { orchestratorService } from "./orchestratorService";
-import { ORCHESTRATOR_SUPERVISOR_PROMPT, ORCHESTRATOR_USER_TEMPLATE } from "./constants";
 
 export function useCreateOrchestrator() {
   const dispatch = useAppDispatch();
@@ -38,24 +36,19 @@ export function useCreateOrchestrator() {
         }
         const orchestratorId = created.data.agentId;
 
-        // 2) Name it + make it a tool-calling SUPERVISOR (the template ships a
-        //    planner prompt that never delegates; runtime delegation projects the
-        //    members as tools, so the orchestrator must be told to call them).
-        //    Non-fatal — the builder still opens — but LOUD: a failed supervisor
-        //    write leaves the template's PLANNER prompt, which never delegates,
-        //    and "Sync agent listings" won't recover it (it only refills
-        //    <available_agents>). So we scream rather than silently ship a dud.
+        // 2) Name it. The prompt needs no touching: the TEMPLATE itself is the
+        //    supervisor definition (fixed in the DB 2026-08-16), so the copy is
+        //    correct at birth.
+        //
+        //    🚨 This code used to overwrite the fresh agent's system + user
+        //    messages with two constants in `./constants` because the template
+        //    shipped an obsolete "emit a JSON dispatch plan" planner prompt that
+        //    never delegated. That made the codebase the real definition of
+        //    every orchestrator anyone created, and left the template lying in
+        //    the DB where a user editing it saw no effect. The fix is the
+        //    template, not a code override — and the constants are deleted so
+        //    the override cannot come back.
         await orchestratorService.rename(orchestratorId, args.name.trim() || "Agent Orchestrator");
-        const promptRes = await orchestratorService.setOrchestratorMessages(
-          orchestratorId,
-          ORCHESTRATOR_SUPERVISOR_PROMPT,
-          ORCHESTRATOR_USER_TEMPLATE,
-        );
-        if (!promptRes.ok) {
-          toast.warning(
-            "Orchestrator created, but its supervisor prompt failed to save — it may not delegate to members. Re-open it and re-save the prompt.",
-          );
-        }
 
         // 3) Create the (empty) set. If the marker write fails we STILL route to
         //    the created agent — the builder's "Make an orchestrator" CTA recovers.

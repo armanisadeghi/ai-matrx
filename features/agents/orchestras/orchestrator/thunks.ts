@@ -38,7 +38,7 @@ import {
   type AvailableAgentEntry,
 } from "./orchestratorService";
 import {
-  ORCHESTRA_ROLE_DESCRIBER_ID,
+  ORCHESTRA_ROLE_DESCRIBER_SLOT_KEY,
   ROLE_DESCRIBER_INPUT_VAR,
 } from "./constants";
 
@@ -189,7 +189,7 @@ export function syncOrchestratorPrompt(args: {
       try {
         const launch = await dispatch(
           launchAgentExecution({
-            agentId: ORCHESTRA_ROLE_DESCRIBER_ID,
+            slotKey: ORCHESTRA_ROLE_DESCRIBER_SLOT_KEY,
             surfaceKey: "orchestrator-role-describer",
             sourceFeature: "agent-generator",
             isEphemeral: true,
