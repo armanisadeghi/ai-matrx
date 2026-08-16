@@ -128,9 +128,28 @@ vision:
 - AI Work Hub live: unified inbox, provider transcript with tool calls + load-earlier, associations,
   account grouping, capability facts, workspace chips — `features/ai-work/FEATURE.md`.
 
-## Decisions needed
+## Ground truth about Claude Code's local store (measured 2026-08-16 — cite this, stop re-asking)
 
-- **Situation:** About 20 sessions mirrored before 2026-08-11 belong to a different AI Matrx account,
-  because the Claude plugin was authorized to that account at the time. They are real sessions and
-  they will never appear in the main account's inbox. **Decide:** leave them with the account that
-  owns them (current behavior), or run a one-time verified ownership transfer to the main account.
+The desktop app keeps its EXACT sidebar metadata in per-account session index records:
+`~/Library/Application Support/Claude/claude-code-sessions/<accountUuid>/<orgUuid>/local_<id>.json`
+(4,222 records inspected on Arman's Mac). Every record has: `title` (the sidebar label; `titleSource`
+on ~40%), `cliSessionId` (→ transcript `~/.claude/projects/<cwd-slug>/<cliSessionId>.jsonl`),
+`cwd`/`originCwd` (the folder), `isArchived`, `model`, `effort`, `permissionMode`,
+`createdAt`/`lastActivityAt`/`lastFocusedAt`, `completedTurns`, `spawnedFrom` (spawn lineage);
+sometimes `branch`/`worktreePath`/`worktreeName`, PR fields, `scheduledTaskId`.
+**There is NO pinned/starred/favorite/tag/category field anywhere in the store** — pinning cannot be
+synced because Claude Code does not persist it. Arman's multi-account visibility script
+(`~/.claude/sync-claude-code-sessions.py`, doc `~/.claude/CLAUDE-CODE-SESSION-SYNC.md`) is an
+additive pointer-merge across account folders — audited 2026-08-16: it cannot create duplicates in
+our DB (dedup is `(created_by, provider, provider_session_id)`; the only 2 historic cross-account
+duplicates predated it and are merged).
+
+- **2026-08-16 ownership consolidation (Arman's ruling executed):** all 68 admin@admin.com coding
+  sessions + conversations/messages/tool_calls/raw entries transferred to arman@armansadeghi.com;
+  the 2 cross-account duplicate provider sessions merged (richer copy kept, thin copy soft-deleted).
+  Live: 264 sessions, ONE owner, zero duplicate provider_session_ids.
+- Chips fired 2026-08-16: Claude-native title sync from the desktop session index (supersedes the
+  old TASK-003 framing — the index `title` is the source, backfill + pull-sync cadence), and the
+  /work/conversations overhaul (default list excludes the 4,613 `conversation_type='subagent'`
+  internal machine runs, canonical table view, URL state for selection/sort/filter,
+  provenance-labeled detail view, sync-state panel + Sync-now).
