@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 381 active entity tokens. A token here is FK-valid for
+// 382 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -183,6 +183,7 @@ export type EntityTypeToken =
   | "heatmap_save"
   | "hindsight_enrollment"
   | "hindsight_finding"
+  | "hindsight_regression_case"
   | "hindsight_replay"
   | "hindsight_replay_step"
   | "hindsight_review"
@@ -825,6 +826,7 @@ export type ScopeableEntityToken =
   | "heatmap_save"
   | "hindsight_enrollment"
   | "hindsight_finding"
+  | "hindsight_regression_case"
   | "hindsight_replay"
   | "hindsight_replay_step"
   | "hindsight_review"
@@ -1085,6 +1087,7 @@ export type ListedEntityToken =
   | "dataset"
   | "expertise_pack"
   | "growth_loop_run"
+  | "hindsight_regression_case"
   | "hindsight_replay_step"
   | "interview_session"
   | "learn_doc"
@@ -1250,6 +1253,7 @@ export const ENTITY_TYPE_METADATA = {
   "heatmap_save": { token: "heatmap_save", schema: "workbench", table: "heatmap_saves", label: "Heatmap Save", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
   "hindsight_enrollment": { token: "hindsight_enrollment", schema: "hindsight", table: "enrollment", label: "Hindsight Enrollment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "hindsight_finding": { token: "hindsight_finding", schema: "hindsight", table: "finding", label: "Hindsight Finding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hindsight_regression_case": { token: "hindsight_regression_case", schema: "hindsight", table: "regression_case", label: "Regression Case", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hindsight_replay": { token: "hindsight_replay", schema: "hindsight", table: "replay", label: "Hindsight Replay", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hindsight_replay_step": { token: "hindsight_replay_step", schema: "hindsight", table: "replay_step", label: "Wire Replay Step", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hindsight_review": { token: "hindsight_review", schema: "hindsight", table: "review", label: "Hindsight Review", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1635,6 +1639,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "heatmap_save",
   "hindsight_enrollment",
   "hindsight_finding",
+  "hindsight_regression_case",
   "hindsight_replay",
   "hindsight_replay_step",
   "hindsight_review",
