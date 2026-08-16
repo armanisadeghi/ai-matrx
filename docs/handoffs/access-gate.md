@@ -17,37 +17,7 @@ offers Request access with one-click approval in the owner's DM.
 
 ---
 
-## 1. THE OPEN BUG — confirmed live, well understood, ready to fix
-
-**`get_resource_access` reports 129 of the platform's active entity types as
-not existing at all.** Reproduce (Supabase MCP, project `txzxabzwovsujtloxrus`):
-
-```sql
-with m as (select id from ai.model_definition limit 1)
-select public.get_resource_access('ai_model',(select id from m))            as says_nonexistent,
-       public.access_denied_context('ai_model',(select id from m)) ->> 'exists' as actually_exists;
--- → {"level":"none","exists":false}   |   "true"
-```
-
-Cause: it resolves its type through `platform.shareable_resource_registry` (via
-`resolve_shareable_resource`) instead of `platform.entity_types`, and swallows
-the unknown-type exception into `{level:'none', exists:false}`. Count the blast
-radius yourself:
-
-```sql
-select count(*) from platform.entity_types et
- where et.is_active and coalesce(et.is_component,false)=false
-   and not exists (select 1 from platform.shareable_resource_registry r
-                    where r.resource_type=et.token and r.is_active);   -- 129
-```
-
-It backs `utils/permissions/access-core.ts` → `useAccess` / `requireAccess`.
-**This is a REPORTING defect, not an access one** — `iam.has_access` is correct
-and must not change; prove that with a before/after sample. Filed as **G16b**
-in the common-docs SoR §7. A focused session was dispatched for this once and
-did not land it; re-dispatch or do it directly.
-
-## 2. The sweep tail — 543 → 319
+## 1. The sweep tail — 543 → 319
 
 `pnpm check:access-errors` (advisory, in the release gates; scoreboard is the
 report JSON). Zero in education, files, rag, `features/marketing`, and every
@@ -59,7 +29,7 @@ A line the regexes genuinely cannot judge takes `// access-errors: ok —
 <reason>`; the reason is required and the summary prints the count, so a
 suppression is a sentence someone has to defend.
 
-## 3. The sweep's two blind spots — both worth closing
+## 2. The sweep's two blind spots — both worth closing
 
 - **Bare JSX text is invisible.** `<p>This doesn&apos;t exist…</p>` is not a
   quoted string, so the scanner never sees it; that is why the research-topic
@@ -74,7 +44,7 @@ suppression is a sentence someone has to defend.
   throw `recordUnavailable`, assert that some consumer reads `.isError` /
   `.error`. Until that exists, a zero in this report is a floor, not a proof.
 
-## 4. Smaller open items
+## 3. Smaller open items
 
 - **No shell-level door to the inbox.** `/settings/access-requests` badges both
   boxes, but nothing in the app shell tells an owner a request is waiting the
@@ -88,7 +58,7 @@ suppression is a sentence someone has to defend.
   seven `[id]/edit` routes, redirecting is *correct* (the view route offers
   "Make a copy"). It is for future routes with no better destination.
 
-## 5. Two traps — do not rebuild these
+## 4. Two traps — do not rebuild these
 
 - **A `forbidden.tsx` can never name the record.** It was built (request-scoped
   `React.cache()` target) and instrumented: the boundary reads it BEFORE the

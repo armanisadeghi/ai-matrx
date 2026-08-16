@@ -14,6 +14,40 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D203 — `get_resource_access` grants the row's owner `admin` without asking the authority; on 3 tokens `iam.has_access` grants them less (2026-08-15)
+
+**Needs a product ruling — not fixed unilaterally because it moves access reporting.**
+
+`public.get_resource_access` short-circuits: if the row's owner column equals
+`auth.uid()` it returns `{level:'admin', is_owner:true}` without ever calling
+`iam.has_access`. On most tokens that agrees with the kernel. Measured live
+2026-08-15 over a 1543-row / 149-token owner + non-owner corpus, it does **not**
+agree on three non-component tokens:
+
+| token | `get_resource_access` | `iam.has_access_for` / `access_denied_context` |
+|---|---|---|
+| `file` | `admin` | `view` |
+| `sandbox_instance` | `admin` | `view` |
+| `context_item` | `admin` | `none` |
+
+So a `file` owner is shown edit/admin affordances by `useAccess`, while RLS —
+the actual boundary — allows only a read. The short-circuit predates the G16b
+fix and is unchanged by it; for `context_item` and `sandbox_instance` the fix
+merely made it visible (those owners previously got `exists:false`).
+
+**The decision:** does a row's creator keep owner privileges the access kernel
+no longer grants them? If **no** (kernel is the sole authority), delete the
+short-circuit and let the `iam.has_access` probe answer for owners too, keeping
+`is_owner` as a separate reported fact — but first confirm no owner LOSES a
+level they rely on, since the short-circuit currently masks the kernel. If
+**yes**, the divergence is intended and `access_denied_context` should adopt the
+same rule so the two resolvers stop contradicting each other. Either way both
+resolvers must end up saying the same thing.
+
+Fix site: `migrations/access_gate_get_resource_access.sql` (the `-- Owner → full
+control.` block). Context: common-docs
+`systems/access-architecture/FEATURE.md` §7 G16b.
+
 ### D202 — `conversation → project` is not a registered association type, so the AI Work inspector's Project picker always fails (2026-08-15)
 
 `platform.association_types` registers `conversation → task` (`container_side
