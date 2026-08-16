@@ -79,8 +79,16 @@ export interface AdoptedWorkflowRun {
   runId: string;
   /** Stop transports for the whole tree and dispose lanes. State stays. */
   stop: () => void;
-  /** Promote a node invocation to a streaming lane (viewer-driven). */
-  ensureLane: (runId: string, invocationKey: string) => string | null;
+  /**
+   * Promote a node invocation to a streaming lane (viewer-driven). Works for
+   * any run in this adoption tree (the lane budget spans the tree).
+   * `seedText` starts a NEW lane with the tracked tail for continuity.
+   */
+  ensureLane: (
+    runId: string,
+    invocationKey: string,
+    seedText?: string,
+  ) => string | null;
 }
 
 interface TreeContext {
@@ -374,8 +382,8 @@ export function adoptWorkflowRun(
         tree.stops.clear();
         tree.laneManager.disposeRun();
       },
-      ensureLane: (runId, invocationKey) => {
-        const lane = tree.laneManager.ensureLane(runId, invocationKey);
+      ensureLane: (runId, invocationKey, seedText) => {
+        const lane = tree.laneManager.ensureLane(runId, invocationKey, seedText);
         return lane?.requestId ?? null;
       },
     };

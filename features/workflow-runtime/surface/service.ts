@@ -166,6 +166,12 @@ export interface SaveSurfaceConfigArgs {
   /** The `version` the edit was based on — from the read that fed the UI. */
   expectedVersion: number;
   config: RunSurfaceConfig;
+  /** Optional metadata edits saved in the SAME CAS write as the config. */
+  meta?: {
+    name?: string;
+    audience?: SurfaceAudience;
+    profile?: SurfaceProfile;
+  };
 }
 
 /**
@@ -188,6 +194,13 @@ export async function saveSurfaceConfig(
           config: args.config as unknown as Json,
           schema_version: SURFACE_SCHEMA_VERSION,
           version: nextVersion,
+          ...(args.meta?.name !== undefined ? { name: args.meta.name } : {}),
+          ...(args.meta?.audience !== undefined
+            ? { audience: args.meta.audience }
+            : {}),
+          ...(args.meta?.profile !== undefined
+            ? { profile: args.meta.profile }
+            : {}),
         })
         .eq("id", args.id)
         .eq("version", expectedVersion)

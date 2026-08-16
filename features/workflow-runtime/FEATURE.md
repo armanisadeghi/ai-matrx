@@ -33,7 +33,8 @@ that is the exit-test surface.
 | Shared readout parts | `components/readout-parts.tsx` | THE one per-invocation body (`InvocationBody`: lane → `LiveRunDisplay`, settled kind → `KindInstanceRender`, textTail, JSON, error) + `PhaseIcon` / `PHASE_LABEL` / `InterruptCard` — consumed by the board AND every Phase 2 readout; never fork a second copy. |
 | Surface config | `surface/config.ts` | The Run Surface document (R1/R6/R7): 24-col grid, readout sources (node/group/childRun/progressRail/static/action), pages, visibility; tolerant parse + strict validate. |
 | Progress rail | `components/ProgressRailReadout.tsx` | The generalized podcast rail: per-node rows from selectors + authored SYNTHETIC sub-steps (randomized 2.2–5.5s cadence, last held until the node leaves "running", snap-all-done), 99%-cap progress bar until the run is terminal. Animation state is presentation-local — refresh restarts it by design. |
-| Readout renderer | `components/ReadoutView.tsx` | One readout's bare content per source kind; multi-run modes stack/latest/table (table is an honest compact v1); childRun renders the linked child via `selectChildRunIdForNode` as a nested board (`adopt={false}`); static markdown via `MarkdownStream` content mode. Node and rail labels use the resolved spec type with a human fallback, never expose graph-local IDs as dead-end UI text. |
+| Readout renderer | `components/ReadoutView.tsx` | One readout's bare content per source kind; multi-run modes stack/latest/table (table = the canonical `MatrxDataTable` over invocations — item/status/output/duration, every column sorts + filters); childRun renders the child's OWN authored compact surface when one exists (R9 — `getDefaultSurface(childDefId, {profile:"compact"})` → nested `RunSurfaceView adopt={false}`), else a compact status summary with an expandable full board; static markdown via `MarkdownStream` content mode. Node and rail labels use the resolved spec type with a human fallback, never expose graph-local IDs as dead-end UI text. Visible node readouts promote running lane-less invocations via `useViewportLanePromotion` (IntersectionObserver → `ensureLane`, seeded with the tracked tail). |
+| Layout preview | `components/SurfaceLayoutPreview.tsx` | The builder's drag-to-place miniature (dnd-kit core): pixel delta → grid delta → caller runs `applyPlacement`. Position only; sizes stay on steppers — the preview never re-implements layout rules. |
 | Surface renderer | `components/RunSurfaceView.tsx` | Renders a config over a run: trigger-resolved visibility (`appearOn`/`hideOn`, placeholder empty states), pages with auto-advance (manual tab choice wins until a LATER page's trigger fires), 24-col desktop grid / mobile single column by `mobileOrder ?? (y,x)`, interrupt card above the grid. The grid only ever grows — zero page shift. |
 | Exit-test page | `app/(dev)/demos/workflow-runtime/page.dev.tsx` | Pick → run → watch; run id rides `?run=` so mid-run refresh re-adopts and resumes. |
 
@@ -70,6 +71,15 @@ that is the exit-test surface.
   one-request singleton was a measured hazard for N concurrent lanes.
 
 ## Change Log
+
+- 2026-08-16 — Phase 2 tail: drag-to-place layout preview in the builder
+  (`SurfaceLayoutPreview` over `applyPlacement`); surface metadata (name /
+  audience / profile) editable in the builder and saved in the same CAS write;
+  R9 compact child-run render (child's own compact surface, summary+expand
+  fallback); real "table" multi-run mode on `MatrxDataTable`; viewer-driven
+  lane promotion (`useViewportLanePromotion` → `ensureLane` with text-tail
+  seeding); `describeSource` shared in `surface/config.ts`;
+  `selectRunDefinitionId` selector.
 
 - 2026-08-16 — Phase 1 initial build: types, transport (SSE+poller), workflowRuns slice +
   selectors, lane manager (budget + shared flush), adoptWorkflowRun adapter (replay + live +

@@ -151,6 +151,27 @@ export interface SurfaceParseResult {
   warnings: string[];
 }
 
+/** One human line for a readout source — shared by the builder row list and
+ * the layout preview (never fork a second copy). */
+export function describeSource(source: ReadoutSource): string {
+  switch (source.kind) {
+    case "node":
+      return `Node: ${source.nodeId}`;
+    case "childRun":
+      return `Child run: ${source.nodeId}`;
+    case "group":
+      return `Group: ${source.label} (${source.nodeIds.length} nodes)`;
+    case "progressRail":
+      return source.nodeIds?.length
+        ? `Progress rail (${source.nodeIds.length} nodes)`
+        : "Progress rail (all nodes)";
+    case "static":
+      return "Static content";
+    case "action":
+      return `Action: ${source.label} → ${source.nodeId}`;
+  }
+}
+
 // ── Tolerant parse (read path) ──────────────────────────────────────────────
 
 function isRecord(v: unknown): v is Record<string, unknown> {

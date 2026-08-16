@@ -183,6 +183,14 @@ export const selectChildRunIds = (runId: string) =>
     (byRunId): string[] => byRunId[runId]?.childRunIds ?? EMPTY_CHILD_RUN_IDS,
   );
 
+/** The run's workflow definition id (from attach options or the
+ * subgraph_run_linked event for child runs), or null while unknown. */
+export const selectRunDefinitionId = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): string | null => byRunId[runId]?.definitionId ?? null,
+  );
+
 export const selectRunTransportMode = (runId: string) =>
   createSelector(
     [selectByRunId],
