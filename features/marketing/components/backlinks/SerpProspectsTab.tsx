@@ -180,15 +180,20 @@ function PromoterChip({
     </span>
   );
   if (!href) {
+    // No campaign earned this win (an organic or manually-recorded outcome), so
+    // the proof is the party. The wrapper keeps the WHY on the chip — the
+    // entity link's own tooltip only says where it goes.
     return (
-      <EntityRef
-        token="party"
-        id={signal.party_id}
-        name={label}
-        openInNewTab
-        showIcon={false}
-        className="shrink-0 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
-      />
+      <span className="shrink-0" title={signal.summary}>
+        <EntityRef
+          token="party"
+          id={signal.party_id}
+          name={label}
+          openInNewTab
+          showIcon={false}
+          className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
+        />
+      </span>
     );
   }
   return (
@@ -222,8 +227,9 @@ function PromoterBand({ prospects }: { prospects: SerpProspects }) {
     <div className="space-y-1 rounded-md border border-emerald-500/40 bg-emerald-500/5 px-2.5 py-2">
       <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
         <Trophy className="h-3.5 w-3.5" />
-        {entries.length} prospect{entries.length === 1 ? "" : "s"} here have
-        already said yes to you
+        {entries.length === 1
+          ? "1 prospect here has already said yes to you"
+          : `${entries.length} prospects here have already said yes to you`}
       </p>
       <p className="text-[11px] leading-4 text-muted-foreground">
         {PROMOTER_EXPLAINER}
