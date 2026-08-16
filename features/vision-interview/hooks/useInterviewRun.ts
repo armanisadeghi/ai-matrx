@@ -37,6 +37,7 @@ import {
 } from "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { toast } from "@/lib/toast";
+import { appendVisionStatement } from "../service";
 import { roleFromNodeId, type RoleKey } from "../types";
 import {
   nodeCompleted,
@@ -50,6 +51,7 @@ import {
   selectPendingInterrupt,
   selectRunId,
   selectRunPhase,
+  sessionMerged,
   streamAdopted,
 } from "../redux/vision-interview.slice";
 
@@ -191,10 +193,15 @@ export function useInterviewRun(sessionId: string) {
       }),
     );
 
+  /** Runs one start/resume request. Returns true when the request was
+   *  ACCEPTED (stream consumed without an error envelope) — the caller uses
+   *  this to decide whether the composer draft may be cleared. Every failure
+   *  path lands in `runFailed`, which returns the surface to an actionable
+   *  state (Start re-arms); nothing here can leave a stuck busy flag. */
   const runStream = async (
     call: () => ReturnType<typeof callApi>,
-  ): Promise<void> => {
-    if (inFlightRef.current) return;
+  ): Promise<boolean> => {
+    if (inFlightRef.current) return false;
     inFlightRef.current = true;
     dispatch(runStarting());
     try {
@@ -205,22 +212,50 @@ export function useInterviewRun(sessionId: string) {
           runFailed({ message: error.message ?? "The run request failed." }),
         );
         toast.error(error.message ?? "The interview run could not start.");
+        return false;
       }
+      return true;
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "The interview run failed.";
       dispatch(runFailed({ message }));
       toast.error(message);
+      return false;
     } finally {
       inFlightRef.current = false;
     }
   };
 
-  /** Start (or restart — the tables are truth, a new run re-hydrates) the
-   *  session's workflow run. */
-  const start = async (): Promise<void> => {
+  /**
+   * Start (or restart — the tables are truth, a new run re-hydrates) the
+   * session's workflow run.
+   *
+   * `openingMessage` is the pre-start composer draft: it is appended to the
+   * session's vision statement BEFORE the run starts (the backend seeds
+   * turn 0 from it on a fresh session, and it stays on the session as
+   * durable context for restarts). Returns true when the draft was consumed
+   * — false means keep it in the composer.
+   */
+  const start = async (openingMessage?: string): Promise<boolean> => {
+    if (inFlightRef.current) return false;
+    const message = openingMessage?.trim();
+    if (message) {
+      try {
+        const saved = await appendVisionStatement(sessionId, message);
+        // Merge the fresh row now; the realtime echo is dropped by the
+        // slice's monotonic guard.
+        dispatch(sessionMerged(saved));
+      } catch (err) {
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Could not save your statement — nothing was started.",
+        );
+        return false; // Draft stays in the composer; Start stays armed.
+      }
+    }
     const consume = adopt();
-    await runStream(() =>
+    return runStream(() =>
       callApi({
         path: "/vision-interview/sessions/{session_id}/start" as never,
         method: "POST",
@@ -232,19 +267,20 @@ export function useInterviewRun(sessionId: string) {
     );
   };
 
-  /** Answer the pending human-input interrupt (and/or send controls). */
-  const resume = async (input: ResumeInput): Promise<void> => {
+  /** Answer the pending human-input interrupt (and/or send controls).
+   *  Returns true when the answer was accepted (draft may clear). */
+  const resume = async (input: ResumeInput): Promise<boolean> => {
     if (!runId) {
       toast.error("There is no active run to answer — start the interview first.");
-      return;
+      return false;
     }
     const checkpointId = pendingInterrupt?.checkpointId;
     if (!checkpointId) {
       toast.error("The run is not waiting for input right now.");
-      return;
+      return false;
     }
     const consume = adopt();
-    await runStream(() =>
+    const accepted = await runStream(() =>
       callApi({
         path: "/runs/{run_id}/resume",
         method: "POST",
@@ -265,6 +301,7 @@ export function useInterviewRun(sessionId: string) {
     // The resume adopted a fresh requestId; re-arm the follower on it so
     // the next round's node streams land in the row the room now reads.
     startFollowing(runId);
+    return accepted;
   };
 
   return { runPhase, runId, pendingInterrupt, start, resume };

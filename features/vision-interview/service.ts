@@ -77,6 +77,37 @@ export async function renameSession(id: string, title: string): Promise<void> {
   if (error) throw pgError(error);
 }
 
+/**
+ * Append pre-start composer text to the session's vision statement.
+ *
+ * The vision statement is HUMAN content (the FE-owned half of the session —
+ * unlike `document`/`stage`/`current_round`, which are server-owned). The
+ * backend seeds turn 0 from it on the first start, and it stays on the
+ * session as durable context for every later run — so anything the user
+ * composes before pressing Start is never lost (flow mandate: the composer
+ * is alive before a run exists).
+ */
+export async function appendVisionStatement(
+  id: string,
+  addition: string,
+): Promise<InterviewSessionRow> {
+  const trimmed = addition.trim();
+  const current = await getSession(id);
+  if (!current) throw new Error("The session could not be loaded.");
+  if (!trimmed) return current;
+  const next = current.vision_statement?.trim()
+    ? `${current.vision_statement.trim()}\n\n${trimmed}`
+    : trimmed;
+  const { data, error } = await interviewDb(supabase)
+    .from("session")
+    .update({ vision_statement: next })
+    .eq("id", id)
+    .select("*")
+    .single();
+  if (error) throw pgError(error);
+  return data as InterviewSessionRow;
+}
+
 /** Soft delete — lifecycle marker only, never a hard DELETE from the client. */
 export async function deleteSession(id: string): Promise<void> {
   const { error } = await interviewDb(supabase)
