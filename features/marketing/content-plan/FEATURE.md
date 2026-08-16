@@ -679,6 +679,24 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-16 — **The plan TREE and TABLE now show the AFTER, not just the
+  DURING (cms-page-hub item 6, last leg).** The overlay was the data gap:
+  `setup/bridge.ts CmsPageMapEntry` dropped `web_page_id`, which aidream's
+  `/content-plan/sites/{id}/cms-pages` payload has carried all along
+  (`CmsPageSummary.web_page_id`, verified against the deployed OpenAPI schema —
+  no server change was needed). Carrying it through lit up three things:
+  `components/NodeMeasureDoor.tsx` (one badge, shared by tree and table, over
+  the pure `lib/measure-door.ts` decision) renders the page's 28d clicks and
+  opens `cmsPageEditorHref(site, page, "measure")`;
+  `hooks/usePlanMeasureOverlay.ts` reads every visible row's standing in ONE
+  query through the new canonical `usePageSearchPerformance` /
+  `listPageSearchPerformance` primitive (`v_page_list`, batched `.in()`, keyed
+  by the deduped page set — never a query per row); and `useNodeMeasurement`
+  no longer stalls in `resolving` while it waits for the full CMS row, since
+  the summary already answers the join. Absent join = **no badge at all**, not
+  a zero — which is what every production row shows today, since no
+  `client_pages` row carries a `web_page_id` yet. Unit-covered in
+  `lib/measure-door.test.ts` (four honest states, incl. zero-clicks-is-real).
 - 2026-08-15 — **The pipeline rail can RUN its steps, and the Setup chain's
   output is finally read.** `hooks/usePageStepRun.ts` +
   `types.ts RUNNABLE_PIPELINE_STEPS` / `RUNNABLE_STEP_ACTIONS` +

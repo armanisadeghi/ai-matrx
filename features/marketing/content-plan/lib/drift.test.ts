@@ -46,6 +46,7 @@ const page = (overrides: Partial<CmsPageMapEntry> = {}): CmsPageMapEntry => ({
   liveUrl: null,
   previewUrl: "https://preview.example.com/",
   planExcludedAt: null,
+  webPageId: null,
   ...overrides,
 });
 

@@ -48,9 +48,12 @@ export function useNodeMeasurement(args: {
 }) {
   const { cmsPage, reality } = args;
   const isPublished = reality.page?.is_published ?? cmsPage?.isPublished ?? false;
-  // Only the FULL CMS row carries the link column; the plan-wide summary does
-  // not. Until it lands we say "resolving", never "not joined".
-  const webPageId = reality.page?.web_page_id ?? null;
+  // The plan-wide overlay summary carries `web_page_id` too, so the join is
+  // known the moment the panel opens — the full CMS row only has to CONFIRM
+  // it. Prefer the full row (it is the fresher read of the same column) and
+  // fall back to the summary, so "resolving" is now only the state where
+  // neither source has spoken yet — never a stall on a join we already have.
+  const webPageId = reality.page?.web_page_id ?? cmsPage?.webPageId ?? null;
 
   const location = usePageLocation(webPageId);
   const siteId = location.data?.siteId ?? "";

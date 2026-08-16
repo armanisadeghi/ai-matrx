@@ -19,6 +19,8 @@ import { Columns3 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
+import type { PageSearchPerformance } from "@/features/marketing/types";
+import { NodeMeasureDoor } from "./NodeMeasureDoor";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -87,10 +89,18 @@ export interface PlanNodesTableProps {
   /** node_id → its realized CMS page (WF-11 overlay; absent = no pairing). */
   cmsPageById?: Map<
     string,
-    { pageId: string; isPublished: boolean; route: string | null }
+    {
+      pageId: string;
+      isPublished: boolean;
+      route: string | null;
+      /** `client_pages.web_page_id` — the AFTER door (absent = not measured). */
+      webPageId: string | null;
+    }
   >;
   /** The paired CMS site — the Page badge is a DOOR into the editor with it. */
   cmsSiteId?: string | null;
+  /** web.page id → 28d Search Console standing (usePlanMeasureOverlay). */
+  measureByWebPageId?: ReadonlyMap<string, PageSearchPerformance>;
   /** One site-wide node_step query projected by node; untouched nodes absent. */
   pipelineByNodeId: ReadonlyMap<string, NodePipelineProgress>;
   /** The workspace's one plan-vs-reality verdict, shared with the drift bar. */
@@ -105,6 +115,7 @@ export function PlanNodesTable({
   isFetching,
   cmsPageById,
   cmsSiteId,
+  measureByWebPageId,
   pipelineByNodeId,
   drift,
   renderNodePanel,
@@ -336,10 +347,26 @@ export function PlanNodesTable({
               {page.isPublished ? "Published" : "Draft"}
             </Badge>
           );
+          // THE AFTER door rides beside the DURING one — same row, same cell:
+          // this page's 28d standing, opening the editor's Measure tab. It
+          // renders nothing until the page is joined to a measured web.page.
+          const measure = (
+            <NodeMeasureDoor
+              cmsSiteId={cmsSiteId}
+              cmsPageId={page.pageId}
+              webPageId={page.webPageId}
+              performance={
+                page.webPageId
+                  ? measureByWebPageId?.get(page.webPageId)
+                  : undefined
+              }
+            />
+          );
           // THE DOOR LAW: the badge names a CMS page, so it opens it (new tab
           // — the row click still opens the node panel). Unpaired site: text.
-          if (!cmsSiteId) return badge;
-          return (
+          const during = !cmsSiteId ? (
+            badge
+          ) : (
             <a
               href={cmsPageEditorHref(cmsSiteId, page.pageId)}
               target="_blank"
@@ -350,8 +377,14 @@ export function PlanNodesTable({
               {badge}
             </a>
           );
+          return (
+            <span className="inline-flex items-center gap-1">
+              {during}
+              {measure}
+            </span>
+          );
         },
-        width: 100,
+        width: 140,
       },
       {
         id: "pipeline",
@@ -480,6 +513,7 @@ export function PlanNodesTable({
     statusMetaById,
     cmsPageById,
     cmsSiteId,
+    measureByWebPageId,
     pipelineByNodeId,
     drift,
   ]);
@@ -586,6 +620,22 @@ export function PlanNodesTable({
             : (drift.byNodeId.get(row.id)?.verdict ?? "matches the live site"),
           pipeline: pipelineByNodeId.get(row.id) ?? null,
           cms_page_id: cmsPageById?.get(row.id)?.pageId ?? null,
+          // The AFTER the cell shows, so a copied row carries the same claim:
+          // null web_page_id = nothing measures this page yet.
+          web_page_id: cmsPageById?.get(row.id)?.webPageId ?? null,
+          search_console_28d: (() => {
+            const webPageId = cmsPageById?.get(row.id)?.webPageId;
+            const performance = webPageId
+              ? measureByWebPageId?.get(webPageId)
+              : undefined;
+            return performance?.in_gsc
+              ? {
+                  clicks: performance.gsc_clicks_28d,
+                  impressions: performance.gsc_impressions_28d,
+                  position: performance.gsc_position_28d,
+                }
+              : null;
+          })(),
         }),
         rowAttributes: (row) => ({
           node_id: row.id,

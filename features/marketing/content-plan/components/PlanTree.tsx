@@ -40,6 +40,7 @@ import {
 } from "@/components/agent-copy/export";
 import { webLocation } from "@/features/marketing/lib/copy-payloads";
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
+import type { PageSearchPerformance } from "@/features/marketing/types";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useSurfaceClientTools } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -62,6 +63,7 @@ import type { PlanNodeRow, PlanNodeTreeItem, PlanNodeType } from "../types";
 import { buildPlanTree } from "../types";
 import { planNodeKeyFields, planNodeSummary } from "../format";
 import type { NodePipelineProgress } from "../lib/pipeline-progress";
+import { NodeMeasureDoor } from "./NodeMeasureDoor";
 import { PipelineProgressBadge } from "./PipelineProgressBadge";
 import { filterWithAncestors } from "./pillar-map/layouts";
 import { PlanTreeToolbar, type TreeStatusOption } from "./PlanTreeToolbar";
@@ -106,10 +108,14 @@ export interface PlanTreeProps {
       route: string | null;
       isPublished: boolean;
       liveUrl: string | null;
+      /** `client_pages.web_page_id` — the AFTER door (absent = not measured). */
+      webPageId: string | null;
     }
   >;
   /** The paired CMS site — the badge is a DOOR into the page editor with it. */
   cmsSiteId?: string | null;
+  /** web.page id → 28d Search Console standing (usePlanMeasureOverlay). */
+  measureByWebPageId?: ReadonlyMap<string, PageSearchPerformance>;
   /** node_id → production progress; untouched nodes are absent. */
   pipelineByNodeId: ReadonlyMap<string, NodePipelineProgress>;
   onSelect: (id: string) => void;
@@ -124,6 +130,7 @@ export function PlanTree({
   liveById,
   cmsPageById,
   cmsSiteId,
+  measureByWebPageId,
   pipelineByNodeId,
   onSelect,
   onReparent,
@@ -437,6 +444,12 @@ export function PlanTree({
                 liveMatch={liveById?.get(row.node.id) ?? null}
                 cmsPage={cmsPageById?.get(row.node.id) ?? null}
                 cmsSiteId={cmsSiteId ?? null}
+                measurePerformance={(() => {
+                  const webPageId = cmsPageById?.get(row.node.id)?.webPageId;
+                  return webPageId
+                    ? measureByWebPageId?.get(webPageId)
+                    : undefined;
+                })()}
                 pipelineProgress={pipelineByNodeId.get(row.node.id) ?? null}
                 dragging={row.node.id === activeId}
                 onSelect={() => onSelect(row.node.id)}
@@ -487,6 +500,7 @@ function TreeRow({
   liveMatch,
   cmsPage,
   cmsSiteId,
+  measurePerformance,
   pipelineProgress,
   dragging,
   onSelect,
@@ -507,8 +521,11 @@ function TreeRow({
     route: string | null;
     isPublished: boolean;
     liveUrl: string | null;
+    webPageId: string | null;
   } | null;
   cmsSiteId: string | null;
+  /** This page's 28d standing; absent = joined but not read (or not joined). */
+  measurePerformance: PageSearchPerformance | undefined;
   pipelineProgress: NodePipelineProgress | null;
   dragging: boolean;
   onSelect: () => void;
@@ -659,6 +676,18 @@ function TreeRow({
                     </a>
                   );
                 })()
+              ) : null}
+              {/* The AFTER door, beside the DURING one: what the live page is
+                  doing, opening the editor's Measure tab. Renders nothing
+                  until the page is joined to a measured `web.page`. */}
+              {cmsPage ? (
+                <NodeMeasureDoor
+                  cmsSiteId={cmsSiteId}
+                  cmsPageId={cmsPage.pageId}
+                  webPageId={cmsPage.webPageId}
+                  performance={measurePerformance}
+                  className="ml-1.5"
+                />
               ) : null}
               {pipelineProgress ? (
                 <PipelineProgressBadge progress={pipelineProgress} dense />

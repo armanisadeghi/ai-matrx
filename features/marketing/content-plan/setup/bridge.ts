@@ -652,6 +652,14 @@ export interface CmsPageMapEntry {
   previewUrl: string | null;
   /** `plan_excluded_at` — a human declared this page not part of the plan. */
   planExcludedAt: string | null;
+  /**
+   * `client_pages.web_page_id` (CMS migration 0037) — the MEASURED `web.page`
+   * this CMS page serves. THE AFTER door: with it, a plan row can open the
+   * page's measurement without first reading the full CMS row. `null` means
+   * the publish→crawl join has not landed yet, which is an honest hidden
+   * state, never an error (`docs/handoffs/cms-page-hub.md` item 6).
+   */
+  webPageId: string | null;
 }
 
 export interface CmsPageMap {
@@ -704,6 +712,7 @@ export async function bridgeCmsPages(
       liveUrl: str(record.live_url) || null,
       previewUrl: str(record.preview_url) || null,
       planExcludedAt: str(record.plan_excluded_at) || null,
+      webPageId: str(record.web_page_id) || null,
     });
   }
   return {

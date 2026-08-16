@@ -35,6 +35,7 @@ import type {
   MarketingSite,
   MetaApplyTarget,
   PageListRow,
+  PageSearchPerformance,
   PageSnapshot,
   PageUpdate,
   PageWorkspaceData,
@@ -613,6 +614,57 @@ export async function getPageLocation(
     siteId: page.site_id,
     brandId: siteResponse.data?.brand_id ?? null,
   };
+}
+
+/** Bounded `.in()` lists keep the PostgREST URL well under any proxy limit. */
+const PAGE_PERFORMANCE_ID_BATCH_SIZE = 150;
+
+/**
+ * THE AFTER, in bulk: 28-day Search Console performance for MANY measured
+ * pages in one read, keyed by `web.page` id.
+ *
+ * `getPageWorkspace` answers this for ONE page as part of a much larger read;
+ * a listing that only wants "how is this page doing" for every visible row
+ * (the plan tree/table's measure door) must never fan that read out per row.
+ * Same view, same four columns, same numbers — just the set form.
+ *
+ * A page id with no row in `v_page_list` is simply absent from the result;
+ * callers render that as "not measured yet", never as zero clicks.
+ */
+export async function listPageSearchPerformance(
+  pageIds: readonly string[],
+  signal?: AbortSignal,
+): Promise<Map<string, PageSearchPerformance>> {
+  const unique = [...new Set(pageIds.filter(Boolean))];
+  const byPageId = new Map<string, PageSearchPerformance>();
+  if (unique.length === 0) return byPageId;
+
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  for (
+    let start = 0;
+    start < unique.length;
+    start += PAGE_PERFORMANCE_ID_BATCH_SIZE
+  ) {
+    const chunk = unique.slice(start, start + PAGE_PERFORMANCE_ID_BATCH_SIZE);
+    const response = await db
+      .from("v_page_list")
+      .select(
+        "page_id, in_gsc, gsc_clicks_28d, gsc_impressions_28d, gsc_position_28d",
+      )
+      .in("page_id", chunk)
+      .abortSignal(abortSignal);
+    for (const row of assertData(response.data, response.error)) {
+      if (!row.page_id) continue;
+      byPageId.set(row.page_id, {
+        in_gsc: row.in_gsc ?? false,
+        gsc_clicks_28d: row.gsc_clicks_28d,
+        gsc_impressions_28d: row.gsc_impressions_28d,
+        gsc_position_28d: row.gsc_position_28d,
+      });
+    }
+  }
+  return byPageId;
 }
 
 export async function getSiteOverview(

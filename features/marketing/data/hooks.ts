@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   keepPreviousData,
   useMutation,
@@ -54,6 +55,7 @@ import {
   getHomepageObservedMeta,
   getPageLocation,
   getPageWorkspace,
+  listPageSearchPerformance,
   getSite,
   getSiteHeroScreenshot,
   getSiteOverview,
@@ -164,6 +166,9 @@ export const marketingKeys = {
     [...marketingKeys.site(siteId), "pages", state] as const,
   page: (siteId: string, pageId: string) =>
     [...marketingKeys.site(siteId), "page", pageId] as const,
+  /** Bulk 28d Search Console standing, keyed by the deduped/sorted page set. */
+  pageSearchPerformance: (pageIds: readonly string[]) =>
+    [...marketingKeys.root, "page-search-performance", pageIds] as const,
   snapshots: (
     siteId: string,
     pageId: string,
@@ -313,6 +318,29 @@ export function usePageWorkspace(siteId: string, pageId: string) {
     queryKey: marketingKeys.page(siteId, pageId),
     queryFn: ({ signal }) => getPageWorkspace(siteId, pageId, signal),
     enabled: Boolean(siteId && pageId),
+  });
+}
+
+/**
+ * 28-day Search Console standing for a SET of measured pages — one read for
+ * every row a listing shows, never one read per row.
+ *
+ * The caller passes whatever page ids it has (duplicates and blanks welcome);
+ * the key is the deduped, sorted set, so two surfaces showing the same pages
+ * share one cache entry and a re-render with a new array identity does not
+ * refetch. Ids the view has no row for are simply absent from the map.
+ */
+export function usePageSearchPerformance(pageIds: readonly string[]) {
+  const ids = useMemo(
+    () => [...new Set(pageIds.filter(Boolean))].sort(),
+    [pageIds],
+  );
+  return useQuery({
+    queryKey: marketingKeys.pageSearchPerformance(ids),
+    queryFn: ({ signal }) => listPageSearchPerformance(ids, signal),
+    enabled: ids.length > 0,
+    staleTime: 5 * 60_000,
+    placeholderData: keepPreviousData,
   });
 }
 

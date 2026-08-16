@@ -311,16 +311,25 @@ export interface HomepageObservedMeta {
   capturedAt: string;
 }
 
+/**
+ * One page's 28-day Search Console standing — the AFTER numbers, in the ONE
+ * shape every surface reads them in (the page workspace's own read, and the
+ * bulk `listPageSearchPerformance` a listing uses for its visible rows).
+ * `in_gsc: false` means Search Console has no rows for this URL — a real,
+ * distinguishable state, never the same as zero clicks.
+ */
+export type PageSearchPerformance = Pick<
+  WebViews["v_page_list"]["Row"],
+  "in_gsc" | "gsc_clicks_28d" | "gsc_impressions_28d" | "gsc_position_28d"
+>;
+
 export interface PageWorkspaceData {
   page: MarketingPage;
   latestSnapshot: PageSnapshot | null;
   score: number | null;
   failCount: number;
   openFindings: number;
-  searchPerformance: Pick<
-    WebViews["v_page_list"]["Row"],
-    "in_gsc" | "gsc_clicks_28d" | "gsc_impressions_28d" | "gsc_position_28d"
-  >;
+  searchPerformance: PageSearchPerformance;
 }
 
 export interface CreateSiteInput {

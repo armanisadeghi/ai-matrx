@@ -51,5 +51,8 @@ export function toCmsPageMapEntry(
     // This CMS read does not carry the plan-side exclusion marker. The plan
     // overlay remains authoritative when that distinction matters.
     planExcludedAt: null,
+    // The measurement join IS on the CMS row, so a CMS-side caller gets the
+    // AFTER door for free — same column the plan overlay reads.
+    webPageId: page.web_page_id,
   };
 }

@@ -501,6 +501,15 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-16 — Claude: **Bulk Search Console standing is now a primitive, not a
+  per-row fetch.** `data/service.ts listPageSearchPerformance(pageIds)` +
+  `data/hooks.ts usePageSearchPerformance` read `v_page_list`'s four 28d columns
+  for a SET of `web.page` ids in one batched query (`.in()` chunked at 150,
+  keyed by the deduped/sorted set so two surfaces share a cache entry). It is
+  the listing counterpart of `getPageWorkspace`'s single-page read — same view,
+  same columns, same numbers — and its first consumer is the content plan's
+  tree/table measure door. `PageSearchPerformance` is now a named type in
+  `types.ts`, so the workspace and the bulk read can never drift.
 - 2026-08-15 — Claude: **The page workspace shows its BEFORE — the plan the page
   was built from** (`docs/handoffs/cms-page-hub.md` item 6). `PageWorkspace` mounts
   the new `components/pages/cards/PagePlanContextCard.tsx` full-width above the

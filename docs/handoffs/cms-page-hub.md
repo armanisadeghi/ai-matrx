@@ -118,8 +118,12 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
    associations read and lists a topic/tag's consuming sites, plan pages, and canonical pages
    as doors — mounted on the topic Outputs studio + tag consolidation view, verified against
    live edges; remaining leg is the CMS-array reverse filter (`client_pages.research_topic_ids`
-   in the separate CMS DB). Still chipped (large): plan tree/table AFTER (needs `webPageId` in
-   aidream's cms-pages payload). Listed, lowest value: CMS components editor has no
+   in the separate CMS DB). **Plan tree/table AFTER: DONE 2026-08-16** — the aidream payload
+   already carried `web_page_id` (`CmsPageSummary`, confirmed against the deployed OpenAPI
+   schema; no server change needed); the gap was `CmsPageMapEntry` dropping it. Tree badge +
+   table Page column now carry `NodeMeasureDoor` (28d clicks → the editor's Measure tab) over a
+   single bulk `v_page_list` read (`usePageSearchPerformance` / `usePlanMeasureOverlay`). No
+   join = no badge, never a zero, which is every production row today. Listed, lowest value: CMS components editor has no
    component→page usage join (that join doesn't exist yet).
    Verified as NOT gaps: Search Console page rows, marketing PagesTable (both door into
    PageWorkspace, which now carries BEFORE + CMS door); CMS collections (not page-shaped).

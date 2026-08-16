@@ -73,6 +73,7 @@ import {
 } from "../setup/draft";
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
 import { useCmsPageMap } from "../hooks/useCmsPageMap";
+import { usePlanMeasureOverlay } from "../hooks/usePlanMeasureOverlay";
 import {
   PLAN_VIEWS,
   usePlanWorkspaceParams,
@@ -209,6 +210,10 @@ export function ContentPlanWorkbench({
     (cmsLink.data?.linked ? cmsLink.data.cmsSiteId : null) ??
     cmsPages.map?.cmsSiteId ??
     null;
+  // THE AFTER for the whole plan in ONE read — what every realized page is
+  // doing in Search Console, keyed by the `web.page` the CMS row is joined to.
+  // Nothing joined yet (today's production state) = no read at all.
+  const measure = usePlanMeasureOverlay(cmsPages.pagesByNodeId);
 
   const statusCategories = useCategories({
     dimension: CATEGORY_DIMENSIONS.planStatus,
@@ -894,6 +899,7 @@ export function ContentPlanWorkbench({
               isFetching={nodes.isFetching}
               cmsPageById={cmsPages.pagesByNodeId}
               cmsSiteId={resolvedCmsSiteId}
+              measureByWebPageId={measure.byWebPageId}
               pipelineByNodeId={pipelineByNodeId}
               drift={drift.model}
               renderNodePanel={(node, onDeleted) => (
@@ -934,6 +940,7 @@ export function ContentPlanWorkbench({
               liveById={liveById}
               cmsPageById={cmsPages.pagesByNodeId}
               cmsSiteId={resolvedCmsSiteId}
+              measureByWebPageId={measure.byWebPageId}
               pipelineByNodeId={pipelineByNodeId}
               onSelect={setSelectedNodeId}
               onReparent={handleReparent}
@@ -956,6 +963,7 @@ export function ContentPlanWorkbench({
                     liveById={liveById}
                     cmsPageById={cmsPages.pagesByNodeId}
                     cmsSiteId={resolvedCmsSiteId}
+                    measureByWebPageId={measure.byWebPageId}
                     pipelineByNodeId={pipelineByNodeId}
                     onSelect={setSelectedNodeId}
                     onReparent={handleReparent}
