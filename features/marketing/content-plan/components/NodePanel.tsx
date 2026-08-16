@@ -73,7 +73,13 @@ import {
 import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import { useNodeReality } from "../hooks/useNodeReality";
+import {
+  nodeMeasurementPayload,
+  nodeMeasurementSummary,
+  useNodeMeasurement,
+} from "../hooks/useNodeMeasurement";
 import { NodeRealityCard } from "./NodeRealityCard";
+import { NodeMeasureCard } from "./NodeMeasureCard";
 import { NodeStepRail } from "./NodeStepRail";
 import { NodeSeoIntentEditor } from "./NodeSeoIntentEditor";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
@@ -284,6 +290,12 @@ export function NodePanel({
     cmsPage: cmsPage ?? null,
     cmsPagesByNodeId: cmsPagesByNodeId ?? EMPTY_CMS_PAGES,
   });
+  // The AFTER half. Owned HERE for the same reason `reality` is: the panel's
+  // payload and its agent scope must carry what the user is looking at.
+  const measurement = useNodeMeasurement({
+    cmsPage: cmsPage ?? null,
+    reality,
+  });
   const getScope = () =>
     createContentPlanNodeScope({
       view,
@@ -391,6 +403,9 @@ export function NodePanel({
       keywordNotice,
       reality.failure,
       reality.pageError ? `Could not read the live page: ${reality.pageError.message}` : null,
+      measurement.error
+        ? `Could not read this page's measurement: ${measurement.error.message}`
+        : null,
       nodeEdges.error ? `Research lineage unavailable: ${nodeEdges.error.message}` : null,
     ].filter((line): line is string => Boolean(line));
 
@@ -429,6 +444,9 @@ export function NodePanel({
         live_url: cmsPage?.liveUrl ?? null,
         is_published: cmsPage?.isPublished ?? null,
       },
+      // The AFTER: what the live page is measured to be doing, or the honest
+      // reason there is no measurement (unbuilt / unpublished / unjoined).
+      measurement: nodeMeasurementPayload(measurement),
       pipeline: pipelineProgress ?? null,
       targeting: {
         primary_keyword: primaryKeyword,
@@ -465,6 +483,7 @@ export function NodePanel({
       planNodeSummary({ ...node, ...draft } as PlanNodeRow),
       pageKpis ? `Plan: ${contentPlanKpiLine(pageKpis)}` : null,
       realityVerdictSummary(reality.verdict),
+      nodeMeasurementSummary(measurement),
       view.blockers.length ? `\nBlockers:\n- ${view.blockers.join("\n- ")}` : null,
       dirty
         ? `\nUnsaved edits (${view.unsaved_changes.length}): ${view.unsaved_changes
@@ -1069,6 +1088,19 @@ export function NodePanel({
                 cmsPage={cmsPage ?? null}
                 cmsSiteId={cmsSiteId ?? null}
                 reality={reality}
+              />
+            </PanelSection>
+
+            {/* THE AFTER (cms-page-hub doctrine): a plan node whose page is
+          live has results — Search Console, analysis, findings. It renders in
+          every state, because "this page is live and nothing measures it" is
+          exactly the state a planner must not have to discover elsewhere. */}
+            <PanelSection title="What the live page is doing">
+              <NodeMeasureCard
+                measurement={measurement}
+                cmsPage={cmsPage ?? null}
+                cmsSiteId={cmsSiteId ?? null}
+                nodeLabel={node.label}
               />
             </PanelSection>
 
