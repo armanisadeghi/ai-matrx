@@ -10,7 +10,7 @@
  * never through Python.
  */
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { GitCommitVertical, History, Play } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 
 import type { Finding } from "../types";
+import { canRevert, RevertButton } from "../components/RevertButton";
 import { fmtDate } from "../components/tokens";
 
 const SHOWN = 8;
@@ -34,10 +35,14 @@ interface VersionRow {
 export function VersionLadder({
   agentId,
   findings,
+  onChanged,
 }: {
   agentId: string;
   findings: Finding[];
+  /** Called after a revert lands, so the host refetches its findings. */
+  onChanged?: () => void;
 }) {
+  const queryClient = useQueryClient();
   const versions = useQuery({
     queryKey: ["hindsight", "agent-versions", agentId],
     queryFn: async () => {
@@ -99,13 +104,18 @@ export function VersionLadder({
         <ol className="space-y-0.5">
           {versions.data.map((v, i) => {
             const from = appliedByVersion.get(v.version_number);
+            // Reverting only makes sense on the CURRENT version — undoing a
+            // change the agent already moved past would erase later work, so
+            // the server refuses it and the door is not rendered at all.
+            const revertable = i === 0 && from != null && canRevert(from);
             return (
-              <li key={v.version_id}>
+              <li key={v.version_id} className={cn(revertable && "flex items-start gap-1")}>
                 <Link
                   href={`/agents/${agentId}/v/${v.version_number}`}
                   className={cn(
                     "flex items-start gap-1.5 rounded-md px-1.5 py-1 hover:bg-muted/50",
                     i === 0 && "bg-muted/30",
+                    revertable && "min-w-0 flex-1",
                   )}
                   title="Open this version"
                 >
@@ -137,6 +147,19 @@ export function VersionLadder({
                     )}
                   </div>
                 </Link>
+                {revertable && from != null && (
+                  <RevertButton
+                    finding={from}
+                    agentId={agentId}
+                    className="mt-0.5 h-6 shrink-0 px-1.5 text-[11px]"
+                    onChanged={() => {
+                      void queryClient.invalidateQueries({
+                        queryKey: ["hindsight", "agent-versions", agentId],
+                      });
+                      onChanged?.();
+                    }}
+                  />
+                )}
               </li>
             );
           })}

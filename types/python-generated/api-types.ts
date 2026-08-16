@@ -4828,6 +4828,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/serp-prospecting/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Serp Prospecting
+         * @description Every query a prospecting run would send, and the cost, before any spend.
+         *
+         *     Same doctrine as the link-gap seed preview: a paid run's value is decided by
+         *     what goes into the request, so the user sees the exact queries (and anything
+         *     dropped over the per-run cap) before money moves.
+         */
+        post: operations["preview_serp_prospecting_seo_sites__site_id__serp_prospecting_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/serp-prospecting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Collect Serp Prospecting
+         * @description Run SERP/keyword prospecting: who already ranks for these topics.
+         *
+         *     One standard-workflow collection (all query variants in one paid batch),
+         *     normalized into ``seo.serp_opportunity`` rows with query-mention evidence,
+         *     then a bulk authority-enrichment pass so the triage list lands scored.
+         *     Results converge on the SAME review + fold path as the competitor link gap
+         *     — one triage surface, never a second one.
+         */
+        post: operations["collect_serp_prospecting_seo_sites__site_id__serp_prospecting_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/crm/serp-prospects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fold Serp Prospects Endpoint
+         * @description Resolve this site's APPROVED SERP prospect domains into `crm.party` orgs.
+         *
+         *     Only rows a human approved are folded; everything else is reported as
+         *     skipped with its review state. Each folded row carries a provenance edge
+         *     naming the queries the domain ranks for — the reason it is in the CRM.
+         */
+        post: operations["fold_serp_prospects_endpoint_seo_sites__site_id__crm_serp_prospects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/gsc/search-performance/sync": {
         parameters: {
             query?: never;
@@ -7824,6 +7898,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hindsight/findings/{finding_id}/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revert Finding Route
+         * @description Undo an applied finding — re-promotes the pre-apply version as a NEW
+         *     version through the same canonical agent write path (owner or admin).
+         */
+        post: operations["revert_finding_route_hindsight_findings__finding_id__revert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hindsight/findings/{finding_id}/reject": {
         parameters: {
             query?: never;
@@ -7909,6 +8004,40 @@ export interface paths {
          * @description Manual drain pass (the scheduled task does this every 15 min).
          */
         post: operations["trigger_drain_hindsight_drain_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review/descend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descend */
+        get: operations["descend_review_descend_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/review/findings/from-walk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Finding From Walk */
+        post: operations["finding_from_walk_review_findings_from_walk_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8295,6 +8424,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/outreach/personalization/lists/{outreach_list_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Personalization
+         * @description Write evidence-backed personalization for a campaign's members (sync lane).
+         */
+        post: operations["run_personalization_outreach_personalization_lists__outreach_list_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/personalization/lists/{outreach_list_id}/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Personalization
+         * @description Enqueue bulk personalization on the platform Batch system (~50% price).
+         */
+        post: operations["submit_personalization_outreach_personalization_lists__outreach_list_id__batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/personalization/lists/{outreach_list_id}/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Personalized
+         * @description Create planned drafts (IC-6 queue) for personalized members — never sends.
+         */
+        post: operations["draft_personalized_outreach_personalization_lists__outreach_list_id__drafts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/agent-factory/build": {
         parameters: {
             query?: never;
@@ -8453,6 +8642,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -29276,6 +29489,114 @@ export interface components {
             /** Rebuild Confirmation Token */
             rebuild_confirmation_token?: string | null;
         };
+        /**
+         * DescendInput
+         * @description One input the unit received on its turn.
+         */
+        DescendInput: {
+            /** Key */
+            key: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "markdown" | "json";
+            /** Label */
+            label: string;
+            value?: components["schemas"]["JsonValue"] | null;
+            /** Value Ref */
+            value_ref?: string | null;
+            /**
+             * Chars
+             * @default 0
+             */
+            chars?: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            producer: components["schemas"]["ProducerRef"];
+        };
+        /**
+         * DescendOut
+         * @description GET /review/descend response — one layer of the walk.
+         */
+        DescendOut: {
+            unit: components["schemas"]["DescendUnit"];
+            producer?: components["schemas"]["DescendProducer"] | null;
+            /** Inputs */
+            inputs?: components["schemas"]["DescendInput"][];
+            /** Snapshot Refs */
+            snapshot_refs?: string[];
+            /**
+             * Capturable
+             * @default true
+             */
+            capturable?: boolean;
+            /** Notes */
+            notes?: string[];
+        };
+        /**
+         * DescendProducer
+         * @description The provider call that produced the unit (the layer above the inputs).
+         */
+        DescendProducer: {
+            /**
+             * Kind
+             * @default cx_request
+             * @constant
+             */
+            kind?: "cx_request";
+            /** Id */
+            id?: string | null;
+            /** Iteration */
+            iteration?: number | null;
+            /** Model */
+            model?: string | null;
+            /** Provider */
+            provider?: string | null;
+            /** Snapshot Id */
+            snapshot_id?: string | null;
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "linked" | "inferred";
+        };
+        /**
+         * DescendRef
+         * @description A unit the UI can descend into next — the recursive hop.
+         */
+        DescendRef: {
+            /**
+             * Unit Kind
+             * @enum {string}
+             */
+            unit_kind: "assistant_message" | "agent_request" | "wf_node_outcome";
+            /** Unit Id */
+            unit_id: string;
+        };
+        /**
+         * DescendUnit
+         * @description The unit being inspected.
+         */
+        DescendUnit: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "assistant_message" | "agent_request" | "wf_node_outcome";
+            /** Id */
+            id: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Position */
+            position?: number | null;
+            /** Status */
+            status?: string | null;
+            error?: components["schemas"]["JsonValue"] | null;
+        };
         /** DesktopInstanceSummary */
         DesktopInstanceSummary: {
             /** Id */
@@ -29357,6 +29678,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -30085,7 +30433,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "backlink" | "reputation" | "link_gap";
+            source: "backlink" | "reputation" | "link_gap" | "serp_prospect";
             /** Site Id */
             site_id: string;
             /** Organization Id */
@@ -32913,6 +33261,78 @@ export interface components {
             };
         };
         /**
+         * FindingFromWalkOut
+         * @description POST /review/findings/from-walk response.
+         */
+        FindingFromWalkOut: {
+            /** Finding Id */
+            finding_id: string;
+            /** Review Id */
+            review_id: string;
+            /** Enrollment Id */
+            enrollment_id: string;
+            /**
+             * Enrollment Created
+             * @default false
+             */
+            enrollment_created?: boolean;
+            /** Assist Id */
+            assist_id?: string | null;
+            /**
+             * Lever
+             * @enum {string}
+             */
+            lever: "instructions" | "resources" | "tools" | "architecture";
+            /**
+             * Snapshots Pinned
+             * @default 0
+             */
+            snapshots_pinned?: number;
+        };
+        /**
+         * FindingFromWalkRequest
+         * @description POST /review/findings/from-walk body.
+         */
+        FindingFromWalkRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Unit Kind
+             * @default assistant_message
+             * @enum {string}
+             */
+            unit_kind?: "assistant_message" | "agent_request" | "wf_node_outcome";
+            /** Unit Id */
+            unit_id: string;
+            /** Hops */
+            hops: components["schemas"]["WalkHop"][];
+            /** Fault Unit Kind */
+            fault_unit_kind: string;
+            /** Fault Unit Id */
+            fault_unit_id: string;
+            /** Title */
+            title: string;
+            /** Reasoning */
+            reasoning?: string | null;
+            /** Lever */
+            lever?: ("instructions" | "resources" | "tools" | "architecture") | null;
+            /** Snapshot Ids */
+            snapshot_ids?: string[];
+        };
+        /**
          * FindingOut
          * @description One proposed improvement on one of the four levers.
          */
@@ -32948,6 +33368,8 @@ export interface components {
             applied_at?: string | null;
             /** Applied Version Number */
             applied_version_number?: number | null;
+            /** Pre Apply Version */
+            pre_apply_version?: number | null;
             /** Created At */
             created_at?: string | null;
         };
@@ -32977,6 +33399,28 @@ export interface components {
             };
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * FindingRevertOut
+         * @description Receipt for a revert click — which version came back, and as what.
+         *
+         *     The revert re-promotes ``reverted_to_version``'s content through the same
+         *     canonical write path the apply used, so a NEW version row
+         *     (``new_version_number``) records the promote; history is never rewritten.
+         */
+        FindingRevertOut: {
+            /** Finding Id */
+            finding_id: string;
+            /** Status */
+            status: string;
+            /** Agent Id */
+            agent_id: string;
+            /** Reverted From Version */
+            reverted_from_version: number;
+            /** Reverted To Version */
+            reverted_to_version: number;
+            /** New Version Number */
+            new_version_number?: number | null;
         };
         /** FireResponse */
         FireResponse: {
@@ -33105,6 +33549,41 @@ export interface components {
          *     controls. The org comes from the SITE, never the body.
          */
         FoldLinkGapDomainsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Limit
+             * @default 250
+             */
+            limit?: number;
+            /**
+             * Refold
+             * @default false
+             */
+            refold?: boolean;
+        };
+        /**
+         * FoldSerpProspectsRequest
+         * @description How much of this site's APPROVED SERP-prospect backlog to bridge to CRM.
+         *
+         *     Same deliberate shape as ``FoldLinkGapDomainsRequest``: the only gate on a
+         *     SERP opportunity is the human's approval, and the org comes from the SITE,
+         *     never the body.
+         */
+        FoldSerpProspectsRequest: {
             /**
              * Organization Id
              * @description Organization context for the request; omitted to use the authenticated context.
@@ -40127,6 +40606,63 @@ export interface components {
             /** Last Error At */
             last_error_at?: string | null;
         };
+        /** PersonalizeDraftBody */
+        PersonalizeDraftBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Template Id */
+            template_id: string;
+            /** Member Ids */
+            member_ids?: string[] | null;
+            /**
+             * Limit
+             * @default 25
+             */
+            limit?: number;
+        };
+        /** PersonalizeRunBody */
+        PersonalizeRunBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Member Ids */
+            member_ids?: string[] | null;
+            /**
+             * Limit
+             * @default 25
+             */
+            limit?: number;
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+        };
         /** PicklistBinding */
         PicklistBinding: {
             /**
@@ -41466,6 +42002,26 @@ export interface components {
             /** Missing */
             missing?: string[];
         };
+        /**
+         * ProducerRef
+         * @description Who produced one input. ``descend_ref`` present ⇒ the walk can continue
+         *     down through this producer.
+         */
+        ProducerRef: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "cx_request" | "message" | "request_snapshot" | "tool_call" | "agent" | "pending_injection" | "context_slot" | "user";
+            /** Id */
+            id?: string | null;
+            descend_ref?: components["schemas"]["DescendRef"] | null;
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "linked" | "inferred";
+        };
         /** ProjectInputPart */
         ProjectInputPart: {
             /** Metadata */
@@ -41685,6 +42241,14 @@ export interface components {
         PromptWarmRequest: {
             /** Source */
             source?: string | null;
+        };
+        /** ProspectQuery */
+        ProspectQuery: {
+            /** Query */
+            query: string;
+            variant: components["schemas"]["QueryVariant"];
+            /** Seed Keyword */
+            seed_keyword: string;
         };
         /** ProviderCallEvidenceOut */
         ProviderCallEvidenceOut: {
@@ -42077,6 +42641,11 @@ export interface components {
             /** Errors */
             errors: string[];
         };
+        /**
+         * QueryVariant
+         * @enum {string}
+         */
+        QueryVariant: "keyword" | "advanced_operator" | "resource_page" | "listicle" | "hot_off_press";
         /** QuickScrapeRequest */
         QuickScrapeRequest: {
             /**
@@ -46083,6 +46652,58 @@ export interface components {
             title: string | null;
             /** Snippet */
             snippet: string | null;
+        };
+        /** SerpProspectingBody */
+        SerpProspectingBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Keywords */
+            keywords: string[];
+            /** Variants */
+            variants?: components["schemas"]["QueryVariant"][];
+            /**
+             * Depth
+             * @default 30
+             */
+            depth?: number;
+            /**
+             * Enrich Authority
+             * @default true
+             */
+            enrich_authority?: boolean;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+            /** Request Id */
+            request_id?: string | null;
+        };
+        /** SerpProspectingPreview */
+        SerpProspectingPreview: {
+            /** Site Id */
+            site_id: string;
+            /** Site Domain */
+            site_domain: string;
+            /** Queries */
+            queries: components["schemas"]["ProspectQuery"][];
+            /** Estimated Cost Usd */
+            estimated_cost_usd: string;
+            /** Dropped */
+            dropped?: string[];
         };
         /** SessionPayload */
         SessionPayload: {
@@ -53116,6 +53737,27 @@ export interface components {
             variant_errors?: {
                 [key: string]: string;
             };
+        };
+        /**
+         * WalkHop
+         * @description One human answer in the walk — evidence, verbatim (D-40 typed hop).
+         */
+        WalkHop: {
+            /** Hop */
+            hop: number;
+            /** Unit Kind */
+            unit_kind: string;
+            /** Unit Id */
+            unit_id: string;
+            /**
+             * Answer
+             * @enum {string}
+             */
+            answer: "input_wrong" | "inputs_fine";
+            /** Note */
+            note?: string | null;
+            /** Snapshot Id */
+            snapshot_id?: string | null;
         };
         /** WarmupProgress */
         WarmupProgress: {
@@ -62937,6 +63579,111 @@ export interface operations {
             };
         };
     };
+    preview_serp_prospecting_seo_sites__site_id__serp_prospecting_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SerpProspectingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SerpProspectingPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collect_serp_prospecting_seo_sites__site_id__serp_prospecting_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SerpProspectingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fold_serp_prospects_endpoint_seo_sites__site_id__crm_serp_prospects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoldSerpProspectsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainFoldReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     sync_gsc_search_performance_seo_sites__site_id__gsc_search_performance_sync_post: {
         parameters: {
             query?: never;
@@ -67992,6 +68739,37 @@ export interface operations {
             };
         };
     };
+    revert_finding_route_hindsight_findings__finding_id__revert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingRevertOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     reject_finding_route_hindsight_findings__finding_id__reject_post: {
         parameters: {
             query?: never;
@@ -68136,6 +68914,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DrainResult"];
+                };
+            };
+        };
+    };
+    descend_review_descend_get: {
+        parameters: {
+            query: {
+                unit_kind?: "assistant_message" | "agent_request" | "wf_node_outcome";
+                unit_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DescendOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finding_from_walk_review_findings_from_walk_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FindingFromWalkRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FindingFromWalkOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -68920,6 +69763,111 @@ export interface operations {
             };
         };
     };
+    run_personalization_outreach_personalization_lists__outreach_list_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                outreach_list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalizeRunBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_personalization_outreach_personalization_lists__outreach_list_id__batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                outreach_list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalizeRunBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draft_personalized_outreach_personalization_lists__outreach_list_id__drafts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                outreach_list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalizeDraftBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     build_one_agent_factory_build_post: {
         parameters: {
             query?: never;
@@ -69203,6 +70151,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

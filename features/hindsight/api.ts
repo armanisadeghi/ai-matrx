@@ -20,6 +20,7 @@ import type {
   EnrollmentUpdateRequest,
   EnrollRequest,
   FindingDecision,
+  FindingRevert,
   HindsightCosts,
   Replay,
   ReplayRunResult,
@@ -130,6 +131,23 @@ export async function discussFinding(
 export async function applyFinding(id: string): Promise<FindingDecision> {
   const { data } = await apiPost(
     buildPath("/hindsight/findings/{finding_id}/apply", { finding_id: id }),
+    undefined,
+  );
+  return data;
+}
+
+/**
+ * Undo an applied finding. The server re-promotes the pre-apply version
+ * through the same canonical agent write path the apply used, recording it
+ * as a NEW version row — so the receipt names both the version that came
+ * back (`reverted_to_version`) and the row that carries it
+ * (`new_version_number`). Only valid while the agent is still AT the
+ * applied version; a 422 with a human-readable reason is the normal
+ * refusal, not an exception case.
+ */
+export async function revertFinding(id: string): Promise<FindingRevert> {
+  const { data } = await apiPost(
+    buildPath("/hindsight/findings/{finding_id}/revert", { finding_id: id }),
     undefined,
   );
   return data;

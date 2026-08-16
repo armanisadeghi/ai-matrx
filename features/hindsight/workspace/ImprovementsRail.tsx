@@ -56,6 +56,7 @@ export function ImprovementsRail({
                 <FindingCard
                   key={f.id}
                   finding={f}
+                  agentId={agentId}
                   onChanged={onChanged}
                   onGuide={onGuide}
                 />
@@ -83,6 +84,7 @@ export function ImprovementsRail({
                 <FindingCard
                   key={f.id}
                   finding={f}
+                  agentId={agentId}
                   onChanged={onChanged}
                   onGuide={onGuide}
                 />
@@ -92,7 +94,7 @@ export function ImprovementsRail({
         )}
 
         <section className="border-t border-border pt-3">
-          <VersionLadder agentId={agentId} findings={findings} />
+          <VersionLadder agentId={agentId} findings={findings} onChanged={onChanged} />
         </section>
       </div>
     </div>

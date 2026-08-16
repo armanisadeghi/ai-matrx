@@ -8,7 +8,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
-import { Check, ChevronDown, ChevronRight, MessageSquare, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, MessageSquare, Undo2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +21,10 @@ import { conversationHref } from "../subject-doors";
 import { useDoorAudience } from "./door-audience";
 import { splitEvidenceIds, type Finding } from "../types";
 import { DiscussPanel } from "./DiscussPanel";
+import { RevertButton } from "./RevertButton";
 import { LEVER_COLOR, LEVER_LABEL, VERDICT_COLOR } from "./tokens";
 
-const DECIDED = new Set(["applied", "rejected", "superseded", "approved"]);
+const DECIDED = new Set(["applied", "rejected", "superseded", "approved", "reverted"]);
 
 function proposalBody(finding: Finding): string {
   const p = finding.proposal;
@@ -38,10 +39,13 @@ function proposalBody(finding: Finding): string {
 
 export function FindingCard({
   finding,
+  agentId,
   onChanged,
   onGuide,
 }: {
   finding: Finding;
+  /** The subject agent, when known — doors the revert confirm to the version diff. */
+  agentId?: string;
   onChanged: () => void;
   /**
    * When provided, "Guide" hands the finding to the host's conversation
@@ -123,7 +127,14 @@ export function FindingCard({
                   {count}× {verdict}
                 </Badge>
               ))}
-              <Badge variant="secondary">{finding.status}</Badge>
+              {finding.status === "reverted" ? (
+                <Badge className="border-0 bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                  <Undo2 className="mr-1 h-3 w-3" />
+                  reverted
+                </Badge>
+              ) : (
+                <Badge variant="secondary">{finding.status}</Badge>
+              )}
               {finding.applied_version_number != null && (
                 <Badge variant="outline">→ v{finding.applied_version_number}</Badge>
               )}
@@ -149,6 +160,7 @@ export function FindingCard({
             <MessageSquare className="mr-1 h-3.5 w-3.5" />
             Guide
           </Button>
+          <RevertButton finding={finding} agentId={agentId} onChanged={onChanged} />
           {!decided && (
           <>
             <Button

@@ -263,7 +263,16 @@ export function EnrollmentDetailPanel({
         ) : (
           <div className="space-y-2">
             {(data.findings ?? []).map((f) => (
-              <FindingCard key={f.id} finding={f} onChanged={invalidate} />
+              <FindingCard
+                key={f.id}
+                finding={f}
+                agentId={
+                  enrollment?.subject_kind === "agent"
+                    ? enrollment.subject_id ?? undefined
+                    : undefined
+                }
+                onChanged={invalidate}
+              />
             ))}
           </div>
         )}

@@ -15,6 +15,7 @@ export type ReviewDetail = components["schemas"]["ReviewDetailOut"];
 export type Finding = components["schemas"]["FindingOut"];
 export type FindingProposal = components["schemas"]["FindingProposalOut"];
 export type FindingDecision = components["schemas"]["FindingDecisionOut"];
+export type FindingRevert = components["schemas"]["FindingRevertOut"];
 export type Replay = components["schemas"]["ReplayOut"];
 export type ToolSubject = components["schemas"]["ToolSubjectOut"];
 export type HindsightCosts = components["schemas"]["HindsightCostsOut"];

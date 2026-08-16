@@ -12192,6 +12192,163 @@
         }
       }
     },
+    "/seo/sites/{site_id}/serp-prospecting/preview": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Preview Serp Prospecting",
+        "description": "Every query a prospecting run would send, and the cost, before any spend.\n\nSame doctrine as the link-gap seed preview: a paid run's value is decided by\nwhat goes into the request, so the user sees the exact queries (and anything\ndropped over the per-run cap) before money moves.",
+        "operationId": "preview_serp_prospecting_seo_sites__site_id__serp_prospecting_preview_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SerpProspectingBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SerpProspectingPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/serp-prospecting": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Collect Serp Prospecting",
+        "description": "Run SERP/keyword prospecting: who already ranks for these topics.\n\nOne standard-workflow collection (all query variants in one paid batch),\nnormalized into ``seo.serp_opportunity`` rows with query-mention evidence,\nthen a bulk authority-enrichment pass so the triage list lands scored.\nResults converge on the SAME review + fold path as the competitor link gap\n— one triage surface, never a second one.",
+        "operationId": "collect_serp_prospecting_seo_sites__site_id__serp_prospecting_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SerpProspectingBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/crm/serp-prospects": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Fold Serp Prospects Endpoint",
+        "description": "Resolve this site's APPROVED SERP prospect domains into `crm.party` orgs.\n\nOnly rows a human approved are folded; everything else is reported as\nskipped with its review state. Each folded row carries a provenance edge\nnaming the queries the domain ranks for — the reason it is in the CRM.",
+        "operationId": "fold_serp_prospects_endpoint_seo_sites__site_id__crm_serp_prospects_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FoldSerpProspectsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainFoldReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/gsc/search-performance/sync": {
       "post": {
         "tags": [
@@ -19831,6 +19988,49 @@
         }
       }
     },
+    "/hindsight/findings/{finding_id}/revert": {
+      "post": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Revert Finding Route",
+        "description": "Undo an applied finding — re-promotes the pre-apply version as a NEW\nversion through the same canonical agent write path (owner or admin).",
+        "operationId": "revert_finding_route_hindsight_findings__finding_id__revert_post",
+        "parameters": [
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Finding Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingRevertOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/hindsight/findings/{finding_id}/reject": {
       "post": {
         "tags": [
@@ -20032,6 +20232,105 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DrainResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review/descend": {
+      "get": {
+        "tags": [
+          "Review Walk"
+        ],
+        "summary": "Descend",
+        "operationId": "descend_review_descend_get",
+        "parameters": [
+          {
+            "name": "unit_kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "assistant_message",
+                "agent_request",
+                "wf_node_outcome"
+              ],
+              "type": "string",
+              "default": "assistant_message",
+              "title": "Unit Kind"
+            }
+          },
+          {
+            "name": "unit_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 8,
+              "title": "Unit Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DescendOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/review/findings/from-walk": {
+      "post": {
+        "tags": [
+          "Review Walk"
+        ],
+        "summary": "Finding From Walk",
+        "operationId": "finding_from_walk_review_findings_from_walk_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FindingFromWalkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FindingFromWalkOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -21149,6 +21448,159 @@
         }
       }
     },
+    "/outreach/personalization/lists/{outreach_list_id}/run": {
+      "post": {
+        "tags": [
+          "Outreach / Personalization"
+        ],
+        "summary": "Run Personalization",
+        "description": "Write evidence-backed personalization for a campaign's members (sync lane).",
+        "operationId": "run_personalization_outreach_personalization_lists__outreach_list_id__run_post",
+        "parameters": [
+          {
+            "name": "outreach_list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Outreach List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonalizeRunBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/outreach/personalization/lists/{outreach_list_id}/batch": {
+      "post": {
+        "tags": [
+          "Outreach / Personalization"
+        ],
+        "summary": "Submit Personalization",
+        "description": "Enqueue bulk personalization on the platform Batch system (~50% price).",
+        "operationId": "submit_personalization_outreach_personalization_lists__outreach_list_id__batch_post",
+        "parameters": [
+          {
+            "name": "outreach_list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Outreach List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonalizeRunBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/outreach/personalization/lists/{outreach_list_id}/drafts": {
+      "post": {
+        "tags": [
+          "Outreach / Personalization"
+        ],
+        "summary": "Draft Personalized",
+        "description": "Create planned drafts (IC-6 queue) for personalized members — never sends.",
+        "operationId": "draft_personalized_outreach_personalization_lists__outreach_list_id__drafts_post",
+        "parameters": [
+          {
+            "name": "outreach_list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Outreach List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonalizeDraftBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/agent-factory/build": {
       "post": {
         "tags": [
@@ -21601,6 +22053,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -78317,6 +78829,289 @@
         "type": "object",
         "title": "DeriveRequest"
       },
+      "DescendInput": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "text",
+              "markdown",
+              "json"
+            ],
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "value_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Ref"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars",
+            "default": 0
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "producer": {
+            "$ref": "#/components/schemas/ProducerRef"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "label",
+          "producer"
+        ],
+        "title": "DescendInput",
+        "description": "One input the unit received on its turn."
+      },
+      "DescendOut": {
+        "properties": {
+          "unit": {
+            "$ref": "#/components/schemas/DescendUnit"
+          },
+          "producer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DescendProducer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/DescendInput"
+            },
+            "type": "array",
+            "title": "Inputs"
+          },
+          "snapshot_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Snapshot Refs"
+          },
+          "capturable": {
+            "type": "boolean",
+            "title": "Capturable",
+            "default": true
+          },
+          "notes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit"
+        ],
+        "title": "DescendOut",
+        "description": "GET /review/descend response — one layer of the walk."
+      },
+      "DescendProducer": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "cx_request",
+            "title": "Kind",
+            "default": "cx_request"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "iteration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Iteration"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "linked",
+              "inferred"
+            ],
+            "title": "Confidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confidence"
+        ],
+        "title": "DescendProducer",
+        "description": "The provider call that produced the unit (the layer above the inputs)."
+      },
+      "DescendRef": {
+        "properties": {
+          "unit_kind": {
+            "type": "string",
+            "enum": [
+              "assistant_message",
+              "agent_request",
+              "wf_node_outcome"
+            ],
+            "title": "Unit Kind"
+          },
+          "unit_id": {
+            "type": "string",
+            "title": "Unit Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_kind",
+          "unit_id"
+        ],
+        "title": "DescendRef",
+        "description": "A unit the UI can descend into next — the recursive hop."
+      },
+      "DescendUnit": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "assistant_message",
+              "agent_request",
+              "wf_node_outcome"
+            ],
+            "title": "Kind"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "id"
+        ],
+        "title": "DescendUnit",
+        "description": "The unit being inspected."
+      },
       "DesktopInstanceSummary": {
         "properties": {
           "id": {
@@ -78559,6 +79354,61 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -80330,7 +81180,8 @@
             "enum": [
               "backlink",
               "reputation",
-              "link_gap"
+              "link_gap",
+              "serp_prospect"
             ],
             "title": "Source"
           },
@@ -87808,6 +88659,183 @@
         ],
         "title": "FindingFixResult"
       },
+      "FindingFromWalkOut": {
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "title": "Finding Id"
+          },
+          "review_id": {
+            "type": "string",
+            "title": "Review Id"
+          },
+          "enrollment_id": {
+            "type": "string",
+            "title": "Enrollment Id"
+          },
+          "enrollment_created": {
+            "type": "boolean",
+            "title": "Enrollment Created",
+            "default": false
+          },
+          "assist_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assist Id"
+          },
+          "lever": {
+            "type": "string",
+            "enum": [
+              "instructions",
+              "resources",
+              "tools",
+              "architecture"
+            ],
+            "title": "Lever"
+          },
+          "snapshots_pinned": {
+            "type": "integer",
+            "title": "Snapshots Pinned",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "finding_id",
+          "review_id",
+          "enrollment_id",
+          "lever"
+        ],
+        "title": "FindingFromWalkOut",
+        "description": "POST /review/findings/from-walk response."
+      },
+      "FindingFromWalkRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "unit_kind": {
+            "type": "string",
+            "enum": [
+              "assistant_message",
+              "agent_request",
+              "wf_node_outcome"
+            ],
+            "title": "Unit Kind",
+            "default": "assistant_message"
+          },
+          "unit_id": {
+            "type": "string",
+            "title": "Unit Id"
+          },
+          "hops": {
+            "items": {
+              "$ref": "#/components/schemas/WalkHop"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Hops"
+          },
+          "fault_unit_kind": {
+            "type": "string",
+            "title": "Fault Unit Kind"
+          },
+          "fault_unit_id": {
+            "type": "string",
+            "title": "Fault Unit Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 3,
+            "title": "Title"
+          },
+          "reasoning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning"
+          },
+          "lever": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "instructions",
+                  "resources",
+                  "tools",
+                  "architecture"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lever"
+          },
+          "snapshot_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Snapshot Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "unit_id",
+          "hops",
+          "fault_unit_kind",
+          "fault_unit_id",
+          "title"
+        ],
+        "title": "FindingFromWalkRequest",
+        "description": "POST /review/findings/from-walk body."
+      },
       "FindingOut": {
         "properties": {
           "id": {
@@ -87899,6 +88927,17 @@
               }
             ],
             "title": "Applied Version Number"
+          },
+          "pre_apply_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pre Apply Version"
           },
           "created_at": {
             "anyOf": [
@@ -88016,6 +89055,52 @@
         "type": "object",
         "title": "FindingProposalOut",
         "description": "The reviewer's proposed change. Shape varies by lever, so every field is\noptional; the UI renders the first populated body it finds."
+      },
+      "FindingRevertOut": {
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "title": "Finding Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "reverted_from_version": {
+            "type": "integer",
+            "title": "Reverted From Version"
+          },
+          "reverted_to_version": {
+            "type": "integer",
+            "title": "Reverted To Version"
+          },
+          "new_version_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Version Number"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "finding_id",
+          "status",
+          "agent_id",
+          "reverted_from_version",
+          "reverted_to_version"
+        ],
+        "title": "FindingRevertOut",
+        "description": "Receipt for a revert click — which version came back, and as what.\n\nThe revert re-promotes ``reverted_to_version``'s content through the same\ncanonical write path the apply used, so a NEW version row\n(``new_version_number``) records the promote; history is never rewritten."
       },
       "FireResponse": {
         "properties": {
@@ -88299,6 +89384,61 @@
         "type": "object",
         "title": "FoldLinkGapDomainsRequest",
         "description": "How much of this site's APPROVED link-gap backlog to bridge into the CRM.\n\nDeliberately NOT `FoldDomainsRequest`: `include_toxic` and `verdicts` mean\nnothing here — the only gate on a link-gap domain is the human's approval,\nand a body field that silently does nothing is a lie about what the caller\ncontrols. The org comes from the SITE, never the body."
+      },
+      "FoldSerpProspectsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 250
+          },
+          "refold": {
+            "type": "boolean",
+            "title": "Refold",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "FoldSerpProspectsRequest",
+        "description": "How much of this site's APPROVED SERP-prospect backlog to bridge to CRM.\n\nSame deliberate shape as ``FoldLinkGapDomainsRequest``: the only gate on a\nSERP opportunity is the human's approval, and the org comes from the SITE,\nnever the body."
       },
       "FoldedDomain": {
         "properties": {
@@ -106113,6 +107253,140 @@
         "title": "PersistenceSummary",
         "description": "Top-level dashboard signal."
       },
+      "PersonalizeDraftBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "template_id": {
+            "type": "string",
+            "title": "Template Id"
+          },
+          "member_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Ids"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 25
+          }
+        },
+        "type": "object",
+        "required": [
+          "template_id"
+        ],
+        "title": "PersonalizeDraftBody"
+      },
+      "PersonalizeRunBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "member_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Ids"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 25
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "PersonalizeRunBody"
+      },
       "PicklistBinding": {
         "properties": {
           "listId": {
@@ -109004,6 +110278,60 @@
         "type": "object",
         "title": "ProcessYouTubeVideosResponse"
       },
+      "ProducerRef": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "cx_request",
+              "message",
+              "request_snapshot",
+              "tool_call",
+              "agent",
+              "pending_injection",
+              "context_slot",
+              "user"
+            ],
+            "title": "Kind"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "descend_ref": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DescendRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "linked",
+              "inferred"
+            ],
+            "title": "Confidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "confidence"
+        ],
+        "title": "ProducerRef",
+        "description": "Who produced one input. ``descend_ref`` present ⇒ the walk can continue\ndown through this producer."
+      },
       "ProjectInputPart": {
         "properties": {
           "metadata": {
@@ -109663,6 +110991,29 @@
         },
         "type": "object",
         "title": "PromptWarmRequest"
+      },
+      "ProspectQuery": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "variant": {
+            "$ref": "#/components/schemas/QueryVariant"
+          },
+          "seed_keyword": {
+            "type": "string",
+            "title": "Seed Keyword"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query",
+          "variant",
+          "seed_keyword"
+        ],
+        "title": "ProspectQuery"
       },
       "ProviderCallEvidenceOut": {
         "properties": {
@@ -110740,6 +112091,17 @@
           "errors"
         ],
         "title": "QuarantinedRowSummary"
+      },
+      "QueryVariant": {
+        "type": "string",
+        "enum": [
+          "keyword",
+          "advanced_operator",
+          "resource_page",
+          "listicle",
+          "hot_off_press"
+        ],
+        "title": "QueryVariant"
       },
       "QuickScrapeRequest": {
         "properties": {
@@ -120913,6 +122275,137 @@
           "snippet"
         ],
         "title": "SerpLandscapeResult"
+      },
+      "SerpProspectingBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "keywords": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Keywords"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/QueryVariant"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Variants"
+          },
+          "depth": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 10,
+            "title": "Depth",
+            "default": 30
+          },
+          "enrich_authority": {
+            "type": "boolean",
+            "title": "Enrich Authority",
+            "default": true
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "keywords"
+        ],
+        "title": "SerpProspectingBody"
+      },
+      "SerpProspectingPreview": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "site_domain": {
+            "type": "string",
+            "title": "Site Domain"
+          },
+          "queries": {
+            "items": {
+              "$ref": "#/components/schemas/ProspectQuery"
+            },
+            "type": "array",
+            "title": "Queries"
+          },
+          "estimated_cost_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Estimated Cost Usd"
+          },
+          "dropped": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Dropped"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "site_domain",
+          "queries",
+          "estimated_cost_usd"
+        ],
+        "title": "SerpProspectingPreview"
       },
       "SessionPayload": {
         "properties": {
@@ -139192,6 +140685,62 @@
         ],
         "title": "VisionMediaUploadResponse",
         "description": "Response payload for ``POST /media/upload``."
+      },
+      "WalkHop": {
+        "properties": {
+          "hop": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Hop"
+          },
+          "unit_kind": {
+            "type": "string",
+            "title": "Unit Kind"
+          },
+          "unit_id": {
+            "type": "string",
+            "title": "Unit Id"
+          },
+          "answer": {
+            "type": "string",
+            "enum": [
+              "input_wrong",
+              "inputs_fine"
+            ],
+            "title": "Answer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hop",
+          "unit_kind",
+          "unit_id",
+          "answer"
+        ],
+        "title": "WalkHop",
+        "description": "One human answer in the walk — evidence, verbatim (D-40 typed hop)."
       },
       "WarmupProgress": {
         "properties": {
