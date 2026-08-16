@@ -87,6 +87,8 @@ import { BacklinkDimensionTable } from "@/features/marketing/components/backlink
 import { BacklinkInsightsTab } from "@/features/marketing/components/backlinks/BacklinkInsightsTab";
 import { BacklinkProspectsTab } from "@/features/marketing/components/backlinks/BacklinkProspectsTab";
 import { useLinkGapProspects } from "@/features/marketing/components/backlinks/useLinkGapProspects";
+import { SerpProspectsTab } from "@/features/marketing/components/backlinks/SerpProspectsTab";
+import { useSerpProspects } from "@/features/marketing/components/backlinks/useSerpProspects";
 import { parseMatrxAuthority } from "@/features/marketing/components/backlinks/lib/link-gap";
 import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import { BacklinksAssistStrip } from "@/features/marketing/components/backlinks/BacklinksAssistStrip";
@@ -182,6 +184,25 @@ function isDomainViewKey(value: string | null): value is DomainViewKey {
 
 function isDimensionTab(tab: string): tab is DimensionTabKey {
   return tab in DIMENSION_KIND_BY_TAB;
+}
+
+/**
+ * The Prospects tab's TWO methods on one triage surface — never a second
+ * sub-view. "Competitor links" is the site-wide link gap; "Search results" is
+ * SERP prospecting (who already ranks for the user's searches). Both converge
+ * on the same review + CRM-fold path.
+ */
+const PROSPECT_METHOD_PARAM = "method";
+
+const PROSPECT_METHODS = [
+  { key: "competitors", label: "Competitor links" },
+  { key: "search", label: "Search results" },
+] as const;
+
+type ProspectMethodKey = (typeof PROSPECT_METHODS)[number]["key"];
+
+function isProspectMethodKey(value: string | null): value is ProspectMethodKey {
+  return PROSPECT_METHODS.some((method) => method.key === value);
 }
 
 /** Compact top-10 card for the Overview grid — exactly 10 rows, no scroller. */
@@ -470,10 +491,23 @@ export function BacklinksWorkspace() {
    * the human reads another. It stays idle (`enabled`) until the tab is open,
    * so the other six tabs pay nothing for it.
    */
+  const prospectMethodParam = searchParams.get(PROSPECT_METHOD_PARAM);
+  const prospectMethod: ProspectMethodKey = isProspectMethodKey(
+    prospectMethodParam,
+  )
+    ? prospectMethodParam
+    : "competitors";
   const prospects = useLinkGapProspects({
     siteId: site.id,
     siteDomain: site.domain,
-    enabled: tab === "prospects",
+    enabled: tab === "prospects" && prospectMethod === "competitors",
+  });
+  /** The SECOND method's controller — idle unless its method is open. */
+  const serpProspects = useSerpProspects({
+    siteId: site.id,
+    siteDomain: site.domain,
+    organizationId: site.organization_id,
+    enabled: tab === "prospects" && prospectMethod === "search",
   });
   const domainViewParam = searchParams.get(DOMAIN_VIEW_PARAM);
   const domainView: DomainViewKey = isDomainViewKey(domainViewParam)
@@ -487,6 +521,7 @@ export function BacklinksWorkspace() {
     // this. Drop it here or a stale one would win back on the default view.
     params.delete("tab");
     params.delete(DOMAIN_VIEW_PARAM);
+    params.delete(PROSPECT_METHOD_PARAM);
     // The Link changes view's own lens params. A stale `changeKind` carried
     // onto another tab does nothing there, but it comes BACK the moment the
     // user returns — so the tab would reopen filtered with no explanation.
@@ -502,6 +537,20 @@ export function BacklinksWorkspace() {
     clearTableUrlParams(params);
     const query = params.toString();
     return query ? `${pathname}?${query}` : pathname;
+  };
+  const setProspectMethod = (next: ProspectMethodKey) => {
+    if (next === prospectMethod) return;
+    startNavigation(() => {
+      // The two methods are different tables over different evidence — one's
+      // paging/sort/search must never carry into the other's query.
+      router.replace(
+        tabHref(
+          "prospects",
+          next === "competitors" ? {} : { [PROSPECT_METHOD_PARAM]: next },
+        ),
+        { scroll: false },
+      );
+    });
   };
   const setDomainView = (next: DomainViewKey) => {
     if (next === domainView) return;
@@ -1055,6 +1104,48 @@ export function BacklinksWorkspace() {
           link_gap_review_backlog: Object.keys(prospects.statusCounts).length
             ? prospects.statusCounts
             : undefined,
+          // ── Prospects, method two (SERP prospecting) ─────────────────────
+          // Same rules as the link gap: only what the user is looking at,
+          // the score never a bare number, unmeasured never a zero.
+          serp_prospecting_preview: serpProspects.preview
+            ? {
+                site_domain: serpProspects.preview.site_domain,
+                queries: serpProspects.preview.queries.map((query) => ({
+                  query: query.query,
+                  variant: query.variant,
+                  seed_keyword: query.seed_keyword,
+                })),
+                estimated_cost_usd:
+                  serpProspects.preview.estimated_cost_usd,
+                dropped: serpProspects.preview.dropped ?? [],
+              }
+            : undefined,
+          serp_prospecting_prospects: serpProspects.rows.length
+            ? serpProspects.rows.map((row) => {
+                const authority = parseMatrxAuthority(row.metadata);
+                return {
+                  domain: row.display_domain,
+                  ranks_in_searches: row.mention_count,
+                  best_position: row.best_rank,
+                  matrx_authority_score: row.priority_score,
+                  matrx_authority_measured: row.priority_score !== null,
+                  matrx_authority_band: authority.band,
+                  why: row.priority_reason,
+                  not_measured: authority.missing,
+                  spam_score: row.spam_score,
+                  provider_domain_rank: row.domain_rank,
+                  review_status: row.review_status,
+                  has_crm_record: Boolean(
+                    serpProspects.partyByOpportunityId[row.id],
+                  ),
+                };
+              })
+            : undefined,
+          serp_prospecting_review_backlog: Object.keys(
+            serpProspects.statusCounts,
+          ).length
+            ? serpProspects.statusCounts
+            : undefined,
           refresh_schedule: {
             enabled: savedSchedule.enabled,
             cadence: savedSchedule.cadence,
@@ -1481,11 +1572,44 @@ export function BacklinksWorkspace() {
               <BacklinkChangesTable siteId={site.id} />
             </div>
           ) : tab === "prospects" ? (
-            <BacklinkProspectsTab
-              prospects={prospects}
-              sitePath={sitePath}
-              siteDomain={site.domain}
-            />
+            <div className="flex min-h-0 flex-1 flex-col gap-2">
+              <div className="flex w-max items-center gap-0.5 rounded-md border border-border bg-card p-0.5">
+                {PROSPECT_METHODS.map((method) => (
+                  <button
+                    key={method.key}
+                    type="button"
+                    disabled={isNavigating}
+                    aria-pressed={prospectMethod === method.key}
+                    className={cn(
+                      "shrink-0 whitespace-nowrap rounded px-2 py-1 text-xs transition-colors",
+                      prospectMethod === method.key
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                    )}
+                    title={
+                      method.key === "competitors"
+                        ? "Sites that link to your confirmed competitors and not to you"
+                        : "Sites already ranking in the search results your topics live in"
+                    }
+                    onClick={() => setProspectMethod(method.key)}
+                  >
+                    {method.label}
+                  </button>
+                ))}
+              </div>
+              {prospectMethod === "search" ? (
+                <SerpProspectsTab
+                  prospects={serpProspects}
+                  siteDomain={site.domain}
+                />
+              ) : (
+                <BacklinkProspectsTab
+                  prospects={prospects}
+                  sitePath={sitePath}
+                  siteDomain={site.domain}
+                />
+              )}
+            </div>
           ) : tab === "insights" ? (
             <div className="flex min-h-0 flex-1 flex-col">
               <BacklinkInsightsTab
