@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 375 active entity tokens. A token here is FK-valid for
+// 380 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -184,6 +184,7 @@ export type EntityTypeToken =
   | "hindsight_enrollment"
   | "hindsight_finding"
   | "hindsight_replay"
+  | "hindsight_replay_step"
   | "hindsight_review"
   | "industry_curator"
   | "interview_document_revision"
@@ -195,6 +196,7 @@ export type EntityTypeToken =
   | "invitation_code"
   | "invitation_request"
   | "item_mastery"
+  | "judge_verdict"
   | "kg_alert"
   | "kg_suggestion_ack"
   | "kg_sweep_queue"
@@ -234,6 +236,7 @@ export type EntityTypeToken =
   | "processed_document"
   | "processed_document_page"
   | "project"
+  | "purpose"
   | "quiz_session"
   | "redaction_mapping"
   | "research_analysis"
@@ -276,6 +279,8 @@ export type EntityTypeToken =
   | "seo_competitor"
   | "seo_competitor_observation"
   | "seo_competitor_opportunity"
+  | "seo_coverage_mention"
+  | "seo_coverage_tracker"
   | "seo_gsc_dig_rule"
   | "seo_keyword"
   | "seo_keyword_class_rule"
@@ -617,6 +622,8 @@ export type ComponentEntityToken =
   | "seo_competitor"
   | "seo_competitor_observation"
   | "seo_competitor_opportunity"
+  | "seo_coverage_mention"
+  | "seo_coverage_tracker"
   | "seo_gsc_dig_rule"
   | "seo_keyword_class_rule"
   | "seo_keyword_market_observation"
@@ -817,6 +824,7 @@ export type ScopeableEntityToken =
   | "hindsight_enrollment"
   | "hindsight_finding"
   | "hindsight_replay"
+  | "hindsight_replay_step"
   | "hindsight_review"
   | "industry_curator"
   | "interview_document_revision"
@@ -828,6 +836,7 @@ export type ScopeableEntityToken =
   | "invitation_code"
   | "invitation_request"
   | "item_mastery"
+  | "judge_verdict"
   | "kg_alert"
   | "kg_suggestion_ack"
   | "kg_sweep_queue"
@@ -867,6 +876,7 @@ export type ScopeableEntityToken =
   | "processed_document"
   | "processed_document_page"
   | "project"
+  | "purpose"
   | "quiz_session"
   | "redaction_mapping"
   | "research_analysis"
@@ -909,6 +919,8 @@ export type ScopeableEntityToken =
   | "seo_competitor"
   | "seo_competitor_observation"
   | "seo_competitor_opportunity"
+  | "seo_coverage_mention"
+  | "seo_coverage_tracker"
   | "seo_gsc_dig_rule"
   | "seo_keyword"
   | "seo_keyword_class_rule"
@@ -1070,6 +1082,7 @@ export type ListedEntityToken =
   | "dataset"
   | "expertise_pack"
   | "growth_loop_run"
+  | "hindsight_replay_step"
   | "interview_session"
   | "learn_doc"
   | "marketing_initiative"
@@ -1077,6 +1090,7 @@ export type ListedEntityToken =
   | "plan_entity"
   | "plan_node"
   | "platform_outcome_event"
+  | "purpose"
   | "research_context_bundle"
   | "structured_list"
   | "surface"
@@ -1234,6 +1248,7 @@ export const ENTITY_TYPE_METADATA = {
   "hindsight_enrollment": { token: "hindsight_enrollment", schema: "hindsight", table: "enrollment", label: "Hindsight Enrollment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "hindsight_finding": { token: "hindsight_finding", schema: "hindsight", table: "finding", label: "Hindsight Finding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hindsight_replay": { token: "hindsight_replay", schema: "hindsight", table: "replay", label: "Hindsight Replay", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "hindsight_replay_step": { token: "hindsight_replay_step", schema: "hindsight", table: "replay_step", label: "Wire Replay Step", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hindsight_review": { token: "hindsight_review", schema: "hindsight", table: "review", label: "Hindsight Review", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "industry_curator": { token: "industry_curator", schema: "iam", table: "industry_curators", label: "Industry Curator", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "interview_document_revision": { token: "interview_document_revision", schema: "interview", table: "document_revision", label: "Interview Document Revision", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1245,6 +1260,7 @@ export const ENTITY_TYPE_METADATA = {
   "invitation_code": { token: "invitation_code", schema: "users", table: "invitation_codes", label: "Invitation Code", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "invitation_request": { token: "invitation_request", schema: "users", table: "invitation_requests", label: "Invitation Request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "item_mastery": { token: "item_mastery", schema: "education", table: "item_mastery", label: "Item Mastery", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "judge_verdict": { token: "judge_verdict", schema: "platform", table: "judge_verdict", label: "Judge Verdict", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "kg_alert": { token: "kg_alert", schema: "rag", table: "kg_alerts", label: "KG Alert", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "kg_suggestion_ack": { token: "kg_suggestion_ack", schema: "rag", table: "kg_suggestion_ack", label: "KG Suggestion Ack", baseTier: 3, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "kg_sweep_queue": { token: "kg_sweep_queue", schema: "rag", table: "kg_sweep_queue", label: "KG Sweep Queue", baseTier: 3, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1284,6 +1300,7 @@ export const ENTITY_TYPE_METADATA = {
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
+  "purpose": { token: "purpose", schema: "platform", table: "purpose", label: "Purpose", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "quiz_session": { token: "quiz_session", schema: "education", table: "quiz_sessions", label: "Quiz Session", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: "destination", referenceCategory: null },
   "redaction_mapping": { token: "redaction_mapping", schema: "pdf", table: "redaction_mapping", label: "Redaction Mapping", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "research_analysis": { token: "research_analysis", schema: "research", table: "rs_analysis", label: "Research Analysis", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1326,6 +1343,8 @@ export const ENTITY_TYPE_METADATA = {
   "seo_competitor": { token: "seo_competitor", schema: "seo", table: "competitor", label: "SEO Competitor", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_competitor_observation": { token: "seo_competitor_observation", schema: "seo", table: "competitor_observation", label: "Competitor Observation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_competitor_opportunity": { token: "seo_competitor_opportunity", schema: "seo", table: "competitor_opportunity", label: "Competitor Opportunity", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_coverage_mention": { token: "seo_coverage_mention", schema: "seo", table: "coverage_mention", label: "Coverage Mention", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_coverage_tracker": { token: "seo_coverage_tracker", schema: "seo", table: "coverage_tracker", label: "Coverage Tracker", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_gsc_dig_rule": { token: "seo_gsc_dig_rule", schema: "seo", table: "gsc_dig_rule", label: "GSC Dig Rule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_keyword": { token: "seo_keyword", schema: "seo", table: "keyword", label: "SEO Keyword", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: "phrase", contentRole: null, referenceCategory: null },
   "seo_keyword_class_rule": { token: "seo_keyword_class_rule", schema: "seo", table: "keyword_class_rule", label: "Keyword Class Rule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1613,6 +1632,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hindsight_enrollment",
   "hindsight_finding",
   "hindsight_replay",
+  "hindsight_replay_step",
   "hindsight_review",
   "industry_curator",
   "interview_document_revision",
@@ -1624,6 +1644,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "invitation_code",
   "invitation_request",
   "item_mastery",
+  "judge_verdict",
   "kg_alert",
   "kg_suggestion_ack",
   "kg_sweep_queue",
@@ -1663,6 +1684,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "processed_document",
   "processed_document_page",
   "project",
+  "purpose",
   "quiz_session",
   "redaction_mapping",
   "research_analysis",
@@ -1705,6 +1727,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_competitor",
   "seo_competitor_observation",
   "seo_competitor_opportunity",
+  "seo_coverage_mention",
+  "seo_coverage_tracker",
   "seo_gsc_dig_rule",
   "seo_keyword",
   "seo_keyword_class_rule",

@@ -575,6 +575,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/reporting/dead-ends"),
           destination("/administration/reporting/unwired"),
           destination("/administration/reporting/lint-debt"),
+          destination("/administration/reporting/grounding"),
         ],
       },
     ],

@@ -1214,6 +1214,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/reporting/unwired",
         isNew: true,
       },
+      {
+        title: "Purpose & Grounding",
+        description:
+          "Which units of work declare what job they do (no purpose, no build), who authored each purpose (person / person-verified / AI only), and which jobs nothing serves anymore. Live from the registry, never a snapshot.",
+        iconName: "Target",
+        link: "/administration/reporting/grounding",
+        isNew: true,
+      },
     ],
   },
   {

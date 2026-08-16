@@ -60,6 +60,9 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
           pos: member.pos ?? undefined,
           required,
         },
+        // A person just typed this. Whatever the AI drafted, a human has now
+        // verified it — grounding "V" (Engram §4.5).
+        groundingTag: "V",
       }),
     );
     setSaving(false);

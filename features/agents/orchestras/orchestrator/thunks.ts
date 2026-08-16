@@ -289,6 +289,11 @@ export function syncOrchestratorPrompt(args: {
           orchestratorId: args.orchestratorId,
           agentId: m.agentId,
           meta: { roleTitle: nextRole, gap: nextGap, pos: m.pos ?? undefined },
+          // The Role Describer is an AI author, so its purpose row is grounded
+          // "A" (Engram §4.5). The DB refuses to let this overwrite a purpose a
+          // human already wrote or verified — a re-sync can never un-ground a
+          // corrected statement.
+          groundingTag: "A",
         }),
       );
       if (res.ok) membersUpdated += 1;

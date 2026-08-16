@@ -7352,6 +7352,7 @@ export type Database = {
       }
       request_snapshot: {
         Row: {
+          agent_definition_version: string | null
           conversation_id: string
           created_at: string
           created_by: string | null
@@ -7374,8 +7375,10 @@ export type Database = {
           updated_by: string | null
           user_request_id: string | null
           version: number
+          workflow_definition_version: string | null
         }
         Insert: {
+          agent_definition_version?: string | null
           conversation_id: string
           created_at?: string
           created_by?: string | null
@@ -7398,8 +7401,10 @@ export type Database = {
           updated_by?: string | null
           user_request_id?: string | null
           version?: number
+          workflow_definition_version?: string | null
         }
         Update: {
+          agent_definition_version?: string | null
           conversation_id?: string
           created_at?: string
           created_by?: string | null
@@ -7422,6 +7427,7 @@ export type Database = {
           updated_by?: string | null
           user_request_id?: string | null
           version?: number
+          workflow_definition_version?: string | null
         }
         Relationships: [
           {
@@ -27395,6 +27401,119 @@ export type Database = {
           },
         ]
       }
+      replay_step: {
+        Row: {
+          agent_definition_version: string | null
+          arm_key: string
+          completed_at: string | null
+          conversation_id: string | null
+          cost_usd: number
+          created_at: string
+          created_by: string | null
+          cx_request_id: string | null
+          deleted_at: string | null
+          delta: Json
+          error: Json | null
+          fidelity: Json
+          finding_id: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          output_kind: string
+          pinned_model: string | null
+          pinned_params: Json
+          replay_group_id: string
+          sample_count: number
+          samples: Json
+          snapshot_id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          verdict: string | null
+          verdicts: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          workflow_definition_version: string | null
+        }
+        Insert: {
+          agent_definition_version?: string | null
+          arm_key?: string
+          completed_at?: string | null
+          conversation_id?: string | null
+          cost_usd?: number
+          created_at?: string
+          created_by?: string | null
+          cx_request_id?: string | null
+          deleted_at?: string | null
+          delta?: Json
+          error?: Json | null
+          fidelity?: Json
+          finding_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          output_kind?: string
+          pinned_model?: string | null
+          pinned_params?: Json
+          replay_group_id: string
+          sample_count?: number
+          samples?: Json
+          snapshot_id: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          verdicts?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_definition_version?: string | null
+        }
+        Update: {
+          agent_definition_version?: string | null
+          arm_key?: string
+          completed_at?: string | null
+          conversation_id?: string | null
+          cost_usd?: number
+          created_at?: string
+          created_by?: string | null
+          cx_request_id?: string | null
+          deleted_at?: string | null
+          delta?: Json
+          error?: Json | null
+          fidelity?: Json
+          finding_id?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          output_kind?: string
+          pinned_model?: string | null
+          pinned_params?: Json
+          replay_group_id?: string
+          sample_count?: number
+          samples?: Json
+          snapshot_id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          verdicts?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          workflow_definition_version?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "replay_step_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "finding"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       review: {
         Row: {
           completed_at: string | null
@@ -27480,7 +27599,68 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_change_history: {
+        Row: {
+          actor_id: string | null
+          actor_system: string | null
+          actor_tier: string | null
+          change_id: string | null
+          change_note: string | null
+          change_role: string | null
+          changed_at: string | null
+          enrollment_id: string | null
+          finding_confidence: number | null
+          finding_id: string | null
+          finding_lever: string | null
+          finding_status: string | null
+          finding_title: string | null
+          organization_id: string | null
+          restored_version: number | null
+          review_id: string | null
+          unit_id: string | null
+          unit_name: string | null
+          unit_token: string | null
+          version_from: number | null
+          version_from_confidence: string | null
+          version_to: number | null
+        }
+        Relationships: []
+      }
+      v_finding_effectiveness: {
+        Row: {
+          accept_rate: number | null
+          applied_count: number | null
+          approved_count: number | null
+          avg_confidence: number | null
+          cost_delta_usd_avg: number | null
+          cost_signal_findings: number | null
+          evidencing_count: number | null
+          findings_total: number | null
+          first_finding_at: string | null
+          id: string | null
+          last_decision_at: string | null
+          last_finding_at: string | null
+          lever: string | null
+          machine_applicable_count: number | null
+          organization_id: string | null
+          post_apply_request_count: number | null
+          pre_apply_request_count: number | null
+          proposed_count: number | null
+          ready_count: number | null
+          rejected_count: number | null
+          revert_rate: number | null
+          reverted_count: number | null
+          superseded_count: number | null
+          time_to_decision_seconds_avg: number | null
+          time_to_decision_seconds_p50: number | null
+          time_to_revert_seconds_avg: number | null
+          undecided_count: number | null
+          unit_display_name: string | null
+          unit_id: string | null
+          unit_token: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
@@ -39789,6 +39969,21 @@ export type Database = {
       expand_archetype: {
         Args: { p_archetype: string; p_choices?: Json }
         Returns: Json
+      }
+      expertise_pack_snapshot: {
+        Args: { p_pack_id: string; p_version: number }
+        Returns: Json
+      }
+      expertise_pack_versions: {
+        Args: { p_pack_id: string }
+        Returns: {
+          actor_id: string
+          actor_tier: string
+          occurred_at: string
+          operation: string
+          rule_count: number
+          version: number
+        }[]
       }
       expire_stale_tunnels: { Args: never; Returns: undefined }
       export_user_table_as_csv:
