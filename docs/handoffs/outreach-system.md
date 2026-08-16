@@ -254,7 +254,10 @@ Architecturally the ruling is simple and already made (crm handoff §5.2): `crm.
 the ONE suppression authority, and suppression + unsubscribe are enforced **inside** the send
 primitive so no caller can forget. A caller that *can* bypass suppression eventually will.
 
-### G8 — Outcome attribution. *The differentiator (§1).*
+### G8 — Outcome attribution. ✅ **DONE 2026-08-16 — closed at BOTH ends**
+WP4 credits the observed world-change (`platform.outcome_event`); WP1 turns a confirmed one into a
+completed campaign member with its evidence on the roster (`aidream/services/outreach_outcomes/`,
+05:12 UTC). *(Original brief, kept because it is the reasoning:)*
 Link a send back to the `reputation_case` / `backlink` that motivated it, then let our own crawl
 close the loop. Generic shape worth building deliberately: *campaign → intended world-change →
 observed world-change*. Reputation, SEO, growth-loop and sales all want it.
@@ -878,9 +881,13 @@ a customer spam strangers from their real mailbox."
    what it can (server env config, vault-key presence, acceptance row, gmail.readonly state) and
    hands over exact copy-paste values for the rest; `AcceptSendingRulesDialog` there is the first
    and only AUP-accept UI. Until the scope lands the cadence refuses to run un-listened.
-4. **Phase 6 — attribution (G8).** The differentiator (§1): our own crawl closes the loop and
-   proves the link appeared. Nobody else in the category can do this. **Owned by WP4**, whose
-   IC-5 shape is `platform.outcome_event` (attribution PROPOSES, a human CONFIRMS).
+4. ~~Phase 6 — attribution (G8)~~ ✅ **BUILT 2026-08-16 and CLOSED END-TO-END.** WP4's pass
+   credits the win (`platform.outcome_event`; attribution PROPOSES, a human CONFIRMS, and the ONE
+   human path is `platform.decide_outcome_event`); WP1's `outreach_outcomes` sync then COMPLETES
+   the campaign member behind every confirmed win 15 minutes later, so the roster shows what the
+   campaign actually achieved and the chip opens the evidence. The loop the whole feature exists
+   for now runs end to end with **no flag and nothing to activate** — the first production send is
+   matched on the next nightly pass.
 5. ~~Phase 7 — surfaces (G9)~~ ✅ **BUILT 2026-08-15 (WP1).** The reputation verdict now carries
    the action it implies; the same door exists on backlink prospects; the Phase-1 fold trigger,
    provenance on the party record, the unified inbox and the Chasebox all landed. **One piece
