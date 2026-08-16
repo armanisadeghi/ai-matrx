@@ -54,6 +54,24 @@ vision:
 
 ## Remaining work (priority order)
 
+0. **🚨 CONVERSATION MANAGEMENT + WAR ROOM INTEGRATION FIRST (Arman, 2026-08-15).** Before VS Code
+   and distribution work: "the way they're managed is a disaster… they need to be fully integrated
+   into the war room" so war-room agents "have awareness of these conversations and are able to
+   search them", plus "a series of tools that makes it easy to search these conversations" and
+   custom analysis agents (user-vision extractor, end-result summarizer, and more). **Shipped
+   2026-08-15:** registered platform tool `conversations` (list/search/get_summary/get_messages
+   over `chat.conversation` incl. coding mirrors, owner-strict, search snippets —
+   `aidream/tools/conversations_tool.py` over `conversation_browse.py`); all three War Room slot
+   agents armed with it; five analysis agents live via the agent-builder
+   (`conversation_vision_extractor`, `conversation_outcome_summarizer`,
+   `conversation_action_auditor`, `conversation_decision_ledger`, `conversation_drift_auditor` —
+   category `conversation-analysis`, each armed with `conversations`, vision extractor verified
+   end-to-end against a real mirrored Claude Code session). **Still open on this front:** product
+   surfaces to RUN the analysis agents from `/work/conversations` rows and war-room conversation
+   attachments (one-click "Extract vision / Summarize outcomes / Audit drift" via the assists
+   registry or row actions); thread-level conversation placement from the Hub (PLAN.md Lane 3);
+   FTS/tsvector on `chat.message` when ILIKE stops scaling; persisting analysis outputs somewhere
+   durable (note/association on the conversation) instead of one-off run output.
 1. **Claude-native titles/branches — Matrx Local producer (`TASK-003`, chip fired).** The whole
    server side is live, deployed and tested (`SessionMetadata` observation + user > provider >
    first_prompt > placeholder precedence); the plugin ships the transcript locator; Matrx Local
