@@ -459,7 +459,16 @@ is easy to fill in.
   anywhere) and **`canRerun`**, and hydrates the re-run payload from the
   `pc_studio_runs.request` column — so `RunRecoveryBanner`'s new
   orphan state names the server fault and still offers Re-run from source
-  instead of the page sitting on a run that will never finish. Server-side, a
+  instead of the page sitting on a run that will never finish. **Render it only
+  through `RunRecoveryBannerFor` (`studio/components/RunRecoveryBanner.tsx`) —
+  it derives every prop from the `useStudioRun` result and is the ONLY caller of
+  the banner.** Six surfaces had hand-wired the same nine props and had already
+  drifted (only `StudioRunView` passed `audioMissing`, so "the audio didn't make
+  it" never rendered on run-dense / run-refine / run-reimagine / run-sharp);
+  adding `orphaned` to one of six would have repeated exactly that. A new run
+  view consumes the primitive — `AudioStudyDetail`'s explicit `audioMissing`
+  override is the one sanctioned deviation (it gates on its own `audioReady`).
+  Server-side, a
   podcast run now REFUSES to start when its durable record can't be created
   (`RunCheckpointer.start(require_durable=True)` → `DurableRunUnavailable`), and
   a DB/ORM exception can no longer be laundered into a retryable provider
