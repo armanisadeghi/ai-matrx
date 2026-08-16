@@ -20,6 +20,12 @@
  * Message bodies render through the canonical markdown pipeline
  * (`MarkdownStream` in persisted mode). This is not a stream and must never
  * become a bespoke renderer.
+ *
+ * `reply` and every thread message are PROSE — the server splits the reviewer's
+ * `reply_to_human` out of its structured payload (aidream
+ * `services/hindsight/discuss.py`). The old JSON-collapse fallback here was a
+ * workaround for that and is gone: never sniff a reply for `{` again. If JSON
+ * ever shows up in this panel, the server regressed — fix it there.
  */
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -76,44 +82,6 @@ function ThreadMessageRow({ message }: { message: ThreadMessage }) {
           hideCopyButton
         />
       </div>
-    </div>
-  );
-}
-
-/**
- * The reviewer answers with its STRUCTURED output, so `reply` is usually a raw
- * JSON object, not prose. The findings it produced are the human-facing result
- * and already render in the list above; dumping the JSON blob as the headline
- * would bury that. Prose replies render normally; a JSON reply collapses to an
- * inspectable block. (Backend follow-up: have `discuss` return the reviewer's
- * sentence separately from its structured payload.)
- */
-function ReviewerReply({ reply }: { reply: string }) {
-  const [open, setOpen] = useState(false);
-  const looksStructured = reply.trimStart().startsWith("{");
-
-  if (!looksStructured) {
-    return (
-      <div className="mt-1 text-sm">
-        <MarkdownStream content={reply} isStreamActive={false} hideCopyButton />
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-1">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="text-xs text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground"
-      >
-        {open ? "Hide" : "Show"} the reviewer&apos;s raw structured answer
-      </button>
-      {open && (
-        <pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-2 text-[11px]">
-          {reply}
-        </pre>
-      )}
     </div>
   );
 }
@@ -242,7 +210,13 @@ export function DiscussPanel({
             )}
           </div>
           {lastResult.reply && (
-            <ReviewerReply reply={lastResult.reply} />
+            <div className="mt-1 text-sm">
+              <MarkdownStream
+                content={lastResult.reply}
+                isStreamActive={false}
+                hideCopyButton
+              />
+            </div>
           )}
         </div>
       )}

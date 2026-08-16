@@ -96,11 +96,14 @@ disable Send, never an empty void.
 Message bodies render through the canonical markdown pipeline (`MarkdownStream`
 in persisted mode — no `requestId`, not a stream). Never hand-render one.
 
-**Known rough edge:** `discuss` returns the reviewer's STRUCTURED output in
-`reply`, so it is usually a raw JSON object rather than prose. The findings are
-the human-facing result, so the panel headlines those and collapses a
-JSON-shaped reply behind a toggle. The clean fix is backend-side: return the
-reviewer's sentence separately from its structured payload.
+**`reply` is PROSE — never sniff it for JSON.** The reviewer is a
+structured-output agent, and until 2026-08-15 `discuss` handed back its raw
+payload, so this panel collapsed a `{`-shaped reply behind a toggle. That
+workaround is DELETED: the reviewer now writes a `reply_to_human` field and
+aidream (`services/hindsight/discuss.py`) splits it out — for the discuss
+result AND for every assistant turn in `/thread`. Render both directly. JSON
+appearing here again is a SERVER regression; fix it there, never re-add a
+client-side fallback.
 
 ## The three things that are easy to get wrong
 
