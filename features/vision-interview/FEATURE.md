@@ -159,6 +159,16 @@ per-node tokens the same way.
   stage stepper in the header. PR #145 review fixes: follower armed once
   per run_id, `run_errored` terminal, `selectWorkflowNodeStreams` factory
   cache (+ regression tests).
+- 2026-08-16 — NEVER-LOSE-CONTENT contract (Arman's ruling after a dictated
+  vision was lost in the deploy-outage error storm): the composer and the
+  new-interview dialog hold their drafts in `useDurableDraft`
+  (`hooks/useDurableDraft.ts` — localStorage write-through, restore on
+  mount), cleared ONLY after the room durably accepted the content; a
+  vision statement saved on the session but not yet run renders in the
+  transcript pane as "Your vision — saved to this session", because saved
+  but invisible reads as lost. The clearing rule is load-bearing: never
+  clear a draft on send-click — only on acceptance, and only once the
+  content is visible somewhere durable.
 - 2026-08-16 — Mobile breakage pass (Arman's screenshots) + honest network
   errors: RoomHeader mobile chip is stage-label-only and Advance is icon-only
   on xs (title no longer collides); composer drops the pinned text-stats bar

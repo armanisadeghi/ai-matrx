@@ -41,11 +41,16 @@ const EMPTY_NODE_STREAMS: WorkflowNodeStreamEntry[] = [];
 const NO_NODE_STREAMS = () => EMPTY_NODE_STREAMS;
 
 interface TranscriptPaneProps {
+  sessionId: string;
   onResume: (input: ResumeInput) => Promise<boolean>;
   onStart: (openingMessage?: string) => Promise<boolean>;
 }
 
-export function TranscriptPane({ onResume, onStart }: TranscriptPaneProps) {
+export function TranscriptPane({
+  sessionId,
+  onResume,
+  onStart,
+}: TranscriptPaneProps) {
   const turns = useAppSelector(selectTurnsOrdered);
   const hydrated = useAppSelector(selectRoomHydrated);
   const session = useAppSelector(selectRoomSession);
@@ -94,23 +99,45 @@ export function TranscriptPane({ onResume, onStart }: TranscriptPaneProps) {
             <Skeleton className="h-16 w-full" />
           </div>
         ) : turns.length === 0 && liveCards.length === 0 ? (
-          <div className="flex h-full items-center justify-center p-6">
-            <div className="max-w-sm text-center">
-              <div className="mb-3 flex items-center justify-center gap-1.5">
-                {ROLE_ORDER.map((key) => (
-                  <RoleAvatar key={key} role={key} size="sm" />
-                ))}
+          session?.vision_statement?.trim() ? (
+            // NEVER-LOSE-CONTENT: a statement saved on the session but not
+            // yet turned into a run MUST be visible — data that is saved but
+            // invisible reads as lost, and that costs all trust (2026-08-16,
+            // when a run-start failure hid a dictated vision that was in
+            // fact safely on the session row).
+            <div className="p-2">
+              <div className="rounded-lg border border-border bg-card px-3 py-2.5">
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Your vision — saved to this session
+                </p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                  {session.vision_statement}
+                </p>
               </div>
-              <p className="text-sm font-medium text-foreground">
-                Six roles are waiting for your vision
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Type or dictate an opening statement below — or press Start
-                and the room opens from your saved vision. The Amplifier and
-                Cartographer lead the Expand stage.
+              <p className="mt-2 px-1 text-xs text-muted-foreground">
+                Press Start and the room opens from this. Anything you add
+                below is appended to it.
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="flex h-full items-center justify-center p-6">
+              <div className="max-w-sm text-center">
+                <div className="mb-3 flex items-center justify-center gap-1.5">
+                  {ROLE_ORDER.map((key) => (
+                    <RoleAvatar key={key} role={key} size="sm" />
+                  ))}
+                </div>
+                <p className="text-sm font-medium text-foreground">
+                  Six roles are waiting for your vision
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Type or dictate an opening statement below — or press Start
+                  and the room opens from your saved vision. The Amplifier and
+                  Cartographer lead the Expand stage.
+                </p>
+              </div>
+            </div>
+          )
         ) : (
           <div className="space-y-1">
             {turns.map((turn) => (
@@ -127,7 +154,7 @@ export function TranscriptPane({ onResume, onStart }: TranscriptPaneProps) {
           </div>
         )}
       </div>
-      <Composer onResume={onResume} onStart={onStart} />
+      <Composer sessionId={sessionId} onResume={onResume} onStart={onStart} />
     </div>
   );
 }
