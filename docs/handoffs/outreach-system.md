@@ -544,7 +544,11 @@ is the one piece of this section that cannot be closed in code.
 
 🚨 **THE ONE SEND AUTHORITY is `crm.check_send_eligibility()`** — a DB function, so a caller in
 another repo or language cannot route around it. It returns a verdict where **every block carries
-a `fix`**. Ask it before any send; never reimplement one of its checks elsewhere.
+a `fix`**. Ask it before any send; never reimplement one of its checks elsewhere. Since `crm_10`
+(2026-08-15, D13/D-W1-11) it also owns the subject-scoped blocklist (`crm.blocklist_entry` —
+email/domain/party, org + platform tiers, code `blocklisted`) and `party.do_not_contact` (code
+`do_not_contact`), in both lanes — the caller-side copies that predated it are deleted, and a new
+one is a defect.
 
 Live and proven against production, not asserted:
 
@@ -869,8 +873,11 @@ a customer spam strangers from their real mailbox."
    HUMAN gate, not engineering: **`gmail.readonly` — RULED 2026-08-15, added after the current
    Google verification round closes as its own campaign** (queued in
    `common-docs/projects/google-oauth-verification/PLAN.md`); the Pub/Sub topic + subscription;
-   the two env vars; and the AUP acceptance (`crm.outreach_acceptance` is empty, so every send
-   returns `aup_not_accepted`). Until the scope lands the cadence refuses to run un-listened.
+   the two env vars; and the AUP acceptance. **All of these are now ONE guided flow:** the
+   `outreach.production_bring_up` checklist on `/crm/sending-identities` (2026-08-15) machine-checks
+   what it can (server env config, vault-key presence, acceptance row, gmail.readonly state) and
+   hands over exact copy-paste values for the rest; `AcceptSendingRulesDialog` there is the first
+   and only AUP-accept UI. Until the scope lands the cadence refuses to run un-listened.
 4. **Phase 6 — attribution (G8).** The differentiator (§1): our own crawl closes the loop and
    proves the link appeared. Nobody else in the category can do this. **Owned by WP4**, whose
    IC-5 shape is `platform.outcome_event` (attribution PROPOSES, a human CONFIRMS).
