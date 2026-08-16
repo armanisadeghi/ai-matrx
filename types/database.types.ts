@@ -63843,6 +63843,74 @@ export type Database = {
           },
         ]
       }
+      runtime_surface: {
+        Row: {
+          audience: string
+          config: Json
+          created_at: string
+          created_by: string | null
+          definition_id: string
+          deleted_at: string | null
+          id: string
+          is_default: boolean
+          metadata: Json
+          name: string
+          organization_id: string
+          profile: string
+          schema_version: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          audience?: string
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          definition_id: string
+          deleted_at?: string | null
+          id?: string
+          is_default?: boolean
+          metadata?: Json
+          name?: string
+          organization_id: string
+          profile?: string
+          schema_version?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          audience?: string
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          definition_id?: string
+          deleted_at?: string | null
+          id?: string
+          is_default?: boolean
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          profile?: string
+          schema_version?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "runtime_surface_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       template: {
         Row: {
           category: string | null
