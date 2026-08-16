@@ -80,11 +80,19 @@ Shipped 2026-08-15 (verified in browser + in-process against the live DB):
   (auto-opens via `?interview=1`; page refreshes as drafts land).
 - Hygiene: api-types casts dropped, `sourceFeature: "expertise"`.
 
+Also shipped since (each browser- or production-verified): the **R2 exemplar ingest mode**
+(`mode=exemplar` on `/expertise-desks/ingest` + the source-kind choice in the dialog —
+prod-verified 2026-08-16: 3 news briefs → 4 draft rules, all quotes verbatim,
+`source_ref.exemplar=true`); **desk run-history** on `/expertise/[id]/desks` (status · age ·
+duration · summed node cost from `workflow.run`/`node_outcome`, rows open the run); the
+**"What did it get wrong?" feedback loop** — each completed run row opens the interview panel
+seeded with the run context, so complaints become draft rules through the same tool.
+
 Next, in order: ① the honest test — fill `arman-seo-method` via the interview + compile + judge
-(directive #4); ② the R2 exemplar lane — "here are the best outputs in the world, distill rules
-from them + backtest against what the pros published" (reuses ingest machinery; the news-writer
-case); ③ file/PDF/audio ingest via content_processing + page_extraction; ④ desk run-history +
-pack version snapshots (Phase 6); ⑤ the distillation→Engram interface (candidate specialists +
+(directive #4; needs Arman himself); ② the R2 backtest harness (known inputs → run the desk →
+compare against the real published work — the outcome stream for exemplar packs); ③ file/PDF/
+audio ingest via content_processing + page_extraction; ④ pack version snapshots + structured
+outputs (Phase 6 tail); ⑤ the distillation→Engram interface (candidate specialists +
 acceptance criteria as pack outputs).
 
 ## PRIOR STATUS (2026-08-10) — Phases 1-3 SHIPPED
@@ -133,13 +141,13 @@ acceptance criteria as pack outputs).
   listConfig sourceFeature "agents-other" → "expertise".
 - **2026-08-16:** Hopkins recompiled onto the generate shape via the production compiler —
   desk `b0865c3b-774c-44a3-91e4-ddaef205ae67`, pack-stamped v1 (old unstamped desk
-  `0001b1ba…` left as history). Exemplar ingest mode (R2 start) shipped: `mode` on
-  `/expertise-desks/ingest` + the source-kind choice in the FE dialog.
+  `0001b1ba…` left as history). Exemplar ingest mode shipped + prod-verified; desk
+  run-history and the "what did it get wrong" feedback loop shipped + browser-verified
+  (see STATUS above).
 - **First actions for the next agent:** ① run the honest test — open `arman-seo-method`
   with Arman and fill it through the interview lane, ② the R2 backtest harness (exemplar
   outputs + known inputs → run the desk on the same inputs → compare against the real
-  published work), ③ desk run-history + "what did it get wrong" feedback loop from desk
-  runs back into draft rules, ④ file/PDF/audio ingest via content_processing.
+  published work), ③ file/PDF/audio ingest via content_processing.
 
 ---
 
