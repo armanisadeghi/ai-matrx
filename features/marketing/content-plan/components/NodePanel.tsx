@@ -1111,6 +1111,8 @@ export function NodePanel({
             <PanelSection title="Pipeline">
               <NodeStepRail
                 nodeId={node.id}
+                siteId={siteId}
+                pageLabel={node.route ?? node.label}
                 progress={pipelineProgress ?? null}
               />
             </PanelSection>

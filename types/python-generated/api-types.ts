@@ -4225,6 +4225,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/outreach/inbound/gmail/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gmail Push */
+        post: operations["gmail_push_outreach_inbound_gmail__token__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-workspace/files/register": {
         parameters: {
             query?: never;
@@ -4755,6 +4772,56 @@ export interface paths {
          *     paid provider request.
          */
         post: operations["collect_page_link_gap_seo_sites__site_id__pages__page_id__link_gap_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/link-gap/seed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Site Link Gap Seed
+         * @description Who WOULD be compared, before anyone spends money.
+         *
+         *     A gap run is a paid call whose entire value is decided by which competitors
+         *     are in the request, so the user gets to see that list — and the confirmed
+         *     competitors deliberately left out, with the reason — before running it.
+         */
+        post: operations["preview_site_link_gap_seed_seo_sites__site_id__link_gap_seed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/link-gap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Collect Site Link Gap
+         * @description Collect the domains that link to our confirmed competitors and not to us.
+         *
+         *     The competitor seed rule is re-checked inside the package service before any
+         *     paid provider request: human-confirmed AND link-gap eligible, or nothing
+         *     runs. A site with nothing confirmed yet is refused BEFORE the stream opens,
+         *     so the user gets a sentence telling them to confirm competitors rather than
+         *     a failed run.
+         */
+        post: operations["collect_site_link_gap_seo_sites__site_id__link_gap_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5472,6 +5539,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/crm/link-gap-domains": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Fold Link Gap Domains Endpoint
+         * @description Resolve this site's APPROVED competitor link-gap domains into `crm.party` orgs.
+         *
+         *     A link-gap domain links to your competitors and not to you — the most
+         *     actionable outreach list the SEO half produces. **Only rows a human has
+         *     approved are folded**; everything else is reported as skipped with its
+         *     current review state, so the backlog waiting on a decision is visible rather
+         *     than silent. Each folded row carries a provenance edge naming the
+         *     competitors that already get links from that site.
+         */
+        post: operations["fold_link_gap_domains_endpoint_seo_sites__site_id__crm_link_gap_domains_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/crm/fold-settings": {
         parameters: {
             query?: never;
@@ -5662,6 +5756,31 @@ export interface paths {
          * @description Make a past run the node's current proposal again.
          */
         post: operations["restore_brief_run_route_content_plan_nodes__node_id__brief_runs_restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/content-plan/nodes/{node_id}/steps/{step}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Page Step Route
+         * @description Run ONE Website Factory pipeline step for ONE page.
+         *
+         *     `p3_family` / `p4_write` / `p5_review` — each independently re-runnable, each
+         *     persisting its own superseding artifact. The precondition refusals (no brief
+         *     to write from, no draft to review) are checked BEFORE the stream opens, so
+         *     the client renders them as the gap plus its fix rather than a toast.
+         */
+        post: operations["run_page_step_route_content_plan_nodes__node_id__steps__step__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7602,7 +7721,7 @@ export interface paths {
         put?: never;
         /**
          * Trigger Review
-         * @description Manual review trigger — runs the full review inline (admin action).
+         * @description Manual review trigger — runs the full review inline (owner or admin).
          */
         post: operations["trigger_review_hindsight_enrollments__enrollment_id__review_post"];
         delete?: never;
@@ -8278,6 +8397,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9843,6 +9986,126 @@ export interface paths {
          * @description Human-confirm one current person and selected literally observed addresses.
          */
         post: operations["confirm_outlet_contact_candidate_crm_parties__outlet_party_id__contact_candidates_confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/{party_id}/contacts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Party Contact Candidates
+         * @description IC-3 — the ONE ranked list of ways to reach someone here. Writes nothing.
+         */
+        get: operations["list_party_contact_candidates_crm_parties__party_id__contacts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/{party_id}/contacts/find": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Find Party Contacts
+         * @description Run the waterfall. Produces candidates only — never a contact.
+         */
+        post: operations["find_party_contacts_crm_parties__party_id__contacts_find_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/{party_id}/contacts/{candidate_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm Party Contact Candidate
+         * @description The human act — promotes ONE candidate through the governed party resolver.
+         */
+        post: operations["confirm_party_contact_candidate_crm_parties__party_id__contacts__candidate_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/{party_id}/contacts/{candidate_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Party Contact Candidate
+         * @description Refuse a candidate. The verdict survives every later re-discovery.
+         */
+        post: operations["reject_party_contact_candidate_crm_parties__party_id__contacts__candidate_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/{party_id}/contacts/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Party Contact Address
+         * @description Free syntax/MX/disposable filter, then the paid final mile if it passed.
+         */
+        post: operations["verify_party_contact_address_crm_parties__party_id__contacts_verify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/{party_id}/journalist-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Party Journalist Activity
+         * @description Is this person still publishing where we think they are? (ListIQ-equivalent.)
+         */
+        post: operations["check_party_journalist_activity_crm_parties__party_id__journalist_activity_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -17374,6 +17637,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/snapshot-retention/rollup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Rollup
+         * @description Size/row rollup + retention counters. Reports staleness rather than
+         *     presenting an old capture as current.
+         */
+        get: operations["get_rollup_admin_snapshot_retention_rollup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/snapshot-retention/capture-health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Capture Health
+         * @description How many snapshot captures were swallowed in the window. Read-only: this
+         *     never writes the assist chip (only the nightly task does), so refreshing an
+         *     admin page cannot spam the ledger.
+         */
+        get: operations["get_capture_health_admin_snapshot_retention_capture_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/snapshot-retention/prune": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Prune
+         * @description Run one retention pass. Defaults to ``dry_run=true`` — deleting is an
+         *     explicit act, not a default of a URL someone can open by accident.
+         */
+        post: operations["post_prune_admin_snapshot_retention_prune_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/snapshot-retention/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Run
+         * @description The full nightly pass on demand (prune → rollup → capture alarm).
+         */
+        post: operations["post_run_admin_snapshot_retention_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/agent-context/organizations": {
         parameters: {
             query?: never;
@@ -18749,6 +19096,70 @@ export interface components {
             /** Page Ids */
             page_ids: string[];
         };
+        /** ActivityEvidence */
+        ActivityEvidence: {
+            /** Url */
+            url: string;
+            /** Title */
+            title?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /** Outlet Domain */
+            outlet_domain?: string | null;
+            /**
+             * Via
+             * @default search
+             * @enum {string}
+             */
+            via?: "crawl" | "search";
+        };
+        /** ActivityVerdict */
+        ActivityVerdict: {
+            /** Party Id */
+            party_id: string;
+            /** Person Name */
+            person_name: string;
+            /** Outlet Party Id */
+            outlet_party_id?: string | null;
+            /** Outlet Name */
+            outlet_name?: string | null;
+            /** Outlet Domain */
+            outlet_domain?: string | null;
+            /**
+             * Status
+             * @default unknown
+             * @enum {string}
+             */
+            status?: "active" | "stale" | "moved" | "unknown";
+            /**
+             * Window Days
+             * @default 30
+             */
+            window_days?: number;
+            /** Last Seen At */
+            last_seen_at?: string | null;
+            /** Checked At */
+            checked_at?: string | null;
+            /** Evidence */
+            evidence?: components["schemas"]["ActivityEvidence"][];
+            /** Moved To Domain */
+            moved_to_domain?: string | null;
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+            /**
+             * Searched
+             * @default false
+             */
+            searched?: boolean;
+            /**
+             * Search Failed
+             * @default false
+             */
+            search_failed?: boolean;
+        };
         /** AddAssetRequest */
         AddAssetRequest: {
             /**
@@ -19362,6 +19773,7 @@ export interface components {
             variables?: {
                 [key: string]: unknown;
             }[];
+            orchestra?: components["schemas"]["OrchestraBadge"] | null;
         };
         /** AgentListResponse */
         AgentListResponse: {
@@ -19489,11 +19901,8 @@ export interface components {
              * @default false
              */
             block_mode?: boolean;
-            /**
-             * Snapshot
-             * @default false
-             */
-            snapshot?: boolean;
+            /** Snapshot */
+            snapshot?: boolean | null;
             /** Memory */
             memory?: boolean | null;
             /** Memory Model */
@@ -19656,10 +20065,9 @@ export interface components {
             block_mode?: boolean;
             /**
              * Snapshot
-             * @description Capture the agent definition snapshot used for this run.
-             * @default false
+             * @description Request-snapshot capture override. Omit for the platform default (capture ON — the exact provider request/response of every persisted iteration is recorded for replay); false to opt this step out; true to force capture on plus wire-level outbound-capture debug events.
              */
-            snapshot?: boolean;
+            snapshot?: boolean | null;
             /**
              * Memory
              * @description True = enable OM and persist on conversation; False = disable and persist; None = inherit persisted state.
@@ -19724,6 +20132,7 @@ export interface components {
              * @default 1
              */
             version?: number;
+            orchestra?: components["schemas"]["OrchestraBadge"] | null;
         };
         /**
          * AgentTaskCreate
@@ -20562,7 +20971,7 @@ export interface components {
              * @description Where this one asset stands.
              * @enum {string}
              */
-            status: "completed" | "pending" | "failed";
+            status: "completed" | "pending" | "failed" | "skipped";
             /**
              * Action
              * @description What the client can do about it: regenerate, or none when unaddressable.
@@ -22006,6 +22415,11 @@ export interface components {
              * @default 1000
              */
             detail_limit?: number;
+            /**
+             * Detail Max Rows
+             * @default 10000
+             */
+            detail_max_rows?: number;
             /**
              * Force Refresh
              * @default true
@@ -23739,6 +24153,48 @@ export interface components {
             task_cancelled: boolean;
         };
         /**
+         * CaptureHealth
+         * @description Capture-failure counter over the alarm window.
+         */
+        CaptureHealth: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok?: boolean;
+            /**
+             * Lookback Hours
+             * @default 24
+             */
+            lookback_hours?: number;
+            /**
+             * Failures
+             * @default 0
+             */
+            failures?: number;
+            /**
+             * Threshold
+             * @default 5
+             */
+            threshold?: number;
+            /**
+             * Breached
+             * @default false
+             */
+            breached?: boolean;
+            /**
+             * Assist Written
+             * @default false
+             */
+            assist_written?: boolean;
+            /** Addressee User Id */
+            addressee_user_id?: string | null;
+            /** Last Failure At */
+            last_failure_at?: string | null;
+            /** Error */
+            error?: string | null;
+        };
+        /**
          * CapturedLink
          * @description One anchor on the captured page pointing at the requested target.
          *
@@ -24330,11 +24786,8 @@ export interface components {
              * @default false
              */
             block_mode?: boolean;
-            /**
-             * Snapshot
-             * @default false
-             */
-            snapshot?: boolean;
+            /** Snapshot */
+            snapshot?: boolean | null;
             /** Memory */
             memory?: boolean | null;
             /** Memory Model */
@@ -26428,6 +26881,34 @@ export interface components {
             /** Id */
             id: string;
         };
+        /** ConfirmCandidateRequest */
+        ConfirmCandidateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Accept Role Address
+             * @default false
+             */
+            accept_role_address?: boolean;
+            /**
+             * Accept Unverified
+             * @default false
+             */
+            accept_unverified?: boolean;
+        };
         /** ConfirmOutletContactRequest */
         ConfirmOutletContactRequest: {
             /**
@@ -26538,6 +27019,80 @@ export interface components {
             oauth_scopes_granted: string[];
             /** Last Error */
             last_error: string | null;
+        };
+        /**
+         * ContactCandidateView
+         * @description A persisted candidate as a surface sees it. Every field is a door or a why.
+         */
+        ContactCandidateView: {
+            /** Id */
+            id: string;
+            /** Party Id */
+            party_id: string;
+            /** Person Name */
+            person_name?: string | null;
+            /** Person Party Id */
+            person_party_id?: string | null;
+            /** Role Title */
+            role_title?: string | null;
+            /**
+             * Channel
+             * @default email
+             */
+            channel?: string;
+            /** Address */
+            address: string;
+            /**
+             * Is Role Address
+             * @default false
+             */
+            is_role_address?: boolean;
+            /** Source */
+            source: string;
+            /** Source Detail */
+            source_detail?: string | null;
+            /** Source Url */
+            source_url?: string | null;
+            /**
+             * Confidence
+             * @default 0
+             */
+            confidence?: number;
+            /** Provider Confidence */
+            provider_confidence?: number | null;
+            /**
+             * Verification Status
+             * @default unverified
+             * @enum {string}
+             */
+            verification_status?: "unverified" | "verified" | "invalid" | "risky";
+            /** Mx Valid */
+            mx_valid?: boolean | null;
+            /** Verified At */
+            verified_at?: string | null;
+            /**
+             * Verification Reason
+             * @default
+             */
+            verification_reason?: string;
+            /** Engagement Score */
+            engagement_score?: number | null;
+            /** Engagement Reasons */
+            engagement_reasons?: string[];
+            /**
+             * Status
+             * @default candidate
+             * @enum {string}
+             */
+            status?: "candidate" | "confirmed" | "rejected" | "stale";
+            /** Confirmed Contact Point Id */
+            confirmed_contact_point_id?: string | null;
+            /** Why */
+            why?: string[];
+            /** First Seen At */
+            first_seen_at?: string | null;
+            /** Last Seen At */
+            last_seen_at?: string | null;
         };
         /** ContactEvidence */
         ContactEvidence: {
@@ -27028,11 +27583,8 @@ export interface components {
              * @default false
              */
             block_mode?: boolean;
-            /**
-             * Snapshot
-             * @default false
-             */
-            snapshot?: boolean;
+            /** Snapshot */
+            snapshot?: boolean | null;
             /** Memory */
             memory?: boolean | null;
             /** Memory Model */
@@ -28686,6 +29238,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -28998,6 +29577,10 @@ export interface components {
          *     the human was looking at — ``findings_created`` / ``finding_ids`` say what
          *     appeared, and the caller must refetch the review. ``status="failed"`` with a
          *     ``reason`` is a normal outcome to render, never an exception.
+         *
+         *     ``reply`` is the reviewer's PROSE, split from its structured payload on the
+         *     server (``ReviewerOutput.reply_to_human``). The client renders it directly —
+         *     it may never receive raw JSON here again, so no client-side JSON sniffing.
          */
         DiscussOut: {
             /** Review Id */
@@ -29409,7 +29992,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "backlink" | "reputation";
+            source: "backlink" | "reputation" | "link_gap";
             /** Site Id */
             site_id: string;
             /** Organization Id */
@@ -30360,19 +30943,19 @@ export interface components {
              * @description Whether the episode script has been written.
              * @enum {string}
              */
-            script: "completed" | "pending" | "failed";
+            script: "completed" | "pending" | "failed" | "skipped";
             /**
              * Audio
              * @description Whether the episode audio has been produced.
              * @enum {string}
              */
-            audio: "completed" | "pending" | "failed";
+            audio: "completed" | "pending" | "failed" | "skipped";
             /**
              * Episode
              * @description Whether the publishable episode row exists.
              * @enum {string}
              */
-            episode: "completed" | "pending" | "failed";
+            episode: "completed" | "pending" | "failed" | "skipped";
         };
         /** EvidenceReference */
         EvidenceReference: {
@@ -32065,6 +32648,41 @@ export interface components {
             /** Offset */
             offset: number;
         };
+        /** FinalMileResult */
+        FinalMileResult: {
+            /** Medium Id */
+            medium_id: string;
+            /** Address */
+            address: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "unverified" | "verified" | "invalid" | "risky";
+            /** Mx Valid */
+            mx_valid?: boolean | null;
+            /**
+             * Free Tier Status
+             * @default
+             */
+            free_tier_status?: string;
+            /** Provider Used */
+            provider_used?: string | null;
+            /** Provider Result */
+            provider_result?: string | null;
+            /** Provider Skipped Reason */
+            provider_skipped_reason?: string | null;
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
+            /**
+             * Changed
+             * @default false
+             */
+            changed?: boolean;
+        };
         /** FinalizeUploadRequest */
         FinalizeUploadRequest: {
             /** Upload Id */
@@ -32073,6 +32691,31 @@ export interface components {
             actual_size_bytes?: number | null;
             /** Checksum */
             checksum?: string | null;
+        };
+        /** FindContactsRequest */
+        FindContactsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Person Name */
+            person_name?: string | null;
+            /**
+             * Use Paid Providers
+             * @default true
+             */
+            use_paid_providers?: boolean;
         };
         /** FindSimilarBody */
         FindSimilarBody: {
@@ -32359,6 +33002,42 @@ export interface components {
             /** Verdicts */
             verdicts?: string[];
         };
+        /**
+         * FoldLinkGapDomainsRequest
+         * @description How much of this site's APPROVED link-gap backlog to bridge into the CRM.
+         *
+         *     Deliberately NOT `FoldDomainsRequest`: `include_toxic` and `verdicts` mean
+         *     nothing here — the only gate on a link-gap domain is the human's approval,
+         *     and a body field that silently does nothing is a lie about what the caller
+         *     controls. The org comes from the SITE, never the body.
+         */
+        FoldLinkGapDomainsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Limit
+             * @default 250
+             */
+            limit?: number;
+            /**
+             * Refold
+             * @default false
+             */
+            refold?: boolean;
+        };
         /** FoldedDomain */
         FoldedDomain: {
             /** Domain */
@@ -32548,11 +33227,8 @@ export interface components {
              * @default false
              */
             block_mode?: boolean;
-            /**
-             * Snapshot
-             * @default false
-             */
-            snapshot?: boolean;
+            /** Snapshot */
+            snapshot?: boolean | null;
             /** Memory */
             memory?: boolean | null;
             /** Memory Model */
@@ -33558,6 +34234,76 @@ export interface components {
                 [key: string]: components["schemas"]["WcImpairmentDefinitionRead"];
             };
         };
+        /**
+         * InboundClassification
+         * @description One message, one verdict, with the human-readable WHY.
+         *
+         *     `evidence` is not a debug string — it is what the unified inbox shows the
+         *     non-technical expert next to the label ("the mail server replied 5.1.1: no
+         *     such user"). A label without evidence is a dead end.
+         */
+        InboundClassification: {
+            label: components["schemas"]["InboundLabel"];
+            /** Bounce Type */
+            bounce_type?: ("soft" | "hard" | "block" | "complaint") | null;
+            /** Ooo Return At */
+            ooo_return_at?: string | null;
+            /** Matched Phrase */
+            matched_phrase?: string | null;
+            /** Evidence */
+            evidence: string;
+        };
+        /**
+         * InboundLabel
+         * @enum {string}
+         */
+        InboundLabel: "bounce" | "unsubscribe" | "ooo" | "interested" | "not_interested" | "other";
+        /**
+         * InboundOutcome
+         * @description What G6 hands the sequence runner and the inbox — the exported contract.
+         *
+         *     Import this (not the internals) from `aidream.services.outreach_inbound`.
+         */
+        InboundOutcome: {
+            /** Identity Id */
+            identity_id: string;
+            /** Provider Message Id */
+            provider_message_id: string;
+            /** Thread Id */
+            thread_id?: string | null;
+            classification: components["schemas"]["InboundClassification"];
+            /** Sequence Branch */
+            sequence_branch?: ("reply" | "ooo" | "click_no_reply" | "no_response" | "bounce") | null;
+            /**
+             * Correlated
+             * @default false
+             */
+            correlated?: boolean;
+            /** Matched Send Provider Message Id */
+            matched_send_provider_message_id?: string | null;
+            /** Interaction Id */
+            interaction_id?: string | null;
+            /** Member Id */
+            member_id?: string | null;
+            /** Member Status */
+            member_status?: string | null;
+            /** Member Next Attempt At */
+            member_next_attempt_at?: string | null;
+            /**
+             * Suppressed
+             * @default false
+             */
+            suppressed?: boolean;
+            /**
+             * Already Ingested
+             * @default false
+             */
+            already_ingested?: boolean;
+            /** Detail */
+            detail?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
         /** InboxEditRequest */
         InboxEditRequest: {
             /**
@@ -33764,12 +34510,16 @@ export interface components {
          * IngestSourceRequest
          * @description Distill source material into DRAFT rules on an existing pack.
          *
-         *     The "plop in a book / talk it out" flow: text (a chapter, a playbook, a
-         *     transcribed hour of the expert explaining their method) is chunked, each
-         *     chunk distilled by an extraction agent, candidate rules deduped and their
-         *     quotes verified verbatim, then appended to the pack as `draft: true`
-         *     principles the expert approves one by one. Human-first invariant: never
-         *     auto-activated, never non-draft.
+         *     Two source shapes, one pipeline:
+         *     - mode="instructional" — the source TEACHES (a chapter, a playbook, a
+         *       transcribed hour of the expert explaining their method); rules are stated.
+         *     - mode="exemplar" — the source IS the finished work (the R2 regime: great
+         *       articles/emails/briefs with no explanation); rules are implicit and get
+         *       reverse-engineered, quotes anchor as illustrations.
+         *
+         *     Either way: chunk, distill per chunk, dedupe, verify quotes verbatim, then
+         *     append as `draft: true` principles the expert approves one by one.
+         *     Human-first invariant: never auto-activated, never non-draft.
          */
         IngestSourceRequest: {
             /**
@@ -33794,6 +34544,13 @@ export interface components {
              * @description The source material, verbatim.
              */
             text: string;
+            /**
+             * Mode
+             * @description instructional = the source teaches; exemplar = the source IS examples of great finished work.
+             * @default instructional
+             * @enum {string}
+             */
+            mode?: "instructional" | "exemplar";
             /**
              * Source Note
              * @description Where this came from ('Chapter 3', 'recorded call, Aug 10').
@@ -34368,6 +35125,34 @@ export interface components {
             current_version?: number;
             /** Selected Version */
             selected_version?: number | null;
+        };
+        /** JournalistActivityRequest */
+        JournalistActivityRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Window Days
+             * @default 30
+             */
+            window_days?: number;
+            /**
+             * Use Search
+             * @default true
+             */
+            use_search?: boolean;
         };
         /** JsonRpcResponse */
         JsonRpcResponse: {
@@ -37913,6 +38698,30 @@ export interface components {
             /** Unrecovered 24H */
             unrecovered_24h: number;
         };
+        /**
+         * OrchestraBadge
+         * @description The catalog-level answer to "is this agent an Orchestra, and how big?".
+         *
+         *     Deliberately smaller than :class:`Orchestra` — a picker needs to *label* an
+         *     agent, not resolve it. Built by one batched associations read for a whole
+         *     page of agents (see ``read_orchestra_badges``), never per row.
+         */
+        OrchestraBadge: {
+            /**
+             * Member Count
+             * @default 0
+             */
+            member_count?: number;
+            /**
+             * Mode
+             * @default supervisor
+             */
+            mode?: string;
+            /** Tagline */
+            tagline?: string | null;
+            /** Member Titles */
+            member_titles?: string[];
+        };
         /** OrganizationSecretContributeRequest */
         OrganizationSecretContributeRequest: {
             /**
@@ -40008,6 +40817,13 @@ export interface components {
              * @description Text-to-speech quality tier: high_quality or fast; empty uses the pinned agent default.
              */
             tts_quality?: string | null;
+            /**
+             * Run Mode
+             * @description live publishes normally; shadow executes the full pipeline at full cost but publishes nothing — no episode row, nothing public.
+             * @default live
+             * @enum {string}
+             */
+            run_mode?: "live" | "shadow";
         };
         /**
          * PodcastMediaUploadResponse
@@ -40100,6 +40916,12 @@ export interface components {
              * @description The run that was inspected.
              */
             run_id: string;
+            /**
+             * Run Mode
+             * @description live or shadow. A shadow run finishes with NO episode by design — episode_id stays null and that is completion, not a defect.
+             * @default live
+             */
+            run_mode?: string;
             /**
              * Outcome
              * @description running = genuinely alive, keep observing. completed = essential work was done and has now been stamped. resumed = essential work was pending and the server restarted it from its checkpoint. failed = terminal and unrecoverable.
@@ -40868,6 +41690,66 @@ export interface components {
             } | null;
         };
         /**
+         * PruneResult
+         * @description Outcome of one retention pass.
+         */
+        PruneResult: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok?: boolean;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            /**
+             * Retention Days
+             * @default 180
+             */
+            retention_days?: number;
+            /**
+             * Cutoff
+             * @default
+             */
+            cutoff?: string;
+            /**
+             * Candidates
+             * @default 0
+             */
+            candidates?: number;
+            /**
+             * Deleted
+             * @default 0
+             */
+            deleted?: number;
+            /**
+             * Pinned Skipped
+             * @default 0
+             */
+            pinned_skipped?: number;
+            /**
+             * Newly Pinned
+             * @default 0
+             */
+            newly_pinned?: number;
+            /**
+             * Hit Batch Limit
+             * @default false
+             */
+            hit_batch_limit?: boolean;
+            /**
+             * Referenced Ids
+             * @default 0
+             */
+            referenced_ids?: number;
+            /** Reference Sources */
+            reference_sources?: string[];
+            /** Error */
+            error?: string | null;
+        };
+        /**
          * PublicAiVisibilityBody
          * @description A prospect identity and the exact buyer question to test.
          */
@@ -40998,6 +41880,34 @@ export interface components {
             error_code?: string | null;
             /** Error Message */
             error_message?: string | null;
+        };
+        /**
+         * PushIngestResult
+         * @description What one Pub/Sub push produced. The router returns this verbatim.
+         */
+        PushIngestResult: {
+            /** Accepted */
+            accepted: boolean;
+            /** Identity Id */
+            identity_id?: string | null;
+            /** Email Address */
+            email_address?: string | null;
+            /** History Id */
+            history_id?: string | null;
+            /**
+             * Messages Seen
+             * @default 0
+             */
+            messages_seen?: number;
+            /** Outcomes */
+            outcomes?: components["schemas"]["InboundOutcome"][];
+            /**
+             * History Gap Recovered
+             * @default false
+             */
+            history_gap_recovered?: boolean;
+            /** Note */
+            note?: string | null;
         };
         /** PutDeclaredSampleRequest */
         PutDeclaredSampleRequest: {
@@ -41989,6 +42899,26 @@ export interface components {
             /** Skipped Reason */
             skipped_reason?: string | null;
         };
+        /** RejectCandidateRequest */
+        RejectCandidateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
         /** RemoveEdgeOp */
         RemoveEdgeOp: {
             /**
@@ -42401,7 +43331,12 @@ export interface components {
             /** Errors */
             errors?: string[];
         };
-        /** ReplayRunResult */
+        /**
+         * ReplayRunResult
+         * @description Outcome of a replay DISPATCH. ``queued`` means the row was created and
+         *     the mirror-host worker will execute it — no verdict yet by construction
+         *     (the client re-reads the replay row for the terminal result).
+         */
         ReplayRunResult: {
             /** Replay Id */
             replay_id: string;
@@ -42410,7 +43345,7 @@ export interface components {
              * @default completed
              * @enum {string}
              */
-            status?: "completed" | "failed";
+            status?: "queued" | "completed" | "failed";
             /** Verdict */
             verdict?: string | null;
             /** Reason */
@@ -43066,6 +44001,15 @@ export interface components {
              */
             mode?: "inline" | "queued";
         };
+        /**
+         * RetentionRunResult
+         * @description What the nightly system task did — all three duties in one envelope.
+         */
+        RetentionRunResult: {
+            prune: components["schemas"]["PruneResult"];
+            rollup: components["schemas"]["SnapshotRollup"];
+            capture_health: components["schemas"]["CaptureHealth"];
+        };
         /** RetryClaimRequest */
         RetryClaimRequest: {
             /** Item Ids */
@@ -43417,6 +44361,18 @@ export interface components {
             /** Explanation */
             explanation: string;
         };
+        /**
+         * RollupPoint
+         * @description One nightly capture from meta.table_stats_history.
+         */
+        RollupPoint: {
+            /** Captured At */
+            captured_at: string;
+            /** Rows */
+            rows?: number | null;
+            /** Total Bytes */
+            total_bytes?: number | null;
+        };
         /** RotatePageBody */
         RotatePageBody: {
             /**
@@ -43684,6 +44640,20 @@ export interface components {
         RunNowResponse: {
             /** Run Id */
             run_id: string;
+        };
+        /** RunPageStepBody */
+        RunPageStepBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Guidance
+             * @default
+             */
+            guidance?: string;
         };
         /** RunPipelineRequest */
         RunPipelineRequest: {
@@ -44598,6 +45568,27 @@ export interface components {
             /** Source Id */
             source_id: string;
         };
+        /**
+         * SeededCompetitor
+         * @description One competitor that made it into the request, and why it qualified.
+         */
+        SeededCompetitor: {
+            /** Competitor Id */
+            competitor_id: string;
+            /** Domain */
+            domain: string;
+            /** Entity Role */
+            entity_role?: string | null;
+            /** Business Overlap */
+            business_overlap?: string | null;
+            /** Market Overlap */
+            market_overlap?: string | null;
+            /**
+             * Explicitly Enabled
+             * @default false
+             */
+            explicitly_enabled?: boolean;
+        };
         /** SelectedFileResponse */
         SelectedFileResponse: {
             /** Id */
@@ -45401,6 +46392,63 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
+        };
+        /** SiteLinkGapBody */
+        SiteLinkGapBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Competitor Ids */
+            competitor_ids?: string[];
+            /**
+             * Limit
+             * @default 1000
+             */
+            limit?: number;
+            /**
+             * Max Spam Score
+             * @default 30
+             */
+            max_spam_score?: number;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+            /** Request Id */
+            request_id?: string | null;
+        };
+        /**
+         * SiteLinkGapSeedResponse
+         * @description What a site-wide gap run would compare, before it is paid for.
+         */
+        SiteLinkGapSeedResponse: {
+            /** Site Id */
+            site_id: string;
+            /** Can Run */
+            can_run: boolean;
+            /** Seeded */
+            seeded: components["schemas"]["SeededCompetitor"][];
+            /** Excluded */
+            excluded: string[];
+            /** Reason */
+            reason: string | null;
+            /** Confirmed Competitors */
+            confirmed_competitors: number;
+            /** Total Competitors */
+            total_competitors: number;
         };
         /** SitePerformanceAutomation */
         SitePerformanceAutomation: {
@@ -46346,6 +47394,63 @@ export interface components {
             description: string;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * SnapshotRollup
+         * @description Size/row rollup for chat.request_snapshot, from meta.table_stats_history.
+         */
+        SnapshotRollup: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok?: boolean;
+            /** Captured At */
+            captured_at?: string | null;
+            /**
+             * Stale
+             * @default false
+             */
+            stale?: boolean;
+            /** Stale Hours */
+            stale_hours?: number | null;
+            /** Exact Rows */
+            exact_rows?: number | null;
+            /** Total Bytes */
+            total_bytes?: number | null;
+            /** Total Pretty */
+            total_pretty?: string | null;
+            /** Avg Bytes Per Row */
+            avg_bytes_per_row?: number | null;
+            /** Bytes Delta 7D */
+            bytes_delta_7d?: number | null;
+            /** Bytes Delta 30D */
+            bytes_delta_30d?: number | null;
+            /** Rows Delta 7D */
+            rows_delta_7d?: number | null;
+            /** Rows Delta 30D */
+            rows_delta_30d?: number | null;
+            /** Daily Bytes Growth */
+            daily_bytes_growth?: number | null;
+            /** History */
+            history?: components["schemas"]["RollupPoint"][];
+            /**
+             * Retention Days
+             * @default 180
+             */
+            retention_days?: number;
+            /**
+             * Pinned Rows
+             * @default 0
+             */
+            pinned_rows?: number;
+            /**
+             * Prune Eligible Rows
+             * @default 0
+             */
+            prune_eligible_rows?: number;
+            /** Error */
+            error?: string | null;
         };
         /** SnapshotTextResourceRefInput */
         SnapshotTextResourceRefInput: {
@@ -48182,6 +49287,9 @@ export interface components {
         /**
          * ThreadMessageOut
          * @description One message in the reviewer's own conversation, rendered for display.
+         *
+         *     The reviewer's turns ARE its structured payload; ``text`` carries the prose
+         *     the server extracted from it, never the JSON.
          */
         ThreadMessageOut: {
             /** Id */
@@ -51526,6 +52634,31 @@ export interface components {
             /** Next Level */
             next_level?: (1 | 2 | 3 | 4) | null;
         };
+        /** VerifyAddressRequest */
+        VerifyAddressRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Medium Id */
+            medium_id: string;
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+        };
         /** VerifyRequest */
         VerifyRequest: {
             /** Answer */
@@ -51886,6 +53019,51 @@ export interface components {
             oldest_stuck_age_secs: number | null;
             /** Sla Breached */
             sla_breached: boolean;
+        };
+        /** WaterfallResult */
+        WaterfallResult: {
+            /** Party Id */
+            party_id: string;
+            /** Domain */
+            domain: string;
+            /** Steps */
+            steps?: components["schemas"]["WaterfallStep"][];
+            /** Candidates */
+            candidates?: components["schemas"]["ContactCandidateView"][];
+            /**
+             * Personal Found
+             * @default 0
+             */
+            personal_found?: number;
+            /**
+             * Stopped Because
+             * @default
+             */
+            stopped_because?: string;
+        };
+        /**
+         * WaterfallStep
+         * @description One rung, recorded whether it ran, was skipped, or failed. Never silent.
+         */
+        WaterfallStep: {
+            /** Provider */
+            provider: string;
+            /** Ran */
+            ran: boolean;
+            /**
+             * From Cache
+             * @default false
+             */
+            from_cache?: boolean;
+            /**
+             * Found
+             * @default 0
+             */
+            found?: number;
+            /** Skipped Reason */
+            skipped_reason?: string | null;
+            /** Error */
+            error?: string | null;
         };
         /**
          * WcClaimRead
@@ -60551,6 +61729,37 @@ export interface operations {
             };
         };
     };
+    gmail_push_outreach_inbound_gmail__token__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PushIngestResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     register_file_google_workspace_files_register_post: {
         parameters: {
             query?: never;
@@ -61479,6 +62688,76 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PageLinkGapBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_site_link_gap_seed_seo_sites__site_id__link_gap_seed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteLinkGapBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SiteLinkGapSeedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collect_site_link_gap_seo_sites__site_id__link_gap_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SiteLinkGapBody"];
             };
         };
         responses: {
@@ -62586,6 +63865,41 @@ export interface operations {
             };
         };
     };
+    fold_link_gap_domains_endpoint_seo_sites__site_id__crm_link_gap_domains_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FoldLinkGapDomainsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DomainFoldReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_crm_fold_settings_seo_sites__site_id__crm_fold_settings_get: {
         parameters: {
             query?: never;
@@ -62905,6 +64219,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcceptBriefResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_page_step_route_content_plan_nodes__node_id__steps__step__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+                step: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["RunPageStepBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -65252,6 +66602,8 @@ export interface operations {
                 route?: string | null;
                 /** @description Optional error_type filter, e.g. 'SvgRasterizerUnavailable'. */
                 error_type?: string | null;
+                /** @description Optional kind filter, e.g. 'request_snapshot_capture_failure'. `kind` is the stable family name a producer records under, so it is what an alarm deep-links on — error_type is the exception class and changes with the code. */
+                kind?: string | null;
                 /** @description When true, only rows with resolved_at IS NULL. */
                 unresolved_only?: boolean;
             };
@@ -67596,6 +68948,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -70489,6 +71876,216 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConfirmedOutletContact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_party_contact_candidates_crm_parties__party_id__contacts_get: {
+        parameters: {
+            query?: {
+                include_resolved?: boolean;
+            };
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactCandidateView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    find_party_contacts_crm_parties__party_id__contacts_find_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FindContactsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaterfallResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_party_contact_candidate_crm_parties__party_id__contacts__candidate_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmCandidateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactCandidateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_party_contact_candidate_crm_parties__party_id__contacts__candidate_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+                candidate_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectCandidateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactCandidateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_party_contact_address_crm_parties__party_id__contacts_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyAddressRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FinalMileResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_party_journalist_activity_crm_parties__party_id__journalist_activity_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalistActivityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityVerdict"];
                 };
             };
             /** @description Validation Error */
@@ -84030,6 +85627,131 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiCatalogReloadSummary"];
+                };
+            };
+        };
+    };
+    get_rollup_admin_snapshot_retention_rollup_get: {
+        parameters: {
+            query?: {
+                trend_days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SnapshotRollup"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_capture_health_admin_snapshot_retention_capture_health_get: {
+        parameters: {
+            query?: {
+                lookback_hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaptureHealth"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_prune_admin_snapshot_retention_prune_post: {
+        parameters: {
+            query?: {
+                days?: number;
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PruneResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_run_admin_snapshot_retention_run_post: {
+        parameters: {
+            query?: {
+                dry_run?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetentionRunResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

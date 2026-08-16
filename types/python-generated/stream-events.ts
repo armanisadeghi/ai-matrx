@@ -1295,6 +1295,16 @@ export interface PlanGenStartedData {
   keyword_count?: number;
 }
 
+export interface PlanPageStepResultData {
+  type?: "plan_page_step_result";
+  node_id: string;
+  step: string;
+  route?: string;
+  artifact_id?: string;
+  run_id?: string;
+  summary?: string;
+}
+
 export interface PlanSetupAgentResultData {
   type?: "plan_setup_agent_result";
   site_id: string;
@@ -1355,6 +1365,7 @@ export interface PodcastCompleteEvent {
   video_urls?: string[];
   official_video_url?: string;
   official_video_error?: string;
+  run_mode?: string;
   host_count?: number;
   speakers?: Record<string, unknown>[];
   error?: string | null;
@@ -1579,6 +1590,7 @@ export type TypedDataPayload =
   | PlanGenCandidateData
   | PlanGenMergedData
   | PlanGenStartedData
+  | PlanPageStepResultData
   | PlanSetupAgentResultData
   | PodcastAssetEvent
   | PodcastAssetGenStartedEvent

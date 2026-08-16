@@ -10715,6 +10715,48 @@
         }
       }
     },
+    "/outreach/inbound/gmail/{token}": {
+      "post": {
+        "tags": [
+          "Outreach Inbound"
+        ],
+        "summary": "Gmail Push",
+        "operationId": "gmail_push_outreach_inbound_gmail__token__post",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushIngestResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/google-workspace/files/register": {
       "post": {
         "tags": [
@@ -12020,6 +12062,110 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PageLinkGapBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/link-gap/seed": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Preview Site Link Gap Seed",
+        "description": "Who WOULD be compared, before anyone spends money.\n\nA gap run is a paid call whose entire value is decided by which competitors\nare in the request, so the user gets to see that list — and the confirmed\ncompetitors deliberately left out, with the reason — before running it.",
+        "operationId": "preview_site_link_gap_seed_seo_sites__site_id__link_gap_seed_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteLinkGapBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SiteLinkGapSeedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/link-gap": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Collect Site Link Gap",
+        "description": "Collect the domains that link to our confirmed competitors and not to us.\n\nThe competitor seed rule is re-checked inside the package service before any\npaid provider request: human-confirmed AND link-gap eligible, or nothing\nruns. A site with nothing confirmed yet is refused BEFORE the stream opens,\nso the user gets a sentence telling them to confirm competitors rather than\na failed run.",
+        "operationId": "collect_site_link_gap_seo_sites__site_id__link_gap_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SiteLinkGapBody"
               }
             }
           }
@@ -13573,6 +13719,59 @@
         }
       }
     },
+    "/seo/sites/{site_id}/crm/link-gap-domains": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Fold Link Gap Domains Endpoint",
+        "description": "Resolve this site's APPROVED competitor link-gap domains into `crm.party` orgs.\n\nA link-gap domain links to your competitors and not to you — the most\nactionable outreach list the SEO half produces. **Only rows a human has\napproved are folded**; everything else is reported as skipped with its\ncurrent review state, so the backlog waiting on a decision is visible rather\nthan silent. Each folded row carries a provenance edge naming the\ncompetitors that already get links from that site.",
+        "operationId": "fold_link_gap_domains_endpoint_seo_sites__site_id__crm_link_gap_domains_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FoldLinkGapDomainsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DomainFoldReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/sites/{site_id}/crm/fold-settings": {
       "get": {
         "tags": [
@@ -14053,6 +14252,74 @@
                 "schema": {
                   "$ref": "#/components/schemas/AcceptBriefResult"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content-plan/nodes/{node_id}/steps/{step}": {
+      "post": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Run Page Step Route",
+        "description": "Run ONE Website Factory pipeline step for ONE page.\n\n`p3_family` / `p4_write` / `p5_review` — each independently re-runnable, each\npersisting its own superseding artifact. The precondition refusals (no brief\nto write from, no draft to review) are checked BEFORE the stream opens, so\nthe client renders them as the gap plus its fix rather than a toast.",
+        "operationId": "run_page_step_route_content_plan_nodes__node_id__steps__step__post",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "step",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Step"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/RunPageStepBody"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -17573,6 +17840,24 @@
             "description": "Optional error_type filter, e.g. 'SvgRasterizerUnavailable'."
           },
           {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional kind filter, e.g. 'request_snapshot_capture_failure'. `kind` is the stable family name a producer records under, so it is what an alarm deep-links on — error_type is the exception class and changes with the code.",
+              "title": "Kind"
+            },
+            "description": "Optional kind filter, e.g. 'request_snapshot_capture_failure'. `kind` is the stable family name a producer records under, so it is what an alarm deep-links on — error_type is the exception class and changes with the code."
+          },
+          {
             "name": "unresolved_only",
             "in": "query",
             "required": false,
@@ -19276,7 +19561,7 @@
           "Hindsight"
         ],
         "summary": "Trigger Review",
-        "description": "Manual review trigger — runs the full review inline (admin action).",
+        "description": "Manual review trigger — runs the full review inline (owner or admin).",
         "operationId": "trigger_review_hindsight_enrollments__enrollment_id__review_post",
         "parameters": [
           {
@@ -21168,6 +21453,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -25466,6 +25811,346 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ConfirmedOutletContact"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/parties/{party_id}/contacts": {
+      "get": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "List Party Contact Candidates",
+        "description": "IC-3 — the ONE ranked list of ways to reach someone here. Writes nothing.",
+        "operationId": "list_party_contact_candidates_crm_parties__party_id__contacts_get",
+        "parameters": [
+          {
+            "name": "party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Party Id"
+            }
+          },
+          {
+            "name": "include_resolved",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Resolved"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ContactCandidateView"
+                  },
+                  "title": "Response List Party Contact Candidates Crm Parties  Party Id  Contacts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/parties/{party_id}/contacts/find": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Find Party Contacts",
+        "description": "Run the waterfall. Produces candidates only — never a contact.",
+        "operationId": "find_party_contacts_crm_parties__party_id__contacts_find_post",
+        "parameters": [
+          {
+            "name": "party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Party Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FindContactsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaterfallResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/parties/{party_id}/contacts/{candidate_id}/confirm": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Confirm Party Contact Candidate",
+        "description": "The human act — promotes ONE candidate through the governed party resolver.",
+        "operationId": "confirm_party_contact_candidate_crm_parties__party_id__contacts__candidate_id__confirm_post",
+        "parameters": [
+          {
+            "name": "party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Party Id"
+            }
+          },
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Candidate Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmCandidateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactCandidateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/parties/{party_id}/contacts/{candidate_id}/reject": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Reject Party Contact Candidate",
+        "description": "Refuse a candidate. The verdict survives every later re-discovery.",
+        "operationId": "reject_party_contact_candidate_crm_parties__party_id__contacts__candidate_id__reject_post",
+        "parameters": [
+          {
+            "name": "party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Party Id"
+            }
+          },
+          {
+            "name": "candidate_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Candidate Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectCandidateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContactCandidateView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/parties/{party_id}/contacts/verify": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Verify Party Contact Address",
+        "description": "Free syntax/MX/disposable filter, then the paid final mile if it passed.",
+        "operationId": "verify_party_contact_address_crm_parties__party_id__contacts_verify_post",
+        "parameters": [
+          {
+            "name": "party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Party Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyAddressRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalMileResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/parties/{party_id}/journalist-activity": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Check Party Journalist Activity",
+        "description": "Is this person still publishing where we think they are? (ListIQ-equivalent.)",
+        "operationId": "check_party_journalist_activity_crm_parties__party_id__journalist_activity_post",
+        "parameters": [
+          {
+            "name": "party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Party Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JournalistActivityRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityVerdict"
                 }
               }
             }
@@ -47027,6 +47712,202 @@
         }
       }
     },
+    "/admin/snapshot-retention/rollup": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin / Snapshot Retention"
+        ],
+        "summary": "Get Rollup",
+        "description": "Size/row rollup + retention counters. Reports staleness rather than\npresenting an old capture as current.",
+        "operationId": "get_rollup_admin_snapshot_retention_rollup_get",
+        "parameters": [
+          {
+            "name": "trend_days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 365,
+              "minimum": 1,
+              "default": 30,
+              "title": "Trend Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotRollup"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/snapshot-retention/capture-health": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin / Snapshot Retention"
+        ],
+        "summary": "Get Capture Health",
+        "description": "How many snapshot captures were swallowed in the window. Read-only: this\nnever writes the assist chip (only the nightly task does), so refreshing an\nadmin page cannot spam the ledger.",
+        "operationId": "get_capture_health_admin_snapshot_retention_capture_health_get",
+        "parameters": [
+          {
+            "name": "lookback_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 720,
+              "minimum": 1,
+              "default": 24,
+              "title": "Lookback Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CaptureHealth"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/snapshot-retention/prune": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin / Snapshot Retention"
+        ],
+        "summary": "Post Prune",
+        "description": "Run one retention pass. Defaults to ``dry_run=true`` — deleting is an\nexplicit act, not a default of a URL someone can open by accident.",
+        "operationId": "post_prune_admin_snapshot_retention_prune_post",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 3650,
+              "minimum": 1,
+              "default": 180,
+              "title": "Days"
+            }
+          },
+          {
+            "name": "dry_run",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Dry Run"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PruneResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/snapshot-retention/run": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin / Snapshot Retention"
+        ],
+        "summary": "Post Run",
+        "description": "The full nightly pass on demand (prune → rollup → capture alarm).",
+        "operationId": "post_run_admin_snapshot_retention_run_post",
+        "parameters": [
+          {
+            "name": "dry_run",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Dry Run"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionRunResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/agent-context/organizations": {
       "get": {
         "tags": [
@@ -50700,6 +51581,186 @@
         ],
         "title": "ActivePageIdsResponse"
       },
+      "ActivityEvidence": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "outlet_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Domain"
+          },
+          "via": {
+            "type": "string",
+            "enum": [
+              "crawl",
+              "search"
+            ],
+            "title": "Via",
+            "default": "search"
+          }
+        },
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ActivityEvidence"
+      },
+      "ActivityVerdict": {
+        "properties": {
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "person_name": {
+            "type": "string",
+            "title": "Person Name"
+          },
+          "outlet_party_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Party Id"
+          },
+          "outlet_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Name"
+          },
+          "outlet_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Domain"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "stale",
+              "moved",
+              "unknown"
+            ],
+            "title": "Status",
+            "default": "unknown"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days",
+            "default": 30
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "checked_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checked At"
+          },
+          "evidence": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityEvidence"
+            },
+            "type": "array",
+            "title": "Evidence"
+          },
+          "moved_to_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moved To Domain"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          },
+          "searched": {
+            "type": "boolean",
+            "title": "Searched",
+            "default": false
+          },
+          "search_failed": {
+            "type": "boolean",
+            "title": "Search Failed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "party_id",
+          "person_name"
+        ],
+        "title": "ActivityVerdict"
+      },
       "AddAssetRequest": {
         "properties": {
           "asset_kind": {
@@ -52212,6 +53273,16 @@
             },
             "type": "array",
             "title": "Variables"
+          },
+          "orchestra": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrchestraBadge"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -52666,9 +53737,15 @@
             "default": false
           },
           "snapshot": {
-            "type": "boolean",
-            "title": "Snapshot",
-            "default": false
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot"
           },
           "memory": {
             "anyOf": [
@@ -52975,10 +54052,16 @@
             "default": false
           },
           "snapshot": {
-            "type": "boolean",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Snapshot",
-            "description": "Capture the agent definition snapshot used for this run.",
-            "default": false
+            "description": "Request-snapshot capture override. Omit for the platform default (capture ON — the exact provider request/response of every persisted iteration is recorded for replay); false to opt this step out; true to force capture on plus wire-level outbound-capture debug events."
           },
           "memory": {
             "anyOf": [
@@ -53093,6 +54176,16 @@
             "type": "integer",
             "title": "Version",
             "default": 1
+          },
+          "orchestra": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrchestraBadge"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -55131,7 +56224,8 @@
             "enum": [
               "completed",
               "pending",
-              "failed"
+              "failed",
+              "skipped"
             ],
             "title": "Status",
             "description": "Where this one asset stands."
@@ -58546,6 +59640,13 @@
             "minimum": 1,
             "title": "Detail Limit",
             "default": 1000
+          },
+          "detail_max_rows": {
+            "type": "integer",
+            "maximum": 100000,
+            "minimum": 1,
+            "title": "Detail Max Rows",
+            "default": 10000
           },
           "force_refresh": {
             "type": "boolean",
@@ -62842,6 +63943,76 @@
         ],
         "title": "CancelRunResponse"
       },
+      "CaptureHealth": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "lookback_hours": {
+            "type": "integer",
+            "title": "Lookback Hours",
+            "default": 24
+          },
+          "failures": {
+            "type": "integer",
+            "title": "Failures",
+            "default": 0
+          },
+          "threshold": {
+            "type": "integer",
+            "title": "Threshold",
+            "default": 5
+          },
+          "breached": {
+            "type": "boolean",
+            "title": "Breached",
+            "default": false
+          },
+          "assist_written": {
+            "type": "boolean",
+            "title": "Assist Written",
+            "default": false
+          },
+          "addressee_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Addressee User Id"
+          },
+          "last_failure_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure At"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "title": "CaptureHealth",
+        "description": "Capture-failure counter over the alarm window."
+      },
       "CapturedLink": {
         "properties": {
           "target_url": {
@@ -64977,9 +66148,15 @@
             "default": false
           },
           "snapshot": {
-            "type": "boolean",
-            "title": "Snapshot",
-            "default": false
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot"
           },
           "memory": {
             "anyOf": [
@@ -70880,6 +72057,58 @@
         "title": "ComputeTargetRef",
         "description": "Compact reference posted by clients when they bind a target to a\nconversation. The full binding (base_url / access_token / root_path) is\nresolved server-side from this ref."
       },
+      "ConfirmCandidateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "accept_role_address": {
+            "type": "boolean",
+            "title": "Accept Role Address",
+            "default": false
+          },
+          "accept_unverified": {
+            "type": "boolean",
+            "title": "Accept Unverified",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ConfirmCandidateRequest"
+      },
       "ConfirmOutletContactRequest": {
         "properties": {
           "organization_id": {
@@ -71171,6 +72400,226 @@
         ],
         "title": "ConnectionSummary",
         "description": "Non-secret connection state — what the FE reads after any operation."
+      },
+      "ContactCandidateView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "person_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Name"
+          },
+          "person_party_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Party Id"
+          },
+          "role_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role Title"
+          },
+          "channel": {
+            "type": "string",
+            "title": "Channel",
+            "default": "email"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "is_role_address": {
+            "type": "boolean",
+            "title": "Is Role Address",
+            "default": false
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "source_detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Detail"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "confidence": {
+            "type": "integer",
+            "title": "Confidence",
+            "default": 0
+          },
+          "provider_confidence": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Confidence"
+          },
+          "verification_status": {
+            "type": "string",
+            "enum": [
+              "unverified",
+              "verified",
+              "invalid",
+              "risky"
+            ],
+            "title": "Verification Status",
+            "default": "unverified"
+          },
+          "mx_valid": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mx Valid"
+          },
+          "verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verified At"
+          },
+          "verification_reason": {
+            "type": "string",
+            "title": "Verification Reason",
+            "default": ""
+          },
+          "engagement_score": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engagement Score"
+          },
+          "engagement_reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Engagement Reasons"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "candidate",
+              "confirmed",
+              "rejected",
+              "stale"
+            ],
+            "title": "Status",
+            "default": "candidate"
+          },
+          "confirmed_contact_point_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed Contact Point Id"
+          },
+          "why": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Why"
+          },
+          "first_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Seen At"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "party_id",
+          "address",
+          "source"
+        ],
+        "title": "ContactCandidateView",
+        "description": "A persisted candidate as a surface sees it. Every field is a door or a why."
       },
       "ContactEvidence": {
         "properties": {
@@ -72394,9 +73843,15 @@
             "default": false
           },
           "snapshot": {
-            "type": "boolean",
-            "title": "Snapshot",
-            "default": false
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot"
           },
           "memory": {
             "anyOf": [
@@ -76839,6 +78294,61 @@
         "type": "object",
         "title": "DetectorRunInfo"
       },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
+      },
       "DiagSpawnDetachedResponse": {
         "properties": {
           "ok": {
@@ -77689,7 +79199,7 @@
           "review_id"
         ],
         "title": "DiscussOut",
-        "description": "Result of sending human guidance into the reviewer's thread.\n\nGuidance commonly produces BRAND-NEW findings rather than edits to the one\nthe human was looking at — ``findings_created`` / ``finding_ids`` say what\nappeared, and the caller must refetch the review. ``status=\"failed\"`` with a\n``reason`` is a normal outcome to render, never an exception."
+        "description": "Result of sending human guidance into the reviewer's thread.\n\nGuidance commonly produces BRAND-NEW findings rather than edits to the one\nthe human was looking at — ``findings_created`` / ``finding_ids`` say what\nappeared, and the caller must refetch the review. ``status=\"failed\"`` with a\n``reason`` is a normal outcome to render, never an exception.\n\n``reply`` is the reviewer's PROSE, split from its structured payload on the\nserver (``ReviewerOutput.reply_to_human``). The client renders it directly —\nit may never receive raw JSON here again, so no client-side JSON sniffing."
       },
       "DiscussRequest": {
         "properties": {
@@ -78608,7 +80118,8 @@
             "type": "string",
             "enum": [
               "backlink",
-              "reputation"
+              "reputation",
+              "link_gap"
             ],
             "title": "Source"
           },
@@ -81030,7 +82541,8 @@
             "enum": [
               "completed",
               "pending",
-              "failed"
+              "failed",
+              "skipped"
             ],
             "title": "Script",
             "description": "Whether the episode script has been written."
@@ -81040,7 +82552,8 @@
             "enum": [
               "completed",
               "pending",
-              "failed"
+              "failed",
+              "skipped"
             ],
             "title": "Audio",
             "description": "Whether the episode audio has been produced."
@@ -81050,7 +82563,8 @@
             "enum": [
               "completed",
               "pending",
-              "failed"
+              "failed",
+              "skipped"
             ],
             "title": "Episode",
             "description": "Whether the publishable episode row exists."
@@ -85641,6 +87155,94 @@
         ],
         "title": "FilterRowsResponse"
       },
+      "FinalMileResult": {
+        "properties": {
+          "medium_id": {
+            "type": "string",
+            "title": "Medium Id"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unverified",
+              "verified",
+              "invalid",
+              "risky"
+            ],
+            "title": "Status"
+          },
+          "mx_valid": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mx Valid"
+          },
+          "free_tier_status": {
+            "type": "string",
+            "title": "Free Tier Status",
+            "default": ""
+          },
+          "provider_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Used"
+          },
+          "provider_result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Result"
+          },
+          "provider_skipped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Skipped Reason"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "changed": {
+            "type": "boolean",
+            "title": "Changed",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "medium_id",
+          "address",
+          "status"
+        ],
+        "title": "FinalMileResult"
+      },
       "FinalizeUploadRequest": {
         "properties": {
           "upload_id": {
@@ -85675,6 +87277,64 @@
           "upload_id"
         ],
         "title": "FinalizeUploadRequest"
+      },
+      "FindContactsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "person_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Name"
+          },
+          "use_paid_providers": {
+            "type": "boolean",
+            "title": "Use Paid Providers",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "FindContactsRequest"
       },
       "FindSimilarBody": {
         "properties": {
@@ -86374,6 +88034,61 @@
         "title": "FoldDomainsRequest",
         "description": "How much of this site's opportunity data to bridge into the CRM.\n\nThe org comes from the SITE (canonical editor authorization), never from the\nbody — an injected ``organization_id`` is accepted and ignored."
       },
+      "FoldLinkGapDomainsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 250
+          },
+          "refold": {
+            "type": "boolean",
+            "title": "Refold",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "FoldLinkGapDomainsRequest",
+        "description": "How much of this site's APPROVED link-gap backlog to bridge into the CRM.\n\nDeliberately NOT `FoldDomainsRequest`: `include_toxic` and `verdicts` mean\nnothing here — the only gate on a link-gap domain is the human's approval,\nand a body field that silently does nothing is a lie about what the caller\ncontrols. The org comes from the SITE, never the body."
+      },
       "FoldedDomain": {
         "properties": {
           "domain": {
@@ -86942,9 +88657,15 @@
             "default": false
           },
           "snapshot": {
-            "type": "boolean",
-            "title": "Snapshot",
-            "default": false
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot"
           },
           "memory": {
             "anyOf": [
@@ -89101,6 +90822,206 @@
         "title": "ImpairmentsResponse",
         "description": "Full impairment-definitions catalog keyed by definition id (UUID).\n\nSourced from the `wc_impairment_definition` table. The dict key equals\neach value's `id`, so the FE can either iterate `Object.values(...)` or\nlook up directly by UUID."
       },
+      "InboundClassification": {
+        "properties": {
+          "label": {
+            "$ref": "#/components/schemas/InboundLabel"
+          },
+          "bounce_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "soft",
+                  "hard",
+                  "block",
+                  "complaint"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bounce Type"
+          },
+          "ooo_return_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ooo Return At"
+          },
+          "matched_phrase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Phrase"
+          },
+          "evidence": {
+            "type": "string",
+            "title": "Evidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "evidence"
+        ],
+        "title": "InboundClassification",
+        "description": "One message, one verdict, with the human-readable WHY.\n\n`evidence` is not a debug string — it is what the unified inbox shows the\nnon-technical expert next to the label (\"the mail server replied 5.1.1: no\nsuch user\"). A label without evidence is a dead end."
+      },
+      "InboundLabel": {
+        "type": "string",
+        "enum": [
+          "bounce",
+          "unsubscribe",
+          "ooo",
+          "interested",
+          "not_interested",
+          "other"
+        ],
+        "title": "InboundLabel"
+      },
+      "InboundOutcome": {
+        "properties": {
+          "identity_id": {
+            "type": "string",
+            "title": "Identity Id"
+          },
+          "provider_message_id": {
+            "type": "string",
+            "title": "Provider Message Id"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "classification": {
+            "$ref": "#/components/schemas/InboundClassification"
+          },
+          "sequence_branch": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "reply",
+                  "ooo",
+                  "click_no_reply",
+                  "no_response",
+                  "bounce"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sequence Branch"
+          },
+          "correlated": {
+            "type": "boolean",
+            "title": "Correlated",
+            "default": false
+          },
+          "matched_send_provider_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matched Send Provider Message Id"
+          },
+          "interaction_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interaction Id"
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id"
+          },
+          "member_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Status"
+          },
+          "member_next_attempt_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Next Attempt At"
+          },
+          "suppressed": {
+            "type": "boolean",
+            "title": "Suppressed",
+            "default": false
+          },
+          "already_ingested": {
+            "type": "boolean",
+            "title": "Already Ingested",
+            "default": false
+          },
+          "detail": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "identity_id",
+          "provider_message_id",
+          "classification"
+        ],
+        "title": "InboundOutcome",
+        "description": "What G6 hands the sequence runner and the inbox — the exported contract.\n\nImport this (not the internals) from `aidream.services.outreach_inbound`."
+      },
       "InboxEditRequest": {
         "properties": {
           "organization_id": {
@@ -89569,6 +91490,16 @@
             "title": "Text",
             "description": "The source material, verbatim."
           },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "instructional",
+              "exemplar"
+            ],
+            "title": "Mode",
+            "description": "instructional = the source teaches; exemplar = the source IS examples of great finished work.",
+            "default": "instructional"
+          },
           "source_note": {
             "anyOf": [
               {
@@ -89598,7 +91529,7 @@
           "text"
         ],
         "title": "IngestSourceRequest",
-        "description": "Distill source material into DRAFT rules on an existing pack.\n\nThe \"plop in a book / talk it out\" flow: text (a chapter, a playbook, a\ntranscribed hour of the expert explaining their method) is chunked, each\nchunk distilled by an extraction agent, candidate rules deduped and their\nquotes verified verbatim, then appended to the pack as `draft: true`\nprinciples the expert approves one by one. Human-first invariant: never\nauto-activated, never non-draft."
+        "description": "Distill source material into DRAFT rules on an existing pack.\n\nTwo source shapes, one pipeline:\n- mode=\"instructional\" — the source TEACHES (a chapter, a playbook, a\n  transcribed hour of the expert explaining their method); rules are stated.\n- mode=\"exemplar\" — the source IS the finished work (the R2 regime: great\n  articles/emails/briefs with no explanation); rules are implicit and get\n  reverse-engineered, quotes anchor as illustrations.\n\nEither way: chunk, distill per chunk, dedupe, verify quotes verbatim, then\nappend as `draft: true` principles the expert approves one by one.\nHuman-first invariant: never auto-activated, never non-draft."
       },
       "InitialIterationRequest": {
         "properties": {
@@ -91093,6 +93024,60 @@
         ],
         "title": "IterationSession",
         "description": "The full session state. Client holds it and replays it on every\nturn. The server never reads it from a DB."
+      },
+      "JournalistActivityRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "window_days": {
+            "type": "integer",
+            "maximum": 365,
+            "minimum": 1,
+            "title": "Window Days",
+            "default": 30
+          },
+          "use_search": {
+            "type": "boolean",
+            "title": "Use Search",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "JournalistActivityRequest"
       },
       "JsonRpcResponse": {
         "properties": {
@@ -100416,6 +102401,41 @@
         ],
         "title": "OpsSummaryResponse"
       },
+      "OrchestraBadge": {
+        "properties": {
+          "member_count": {
+            "type": "integer",
+            "title": "Member Count",
+            "default": 0
+          },
+          "mode": {
+            "type": "string",
+            "title": "Mode",
+            "default": "supervisor"
+          },
+          "tagline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tagline"
+          },
+          "member_titles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Member Titles"
+          }
+        },
+        "type": "object",
+        "title": "OrchestraBadge",
+        "description": "The catalog-level answer to \"is this agent an Orchestra, and how big?\".\n\nDeliberately smaller than :class:`Orchestra` — a picker needs to *label* an\nagent, not resolve it. Built by one batched associations read for a whole\npage of agents (see ``read_orchestra_badges``), never per row."
+      },
       "OrganizationSecretContributeRequest": {
         "properties": {
           "organization_id": {
@@ -105604,6 +107624,16 @@
             ],
             "title": "Tts Quality",
             "description": "Text-to-speech quality tier: high_quality or fast; empty uses the pinned agent default."
+          },
+          "run_mode": {
+            "type": "string",
+            "enum": [
+              "live",
+              "shadow"
+            ],
+            "title": "Run Mode",
+            "description": "live publishes normally; shadow executes the full pipeline at full cost but publishes nothing — no episode row, nothing public.",
+            "default": "live"
           }
         },
         "type": "object",
@@ -105829,6 +107859,12 @@
             "type": "string",
             "title": "Run Id",
             "description": "The run that was inspected."
+          },
+          "run_mode": {
+            "type": "string",
+            "title": "Run Mode",
+            "description": "live or shadow. A shadow run finishes with NO episode by design — episode_id stays null and that is completion, not a defect.",
+            "default": "live"
           },
           "outcome": {
             "type": "string",
@@ -107765,6 +109801,81 @@
         ],
         "title": "ProviderTaskEvidenceOut"
       },
+      "PruneResult": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          },
+          "retention_days": {
+            "type": "integer",
+            "title": "Retention Days",
+            "default": 180
+          },
+          "cutoff": {
+            "type": "string",
+            "title": "Cutoff",
+            "default": ""
+          },
+          "candidates": {
+            "type": "integer",
+            "title": "Candidates",
+            "default": 0
+          },
+          "deleted": {
+            "type": "integer",
+            "title": "Deleted",
+            "default": 0
+          },
+          "pinned_skipped": {
+            "type": "integer",
+            "title": "Pinned Skipped",
+            "default": 0
+          },
+          "newly_pinned": {
+            "type": "integer",
+            "title": "Newly Pinned",
+            "default": 0
+          },
+          "hit_batch_limit": {
+            "type": "boolean",
+            "title": "Hit Batch Limit",
+            "default": false
+          },
+          "referenced_ids": {
+            "type": "integer",
+            "title": "Referenced Ids",
+            "default": 0
+          },
+          "reference_sources": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reference Sources"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "title": "PruneResult",
+        "description": "Outcome of one retention pass."
+      },
       "PublicAiVisibilityBody": {
         "properties": {
           "organization_id": {
@@ -108196,6 +110307,81 @@
           "status"
         ],
         "title": "PublishBatchItemResult"
+      },
+      "PushIngestResult": {
+        "properties": {
+          "accepted": {
+            "type": "boolean",
+            "title": "Accepted"
+          },
+          "identity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity Id"
+          },
+          "email_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Address"
+          },
+          "history_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "History Id"
+          },
+          "messages_seen": {
+            "type": "integer",
+            "title": "Messages Seen",
+            "default": 0
+          },
+          "outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/InboundOutcome"
+            },
+            "type": "array",
+            "title": "Outcomes"
+          },
+          "history_gap_recovered": {
+            "type": "boolean",
+            "title": "History Gap Recovered",
+            "default": false
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "accepted"
+        ],
+        "title": "PushIngestResult",
+        "description": "What one Pub/Sub push produced. The router returns this verbatim."
       },
       "PutDeclaredSampleRequest": {
         "properties": {
@@ -110643,6 +112829,59 @@
         "type": "object",
         "title": "RegistrySyncReport"
       },
+      "RejectCandidateRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "title": "RejectCandidateRequest"
+      },
       "RemoveEdgeOp": {
         "properties": {
           "op": {
@@ -111688,6 +113927,7 @@
           "status": {
             "type": "string",
             "enum": [
+              "queued",
               "completed",
               "failed"
             ],
@@ -111721,7 +113961,8 @@
         "required": [
           "replay_id"
         ],
-        "title": "ReplayRunResult"
+        "title": "ReplayRunResult",
+        "description": "Outcome of a replay DISPATCH. ``queued`` means the row was created and\nthe mirror-host worker will execute it — no verdict yet by construction\n(the client re-reads the replay row for the terminal result)."
       },
       "RepositoriesListResponse": {
         "properties": {
@@ -113443,6 +115684,27 @@
         ],
         "title": "ResumeRunRequest"
       },
+      "RetentionRunResult": {
+        "properties": {
+          "prune": {
+            "$ref": "#/components/schemas/PruneResult"
+          },
+          "rollup": {
+            "$ref": "#/components/schemas/SnapshotRollup"
+          },
+          "capture_health": {
+            "$ref": "#/components/schemas/CaptureHealth"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prune",
+          "rollup",
+          "capture_health"
+        ],
+        "title": "RetentionRunResult",
+        "description": "What the nightly system task did — all three duties in one envelope."
+      },
       "RetryClaimRequest": {
         "properties": {
           "item_ids": {
@@ -114316,6 +116578,42 @@
         ],
         "title": "RobotsPathCheck"
       },
+      "RollupPoint": {
+        "properties": {
+          "captured_at": {
+            "type": "string",
+            "title": "Captured At"
+          },
+          "rows": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rows"
+          },
+          "total_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Bytes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "captured_at"
+        ],
+        "title": "RollupPoint",
+        "description": "One nightly capture from meta.table_stats_history."
+      },
       "RotatePageBody": {
         "properties": {
           "rotation": {
@@ -114962,6 +117260,51 @@
           "run_id"
         ],
         "title": "RunNowResponse"
+      },
+      "RunPageStepBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "guidance": {
+            "type": "string",
+            "title": "Guidance",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "RunPageStepBody"
       },
       "RunPipelineRequest": {
         "properties": {
@@ -116976,6 +119319,64 @@
           "source_id"
         ],
         "title": "SearchSourceRef"
+      },
+      "SeededCompetitor": {
+        "properties": {
+          "competitor_id": {
+            "type": "string",
+            "title": "Competitor Id"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "entity_role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Role"
+          },
+          "business_overlap": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Business Overlap"
+          },
+          "market_overlap": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Market Overlap"
+          },
+          "explicitly_enabled": {
+            "type": "boolean",
+            "title": "Explicitly Enabled",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "competitor_id",
+          "domain"
+        ],
+        "title": "SeededCompetitor",
+        "description": "One competitor that made it into the request, and why it qualified."
       },
       "SelectedFileResponse": {
         "properties": {
@@ -119369,6 +121770,145 @@
         "additionalProperties": false,
         "type": "object",
         "title": "SiteIntakeRunBody"
+      },
+      "SiteLinkGapBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "competitor_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Competitor Ids"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 1000,
+            "minimum": 1,
+            "title": "Limit",
+            "default": 1000
+          },
+          "max_spam_score": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 0,
+            "title": "Max Spam Score",
+            "default": 30
+          },
+          "force_refresh": {
+            "type": "boolean",
+            "title": "Force Refresh",
+            "default": false
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "SiteLinkGapBody"
+      },
+      "SiteLinkGapSeedResponse": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "can_run": {
+            "type": "boolean",
+            "title": "Can Run"
+          },
+          "seeded": {
+            "items": {
+              "$ref": "#/components/schemas/SeededCompetitor"
+            },
+            "type": "array",
+            "title": "Seeded"
+          },
+          "excluded": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Excluded"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "confirmed_competitors": {
+            "type": "integer",
+            "title": "Confirmed Competitors"
+          },
+          "total_competitors": {
+            "type": "integer",
+            "title": "Total Competitors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "can_run",
+          "seeded",
+          "excluded",
+          "reason",
+          "confirmed_competitors",
+          "total_competitors"
+        ],
+        "title": "SiteLinkGapSeedResponse",
+        "description": "What a site-wide gap run would compare, before it is paid for."
       },
       "SitePerformanceAutomation": {
         "properties": {
@@ -121867,6 +124407,177 @@
           "description"
         ],
         "title": "SnapshotDescriptionResourceRefInput"
+      },
+      "SnapshotRollup": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "captured_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captured At"
+          },
+          "stale": {
+            "type": "boolean",
+            "title": "Stale",
+            "default": false
+          },
+          "stale_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Hours"
+          },
+          "exact_rows": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exact Rows"
+          },
+          "total_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Bytes"
+          },
+          "total_pretty": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Pretty"
+          },
+          "avg_bytes_per_row": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Bytes Per Row"
+          },
+          "bytes_delta_7d": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes Delta 7D"
+          },
+          "bytes_delta_30d": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bytes Delta 30D"
+          },
+          "rows_delta_7d": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rows Delta 7D"
+          },
+          "rows_delta_30d": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rows Delta 30D"
+          },
+          "daily_bytes_growth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Daily Bytes Growth"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/RollupPoint"
+            },
+            "type": "array",
+            "title": "History"
+          },
+          "retention_days": {
+            "type": "integer",
+            "title": "Retention Days",
+            "default": 180
+          },
+          "pinned_rows": {
+            "type": "integer",
+            "title": "Pinned Rows",
+            "default": 0
+          },
+          "prune_eligible_rows": {
+            "type": "integer",
+            "title": "Prune Eligible Rows",
+            "default": 0
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "title": "SnapshotRollup",
+        "description": "Size/row rollup for chat.request_snapshot, from meta.table_stats_history."
       },
       "SnapshotTextResourceRefInput": {
         "properties": {
@@ -126623,7 +129334,7 @@
           "role"
         ],
         "title": "ThreadMessageOut",
-        "description": "One message in the reviewer's own conversation, rendered for display."
+        "description": "One message in the reviewer's own conversation, rendered for display.\n\nThe reviewer's turns ARE its structured payload; ``text`` carries the prose\nthe server extracted from it, never the JSON."
       },
       "ToolCallPart": {
         "properties": {
@@ -135386,6 +138097,61 @@
         ],
         "title": "VerdictResponse"
       },
+      "VerifyAddressRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "medium_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Medium Id"
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "medium_id"
+        ],
+        "title": "VerifyAddressRequest"
+      },
       "VerifyRequest": {
         "properties": {
           "answer": {
@@ -136246,6 +139012,99 @@
         ],
         "title": "WatchdogTableStatus",
         "description": "Health of one registered watchdog config."
+      },
+      "WaterfallResult": {
+        "properties": {
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/WaterfallStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ContactCandidateView"
+            },
+            "type": "array",
+            "title": "Candidates"
+          },
+          "personal_found": {
+            "type": "integer",
+            "title": "Personal Found",
+            "default": 0
+          },
+          "stopped_because": {
+            "type": "string",
+            "title": "Stopped Because",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "required": [
+          "party_id",
+          "domain"
+        ],
+        "title": "WaterfallResult"
+      },
+      "WaterfallStep": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "ran": {
+            "type": "boolean",
+            "title": "Ran"
+          },
+          "from_cache": {
+            "type": "boolean",
+            "title": "From Cache",
+            "default": false
+          },
+          "found": {
+            "type": "integer",
+            "title": "Found",
+            "default": 0
+          },
+          "skipped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Reason"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "ran"
+        ],
+        "title": "WaterfallStep",
+        "description": "One rung, recorded whether it ran, was skipped, or failed. Never silent."
       },
       "WcClaimRead": {
         "properties": {

@@ -4237,6 +4237,11 @@
         "title": "Official Video Error",
         "type": "string"
       },
+      "run_mode": {
+        "default": "live",
+        "title": "Run Mode",
+        "type": "string"
+      },
       "host_count": {
         "default": 2,
         "title": "Host Count",
@@ -8956,6 +8961,52 @@
       "run_id"
     ],
     "title": "PlanSetupAgentResultData",
+    "type": "object"
+  },
+  "PlanPageStepResultData": {
+    "additionalProperties": false,
+    "description": "Terminal event of POST /content-plan/nodes/{id}/steps/{step} — ONE\nWebsite Factory pipeline step (family comparison / write / review) for ONE\npage.\n\nThe artifact is ALREADY persisted on `plan.node_artifact` and the step\nstamped on `plan.node_step` when this fires — the client re-reads those\ntables rather than treating this payload as the only copy.",
+    "properties": {
+      "type": {
+        "const": "plan_page_step_result",
+        "default": "plan_page_step_result",
+        "title": "Type",
+        "type": "string"
+      },
+      "node_id": {
+        "title": "Node Id",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "route": {
+        "default": "",
+        "title": "Route",
+        "type": "string"
+      },
+      "artifact_id": {
+        "default": "",
+        "title": "Artifact Id",
+        "type": "string"
+      },
+      "run_id": {
+        "default": "",
+        "title": "Run Id",
+        "type": "string"
+      },
+      "summary": {
+        "default": "",
+        "title": "Summary",
+        "type": "string"
+      }
+    },
+    "required": [
+      "node_id",
+      "step"
+    ],
+    "title": "PlanPageStepResultData",
     "type": "object"
   },
   "ToolStartedData": {

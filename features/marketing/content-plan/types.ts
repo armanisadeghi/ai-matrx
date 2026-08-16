@@ -33,6 +33,43 @@ export const PIPELINE_STEPS = [
 export type PipelineStepKey = (typeof PIPELINE_STEPS)[number]["step"];
 
 /**
+ * The steps a human can run on ONE page from the rail
+ * (`POST /content-plan/nodes/{id}/steps/{step}`, aidream `page_pipeline.py`).
+ * The others have their own producers: keywords/research come from Deepen and
+ * the Setup passes, build/publish from the CMS fill and publish jobs. Keep this
+ * in lockstep with `RUNNABLE_STEPS` there — the server rejects anything else
+ * with a 404 that names the valid set.
+ */
+export const RUNNABLE_PIPELINE_STEPS = [
+  "p3_family",
+  "p4_write",
+  "p5_review",
+] as const;
+export type RunnablePipelineStep = (typeof RUNNABLE_PIPELINE_STEPS)[number];
+
+/** What the button says, in the words of someone who has never heard of "p4". */
+export const RUNNABLE_STEP_ACTIONS: Record<
+  RunnablePipelineStep,
+  { action: string; explains: string }
+> = {
+  p3_family: {
+    action: "Decide coverage",
+    explains:
+      "Work out what this page covers and what belongs to its sibling pages, so two pages never compete for the same search.",
+  },
+  p4_write: {
+    action: "Write content",
+    explains:
+      "Write the page's content as editable sections — headings and prose you can change without touching code.",
+  },
+  p5_review: {
+    action: "Review + fact-check",
+    explains:
+      "Check the written content against the brief and the research, then fix what it finds.",
+  },
+};
+
+/**
  * Columns on plan.node that are TRIGGER-OWNED derived cache
  * (`plan._node_shape` computes them; `_z_node_cascade` propagates). Clients
  * read them, never write them — sending one in an insert/update payload is a
