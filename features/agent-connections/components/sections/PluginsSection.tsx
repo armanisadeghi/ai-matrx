@@ -36,6 +36,8 @@ import {
   fidelityVerdict,
   formatSessionTimestamp,
 } from "../../coding-sessions/verdict";
+import { captureGapVerdict } from "../../coding-sessions/captureGap";
+import { CaptureGapAlert } from "../../coding-sessions/CaptureGapAlert";
 import { useCodingSessions } from "../../coding-sessions/useCodingSessions";
 import { type CodingSessionView } from "../../coding-sessions/service";
 import { workspaceName } from "@/features/ai-work/lib/codingSessionPresentation";
@@ -108,6 +110,15 @@ export function PluginsSection({
     checkedAtMs === 0 ? null : error === null,
     checkedAtMs,
   );
+  // `bridgeReadHealth` states what the store looks like; the capture-gap
+  // verdict states whether capture is still HAPPENING. The second is the one
+  // that failed silently for 23.5 hours, so it renders above the status card.
+  const captureGap = captureGapVerdict({
+    lastSeenAt: sessions[0]?.last_seen_at ?? null,
+    history: sessions.map((session) => session.last_seen_at),
+    readSucceeded: checkedAtMs === 0 ? null : error === null,
+    nowMs: checkedAtMs === 0 ? Date.now() : checkedAtMs,
+  });
   const initialReadFailed =
     filteredSessions.length === 0 && sessions.length === 0 && error !== null;
 
@@ -120,6 +131,14 @@ export function PluginsSection({
       />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin px-4 pb-4">
+        <CaptureGapAlert
+          verdict={captureGap}
+          lastSeenAt={sessions[0]?.last_seen_at ?? null}
+          onRefresh={refresh}
+          refreshing={loading}
+          className="mb-3"
+        />
+
         <BridgeHealthCard
           health={health}
           loading={loading}

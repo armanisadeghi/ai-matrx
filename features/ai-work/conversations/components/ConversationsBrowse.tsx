@@ -7,6 +7,7 @@
 // door to the internal machine runs the default hides) and the sync verdict.
 
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
+import { CaptureGapAlertConnected } from "@/features/agent-connections/coding-sessions/CaptureGapAlert";
 import { conversationListConfig } from "../listConfig";
 import type { ConversationBrowseRow } from "../types";
 import { ConversationAudienceFilter } from "./ConversationAudienceFilter";
@@ -18,6 +19,12 @@ export function ConversationsBrowse() {
       config={conversationListConfig}
       notice={(list) => (
         <div className="space-y-1.5">
+          {/*
+            This inbox is where a capture outage is actually FELT — an empty or
+            stale list here is indistinguishable from a quiet day unless the
+            surface says so. Renders nothing while capture is healthy.
+          */}
+          <CaptureGapAlertConnected />
           <SyncStateIndicator />
           <ConversationAudienceFilter list={list} />
         </div>

@@ -26,6 +26,8 @@ import {
 import type { CodingSessionView } from "@/features/agent-connections/coding-sessions/service";
 import { useCodingSessions } from "@/features/agent-connections/coding-sessions/useCodingSessions";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
+import { captureGapVerdict } from "@/features/agent-connections/coding-sessions/captureGap";
+import { CaptureGapAlert } from "@/features/agent-connections/coding-sessions/CaptureGapAlert";
 import {
   NO_ACCOUNT_IDENTITY,
   providerAccountIdentity,
@@ -126,11 +128,21 @@ export function AiWorkConnections() {
     sessions,
     loading,
     error,
+    checkedAtMs,
     refresh,
     hasMore,
     loadingMore,
     loadOlder,
   } = useCodingSessions();
+
+  // Derived from the bindings this page already loaded — no second read, and
+  // no chance of disagreeing with the delivery facts rendered below.
+  const captureGap = captureGapVerdict({
+    lastSeenAt: sessions[0]?.last_seen_at ?? null,
+    history: sessions.map((session) => session.last_seen_at),
+    readSucceeded: checkedAtMs === 0 ? null : error === null,
+    nowMs: checkedAtMs === 0 ? Date.now() : checkedAtMs,
+  });
   const [capability, setCapability] =
     useState<ManagedCapability>(INITIAL_CAPABILITY);
 
@@ -180,6 +192,18 @@ export function AiWorkConnections() {
             detail={error}
           />
         ) : null}
+
+        {/*
+          Above every per-platform card on purpose. "Session delivery" is the
+          one connection fact that fails silently — Claude treats a failed hook
+          as non-blocking — so it gets the top of the page, not a status chip.
+        */}
+        <CaptureGapAlert
+          verdict={captureGap}
+          lastSeenAt={sessions[0]?.last_seen_at ?? null}
+          onRefresh={refresh}
+          refreshing={loading}
+        />
 
         <section>
           <div className="mb-2 flex items-center justify-between gap-3">
