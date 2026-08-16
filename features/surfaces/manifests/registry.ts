@@ -188,6 +188,7 @@ import { crmCreatePartyManifest } from "./crm-create-party.manifest";
 import { crmRecordManifest } from "./crm-record.manifest";
 import { crmOutreachListsManifest } from "./crm-outreach-lists.manifest";
 import { crmChaseboxManifest } from "./crm-chasebox.manifest";
+import { crmInboxManifest } from "./crm-inbox.manifest";
 import { adminKnowledgeManifest } from "./admin-knowledge.manifest";
 import { adminKindRegistryManifest } from "./admin-kind-registry.manifest";
 import { adminSkillsManifest } from "./admin-skills.manifest";
@@ -374,6 +375,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   crmRecordManifest,
   crmOutreachListsManifest,
   crmChaseboxManifest,
+  crmInboxManifest,
   adminKnowledgeManifest,
   adminKindRegistryManifest,
   adminSkillsManifest,

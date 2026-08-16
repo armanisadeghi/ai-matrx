@@ -167,10 +167,19 @@ suggest a workaround for one.
       name: "personalization_writer",
       label: "Personalization writer",
       description:
-        "Writes evidence-backed personalization lines for list members from facts extracted from each target's own pages. Every line carries the fact and source page it came from.",
+        "Explains what personalizing this campaign will do, why a particular member has no line, and how to word one that only says what the evidence says. The lines themselves are written by the validated run, from facts read on each target's own pages — every one carrying the fact and the source page it came from.",
       kind: "single",
-      // Platform agent `personalization_line_writer` (WP5 roster) — batch structured writer.
-      defaultAgentId: "67df8ca0-c451-4b8e-928c-a08e93c0c8d7",
+      // Platform agent `personalization_coach` (WP5 roster) — the CONVERSATIONAL
+      // FRONT for this role (round 4). The role previously pointed at
+      // `personalization_line_writer` (67df8ca0), the STRUCTURED batch writer
+      // that actually writes the lines: correct as the implementation, which
+      // the personalization run resolves through its own slot, but launched
+      // from the agent menu it asked a non-technical user to fill in two JSON
+      // variables. The batch writer is unchanged and still does the writing —
+      // this agent is who you talk to about it, and it is deliberately NOT a
+      // second writer (a line typed in chat has had none of the server-side
+      // citation validation done to it, D-W5-7).
+      defaultAgentId: "2b15f237-0cf7-4917-bd14-918d4bac6be8",
       sortOrder: 110,
     },
     {

@@ -437,10 +437,13 @@ Freshness has two clocks: backlink_summary carries when the KPI snapshot was col
       description:
         "Expands a topic into the keyword list a prospecting run should search — validated against real search volume before use.",
       kind: "single",
-      // Deliberately unbound (IC-7 seam): WP5 assigns the platform agent.
-      // Until then the Prospects tab renders the affordance disabled and
-      // manual keyword entry carries the flow — never a dead end.
-      defaultAgentId: null,
+      // Platform agent `seo_keyword_expander` (builtin, public card) — WP5
+      // round 4, filling the seam WP2 declared in D-W2-9. It proposes PLAIN
+      // search phrases only: the guest-post / resource-page / best-of
+      // footprints are added deterministically by the run's own variants, and
+      // volume is measured by the real lookup on this screen — the agent never
+      // states a volume, difficulty, or CPC it does not have.
+      defaultAgentId: "ed0b568d-a32d-463c-8dc6-a6f3191ee0d2",
       sortOrder: 120,
     },
   ],
