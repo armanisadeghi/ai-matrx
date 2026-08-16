@@ -57,7 +57,37 @@ Model tiers used (keep): cheap `bd68e0a8…` Gemini 3.1 Flash Lite · mid `97920
 
 ---
 
-## STATUS (2026-08-10, this session) — Phases 1-3 SHIPPED, read before continuing
+## STATUS (2026-08-15) — Phase 4's interview lane SHIPPED; the system now DISTILLS
+
+**Arman's correction (2026-08-15, read this first):** the original failure of this project was
+an agent hand-rolling packs instead of building THE SYSTEM that distills expertise. The product
+is the PROCESS — a button an expert clicks, a guided intake, an interviewer that works with
+whatever the human gives (helpful, terse, or difficult), document ingestion when there's a book,
+and (next) imitation from best-in-class exemplar outputs when there's no human at all (the
+news-writer case). Every remaining phase serves that. The Engram runtime doc
+(`common-docs/inbox-from-arman-to-be-processed/engram-expert-distillation-runtime.md`) §5 defines
+what distillation must eventually produce for the runtime: candidate specialists, contracts,
+class taxonomy, acceptance criteria, across regimes R1 (dialogue+artifacts) / R2 (artifacts
+only) / R3 (dialogue only).
+
+Shipped 2026-08-15 (verified in browser + in-process against the live DB):
+- **The button:** "New pack" is now the guided intake (goal · who runs it · where the knowledge
+  lives · stakes → `metadata.intake`), routing to the interview or document lane.
+- **The interview lane (was "Phase 4 REMAINING"):** `expertise_pack` tool (aidream
+  `services/expertise_ingest/tools.py`; draft-only writes, one shared CAS write path
+  `pack_writes.py`) + **Expertise Interviewer** agent (`4a0b2f8e-18d0-4ade-8b88-7f5610f1d0c8`,
+  Sonnet 5, elicitation-menu prompt) + `PackInterviewPanel` sheet on `/expertise/[id]`
+  (auto-opens via `?interview=1`; page refreshes as drafts land).
+- Hygiene: api-types casts dropped, `sourceFeature: "expertise"`.
+
+Next, in order: ① the honest test — fill `arman-seo-method` via the interview + compile + judge
+(directive #4); ② the R2 exemplar lane — "here are the best outputs in the world, distill rules
+from them + backtest against what the pros published" (reuses ingest machinery; the news-writer
+case); ③ file/PDF/audio ingest via content_processing + page_extraction; ④ desk run-history +
+pack version snapshots (Phase 6); ⑤ the distillation→Engram interface (candidate specialists +
+acceptance criteria as pack outputs).
+
+## PRIOR STATUS (2026-08-10) — Phases 1-3 SHIPPED
 
 - **Phase 1 DONE (live, FE v0.4.366):** `/expertise` entity-list home (mine/orgs/public),
   `/expertise/[id]` rule editor (plain-language add/edit/retire, version bump w/ optimistic lock),
@@ -74,10 +104,18 @@ Model tiers used (keep): cheap `bd68e0a8…` Gemini 3.1 Flash Lite · mid `97920
   llm_to_pydantic distill per chunk → dedupe (cross-chunk + vs pack) → VERBATIM quote verification
   (whitespace/curly-quote normalization; failures flagged `source_ref.quote_unverified`, never kept
   as anchors) → draft-only append with `source_ref` + version CAS. FE "From a source" dialog.
-- **Phase 4:** build-by-hand shipped with Phase 1 (RuleEditorDialog IS the plain-language form);
-  "talk it out" covered by Phase 3 (paste/transcribe then ingest). REMAINING: a live back-and-forth
-  interview agent (conversation → draft rules; cleanest via an output_directive shape appending
-  draft principles).
+- **Phase 4 DONE (2026-08-15/16, live end-to-end):** the guided distillation start + live
+  interview lane. NewPackDialog is now the four-question intake (goal / who runs it / where the
+  knowledge lives / stakes → `metadata.intake`) and routes head-shaped knowledge to
+  `/expertise/{id}?interview=1`, which auto-opens `PackInterviewPanel` — a real conversation with
+  the **Expertise Interviewer** agent (`4a0b2f8e-18d0-4ade-8b88-7f5610f1d0c8`, Sonnet 5, FE
+  constant `features/expertise/agents.ts`). The agent reads intake + rules and lands DRAFT rules
+  via the server `expertise_pack` tool (aidream `services/expertise_ingest/tools.py`; one shared
+  CAS write path `pack_writes.py` with the ingest lane; drafts-only edit/retire enforced). The
+  panel watches pack `version` and refreshes the rule list live beside the conversation.
+  Browser-verified against prod aidream: one spoken answer → 3 draft rules on the page in ~8s,
+  and the interviewer used the "what did it get wrong" lever unprompted. Composer is jargon-free
+  via the new `variablesPanelStyle: "hidden"` platform style.
 - **Phase 5:** pack `arman-seo-method` (id 5d353449-5a2c-4034-ac00-97b5defb23ca) scaffolded as a
   DRAFT owned by arman@titaniumsuccess.com (personal org, sections R/S/F). Prior-override hardening
   is IN the compiled prompts (PRIOR_OVERRIDE_CLAUSE + mandatory "Conflicts With Common Practice"
@@ -93,9 +131,13 @@ Model tiers used (keep): cheap `bd68e0a8…` Gemini 3.1 Flash Lite · mid `97920
   generate shape (one click on /expertise once aidream deploys); regen FE api-types/stream-events
   (`pnpm sync-types`) after the aidream release, then drop the two path casts + switch
   listConfig sourceFeature "agents-other" → "expertise".
-- **First actions for the next agent:** ① run aidream `./scripts/release.sh` (deploys compile+ingest),
-  ② verify both dialogs end-to-end on aimatrx.com/expertise, ③ recompile Hopkins via the UI,
-  ④ `pnpm sync-types` in matrx-frontend and remove the casts.
+- **First actions for the next agent:** ① recompile Hopkins onto the generate shape via the UI
+  (one click on /expertise once convenient), ② run the honest test — open `arman-seo-method`
+  with Arman and fill it through the interview lane, ③ build the R2 exemplar-imitation lane
+  (news-writer case: exemplar outputs + known inputs → candidate rules + backtest), ④ desk
+  run-history + "what did it get wrong" feedback loop from desk runs back into draft rules.
+  (Compile/ingest deploy, dialog verification, and the type-cast cleanup are done — the
+  interview lane is live and browser-verified.)
 
 ---
 
