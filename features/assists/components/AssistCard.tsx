@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Loader2,
   Quote,
+  Timer,
   VolumeX,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useAssistRunner } from "../runtime/useAssistRunner";
 import { describeAssistAction } from "../runtime/action-descriptors";
 import { formatAssistSourceLabel } from "../source-suppression";
+import { useAssistExpiry } from "./expiry";
 import { ASSIST_URGENCY_ICON } from "./urgency-icon";
 import {
   ASSIST_URGENCY_META,
@@ -137,6 +139,7 @@ export function AssistCard({
   const urgency = urgencyFromPriority(assist.priority);
   const urgencyMeta = ASSIST_URGENCY_META[urgency];
   const UrgencyIcon = ASSIST_URGENCY_ICON[urgency];
+  const expiry = useAssistExpiry(assist);
   const history = firstSeenLine(assist);
   const sourceLabel = formatAssistSourceLabel(assist.sourceKey);
 
@@ -220,6 +223,27 @@ export function AssistCard({
               <span className="text-[11px] text-muted-foreground">
                 {urgencyMeta.note}
               </span>
+            </div>
+          )}
+          {expiry && (
+            // A countdown is an offer's shelf life, never an action timer:
+            // when it runs out the chip just stops being offered — nothing
+            // runs, nothing is approved (THE INTENTIONAL-ACTION LAW). On the
+            // elevated/urgent bands it reads as a hold-warning, because the
+            // underlying condition still needs this user and its producer
+            // will bring it back.
+            <div
+              className={cn(
+                "mt-1 flex items-center gap-1 text-[11px] tabular-nums",
+                urgency === "normal"
+                  ? "text-muted-foreground"
+                  : "text-amber-700 dark:text-amber-400",
+              )}
+            >
+              <Timer className="h-3 w-3 shrink-0" aria-hidden="true" />
+              {urgency === "normal"
+                ? `Expires in ${expiry.label} — then this offer quietly goes away`
+                : `Expires in ${expiry.label} — will return to your queue; nothing runs without you`}
             </div>
           )}
           <div className="mt-0.5 text-[11px] text-muted-foreground">

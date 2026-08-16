@@ -12,7 +12,7 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { Timer, X } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAssistRunner } from "../runtime/useAssistRunner";
 import { AssistCard } from "./AssistCard";
+import { useAssistExpiry } from "./expiry";
 import { ASSIST_URGENCY_ICON } from "./urgency-icon";
 import {
   ASSIST_URGENCY_META,
@@ -43,6 +44,8 @@ export function AssistChip({
   const urgency = urgencyFromPriority(assist.priority);
   const urgencyMeta = ASSIST_URGENCY_META[urgency];
   const UrgencyIcon = ASSIST_URGENCY_ICON[urgency];
+  // Countdown is informational only — it never changes what a click does.
+  const expiry = useAssistExpiry(assist);
   const [open, setOpen] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -91,6 +94,18 @@ export function AssistChip({
             />
             <span className="truncate">{assist.title}</span>
           </button>
+          {expiry?.soon && (
+            // Compact countdown, only inside the 48h window (chips stay
+            // compact). Icon + text, never colour alone; both themes explicit.
+            <span
+              className="flex shrink-0 items-center gap-0.5 rounded-full bg-neutral-900/5 px-1.5 py-px text-[10px] font-medium tabular-nums text-neutral-600 dark:bg-white/10 dark:text-neutral-300"
+              title={`Expires in ${expiry.label} — it just stops being offered; nothing runs on its own`}
+            >
+              <Timer className="h-3 w-3" aria-hidden="true" />
+              <span className="sr-only">Expires in </span>
+              {expiry.label}
+            </span>
+          )}
           {assist.id && (
             <button
               type="button"
