@@ -153,9 +153,9 @@ const values: SurfaceValue[] = [
 
 export const crmChaseboxManifest: SurfaceManifest = {
   surfaceName: CRM_CHASEBOX_SURFACE_NAME,
-  readiness: "partial",
+  readiness: "verified",
   readinessNote:
-    "Read vocabulary verified against crm_chasebox_items + the draft review dialog; emitter and assist strip both mounted on ChaseboxPage. Pending: WP5 to fill draft_reviewer's default agent (IC-7).",
+    "Read vocabulary verified against crm_chasebox_items + the draft review dialog; emitter and assist strip both mounted on ChaseboxPage. draft_reviewer carries its default agent (outreach_draft_reviewer, WP5 round 4) and was proven against a real draft + evidence pair. Note: draft_body and visible_items are autoContext:false, so they arrive DEFERRED — verify them with retrieval allowed or an emitter that works looks broken.",
   label: "Chasebox",
   urlPattern: "/crm/chasebox",
   intro: `<surface_intro>
@@ -184,8 +184,12 @@ eligibility are decided by one authority server-side.
       description:
         "Reads a held draft beside its personalization evidence and says whether the claim is actually supported by the quoted fact and source page, then suggests a better line. Never approves, sends, or edits — it hands wording to the human.",
       kind: "single",
-      // Declared by WP1 (IC-7): WP5 authors the agent and fills this default.
-      defaultAgentId: null,
+      // Platform agent `outreach_draft_reviewer` (builtin, public card) — WP5
+      // of the outreach program, authored through the sanctioned factory and
+      // conversational per D-W5-3. It judges each AI-written line against the
+      // fact and source page supplied beside it; it has no send, approve,
+      // edit, or reject path and never claims one.
+      defaultAgentId: "fa6a4506-a658-41c0-9094-8a370e490849",
       sortOrder: 100,
     },
   ],
