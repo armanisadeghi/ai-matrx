@@ -38,9 +38,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { useDurableDraft } from "@/hooks/useDurableDraft";
 import {
   selectActiveSpeaker,
   selectPendingInterrupt,
+  selectRoomSession,
   selectRunError,
   selectRunPhase,
 } from "../redux/vision-interview.slice";
@@ -58,7 +60,15 @@ export function Composer({ onResume, onStart }: ComposerProps) {
   const pendingInterrupt = useAppSelector(selectPendingInterrupt);
   const activeSpeaker = useAppSelector(selectActiveSpeaker);
   const runError = useAppSelector(selectRunError);
-  const [text, setText] = useState("");
+  const sessionId = useAppSelector(selectRoomSession)?.id;
+  // NEVER-LOSE-CONTENT: the draft survives reloads, crashes, and error
+  // storms — it is cleared ONLY after the room durably accepted it
+  // (Arman's ruling, 2026-08-16, after a dictated vision was lost).
+  const {
+    draft: text,
+    setDraft: setText,
+    clearDraft,
+  } = useDurableDraft(`vision-interview:${sessionId ?? "pending"}`);
   const [summon, setSummon] = useState<RoleKey | null>(null);
   const [sending, setSending] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -81,7 +91,7 @@ export function Composer({ onResume, onStart }: ComposerProps) {
         summonRole: summon ?? undefined,
       });
       if (accepted) {
-        setText("");
+        clearDraft();
         setSummon(null);
       }
     } finally {
@@ -94,7 +104,9 @@ export function Composer({ onResume, onStart }: ComposerProps) {
     setStarting(true);
     try {
       const accepted = await onStart(text.trim() || undefined);
-      if (accepted) setText("");
+      // Cleared only when the statement durably landed on the session row
+      // (and is now visible in the transcript pane as "Your vision").
+      if (accepted) clearDraft();
     } finally {
       setStarting(false);
     }

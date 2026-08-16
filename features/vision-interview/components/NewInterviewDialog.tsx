@@ -13,6 +13,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
+import { useDurableDraft } from "@/hooks/useDurableDraft";
 import { createSession } from "../service";
 
 interface NewInterviewDialogProps {
@@ -26,7 +27,13 @@ export function NewInterviewDialog({
 }: NewInterviewDialogProps) {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [vision, setVision] = useState("");
+  // NEVER-LOSE-CONTENT: a dictated vision survives the dialog closing, a
+  // reload, or a failed create — cleared only after the session row exists.
+  const {
+    draft: vision,
+    setDraft: setVision,
+    clearDraft: clearVision,
+  } = useDurableDraft("vision-interview:new");
   const [busy, setBusy] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -40,7 +47,7 @@ export function NewInterviewDialog({
       });
       onOpenChange(false);
       setTitle("");
-      setVision("");
+      clearVision();
       startTransition(() => {
         router.push(`/vision-interview/${session.id}`);
       });
