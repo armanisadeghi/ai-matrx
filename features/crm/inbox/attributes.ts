@@ -139,6 +139,73 @@ export function readOutreachSendAttributes(attributes: unknown): OutreachSendAtt
 }
 
 /**
+ * WHAT THE AI CLAIMED, AND WHAT IT READ IT FROM.
+ *
+ * `attributes.outreach_single_send.personalization` is stamped at draft time by
+ * `create_draft` from the member's stored personalization record (WP5's writer
+ * over `research.rs_source.page_analysis`). Every field carries the sentence it
+ * will put in the message, the FACT behind it, and the SOURCE PAGE that fact
+ * came from — validated server-side against the evidence set actually supplied
+ * for that target, so a citation here is never the model's own invention.
+ *
+ * This is provenance only: it is never bound into the rendered message. The
+ * reviewer reads it beside the draft, which is the entire point — approving a
+ * claim you cannot trace is the failure the whole ladder exists to prevent.
+ */
+export interface PersonalizationField {
+  name: string;
+  label: string;
+  text: string;
+  fact: string | null;
+  sourceUrl: string | null;
+  editedBy: string | null;
+}
+
+export interface PersonalizationProvenance {
+  fields: PersonalizationField[];
+  version: string | null;
+  generatedAt: string | null;
+  /** True once a human reworded at least one line through the single-send client. */
+  humanEdited: boolean;
+}
+
+/** The writer's own field names, in reading order. An unknown name still renders
+ * (with its raw name as the label) rather than being silently dropped. */
+const PERSONALIZATION_FIELD_LABELS: Record<string, string> = {
+  opening_line: "Opening line",
+  ps_line: "P.S. line",
+};
+
+export function readPersonalizationProvenance(
+  attributes: unknown,
+): PersonalizationProvenance | null {
+  const block = readObject(readObject(attributes, "outreach_single_send"), "personalization");
+  if (!block) return null;
+  const rawFields = isJsonObject(block.fields) ? block.fields : {};
+  const fields: PersonalizationField[] = [];
+  for (const [name, value] of Object.entries(rawFields)) {
+    if (!isJsonObject(value)) continue;
+    const text = readString(value, "text");
+    if (!text) continue;
+    fields.push({
+      name,
+      label: PERSONALIZATION_FIELD_LABELS[name] ?? name.replace(/_/g, " "),
+      text,
+      fact: readString(value, "fact"),
+      sourceUrl: readString(value, "source_url"),
+      editedBy: readString(value, "edited_by"),
+    });
+  }
+  if (fields.length === 0) return null;
+  return {
+    fields,
+    version: readString(block, "version"),
+    generatedAt: readString(block, "generated_at"),
+    humanEdited: fields.some((field) => field.editedBy !== null),
+  };
+}
+
+/**
  * The id the `/outreach/single/drafts/{draft_id}/…` endpoints expect for a
  * draft that is sitting on a `crm.interaction` row.
  *

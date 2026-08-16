@@ -177,9 +177,12 @@ suggest a workaround for one.
       name: "pitch_assistant",
       label: "Pitch assistant",
       description:
-        "Helps with templates, subject lines, and follow-up angles by campaign type. Planned — no default agent yet (WP5 roster).",
+        "Writes and sharpens the message a campaign actually sends — pitch body, subject-line options, and follow-ups that carry a new reason to reply. Uses only merge fields the outreach renderer can really fill.",
       kind: "single",
-      defaultAgentId: null,
+      // Platform agent `pitch_assistant` (WP5 roster) — conversational copy
+      // specialist. Templates it writes become real `agent.message_template`
+      // rows through the validated pitch-template door, never around it.
+      defaultAgentId: "db484110-610f-4dd6-8fad-21e805681cd0",
       sortOrder: 120,
     },
   ],

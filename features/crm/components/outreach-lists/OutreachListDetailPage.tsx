@@ -41,6 +41,8 @@ import type {
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import { CRM_OUTREACH_LISTS_SURFACE_NAME } from "@/features/surfaces/manifests/crm-outreach-lists.manifest";
 import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
 import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { formatRelativeTime } from "@/utils/datetime";
@@ -62,7 +64,11 @@ import type {
   MemberStatus,
   MemberStatusCounts,
 } from "../../outreach-lists/types";
-import { MEMBER_STATUSES } from "../../outreach-lists/types";
+import {
+  MEMBER_STATUSES,
+  outcomeKindLabel,
+  readMemberOutcome,
+} from "../../outreach-lists/types";
 import { ListKindBadge, ListStatusBadge, MemberStatusBadge } from "./badges";
 import { AddMembersDialog } from "./AddMembersDialog";
 import { OutcomesPanel } from "../../outcomes/OutcomesPanel";
@@ -354,6 +360,50 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       filter: false,
       width: 130,
       cell: (row) => <MemberStatusBadge status={row.status} />,
+    },
+    {
+      // THE POINT OF THE CAMPAIGN, on the row it happened to. Attribution
+      // credits a win (WP4); once a human confirms it, the outcome sync
+      // completes this member and copies the evidence onto it (IC-5 → IC-9).
+      // A win the roster cannot show is a loop that never visibly closed.
+      id: "outcome",
+      accessorFn: (row) => readMemberOutcome(row)?.outcomeKind ?? "",
+      header: "Outcome",
+      sortable: false,
+      filter: false,
+      width: 170,
+      cell: (row) => {
+        const outcome = readMemberOutcome(row);
+        if (!outcome) {
+          return <span className="text-xs text-muted-foreground">—</span>;
+        }
+        const extra = outcome.additionalEventIds.length;
+        return (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              // Every evidence trail is a door: the Outcomes view opens with
+              // this exact row selected, the same deep link the assist uses.
+              setActiveView("outcomes");
+              router.replace(
+                `/crm/outreach-lists/${listId}?view=outcomes&outcome=${outcome.outcomeEventId}`,
+                { scroll: false },
+              );
+            }}
+            title={
+              outcome.evidenceUrl
+                ? `Confirmed win — ${outcome.evidenceUrl}`
+                : "Confirmed win — open the evidence"
+            }
+            className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium leading-none text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300"
+          >
+            <Award className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="truncate">{outcomeKindLabel(outcome.outcomeKind)}</span>
+            {extra > 0 && <span className="tabular-nums">+{extra}</span>}
+          </button>
+        );
+      },
     },
     {
       id: "attempt_count",
@@ -662,6 +712,13 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         ) : (
           <div className="h-7" />
         )}
+        {/* Outreach assists for this campaign's surface (WP5 registered the
+            manifest, D14; producers key rows to it). The strip renders nothing
+            while none are pending, so mounting it costs the user nothing. */}
+        <AssistStrip
+          surfaceName={CRM_OUTREACH_LISTS_SURFACE_NAME}
+          className="mt-1.5"
+        />
         {rollupChips && <div className="mt-1.5">{rollupChips}</div>}
         {list?.lane === "cold_outreach" && (
           <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-2 py-1.5">

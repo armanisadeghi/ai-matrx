@@ -1,6 +1,7 @@
 import type { components } from "@/types/python-generated/api-types";
 import { BackendApiError } from "@/lib/api/errors";
 import { apiPost, buildPath } from "@/lib/api/typed-client";
+import { postJson } from "@/lib/python-client";
 import { isJsonObject } from "@/types/json";
 
 export type OutreachDraft = components["schemas"]["DraftResponse"];
@@ -50,6 +51,48 @@ export async function sendOutreachDraft(
       draft_id: draftId,
     }),
     {},
+  );
+  return data;
+}
+
+/**
+ * Reword the AI-written personalization line(s) and re-render this exact draft.
+ *
+ * THE ONLY EDITABLE PART OF A DRAFT IS THE PART AN AGENT WROTE — the rest is the
+ * template rendered over stored records, re-rendered at approve and at send, so
+ * hand-edited bytes would be silently reverted or refused as `draft_changed`.
+ * Editing the binding keeps ONE deterministic render. The server voids the
+ * approval, because the bytes changed.
+ *
+ * Raw client, not `apiPost`: the deployed OpenAPI spec does not carry this route
+ * yet (same honest gap as `bring-up-readiness`). Switch when `pnpm sync-types`
+ * picks it up. Source of truth:
+ * aidream/aidream/services/outreach_single_send/service.py::revise_personalization
+ */
+export async function reviseOutreachPersonalization(
+  draftId: string,
+  fields: Record<string, string>,
+): Promise<OutreachDraft> {
+  const { data } = await postJson<OutreachDraft>(
+    `/outreach/single/drafts/${encodeURIComponent(draftId)}/personalization`,
+    { fields },
+  );
+  return data;
+}
+
+/**
+ * Cancel this message and take the member out of the sequence (D-W1-13).
+ *
+ * Not a suppression: nothing is added to any blocklist and the contact record is
+ * untouched. Reversible in one click through the campaign workspace's Requeue.
+ */
+export async function rejectOutreachDraft(
+  draftId: string,
+  reason?: string,
+): Promise<OutreachDraft> {
+  const { data } = await postJson<OutreachDraft>(
+    `/outreach/single/drafts/${encodeURIComponent(draftId)}/reject`,
+    { reason: reason?.trim() || null },
   );
   return data;
 }

@@ -213,8 +213,14 @@ registered through the overlay controller, metadata registry, catalogue,
 Tools-grid, and typed openers.
 
 **UI surfaces:** code-first manifests declare `matrx-user/crm`,
-`matrx-user/crm-manager`, and `matrx-user/crm-create-party`. The route and
-both windows emit live scopes through `SurfaceRuntimeProvider`; DB rows and
+`matrx-user/crm-manager`, `matrx-user/crm-create-party`,
+`matrx-user/crm-outreach-lists` (registered by WP5 per D14; the console emits
+its scope, the campaign workspace mounts its assist strip) and
+`matrx-user/crm-chasebox` (WP1, 2026-08-16 — the page had been mounting an
+assist strip against a surface that did not exist, so neither the strip nor a
+role could ever resolve; it now emits queue + open-draft values and declares the
+`draft_reviewer` role with a NULL default for WP5 to fill, per IC-7). The route
+and both windows emit live scopes through `SurfaceRuntimeProvider`; DB rows and
 value metadata mirror the manifests.
 
 **Frontend gotchas (paid for once):**
@@ -631,6 +637,24 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-16 — **A confirmed win now shows on the roster, and drafts are
+  reviewed at volume (WP1, round 3).** Two halves of the same day's work:
+  (1) **the outcome lands on the member.** The server sync
+  (`aidream/services/outreach_outcomes/`) completes the member behind every
+  confirmed `platform.outcome_event`; the roster gained an **Outcome** column
+  reading `metadata.outcome` through `readMemberOutcome`, and the chip is a door
+  — it opens the Outcomes view with that exact row selected. `outcome_id` is a
+  `platform.categories` FK (the label), never a pointer at the event table; the
+  evidence is copied onto the member so the roster needs no join.
+  (2) **the Chasebox is a triage surface.** `ChaseboxDraftDialog` now walks the
+  queue on `J`/`K`, approves/sends/edits/rejects on `A`/`S`/`E`/`R`, and renders
+  each AI-written line beside the FACT and SOURCE PAGE it came from — see
+  [`inbox/FEATURE.md`](inbox/FEATURE.md) § Draft triage. Edit and reject are two
+  new canonical single-send calls (`reviseOutreachPersonalization`,
+  `rejectOutreachDraft`); there is still exactly one send path. The Chasebox is
+  also a REGISTERED surface now (`crm_ui_surface_chasebox.sql`, applied live)
+  with the `draft_reviewer` role declared NULL for WP5 (IC-7), and the campaign
+  workspace mounts the outreach-lists assist strip.
 - 2026-08-16 — **The loop is closed on the campaign workspace: attribution
   outcomes (WP4, IC-5).** `features/crm/outcomes/` reads `platform.outcome_event`
   directly (schema-scoped supabase-js, server-paged) and surfaces it as the

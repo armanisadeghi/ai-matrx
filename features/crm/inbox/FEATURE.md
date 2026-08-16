@@ -102,6 +102,34 @@ reason both accessors exist.
 
 ---
 
+## Draft triage — reviewing FIFTY is the job, not reviewing one (2026-08-16)
+
+WP5's personalization writer lands AI-written drafts into `pending_drafts`, so
+the queue's daily shape is *many near-identical messages, each with one sentence
+that has to be true*. The dialog is built for that:
+
+- **The evidence sits beside the message.** Every personalization line renders
+  with the FACT it stands on and the SOURCE PAGE that fact came from, read
+  through `readPersonalizationProvenance` in [`attributes.ts`](./attributes.ts)
+  (`attributes.outreach_single_send.personalization`, stamped by `create_draft`;
+  contract in aidream `outreach_single_send/FEATURE.md`). Approving a claim you
+  cannot trace is the failure personalization adds to this queue, and this panel
+  is the whole answer to it.
+- **Keyboard triage:** `J`/`K` (or ↑/↓) walk the loaded page WITHOUT closing,
+  `A` approve, `S` send, `E` edit, `R` reject, `⌘/Ctrl+Enter` does the obvious
+  next thing. Shortcuts never fire while the reviewer is typing — an editor that
+  eats keystrokes as commands is worse than no shortcuts at all.
+- **Edit means the AI's line, not the bytes.** Saving calls
+  `reviseOutreachPersonalization`, which rewrites the member's personalization
+  record and re-renders server-side. Hand-editing the body would be reverted (or
+  refused as `draft_changed`) at send, because the send path re-renders. The
+  panel says so in the UI rather than leaving the reviewer to discover it.
+- **Reject means "not this message, and this person leaves the campaign"** — the
+  confirm panel says exactly that, plus what it is NOT (no suppression, contact
+  record untouched) and how to undo it (Requeue on the campaign).
+- After a send or a reject the dialog **advances to the next draft** and the
+  page refreshes counts; the last one closes it.
+
 ## Invariants
 
 - **No second send path, ever.** Replying from the inbox resolves the campaign + member and
@@ -177,7 +205,7 @@ it answers.
 | `../chasebox/types.ts` | Queue vocabulary + metadata + fix resolution |
 | `../chasebox/service.ts` | `crm_chasebox_counts` / `crm_chasebox_items` |
 | `../chasebox/components/ChaseboxPage.tsx` | The five queue cards + the item list |
-| `../chasebox/components/ChaseboxDraftDialog.tsx` | Read the exact message, then approve + send |
+| `../chasebox/components/ChaseboxDraftDialog.tsx` | THE DRAFT TRIAGE SURFACE — the exact message, the evidence behind its AI-written lines, and approve / edit / reject / send at volume |
 | `../components/outreach-lists/badges.tsx` | `InboundLabelBadge` lives with the OTHER status maps |
 
 ---
@@ -186,7 +214,11 @@ it answers.
 
 `<AssistStrip>` is mounted on both surfaces (`matrx-user/crm-inbox`,
 `matrx-user/crm-chasebox`) and renders nothing today, because **no producer writes to them
-yet**. That is declared, not forgotten: the first genuine assist belongs with the
+yet**. 🚨 **`matrx-user/crm-chasebox` is a REGISTERED surface as of 2026-08-16**
+(`crm-chasebox.manifest.ts` + `migrations/crm_ui_surface_chasebox.sql`, applied live) — until
+then the strip was keyed to a surface row that did not exist, so it could never have rendered
+anything and no agent role could hang off it (IC-7). `matrx-user/crm-inbox` is still in that
+state and is the next one to register. That is declared, not forgotten: the first genuine assist belongs with the
 inbound-classification server half — *a reply arrived with no classifier verdict* is a real,
 one-click-fixable gap and exactly the shape `platform.assists` exists for. The Chasebox's
 five queues are deliberately NOT assists: they are the action surface itself, and emitting

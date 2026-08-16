@@ -222,3 +222,69 @@ export const EMPTY_SESSION_STATS: DialSessionStats = {
   skipped: 0,
   suppressed: 0,
 };
+
+// ── The win, on the member (IC-5 → IC-9) ────────────────────────────────────
+
+/**
+ * WHAT THIS CAMPAIGN ACTUALLY ACHIEVED FOR ONE CONTACT.
+ *
+ * WP4's attribution pass credits a win as a `platform.outcome_event`; once it is
+ * CONFIRMED, the server-side outcome sync completes the member and copies the
+ * evidence here (`aidream/services/outreach_outcomes/`). The label itself is the
+ * member's `outcome_id` → `platform.categories` FK; this record is the evidence
+ * trail, copied so the roster renders the win and opens its proof with no join.
+ *
+ * `platform.outcome_event` stays the source of truth for all of it.
+ */
+export interface MemberOutcome {
+  outcomeEventId: string;
+  outcomeKind: string;
+  categorySlug: string;
+  evidenceUrl: string | null;
+  occurredAt: string | null;
+  confirmedAt: string | null;
+  confidence: number;
+  /** Later wins for the same member — counted, never re-credited (D-W4-11). */
+  additionalEventIds: string[];
+}
+
+/** Plain-language label per outcome kind. Never a raw enum in front of a user. */
+const OUTCOME_KIND_LABELS: Record<string, string> = {
+  link_appeared: "Link earned",
+  coverage_published: "Coverage published",
+  page_corrected: "Page corrected",
+  mention_appeared: "Mention earned",
+};
+
+export function outcomeKindLabel(kind: string): string {
+  return OUTCOME_KIND_LABELS[kind] ?? kind.replace(/_/g, " ");
+}
+
+export function readMemberOutcome(
+  member: Pick<OutreachListMemberRow, "metadata">,
+): MemberOutcome | null {
+  const metadata = member.metadata;
+  if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
+    return null;
+  }
+  const record = (metadata as Record<string, unknown>).outcome;
+  if (typeof record !== "object" || record === null || Array.isArray(record)) {
+    return null;
+  }
+  const value = record as Record<string, unknown>;
+  const id = value.outcome_event_id;
+  if (typeof id !== "string" || !id) return null;
+  const extra = Array.isArray(value.additional_event_ids)
+    ? value.additional_event_ids.filter((item): item is string => typeof item === "string")
+    : [];
+  return {
+    outcomeEventId: id,
+    outcomeKind: typeof value.outcome_kind === "string" ? value.outcome_kind : "",
+    categorySlug: typeof value.category_slug === "string" ? value.category_slug : "",
+    evidenceUrl: typeof value.evidence_url === "string" ? value.evidence_url : null,
+    occurredAt: typeof value.occurred_at === "string" ? value.occurred_at : null,
+    confirmedAt: typeof value.confirmed_at === "string" ? value.confirmed_at : null,
+    confidence: typeof value.confidence === "number" ? value.confidence : 0,
+    additionalEventIds: extra,
+  };
+}

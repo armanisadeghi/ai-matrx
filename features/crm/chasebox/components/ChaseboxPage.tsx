@@ -21,12 +21,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  CRM_CHASEBOX_SURFACE_NAME,
+  createCrmChaseboxScope,
+} from "@/features/surfaces/manifests/crm-chasebox.manifest";
 import { relativeTime } from "@/lib/entity-list/columns";
 import { makeScope, type ListScope } from "@/lib/list-scope/types";
 import type { EntityScopeCounts } from "@/lib/entity-list/types";
 import { cn } from "@/lib/utils";
 import { CHASEBOX_ASSIST_SURFACE } from "../../inbox/constants";
 import { fetchChaseboxCounts, fetchChaseboxItems } from "../service";
+import type { ReviewedDraft } from "./ChaseboxDraftDialog";
 import {
   CHASEBOX_QUEUES,
   CHASEBOX_QUEUE_META,
@@ -54,7 +60,14 @@ export function ChaseboxPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [draftRow, setDraftRow] = useState<ChaseboxRow | null>(null);
+  // The index of the draft under review, so J/K walk the loaded page without
+  // closing — reviewing fifty drafts is the job, not reviewing one.
+  const [reviewIndex, setReviewIndex] = useState<number | null>(null);
+  // The draft the reviewer is looking at RIGHT NOW, lifted so the surface can
+  // hand an agent exactly what the human is being asked to approve — including
+  // the evidence behind each AI-written line. A surface that claims a value it
+  // cannot see would be the UI lying.
+  const [reviewedDraft, setReviewedDraft] = useState<ReviewedDraft | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
   const refresh = useCallback(() => setReloadToken((n) => n + 1), []);
@@ -119,6 +132,31 @@ export function ChaseboxPage() {
   const meta = CHASEBOX_QUEUE_META[queue];
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={CRM_CHASEBOX_SURFACE_NAME}
+      getScope={() =>
+        createCrmChaseboxScope({
+          active_queue: queue,
+          queue_counts: counts ?? EMPTY_CHASEBOX_COUNTS,
+          visible_items: (rows ?? []).map((row) => ({
+            id: row.id,
+            queue: row.queue,
+            party_name: row.party_name,
+            outreach_list_name: row.outreach_list_name,
+            step: row.step,
+            problem_code: row.problem_code,
+            problem_message: row.problem_message,
+            problem_fix: row.problem_fix,
+            occurred_at: row.occurred_at,
+          })),
+          total_items: total,
+          draft_subject: reviewedDraft?.subject ?? undefined,
+          draft_body: reviewedDraft?.body ?? undefined,
+          draft_personalization: reviewedDraft?.personalization ?? undefined,
+          draft_approved: reviewedDraft?.approved ?? undefined,
+        })
+      }
+    >
     <div className="flex h-full flex-col overflow-hidden">
       <div className="shrink-0 space-y-2 px-3 pt-[calc(var(--shell-header-h)+0.5rem)] pb-2">
         <AssistStrip surfaceName={CHASEBOX_ASSIST_SURFACE} />
@@ -197,7 +235,13 @@ export function ChaseboxPage() {
               aria-hidden
             />
           )}
-          <p>{meta.description}</p>
+          <p className="flex-1">{meta.description}</p>
+          {/* Drafts are reviewed at volume — one door into the whole queue. */}
+          {queue === "pending_drafts" && rows && rows.length > 0 && (
+            <Button size="sm" onClick={() => setReviewIndex(0)}>
+              Review {rows.length} draft{rows.length === 1 ? "" : "s"}
+            </Button>
+          )}
         </div>
 
         {error && (
@@ -229,11 +273,11 @@ export function ChaseboxPage() {
           </div>
         ) : (
           <ul className="space-y-1.5">
-            {rows.map((row) => (
+            {rows.map((row, rowIndex) => (
               <ChaseboxItem
                 key={`${row.queue}-${row.id}`}
                 row={row}
-                onOpenDraft={() => setDraftRow(row)}
+                onOpenDraft={() => setReviewIndex(rowIndex)}
               />
             ))}
           </ul>
@@ -265,14 +309,18 @@ export function ChaseboxPage() {
       </div>
 
       <ChaseboxDraftDialog
-        row={draftRow}
-        onClose={() => setDraftRow(null)}
-        onSent={() => {
-          setDraftRow(null);
-          refresh();
+        rows={rows ?? []}
+        index={reviewIndex}
+        onIndexChange={setReviewIndex}
+        onClose={() => {
+          setReviewIndex(null);
+          setReviewedDraft(null);
         }}
+        onResolved={refresh}
+        onDraftLoaded={setReviewedDraft}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }
 
