@@ -840,6 +840,7 @@ interface AgentRunRow {
   started_at: string | null;
   ended_at: string | null;
   error: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 function rowToAgentRun(row: AgentRunRow): import("../types").AgentRun {
@@ -862,6 +863,7 @@ function rowToAgentRun(row: AgentRunRow): import("../types").AgentRun {
     startedAt: row.started_at,
     endedAt: row.ended_at,
     error: row.error,
+    metadata: row.metadata ?? null,
   };
 }
 
@@ -872,6 +874,13 @@ export interface InsertAgentRunInput {
   triggerCause: import("../types").TriggerCause;
   resumeMarker?: string | null;
   inputCharRange?: [number, number] | null;
+  /**
+   * Where this run's output belongs on the surface that started it — the ONLY
+   * thing a reattaching tab cannot re-derive. The cleanup pad writes
+   * `{ target: "clean" | "<docKind>" }` here so a reload can put a recovered
+   * output back in the container it came from. See `reattachStudioRun.ts`.
+   */
+  metadata?: Record<string, unknown>;
 }
 
 export async function insertAgentRun(
@@ -890,6 +899,7 @@ export async function insertAgentRun(
   if (input.inputCharRange) {
     insert.input_char_range = `[${input.inputCharRange[0]},${input.inputCharRange[1]})`;
   }
+  if (input.metadata) insert.metadata = input.metadata;
   const { data, error } = await db
     .schema("transcripts")
     .from("studio_runs")
@@ -902,6 +912,56 @@ export async function insertAgentRun(
     );
   }
   return rowToAgentRun(data as AgentRunRow);
+}
+
+/**
+ * Every run this session ever recorded, newest first.
+ *
+ * 🚨 THIS IS THE DURABLE HALF OF THE FLOATING LAW. Without it, a column's run
+ * status and its watch door live only in the tab that launched the pass — a
+ * refresh mid-pass lost both, which is the same defect as a spinner
+ * (`features/window-panels/FEATURE.md`). Hydrated by `fetchAgentRunsThunk`,
+ * which also reattaches anything still running.
+ */
+export async function listAgentRuns(
+  sessionId: string,
+): Promise<import("../types").AgentRun[]> {
+  const { data, error } = await db
+    .schema("transcripts")
+    .from("studio_runs")
+    .select("*")
+    .eq("session_id", sessionId)
+    .is("deleted_at", null)
+    .order("started_at", { ascending: false, nullsFirst: false })
+    .order("id", { ascending: false })
+    .limit(200);
+  if (error) {
+    throw new Error(`[studio] listAgentRuns failed: ${error.message}`);
+  }
+  return ((data ?? []) as AgentRunRow[]).map(rowToAgentRun);
+}
+
+/**
+ * Persist the run's conversation the MOMENT it exists, not when the pass ends.
+ *
+ * A conversation id bound only in Redux dies with the tab; this write is what
+ * lets a reloaded page find the run again and rejoin it. Called from
+ * `liveRunWatch.watchLiveRun`, the one seam every studio pass launches through.
+ */
+export async function bindAgentRunConversation(
+  id: string,
+  conversationId: string,
+): Promise<void> {
+  const { error } = await db
+    .schema("transcripts")
+    .from("studio_runs")
+    .update({ conversation_id: conversationId })
+    .eq("id", id);
+  if (error) {
+    throw new Error(
+      `[studio] bindAgentRunConversation failed: ${error.message}`,
+    );
+  }
 }
 
 export interface FinalizeAgentRunInput {

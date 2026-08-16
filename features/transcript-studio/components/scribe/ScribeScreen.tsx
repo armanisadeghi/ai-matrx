@@ -28,6 +28,7 @@ import { selectSessionById } from "../../redux/selectors";
 import { activeSessionIdSet } from "../../redux/slice";
 import {
   deleteSessionThunk,
+  fetchAgentRunsThunk,
   fetchCleanedSegmentsThunk,
   fetchRawSegmentsThunk,
   fetchRecordingSegmentsThunk,
@@ -252,6 +253,9 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
     dispatch(activeSessionIdSet(sessionId));
     void dispatch(fetchCleanedSegmentsThunk({ sessionId }));
     void dispatch(fetchStudioDocumentsThunk({ sessionId }));
+    // Durable run rows: column status, the watch door, and the rejoin of any
+    // pass still running from before a reload (THE FLOATING LAW).
+    void dispatch(fetchAgentRunsThunk({ sessionId }));
     // Recording + raw segments must land before reconcile so it can derive
     // each stranded segment's tEnd from its chunks. Recovery then finalizes
     // any segment whose stop-finalize was lost (stomped start / reload mid-save)

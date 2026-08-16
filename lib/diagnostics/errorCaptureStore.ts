@@ -185,6 +185,13 @@ export type CapturedErrorSource =
   /** Unsaved user work existed only in a browser buffer after repeated save failure or identity drift. */
   | "unsaved-work"
   /**
+   * A DURABLE run row (a server-owned AI pass the client rejoins after a
+   * reload) could not be rejoined, applied, or settled. Firing means the row
+   * now disagrees with what actually happened on the server — a run stuck at
+   * "running" forever, or an output the surface produced and could not save.
+   */
+  | "durable-run"
+  /**
    * A single-record read returned ZERO rows (`lib/records/recordUnavailable.ts`).
    * The user sees an honest "deleted, or an org you can't reach" message — but
    * the cause is either a real access gap (the over-tightening defect class:

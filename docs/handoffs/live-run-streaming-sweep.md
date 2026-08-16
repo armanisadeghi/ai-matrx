@@ -120,6 +120,7 @@ carry no agent-run import at all. That is the signature to search on next time.
 | `features/transcription-cleanup/components/CleanupPad.tsx` — `/transcripts/cleanup` | "record → auto-clean → refine with ANY number of agents" fires up to 4 runs at once, but custom slots are tab pills (one visible) and an embedded host can hide Clean entirely. Every hidden pass streamed into a pane nobody could see, behind a 12px tab spinner. | A pass whose pane is not visible floats in `LiveRunWindow` — one per slot, stable `instanceId` so a re-run rebinds instead of stacking. Switching to a pass's own tab closes its window (the pane is the better home when it is on screen). |
 | `features/transcript-studio/redux/{runCleaningPass,runConceptPass,runModulePass,cleanRecording}.thunk.ts` — `/transcripts/studio`, `/transcripts/scribe` | All four passes launched `displayMode: "background"` and discarded the run; the column header spun a `RefreshCw` and segments appeared only when the whole pass finished. | Each thunk binds its conversation at `onConversationCreated` (`redux/liveRunWatch.ts`) and floats `liveRunWindow` for user-initiated causes; interval passes bind without stealing the screen and stay one click away via `<WatchRunButton>`. Batch re-clean narrates "Cleaning recording 2 of 7" into ONE window. Live-verified on a real session. |
 | `features/education/{study/components/SessionDetailView.tsx,study/reviewRun.ts,tutor/lanes/reviewSession.ts}` — `/education/flashcards/sessions/[id]` | The holistic coach review was launched fire-and-forget on drill completion with its identity discarded; the detail page polled `getSession` every 3s for up to 2 minutes waiting for `session_review`. | The lane stamps a DURABLE handle (`metadata.ai.reviewRun` — conversationId + terminal status) the instant the conversation exists, and floats `LiveRunWindow` when the caller owns no window. The page reattaches to a live handle (`reconnectServerOperation`, cold-load), floats it, and reads the row once on terminal. Poll deleted; a pending review with no live run offers "Write my review" instead of an endless spinner. |
+| `features/transcript-studio/{service/studioService.ts,redux/{liveRunWatch,reattachStudioRun,thunks}.ts}` + `features/transcription-cleanup/{hooks/useCleanupSession.ts,components/CleanupPad.tsx}` — `/transcripts/studio`, `/transcripts/scribe`, `/transcripts/cleanup` | **Class D, both transcript surfaces.** Run identity lived only in browser memory: nothing ever loaded `studio_runs`, the studio bound its conversation in Redux alone, and the cleanup pad wrote its run row at COMPLETION — so a reload mid-pass lost the column status, the watch door, and (in the pad) the output itself. | One shared primitive, `redux/reattachStudioRun.ts` (the `useSiteCommandRun` shape): the row is opened at LAUNCH and stamped with its conversation the moment one exists (`bindAgentRunConversation`), `listAgentRuns` + `fetchAgentRunsThunk` hydrate on load, and every row still running is rejoined via `reconnectServerOperation` (cold-load) into a floating `LiveRunWindow` that narrates real stages and hands back the finished text. The pad re-applies it to the container the run recorded in `metadata.target`; every row settles from SERVER truth, never a guess. A finished run's door opens its conversation instead of an empty live window. Live-verified end to end on `/transcripts/cleanup` (reload mid-run → rejoin → output restored → row `complete`) and `/transcripts/studio` (doors present on a cold load). |
 | `features/marketing/discovery/youtube/{service.ts,YouTubeResearchActions.tsx}` | Minutes of AI work (watch → transcribe → analyze → check claims) narrated real phases and threw the stream body away. | `adoptForeignStream` + floated `LiveRunWindow`. Phase/info events still drive the stage line; content never goes through `onEvent`. |
 
 ### Verified compliant — do not re-audit
@@ -151,13 +152,17 @@ carry no agent-run import at all. That is the signature to search on next time.
   The real upgrade is an aidream change: emit the docproc clean pipeline as a
   stream (it already has the shape — `rag.stage.progress` / `page_clean`), then
   the scanner adopts it and the poll dies. Cross-repo, own session.
-- **Transcript Studio runs are never loaded from the DB.** Nothing dispatches
-  `runsLoaded` and there is no `listAgentRuns` — so column run status AND the
-  new watch door are in-memory only, and a refresh mid-pass loses both. Class D,
-  pre-existing, found while fixing §3. Logged in `FOUND_DEFECTS.md`.
-- **A refresh still kills a cleanup pass.** `useAiPostProcess` holds its
-  conversationId in local state; reload mid-run and the output is lost (the
-  persist happens client-side on completion). Class D, unchanged by this pass.
+- **A Transcript Studio pass that finishes while the page is away cannot be
+  APPLIED by the reattaching tab.** The reattach itself shipped (below), but a
+  studio pass's replace-window (`replaceFromTime` / `passIndex`, computed from
+  live state at launch) is never recorded on the run row, so the recovered text
+  can only be READ (the run window, its conversation) — not turned into a
+  cleaned/concept/module segment. The fix is one write, not a redesign: stamp
+  the window onto `studio_runs.metadata` at launch and let
+  `reattachStudioRun`'s `applyRecoveredOutput` replay it, exactly as the
+  cleanup pad already does with `metadata.target`. Until then the row settles
+  `failed` with a sentence saying so, which is honest but costs the user a
+  re-run.
 
 ## Remaining work — ranked by pain × reach
 

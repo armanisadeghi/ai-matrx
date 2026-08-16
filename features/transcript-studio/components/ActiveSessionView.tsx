@@ -12,6 +12,7 @@ import { ProcessForRagButton } from "@/features/rag/components/ProcessForRagButt
 import { cn } from "@/lib/utils";
 import {
   deleteSessionThunk,
+  fetchAgentRunsThunk,
   fetchCleanedSegmentsThunk,
   fetchConceptItemsThunk,
   fetchModuleSegmentsThunk,
@@ -84,6 +85,12 @@ export function ActiveSessionView({
   const hasModuleSegmentIds = useAppSelector((state) =>
     Boolean(state.transcriptStudio.moduleSegmentIdsBySession[session.id]),
   );
+  // Run rows are the DURABLE half of every column's AI pass — the status badge
+  // and `WatchRunButton`'s door read them, and a pass still running when the
+  // page reloads is rejoined from here (THE FLOATING LAW).
+  const hasRunIds = useAppSelector((state) =>
+    Boolean(state.transcriptStudio.runIdsBySession[session.id]),
+  );
   useEffect(() => {
     if (!hasRawIds) {
       void dispatch(fetchRawSegmentsThunk({ sessionId: session.id }));
@@ -96,6 +103,9 @@ export function ActiveSessionView({
     }
     if (!hasModuleSegmentIds) {
       void dispatch(fetchModuleSegmentsThunk({ sessionId: session.id }));
+    }
+    if (!hasRunIds) {
+      void dispatch(fetchAgentRunsThunk({ sessionId: session.id }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.id, dispatch]);

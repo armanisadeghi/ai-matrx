@@ -490,10 +490,6 @@ System-of-record: `common-docs/systems/entity-content-role/FEATURE.md` — read 
 
 The floating-window posture only kills the spinner for markdown payloads. Watched blank for their whole run: podcast blog writer/show notes (`useEpisodeArticles` — structured JSON envelope) and the marketing image prompt generator (`generate-page-image.ts` step 1 — `<image_prompt>` wrapper). Fix belongs in the canonical pipeline, never the call site: content-IR renders un-kinded live JSON progressively, or these agents get a registered kind. Per `docs/handoffs/live-run-streaming-sweep.md`; note its §6 wrongly records podcast articles as plain markdown — the wire is JSON, markdown is assembled client-side (`articleMarkdown.ts`). Whether they get a kind is **Arman's call**.
 
-### D169 (was D167) — Transcript Studio never loads its own `studio_runs` rows, so refresh forgets every pass (2026-08-11)
-
-No `listAgentRuns` in `features/transcript-studio/service/studioService.ts`, nothing dispatches `runsLoaded` — column status is in-memory only and the live-run door (`<WatchRunButton>` via the run row's `conversationId`) dies with the tab. Fix: add `listAgentRuns(sessionId)`, dispatch `runsLoaded` where segments load, reopen for rows still `running`. **Chip fired 2026-08-12.**
-
 ### D185 — A CMS link breaks whenever the CMS site belongs to a DIFFERENT user (2026-08-13; **re-diagnosed live 2026-08-15 — the original prescription was wrong**)
 
 ⚠️ **DO NOT clear or repoint `settings.cms.site_id`.** The original entry guessed the CMS site was "deleted or never valid" and prescribed clearing it. Both guesses are false, and that fix would have DESTROYED a correct link.

@@ -62,7 +62,7 @@ import {
 import { toast } from "@/lib/toast";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectVoicePadEntries,
   selectVoicePadDraftText,
@@ -114,6 +114,10 @@ import type {
   SessionContextItem,
 } from "@/features/transcript-studio/types";
 import { updateSessionThunk } from "@/features/transcript-studio/redux/thunks";
+import {
+  reattachStudioRun,
+  studioRunTarget,
+} from "@/features/transcript-studio/redux/reattachStudioRun";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   CLEANUP_TEXT_WRITE_MODES,
@@ -165,6 +169,20 @@ const V_COOKIE = "panels:cleanup-v";
 
 /** Fixed hook pool size — raise here when more parallel slots are needed. */
 const MAX_CUSTOM_SLOTS = 3;
+
+/**
+ * `studio_runs.metadata.target` for the Clean container. Slots use their own
+ * `docKind`. This is what a reattaching page reads to put a recovered output
+ * back where it came from — see `reattachStudioRun.ts`.
+ */
+const CLEAN_RUN_TARGET = "clean";
+
+/** Phases that mean the pass is over and produced nothing usable. */
+const FAILED_RUN_PHASES: ReadonlySet<string> = new Set([
+  "error",
+  "cancelled",
+  "timeout",
+]);
 
 /** Side columns — top band aligns vertically with the center record band. */
 const SIDE_COLUMN_TOP_BAND =
@@ -701,6 +719,7 @@ export default function CleanupPad({
   externalRecording,
 }: CleanupPadProps) {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const session = useCleanupSession({ sessionId, urlSync });
   const isEmbedded = variant === "embedded";
   const propSidebar = sections?.sidebar ?? true;
@@ -764,6 +783,9 @@ export default function CleanupPad({
   // Agents — Clean is seeded from the surface's "clean" role (below).
   const [cleanAgentId, setCleanAgentId] = useState<string>("");
   const [agentNames, setAgentNames] = useState<Record<string, string>>({});
+  // Read by the reattach effect, which must not re-run when a name resolves.
+  const agentNamesRef = useRef(agentNames);
+  agentNamesRef.current = agentNames;
 
   // ── Surface "clean" role — supplies the default Clean agent ───────────────
   const surfaceRoles = useSurfaceAgentRoles(CLEANUP_SURFACE_NAME);
@@ -1248,23 +1270,76 @@ export default function CleanupPad({
     [updateSlots],
   );
 
+  /**
+   * conversationId → the `studio_runs` row opened for that pass.
+   *
+   * 🚨 THE DURABLE HALF OF THE FLOATING LAW. The pad used to record a run only
+   * once it finished, so a reload mid-pass lost the run AND its output. The row
+   * is now opened as the pass launches and bound to its conversation the moment
+   * one exists; the completion effects finalize that same row instead of
+   * inserting a fresh one, and `reattachStudioRun` rejoins anything still open
+   * on the next load. See `features/transcript-studio/redux/reattachStudioRun.ts`.
+   */
+  const runIdByConversationRef = useRef<Record<string, string>>({});
+
+  /** Open the durable row and launch the agent — concurrently, so the row
+   *  costs the run no latency. */
+  const launchDurable = useCallback(
+    async (args: {
+      agentId: string;
+      columnIdx: 2 | 4;
+      target: string;
+      ai: ReturnType<typeof useAiPostProcess>;
+      text: string;
+    }) => {
+      const runPromise = sessionRefs.current.beginRun({
+        agentId: args.agentId,
+        columnIdx: args.columnIdx,
+        target: args.target,
+      });
+      const result = await args.ai.process({
+        agentId: args.agentId,
+        text: args.text,
+        contextItems: contextItemsRef.current,
+        scope: buildScope(),
+      });
+      const run = await runPromise;
+      if (!run) return;
+      if (!result) {
+        void sessionRefs.current.failRun(
+          run.id,
+          "The agent could not be started.",
+        );
+        return;
+      }
+      runIdByConversationRef.current[result.conversationId] = run.id;
+      void sessionRefs.current.bindRunConversation(
+        run.id,
+        result.conversationId,
+      );
+    },
+    [buildScope],
+  );
+
   // ── Run: Clean ─────────────────────────────────────────────────────────────
   const runClean = useCallback(
     (text: string) => {
-      if (!cleanAgentIdRef.current) {
+      const agentId = cleanAgentIdRef.current;
+      if (!agentId) {
         toast.info("Choose a cleaning agent first");
         return;
       }
       setEditedResponse(null);
       void session.maybeAutoLabelFromTranscript(text);
-      void cleanAi.process({
-        agentId: cleanAgentIdRef.current,
+      void launchDurable({
+        agentId,
+        columnIdx: 2,
+        target: CLEAN_RUN_TARGET,
+        ai: cleanAi,
         text,
-        contextItems: contextItemsRef.current,
-        scope: buildScope(),
       });
     },
-    [cleanAi, buildScope, session.maybeAutoLabelFromTranscript],
+    [cleanAi, launchDurable, session.maybeAutoLabelFromTranscript],
   );
 
   // ── Run: Custom slots ──────────────────────────────────────────────────────
@@ -1281,16 +1356,17 @@ export default function CleanupPad({
         return;
       }
       setEditedBySlot((prev) => ({ ...prev, [slot.id]: null }));
-      void slotAis[idx].process({
+      void launchDurable({
         agentId: slot.agentId,
+        columnIdx: 4,
+        target: slot.docKind,
+        ai: slotAis[idx],
         text: input,
-        contextItems: contextItemsRef.current,
-        scope: buildScope(),
       });
     },
     // slotAis identities are stable per render position
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [buildScope],
+    [launchDurable],
   );
 
   const runActiveSlot = useCallback(() => {
@@ -1330,6 +1406,7 @@ export default function CleanupPad({
         text,
         cleanAgentIdRef.current,
         cleanAi.conversationId,
+        runIdByConversationRef.current[cleanAi.conversationId],
       );
       if (text.trim()) {
         slotsRef.current.forEach((slot, idx) => {
@@ -1359,6 +1436,7 @@ export default function CleanupPad({
           slot.agentId,
           ai.conversationId,
           slot.docKind,
+          runIdByConversationRef.current[ai.conversationId],
         );
       }
     });
@@ -1374,6 +1452,99 @@ export default function CleanupPad({
     slotAi2.conversationId,
     slotAi2.accumulatedText,
   ]);
+
+  // A pass that ended badly closes its durable row. Left open it would sit at
+  // "running" forever and every later load would try to rejoin a dead run.
+  const failedRunCidsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    for (const ai of [cleanAi, ...slotAis]) {
+      const cid = ai.conversationId;
+      if (!cid || !FAILED_RUN_PHASES.has(ai.phase)) continue;
+      if (failedRunCidsRef.current.has(cid)) continue;
+      const runId = runIdByConversationRef.current[cid];
+      if (!runId) continue;
+      failedRunCidsRef.current.add(cid);
+      void sessionRefs.current.failRun(runId, `This pass ended: ${ai.phase}.`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    cleanAi.phase,
+    cleanAi.conversationId,
+    slotAi0.phase,
+    slotAi0.conversationId,
+    slotAi1.phase,
+    slotAi1.conversationId,
+    slotAi2.phase,
+    slotAi2.conversationId,
+  ]);
+
+  // ── THE FLOATING LAW, durable half: rejoin a pass that outlived the page ──
+  // A run still marked running when this session loads was launched before a
+  // reload (or in another tab). `reattachStudioRun` floats its window, follows
+  // it to terminal on aidream's runtime spine, and hands back the finished text
+  // — which lands in the container the run recorded as its `target`, and is
+  // persisted exactly as a live completion would be. A run whose container is
+  // gone (a deleted slot) settles honestly instead, still readable in its
+  // window. See `features/transcript-studio/redux/reattachStudioRun.ts`.
+  const reattachedRunIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const runs = session.loaded?.resumableRuns;
+    if (!runs?.length) return;
+    for (const run of runs) {
+      if (reattachedRunIdsRef.current.has(run.id)) continue;
+      reattachedRunIdsRef.current.add(run.id);
+
+      const target = studioRunTarget(run);
+      const isClean =
+        target === CLEAN_RUN_TARGET || (!target && run.columnIdx === 2);
+      const slotIdx = target
+        ? slotsRef.current.findIndex((s) => s.docKind === target)
+        : -1;
+      const slot = slotIdx >= 0 ? slotsRef.current[slotIdx] : null;
+      const agentName = run.shortcutId ? agentNamesRef.current[run.shortcutId] : null;
+
+      const applyRecoveredOutput = isClean
+        ? async (text: string) => {
+            const visible = stripThinkingStreaming(text).visible;
+            setEditedResponse(visible);
+            await sessionRefs.current.persistCleanRun(
+              visible,
+              run.shortcutId ?? "",
+              run.conversationId,
+              run.id,
+            );
+          }
+        : slot
+          ? async (text: string) => {
+              const visible = stripThinkingStreaming(text).visible;
+              setEditedBySlot((prev) => ({ ...prev, [slot.id]: visible }));
+              await sessionRefs.current.persistCustomRun(
+                visible,
+                run.shortcutId ?? "",
+                run.conversationId,
+                slot.docKind,
+                run.id,
+              );
+            }
+          : undefined;
+
+      void reattachStudioRun({
+        dispatch,
+        getState: store.getState,
+        run,
+        label: isClean
+          ? `Cleaning up${agentName ? ` · ${agentName}` : ""}`
+          : (agentName ?? slot?.label ?? "Refining"),
+        instanceId: isClean
+          ? `cleanup-run-${INSTANCE_ID}-clean`
+          : slotIdx >= 0
+            ? `cleanup-run-${INSTANCE_ID}-slot-${slotIdx}`
+            : `cleanup-run-${INSTANCE_ID}-recovered-${run.id}`,
+        applyRecoveredOutput,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.loaded, dispatch, store, INSTANCE_ID]);
 
   // ── THE FLOATING LAW: every concurrent pass is watchable ──────────────────
   // "Record → auto-clean → refine with ANY number of custom agents" fires up

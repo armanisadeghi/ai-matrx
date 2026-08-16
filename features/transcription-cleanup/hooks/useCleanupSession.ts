@@ -47,11 +47,13 @@ import { supabase } from "@/utils/supabase/client";
 import { getUserId } from "@/utils/auth/getUserId";
 import {
   applyCleanupRun,
+  bindAgentRunConversation,
   createSession,
   deleteRawSegment,
   fetchSessionSettings,
   finalizeAgentRun,
   insertAgentRun,
+  listAgentRuns,
   insertRawSegment,
   listCleanedSegments,
   listRawSegments,
@@ -71,7 +73,9 @@ import {
   selectAllSessions,
   selectFetchStatus,
 } from "@/features/transcript-studio/redux/selectors";
+import { isResumableStudioRun } from "@/features/transcript-studio/redux/reattachStudioRun";
 import type {
+  AgentRun,
   CleanupCustomSlot,
   SessionContextItem,
   StudioSession,
@@ -116,6 +120,14 @@ export interface LoadedSessionContent {
   contextItems: SessionContextItem[];
   /** Display names for the persisted agent ids (best-effort). */
   agentNames: Record<string, string>;
+  /**
+   * Passes that were still running when this page went away — the durable
+   * handle a reload rejoins (THE FLOATING LAW). Each carries
+   * `metadata.target` = "clean" or the slot's docKind, so a recovered output
+   * lands back in the container it came from. See
+   * `features/transcript-studio/redux/reattachStudioRun.ts`.
+   */
+  resumableRuns: AgentRun[];
 }
 
 interface AgentSelections {
@@ -301,11 +313,12 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
     setLoadState("loading");
     (async () => {
       try {
-        const [raw, cleaned, docs, settings] = await Promise.all([
+        const [raw, cleaned, docs, settings, runs] = await Promise.all([
           listRawSegments(activeSessionId),
           listCleanedSegments(activeSessionId),
           listStudioDocuments(activeSessionId),
           fetchSessionSettings(activeSessionId),
+          listAgentRuns(activeSessionId),
         ]);
         if (seq !== loadSeqRef.current) return; // superseded by a newer load
 
@@ -362,6 +375,7 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
           customSlots,
           contextItems,
           agentNames,
+          resumableRuns: runs.filter(isResumableStudioRun),
         });
         setLoadState("ready");
       } catch (err) {
@@ -608,20 +622,94 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
     }
   }, []);
 
+  // ── Durable run handles ────────────────────────────────────────────────────
+
+  /**
+   * 🚨 Record the run BEFORE the agent starts, not after it finishes.
+   *
+   * The pad used to write its `studio_runs` row at completion, so a reload
+   * mid-pass left nothing on the server to find — the run, and the output it
+   * was about to produce, were gone (THE FLOATING LAW: "a run that dies on
+   * page refresh is the same defect as a spinner"). The row created here, plus
+   * `bindRunConversation` the moment the conversation exists, is the handle
+   * `CleanupPad` rejoins on load via `reattachStudioRun`.
+   *
+   * `target` is the ONLY thing a reattaching tab cannot re-derive: which
+   * container the output belongs in ("clean", or the slot's docKind).
+   */
+  const beginRun = useCallback(
+    async (args: {
+      agentId: string;
+      columnIdx: 2 | 4;
+      target: string;
+    }): Promise<AgentRun | null> => {
+      const sessionId = await ensureSession();
+      if (!sessionId) return null;
+      try {
+        return await insertAgentRun({
+          sessionId,
+          columnIdx: args.columnIdx,
+          shortcutId: args.agentId,
+          triggerCause: "manual",
+          metadata: { surface: "cleanup", target: args.target },
+        });
+      } catch (err) {
+        // Never blocks the run — the pass still streams into its pane; it just
+        // won't be recoverable across a reload, which is worth saying.
+        console.error("[cleanup] beginRun failed:", err);
+        return null;
+      }
+    },
+    [ensureSession],
+  );
+
+  /** Stamp the conversation on the run row the moment it exists. */
+  const bindRunConversation = useCallback(
+    async (runId: string, conversationId: string) => {
+      try {
+        await bindAgentRunConversation(runId, conversationId);
+      } catch (err) {
+        console.error("[cleanup] bindRunConversation failed:", err);
+      }
+    },
+    [],
+  );
+
+  /**
+   * Close an open run row that produced nothing. Without this a launch failure
+   * leaves a row at "running" forever, and every later load tries to rejoin it.
+   */
+  const failRun = useCallback(async (runId: string, error: string) => {
+    try {
+      await finalizeAgentRun({ id: runId, status: "failed", error });
+    } catch (err) {
+      console.error("[cleanup] failRun failed:", err);
+    }
+  }, []);
+
   // ── Clean output persistence ───────────────────────────────────────────────
 
   /** Agent pass completed → audit run + versioned full-range cleaned segment. */
   const persistCleanRun = useCallback(
-    async (text: string, agentId: string, conversationId: string | null) => {
+    async (
+      text: string,
+      agentId: string,
+      conversationId: string | null,
+      /** The row `beginRun` opened for this pass; a new one is opened without it. */
+      existingRunId?: string | null,
+    ) => {
       const sessionId = await ensureSession();
       if (!sessionId || !text.trim()) return;
       try {
-        const run = await insertAgentRun({
-          sessionId,
-          columnIdx: 2,
-          shortcutId: agentId,
-          triggerCause: "manual",
-        });
+        const run = existingRunId
+          ? { id: existingRunId }
+          : await insertAgentRun({
+              sessionId,
+              columnIdx: 2,
+              shortcutId: agentId,
+              triggerCause: "manual",
+              metadata: { surface: "cleanup", target: "clean" },
+            });
         const passIndex = (activeCleanedRef.current?.passIndex ?? 0) + 1;
         const seg = await applyCleanupRun({
           sessionId,
@@ -695,16 +783,21 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
       agentId: string,
       conversationId: string | null,
       docKind: string,
+      /** The row `beginRun` opened for this pass; a new one is opened without it. */
+      existingRunId?: string | null,
     ) => {
       const sessionId = await ensureSession();
       if (!sessionId || !text.trim()) return;
       try {
-        const run = await insertAgentRun({
-          sessionId,
-          columnIdx: 4,
-          shortcutId: agentId,
-          triggerCause: "manual",
-        });
+        const run = existingRunId
+          ? { id: existingRunId }
+          : await insertAgentRun({
+              sessionId,
+              columnIdx: 4,
+              shortcutId: agentId,
+              triggerCause: "manual",
+              metadata: { surface: "cleanup", target: docKind },
+            });
         await writeCustomDoc(text, docKind);
         await finalizeAgentRun({
           id: run.id,
@@ -808,6 +901,10 @@ export function useCleanupSession(opts?: UseCleanupSessionOptions) {
     loadState,
     loaded,
     rawSegmentCount: rawSegmentsRef.current.length,
+    // durable run handles (survive a reload — see reattachStudioRun.ts)
+    beginRun,
+    bindRunConversation,
+    failRun,
     // persistence
     ensureSession,
     persistRawAppend,

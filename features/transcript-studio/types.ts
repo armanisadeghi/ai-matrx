@@ -192,6 +192,12 @@ export interface AgentRun {
   startedAt: string | null;
   endedAt: string | null;
   error: string | null;
+  /**
+   * Surface-owned routing for the run's output (e.g. the cleanup pad's
+   * `{ target: "clean" | "<docKind>" }`) — read on reattach to put a recovered
+   * output back where it belongs. See `redux/reattachStudioRun.ts`.
+   */
+  metadata?: Record<string, unknown> | null;
 }
 
 /**

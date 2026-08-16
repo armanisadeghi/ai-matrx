@@ -28,6 +28,8 @@
 
 import type { AppDispatch } from "@/lib/redux/store";
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { bindAgentRunConversation } from "../service/studioService";
 import type { TriggerCause } from "../types";
 import { runConversationBound } from "./slice";
 
@@ -77,6 +79,23 @@ export function watchLiveRun({
 }: WatchArgs): (conversationId: string) => void {
   return (conversationId: string) => {
     dispatch(runConversationBound({ sessionId, runId, conversationId }));
+    // DURABLE half: the same binding on the row, immediately — a conversation
+    // id that lives only in Redux dies with the tab, and a reloaded page then
+    // has no way to find a pass that is still running (see
+    // `reattachStudioRun.ts`). Fire-and-forget; the pass must not wait on it.
+    void bindAgentRunConversation(runId, conversationId).catch((err) => {
+      captureError({
+        source: "durable-run",
+        relation: "transcripts.studio_runs",
+        message:
+          err instanceof Error
+            ? err.message
+            : "Could not bind a studio run to its conversation.",
+        userMessage:
+          "This AI pass will not be recoverable if you reload the page.",
+        raw: { runId, conversationId },
+      });
+    });
     if (!isUserInitiated(triggerCause)) return;
     dispatch(
       openLiveRunWindowAction({

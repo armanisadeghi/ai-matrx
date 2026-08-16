@@ -11,12 +11,21 @@
  *
  * It also replaces the old spinning refresh icon. A spinner while AI works is
  * the defect; a live badge that OPENS the output is the fix.
+ *
+ * 🚨 A FINISHED run does NOT open the live window. Since run rows are loaded
+ * from the DB (`fetchAgentRunsThunk`), this door now appears on a cold page —
+ * where a finished conversation has no client-side request row, so the live
+ * window would open EMPTY: a dead end (THE DOOR LAW,
+ * `common-docs/policies/no-dead-ends.md`). A finished run's canonical home is
+ * its conversation, so the door opens that instead, in a new tab so the
+ * session the user is working in is never lost.
  */
 
 import { Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
+import { conversationHref } from "@/features/hindsight/subject-doors";
 import { selectLatestRunForColumn } from "../../redux/selectors";
 import { studioLiveRunInstanceId } from "../../redux/liveRunWatch";
 
@@ -48,15 +57,32 @@ export function WatchRunButton({
   return (
     <button
       type="button"
-      onClick={() =>
-        openLiveRun({
-          instanceId: studioLiveRunInstanceId(sessionId, columnIdx),
-          conversationId: run.conversationId,
-          label,
-        })
+      onClick={() => {
+        if (!run.conversationId) return;
+        if (isRunning) {
+          openLiveRun({
+            instanceId: studioLiveRunInstanceId(sessionId, columnIdx),
+            conversationId: run.conversationId,
+            label,
+          });
+          return;
+        }
+        window.open(
+          conversationHref(run.conversationId, "product"),
+          "_blank",
+          "noopener,noreferrer",
+        );
+      }}
+      title={
+        isRunning
+          ? `Watch: ${label}`
+          : `Open the last run in a new tab — ${label}`
       }
-      title={isRunning ? `Watch: ${label}` : `Open the last run — ${label}`}
-      aria-label={isRunning ? `Watch ${label}` : `Open the last ${label} run`}
+      aria-label={
+        isRunning
+          ? `Watch ${label}`
+          : `Open the last ${label} run in a new tab`
+      }
       className={cn(
         "inline-flex h-5 w-5 items-center justify-center rounded transition-colors",
         isRunning

@@ -21,6 +21,7 @@ import {
   getOrCreateWorkingDocument,
   insertRawSegment,
   insertRecordingSegment,
+  listAgentRuns,
   listCleanedSegments,
   listConceptItems,
   listModuleSegments,
@@ -45,6 +46,7 @@ import {
   type UpsertSessionSettingsInput,
 } from "../service/studioService";
 import type {
+  AgentRun,
   CleanedSegment,
   ConceptItem,
   CreateSessionInput,
@@ -84,6 +86,7 @@ import {
   recordingSegmentRemoved,
   recordingSegmentUpserted,
   recordingSegmentsLoaded,
+  runsLoaded,
   unsortedRecordingsLoaded,
   sessionRemoved,
   sessionSettingsLoaded,
@@ -96,6 +99,11 @@ import {
 } from "./slice";
 // Imported (not just re-exported) so ingestExternalRecordingThunk can compose it.
 import { cleanRecordingThunk } from "./cleanRecording.thunk";
+import { studioLiveRunInstanceId } from "./liveRunWatch";
+import {
+  isResumableStudioRun,
+  reattachStudioRun,
+} from "./reattachStudioRun";
 
 interface CreateSessionThunkArg extends CreateSessionInput {
   /** auth.users.id of the caller — passed in to avoid an extra fetch in the thunk. */
@@ -380,6 +388,58 @@ export const fetchConceptItemsThunk = createAsyncThunk<
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Failed to load concept items";
+      return rejectWithValue(message);
+    }
+  },
+);
+
+/** What the floating window calls a rejoined pass, per column. */
+const RUN_LABEL_BY_COLUMN: Record<number, string> = {
+  2: "Cleaning transcript",
+  3: "Pulling out concepts",
+  4: "Building the module",
+};
+
+/**
+ * Hydrate this session's run rows — and REJOIN anything still running.
+ *
+ * 🚨 Without this the column status badges and `WatchRunButton`'s door existed
+ * only in the tab that launched the pass: a refresh mid-pass lost both, which
+ * THE FLOATING LAW calls the same defect as a spinner
+ * (`features/window-panels/FEATURE.md`). Each still-running row is rejoined
+ * through the shared `reattachStudioRun` primitive: its window floats
+ * immediately and the row is settled from server truth when the pass ends.
+ *
+ * No `applyRecoveredOutput` here on purpose. A studio pass's replace-window
+ * (`replaceFromTime` / `passIndex`, computed from live state at launch) is not
+ * recorded on the row, so a reattaching tab cannot honestly re-apply the
+ * output — it says so on the row instead of inventing a segment. Recording the
+ * window so a reattach CAN apply is tracked as follow-up work in
+ * `docs/handoffs/live-run-streaming-sweep.md`.
+ */
+export const fetchAgentRunsThunk = createAsyncThunk<
+  AgentRun[],
+  { sessionId: string },
+  { state: RootState }
+>(
+  "transcriptStudio/fetchAgentRuns",
+  async ({ sessionId }, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const runs = await listAgentRuns(sessionId);
+      dispatch(runsLoaded({ sessionId, runs }));
+      for (const run of runs.filter(isResumableStudioRun)) {
+        void reattachStudioRun({
+          dispatch,
+          getState,
+          run,
+          label: RUN_LABEL_BY_COLUMN[run.columnIdx] ?? "AI pass",
+          instanceId: studioLiveRunInstanceId(sessionId, run.columnIdx),
+        });
+      }
+      return runs;
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load agent runs";
       return rejectWithValue(message);
     }
   },

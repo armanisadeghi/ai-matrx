@@ -91,6 +91,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "layout-scroll-chain": "Content clipped — scroll chain broken",
   "agent-json-result": "Agent run produced no usable structured result",
   "unsaved-work": "Unsaved user work at risk",
+  "durable-run": "Durable run could not be rejoined or settled",
   "record-unavailable": "Record unavailable (deleted, or access gap)",
 };
 
