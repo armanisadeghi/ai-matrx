@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-14
+updated: 2026-08-15
 repos: [matrx-frontend, aidream, my-matrx]
 vision: [this doc §Vision — Arman's words, 2026-07-30 chat]
 ---
@@ -138,8 +138,13 @@ the artifact dialog renders components instead of raw JSON; a human EDIT surface
 slot-bound specialist agents (item 7 below) — the module contract does not change when that
 happens.
 
-**Known soft edge:** concurrent writers racing `record_artifact` on the same `(node, kind)` can
-lose the losing record to the unique index (logged loudly; the work itself is unaffected).
+**Known soft edges:**
+- Concurrent writers racing `record_artifact` on the same `(node, kind)` can lose the losing
+  record to the unique index (logged loudly; the work itself is unaffected).
+- `draft` and `review` supersede INDEPENDENTLY, so re-running the writer leaves a review the new
+  draft never saw. `approved_content` resolves this correctly (recency wins, tested) — but the
+  RAIL still shows both steps green, so the user has no signal that the review is stale. The fix
+  is UI: mark a step stale when a newer upstream artifact exists.
 
 ## Resources
 
