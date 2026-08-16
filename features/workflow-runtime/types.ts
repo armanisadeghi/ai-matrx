@@ -409,6 +409,62 @@ export interface RunEventRecord {
 }
 
 /** The run row from `GET /runs/{id}`. */
+/**
+ * A parsed refetch signal from a `record_update` / `resource_changed`
+ * node_stream frame (Phase 3 — the signal→refetch pump). The wire delta is a
+ * compact JSON summary emitted by aidream's ProgressTrackingEmitter; parsing
+ * is tolerant — a malformed delta still yields a generic signal (revision
+ * bump with no table), never a crash and never a silent drop.
+ */
+export interface RunRecordSignal {
+  signalKind: "record_update" | "resource_changed";
+  /** record_update: the matrx-orm table that changed. */
+  table: string | null;
+  recordId: string | null;
+  status: string | null;
+  /** resource_changed: namespaced resource kind (e.g. "fs.file"). */
+  resourceKind: string | null;
+  action: string | null;
+  resourceId: string | null;
+  /** Node that emitted it; null for the run-level emitter. */
+  nodeId: string | null;
+  receivedAt: number;
+}
+
+/** Parse a record_update / resource_changed delta into a RunRecordSignal.
+ * NEVER throws — an unparseable delta is still a signal (all-null fields). */
+export function parseSignalDelta(
+  signalKind: "record_update" | "resource_changed",
+  delta: string,
+  nodeId: string | null,
+  receivedAt: number,
+): RunRecordSignal {
+  let data: Record<string, unknown> = {};
+  try {
+    const parsed: unknown = JSON.parse(delta);
+    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+      data = parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Tolerant by contract — the revision bump is the signal floor.
+  }
+  const str = (key: string): string | null => {
+    const v = data[key];
+    return typeof v === "string" && v.length > 0 ? v : null;
+  };
+  return {
+    signalKind,
+    table: signalKind === "record_update" ? str("table") : null,
+    recordId: str("record_id"),
+    status: str("status"),
+    resourceKind: signalKind === "resource_changed" ? str("kind") : null,
+    action: str("action"),
+    resourceId: str("resource_id"),
+    nodeId,
+    receivedAt,
+  };
+}
+
 export interface RunRow {
   id: string;
   definition_id: string;

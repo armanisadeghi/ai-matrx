@@ -33,6 +33,7 @@ import {
 import {
   selectNodeAggregatePhases,
   selectRunStatus,
+  selectRunStickyFacts,
 } from "../redux/workflow-runs.selectors";
 import { useWorkflowRun } from "../hooks/useWorkflowRun";
 import { InterruptCard } from "./readout-parts";
@@ -61,11 +62,21 @@ function deriveTitle(readout: Readout): string | null {
   }
 }
 
-function mobileOrderOf(readout: Readout): number {
-  return (
-    readout.mobileOrder ??
-    readout.pos.y * (GRID_COLUMNS + 1) + readout.pos.x
-  );
+/**
+ * Mobile single-column comparator. Explicit `mobileOrder` values and the
+ * derived (y,x) key live on DIFFERENT scales (small author ints vs. y*25+x),
+ * so they are never compared to each other: annotated readouts come FIRST in
+ * their authored order, the rest follow in grid (y,x) order.
+ */
+function compareMobile(a: Readout, b: Readout): number {
+  const ea = a.mobileOrder;
+  const eb = b.mobileOrder;
+  if (ea !== undefined && eb !== undefined) return ea - eb;
+  if (ea !== undefined) return -1;
+  if (eb !== undefined) return 1;
+  const da = a.pos.y * (GRID_COLUMNS + 1) + a.pos.x;
+  const db = b.pos.y * (GRID_COLUMNS + 1) + b.pos.x;
+  return da - db;
 }
 
 type ReadoutRender =
@@ -141,12 +152,17 @@ export function RunSurfaceView({
   const isMobile = useIsMobile();
   const runStatus = useAppSelector(selectRunStatus(runId));
   const nodePhases = useAppSelector(selectNodeAggregatePhases(runId));
+  const sticky = useAppSelector(selectRunStickyFacts(runId));
 
   const triggerState: TriggerResolutionState = {
     runStatus,
     nodePhases,
     marks: EMPTY_MARKS,
     deliverableNodeId: config.deliverableNodeId ?? null,
+    // Sticky facts keep fired triggers fired — live phases regress on retry
+    // and resume, which used to snap pages back and collapse appeared
+    // readouts to placeholders (the zero-page-shift law).
+    sticky,
   };
 
   // ── Pages: trigger-driven auto-advance, manual choice wins until a LATER
@@ -202,9 +218,7 @@ export function RunSurfaceView({
   }
 
   const ordered = isMobile
-    ? [...rendered].sort(
-        (a, b) => mobileOrderOf(a.readout) - mobileOrderOf(b.readout),
-      )
+    ? [...rendered].sort((a, b) => compareMobile(a.readout, b.readout))
     : rendered;
 
   return (

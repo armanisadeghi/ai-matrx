@@ -139,6 +139,20 @@ export interface TriggerResolutionState {
   marks: ReadonlySet<string>;
   /** Config: which node's settle means deliverable:ready (null = run completion only). */
   deliverableNodeId: string | null;
+  /**
+   * Sticky (monotonic) facts from the run slice. Live phases REGRESS — a
+   * retry flips settled→running, resume clears paused — but a fired trigger
+   * must never unfire (R2: pages snapped back and appeared readouts
+   * collapsed to placeholders without this). Optional so pure callers/tests
+   * can resolve from phases alone; the surface always supplies it.
+   */
+  sticky?: {
+    pausedOnce: boolean;
+    interruptedOnce: boolean;
+    startedNodes: Record<string, true>;
+    completedNodes: Record<string, true>;
+    failedNodes: Record<string, true>;
+  };
 }
 
 export type ParsedTriggerPoint =
@@ -222,6 +236,7 @@ export function hasTriggerFired(
   const parsed = parseTriggerPointId(id);
   if (parsed === null) return false;
 
+  const sticky = state.sticky;
   switch (parsed.kind) {
     case "run": {
       if (state.runStatus === null) return false;
@@ -229,25 +244,52 @@ export function hasTriggerFired(
         // The run has started once it holds any post-pending status.
         return state.runStatus !== "pending";
       }
+      if (parsed.event === "paused") {
+        // Resume clears the live status — the sticky fact keeps it fired.
+        return state.runStatus === "paused" || sticky?.pausedOnce === true;
+      }
+      if (parsed.event === "interrupted") {
+        return (
+          state.runStatus === "interrupted" || sticky?.interruptedOnce === true
+        );
+      }
+      // completed / failed are terminal — the live status is monotone.
       return state.runStatus === parsed.event;
     }
     case "node": {
       const phase = phaseOf(state, parsed.nodeId);
-      if (parsed.event === "started") return STARTED_PHASES.has(phase);
-      if (parsed.event === "completed") return phase === "settled";
-      return phase === "failed";
+      if (parsed.event === "started") {
+        return (
+          STARTED_PHASES.has(phase) ||
+          sticky?.startedNodes[parsed.nodeId] === true
+        );
+      }
+      if (parsed.event === "completed") {
+        // A retry regresses the live phase to running — sticky keeps it fired.
+        return (
+          phase === "settled" || sticky?.completedNodes[parsed.nodeId] === true
+        );
+      }
+      return phase === "failed" || sticky?.failedNodes[parsed.nodeId] === true;
     }
     case "edge": {
       const edge = def.edges.find((e) => e.id === parsed.edgeId);
       if (!edge) return false;
-      return (
-        phaseOf(state, edge.source) === "settled" && phaseOf(state, edge.target) !== "idle"
-      );
+      const sourceDone =
+        phaseOf(state, edge.source) === "settled" ||
+        sticky?.completedNodes[edge.source] === true;
+      const targetTouched =
+        phaseOf(state, edge.target) !== "idle" ||
+        sticky?.startedNodes[edge.target] === true;
+      return sourceDone && targetTouched;
     }
     case "deliverable": {
       if (state.runStatus === "completed") return true;
       if (state.deliverableNodeId === null) return false;
-      return phaseOf(state, state.deliverableNodeId) === "settled";
+      return (
+        phaseOf(state, state.deliverableNodeId) === "settled" ||
+        sticky?.completedNodes[state.deliverableNodeId] === true
+      );
     }
     case "mark":
       return state.marks.has(parsed.name);

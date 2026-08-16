@@ -21,6 +21,7 @@ import {
   invocationKeyOf,
   readHeartbeatTails,
   type NodeStreamEvent,
+  type RunRecordSignal,
   type RunRow,
   type WorkflowRunEvent,
   type WorkflowRunStatus,
@@ -132,6 +133,28 @@ export interface WorkflowRunState {
   attachedAt: number | null;
   /** Max step seen across node events. */
   stepsExecuted: number;
+  /** Sticky (monotonic) trigger facts — once true, NEVER unfires. Live
+   * phases regress (a retry flips settled→running; resume clears paused),
+   * but ruling R2 promises triggers fire monotonically within a run, so the
+   * surface reads these, never the live phase alone (adversarial finding 6:
+   * pages snapped back and appeared readouts collapsed to placeholders). */
+  sticky: {
+    pausedOnce: boolean;
+    interruptedOnce: boolean;
+    startedNodes: Record<string, true>;
+    /** Whole-node completion: every expected invocation terminal. */
+    completedNodes: Record<string, true>;
+    failedNodes: Record<string, true>;
+  };
+  /** Phase 3 signal→refetch pump — bounded ring of parsed record_update /
+   * resource_changed signals (cap SIGNALS_MAX, oldest dropped). The pump
+   * never refetches; consumers subscribe to the revisions and refetch
+   * themselves (colocated side effects, the skills-pump pattern). */
+  signals: RunRecordSignal[];
+  /** Bumped on EVERY signal (parseable or not) — the coarse subscription. */
+  signalRevision: number;
+  /** Bumped per record_update table — the targeted subscription. */
+  signalRevisionByTable: Record<string, number>;
 }
 
 export interface WorkflowRunsState {
@@ -145,6 +168,9 @@ export const TEXT_TAIL_CAP = 4_000;
 
 /** Emission ring cap — beyond this the oldest entries are dropped. */
 export const EMISSIONS_MAX = 100;
+
+/** Signal ring cap — beyond this the oldest entries are dropped. */
+export const SIGNALS_MAX = 50;
 
 const initialState: WorkflowRunsState = { byRunId: {} };
 
@@ -201,7 +227,31 @@ function makeRunState(
     transportMode: "idle",
     attachedAt: null,
     stepsExecuted: 0,
+    sticky: {
+      pausedOnce: false,
+      interruptedOnce: false,
+      startedNodes: {},
+      completedNodes: {},
+      failedNodes: {},
+    },
+    signals: [],
+    signalRevision: 0,
+    signalRevisionByTable: {},
   };
+}
+
+/** The ONE invocation a node-level (un-attributed) stream delta or heartbeat
+ * tail lands on: the first running invocation, else the latest. Fanning one
+ * multiplexed delta into EVERY sibling rendered N identical copies on screen
+ * (adversarial finding 11) — attribution is imperfect either way, but one
+ * bounded copy beats N. */
+function streamTargetKey(run: WorkflowRunState, nodeId: string): string | null {
+  const aggregate = run.nodeAggregates[nodeId];
+  if (!aggregate || aggregate.invocationKeys.length === 0) return null;
+  for (const key of aggregate.invocationKeys) {
+    if (run.nodes[key]?.phase === "running") return key;
+  }
+  return aggregate.invocationKeys[aggregate.invocationKeys.length - 1];
 }
 
 /** Idempotent attach shared by the attachRun reducer and the
@@ -359,6 +409,7 @@ function applyEvent(
       break;
     case "run_paused":
       stampStatus(run, "paused", event.ts);
+      run.sticky.pausedOnce = true;
       break;
     case "run_resumed":
       stampStatus(run, "running", event.ts);
@@ -372,6 +423,7 @@ function applyEvent(
     }
     case "run_interrupted":
       stampStatus(run, "interrupted", event.ts);
+      run.sticky.interruptedOnce = true;
       run.interrupt = {
         nodeId: event.node_id,
         payload: asRecord(event.payload) ?? {},
@@ -395,6 +447,7 @@ function applyEvent(
         break;
       }
       const invocation = upsertInvocation(run, event, event);
+      run.sticky.startedNodes[event.node_id] = true;
       invocation.phase = "running";
       invocation.attempt = event.attempt;
       invocation.startedAt = event.ts;
@@ -424,10 +477,25 @@ function applyEvent(
       // A retry that succeeded makes prior diagnostics stale.
       invocation.error = null;
       invocation.progress = null;
+      // Sticky whole-node completion: every expected invocation terminal.
+      const aggregate = run.nodeAggregates[event.node_id];
+      if (aggregate) {
+        const keys = aggregate.invocationKeys;
+        const allTerminal =
+          keys.length >= aggregate.expectedCount &&
+          keys.every((k) => {
+            const phase = run.nodes[k]?.phase;
+            return (
+              phase === "settled" || phase === "failed" || phase === "skipped"
+            );
+          });
+        if (allTerminal) run.sticky.completedNodes[event.node_id] = true;
+      }
       break;
     }
     case "node_failed": {
       const invocation = upsertInvocation(run, event, event);
+      run.sticky.failedNodes[event.node_id] = true;
       invocation.phase = "failed";
       invocation.attempt = event.attempt;
       invocation.error = {
@@ -604,16 +672,15 @@ const workflowRunsSlice = createSlice({
       for (const [nodeId, snapshot] of Object.entries(tails)) {
         const tail = snapshot.live_text_tail;
         if (!tail) continue;
-        const aggregate = run.nodeAggregates[nodeId];
-        if (!aggregate) continue;
-        for (const key of aggregate.invocationKeys) {
-          const invocation = run.nodes[key];
-          if (invocation && invocation.textTail === "") {
-            invocation.textTail =
-              tail.length > TEXT_TAIL_CAP
-                ? tail.slice(tail.length - TEXT_TAIL_CAP)
-                : tail;
-          }
+        // ONE target invocation — the heartbeat tail is node-level and
+        // multiplexed; seeding every sibling duplicated it N times.
+        const key = streamTargetKey(run, nodeId);
+        const invocation = key ? run.nodes[key] : undefined;
+        if (invocation && invocation.textTail === "") {
+          invocation.textTail =
+            tail.length > TEXT_TAIL_CAP
+              ? tail.slice(tail.length - TEXT_TAIL_CAP)
+              : tail;
         }
       }
     },
@@ -652,25 +719,49 @@ const workflowRunsSlice = createSlice({
      * cheap record for lanes that are tracked but not streamed on screen. */
     applyNodeStreamMeta(
       state,
-      action: PayloadAction<{ runId: string; event: NodeStreamEvent }>,
+      action: PayloadAction<{
+        runId: string;
+        event: NodeStreamEvent;
+        /** Coalesced frame count beyond this one (adapter batches meta). */
+        extraChunks?: number;
+      }>,
     ) {
-      const { runId, event } = action.payload;
+      const { runId, event, extraChunks } = action.payload;
       const run = state.byRunId[runId];
       if (!run) return;
       const nodeId = event.node_id;
       if (!nodeId) return;
-      const aggregate = run.nodeAggregates[nodeId];
-      if (!aggregate) return;
-      for (const key of aggregate.invocationKeys) {
-        const invocation = run.nodes[key];
-        if (!invocation) continue;
-        invocation.lastStreamKind = event.kind;
-        if (event.kind === "chunk") {
-          invocation.chunksReceived += 1;
-          if (typeof event.delta === "string" && event.delta) {
-            invocation.textTail = appendTail(invocation.textTail, event.delta);
-          }
+      // ONE target invocation — node-level deltas carry no invocation
+      // identity; fanning them into every sibling rendered N copies.
+      const key = streamTargetKey(run, nodeId);
+      const invocation = key ? run.nodes[key] : undefined;
+      if (!invocation) return;
+      invocation.lastStreamKind = event.kind;
+      if (event.kind === "chunk") {
+        invocation.chunksReceived += 1 + (extraChunks ?? 0);
+        if (typeof event.delta === "string" && event.delta) {
+          invocation.textTail = appendTail(invocation.textTail, event.delta);
         }
+      }
+    },
+
+    /** Phase 3 pump — record a parsed refetch signal and bump the revisions
+     * consumers subscribe to. Bounded (SIGNALS_MAX); never refetches. */
+    applyRunSignal(
+      state,
+      action: PayloadAction<{ runId: string; signal: RunRecordSignal }>,
+    ) {
+      const run = state.byRunId[action.payload.runId];
+      if (!run) return;
+      const { signal } = action.payload;
+      run.signals.push(signal);
+      if (run.signals.length > SIGNALS_MAX) {
+        run.signals.splice(0, run.signals.length - SIGNALS_MAX);
+      }
+      run.signalRevision += 1;
+      if (signal.table) {
+        run.signalRevisionByTable[signal.table] =
+          (run.signalRevisionByTable[signal.table] ?? 0) + 1;
       }
     },
 
@@ -724,6 +815,7 @@ export const {
   seedRunRow,
   applyRunEvent,
   applyNodeStreamMeta,
+  applyRunSignal,
   registerLane,
   releaseLane,
   setTransportMode,

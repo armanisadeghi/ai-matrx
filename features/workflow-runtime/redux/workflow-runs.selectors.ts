@@ -20,7 +20,10 @@ import type {
   WorkflowRunState,
   WorkflowRunsState,
 } from "@/features/workflow-runtime/redux/workflow-runs.slice";
-import type { WorkflowRunStatus } from "@/features/workflow-runtime/types";
+import type {
+  RunRecordSignal,
+  WorkflowRunStatus,
+} from "@/features/workflow-runtime/types";
 
 interface StateWithWorkflowRuns {
   workflowRuns: WorkflowRunsState;
@@ -181,6 +184,47 @@ export const selectChildRunIds = (runId: string) =>
   createSelector(
     [selectByRunId],
     (byRunId): string[] => byRunId[runId]?.childRunIds ?? EMPTY_CHILD_RUN_IDS,
+  );
+
+const EMPTY_SIGNALS: RunRecordSignal[] = [];
+
+const EMPTY_STICKY: WorkflowRunState["sticky"] = {
+  pausedOnce: false,
+  interruptedOnce: false,
+  startedNodes: {},
+  completedNodes: {},
+  failedNodes: {},
+};
+
+/** Sticky (monotonic) trigger facts — see the slice's `sticky` contract. */
+export const selectRunStickyFacts = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): WorkflowRunState["sticky"] =>
+      byRunId[runId]?.sticky ?? EMPTY_STICKY,
+  );
+
+/** The bounded signal ring (Phase 3 pump) — newest last. */
+export const selectRunSignals = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): RunRecordSignal[] => byRunId[runId]?.signals ?? EMPTY_SIGNALS,
+  );
+
+/** Coarse pump revision — bumps on EVERY signal. Subscribe + refetch on
+ * change (the pump itself never refetches). */
+export const selectRunSignalRevision = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): number => byRunId[runId]?.signalRevision ?? 0,
+  );
+
+/** Targeted pump revision — bumps only for record_update signals naming this
+ * matrx-orm table. */
+export const selectRunSignalRevisionForTable = (runId: string, table: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): number => byRunId[runId]?.signalRevisionByTable[table] ?? 0,
   );
 
 /** The run's workflow definition id (from attach options or the

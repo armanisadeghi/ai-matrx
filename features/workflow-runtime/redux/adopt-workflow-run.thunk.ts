@@ -38,6 +38,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   invocationKeyOf,
   isWorkflowRunEvent,
+  parseSignalDelta,
   TERMINAL_RUN_STATUSES,
   type NodeStreamEvent,
   type RunEventRecord,
@@ -51,6 +52,7 @@ import {
 import {
   applyNodeStreamMeta,
   applyRunEvent,
+  applyRunSignal,
   attachRun,
   detachRun,
   seedRunRow,
@@ -137,26 +139,112 @@ export function adoptWorkflowRun(
       return (await response.json()) as T;
     };
 
+    // ── Tracked-tier meta batching (adversarial finding 7) ────────────────
+    // Lane content batches on the manager's 50 ms timer, but every raw
+    // node_stream frame also used to dispatch applyNodeStreamMeta — one
+    // store notification per token frame, re-running the aggregate selectors
+    // and re-rendering every readout. Chunk/reasoning meta now coalesces on
+    // its own timer; low-rate kinds (phase/tool/warning) stay immediate.
+    const META_FLUSH_MS = 100;
+    interface PendingMeta {
+      runId: string;
+      event: NodeStreamEvent;
+      extraChunks: number;
+    }
+    const metaBuffer = new Map<string, PendingMeta>();
+    let metaTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushMeta = (): void => {
+      metaTimer = null;
+      for (const pending of metaBuffer.values()) {
+        dispatch(
+          applyNodeStreamMeta({
+            runId: pending.runId,
+            event: pending.event,
+            extraChunks: pending.extraChunks,
+          }),
+        );
+      }
+      metaBuffer.clear();
+    };
+    const queueMeta = (runId: string, event: NodeStreamEvent): void => {
+      const key = `${runId} ${event.node_id ?? ""} ${event.kind}`;
+      const existing = metaBuffer.get(key);
+      if (existing) {
+        existing.event = {
+          ...event,
+          delta: existing.event.delta + event.delta,
+        };
+        existing.extraChunks += 1;
+      } else {
+        metaBuffer.set(key, { runId, event, extraChunks: 0 });
+      }
+      if (metaTimer === null && !tree.stopped) {
+        metaTimer = setTimeout(flushMeta, META_FLUSH_MS);
+      }
+    };
+
     const routeNodeStream = (runId: string, event: NodeStreamEvent): void => {
+      // Refetch signals (Phase 3 pump) can come from the RUN-LEVEL emitter
+      // (node_id null), so they route BEFORE the node guard — dropping them
+      // there silently killed every run-level record_update.
+      if (event.kind === "record_update" || event.kind === "resource_changed") {
+        dispatch(
+          applyRunSignal({
+            runId,
+            signal: parseSignalDelta(
+              event.kind,
+              event.delta,
+              event.node_id,
+              Date.now(),
+            ),
+          }),
+        );
+        return;
+      }
       if (!event.node_id) return;
-      // The wire gives us node_id only; fan-out siblings multiplex their
-      // deltas onto the node's root lane. (Per-invocation stream identity is
-      // a server contract addition tracked in the plan.)
-      const key = invocationKeyOf(event.node_id, null, 0);
+
       if (event.kind === "chunk" || event.kind === "reasoning") {
+        // The wire gives us node_id only — no invocation identity. For a
+        // SINGLE-invocation node the delta belongs to that invocation's
+        // lane. For a FAN-OUT node the delta is multiplexed across siblings
+        // with no way to attribute it: opening a lane would mint a request
+        // row no invocation renders (registerLane no-ops on a key with no
+        // invocation) while eager sibling lanes stay empty — burning budget
+        // on invisible content (adversarial finding 1). Fan-out therefore
+        // stays in the TRACKED tier until the server grows per-invocation
+        // stream identity (plan).
+        const run = getState().workflowRuns.byRunId[runId];
+        const aggregate = run?.nodeAggregates[event.node_id];
+        const keys = aggregate?.invocationKeys ?? [];
+        const isFanOut =
+          keys.length > 1 || (aggregate?.expectedCount ?? 1) > 1;
+        if (isFanOut) {
+          queueMeta(runId, event);
+          return;
+        }
+        const key = keys.length === 1 ? keys[0] : invocationKeyOf(event.node_id, null, 0);
+        // Creating the lane HERE (budget freed, or post-refresh live delta
+        // racing the viewport promotion) seeds it with the tracked tail so
+        // the visible history carries over (adversarial finding 8). Buffered
+        // meta flushes FIRST — the seed must include coalesced deltas that
+        // haven't landed in the slice tail yet.
+        if (!tree.laneManager.hasLane(runId, key)) {
+          if (metaBuffer.size > 0) flushMeta();
+          const tail =
+            getState().workflowRuns.byRunId[runId]?.nodes[key]?.textTail;
+          tree.laneManager.ensureLane(runId, key, tail || undefined);
+        }
         const streamed = tree.laneManager.pushDelta(
           runId,
           key,
           event.kind,
           event.delta,
         );
-        if (!streamed) dispatch(applyNodeStreamMeta({ runId, event }));
-        else dispatch(applyNodeStreamMeta({ runId, event: { ...event, delta: "" } }));
+        if (!streamed) queueMeta(runId, event);
+        else queueMeta(runId, { ...event, delta: "" });
         return;
       }
-      // phase / tool / warning / record_update / resource_changed — tracked
-      // bookkeeping. record_update/resource_changed are refetch hints; the
-      // generic signal→refetch pump wiring is Phase 3 (plan §7).
+      // phase / tool / warning — low-rate label transitions, immediate.
       dispatch(applyNodeStreamMeta({ runId, event }));
     };
 
@@ -172,14 +260,30 @@ export function adoptWorkflowRun(
       switch (event.event) {
         case "node_started": {
           if (replay) break;
+          // A fan-out sibling never gets an eager lane: node_stream deltas
+          // carry node_id only, so a sibling lane can never receive content —
+          // it would render a permanently-blank LiveRunDisplay shadowing the
+          // tracked tail and settled output while burning a budget slot
+          // (adversarial finding 1). Fan-out streams stay tracked-tier.
+          const isFanOutSibling =
+            (event.dispatch_id ?? "") !== "" ||
+            (event.item_index ?? 0) !== 0 ||
+            (event.invocation_count ?? 1) > 1;
+          if (isFanOutSibling) break;
           const key = invocationKeyOf(
             event.node_id,
             event.dispatch_id ?? null,
             event.item_index ?? null,
           );
-          // Open a lane eagerly while budget allows, so first tokens land in
-          // a live lane instead of the tracked tail.
-          tree.laneManager.ensureLane(runId, key);
+          // The reducer (applyRunEvent above) already deduped cross-transport
+          // duplicates: open a lane only when the invocation is genuinely
+          // running now — a re-delivered node_started for a settled
+          // invocation used to mint a permanent budget-burning lane
+          // (adversarial finding 4).
+          const invocation = getState().workflowRuns.byRunId[runId]?.nodes[key];
+          if (invocation?.phase === "running") {
+            tree.laneManager.ensureLane(runId, key);
+          }
           break;
         }
         case "node_completed":
@@ -193,6 +297,23 @@ export function adoptWorkflowRun(
         }
         case "subgraph_run_linked": {
           adoptChild(event.child_run_id, runId, depth + 1);
+          break;
+        }
+        case "run_completed":
+        case "run_failed":
+        case "run_cancelled": {
+          // Terminal. The SSE path gets an `end` frame (onEnd stops + poses
+          // idle), but POLLING mode has none — without this the poller kept
+          // fetching an idle run every 2s for the life of the page
+          // (adversarial finding 5). Live events only: during replay no
+          // transport exists yet, and attachOne's terminal check already
+          // skips starting one.
+          if (replay) break;
+          dispatch(setTransportMode({ runId, mode: "idle" }));
+          tree.laneManager.disposeRun(runId);
+          const stopThisRun = tree.stops.get(runId);
+          // Defer so the current onEvent callback unwinds first.
+          if (stopThisRun) setTimeout(stopThisRun, 0);
           break;
         }
         default:
@@ -378,6 +499,11 @@ export function adoptWorkflowRun(
       runId: options.runId,
       stop: () => {
         tree.stopped = true;
+        if (metaTimer !== null) {
+          clearTimeout(metaTimer);
+          metaTimer = null;
+        }
+        metaBuffer.clear();
         for (const stop of tree.stops.values()) stop();
         tree.stops.clear();
         tree.laneManager.disposeRun();
