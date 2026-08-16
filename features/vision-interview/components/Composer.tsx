@@ -134,7 +134,10 @@ export function Composer({ onResume, onStart }: ComposerProps) {
         <p className="mb-1.5 flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <span className="min-w-0">
-            {runError} — your draft is kept; start again when ready.
+            {runError}
+            {hasDraft
+              ? " — your draft is kept; start again when ready."
+              : " — anything you already sent is saved on the session; start again when ready."}
           </span>
         </p>
       ) : null}
