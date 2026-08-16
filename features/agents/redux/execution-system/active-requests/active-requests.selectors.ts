@@ -1407,9 +1407,23 @@ export const selectAgentCallChildStream = (requestId: string, callId: string) =>
  * The workflow twin of `selectAgentCallChildStream` — but attribution is
  * explicit (`node_id` on every `node_stream` SSE frame), so no block-range
  * walking is needed. Empty array for non-workflow requests.
+ *
+ * Instances are CACHED per requestId in the factory itself, so calling
+ * `selectWorkflowNodeStreams(id)` inline inside `useAppSelector` returns the
+ * SAME memoized selector every render — a fresh `createSelector` per call
+ * would never hit its memo and would hand back a new sorted array on every
+ * store update (re-rendering the consumer each time). React Compiler is on,
+ * so the stability lives here, not in a callsite useMemo.
  */
-export const selectWorkflowNodeStreams = (requestId: string) =>
-  createSelector(
+const workflowNodeStreamsSelectorCache = new Map<
+  string,
+  (state: RootState) => WorkflowNodeStreamEntry[]
+>();
+
+export const selectWorkflowNodeStreams = (requestId: string) => {
+  const cached = workflowNodeStreamsSelectorCache.get(requestId);
+  if (cached) return cached;
+  const selector = createSelector(
     (state: RootState) => state.activeRequests.byRequestId[requestId]?.nodeStreams,
     (streams): WorkflowNodeStreamEntry[] => {
       if (!streams) return [];
@@ -1418,6 +1432,14 @@ export const selectWorkflowNodeStreams = (requestId: string) =>
       );
     },
   );
+  // Bounded: request rows are short-lived; a stale selector instance is
+  // harmless (it only closes over the id), so a simple clear-at-cap works.
+  if (workflowNodeStreamsSelectorCache.size > 200) {
+    workflowNodeStreamsSelectorCache.clear();
+  }
+  workflowNodeStreamsSelectorCache.set(requestId, selector);
+  return selector;
+};
 
 /** One node's live stream entry (undefined until its first frame lands). */
 export const selectWorkflowNodeStream =

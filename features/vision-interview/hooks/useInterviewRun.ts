@@ -71,9 +71,14 @@ export function useInterviewRun(sessionId: string) {
   const pendingInterrupt = useAppSelector(selectPendingInterrupt);
   // A second click while a call is in flight must not start a second run.
   const inFlightRef = useRef(false);
-  // The SSE follower for the current run — one at a time; aborted on
-  // restart (a resume adopts a fresh requestId) and on unmount.
+  // The SSE follower for the current run — armed EXACTLY ONCE per run_id and
+  // aborted only on unmount or a genuine new run. Re-arming a live follower
+  // aborts its SSE connection and replays the feed from seq 0, pushing stale
+  // lifecycle events back through the choreography — never do it.
   const followAbortRef = useRef<AbortController | null>(null);
+  // The run_id the current live follower is on; cleared when the follower
+  // settles (terminal event / gave up / aborted) so a later start can re-arm.
+  const followingRunIdRef = useRef<string | null>(null);
   // Ids of the latest adoption, so the follower can start the moment the
   // run_id becomes known (either order: adoption first, run_id event later).
   const adoptedRef = useRef<{ requestId: string; conversationId: string } | null>(
@@ -146,9 +151,20 @@ export function useInterviewRun(sessionId: string) {
   const startFollowing = (followRunId: string) => {
     const adopted = adoptedRef.current;
     if (!adopted) return;
+    // Once per run: a live follower on this run_id is left alone. (It only
+    // needs re-arming after it SETTLED — terminal event or reconnects
+    // exhausted — which clears followingRunIdRef below.)
+    if (
+      followingRunIdRef.current === followRunId &&
+      followAbortRef.current &&
+      !followAbortRef.current.signal.aborted
+    ) {
+      return;
+    }
     followAbortRef.current?.abort();
     const controller = new AbortController();
     followAbortRef.current = controller;
+    followingRunIdRef.current = followRunId;
     void dispatch(
       followWorkflowRunStream({
         runId: followRunId,
@@ -157,7 +173,11 @@ export function useInterviewRun(sessionId: string) {
         signal: controller.signal,
         onEvent: handleRunEvent,
       }),
-    );
+    ).finally(() => {
+      if (followAbortRef.current === controller) {
+        followingRunIdRef.current = null;
+      }
+    });
   };
 
   /**
@@ -186,6 +206,19 @@ export function useInterviewRun(sessionId: string) {
     dispatch(
       adoptForeignStream({
         onAdopted: ({ requestId, conversationId }) => {
+          // FIRST adoption of a run wins: the follower routes node streams
+          // into that row for the run's whole life (armed once — see
+          // startFollowing). Later resume adoptions mint inline rows we
+          // deliberately ignore so the room keeps reading the row the
+          // follower actually writes.
+          if (
+            followingRunIdRef.current &&
+            followAbortRef.current &&
+            !followAbortRef.current.signal.aborted &&
+            adoptedRef.current
+          ) {
+            return;
+          }
           adoptedRef.current = { requestId, conversationId };
           dispatch(streamAdopted({ sessionId, requestId }));
         },
@@ -298,9 +331,12 @@ export function useInterviewRun(sessionId: string) {
         consumeStream: consume,
       }),
     );
-    // The resume adopted a fresh requestId; re-arm the follower on it so
-    // the next round's node streams land in the row the room now reads.
-    startFollowing(runId);
+    // NO unconditional re-arm: the follower armed at run start stays live
+    // across resumes (aborting it here replayed the feed from seq 0 into the
+    // choreography). This call is a guarded no-op while it is live — it only
+    // arms a fresh follower if the previous one already settled (e.g. its
+    // reconnects were exhausted), and never on a failed resume request.
+    if (accepted) startFollowing(runId);
     return accepted;
   };
 

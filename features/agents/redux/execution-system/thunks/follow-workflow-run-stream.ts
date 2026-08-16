@@ -68,6 +68,7 @@ export interface WorkflowRunWireEvent {
 const TERMINAL_RUN_EVENTS = new Set([
   "run_completed",
   "run_failed",
+  "run_errored",
   "run_cancelled",
 ]);
 
