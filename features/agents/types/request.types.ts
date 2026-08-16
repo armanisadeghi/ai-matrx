@@ -369,6 +369,40 @@ export interface ActiveRequest {
    * (`req_*`) is meaningless to the server. `null` until the stream opens.
    */
   serverRequestId: string | null;
+
+  // ── Workflow node streams (adopted workflow runs) ────────────
+  /**
+   * Per-node live token accumulation for an ADOPTED workflow run.
+   *
+   * A workflow run's inline NDJSON response detaches immediately
+   * (`workflow_run_started` → `workflow_run_detached` → `end`); the live
+   * tokens flow as typed `node_stream` frames on the run's SSE events feed
+   * (`GET /runs/{run_id}/events/stream`). `followWorkflowRunStream` feeds
+   * those frames here, keyed by the emitting workflow node — the per-node
+   * twin of the collab child-stream pattern (`selectAgentCallChildStream`),
+   * except attribution is explicit (`node_id` on every frame) instead of a
+   * block-range anchor. Empty for every non-workflow request.
+   */
+  nodeStreams: Record<string, WorkflowNodeStreamEntry>;
+}
+
+/**
+ * One workflow node's accumulated live stream (see `ActiveRequest.nodeStreams`).
+ * `chunk` deltas build `text`, `reasoning` deltas build `reasoningText`,
+ * `phase` markers overwrite `phase`. Ordering/dedupe rides the per-node
+ * monotonic `stream_seq` the server stamps on every `node_stream` frame.
+ */
+export interface WorkflowNodeStreamEntry {
+  nodeId: string;
+  /** Accumulated answer text (kind="chunk"). */
+  text: string;
+  /** Accumulated reasoning text (kind="reasoning") — "thinking" state. */
+  reasoningText: string;
+  /** Latest phase/tool label (kind="phase" | "tool"), when any arrived. */
+  phase: string | null;
+  /** Last applied per-node `stream_seq` — smaller/equal frames are drops. */
+  lastStreamSeq: number;
+  status: "streaming" | "done" | "failed";
 }
 
 /**
