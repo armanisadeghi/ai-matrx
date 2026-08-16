@@ -131,13 +131,15 @@ acceptance criteria as pack outputs).
   generate shape (one click on /expertise once aidream deploys); regen FE api-types/stream-events
   (`pnpm sync-types`) after the aidream release, then drop the two path casts + switch
   listConfig sourceFeature "agents-other" → "expertise".
-- **First actions for the next agent:** ① recompile Hopkins onto the generate shape via the UI
-  (one click on /expertise once convenient), ② run the honest test — open `arman-seo-method`
-  with Arman and fill it through the interview lane, ③ build the R2 exemplar-imitation lane
-  (news-writer case: exemplar outputs + known inputs → candidate rules + backtest), ④ desk
-  run-history + "what did it get wrong" feedback loop from desk runs back into draft rules.
-  (Compile/ingest deploy, dialog verification, and the type-cast cleanup are done — the
-  interview lane is live and browser-verified.)
+- **2026-08-16:** Hopkins recompiled onto the generate shape via the production compiler —
+  desk `b0865c3b-774c-44a3-91e4-ddaef205ae67`, pack-stamped v1 (old unstamped desk
+  `0001b1ba…` left as history). Exemplar ingest mode (R2 start) shipped: `mode` on
+  `/expertise-desks/ingest` + the source-kind choice in the FE dialog.
+- **First actions for the next agent:** ① run the honest test — open `arman-seo-method`
+  with Arman and fill it through the interview lane, ② the R2 backtest harness (exemplar
+  outputs + known inputs → run the desk on the same inputs → compare against the real
+  published work), ③ desk run-history + "what did it get wrong" feedback loop from desk
+  runs back into draft rules, ④ file/PDF/audio ingest via content_processing.
 
 ---
 
