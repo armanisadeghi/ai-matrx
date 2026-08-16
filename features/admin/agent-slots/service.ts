@@ -17,7 +17,10 @@ import {
   versionSnapshotRowToAgentDefinition,
   type AgentVersionSnapshot,
 } from "@/features/agents/redux/agent-definition/converters";
-import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import type {
+  AgentDefinition,
+  VariableDefinition,
+} from "@/features/agents/types/agent-definition.types";
 import type { Database } from "@/types/database.types";
 import { isJsonObject, toJsonRecord, type JsonObject } from "@/types/json";
 import { callApi } from "@/lib/api/call-api";
@@ -167,6 +170,34 @@ export async function updateSlotDefinition(
   // editor, or the Linked Agent Sync window).
   invalidateClientSlotCache(data.slot_key);
   return data;
+}
+
+/**
+ * Variable definitions of ONE saved version — what a version-pinned slot
+ * actually runs. `agx_get_execution_minimal` reads the live definition only,
+ * so scaffolding a bench form from it would ask for the LATEST agent's
+ * variables while the run uses the pinned version's.
+ */
+export async function fetchVersionVariableDefinitions(
+  versionId: string,
+): Promise<VariableDefinition[] | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("agent")
+    .from("definition_version")
+    .select("variable_definitions")
+    .eq("id", versionId)
+    .maybeSingle();
+  if (error) throw error;
+  const raw: unknown = data?.variable_definitions;
+  if (!Array.isArray(raw)) return null;
+  return raw.filter(isVariableDefinition);
+}
+
+/** The column is open JSONB. Only `name` is load-bearing for a bench form;
+ * every other field is read defensively by the canonical input component. */
+function isVariableDefinition(value: unknown): value is VariableDefinition {
+  return isJsonObject(value) && typeof value.name === "string";
 }
 
 /** Version history for one agent — for picking a pin. */
@@ -388,6 +419,13 @@ export async function saveAdHocResultAsExemplar(input: {
   if (input.result.error) {
     throw new Error(
       "This run failed, so it cannot become a test case's reference output.",
+    );
+  }
+  // Same bar the server's promote endpoint enforces — an empty reference is
+  // not a bar anything can be judged against.
+  if (!input.result.output) {
+    throw new Error(
+      "This run produced no output, so there is nothing to keep as the reference.",
     );
   }
   const supabase = createClient();

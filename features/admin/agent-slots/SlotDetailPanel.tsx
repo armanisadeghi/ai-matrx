@@ -1527,7 +1527,10 @@ export function SlotDetail({
             baselineLabel={baselineLabel}
             presetLatestCandidate={row.drift != null}
             autoRunSignal={benchFocus}
-            passesUserInput={row.codeTruth?.passes_user_input ?? false}
+            // Undefined (no code declaration / import failure) stays
+            // undefined — the bench treats unknown as "offer the field",
+            // never as "this slot takes no user message".
+            passesUserInput={row.codeTruth?.passes_user_input}
           />
         </Section>
       </div>

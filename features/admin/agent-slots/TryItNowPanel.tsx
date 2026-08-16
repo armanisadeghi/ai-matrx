@@ -3,22 +3,30 @@
 /**
  * "Try it now" — run a slot with inputs typed right now, no stored test case.
  *
- * This is the cold-start half of the owner bench. 94 of ~148 live slots have
- * no exemplar at all, so the batch bench has literally nothing to run for
- * them: the only way in is to run the slot once by hand and keep the result.
- * So this panel does exactly two things:
+ * This is the cold-start half of the owner bench. Most live slots have no
+ * exemplar at all, so the batch bench has literally nothing to run for them:
+ * the only way in is to run the slot once by hand and keep the result. So this
+ * panel does exactly two things:
  *
  *   1. Scaffold a form from what the slot ALREADY declares — the contract's
- *      required variables plus the resolved agent's own variable definitions
- *      (so the admin never guesses a variable name or its input type), with
- *      the user message field for chat-shaped slots.
+ *      required variables plus the variable definitions of the agent that
+ *      actually runs (the PINNED VERSION's when the slot pins one, not the
+ *      latest definition's), so the admin never guesses a variable name or its
+ *      input type, with the user message field for chat-shaped slots.
  *   2. On any successful run, "Save as test case" writes the inputs AND the
  *      run — as the reference — into one new exemplar. The slot is benchable
  *      from that click on.
  *
  * Fields render with the CANONICAL `VariableInputComponent`, so a picklist,
  * media, or slider variable gets its real control here exactly as it does in
- * chat — never a JSON textarea.
+ * chat — never a JSON textarea. Output renders through the shared
+ * `OutputPreview`, so a media result is an image and not a raw expiring URL.
+ *
+ * 🚨 **The saved test case carries the inputs THAT RUN received**, captured
+ * with the result — never whatever is in the form at save time. Re-reading the
+ * live form would silently pair edited inputs with an older output, and this
+ * is the FIRST test case of a cold slot: the bar every later run is judged
+ * against.
  *
  * No progress UI: `POST /agent-slots/{slot_key}/test` returns one completed
  * result and exposes no requestId, so there is no stream to render. When that
@@ -41,7 +49,9 @@ import { parseSlotContract } from "@/features/agents/slots/overrides";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
+import { OutputPreview } from "./bench-output-preview";
 import {
+  fetchVersionVariableDefinitions,
   runSlotAdHocTest,
   saveAdHocResultAsExemplar,
   type SlotDefinitionRow,
@@ -56,6 +66,14 @@ interface BenchField {
   definition: VariableDefinition | null;
   /** Declared in the slot's contract — blank is a refusal, not a default. */
   requiredByContract: boolean;
+}
+
+/** A completed run TOGETHER with the exact inputs it received. Saving reads
+ * this, never the live form. */
+interface CompletedRun {
+  result: SlotTestResponse;
+  variables: JsonObject;
+  userInput: string | null;
 }
 
 function describeError(error: unknown): string {
@@ -88,21 +106,26 @@ export function TryItNowPanel({
   /** The agent this slot resolves to — its variable definitions supply the
    * real input types (picklists, media, sliders). */
   defaultAgentId: string | null;
-  /** Code truth: does any call site pass a user message to this slot? */
-  passesUserInput: boolean;
+  /** Code truth: does any call site pass a user message to this slot?
+   * `undefined` means code truth could not answer (import failure, no code
+   * declaration) — UNKNOWN IS NOT NO, so the field is offered. */
+  passesUserInput: boolean | undefined;
   onSavedTestCase: () => void;
 }) {
   const dispatch = useAppDispatch();
   const contract = useMemo(() => parseSlotContract(slot.contract), [slot]);
+  const pinnedVersionId = slot.default_agent_version_id;
   const execution = useAppSelector((state) =>
-    defaultAgentId
-      ? selectAgentExecutionPayload(state, defaultAgentId)
-      : null,
+    defaultAgentId ? selectAgentExecutionPayload(state, defaultAgentId) : null,
   );
+  /** Set only for a version-pinned slot: the PINNED version's declarations. */
+  const [versionDefinitions, setVersionDefinitions] = useState<
+    VariableDefinition[] | null
+  >(null);
   const [values, setValues] = useState<Record<string, unknown>>({});
   const [userInput, setUserInput] = useState("");
   const [running, setRunning] = useState(false);
-  const [result, setResult] = useState<SlotTestResponse | null>(null);
+  const [completed, setCompleted] = useState<CompletedRun | null>(null);
   const [saveLabel, setSaveLabel] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -117,13 +140,44 @@ export function TryItNowPanel({
       );
   }, [defaultAgentId, dispatch]);
 
+  useEffect(() => {
+    // No reset branch: the bench (and this panel with it) is keyed by slot id
+    // in SlotDetailPanel, so a different slot means a fresh mount.
+    if (!pinnedVersionId) return;
+    let cancelled = false;
+    fetchVersionVariableDefinitions(pinnedVersionId)
+      .then((rows) => {
+        if (!cancelled) setVersionDefinitions(rows);
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          toast.error(
+            `Couldn't load the pinned version's variables (${describeError(error)}) — showing the latest version's instead.`,
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pinnedVersionId]);
+
+  /** The declarations of the agent that ACTUALLY RUNS. A version pin wins;
+   * otherwise the live definition (which is also what `use_latest` runs). */
+  const agentDefinitions: VariableDefinition[] =
+    (pinnedVersionId ? versionDefinitions : null) ??
+    execution?.variableDefinitions ??
+    [];
+  const definitionsSource =
+    pinnedVersionId && versionDefinitions ? "pinned version" : "latest version";
+
   const fields: BenchField[] = useMemo(() => {
-    const definitions = execution?.variableDefinitions ?? [];
     const byName = new Map<string, VariableDefinition>();
-    for (const definition of definitions) byName.set(definition.name, definition);
+    for (const definition of agentDefinitions) {
+      byName.set(definition.name, definition);
+    }
     const names = [
       ...contract.requiredVariables,
-      ...definitions
+      ...agentDefinitions
         .map((definition) => definition.name)
         .filter((name) => !contract.requiredVariables.includes(name)),
     ];
@@ -132,9 +186,12 @@ export function TryItNowPanel({
       definition: byName.get(name) ?? null,
       requiredByContract: contract.requiredVariables.includes(name),
     }));
-  }, [contract.requiredVariables, execution?.variableDefinitions]);
+  }, [contract.requiredVariables, agentDefinitions]);
 
-  const showsUserInput = passesUserInput || fields.length === 0;
+  // Unknown code truth offers the field rather than hiding it: a chat-shaped
+  // slot whose declaration could not be read would otherwise be benched
+  // without the input its real call site sends.
+  const showsUserInput = passesUserInput !== false;
 
   function currentValue(field: BenchField): unknown {
     if (field.name in values) return values[field.name];
@@ -166,20 +223,36 @@ export function TryItNowPanel({
   async function run() {
     const variables = buildVariables();
     if (!variables) return;
-    if (Object.keys(variables).length === 0 && !userInput.trim()) {
-      toast.error("Give the slot something to run on — fill an input or a user message.");
+    const message = showsUserInput && userInput.trim() ? userInput : null;
+    // A slot that declares nothing legitimately runs as-is; one that declares
+    // inputs but got none would just burn a run on an empty prompt.
+    if (
+      fields.length > 0 &&
+      Object.keys(variables).length === 0 &&
+      message === null
+    ) {
+      toast.error(
+        "Give the slot something to run on — fill an input or a user message.",
+      );
       return;
     }
     setRunning(true);
-    setResult(null);
+    setCompleted(null);
     try {
-      const response = await runSlotAdHocTest(dispatch, slot.slot_key, {
+      const result = await runSlotAdHocTest(dispatch, slot.slot_key, {
         variables,
-        userInput: showsUserInput ? userInput : null,
+        userInput: message,
+        // Name the column the way the bench names every other one — the
+        // server's default label is the bare word "Candidate".
+        candidate: {
+          candidate_id: crypto.randomUUID(),
+          label: "Try it now",
+          selection: "current",
+        },
       });
-      setResult(response);
-      if (response.error) {
-        toast.error(`The run failed: ${response.error}`);
+      setCompleted({ result, variables, userInput: message });
+      if (result.error) {
+        toast.error(`The run failed: ${result.error}`);
       } else {
         toast.success("Ran once. Keep it as a test case if the output is right.");
       }
@@ -191,19 +264,18 @@ export function TryItNowPanel({
   }
 
   async function saveAsTestCase() {
-    if (!result || result.error) return;
-    const variables = buildVariables();
-    if (!variables) return;
+    if (!completed || completed.result.error) return;
     setSaving(true);
     try {
       await saveAdHocResultAsExemplar({
         slotId: slot.id,
         label: saveLabel.trim() || "First test case",
-        variables,
-        userInput: showsUserInput && userInput.trim() ? userInput : null,
-        result,
+        // The inputs THIS run received — the form may have been edited since.
+        variables: completed.variables,
+        userInput: completed.userInput,
+        result: completed.result,
       });
-      setResult(null);
+      setCompleted(null);
       setSaveLabel("");
       onSavedTestCase();
       toast.success(
@@ -216,8 +288,30 @@ export function TryItNowPanel({
     }
   }
 
+  const result = completed?.result ?? null;
   const structural = result?.structural;
   const ranAgentId = result?.definition_agent_id ?? result?.agent_id ?? null;
+  const inputsChanged =
+    completed != null &&
+    JSON.stringify(buildVariablesQuietly()) !==
+      JSON.stringify(completed.variables);
+
+  /** Same projection as `buildVariables`, minus the toasts — used only to tell
+   * the admin that the form no longer matches the run on screen. */
+  function buildVariablesQuietly(): JsonObject {
+    const out: JsonObject = {};
+    for (const field of fields) {
+      const raw = currentValue(field);
+      if (isBlank(raw)) continue;
+      try {
+        const json = toJsonValue(raw);
+        if (json !== undefined) out[field.name] = json;
+      } catch {
+        // A value that cannot be serialized is reported by the real builder.
+      }
+    }
+    return out;
+  }
 
   return (
     <div className="space-y-2 rounded-md border border-border bg-muted/10 p-2">
@@ -236,8 +330,17 @@ export function TryItNowPanel({
         </div>
       ) : (
         <div className="space-y-2">
+          {fields.length > 0 && agentDefinitions.length > 0 && (
+            <div className="text-[10px] text-muted-foreground">
+              Fields come from this slot&apos;s contract and the{" "}
+              {definitionsSource} of the agent that runs it.
+            </div>
+          )}
           {fields.map((field) => (
-            <div key={field.name} className="rounded border border-border bg-card p-2">
+            <div
+              key={field.name}
+              className="rounded border border-border bg-card p-2"
+            >
               <div className="mb-1 flex items-center gap-1.5">
                 <span className="font-mono text-[10px] text-muted-foreground">
                   {field.name}
@@ -273,7 +376,11 @@ export function TryItNowPanel({
         <Textarea
           value={userInput}
           onChange={(event) => setUserInput(event.target.value)}
-          placeholder="User message — what the person using this slot would say"
+          placeholder={
+            passesUserInput
+              ? "User message — what the person using this slot would say"
+              : "User message (optional — this slot's call site could not be read)"
+          }
           className="min-h-16 text-xs"
         />
       )}
@@ -296,7 +403,9 @@ export function TryItNowPanel({
       {result && (
         <div
           className={`space-y-2 rounded-md border p-2 ${
-            result.error ? "border-destructive/60 bg-destructive/5" : "border-border bg-card"
+            result.error
+              ? "border-destructive/60 bg-destructive/5"
+              : "border-border bg-card"
           }`}
         >
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
@@ -336,11 +445,17 @@ export function TryItNowPanel({
                   {(structural?.errors ?? []).slice(0, 4).join("; ")}
                 </div>
               )}
-              <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/40 p-2 text-[11px]">
-                {result.artifact != null
-                  ? JSON.stringify(result.artifact, null, 1)
-                  : result.output || "(empty)"}
-              </pre>
+              <OutputPreview
+                output={result.output ?? ""}
+                artifact={result.artifact}
+              />
+              {inputsChanged && (
+                <div className="rounded bg-muted/40 p-2 text-[11px] text-muted-foreground">
+                  You have edited the inputs since this run. Saving keeps the
+                  inputs this run actually received — run again to test the
+                  edited ones.
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-1.5">
                 <Input
                   value={saveLabel}
@@ -351,7 +466,12 @@ export function TryItNowPanel({
                 <Button
                   size="sm"
                   className="h-8 gap-1 text-[11px]"
-                  disabled={saving}
+                  disabled={saving || !result.output}
+                  title={
+                    result.output
+                      ? undefined
+                      : "This run produced no output to keep as the reference."
+                  }
                   onClick={() => void saveAsTestCase()}
                 >
                   {saving ? (
@@ -362,7 +482,8 @@ export function TryItNowPanel({
                   Save as test case
                 </Button>
                 <span className="text-[10px] text-muted-foreground">
-                  Keeps these inputs and makes this output the reference.
+                  Keeps this run&apos;s inputs and makes this output the
+                  reference.
                 </span>
               </div>
             </>

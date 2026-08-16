@@ -28,7 +28,6 @@ import {
   X,
 } from "lucide-react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { RunConfigOverrides } from "@/features/agents/components/run-controls/RunConfigOverrides";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +41,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { fileIdFromUserFilesUrl } from "@/lib/media/durability";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { isJsonObject, toJsonRecord } from "@/types/json";
@@ -61,6 +59,7 @@ import {
   selectSettingsOverridesForApi,
 } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/base-settings";
+import { OutputPreview } from "./bench-output-preview";
 import { TryItNowPanel } from "./TryItNowPanel";
 import {
   clearSlotBenchSnapshot,
@@ -151,29 +150,6 @@ function candidateLabel(draft: CandidateDraft): string {
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-function OutputPreview({
-  output,
-  artifact,
-}: {
-  output: string;
-  artifact: unknown;
-}) {
-  const fileId = output ? fileIdFromUserFilesUrl(output.trim()) : null;
-  if (fileId) {
-    return <InlineMediaRef ref={fileId} size="xl" fit="cover" />;
-  }
-  const text = artifact != null ? JSON.stringify(artifact, null, 1) : output;
-  return (
-    <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/40 p-2 text-[11px]">
-      {text
-        ? text.length > 3200
-          ? `${text.slice(0, 3200)}…`
-          : text
-        : "(empty)"}
-    </pre>
-  );
 }
 
 /**
@@ -577,11 +553,12 @@ export function SlotTestBench({
   baselineLabel = "Current — what users get now",
   presetLatestCandidate = false,
   autoRunSignal = 0,
-  passesUserInput = false,
+  passesUserInput,
 }: {
   slot: SlotDefinitionRow;
-  /** Code truth: some call site sends this slot a user message, so the
-   * ad-hoc runner offers one. */
+  /** Code truth: some call site sends this slot a user message, so the ad-hoc
+   * runner offers one. `undefined` = code truth could not answer, which is NOT
+   * the same as "no" — the runner offers the field anyway. */
   passesUserInput?: boolean;
   /** Names the baseline column after the slot's actual pin state. */
   baselineLabel?: string;
