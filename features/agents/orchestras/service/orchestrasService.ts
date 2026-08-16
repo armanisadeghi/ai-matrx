@@ -27,6 +27,7 @@ import {
   MEMBER_ROLE,
   ORCHESTRA_MARKER_ROLE,
   isOrchestraMarkerRole,
+  isOrchestraMode,
 } from "../constants";
 import type {
   OrchestraConfig,
@@ -50,6 +51,7 @@ function metaToConfig(meta: Json | null | undefined): OrchestraConfig {
   const cfg: OrchestraConfig = {};
   if (typeof m.accent === "string") cfg.accent = m.accent as OrchestraConfig["accent"];
   if (typeof m.tagline === "string") cfg.tagline = m.tagline;
+  if (isOrchestraMode(m.mode)) cfg.mode = m.mode;
   if (m.orchestratorPos && typeof m.orchestratorPos === "object") {
     const p = m.orchestratorPos as Record<string, unknown>;
     if (typeof p.x === "number" && typeof p.y === "number") {

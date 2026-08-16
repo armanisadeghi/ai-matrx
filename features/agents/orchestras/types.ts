@@ -4,7 +4,7 @@
 // these types describe the relationship layer that rides on platform.associations.
 
 import type { Json } from "@/types/database.types";
-import type { OrchestraAccent } from "./constants";
+import type { OrchestraAccent, OrchestraMode } from "./constants";
 
 /** A saved 2D position on the builder canvas. */
 export interface CanvasPos {
@@ -23,6 +23,12 @@ export interface OrchestraConfig {
   tagline?: string;
   /** Saved orchestrator node position on the builder canvas. */
   orchestratorPos?: CanvasPos;
+  /**
+   * How the Orchestra runs its members. Absent = "supervisor". The aidream
+   * runtime honors this per run: supervisor projects members as tools; the
+   * compiled modes (sequential/parallel/dag) run as a deterministic plan.
+   */
+  mode?: OrchestraMode;
 }
 
 /**

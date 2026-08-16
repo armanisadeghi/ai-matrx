@@ -50,3 +50,41 @@ export const ORCHESTRA_ACCENTS = [
 export type OrchestraAccent = (typeof ORCHESTRA_ACCENTS)[number];
 
 export const DEFAULT_ORCHESTRA_ACCENT: OrchestraAccent = "violet";
+
+/**
+ * How the Orchestra RUNS its members (stored in `OrchestraConfig.mode` on the
+ * marker edge — the aidream runtime reads it per run). "supervisor" projects
+ * members as tools the orchestrator calls; the other three compile to a
+ * deterministic plan run on the server (D-36). An unknown value fails loudly
+ * server-side — never silently degrades to a memberless run.
+ */
+export const ORCHESTRA_MODES = ["supervisor", "sequential", "parallel", "dag"] as const;
+
+export type OrchestraMode = (typeof ORCHESTRA_MODES)[number];
+
+export const DEFAULT_ORCHESTRA_MODE: OrchestraMode = "supervisor";
+
+/** Non-technical labels/descriptions for the mode picker (the user builds
+ * expertise systems — they don't know what a DAG is, and shouldn't need to). */
+export const ORCHESTRA_MODE_META: Record<OrchestraMode, { label: string; description: string }> = {
+  supervisor: {
+    label: "Supervisor",
+    description: "The orchestrator decides which members to bring in, and weaves their answers together.",
+  },
+  sequential: {
+    label: "Pipeline",
+    description: "Members work in order — each one builds on the previous member's output.",
+  },
+  parallel: {
+    label: "Panel",
+    description: "All members work at the same time; the orchestrator combines their answers.",
+  },
+  dag: {
+    label: "Custom flow",
+    description: "Members run according to the dependencies set on their connections.",
+  },
+};
+
+export function isOrchestraMode(value: unknown): value is OrchestraMode {
+  return typeof value === "string" && (ORCHESTRA_MODES as readonly string[]).includes(value);
+}

@@ -24,7 +24,15 @@ import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { deleteOrchestra, saveOrchestraConfig } from "@/features/agents/redux/orchestras/thunks";
 import { accentClasses } from "./accents";
-import { DEFAULT_ORCHESTRA_ACCENT, ORCHESTRA_ACCENTS, type OrchestraAccent } from "../constants";
+import {
+  DEFAULT_ORCHESTRA_ACCENT,
+  DEFAULT_ORCHESTRA_MODE,
+  ORCHESTRA_ACCENTS,
+  ORCHESTRA_MODES,
+  ORCHESTRA_MODE_META,
+  type OrchestraAccent,
+  type OrchestraMode,
+} from "../constants";
 import type { OrchestraConfig } from "../types";
 
 export interface OrchestraSettingsDialogProps {
@@ -49,6 +57,7 @@ function SettingsForm({
   const [name, setName] = useState(label ?? "");
   const [tagline, setTagline] = useState(config.tagline ?? "");
   const [accent, setAccent] = useState<OrchestraAccent>(config.accent ?? DEFAULT_ORCHESTRA_ACCENT);
+  const [mode, setMode] = useState<OrchestraMode>(config.mode ?? DEFAULT_ORCHESTRA_MODE);
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -57,7 +66,7 @@ function SettingsForm({
       saveOrchestraConfig({
         orchestratorId,
         label: name.trim() || null,
-        config: { ...config, accent, tagline: tagline.trim() || undefined },
+        config: { ...config, accent, mode, tagline: tagline.trim() || undefined },
       }),
     );
     setSaving(false);
@@ -106,6 +115,34 @@ function SettingsForm({
             onChange={(e) => setTagline(e.target.value)}
             placeholder="What does this Orchestra accomplish together?"
           />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">How members run</label>
+          <div className="space-y-1">
+            {ORCHESTRA_MODES.map((m) => {
+              const meta = ORCHESTRA_MODE_META[m];
+              const selected = mode === m;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMode(m)}
+                  aria-pressed={selected}
+                  className={cn(
+                    "w-full rounded-md border px-2.5 py-1.5 text-left transition-colors",
+                    selected
+                      ? "border-primary/50 bg-accent"
+                      : "border-border hover:bg-muted/50",
+                  )}
+                >
+                  <span className="block text-xs font-medium text-foreground">{meta.label}</span>
+                  <span className="block text-[11px] leading-snug text-muted-foreground">
+                    {meta.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-muted-foreground">Accent</label>
