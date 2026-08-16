@@ -245,13 +245,18 @@ export function startRunEventSource(config: RunEventSourceConfig): {
         cursor !== null
           ? `?after_seq=${cursor}&limit=${POLL_LIMIT}`
           : `?limit=${POLL_LIMIT}`;
-      const rows = await fetchJson<RunEventRecord[]>(`${baseUrl}/runs/${runId}/events${qs}`);
+      // PATH-relative: the injected fetchJson prepends the base URL itself
+      // (passing a full URL here double-prefixed every poll — Bugbot #147).
+      const rows = await fetchJson<RunEventRecord[]>(`/runs/${runId}/events${qs}`);
       if (stopped) return;
       for (const row of rows) {
         // Monotonic cursor guard — defend against duplicate delivery
         // across transports and out-of-order responses.
         if (row.seq !== null && cursor !== null && row.seq <= cursor) continue;
-        const payload: unknown = row.payload;
+        // The durable row keeps the discriminator on `event_type`; merge it in
+        // exactly as the replay path does, or every polled event fails the
+        // type guard and the fallback transport applies nothing.
+        const payload: unknown = { ...row.payload, event: row.event_type };
         // Durable rows only ever hold the 19 workflow events; node_stream
         // is never persisted, so no ephemeral branch exists here.
         if (isWorkflowRunEvent(payload)) {
