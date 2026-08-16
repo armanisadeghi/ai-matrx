@@ -160,8 +160,11 @@ export function RoomHeader({ onAdvanceStage }: RoomHeaderProps) {
         session && stage ? (
           <span className="flex items-center gap-1.5">
             <StageStepper current={session.stage} />
-            <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-foreground md:hidden">
-              {stage.label} · round {session.current_round}
+            {/* Mobile: stage label ONLY — "· round N" made the chip collide
+                with the title and the Advance control on narrow viewports
+                (Arman's screenshots, 2026-08-16). Round stays on md+. */}
+            <span className="shrink-0 rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground md:hidden">
+              {stage.label}
             </span>
             <span className="hidden rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground md:inline">
               Round {session.current_round}
@@ -185,9 +188,14 @@ export function RoomHeader({ onAdvanceStage }: RoomHeaderProps) {
                     setAdvancing(false);
                   }
                 }}
+                aria-label={
+                  canAdvance && stage.next
+                    ? `Advance to ${STAGES[stage.next].label}`
+                    : "Advance stage"
+                }
               >
-                Advance
-                <ArrowRight className="ml-1 h-3 w-3" aria-hidden />
+                <span className="hidden sm:inline">Advance</span>
+                <ArrowRight className="h-3 w-3 sm:ml-1" aria-hidden />
               </Button>
             )}
           </span>
