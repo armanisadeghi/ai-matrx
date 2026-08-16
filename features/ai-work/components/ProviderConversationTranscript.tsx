@@ -40,6 +40,7 @@ import {
 } from "../service/providerConversationClient";
 import type { ProviderConversationMessage } from "../lib/providerConversationMessage";
 import { buildProviderTimeline } from "../lib/providerTimeline";
+import { ConversationAnalyzePanel } from "../analysis/ConversationAnalyzePanel";
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
 
 /** Tool activity page loaded per request — a mirror can hold thousands. */
@@ -291,6 +292,11 @@ export function ProviderConversationTranscript({
           </Link>
         </Button>
       </section>
+
+      <ConversationAnalyzePanel
+        conversationId={conversation.id}
+        conversationTitle={title}
+      />
 
       <ConversationOrganizationPanel conversationId={conversation.id} />
 

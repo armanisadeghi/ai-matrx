@@ -33,6 +33,7 @@ import {
   recordedCapabilityLabels,
   workspaceName,
 } from "@/features/ai-work/lib/codingSessionPresentation";
+import { ConversationAnalyzePanel } from "../analysis/ConversationAnalyzePanel";
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
 
 function conversationHref(conversation: ConversationListItem): string {
@@ -225,6 +226,11 @@ function ConversationInspector({
           </div>
         )}
       </section>
+
+      <ConversationAnalyzePanel
+        conversationId={conversation.conversationId}
+        conversationTitle={title}
+      />
 
       <ConversationOrganizationPanel
         conversationId={conversation.conversationId}

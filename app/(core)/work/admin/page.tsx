@@ -114,6 +114,13 @@ const AI_WORK_ADMIN_MAP: FeatureAdminMap = {
       tier: "internal",
     },
     {
+      name: "ConversationAnalyzePanel",
+      filePath: "features/ai-work/analysis/ConversationAnalyzePanel.tsx",
+      description:
+        "The 'Analyze this conversation' action group (inbox inspector + transcript): five slot-resolved conversation-analysis agents launched through launchAgentExecution, streaming in LiveRunWindow, each report kept as a doored canonical conversation.",
+      tier: "internal",
+    },
+    {
       name: "ProviderConversationTranscript",
       filePath:
         "features/ai-work/components/ProviderConversationTranscript.tsx",
