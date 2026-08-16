@@ -414,6 +414,28 @@ for once:
   (`recordEnrollmentSource` / `readEnrollmentSource` — the column that shipped
   with no writer), so the workspace header names the query that filled the
   queue and links back to it at `/crm?view=<id>`.
+- 🚨 **A MEMBER WHOSE PARTY YOU CANNOT READ IS RESOLVED, NEVER LABELLED.** The
+  member row is a component of the LIST, so it is readable by anyone who can
+  read the list — but its `party` embed is filtered independently by
+  `crm.party` RLS, and enrollment across orgs makes that routine: the list can
+  live in org A while a member's party lives in org B, so a rep in only A sees
+  the row with a hole where the person is. `outreach_list_member.party_id` is
+  `ON DELETE CASCADE`, so "missing" is impossible and a soft-deleted party
+  still embeds for anyone with access — **a null embed means the reader lacks
+  access, or their session lapsed.** Never print a guess like
+  "(record unavailable)". Resolve it: `useAccessStates("party", ids)` asks
+  `access_denied_context` once for every hole on the page, the cell renders
+  `<UnresolvedEntityRef>` (true state + owner + org + the canonical
+  **Request access** panel + "Remove from outreach list"), and the row's
+  ⋮ menu branches on the SAME answer — every verb needing the person (open,
+  "Write one email", "Back to queue") is withheld, leaving only Remove.
+  The **call queue** does the same: `buildQueueEntry` raises the canonical
+  `recordUnavailable` (`fetchPartyDetail` reads the party with `maybeSingle`,
+  so a denied party is never PostgREST prose on a rep's screen), and the dialer
+  releases + defers that member and names it — it does **not** mark it
+  `suppressed`, which would assert a contact decision nobody made, and it does
+  not kill the queue as it used to. The Error Inspector capture deliberately
+  stays red: a queue serving members nobody can work is a real data problem.
 - **Known limits:** dialing is a `tel:` handoff (no telephony integration);
   member table search/status filter are server-side but member columns don't
   sort.
@@ -609,6 +631,24 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-15 — **"(record unavailable)" is gone from the outreach roster; the
+  platform now has an inline door for a reference it cannot resolve.** A member
+  of "Phase 4 — first governed send" rendered a bare italic string for a party
+  in another org, asserted no cause, offered no door, and still let the rep act
+  on the person through the ⋮ menu. Root cause was ordinary and will recur:
+  cross-org enrollment plus `crm.party` RLS. Two new primitives beside
+  `features/access-gate` — `useAccessStates(token, ids)` (the LIST counterpart
+  of `useAccessGate`; module-cached, one RPC per distinct id) and
+  `<UnresolvedEntityRef>` (the inline sibling of `EntityRef`: resolved state in
+  the cell, then owner, organization, the canonical `RequestAccessPanel`, and
+  the surface's own repair one click away). The roster consumes both and gates
+  its row actions on the same answer. `fetchPartyDetail` reads the party with
+  `maybeSingle` + `recordUnavailable` instead of `.single()`, which is what let
+  a single unreadable member kill the whole call queue with
+  "Cannot coerce the result to a single JSON object · PGRST116"; the dialer now
+  defers and names it. Verified in the browser as `admin@admin.com` (denied
+  chip, popover, request panel, suppressed menu, readable rows unchanged) and
+  on a scratch list for the drained-queue path.
 - 2026-08-15 — **`EVERY USER HAS A PARTY` became a live invariant, not a promise.**
   `crm.ensure_user_party` plus the `auth.users` signup/promotion trigger provisions
   one normal AI Matrx-tenant party per permanent account, claims exact unambiguous

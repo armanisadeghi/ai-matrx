@@ -40,6 +40,8 @@ import type {
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
+import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { formatRelativeTime } from "@/utils/datetime";
 import { cn } from "@/lib/utils";
 import { useCrmContext } from "../../hooks/useCrmContext";
@@ -164,6 +166,30 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
     void loadMembers();
   }, [loadHeader, loadMembers]);
 
+  /**
+   * A member whose `party` embed came back null is NOT "(record unavailable)" —
+   * that is the surface guessing. Under `crm.party` RLS a null embed has four
+   * possible causes, and enrolling across orgs makes the common one real: the
+   * list's org is not the party's, so a rep in only one of them sees the member
+   * row (a component of the list they CAN read) with a hole where the person is.
+   *
+   * Resolve every hole on the page once, then let BOTH the cell and the row's
+   * action menu branch on that one answer.
+   */
+  const unresolvedPartyIds = useMemo(
+    () => members.filter((m) => !m.party).map((m) => m.party_id),
+    [members],
+  );
+  const { states: partyAccess, refresh: refreshPartyAccess } = useAccessStates(
+    "party",
+    unresolvedPartyIds,
+  );
+  /** An owner granting access must heal the row in place, not just the popover. */
+  const onPartyAccessChanged = useCallback(() => {
+    refreshPartyAccess();
+    void loadMembers();
+  }, [refreshPartyAccess, loadMembers]);
+
   const selectedIdentity = sendingIdentities.find(
     (identity) => identity.id === list?.sending_identity_id,
   );
@@ -260,18 +286,45 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       sortable: false,
       filter: false,
       href: (row) => (row.party ? `/crm/${row.party.id}` : undefined),
-      cell: (row) => (
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate text-sm font-medium text-foreground">
-            {row.party?.display_name ?? "(record unavailable)"}
-          </span>
-          {row.party?.do_not_contact && (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-destructive">
-              DNC
+      cell: (row) =>
+        !row.party ? (
+          <UnresolvedEntityRef
+            id={row.party_id}
+            context={partyAccess.get(row.party_id) ?? null}
+            onChanged={onPartyAccessChanged}
+            repairAction={
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 w-full text-xs"
+                onClick={async () => {
+                  try {
+                    await removeMember(row.id);
+                    refreshAll();
+                    toast.success("Member removed from this outreach list");
+                  } catch (e) {
+                    toast.error(
+                      e instanceof Error ? e.message : "Remove failed",
+                    );
+                  }
+                }}
+              >
+                Remove from outreach list
+              </Button>
+            }
+          />
+        ) : (
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm font-medium text-foreground">
+              {row.party.display_name}
             </span>
-          )}
-        </div>
-      ),
+            {row.party.do_not_contact && (
+              <span className="inline-flex shrink-0 items-center rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-destructive">
+                DNC
+              </span>
+            )}
+          </div>
+        ),
     },
     {
       id: "job_title",
@@ -389,33 +442,41 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         },
         {
           id: "queue",
-          items: [
-            ...(list?.lane === "cold_outreach"
-              ? [
-                  {
-                    id: "write-email",
-                    label: "Write one email",
-                    icon: Mail,
-                    onSelect: () => setSingleSendMember(row),
+          // An action that cannot possibly succeed must not be offered. Every
+          // verb below needs the PERSON — a draft needs their name and address,
+          // the dialer needs their numbers — and the person is exactly what this
+          // reader cannot read. Only the two member-row verbs survive, and
+          // "Back to queue" is withheld too: it would hand the call queue a
+          // member it cannot load. The popover on the name carries the ask.
+          items: row.party
+            ? [
+                ...(list?.lane === "cold_outreach"
+                  ? [
+                      {
+                        id: "write-email",
+                        label: "Write one email",
+                        icon: Mail,
+                        onSelect: () => setSingleSendMember(row),
+                      },
+                    ]
+                  : []),
+                {
+                  id: "requeue",
+                  label: "Back to queue",
+                  onSelect: async () => {
+                    try {
+                      await requeueMember(row.id);
+                      refreshAll();
+                      toast.success("Member requeued");
+                    } catch (e) {
+                      toast.error(
+                        e instanceof Error ? e.message : "Requeue failed",
+                      );
+                    }
                   },
-                ]
-              : []),
-            {
-              id: "requeue",
-              label: "Back to queue",
-              onSelect: async () => {
-                try {
-                  await requeueMember(row.id);
-                  refreshAll();
-                  toast.success("Member requeued");
-                } catch (e) {
-                  toast.error(
-                    e instanceof Error ? e.message : "Requeue failed",
-                  );
-                }
-              },
-            },
-          ],
+                },
+              ]
+            : [],
         },
         {
           id: "danger",

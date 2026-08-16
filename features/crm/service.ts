@@ -686,12 +686,19 @@ export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
   const [party, points, addresses, affiliations, members, interactions] =
     await Promise.all([
       // Same `.returns<>` rationale as fetchPartyPage (column-as-target embed).
+      // `maybeSingle`, NOT `single`: under RLS a party the caller may not read
+      // is simply zero rows, and `.single()` turns that into "Cannot coerce the
+      // result to a single JSON object · PGRST116" — PostgREST prose handed to
+      // a person, on top of whichever surface then has to guess why. Zero rows
+      // raises the canonical ambiguous-read error instead, which the record
+      // page resolves through `<AccessGate>` and the call queue treats as an
+      // unworkable member rather than a fatal queue error.
       crm
         .from("party")
         .select(EMPLOYER_EMBED)
         .eq("id", partyId)
-        .single()
-        .returns<PartyListRow>(),
+        .maybeSingle()
+        .returns<PartyListRow | null>(),
       // RULE 1: contact points are ALWAYS read joined to their medium.
       crm
         .from("party_contact_point")
@@ -734,6 +741,15 @@ export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
     ]);
 
   if (party.error) throw pgError(party.error);
+  if (!party.data) {
+    throw recordUnavailable({
+      entity: "record",
+      reason: "unknown",
+      recordId: partyId,
+      token: "party",
+      relation: "crm.party",
+    });
+  }
   if (points.error) throw pgError(points.error);
   if (addresses.error) throw pgError(addresses.error);
   if (affiliations.error) throw pgError(affiliations.error);

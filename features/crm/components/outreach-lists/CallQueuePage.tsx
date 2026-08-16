@@ -28,6 +28,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -105,6 +106,9 @@ export function CallQueuePage({ listId }: { listId: string }) {
   const [autoSuppressed, setAutoSuppressed] = useState<
     { id: string; name: string }[]
   >([]);
+  // Party ids the queue served but this rep cannot open. Named, never silent —
+  // and never given a name we did not read (that is the roster's job).
+  const [unreadable, setUnreadable] = useState<string[]>([]);
 
   // The held member id, for release-on-leave (cleanup can't read state).
   const heldRef = useRef<{ memberId: string; userId: string } | null>(null);
@@ -133,7 +137,27 @@ export function CallQueuePage({ listId }: { listId: string }) {
           return;
         }
         heldRef.current = { memberId: member.id, userId };
-        const next = await buildQueueEntry(member);
+
+        // A member whose PARTY this rep cannot read (cross-org enrollment, a
+        // permission revoked after enrollment) used to kill the whole queue
+        // with PostgREST prose. It is not a fatal error and it is not a
+        // suppression either — writing `suppressed` would assert a contact
+        // decision nobody made. Release it, defer it, and name it: the roster
+        // resolves the real reason and offers "Request access".
+        let next: QueueEntry;
+        try {
+          next = await buildQueueEntry(member);
+        } catch (e) {
+          if (!isRecordUnavailableError(e)) throw e;
+          await skipMember({ memberId: member.id, userId });
+          heldRef.current = null;
+          setStats((s) => ({ ...s, skipped: s.skipped + 1 }));
+          setUnreadable((prev) =>
+            prev.includes(member.party_id) ? prev : [...prev, member.party_id],
+          );
+          continue;
+        }
+
         if (next.undialable) {
           // Rule 3: never offer this member. Mark, tally, take the next one.
           const reason = next.detail.party.do_not_contact
@@ -384,6 +408,22 @@ export function CallQueuePage({ listId }: { listId: string }) {
                 </Link>
               </span>
             ))}
+          </div>
+        )}
+        {unreadable.length > 0 && (
+          <div className="mt-1.5 rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] text-amber-600 dark:text-amber-400">
+            {unreadable.length === 1
+              ? "1 member was skipped because you can't open their record"
+              : `${unreadable.length} members were skipped because you can't open their records`}
+            .{" "}
+            {/* The roster resolves WHY for each of them, and offers the ask. */}
+            <Link
+              href={`/crm/outreach-lists/${listId}`}
+              target="_blank"
+              className="font-medium underline underline-offset-2 hover:text-foreground"
+            >
+              See why on the roster
+            </Link>
           </div>
         )}
       </div>

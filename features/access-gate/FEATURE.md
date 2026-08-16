@@ -92,6 +92,8 @@ is the same class of lie this feature exists to kill.
 | `components/SettingAccessGate.tsx`                           | Org-admin setting composition: admins get the control; members get a contextual request.                                                                                                                                                                                                           |
 | `components/SettingRequestActionButtons.tsx`                 | One inline apply/open/decline component reused by DM bubbles and the durable inbox.                                                                                                                                                                                                                |
 | `hooks/useAccessGate.ts`                                     | `(token, id) → status + context`; reconciles a passed `RecordUnavailableError` capture before rendering.                                                                                                                                                                                           |
+| `hooks/useAccessStates.ts`                                   | The LIST counterpart: `(token, ids) → Map<id, context>`. A table that joins to another table has rows whose embed came back null for the same four reasons. Module-cached by `token:id`, one RPC per distinct id, `refresh()` for the grant loop. Pass ONLY the ids that actually failed to resolve. |
+| `components/UnresolvedEntityRef.tsx`                         | The inline sibling of `EntityRef` — the door for a record you CANNOT read. Renders the resolved state in the cell ("Steven Wax — no access"), with owner, organization, `RequestAccessPanel`, sign-in, retry, and the surface's own `repairAction` one click away. Live: the CRM outreach roster.  |
 | `service/accessDeniedContext.ts`                             | Client half of `access_denied_context`.                                                                                                                                                                                                                                                            |
 | `service/accessRequests.ts`                                  | resource + setting create/list/decide/report/withdraw and DM delivery.                                                                                                                                                                                                                             |
 | —                                                            | **No variant registry.** A feature that earns a bespoke screen composes the exported `AccessDeniedView`. A token→component map consulted during render is a dynamic component boundary for an extension point with zero users — speculative abstraction, and React Compiler lint rightly flags it. |
@@ -223,6 +225,21 @@ uuid)` needs the uuid, and `/organizations/[orgId]` accepts a slug. When the
 
 ## Change Log
 
+- **2026-08-15** — **The gate reached inside LISTS.** The four-cause ambiguity is
+  not only a page-level problem: any table that joins to another table has rows
+  whose embed came back null, and every surface was inventing a label for them
+  ("(record unavailable)" on the CRM outreach roster). `useAccessStates` asks
+  the same resolver for every hole on a page at once, and
+  `<UnresolvedEntityRef>` renders the answer inline with the same doors the
+  full screen offers — including the canonical `RequestAccessPanel`, so the
+  grant loop closes without leaving the list. A surface passes its own repair
+  (`repairAction`) rather than forking the component, and it branches its row
+  actions on the same resolved status so nothing that needs the record stays
+  clickable. **Do not resolve ids the caller can already read** — the resolver
+  is deliberately one call per record. Note that a list-resolved denial does
+  NOT reconcile a `recordUnavailable` capture (there is no thrown error object
+  to key on); a capture raised elsewhere, like the call queue's skip path,
+  stays red on purpose.
 - **2026-08-15** — **Access Gate now resolves standalone CMS sites and pages.**
   Registered tokens `client_site` / `client_page` delegate to the authenticated
   CMS boundary instead of Main's entity registry, preserving signed-out,
