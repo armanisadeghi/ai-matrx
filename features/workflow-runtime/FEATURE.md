@@ -30,6 +30,11 @@ that is the exit-test surface.
 | Trigger points | `trigger-points.ts` | Ruling R2: named, enumerable moments derived from the DEFINITION (`run:*`, `node:<id>:*`, `edge:<id>:traversed` — client-DERIVED, the engine emits no edge events — `deliverable:ready`, `mark:<name>`), resolved against run state. Pure module. |
 | Hooks | `hooks/useWorkflowRun.ts`, `hooks/useWorkflowRunControls.ts` | Adoption is refcounted per runId (two watchers share one adapter). Controls are the ONLY lifecycle verbs — start/pause/resume/cancel/answer-interrupt/retry/skip via `callApi`. |
 | Zero-config board | `components/WorkflowRunBoard.tsx` | Tier 0 presentation: status rows for every node, lanes via `LiveRunDisplay variant="bare"`, settled kind-checked output via `KindInstanceRender`, interrupt answer card, recursive child boards (`adopt={false}` on children — the parent adapter already follows them). |
+| Shared readout parts | `components/readout-parts.tsx` | THE one per-invocation body (`InvocationBody`: lane → `LiveRunDisplay`, settled kind → `KindInstanceRender`, textTail, JSON, error) + `PhaseIcon` / `PHASE_LABEL` / `InterruptCard` — consumed by the board AND every Phase 2 readout; never fork a second copy. |
+| Surface config | `surface/config.ts` | The Run Surface document (R1/R6/R7): 24-col grid, readout sources (node/group/childRun/progressRail/static/action), pages, visibility; tolerant parse + strict validate. |
+| Progress rail | `components/ProgressRailReadout.tsx` | The generalized podcast rail: per-node rows from selectors + authored SYNTHETIC sub-steps (randomized 2.2–5.5s cadence, last held until the node leaves "running", snap-all-done), 99%-cap progress bar until the run is terminal. Animation state is presentation-local — refresh restarts it by design. |
+| Readout renderer | `components/ReadoutView.tsx` | One readout's bare content per source kind; multi-run modes stack/latest/table (table is an honest compact v1); childRun renders the linked child via `selectChildRunIdForNode` as a nested board (`adopt={false}`); static markdown via `MarkdownStream` content mode. |
+| Surface renderer | `components/RunSurfaceView.tsx` | Renders a config over a run: trigger-resolved visibility (`appearOn`/`hideOn`, placeholder empty states), pages with auto-advance (manual tab choice wins until a LATER page's trigger fires), 24-col desktop grid / mobile single column by `mobileOrder ?? (y,x)`, interrupt card above the grid. The grid only ever grows — zero page shift. |
 | Exit-test page | `app/(dev)/demos/workflow-runtime/page.dev.tsx` | Pick → run → watch; run id rides `?run=` so mid-run refresh re-adopts and resumes. |
 
 ## Invariants (violating any of these is a defect)
@@ -69,3 +74,7 @@ that is the exit-test surface.
 - 2026-08-16 — Phase 1 initial build: types, transport (SSE+poller), workflowRuns slice +
   selectors, lane manager (budget + shared flush), adoptWorkflowRun adapter (replay + live +
   child runs), trigger points, hooks, zero-config board, demo page, StreamProfiler gate.
+- 2026-08-16 — Phase 2 surface renderers: extracted shared `readout-parts.tsx` from the board;
+  added `ProgressRailReadout` / `ReadoutView` / `RunSurfaceView`; slice gained
+  `childRunsByNode` (subgraph_run_linked node→child map) + selectors
+  `selectChildRunIdForNode` and `selectNodeAggregatePhases`.
