@@ -1,5 +1,5 @@
 /**
- * features/administration/hindsight/types.ts
+ * features/hindsight/types.ts
  *
  * Every shape here is DERIVED from the generated OpenAPI contract
  * (`pnpm sync-types`), never hand-mirrored — a backend rename turns each

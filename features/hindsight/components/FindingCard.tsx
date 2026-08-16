@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 import { applyFinding, rejectFinding } from "../api";
 import { conversationHref } from "../subject-doors";
+import { useDoorAudience } from "./door-audience";
 import { splitEvidenceIds, type Finding } from "../types";
 import { DiscussPanel } from "./DiscussPanel";
 import { LEVER_COLOR, LEVER_LABEL, VERDICT_COLOR } from "./tokens";
@@ -42,6 +43,7 @@ export function FindingCard({
   finding: Finding;
   onChanged: () => void;
 }) {
+  const audience = useDoorAudience();
   const [expanded, setExpanded] = useState(false);
   const [discussing, setDiscussing] = useState(false);
 
@@ -183,7 +185,7 @@ export function FindingCard({
                       part.id ? (
                         <Link
                           key={j}
-                          href={conversationHref(part.id)}
+                          href={conversationHref(part.id, audience)}
                           className="font-mono underline decoration-dotted underline-offset-2 hover:text-foreground"
                           title="Open this conversation"
                         >

@@ -33,9 +33,11 @@ import {
 } from "../types";
 import { conversationHref, exampleDoor } from "../subject-doors";
 import { DoorLink } from "./DoorLink";
+import { useDoorAudience } from "./door-audience";
 import { fmtCost, fmtDate, VERDICT_COLOR } from "./tokens";
 
 export function ReplaysTable({ replays }: { replays: Replay[] }) {
+  const audience = useDoorAudience();
   if (replays.length === 0) return null;
 
   return (
@@ -64,7 +66,7 @@ export function ReplaysTable({ replays }: { replays: Replay[] }) {
               const ran = replayRan(r);
               const spend = replaySpend(r);
               const baseline = replayBaseline(r);
-              const sourceDoor = exampleDoor("conversation", r.source_conversation_id);
+              const sourceDoor = exampleDoor("conversation", r.source_conversation_id, audience);
               return (
                 <TableRow key={r.id} className={cn(!ran && "opacity-80")}>
                   <TableCell>
@@ -125,7 +127,7 @@ export function ReplaysTable({ replays }: { replays: Replay[] }) {
                       {r.replay_conversation_id && (
                         <DoorLink
                           door={{
-                            href: conversationHref(r.replay_conversation_id),
+                            href: conversationHref(r.replay_conversation_id, audience),
                             label: "Replay",
                             external: false,
                           }}

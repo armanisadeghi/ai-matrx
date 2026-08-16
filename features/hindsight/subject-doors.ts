@@ -1,5 +1,5 @@
 /**
- * features/administration/hindsight/subject-doors.ts
+ * features/hindsight/subject-doors.ts
  *
  * The Door Law for Hindsight: every record this surface names must be
  * openable. Subjects (agent / workflow / tool), the real examples a review
@@ -14,12 +14,26 @@ import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 
 import type { Enrollment } from "./types";
 
-export function agentHref(agentId: string): string {
-  return `/administration/agents/system-agents/agents/${agentId}`;
+/**
+ * Who is looking. The admin console opens records through /administration/*;
+ * the product surface (a user's own agent's Hindsight tab) opens the same
+ * records through routes a non-admin can reach.
+ */
+export type DoorAudience = "admin" | "product";
+
+export function agentHref(agentId: string, audience: DoorAudience = "admin"): string {
+  return audience === "admin"
+    ? `/administration/agents/system-agents/agents/${agentId}`
+    : `/agents/${agentId}`;
 }
 
-export function conversationHref(conversationId: string): string {
-  return `/administration/chat/cx-dashboard/conversations/${conversationId}`;
+export function conversationHref(
+  conversationId: string,
+  audience: DoorAudience = "admin",
+): string {
+  return audience === "admin"
+    ? `/administration/chat/cx-dashboard/conversations/${conversationId}`
+    : `/chat/${conversationId}`;
 }
 
 export function toolHref(toolId: string): string {
@@ -48,10 +62,11 @@ export interface Door {
 export function subjectDoor(
   enrollment: Enrollment,
   toolId?: string | null,
+  audience: DoorAudience = "admin",
 ): Door | null {
   const { subject_kind: kind, subject_id: id } = enrollment;
   if (kind === "agent" && id) {
-    return { href: agentHref(id), label: "Open agent", external: false };
+    return { href: agentHref(id, audience), label: "Open agent", external: false };
   }
   if (kind === "workflow" && id) {
     return { href: workflowHref(id), label: "Open workflow", external: true };
@@ -63,9 +78,17 @@ export function subjectDoor(
 }
 
 /** The door for one real example a review read. */
-export function exampleDoor(kind: string, id: string): Door | null {
+export function exampleDoor(
+  kind: string,
+  id: string,
+  audience: DoorAudience = "admin",
+): Door | null {
   if (kind === "conversation") {
-    return { href: conversationHref(id), label: "Open transcript", external: false };
+    return {
+      href: conversationHref(id, audience),
+      label: "Open transcript",
+      external: false,
+    };
   }
   if (kind === "wf_run") {
     return { href: workflowRunHref(id), label: "Open run", external: true };

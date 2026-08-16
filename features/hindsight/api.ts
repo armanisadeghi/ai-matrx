@@ -1,5 +1,5 @@
 /**
- * features/administration/hindsight/api.ts
+ * features/hindsight/api.ts
  *
  * Contract-bound client for aidream's `/hindsight/*` admin surface. Every call
  * goes through the typed client so a backend rename is a compile error here.

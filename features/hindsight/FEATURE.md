@@ -1,8 +1,23 @@
-# FEATURE: Hindsight — continuous review + Replay (admin)
+# FEATURE: Hindsight — continuous review + Replay
 
-**Status:** Active · **Route:** `/administration/agents/hindsight` (Agents →
-Health & Drift) · **Entry point:**
-[`components/HindsightPage.tsx`](./components/HindsightPage.tsx)
+**Status:** Active · **Routes:** `/administration/agents/hindsight` (admin
+console, Agents → Health & Drift) + `/agents/{id}/hindsight` (Layer 2 — a
+user's own agent's "Review" tab) · **Entry points:**
+[`components/HindsightPage.tsx`](./components/HindsightPage.tsx) (admin) ·
+[`components/AgentHindsightPanel.tsx`](./components/AgentHindsightPanel.tsx)
+(product)
+
+**Layer 2 (2026-08-15).** This feature dir moved from
+`features/administration/hindsight/` to `features/hindsight/` because it is no
+longer admin-only: a user turns on continuous review for an agent THEY OWN from
+the agent's "Review" tab (`AgentModeController` mode `hindsight`). The server
+scopes everything by `created_by` for non-admins (aidream router), so both
+surfaces share `api.ts` unchanged. `DoorAudienceProvider` (in
+`components/door-audience.tsx`) decides whether doors open admin routes or
+product routes (`/agents/{id}`, `/chat/{id}`) — the product tree wraps itself
+in `audience="product"`; the admin console needs nothing (default `admin`).
+Replay triggering and tool/workflow/environment subjects remain admin-only
+server-side.
 
 Hindsight is how the platform reads its own history and improves itself. Enroll
 an **agent, workflow, tool, or environment**; every N real runs a reviewer agent
@@ -27,7 +42,8 @@ platform admin, not in a backend-repo dashboard. Do not re-create a second copy.
 | Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, Apply / Reject / **Guide** |
 | Discuss | `components/DiscussPanel.tsx` — the reviewer's thread + the reply box |
 | Review | `components/ReviewRow.tsx` → `components/ReplaysTable.tsx` |
-| Doors | `subject-doors.ts` |
+| Layer 2 panel | `components/AgentHindsightPanel.tsx` — enable CTA or `EnrollmentDetailPanel`, product doors |
+| Doors | `subject-doors.ts` (audience-aware) + `components/door-audience.tsx` |
 | Types | `types.ts` — DERIVED from the OpenAPI contract |
 | Client | `api.ts` — `lib/api/typed-client.ts` over aidream `/hindsight/*` |
 

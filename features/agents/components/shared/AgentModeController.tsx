@@ -12,6 +12,7 @@ import {
   Pencil,
   Play,
   Plus,
+  Sparkles,
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ export type AgentPageMode =
   | "shortcuts"
   | "apps"
   | "surfaces"
+  | "hindsight"
   | "versions"
   | "widgets";
 export type ModeOption = AgentPageMode | "new";
@@ -54,6 +56,7 @@ export const MODES: { id: ModeOption; label: string; icon: typeof Eye }[] = [
   { id: "shortcuts", label: "Shortcuts", icon: Zap },
   { id: "apps", label: "Apps", icon: AppWindow },
   { id: "surfaces", label: "Surfaces", icon: Layers },
+  { id: "hindsight", label: "Review", icon: Sparkles },
   { id: "versions", label: "Versions", icon: History },
   { id: "widgets", label: "Widgets", icon: LayoutGrid },
   { id: "new", label: "New", icon: Plus },
@@ -74,6 +77,7 @@ export function getAgentModeHref(
     shortcuts: `${basePath}/${agentId}/shortcuts`,
     apps: `${basePath}/${agentId}/apps`,
     surfaces: `${basePath}/${agentId}/surfaces`,
+    hindsight: `${basePath}/${agentId}/hindsight`,
     versions: `${basePath}/${agentId}/latest`,
     widgets: `${basePath}/${agentId}/widgets`,
   };
@@ -91,6 +95,7 @@ export function deriveAgentMode(
   if (pathname.startsWith(`${base}/shortcuts`)) return "shortcuts";
   if (pathname.startsWith(`${base}/apps`)) return "apps";
   if (pathname.startsWith(`${base}/surfaces`)) return "surfaces";
+  if (pathname.startsWith(`${base}/hindsight`)) return "hindsight";
   if (pathname.startsWith(`${base}/widgets`)) return "widgets";
   const versionPattern = new RegExp(
     `^${basePath.replace(/\//g, "\\/")}\\/[^/]+\\/v\\/\\d+$`,

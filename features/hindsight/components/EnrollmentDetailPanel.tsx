@@ -27,6 +27,7 @@ import {
 } from "../api";
 import { subjectDoor } from "../subject-doors";
 import { DoorLink } from "./DoorLink";
+import { useDoorAudience } from "./door-audience";
 import { FindingCard } from "./FindingCard";
 import { ReviewRow } from "./ReviewRow";
 import { fmtCost, fmtDate, fmtElapsed, KIND_COLOR, KIND_ICON, KIND_LABEL } from "./tokens";
@@ -70,6 +71,7 @@ export function EnrollmentDetailPanel({
   enrollmentId: string;
   onArchived: () => void;
 }) {
+  const audience = useDoorAudience();
   const queryClient = useQueryClient();
   const reviewStartedAt = useRef<number>(0);
 
@@ -153,7 +155,7 @@ export function EnrollmentDetailPanel({
   if (!data || !enrollment) return null;
 
   const Icon = KIND_ICON[enrollment.subject_kind];
-  const door = subjectDoor(enrollment, toolId.data);
+  const door = subjectDoor(enrollment, toolId.data, audience);
   const spend = data.spend;
   const untilNext = Math.max(
     0,

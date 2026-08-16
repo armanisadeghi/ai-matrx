@@ -8,7 +8,7 @@
 
 import { Suspense } from "react";
 
-import { HindsightPage } from "@/features/administration/hindsight/components/HindsightPage";
+import { HindsightPage } from "@/features/hindsight/components/HindsightPage";
 
 export const metadata = {
   title: "Hindsight | Agents | Administration",

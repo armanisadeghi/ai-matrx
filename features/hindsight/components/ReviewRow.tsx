@@ -18,6 +18,7 @@ import { conversationHref, exampleDoor } from "../subject-doors";
 import type { Review } from "../types";
 import { DiscussPanel } from "./DiscussPanel";
 import { DoorLink } from "./DoorLink";
+import { useDoorAudience } from "./door-audience";
 import { ReplaysTable } from "./ReplaysTable";
 import { fmtCost, fmtDate } from "./tokens";
 
@@ -29,6 +30,7 @@ export function ReviewRow({
   /** Guidance sent from the thread changes the FINDINGS — refetch on resolve. */
   onChanged: () => void;
 }) {
+  const audience = useDoorAudience();
   const [expanded, setExpanded] = useState(false);
   const detail = useQuery({
     queryKey: ["hindsight", "review", review.id],
@@ -102,7 +104,7 @@ export function ReviewRow({
                 {examples.map((ex, i) => {
                   const kind = ex.kind ?? "run";
                   const id = ex.id ?? "";
-                  const door = id ? exampleDoor(kind, id) : null;
+                  const door = id ? exampleDoor(kind, id, audience) : null;
                   const label = `${kind} ${id.slice(0, 8)}`;
                   return door ? (
                     <DoorLink key={`${id}-${i}`} size="xs" door={{ ...door, label }} />
@@ -127,7 +129,7 @@ export function ReviewRow({
               <DoorLink
                 size="xs"
                 door={{
-                  href: conversationHref(review.reviewer_conversation_id),
+                  href: conversationHref(review.reviewer_conversation_id, audience),
                   label: "Open reviewer transcript",
                   external: false,
                 }}
