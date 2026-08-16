@@ -83,7 +83,7 @@ names on one page.
 | `config.tsx` | `EntityListConfig<TRow>` — THE contract. Read its doc comments before adding a knob; a knob earns its place only when a second surface needs it |
 | `columns.tsx` | `EntityColumnSpec<TRow>` + shared cell helpers (`relativeTime`, `timeCell`, `DATE_FILTER_OPTIONS`) |
 | `useEntityList.ts` | The query hook — generation-guarded fetches, debounced search, counts/facets with deliberate dependency keys |
-| `components/EntityListPage.tsx` | The shell. Slots: `notice`, `headerActions`, `emptyAction`; feature modals come back from `config.useRowActions` |
+| `components/EntityListPage.tsx` | The shell. Slots: `notice`, `headerActions`, `emptyAction`, `surface`; feature modals come back from `config.useRowActions` |
 | `components/EntityScopeTabs.tsx` | THE VIEW LAW tabs — fixed five vocabulary (lib/list-scope), narrowing options from the counts RPC, never Redux |
 | `components/EntityListToolbar.tsx` / `EntityFilterPanel.tsx` / `EntityColumnPicker.tsx` / `EntityListTable.tsx` | The lifted surface pieces |
 
@@ -161,7 +161,37 @@ search touches all users' transcripts before scoping narrows them. Counting
 calls skip per-row scoring (the `LIMIT <= 1` guard); the deep `ILIKE` still
 runs. Restructure if it ever shows up in timings.
 
+## The agent surface (`surface`)
+
+A list has exactly one honest set of live values — *what is on screen, in which
+scope, out of what total* — and the shell is the only thing that holds all of
+them. So a list page binds its agent surface here rather than wrapping itself in
+a `SurfaceRuntimeProvider` around a second copy of state it does not own:
+
+```tsx
+<EntityListPage
+  config={inboxListConfig}
+  surface={{
+    surfaceName: CRM_INBOX_SURFACE_NAME,
+    getScope: (list) => createCrmInboxScope({ ... }),  // manifest values
+  }}
+/>
+```
+
+`getScope` receives the live `EntityListController` and runs at Run time only —
+never on mount — so a page that never launches an agent pays nothing. The
+surface must exist in `features/surfaces/manifests/registry.ts` and be synced to
+`ui.ui_surface`; without a manifest row it can carry neither values nor roles.
+🚨 It must ALSO be mapped in `features/surfaces/utils/route-to-surface.ts`
+BEFORE any shorter prefix that would swallow its route — the panel discards a
+registered runtime whose name disagrees with the route, so a `/crm` row above
+`/crm/inbox` silently makes the whole surface unreachable from the header.
+
 ## Change log
+
+- 2026-08-16 — `surface` prop: any list page can emit its live values to an
+  agent surface in two lines, reading the shell's own controller (first
+  consumer: `/crm/inbox`, outreach-system WP1).
 
 - 2026-08-16 — Three generic additions, all driven by `/work/conversations`
   (its third consumer): `config.urlState` (the query lives in the URL — see

@@ -212,13 +212,24 @@ it answers.
 
 ## Assists
 
-`<AssistStrip>` is mounted on both surfaces (`matrx-user/crm-inbox`,
-`matrx-user/crm-chasebox`) and renders nothing today, because **no producer writes to them
-yet**. 🚨 **`matrx-user/crm-chasebox` is a REGISTERED surface as of 2026-08-16**
-(`crm-chasebox.manifest.ts` + `migrations/crm_ui_surface_chasebox.sql`, applied live) — until
-then the strip was keyed to a surface row that did not exist, so it could never have rendered
-anything and no agent role could hang off it (IC-7). `matrx-user/crm-inbox` is still in that
-state and is the next one to register. That is declared, not forgotten: the first genuine assist belongs with the
+`<AssistStrip>` is mounted on both surfaces and renders nothing today, because **no producer
+writes to them yet**. 🚨 **BOTH ARE REGISTERED SURFACES as of 2026-08-16** —
+`matrx-user/crm-chasebox` (`crm-chasebox.manifest.ts` + `migrations/crm_ui_surface_chasebox.sql`)
+and `matrx-user/crm-inbox` (`crm-inbox.manifest.ts` + `migrations/crm_ui_surface_inbox.sql`),
+both applied live. Until each was registered its strip was keyed to a surface row that did not
+exist, so it could never have rendered anything and no agent role could hang off it (IC-7).
+
+🚨 **REGISTERING A SURFACE IS TWO HALVES, AND THE SECOND ONE IS EASY TO MISS.** The manifest +
+DB row make the surface EXIST; `features/surfaces/utils/route-to-surface.ts` is what makes the
+page RESOLVE to it. `SurfaceAgentsPanelImpl` discards a registered runtime whose name disagrees
+with the route, and a bare `/crm` prefix sat above both of these routes — so from the day the
+Chasebox was registered until 2026-08-16 the header panel still resolved `matrx-user/crm`,
+listed the CRM manager's agents, and made the `draft_reviewer` role WP5 had bound unreachable.
+Fixed by mapping `/crm/chasebox` and `/crm/inbox` above `/crm` (first match wins). Verify a new
+surface by opening the panel and reading the surface name it prints — never by the manifest
+alone.
+
+The first genuine assist belongs with the
 inbound-classification server half — *a reply arrived with no classifier verdict* is a real,
 one-click-fixable gap and exactly the shape `platform.assists` exists for. The Chasebox's
 five queues are deliberately NOT assists: they are the action surface itself, and emitting
@@ -265,6 +276,15 @@ then deleted** (`crm.interaction` is back to its original 4 rows, 0 inbound):
 ---
 
 ## Change log
+
+- 2026-08-16 — **WP1 round 4.** `matrx-user/crm-inbox` REGISTERED (manifest + live DB sync,
+  5 values + the `reply_reader` role), emitted through the entity-list shell's new generic
+  `surface` binding rather than a hand-rolled provider. Route→surface mapping fixed for BOTH
+  outreach routes (see Assists — the Chasebox's own registration had been unreachable).
+  The Chasebox draft dialog gained the **reply-evidence panel** (intent, what it is
+  answering, every traced claim with where it came from, and a door to the message it
+  answers) plus **"approve the N you have read"**, which posts the ids the reviewer actually
+  opened to the canonical `approve_drafts` — ids, never a filter.
 
 - 2026-08-15 — **Created (WP1).** `migrations/crm_08_inbox_chasebox.sql` applied live +
   ledgered; `/crm/inbox` and `/crm/chasebox` shipped on the canonical entity-list shell and a
