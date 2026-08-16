@@ -59,6 +59,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/notes", surface: "matrx-user/notes" },
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
+  { prefix: "/crm/outreach-lists", surface: "matrx-user/crm-outreach-lists" },
   { prefix: "/crm", surface: "matrx-user/crm" },
   // Images family. The my-cloud tab is the library; the four studio tools
   // each carry their own surface. The static /images/studio landing maps to

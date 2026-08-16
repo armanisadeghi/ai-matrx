@@ -18,6 +18,12 @@ import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatRelativeTime } from "@/utils/datetime";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import {
+  CRM_OUTREACH_LISTS_SURFACE_NAME,
+  createCrmOutreachListsScope,
+} from "@/features/surfaces/manifests/crm-outreach-lists.manifest";
 import { useCrmContext } from "../../hooks/useCrmContext";
 import {
   deleteOutreachList,
@@ -245,6 +251,30 @@ export function OutreachListsPage() {
   );
 
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={CRM_OUTREACH_LISTS_SURFACE_NAME}
+      getScope={() =>
+        createCrmOutreachListsScope({
+          visible_lists: rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            description: row.description,
+            list_kind: row.list_kind,
+            status: row.status,
+            member_count: memberCount(row),
+            started_at: row.started_at,
+            updated_at: row.updated_at,
+          })),
+          visible_list_ids: rows.map((row) => row.id),
+          list_count: rows.length,
+          available_organizations: ctx
+            ? Object.entries(ctx.orgNames).map(([id, name]) => ({ id, name }))
+            : undefined,
+          is_loading: isLoading || !ctx,
+          load_error: error ?? undefined,
+        })
+      }
+    >
     <div className="flex h-full flex-col overflow-hidden">
       <div className="shrink-0 px-3 pt-[calc(var(--shell-header-h)+0.375rem)]">
         <div className="flex flex-wrap items-center gap-2">
@@ -258,6 +288,12 @@ export function OutreachListsPage() {
             {error}
           </div>
         )}
+        {/* Outreach assists (producers write platform.assists rows keyed to
+            this surface; the strip renders nothing while none are pending). */}
+        <AssistStrip
+          surfaceName={CRM_OUTREACH_LISTS_SURFACE_NAME}
+          className="mt-2"
+        />
       </div>
 
       <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
@@ -313,5 +349,6 @@ export function OutreachListsPage() {
         }}
       />
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -1,0 +1,197 @@
+/**
+ * Surface manifest — Outreach Lists (`matrx-user/crm-outreach-lists`).
+ *
+ * The outreach campaign console at /crm/outreach-lists: every outreach list
+ * (cold email / call / mixed audiences) the user can work, table-first, with
+ * create + lifecycle actions. Registered by WP5 of the outreach-system program
+ * (decision D14) as the anchor for the outreach agent roles and assist strip;
+ * the surface itself is owned by the pipeline (WP1).
+ *
+ * READ-ONLY v1, deliberately: no writeTargets yet. The useful agent work here
+ * is planning and drafting (the roles below) — every draft an agent produces
+ * lands as a `crm.interaction` row with status 'planned' through the
+ * outreach_single_send service (contract IC-6), never as a direct write to
+ * this page. List lifecycle (activate / pause / delete) stays human.
+ */
+
+import type {
+  SurfaceManifest,
+  SurfaceScopePayload,
+  SurfaceValue,
+  SurfaceValueGroup,
+} from "@/features/surfaces/types";
+
+export const CRM_OUTREACH_LISTS_SURFACE_NAME = "matrx-user/crm-outreach-lists";
+
+const groups: SurfaceValueGroup[] = [
+  {
+    key: "lists",
+    label: "Outreach lists",
+    sortOrder: 100,
+    description: "The outreach lists currently loaded in the console table.",
+  },
+  {
+    key: "workspace",
+    label: "Workspace",
+    sortOrder: 200,
+    description: "Organizations and loading state available to this console.",
+  },
+];
+
+/**
+ * One row of `visible_lists` — the summary shape the emitter builds from the
+ * loaded `OutreachListWithCount` rows. A mapped summary, not the raw DB row:
+ * the raw row carries `definition` jsonb (sequence + enrollment provenance)
+ * that can run to kilobytes per list and belongs to the detail surface.
+ */
+export interface OutreachListSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  list_kind: string;
+  status: string;
+  member_count: number;
+  started_at: string | null;
+  updated_at: string;
+}
+
+const values: SurfaceValue[] = [
+  {
+    name: "visible_lists",
+    label: "Visible outreach lists",
+    description:
+      "Summary of every outreach list loaded in the table: id, name, description, kind (list/email/call/mixed), status, member count, started and updated times. Empty array when the user has no outreach lists.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 4000,
+    autoContext: false,
+    group: "lists",
+    sortOrder: 100,
+  },
+  {
+    name: "visible_list_ids",
+    label: "Visible list IDs",
+    description:
+      "UUIDs of the outreach lists in the table, in display order. Empty array when none exist.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 800,
+    group: "lists",
+    sortOrder: 110,
+  },
+  {
+    name: "list_count",
+    label: "List count",
+    description: "Number of outreach lists loaded. Always populated.",
+    valueType: "number",
+    alwaysAvailable: true,
+    typicalCharCount: 3,
+    group: "lists",
+    sortOrder: 120,
+  },
+  {
+    name: "available_organizations",
+    label: "Available organizations",
+    description:
+      "Organizations whose outreach lists this console can show, as id and name pairs. Empty until memberships resolve or when the user belongs to none.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 400,
+    group: "workspace",
+    sortOrder: 200,
+  },
+  {
+    name: "is_loading",
+    label: "List is loading",
+    description:
+      "True while the outreach lists are still loading. Always populated.",
+    valueType: "boolean",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    group: "workspace",
+    sortOrder: 210,
+  },
+  {
+    name: "load_error",
+    label: "Load error",
+    description:
+      "Current load error message. Empty when the lists loaded successfully.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 180,
+    group: "workspace",
+    sortOrder: 220,
+  },
+];
+
+export const crmOutreachListsManifest: SurfaceManifest = {
+  surfaceName: CRM_OUTREACH_LISTS_SURFACE_NAME,
+  readiness: "partial",
+  readinessNote:
+    "Read vocabulary verified against OutreachListsPage; emitter + assist strip wired; roles declared. Pending: pitch_assistant default agent (not yet authored) and the non-matching-name binding verification pass.",
+  label: "Outreach Lists",
+  urlPattern: "/crm/outreach-lists",
+  intro: `<surface_intro>
+You are in the outreach lists console — the campaign home for cold outreach.
+Each list is a named audience (email, calling, or mixed) whose members are CRM
+parties worked through sequences, the call queue, and single sends. The lists
+values describe exactly what the table shows; workspace values say which
+organizations are in play and whether the list is still loading.
+
+WHAT YOU MAY DO HERE: explain, plan, prioritize, and draft. Anything you draft
+becomes a planned message a human reviews in the Chasebox — you have no send
+path, and you never imply one. Never state a fact about a recipient you cannot
+trace to a stored record, and never fill a merge variable with a guess: an
+unresolved variable correctly refuses to send.
+
+WHAT YOU MAY NOT DO: activate, pause, delete, or enroll into lists — the user
+presses those buttons. Suppression, do-not-contact, and sending eligibility are
+decided by one authority server-side; never reason around a block, and never
+suggest a workaround for one.
+</surface_intro>`,
+  groups,
+  values,
+  skipBaselineValues: true,
+  agentRoles: [
+    {
+      name: "outreach_strategist",
+      label: "Outreach strategist",
+      description:
+        "Turns stored evidence and recommended actions into a prioritized outreach plan; drafts wording on request. Never sends and has no contact lookup.",
+      kind: "single",
+      // Platform agent `outreach_strategist` (WP5 roster) — plans + drafts, refuses to send.
+      defaultAgentId: "6a8c6a97-a473-440f-87b1-ab09e02adfa2",
+      sortOrder: 100,
+    },
+    {
+      name: "personalization_writer",
+      label: "Personalization writer",
+      description:
+        "Writes evidence-backed personalization lines for list members from facts extracted from each target's own pages. Every line carries the fact and source page it came from.",
+      kind: "single",
+      // Platform agent `personalization_line_writer` (WP5 roster) — batch structured writer.
+      defaultAgentId: "67df8ca0-c451-4b8e-928c-a08e93c0c8d7",
+      sortOrder: 110,
+    },
+    {
+      name: "pitch_assistant",
+      label: "Pitch assistant",
+      description:
+        "Helps with templates, subject lines, and follow-up angles by campaign type. Planned — no default agent yet (WP5 roster).",
+      kind: "single",
+      defaultAgentId: null,
+      sortOrder: 120,
+    },
+  ],
+};
+
+export function createCrmOutreachListsScope(values: {
+  visible_lists: OutreachListSummary[];
+  visible_list_ids: string[];
+  list_count: number;
+  available_organizations?: Array<{ id: string; name: string }>;
+  is_loading: boolean;
+  load_error?: string;
+}): SurfaceScopePayload {
+  return values as SurfaceScopePayload;
+}
