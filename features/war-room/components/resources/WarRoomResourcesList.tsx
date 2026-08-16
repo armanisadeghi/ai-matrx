@@ -488,6 +488,12 @@ export function WarRoomResourcesList({
               "conversation",
               conv.conversationId,
               conv.title ?? undefined,
+              // Stamp provider provenance at attach time so agent rosters can
+              // mark a mirrored coding session (e.g. claude-code) with no
+              // re-read of the conversation row.
+              conv.sourceApp
+                ? { metadata: { source_app: conv.sourceApp } }
+                : undefined,
             )
           }
         />

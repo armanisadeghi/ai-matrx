@@ -1452,9 +1452,12 @@ export const startThreadConversation =
  * this links a conversation that already exists. The current title is stamped
  * as the edge `label` so the Resources surface and the Chat switcher show the
  * real name immediately (no re-read of `chat.conversation`, per the label-at-
- * attach-time contract). Idempotent: re-picking an already-attached chat just
- * re-focuses it. Binding the panel needs the tile's session, so `sessionId` is
- * required.
+ * attach-time contract) — and, same contract, the picker row's `source_app`
+ * (e.g. `claude-code` for a mirrored coding-agent session) is stamped into the
+ * edge `metadata` so the agent roster can mark provider provenance without
+ * ever re-reading the conversation row. Idempotent: re-picking an
+ * already-attached chat just re-focuses it. Binding the panel needs the tile's
+ * session, so `sessionId` is required.
  */
 export const attachExistingConversationToThread =
   (
@@ -1462,6 +1465,7 @@ export const attachExistingConversationToThread =
     sessionId: string,
     conversationId: string,
     label?: string | null,
+    sourceApp?: string | null,
   ) =>
   async (dispatch: AppDispatch, getState: () => RootState): Promise<boolean> => {
     const already = selectAssignmentsForContainer(
@@ -1474,7 +1478,10 @@ export const attachExistingConversationToThread =
       const ok = await dispatch(
         attachEntityToThread(threadId, "conversation", conversationId, {
           label: label?.trim() || null,
-          metadata: { role: "agent" },
+          metadata: {
+            role: "agent",
+            ...(sourceApp?.trim() ? { source_app: sourceApp.trim() } : {}),
+          },
         }),
       );
       if (!ok) return false;

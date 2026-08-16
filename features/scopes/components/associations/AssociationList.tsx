@@ -74,6 +74,13 @@ export interface ContainerResourcesAdapter {
     token: EntityTypeToken,
     resourceId: string,
     title?: string,
+    /**
+     * Extra edge metadata stamped at attach time (label-at-attach-time's
+     * sibling contract) — e.g. a conversation's `source_app` so agent rosters
+     * can mark provider provenance without re-reading the source row.
+     * Adapters without metadata support may ignore it.
+     */
+    opts?: { metadata?: Record<string, unknown> | null },
   ) => Promise<{ ok: boolean; error?: string }>;
   detach: (
     token: EntityTypeToken,

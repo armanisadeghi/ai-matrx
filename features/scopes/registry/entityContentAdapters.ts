@@ -170,5 +170,5 @@ register({
 register({
   token: "conversation",
   accessHint:
-    "war_room_read_thread(thread_id) for a thread's chain; war_room_read_resource(entity_type='conversation', entity_id=<id>) for any attached conversation",
+    "war_room_read_thread(thread_id) for a thread's chain; war_room_read_resource(entity_type='conversation', entity_id=<id>) for any attached conversation; conversations(action='search'|'get_summary'|'get_messages', ...) to search ALL your conversations (coding-agent sessions included — rows with source_app name their app, e.g. claude-code; conversations(action='list', provider=...) finds coding sessions) and read transcripts server-side",
 });

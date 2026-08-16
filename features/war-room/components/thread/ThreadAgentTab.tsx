@@ -148,6 +148,7 @@ function ThreadChatChrome({
               sessionId,
               conv.conversationId,
               conv.title,
+              conv.sourceApp ?? null,
             ),
           );
         }}

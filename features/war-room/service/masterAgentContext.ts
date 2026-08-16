@@ -119,11 +119,18 @@ export function indexThreadAssignments(
     countsRaw.set(row.container_id, perThread);
     if (isPlainMeta(row.metadata) && row.metadata.pinned === true) {
       const list = pinnedByThread.get(row.container_id) ?? [];
+      // Provider provenance from the edge (conversations: source_app =
+      // e.g. "claude-code" marks a mirrored coding-agent session).
+      const sourceApp =
+        typeof row.metadata.source_app === "string" && row.metadata.source_app
+          ? row.metadata.source_app
+          : undefined;
       list.push({
         token,
         id: row.entity_id,
         title: row.label?.trim() || `Untitled ${token}`,
         pinned: true,
+        ...(sourceApp ? { attrs: { source_app: sourceApp } } : {}),
       });
       pinnedByThread.set(row.container_id, list);
     }

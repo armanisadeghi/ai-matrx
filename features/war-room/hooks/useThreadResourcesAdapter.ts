@@ -88,14 +88,25 @@ function useContainerResourcesAdapter(
     error: null,
     reload,
     rows: ref ? assignments.map(rowFromAssignment) : [],
-    attach: async (token: EntityTypeToken, resourceId: string, title?: string) => {
+    attach: async (
+      token: EntityTypeToken,
+      resourceId: string,
+      title?: string,
+      opts?: { metadata?: Record<string, unknown> | null },
+    ) => {
       if (!ref) return { ok: false, error: "Missing container" };
+      // Attaching a knowledge store is an explicit "use this" — pinned
+      // rows stay inline in the agent context at every tier. Caller-supplied
+      // metadata (e.g. a conversation's `source_app`) merges in.
+      const extra = (opts?.metadata ?? null) as Record<string, Json> | null;
+      const metadata =
+        token === "data_store"
+          ? { pinned: true, ...(extra ?? {}) }
+          : extra;
       const ok = await dispatch(
         attachEntityToContainer(ref, sourceToEntity(token), resourceId, {
           label: title ?? null,
-          // Attaching a knowledge store is an explicit "use this" — pinned
-          // rows stay inline in the agent context at every tier.
-          metadata: token === "data_store" ? { pinned: true } : null,
+          metadata,
         }),
       );
       return { ok };
