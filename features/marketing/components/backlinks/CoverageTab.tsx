@@ -475,7 +475,15 @@ export function CoverageTab({ siteId }: { siteId: string }) {
   ];
 
   const trackerCount = trackers.data?.length ?? 0;
-  const unhealthy = (trackers.data ?? []).filter(
+  // BOTH shapes of "this feed may be incomplete": a tracker whose last pass
+  // FAILED (we learned nothing) and one that succeeded PARTIALLY (some searches
+  // were refused, so stories may be missing). The server records the sentence
+  // on `last_error` either way; showing only the failures would let a partial
+  // answer read as a complete one.
+  const incomplete = (trackers.data ?? []).filter(
+    (tracker) => Boolean(tracker.last_error),
+  );
+  const anyFailed = incomplete.some(
     (tracker) => tracker.last_run_status === "failed",
   );
 
@@ -507,11 +515,18 @@ export function CoverageTab({ siteId }: { siteId: string }) {
       )}
 
       {/* A broken tracker and a quiet week look identical unless we say so. */}
-      {unhealthy.length ? (
-        <div className="shrink-0 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
-          {unhealthy.length === 1
-            ? `“${unhealthy[0].name}” could not reach the news index on its last run, so this feed may be missing stories. ${unhealthy[0].last_error ?? ""}`
-            : `${unhealthy.length} trackers could not reach the news index on their last run, so this feed may be missing stories.`}
+      {incomplete.length ? (
+        <div
+          className={cn(
+            "shrink-0 rounded-md border p-2 text-xs",
+            anyFailed
+              ? "border-destructive/40 bg-destructive/5 text-destructive"
+              : "border-warning/40 bg-warning/5 text-warning",
+          )}
+        >
+          {incomplete.length === 1
+            ? `“${incomplete[0].name}”: ${incomplete[0].last_error}`
+            : `${incomplete.length} trackers could not see everything on their last pass, so this feed may be missing stories.`}
         </div>
       ) : null}
 
