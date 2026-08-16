@@ -32221,6 +32221,51 @@ export type Database = {
           },
         ]
       }
+      change_type_default: {
+        Row: {
+          change_type_key: string
+          created_at: string
+          default_mode: string
+          default_timeout_expiry: string
+          default_timeout_minutes: number
+          description: string
+          floor_human_only: boolean
+          label: string
+          note: string
+          row_num: number
+          tier: number
+          updated_at: string
+        }
+        Insert: {
+          change_type_key: string
+          created_at?: string
+          default_mode: string
+          default_timeout_expiry: string
+          default_timeout_minutes?: number
+          description?: string
+          floor_human_only?: boolean
+          label: string
+          note?: string
+          row_num: number
+          tier: number
+          updated_at?: string
+        }
+        Update: {
+          change_type_key?: string
+          created_at?: string
+          default_mode?: string
+          default_timeout_expiry?: string
+          default_timeout_minutes?: number
+          description?: string
+          floor_human_only?: boolean
+          label?: string
+          note?: string
+          row_num?: number
+          tier?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           body: string
@@ -32833,6 +32878,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      org_change_policy: {
+        Row: {
+          change_type_key: string
+          created_at: string
+          created_by_system: string | null
+          created_by_tier: string | null
+          handling_mode: string
+          organization_id: string
+          timeout_expiry: string | null
+          timeout_minutes: number | null
+          updated_at: string
+          updated_by_system: string | null
+          updated_by_tier: string | null
+          version: number
+        }
+        Insert: {
+          change_type_key: string
+          created_at?: string
+          created_by_system?: string | null
+          created_by_tier?: string | null
+          handling_mode: string
+          organization_id: string
+          timeout_expiry?: string | null
+          timeout_minutes?: number | null
+          updated_at?: string
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
+          version?: number
+        }
+        Update: {
+          change_type_key?: string
+          created_at?: string
+          created_by_system?: string | null
+          created_by_tier?: string | null
+          handling_mode?: string
+          organization_id?: string
+          timeout_expiry?: string | null
+          timeout_minutes?: number | null
+          updated_at?: string
+          updated_by_system?: string | null
+          updated_by_tier?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_change_policy_change_type_key_fkey"
+            columns: ["change_type_key"]
+            isOneToOne: false
+            referencedRelation: "change_type_default"
+            referencedColumns: ["change_type_key"]
+          },
+        ]
       }
       org_module_config: {
         Row: {
@@ -33528,6 +33626,7 @@ export type Database = {
         Args: { p_type: string }
         Returns: boolean
       }
+      get_change_policy_divergence: { Args: never; Returns: Json }
       log_activity:
         | {
             Args: {
@@ -33583,6 +33682,10 @@ export type Database = {
         Args: { p_container_id: string; p_container_type: string }
         Returns: undefined
       }
+      resolve_change_handling: {
+        Args: { p_change_type_key: string; p_organization_id: string }
+        Returns: Json
+      }
       retrofit_entity: {
         Args: {
           p_legacy_trigger?: string
@@ -33594,6 +33697,16 @@ export type Database = {
           p_token: string
         }
         Returns: string
+      }
+      set_org_change_policy: {
+        Args: {
+          p_change_type_key: string
+          p_handling_mode?: string
+          p_org_id: string
+          p_timeout_expiry?: string
+          p_timeout_minutes?: number
+        }
+        Returns: Json
       }
       sweep_orphaned_associations: {
         Args: { p_dry_run?: boolean }

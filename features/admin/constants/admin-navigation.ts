@@ -457,6 +457,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         destinations: [
           destination("/administration/users"),
           destination("/administration/users/organizations"),
+          destination("/administration/users/change-policy"),
           destination("/administration/users/preferences"),
           destination("/administration/users/admins"),
           destination("/administration/users/invitations"),

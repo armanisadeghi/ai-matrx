@@ -121,6 +121,12 @@ export function OrgManage({
       show: canManageSettings,
     },
     {
+      id: "change-policy",
+      label: "Change policy",
+      icon: ShieldCheck,
+      show: true,
+    },
+    {
       id: "dictionary",
       label: "Dictionary",
       icon: BookA,
@@ -378,6 +384,28 @@ export function OrgManage({
               />
             </SectionCard>
           )}
+
+          {/* Change policy (C-18) — how AI-proposed changes are handled */}
+          <SectionCard
+            id="change-policy"
+            icon={ShieldCheck}
+            title="Change policy"
+            description="How this organization wants each kind of AI-proposed change handled — automatic, reviewed, or off, per change type."
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <p className="text-sm text-muted-foreground flex-1">
+                Six risk tiers with one-click presets, plus per-row overrides
+                across the full change-type catalogue. Members can request
+                changes; owners and admins decide.
+              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/organizations/${slug}/settings/change-policy`}>
+                  Open change policy
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Link>
+              </Button>
+            </div>
+          </SectionCard>
 
           {/* Custom Dictionary — org-wide terminology + pronunciation */}
           {canManageSettings && (
