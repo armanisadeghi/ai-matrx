@@ -1,3 +1,14 @@
+/**
+ * StreamProfiler is a GLOBAL singleton holding ONE requestId: each `start()`
+ * cancels the previous profile, so under the workflow runtime's normal state
+ * (N concurrent stream lanes) every new stream clobbers the last profile and
+ * per-stream `console.table` output fires constantly. It therefore defaults
+ * OFF; flip the constant below for a deliberate single-stream profiling
+ * session.
+ */
+// Toggle is a CAPS constant per repo doctrine (never an env var). Default off — see header.
+const STREAM_PROFILER_ENABLED = false;
+
 export interface StreamProfilerExtraStats {
   tokens?: { output?: number; total?: number };
   timing?: { total_duration?: number; api_duration?: number };
@@ -54,6 +65,7 @@ export class StreamProfiler {
   }
 
   public start(requestId: string) {
+    if (!STREAM_PROFILER_ENABLED) return;
     if (this.isActive) {
       this.cancelRunning();
     }
@@ -80,6 +92,7 @@ export class StreamProfiler {
   }
 
   public trackChunk() {
+    if (!STREAM_PROFILER_ENABLED) return;
     if (this.isActive) {
       this.chunkCount++;
     }
@@ -94,6 +107,7 @@ export class StreamProfiler {
   }
 
   public stopAndReport(testName: string, extraStats?: StreamProfilerExtraStats) {
+    if (!STREAM_PROFILER_ENABLED) return null;
     if (!this.isActive) return null;
     this.cancelRunning();
 
