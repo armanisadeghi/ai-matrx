@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import type { paths } from "@/types/python-generated/api-types";
@@ -30,6 +31,26 @@ import type { ExpertisePack } from "../../types";
 
 const INGEST_PATH = "/expertise-desks/ingest" satisfies keyof paths;
 
+type IngestMode = "instructional" | "exemplar";
+
+const MODE_OPTIONS: {
+  value: IngestMode;
+  title: string;
+  blurb: string;
+}[] = [
+  {
+    value: "instructional",
+    title: "It explains the method",
+    blurb: "A chapter, a playbook, a transcript of you talking it through.",
+  },
+  {
+    value: "exemplar",
+    title: "It IS the finished work",
+    blurb:
+      "Examples of great output — the rules behind them get worked out for you.",
+  },
+];
+
 export function IngestSourceDialog({
   open,
   onOpenChange,
@@ -43,6 +64,7 @@ export function IngestSourceDialog({
 }) {
   const dispatch = useAppDispatch();
   const [text, setText] = useState("");
+  const [mode, setMode] = useState<IngestMode>("instructional");
   const [sourceNote, setSourceNote] = useState("");
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<string[]>([]);
@@ -72,6 +94,7 @@ export function IngestSourceDialog({
           body: {
             pack_id: pack.id,
             text: text,
+            mode,
             source_note: sourceNote.trim() || undefined,
           } as never,
           stream: true,
@@ -160,12 +183,41 @@ export function IngestSourceDialog({
         ) : (
           <div className="space-y-3">
             <div className="space-y-1.5">
+              <Label>What kind of source is it?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {MODE_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setMode(opt.value)}
+                    className={cn(
+                      "rounded-md border p-2.5 text-left transition-colors",
+                      mode === opt.value
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-card hover:border-muted-foreground/40",
+                    )}
+                  >
+                    <p className="text-sm font-medium text-foreground">
+                      {opt.title}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {opt.blurb}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="ingest-text">The source material</Label>
               <Textarea
                 id="ingest-text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Paste the text here — long is fine; it gets split automatically."
+                placeholder={
+                  mode === "exemplar"
+                    ? "Paste the finished work — one or several examples; separate them with blank lines."
+                    : "Paste the text here — long is fine; it gets split automatically."
+                }
                 rows={10}
               />
             </div>

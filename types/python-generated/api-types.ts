@@ -35196,7 +35196,7 @@ export interface components {
          */
         JsonSchemaProperty: {
             /** Type */
-            type?: ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null") | ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null")[] | null;
+            type?: ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string") | ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string")[] | null;
             /** Description */
             description?: string | null;
             /** Enum */
