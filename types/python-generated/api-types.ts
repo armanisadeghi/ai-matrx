@@ -7915,6 +7915,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vision-interview/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Interview Session */
+        post: operations["create_interview_session_vision_interview_sessions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vision-interview/sessions/{session_id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Interview Session */
+        post: operations["start_interview_session_vision_interview_sessions__session_id__start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/expertise-desks/compile": {
         parameters: {
             query?: never;
@@ -8003,6 +8037,28 @@ export interface paths {
          * @description The per-org kill switch. Takes effect at the gate immediately.
          */
         post: operations["set_sending_policy_sending_identities_policy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/sending-identities/bring-up-readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Bring Up Readiness
+         * @description Server-only facts for the org's production bring-up checklist — deployment
+         *     config, vendor-key presence (booleans, never values), gmail.readonly state.
+         *     Declared BEFORE /{identity_id} so the literal path is reachable.
+         */
+        get: operations["get_bring_up_readiness_sending_identities_bring_up_readiness_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8397,30 +8453,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13430,6 +13462,35 @@ export interface paths {
          *     Returns 409 if the run isn't in 'paused' state.
          */
         post: operations["resume_paused_run_runs__run_id__resume_paused_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/inject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Inject Run
+         * @description Live mid-run node injection (C-25 / D-35): pause the running run at
+         *     the next super-step boundary (or use its existing park), apply an
+         *     ADDITIVE DefinitionPatch through the full patch gate stack, re-stamp
+         *     the run's definition hash, and resume the SAME run — the injected
+         *     node(s) execute as part of it.
+         *
+         *     Rejections are loud and named (422 with the issue list, 409 for state
+         *     conflicts): non-additive ops, a missing output_kind (C-7), an edge into
+         *     a live partial join, a version-pinned run, a run that never started or
+         *     already ended.
+         */
+        post: operations["inject_run_runs__run_id__inject_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -20415,6 +20476,11 @@ export interface components {
             /** Cost Cap Per Call */
             cost_cap_per_call?: number | null;
             /**
+             * Max Recursion Depth
+             * @description Per-spec agent-nesting ceiling for the projected tool. None (the default) keeps the platform constant (agent_projection.PROJECTED_AGENT_MAX_RECURSION_DEPTH). A composition that declares its own depth budget (an Orchestra's metadata.depth_budget, D-39) passes it here so projection stamps the effective ceiling instead of the constant.
+             */
+            max_recursion_depth?: number | null;
+            /**
              * Result Mode
              * @description How the child agent's result returns to the caller. 'inline' — the full output in the tool_result (default). 'reference' — the output is stored in the conversation value store and the caller receives only a bounded descriptor (key + description + size + a paste-able reference fence); the child's tokens are NOT streamed to the client. 'inline_once' — full output this turn AND stored, so it can be stubbed from history once consumed.
              * @default inline
@@ -23434,6 +23500,28 @@ export interface components {
              * @default
              */
             error?: string;
+        };
+        /**
+         * BringUpReadiness
+         * @description Server-side half of the production bring-up checklist. Booleans only.
+         */
+        BringUpReadiness: {
+            /** Organization Id */
+            organization_id: string;
+            /** Pubsub Topic Configured */
+            pubsub_topic_configured: boolean;
+            /** Push Token Configured */
+            push_token_configured: boolean;
+            /** Hunter Key Present */
+            hunter_key_present: boolean;
+            /** Prospeo Key Present */
+            prospeo_key_present: boolean;
+            /** Millionverifier Key Present */
+            millionverifier_key_present: boolean;
+            /** Gmail Readonly Granted */
+            gmail_readonly_granted: boolean;
+            /** Connected Mailboxes */
+            connected_mailboxes: number;
         };
         /**
          * BrokeredCredential
@@ -27941,6 +28029,38 @@ export interface components {
             /** Display Name */
             display_name?: string | null;
         };
+        /** CreateSessionRequest */
+        CreateSessionRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Title
+             * @default Untitled interview
+             */
+            title?: string;
+            /**
+             * Vision Statement
+             * @description The human's opening statement of the vision — becomes turn 0.
+             */
+            vision_statement: string;
+            /** Settings */
+            settings?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
         /**
          * CreateShareLinkRequest
          * @description Canonical share-link mint request (``platform.share_links`` levels).
@@ -29237,33 +29357,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -34584,6 +34677,20 @@ export interface components {
              */
             show_thinking?: boolean;
         };
+        /**
+         * InjectRunRequest
+         * @description Body for POST /runs/{run_id}/inject — live mid-run node injection
+         *     (C-25 / D-35). The patch must be ADDITIVE (add_node / add_edge /
+         *     set_variable); anything else is rejected loudly by the service gates.
+         */
+        InjectRunRequest: {
+            patch: components["schemas"]["DefinitionPatch-Input"];
+            /**
+             * Max Steps
+             * @default 1000
+             */
+            max_steps?: number;
+        };
         /** InjuryCreate */
         InjuryCreate: {
             /** Impairment Definition Id */
@@ -35196,7 +35303,7 @@ export interface components {
          */
         JsonSchemaProperty: {
             /** Type */
-            type?: ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string") | ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string")[] | null;
+            type?: ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null") | ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null")[] | null;
             /** Description */
             description?: string | null;
             /** Enum */
@@ -38721,6 +38828,8 @@ export interface components {
             tagline?: string | null;
             /** Member Titles */
             member_titles?: string[];
+            /** Member Depth Ceiling */
+            member_depth_ceiling?: number | null;
         };
         /** OrganizationSecretContributeRequest */
         OrganizationSecretContributeRequest: {
@@ -45975,6 +46084,29 @@ export interface components {
             /** Snippet */
             snippet: string | null;
         };
+        /** SessionPayload */
+        SessionPayload: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Vision Statement */
+            vision_statement?: string | null;
+            /**
+             * Stage
+             * @enum {string}
+             */
+            stage: "expand" | "test" | "shape" | "loop" | "done";
+            /** Current Round */
+            current_round: number;
+            /** Run Id */
+            run_id?: string | null;
+            /**
+             * Document
+             * @default
+             */
+            document?: string;
+        };
         /** SetCanonicalCleanRequest */
         SetCanonicalCleanRequest: {
             /**
@@ -47837,6 +47969,28 @@ export interface components {
             pipe_policy?: components["schemas"]["PipePolicy-Input"] | null;
             /** @default research */
             start_stage?: components["schemas"]["LoopStage"];
+        };
+        /**
+         * StartRunBody
+         * @description POST body for /vision-interview/sessions/{id}/start — the session id
+         *     rides the path; only injected scope may appear on the body.
+         */
+        StartRunBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
         };
         /**
          * StartStepRunResponse
@@ -51709,6 +51863,8 @@ export interface components {
              * @default false
              */
             blocking?: boolean;
+            /** Spilled Text */
+            spilled_text?: string | null;
         };
         /**
          * VariableSpec
@@ -67984,6 +68140,74 @@ export interface operations {
             };
         };
     };
+    create_interview_session_vision_interview_sessions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionPayload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_interview_session_vision_interview_sessions__session_id__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StartRunBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     compile_desk_expertise_desks_compile_post: {
         parameters: {
             query?: never;
@@ -68196,6 +68420,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SendingPolicyView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_bring_up_readiness_sending_identities_bring_up_readiness_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BringUpReadiness"];
                 };
             };
             /** @description Validation Error */
@@ -68948,41 +69203,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -78123,6 +78343,41 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["ResumeRunRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inject_run_runs__run_id__inject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InjectRunRequest"];
             };
         };
         responses: {

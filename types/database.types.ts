@@ -27288,9 +27288,11 @@ export type Database = {
           original_metrics: Json
           overrides: Json
           replay_conversation_id: string | null
-          source_conversation_id: string
+          replay_wf_run_id: string | null
+          source_conversation_id: string | null
           source_position: number | null
           source_user_input: string | null
+          source_wf_run_id: string | null
           status: string
           updated_at: string
           updated_by: string | null
@@ -27320,9 +27322,11 @@ export type Database = {
           original_metrics?: Json
           overrides?: Json
           replay_conversation_id?: string | null
-          source_conversation_id: string
+          replay_wf_run_id?: string | null
+          source_conversation_id?: string | null
           source_position?: number | null
           source_user_input?: string | null
+          source_wf_run_id?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -27352,9 +27356,11 @@ export type Database = {
           original_metrics?: Json
           overrides?: Json
           replay_conversation_id?: string | null
-          source_conversation_id?: string
+          replay_wf_run_id?: string | null
+          source_conversation_id?: string | null
           source_position?: number | null
           source_user_input?: string | null
+          source_wf_run_id?: string | null
           status?: string
           updated_at?: string
           updated_by?: string | null
@@ -40605,6 +40611,64 @@ export type Database = {
       is_super_admin_for: { Args: { p_user_id: string }; Returns: boolean }
       is_super_admin_user: { Args: { p_user: string }; Returns: boolean }
       is_system_path: { Args: { p_path: string }; Returns: boolean }
+      ivw_list_facets: {
+        Args: { p_org_id?: string; p_scope?: string; p_search?: string }
+        Returns: {
+          kind: string
+          total: number
+          value: string
+        }[]
+      }
+      ivw_list_scope_counts: {
+        Args: { p_filters?: Json; p_search?: string }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      ivw_list_scoped: {
+        Args: {
+          p_dir?: string
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          access_level: string
+          created_at: string
+          current_round: number
+          id: string
+          is_owner: boolean
+          open_questions: number
+          organization_id: string
+          organization_name: string
+          owner_email: string
+          stage: string
+          title: string
+          total_count: number
+          updated_at: string
+          user_id: string
+          visibility: string
+          vision_statement: string
+        }[]
+      }
+      ivw_search_score: {
+        Args: {
+          p_id: string
+          p_owner_email: string
+          p_query: string
+          p_stage: string
+          p_title: string
+          p_vision: string
+        }
+        Returns: number
+      }
       kg_caller_can_target_scope: {
         Args: { p_scope_id: string }
         Returns: boolean
