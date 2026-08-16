@@ -508,6 +508,11 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-15` — The CMS access predicate now consumes the canonical
+  `satisfiesPermissionLevel` helper instead of maintaining a second local
+  viewer/editor/admin rank map. Existing owner, organization-member, admin,
+  and public-viewer behavior remains pinned by the 13 access tests.
+
 - `2026-08-15` — **Page editor tab governance + SEO plan** (cms-page-hub items 4–5). HTML/CSS/JS
   folded into one Code tab with an inner switcher (7-tab strip); tabs are URL state (`?tab=`
   written on every switch, legacy `html|css|js` values land on the right buffer). The Plan tab

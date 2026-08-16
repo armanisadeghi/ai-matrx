@@ -254,7 +254,7 @@ export function LandscapeBriefCard({
 
             {questions.length ? (
               <div className="space-y-1.5">
-                <Label>Only you can answer these</Label>
+                <Label>Questions for your review</Label>
                 <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
                   {questions.map((question) => (
                     <li key={question}>{question}</li>

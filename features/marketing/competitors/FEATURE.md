@@ -79,6 +79,10 @@ classification without buying a page-crawl autopsy. Everything lands `proposed`.
 
 ## Change log
 
+- 2026-08-15 — Replaced the unprovable “Only you” privacy claim above the
+  landscape-review questions with factual review copy; access is never inferred
+  from a label or a single visibility column.
+
 - 2026-08-15 — Added the Review tab: the landscape brief (staged confidence, service lines, 24h
   non-blocking deadline), the confidence-ordered ruling queue, and the ground-truth ruling record.
   The axis editor gained `peer_scale` and the live 15-value `entity_role` list — the pinned

@@ -48,8 +48,13 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-/** Mirrors MAIN's `permission_level`, in ascending order. */
-export type CmsAccessLevel = "viewer" | "editor" | "admin";
+import {
+  satisfiesPermissionLevel,
+  type PermissionLevel,
+} from "@/utils/permissions/types";
+
+/** MAIN's canonical permission level. */
+export type CmsAccessLevel = PermissionLevel;
 
 /** Mirrors MAIN's `platform.visibility`, in ascending order. */
 export const CMS_VISIBILITIES = [
@@ -73,12 +78,6 @@ function visibilityRank(value: unknown): number {
   // an authorization check must fail closed on data it does not understand.
   return index === -1 ? 0 : index;
 }
-
-const LEVEL_RANK: Record<CmsAccessLevel, number> = {
-  viewer: 0,
-  editor: 1,
-  admin: 2,
-};
 
 /** The governance columns every access decision reads. */
 export interface CmsSiteAccessRow {
@@ -156,7 +155,10 @@ export function canAccessCmsSite(
   const rank = visibilityRank(site.visibility);
 
   // `public` is readable by anyone signed in (viewer only).
-  if (site.visibility === "public" && LEVEL_RANK[level] === LEVEL_RANK.viewer) {
+  if (
+    site.visibility === "public" &&
+    !satisfiesPermissionLevel(level, "editor")
+  ) {
     return true;
   }
 
@@ -167,7 +169,7 @@ export function canAccessCmsSite(
 
   if (caller.adminOrgIds.includes(site.organization_id)) return true;
   if (
-    LEVEL_RANK[level] <= LEVEL_RANK.editor &&
+    !satisfiesPermissionLevel(level, "admin") &&
     caller.memberOrgIds.includes(site.organization_id)
   ) {
     return true;
