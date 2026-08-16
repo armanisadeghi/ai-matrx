@@ -584,8 +584,13 @@ const workflowRunsSlice = createSlice({
       const run = state.byRunId[action.payload.runId];
       if (!run) return;
       const row = action.payload.row;
-      run.status = row.status;
-      if (row.error) run.error = row.error;
+      // The row is a PRE-replay snapshot and this reducer runs AFTER replay
+      // (the tails need the invocations replay creates). A status event folded
+      // during replay is therefore NEWER than the row — only adopt the row's
+      // status when no event has set one, or a terminal replayed status would
+      // be regressed to a stale "running" forever (Bugbot #148).
+      if (run.statusTs === null) run.status = row.status;
+      if (row.error && run.error === null) run.error = row.error;
       // Durable reconnect snapshot for streamed text — node_stream frames are
       // never replayed; the heartbeat is how a late-attaching client rebuilds
       // the tails. Canonical reader lives beside the wire types.

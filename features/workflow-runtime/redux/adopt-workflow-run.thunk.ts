@@ -230,7 +230,23 @@ export function adoptWorkflowRun(
             );
           });
         if (allTerminal) {
-          tree.laneManager.settleLane(runId, rootKey, outcome, message);
+          // The shared lane's outcome follows the AGGREGATE, not whichever
+          // sibling happened to settle last: any failed invocation makes the
+          // node failed (same law the aggregate selector applies).
+          const anyFailed = invocationKeys.some(
+            (k) => run?.nodes[k]?.phase === "failed",
+          );
+          const failedMessage = anyFailed
+            ? invocationKeys
+                .map((k) => run?.nodes[k]?.error?.message)
+                .find((m): m is string => typeof m === "string")
+            : undefined;
+          tree.laneManager.settleLane(
+            runId,
+            rootKey,
+            anyFailed ? "error" : "complete",
+            anyFailed ? failedMessage : undefined,
+          );
         }
       }
     };
