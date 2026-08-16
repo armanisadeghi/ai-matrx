@@ -45,6 +45,7 @@ import pageExtractionReducer from "@/features/page-extraction/redux/pageExtracti
 import { pdfStudioReducer } from "@/features/pdf-extractor/state/pdfStudioSlice";
 import { pdfBatchExtractDebugReducer } from "@/features/pdf-extractor/state/pdfBatchExtractDebugSlice";
 import transcriptStudioReducer from "@/features/transcript-studio/redux/slice";
+import visionInterviewReducer from "@/features/vision-interview/redux/vision-interview.slice";
 import fastFireReducer from "@/features/flashcards/fast-fire/redux/fastFireSlice";
 import warRoomReducer from "@/features/war-room/redux/slice";
 import warRoomWatchReducer from "@/features/war-room/redux/watchSlice";
@@ -212,6 +213,8 @@ export const slimReducerMap = {
   noteVersions: noteVersionsReducer,
   notes: notesReducer,
   transcriptStudio: transcriptStudioReducer,
+  // Vision Interview — multi-agent interview room (features/vision-interview)
+  visionInterview: visionInterviewReducer,
   // FastFire — the voice-graded flashcard drill state machine
   // (features/flashcards/fast-fire). ONE slice owns the whole drill lifecycle.
   fastFire: fastFireReducer,
