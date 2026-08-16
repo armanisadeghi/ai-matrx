@@ -12,10 +12,35 @@ vision: [/Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FE
 nine-scenario matrix, the mapping vocabulary, the blocking rules, and Arman's rulings. Read it
 first. This handoff is only the work order.
 
+**This is the second half of Agent Slots, not a separate feature.** The other half —
+*which* agent runs a step — is `common-docs/systems/agent-slots/FEATURE.md`, which carries
+**THE UNIVERSAL LAW** (every repo, every package and sub-package, every surface; both the agent id
+AND its definition) and **the exception policy** (Arman's written approval only; exactly one
+exception exists — the conversation labeler). The cross-repo worklist of everything still
+non-conforming is `common-docs/systems/agent-slots/ROLLOUT.md`; the sibling work order is
+`aidream/docs/handoffs/content-ir-agent-slots.md`. These two handoffs share the admin console, the
+code-truth API, and the `contract` column — coordinate before changing any of the three.
+
 ## THE DEFINITION OF DONE — one slot, unprompted
 
-`podcast.deep_research` is **deliberately left broken.** The code passes `user_request`; the bound
-"Deep Web Research Agent" declares no variables. **Do not fix it.**
+🚨 **STATUS CORRECTION (2026-08-16) — read this before acting on the paragraph below.**
+`podcast.deep_research` is **no longer silently broken, and you must NOT revert the fix.** On
+2026-08-16 the delivery half was repaired platform-wide: `declare_slot(spill_variables=…)` now
+exists, and this slot declares one, so the topic is appended to the run's user text instead of
+being silently DROPPED. Every topic-to-podcast run had been reaching the researcher blank
+(commits `94a03f053`, `11de4b47e`; full account in
+`aidream/docs/handoffs/content-ir-agent-slots.md` § THE DELIVERY GUARANTEE).
+
+**The acceptance test below still stands and is still unmet.** A spill is a *delivery guarantee,
+not a contract waiver*: the variable stays in `required_variables`, so the console's drift verdict
+still names this slot on purpose. What must still be proven is the ORIGINAL goal — that the console
+surfaces the mismatch **unprompted**, in plain language, with real options Arman can pick from.
+Do not "fix" the slot by removing the variable or silencing the verdict; that destroys the test.
+
+The original framing, kept for intent:
+
+`podcast.deep_research` was **deliberately left broken.** The code passes `user_request`; the bound
+"Deep Web Research Agent" declares no variables. **Do not paper over the verdict.**
 
 > **Arman, 2026-08-15:** "You have not achieved your goal until the system helps me see this bug
 > about the deep research and tells me what to do and you and I fix it together, but only because
@@ -41,9 +66,21 @@ suggestion is worse than no suggestion.
 
 ## The work, in dependency order
 
-### 1. Expand code-truth coverage — BLOCKS the backfill *(aidream, chip fired)*
+### 1. Expand code-truth coverage — ✅ **DONE 2026-08-15, verified 2026-08-16**
 
-`CODE_TRUTH_AGENT_MODULES` in `code_truth.py` is a hardcoded 3-module tuple. `NamedAgent`
+**The hardcoded allowlist no longer exists.** `code_truth.py` now exposes
+`discover_code_truth_modules()`, which walks `CODE_TRUTH_PACKAGE_ROOTS` (every production agent
+package), imports every module whose AST defines or dynamically builds a `NamedAgent` subclass, and
+unions that with `DECLARING_MODULES` for import-time declaration factories. Failed imports are
+retained in `SlotCodeTruthReport.import_failures` and statically-recoverable slot keys resolve as
+`code_exists_but_import_failed` rather than being misreported as DB-only. A guard
+(`tests/test_code_truth.py`) fails if a new production package holds a `NamedAgent` outside the
+known roots. **This no longer blocks the backfill — and the backfill itself is now closed** (see
+the Live state table in `common-docs/systems/agent-slots/FEATURE.md`).
+
+*Original description, kept for context:*
+
+`CODE_TRUTH_AGENT_MODULES` in `code_truth.py` was a hardcoded 3-module tuple. `NamedAgent`
 subclasses also live in ~10 other modules (`conversation_labeler`, `podcast_stages`,
 `agent_iteration/agents.py`, `services/rag_agents.py`, `auto_ingest/ner_agents.py`,
 `human_decisions/agent.py`, `runtime/recovery_advisor.py`, `agent_factory/agent_builder_agent.py`,
