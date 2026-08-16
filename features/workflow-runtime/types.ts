@@ -470,5 +470,13 @@ export function invocationKeyOf(
   dispatchId: string | null | undefined,
   itemIndex: number | null | undefined,
 ): string {
-  return `${nodeId}::${dispatchId ?? "root"}:${itemIndex ?? 0}`;
+  // The wire's non-fan-out default is the EMPTY STRING (`dispatch_id=""` in
+  // the Pydantic models), while client-side callers pass null — both mean
+  // "the root invocation" and MUST produce the same key, or durable lanes
+  // and token lanes split for every ordinary node.
+  const dispatch =
+    dispatchId === null || dispatchId === undefined || dispatchId === ""
+      ? "root"
+      : dispatchId;
+  return `${nodeId}::${dispatch}:${itemIndex ?? 0}`;
 }

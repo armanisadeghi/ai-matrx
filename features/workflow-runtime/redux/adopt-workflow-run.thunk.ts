@@ -210,11 +210,44 @@ export function adoptWorkflowRun(
       if (tree.laneManager.hasLane(runId, key)) {
         tree.laneManager.settleLane(runId, key, outcome, message);
       }
-      // Fan-out deltas multiplex onto the root lane — settle it too when the
-      // root invocation itself settles.
+      // Fan-out deltas multiplex onto the node's ROOT lane (the wire's
+      // node_stream frames carry node_id only), so that lane must stay open
+      // until the WHOLE node settles — settling it on the first sibling's
+      // completion dropped every later sibling's tokens (Bugbot #147). The
+      // reducer has already applied this event, so the slice is current.
       const rootKey = invocationKeyOf(nodeId, null, 0);
       if (rootKey !== key && tree.laneManager.hasLane(runId, rootKey)) {
-        tree.laneManager.settleLane(runId, rootKey, outcome, message);
+        const run = getState().workflowRuns.byRunId[runId];
+        const aggregate = run?.nodeAggregates[nodeId];
+        const invocationKeys = aggregate?.invocationKeys ?? [];
+        const allTerminal =
+          invocationKeys.length > 0 &&
+          invocationKeys.length >= (aggregate?.expectedCount ?? 1) &&
+          invocationKeys.every((k) => {
+            const phase = run?.nodes[k]?.phase;
+            return (
+              phase === "settled" || phase === "failed" || phase === "skipped"
+            );
+          });
+        if (allTerminal) {
+          // The shared lane's outcome follows the AGGREGATE, not whichever
+          // sibling happened to settle last: any failed invocation makes the
+          // node failed (same law the aggregate selector applies).
+          const anyFailed = invocationKeys.some(
+            (k) => run?.nodes[k]?.phase === "failed",
+          );
+          const failedMessage = anyFailed
+            ? invocationKeys
+                .map((k) => run?.nodes[k]?.error?.message)
+                .find((m): m is string => typeof m === "string")
+            : undefined;
+          tree.laneManager.settleLane(
+            runId,
+            rootKey,
+            anyFailed ? "error" : "complete",
+            anyFailed ? failedMessage : undefined,
+          );
+        }
       }
     };
 
@@ -262,10 +295,13 @@ export function adoptWorkflowRun(
         try {
           const row = await fetchJson<RunRow>(`/runs/${runId}`);
           if (stopped) return;
-          dispatch(seedRunRow({ runId, row }));
 
           const cursor = await replayDurableLog(runId, depth);
           if (stopped) return;
+          // Seed AFTER replay: the heartbeat tails only land on node
+          // invocations that exist, and replay is what creates them. Seeding
+          // first silently dropped every tail on a fresh attach (Bugbot #147).
+          dispatch(seedRunRow({ runId, row }));
 
           if (TERMINAL_RUN_STATUSES.has(row.status)) {
             // Nothing live to follow — the replay already rebuilt the state.
