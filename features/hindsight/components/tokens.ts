@@ -2,12 +2,12 @@
  * Shared display tokens for the Hindsight surface. Dark-mode pairs only —
  * every colour here is declared for both themes.
  */
-import { Bot, Globe, Workflow, Wrench } from "lucide-react";
+import { Globe, Webhook, Workflow, Wrench } from "lucide-react";
 
 import type { Lever, SubjectKind, Verdict } from "../types";
 
-export const KIND_ICON: Record<SubjectKind, typeof Bot> = {
-  agent: Bot,
+export const KIND_ICON: Record<SubjectKind, typeof Webhook> = {
+  agent: Webhook,
   workflow: Workflow,
   tool: Wrench,
   environment: Globe,

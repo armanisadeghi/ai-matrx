@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { getAgent } from "@/lib/agents/data";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
-import { AgentHindsightPanel } from "@/features/hindsight/components/AgentHindsightPanel";
+import { ImprovementWorkspace } from "@/features/hindsight/workspace/ImprovementWorkspace";
 
 export default async function AgentHindsightRoute({
   params,
@@ -18,9 +18,9 @@ export default async function AgentHindsightRoute({
       <PageHeader>
         <AgentHeader agentId={id} agentName={agent.name} />
       </PageHeader>
-      <div className="h-full overflow-y-auto p-4">
+      <div className="h-full overflow-hidden">
         <Suspense fallback={<div className="h-64 animate-pulse rounded-md bg-muted/50" />}>
-          <AgentHindsightPanel agentId={id} agentName={agent.name} />
+          <ImprovementWorkspace agentId={id} agentName={agent.name} />
         </Suspense>
       </div>
     </>

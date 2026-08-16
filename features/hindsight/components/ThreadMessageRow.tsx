@@ -1,0 +1,85 @@
+"use client";
+
+/**
+ * ThreadMessageRow — one message in the reviewer's own conversation.
+ *
+ * `text` is PROSE, split server-side from the reviewer's structured payload
+ * (aidream `services/hindsight/discuss.py`). Never sniff it for JSON — JSON
+ * appearing here is a SERVER regression. Bodies render through the canonical
+ * markdown pipeline (`MarkdownStream` in persisted mode), never hand-rendered.
+ *
+ * Shared by the admin `DiscussPanel` and the product `ReviewerChat`.
+ */
+import MarkdownStream from "@/components/MarkdownStream";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+import type { ThreadMessage } from "../types";
+import { fmtDate } from "./tokens";
+
+export function ThreadMessageRow({
+  message,
+  /** "chat" right-aligns the human like a messenger; "flat" is the compact admin list. */
+  variant = "flat",
+}: {
+  message: ThreadMessage;
+  variant?: "flat" | "chat";
+}) {
+  const isHuman = message.role === "user";
+
+  if (variant === "chat") {
+    return (
+      <div className={cn("flex", isHuman ? "justify-end" : "justify-start")}>
+        <div
+          className={cn(
+            "max-w-[85%] rounded-lg border px-3 py-2",
+            isHuman
+              ? "border-primary/30 bg-primary/5"
+              : "border-border bg-card",
+          )}
+        >
+          <div className="mb-0.5 flex items-center gap-2">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {isHuman ? "You" : "Reviewer"}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {fmtDate(message.created_at)}
+            </span>
+          </div>
+          <div className="text-sm">
+            <MarkdownStream
+              content={message.text ?? ""}
+              isStreamActive={false}
+              hideCopyButton
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-md border p-2",
+        isHuman ? "border-primary/30 bg-primary/5" : "border-border bg-muted/30",
+      )}
+    >
+      <div className="mb-1 flex items-center gap-2">
+        <Badge variant="outline" className="text-[10px] uppercase">
+          {isHuman ? "you" : message.role}
+        </Badge>
+        <span className="text-[11px] text-muted-foreground">
+          {fmtDate(message.created_at)}
+        </span>
+      </div>
+      <div className="text-sm">
+        <MarkdownStream
+          content={message.text ?? ""}
+          isStreamActive={false}
+          hideCopyButton
+        />
+      </div>
+    </div>
+  );
+}

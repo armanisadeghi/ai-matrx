@@ -27,22 +27,21 @@
  * workaround for that and is gone: never sniff a reply for `{` again. If JSON
  * ever shows up in this panel, the server regressed — fix it there.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { MessageSquare, RefreshCw, Send } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import MarkdownStream from "@/components/MarkdownStream";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 
 import { discussFinding, discussReview, getReviewThread } from "../api";
-import type { DiscussResult, ThreadMessage } from "../types";
-import { fmtCost, fmtDate, fmtElapsed } from "./tokens";
+import type { DiscussResult } from "../types";
+import { ThreadMessageRow } from "./ThreadMessageRow";
+import { fmtCost, fmtElapsed } from "./tokens";
 
 function Elapsed({ startedAt }: { startedAt: number }) {
   const [elapsed, setElapsed] = useState(0);
@@ -54,36 +53,6 @@ function Elapsed({ startedAt }: { startedAt: number }) {
     return () => clearInterval(t);
   }, [startedAt]);
   return <span className="tabular-nums">{fmtElapsed(elapsed)}</span>;
-}
-
-function ThreadMessageRow({ message }: { message: ThreadMessage }) {
-  const isHuman = message.role === "user";
-  return (
-    <div
-      className={cn(
-        "rounded-md border p-2",
-        isHuman
-          ? "border-primary/30 bg-primary/5"
-          : "border-border bg-muted/30",
-      )}
-    >
-      <div className="mb-1 flex items-center gap-2">
-        <Badge variant="outline" className="text-[10px] uppercase">
-          {isHuman ? "you" : message.role}
-        </Badge>
-        <span className="text-[11px] text-muted-foreground">
-          {fmtDate(message.created_at)}
-        </span>
-      </div>
-      <div className="text-sm">
-        <MarkdownStream
-          content={message.text ?? ""}
-          isStreamActive={false}
-          hideCopyButton
-        />
-      </div>
-    </div>
-  );
 }
 
 export function DiscussPanel({
@@ -101,7 +70,8 @@ export function DiscussPanel({
 }) {
   const [draft, setDraft] = useState("");
   const [lastResult, setLastResult] = useState<DiscussResult | null>(null);
-  const startedAt = useRef(0);
+  // State, not a ref: the elapsed indicator reads it during render.
+  const [startedAt, setStartedAt] = useState(0);
 
   const thread = useQuery({
     queryKey: ["hindsight", "thread", reviewId],
@@ -110,7 +80,7 @@ export function DiscussPanel({
 
   const send = useMutation({
     mutationFn: (message: string) => {
-      startedAt.current = Date.now();
+      setStartedAt(Date.now());
       return findingId
         ? discussFinding(findingId, message)
         : discussReview(reviewId, message);
@@ -179,7 +149,7 @@ export function DiscussPanel({
         <div className="rounded-md border border-border bg-muted/40 p-2 text-xs">
           <span className="inline-flex items-center gap-2 font-medium">
             <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            The reviewer is reading your guidance — <Elapsed startedAt={startedAt.current} />{" "}
+            The reviewer is reading your guidance — <Elapsed startedAt={startedAt} />{" "}
             elapsed
           </span>
           <p className="mt-1 text-muted-foreground">

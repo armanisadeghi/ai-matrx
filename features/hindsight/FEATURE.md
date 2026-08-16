@@ -2,9 +2,10 @@
 
 **Status:** Active · **Routes:** `/administration/agents/hindsight` (admin
 console, Agents → Health & Drift) + `/agents/{id}/hindsight` (Layer 2 — a
-user's own agent's "Review" tab) · **Entry points:**
-[`components/HindsightPage.tsx`](./components/HindsightPage.tsx) (admin) ·
-[`components/AgentHindsightPanel.tsx`](./components/AgentHindsightPanel.tsx)
+user's own agent's "Review" tab, now the **improvement workspace**) · **Entry
+points:** [`components/HindsightPage.tsx`](./components/HindsightPage.tsx)
+(admin) ·
+[`workspace/ImprovementWorkspace.tsx`](./workspace/ImprovementWorkspace.tsx)
 (product)
 
 **Layer 2 (2026-08-15).** This feature dir moved from
@@ -18,6 +19,29 @@ product routes (`/agents/{id}`, `/chat/{id}`) — the product tree wraps itself
 in `audience="product"`; the admin console needs nothing (default `admin`).
 Replay triggering and tool/workflow/environment subjects remain admin-only
 server-side.
+
+**The improvement workspace (2026-08-16).** The product surface is a
+three-pane workspace, not a dashboard panel — **the conversation with the
+reviewer is the center of the experience** (Arman's directive): tell the
+intelligence watching your agent what it got right or wrong, and watch better
+proposals appear.
+
+| Pane | Component | What it holds |
+|---|---|---|
+| Left | [`workspace/EnrollmentSidebar.tsx`](./workspace/EnrollmentSidebar.tsx) | Review now / pause / archive, progress-to-next-review meter, editable reviewer focus (goal), compact spend, review timeline — selecting a review opens its conversation |
+| Center | [`workspace/ReviewerChat.tsx`](./workspace/ReviewerChat.tsx) | The selected review's thread as a real chat: the review's conclusions as the opening message, then the human↔reviewer exchange, composer pinned at the bottom |
+| Right | [`workspace/ImprovementsRail.tsx`](./workspace/ImprovementsRail.tsx) | Findings grouped **Waiting for you** vs **Decided** (canonical `FindingCard`), plus [`workspace/VersionLadder.tsx`](./workspace/VersionLadder.tsx) — recent agent versions via the `agx_get_version_history` RPC (direct Supabase, same source as the version-diff page), applied findings marked "from review", doors to `/agents/{id}/v/{n}`, `/agents/{id}/latest`, and `/agents/{id}/run` |
+
+Not enrolled → [`components/EnableCard.tsx`](./components/EnableCard.tsx)
+centered. Mobile stacks chat (bounded height) → proposals → state, one scroll
+area. "Guide" on a finding routes into the center chat via `FindingCard`'s
+optional `onGuide` prop (scope chip on the composer, thread switched to the
+finding's review) — the admin console omits `onGuide` and keeps the inline
+`DiscussPanel`. Shared mutations live ONCE in
+[`hooks/useEnrollmentActions.ts`](./hooks/useEnrollmentActions.ts) (review
+now / pause / goal / archive) — never re-implement them beside a component.
+`AgentHindsightPanel.tsx` was the single-panel predecessor and is DELETED —
+do not resurrect it.
 
 Hindsight is how the platform reads its own history and improves itself. Enroll
 an **agent, workflow, tool, or environment**; every N real runs a reviewer agent
@@ -40,9 +64,12 @@ platform admin, not in a backend-repo dashboard. Do not re-create a second copy.
 | Detail | `components/EnrollmentDetailPanel.tsx` — subject, spend, cadence, findings, reviews |
 | Enroll | `components/EnrollDialog.tsx` — all four kinds, real pickers |
 | Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, Apply / Reject / **Guide** |
-| Discuss | `components/DiscussPanel.tsx` — the reviewer's thread + the reply box |
+| Discuss (admin) | `components/DiscussPanel.tsx` — the reviewer's thread + the reply box; product uses `workspace/ReviewerChat.tsx` |
+| Thread message | `components/ThreadMessageRow.tsx` — ONE renderer for reviewer-thread messages (`flat` admin / `chat` product variants) |
 | Review | `components/ReviewRow.tsx` → `components/ReplaysTable.tsx` |
-| Layer 2 panel | `components/AgentHindsightPanel.tsx` — enable CTA or `EnrollmentDetailPanel`, product doors |
+| Review progress | `components/ReviewProgress.tsx` — the "minutes, not seconds" elapsed panel, shared by both surfaces |
+| Layer 2 workspace | `workspace/ImprovementWorkspace.tsx` — enable CTA or the three-pane workspace, product doors |
+| Enrollment actions | `hooks/useEnrollmentActions.ts` — review-now / pause / goal / archive mutations, one home |
 | Doors | `subject-doors.ts` (audience-aware) + `components/door-audience.tsx` |
 | Types | `types.ts` — DERIVED from the OpenAPI contract |
 | Client | `api.ts` — `lib/api/typed-client.ts` over aidream `/hindsight/*` |
@@ -148,3 +175,13 @@ review: real guidance ("you missed that browser-tool failures are
 indistinguishable") returned 4 new findings for $0.085 in ~2 minutes, the
 findings list refreshed itself, and the original finding was deprioritized to
 40% confidence.
+
+## Change Log
+
+- **2026-08-16** — Layer 2 rebuilt as the three-pane **improvement workspace**
+  (`workspace/`): reviewer conversation center-stage, review timeline +
+  controls left, proposals + version ladder right. Extracted shared
+  `useEnrollmentActions`, `EnableCard`, `ThreadMessageRow`, `ReviewProgress`;
+  `FindingCard` gained the optional `onGuide` seam; deleted
+  `AgentHindsightPanel.tsx`; toasts moved off bare `sonner`; `Bot`/`Sparkles`
+  icons replaced (banned). Admin console unchanged.
