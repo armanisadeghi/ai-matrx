@@ -638,8 +638,35 @@ export interface PlannedLinkEntry {
   anchor_text?: string;
 }
 
+/**
+ * THE ONE per-page keyword plan (Arman's one-source-of-truth ruling,
+ * 2026-08-16). This slice replaces the SEO-intent fields that previously
+ * lived on `plan.node` (`primary_keyword_id`, `attributes.keyword_strategy`)
+ * — a page's keyword intent is planned HERE and only here, whether the page
+ * came from the content plan, was authored directly in the CMS, or is an
+ * externally-hosted crawled page. Keywords are keyword-library FKs
+ * (`seo.keyword` ids via `ensureKeywordId`), never raw phrases — the legacy
+ * `web.page.target_keyword` text column is read-only during migration.
+ * The strategist's planned internal links do NOT live in this slice: they map
+ * onto the existing `outbound_links` / `inbound_links` PlannedLinkEntry plans
+ * (one link-plan system, already scored by link compliance).
+ */
+export interface PageKeywordPlan {
+  /** `seo.keyword` id — THE target keyword. */
+  primary_keyword_id?: string | null;
+  /** `seo.keyword` ids — supporting terms this page should also rank for. */
+  secondary_keyword_ids?: string[];
+  /** The page's role in the site-wide strategy (money / supporting / hub…). */
+  page_role?: string;
+  /** Routes of the money pages this page feeds authority to. */
+  supports_routes?: string[];
+  /** The strategist's reasoning — kept so humans can audit the assignment. */
+  reason?: string;
+}
+
 export interface PageDesiredValues {
   /** ONE key per card — a card's slice save can never touch a sibling's. */
+  keyword_plan?: PageKeywordPlan;
   social_card?: { og_title?: string; og_description?: string };
   indexability?: { canonical_url?: string; meta_robots?: string };
   headings?: { outline?: DesiredHeadingEntry[]; notes?: string };
