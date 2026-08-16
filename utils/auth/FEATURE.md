@@ -63,9 +63,8 @@ destination system knows nothing about onboarding.
 Guarded by
 [`__tests__/onboarding-funnel-scope.test.ts`](./__tests__/onboarding-funnel-scope.test.ts),
 which fails the moment `isNewUser` / `WELCOME_ROUTE` appears outside that route.
-It searches **every tracked source file** via `git grep`, never a hand-listed set
-of directories — the first version listed five directories and silently excluded
-`actions/` and the root `proxy.ts`, the exact two layers this rule warns about.
+**Search every tracked source file via `git grep`.** Never hand-list directories;
+`actions/`, root files, hooks, providers, and future top-level paths must stay covered.
 
 ## Marketing surfaces never trap a signed-in user
 
@@ -106,10 +105,8 @@ the rules. [`__tests__/auth-flow.e2e.test.ts`](./__tests__/auth-flow.e2e.test.ts
 
 ## Change Log
 
-- **2026-08-12** — Closed a blind spot in the funnel guard: it scanned five
-  hard-coded directories, so a violation in `actions/`, `proxy.ts`, `hooks/` or
-  `providers/` passed silently. Now walks every tracked file with `git grep`;
-  verified by planting a violation in each formerly-invisible location.
+- **2026-08-12** — Expanded the funnel guard to every tracked source file via
+  `git grep`, including root files, `actions/`, hooks, and providers.
 
 - **2026-08-12** — Verified and documented the onboarding-funnel boundary: a new
   user with a real destination reaches it (the funnel fires only on `/dashboard`),
