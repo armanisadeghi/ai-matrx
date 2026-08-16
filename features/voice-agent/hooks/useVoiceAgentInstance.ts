@@ -54,6 +54,7 @@ import type {
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import type { RootState } from "@/lib/redux/store";
 import { readInstructionsFromAgent } from "../agentInstructions";
+import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
 
 interface UseVoiceAgentInstanceOpts {
   preset: VoiceAgentPreset;
@@ -142,9 +143,15 @@ export function useVoiceAgentInstance(opts: UseVoiceAgentInstanceOpts): string {
     let cancelled = false;
     if (o.agentId) {
       void (async () => {
-        const state0 = store.getState() as RootState;
         let fetchFailed = false;
-        if (!state0.agentDefinition.agents?.[o.agentId!]) {
+        // Gate on FETCH STATUS, not field presence: a list fetch merges a
+        // partial record with no `messages`, and treating that as loaded
+        // reports a healthy agent as having no system message. (Pre-existing
+        // here; it only stayed invisible because nothing lists agents on the
+        // intro route before this runs.)
+        if (
+          !selectAgentReadyForBuilder(store.getState() as RootState, o.agentId!)
+        ) {
           await dispatch(fetchFullAgent(o.agentId!))
             .unwrap()
             .catch(() => {

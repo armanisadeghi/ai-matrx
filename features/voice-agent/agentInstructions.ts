@@ -14,6 +14,7 @@
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
 import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
 import type { RootState } from "@/lib/redux/store";
 
@@ -63,14 +64,18 @@ export function useSlotAgentInstructions(
     if (!agentId) return;
     let cancelled = false;
     void (async () => {
-      const existing = (store.getState() as RootState).agentDefinition.agents?.[
-        agentId
-      ];
-      if (!existing) {
+      // Gate on the record's FETCH STATUS, never on field presence. A cheap
+      // list fetch (`fetchAgentsListFull`, which any agent picker on the page
+      // triggers) merges a PARTIAL record carrying no `messages` — treating
+      // that as loaded reads the instructions as empty and reports a perfectly
+      // healthy agent as broken. The slice states this rule in
+      // agent-definition/selectors.ts; `selectAgentReadyForBuilder` is the
+      // authoritative "this record has messages" signal.
+      if (!selectAgentReadyForBuilder(store.getState() as RootState, agentId)) {
         await dispatch(fetchFullAgent(agentId))
           .unwrap()
           .catch(() => {
-            /* handled below by the missing-row branch */
+            /* handled below by the missing-instructions branch */
           });
       }
       if (cancelled) return;
