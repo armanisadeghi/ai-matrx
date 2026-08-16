@@ -99,7 +99,9 @@ export interface ReadoutVisibility {
   /**
    * What holds the space before data exists (R3 empty states):
    * "placeholder" reserves the box, "hidden" renders nothing until appearOn/
-   * first data.
+   * first data. ABSENT = "placeholder" — every consumer must treat only an
+   * explicit "hidden" as collapsing (zero page shift), because the builder
+   * encodes the placeholder choice by omitting the key.
    */
   empty?: "placeholder" | "hidden";
 }

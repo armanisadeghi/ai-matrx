@@ -61,10 +61,12 @@ function NodeReadout({
   runId,
   nodeId,
   multiRun,
+  prefer,
 }: {
   runId: string;
   nodeId: string;
   multiRun: "stack" | "latest" | "table";
+  prefer: "live" | "persisted";
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
   const { invocations, phase } = aggregate;
@@ -86,7 +88,7 @@ function NodeReadout({
             {invocations.length} of {invocations.length} — showing the latest
           </p>
         ) : null}
-        <InvocationBody runId={runId} invocation={latest} />
+        <InvocationBody runId={runId} invocation={latest} prefer={prefer} />
       </div>
     );
   }
@@ -126,7 +128,7 @@ function NodeReadout({
               {inv.iteration !== null ? ` · pass ${inv.iteration + 1}` : ""}
             </div>
           ) : null}
-          <InvocationBody runId={runId} invocation={inv} />
+          <InvocationBody runId={runId} invocation={inv} prefer={prefer} />
           {inv.progress?.message ? (
             <p className="mt-1 text-[11px] text-muted-foreground">
               {inv.progress.message}
@@ -141,9 +143,11 @@ function NodeReadout({
 function GroupMemberReadout({
   runId,
   nodeId,
+  prefer,
 }: {
   runId: string;
   nodeId: string;
+  prefer: "live" | "persisted";
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
   const { phase, invocations } = aggregate;
@@ -158,7 +162,12 @@ function GroupMemberReadout({
         </span>
       </div>
       {withBody.map((inv) => (
-        <InvocationBody key={inv.invocationKey} runId={runId} invocation={inv} />
+        <InvocationBody
+          key={inv.invocationKey}
+          runId={runId}
+          invocation={inv}
+          prefer={prefer}
+        />
       ))}
     </div>
   );
@@ -210,6 +219,7 @@ export function ReadoutView({
   readout: Readout;
 }) {
   const source: ReadoutSource = readout.source;
+  const prefer = readout.prefer ?? "live";
   switch (source.kind) {
     case "node":
       return (
@@ -217,13 +227,19 @@ export function ReadoutView({
           runId={runId}
           nodeId={source.nodeId}
           multiRun={readout.multiRun ?? "stack"}
+          prefer={prefer}
         />
       );
     case "group":
       return (
         <div className="space-y-2">
           {source.nodeIds.map((nodeId) => (
-            <GroupMemberReadout key={nodeId} runId={runId} nodeId={nodeId} />
+            <GroupMemberReadout
+              key={nodeId}
+              runId={runId}
+              nodeId={nodeId}
+              prefer={prefer}
+            />
           ))}
         </div>
       );
