@@ -81,6 +81,14 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-16 — Phase 4 core + review fixes: `startStepRun` + `executeNode` verbs on the ONE
+  controls hook; `nodeActionReadiness` (sticky-aware upstream-dependency derivation); the
+  action readout is REAL — verb button unlocking on readiness, auto mode firing once on the
+  waiting→ready edge with a live toggle; `InterruptCard` renders a schema-driven form from
+  `schema_hint` (flat object schemas; tolerant fallback to text, `default_answer` prefilled).
+  Bugbot fixes: sticky completion mirrors the aggregate "settled" verdict exactly (never
+  stamps on failures; evaluated on completed AND skipped) and viewport promotion is
+  single-invocation only (a fan-out sibling lane can never receive content).
 - 2026-08-16 — Phase 3 pump + adversarial-review fixes: `record_update`/`resource_changed`
   frames parse into bounded per-run signals with coarse + per-table revisions
   (`parseSignalDelta`, `applyRunSignal`, `useRunRecordSignal`; run-level frames no longer

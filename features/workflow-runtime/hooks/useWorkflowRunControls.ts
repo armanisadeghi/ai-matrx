@@ -29,6 +29,22 @@ export interface WorkflowRunControls {
   starting: boolean;
   /** Returns the new run_id, or null on failure (already toasted). */
   startRun: (args: StartRunArgs) => Promise<string | null>;
+  /**
+   * Create a STEP-MODE run: a paused run seeded at its entry frontier —
+   * nothing executes until `executeNode` (the actions surface, Phase 4).
+   * Returns the new run_id, or null on failure (already toasted).
+   */
+  startStepRun: (args: StartRunArgs) => Promise<string | null>;
+  /**
+   * Execute exactly ONE node of a parked/step-mode run (the server persists
+   * its result and parks again). The adopted run stream reports progress —
+   * callers never consume this response body.
+   */
+  executeNode: (
+    runId: string,
+    nodeId: string,
+    inputs?: Record<string, unknown>,
+  ) => Promise<boolean>;
   pause: (runId: string) => Promise<boolean>;
   resumePaused: (runId: string) => Promise<boolean>;
   cancel: (runId: string, mode?: "graceful" | "immediate") => Promise<boolean>;
@@ -141,6 +157,38 @@ export function useWorkflowRunControls(): WorkflowRunControls {
         setStarting(false);
       }
     },
+    startStepRun: async ({ definitionId, inputs, nodeInputs }) => {
+      setStarting(true);
+      try {
+        const { ok, rawText } = await post(
+          "/workflows/{definition_id}/step-runs",
+          { definition_id: definitionId },
+          {
+            ...(inputs ? { inputs } : {}),
+            ...(nodeInputs ? { node_inputs: nodeInputs } : {}),
+          },
+        );
+        if (!ok) {
+          toast.error("Could not prepare the step-by-step run.");
+          return null;
+        }
+        const runId = rawText ? extractRunId(rawText) : null;
+        if (!runId) {
+          toast.error("The run was prepared but no run id came back.");
+          return null;
+        }
+        return runId;
+      } finally {
+        setStarting(false);
+      }
+    },
+    executeNode: (runId, nodeId, inputs) =>
+      verb(
+        "run the step",
+        "/runs/{run_id}/nodes/{node_id}/execute",
+        { run_id: runId, node_id: nodeId },
+        inputs ? { inputs } : {},
+      ),
     pause: (runId) => verb("pause the run", "/runs/{run_id}/pause", { run_id: runId }),
     resumePaused: (runId) =>
       verb("resume the run", "/runs/{run_id}/resume-paused", { run_id: runId }),

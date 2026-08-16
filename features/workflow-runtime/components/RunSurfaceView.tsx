@@ -88,11 +88,13 @@ function ReadoutCell({
   item,
   mobile,
   ensureLane,
+  definition,
 }: {
   runId: string;
   item: ReadoutRender;
   mobile: boolean;
   ensureLane?: (invocationKey: string, seedText?: string) => string | null;
+  definition?: WorkflowDefinitionLike;
 }) {
   const { readout, mode } = item;
   const title = deriveTitle(readout);
@@ -122,7 +124,12 @@ function ReadoutCell({
         {mode === "placeholder" ? (
           <div className="h-full min-h-6 w-full animate-pulse rounded-md bg-muted" />
         ) : (
-          <ReadoutView runId={runId} readout={readout} ensureLane={ensureLane} />
+          <ReadoutView
+            runId={runId}
+            readout={readout}
+            ensureLane={ensureLane}
+            definition={definition}
+          />
         )}
       </div>
     </div>
@@ -258,6 +265,7 @@ export function RunSurfaceView({
               item={item}
               mobile
               ensureLane={promoteLane}
+              definition={definition}
             />
           ))}
         </div>
@@ -276,6 +284,7 @@ export function RunSurfaceView({
               item={item}
               mobile={false}
               ensureLane={promoteLane}
+              definition={definition}
             />
           ))}
         </div>
