@@ -64,6 +64,22 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
   `features/marketing/components/crawls/NewCrawlWorkspace.tsx:225`.
 - Reference for class A done right: `KeywordResearchLauncher.tsx:236`
   (`MarkdownStream requestId` over an adopted pipeline stream).
+- **Window sizing is already correct — do not set it per migration.**
+  `LiveRunWindow` defaults to the `/chat` reading column (760 outer → ~720
+  usable) × `80vh`, derived from named constants at the top of the file.
+  A migration passes `width`/`height` ONLY after watching that kind render and
+  seeing the default be wrong (a three-line kind should not open at 80vh).
+  Rule + arithmetic: `features/window-panels/FEATURE.md` § THE FLOATING LAW.
+- **The action goes ON the kind component, through the ONE write path.**
+  A verb that acts on streamed output ("Use this brief", "Apply") is never a
+  button on a bespoke card beside the component. The component calls
+  `runAction("apply_surface_write", { target, value, origin: "user" })`, which
+  routes to a write target the surface DECLARED in its manifest — so a human
+  click and an agent write are literally the same operation, and the agent gets
+  write access for free. Exemplar end-to-end: `PageBriefBlock`'s `acceptTarget`
+  → `accept_brief_draft` (entity mode) in
+  `features/surfaces/manifests/content-plan-node.manifest.ts` → the handler in
+  `NodePanel.tsx`. Never add a second mechanism.
 - `streamCommand`'s `onEvent` callback: `features/marketing/crawler/direct-client.ts:245`.
   Every command wrapper (`analyzeSite`, `syncSitemaps`, `checkSiteLinks`,
   `fetchPageNow`, `syncGsc`, `rescrapeSite`, `initializeSite`) accepts it; most
