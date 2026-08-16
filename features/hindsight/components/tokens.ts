@@ -2,7 +2,7 @@
  * Shared display tokens for the Hindsight surface. Dark-mode pairs only —
  * every colour here is declared for both themes.
  */
-import { Globe, Webhook, Workflow, Wrench } from "lucide-react";
+import { Globe, Network, StepForward, Webhook, Workflow, Wrench } from "lucide-react";
 
 import type { Lever, SubjectKind, Verdict } from "../types";
 
@@ -11,6 +11,8 @@ export const KIND_ICON: Record<SubjectKind, typeof Webhook> = {
   workflow: Workflow,
   tool: Wrench,
   environment: Globe,
+  orchestra: Network,
+  workflow_node: StepForward,
 };
 
 export const KIND_COLOR: Record<SubjectKind, string> = {
@@ -18,6 +20,8 @@ export const KIND_COLOR: Record<SubjectKind, string> = {
   workflow: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
   tool: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   environment: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+  orchestra: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
+  workflow_node: "bg-slate-500/15 text-slate-600 dark:text-slate-400",
 };
 
 export const KIND_LABEL: Record<SubjectKind, string> = {
@@ -25,7 +29,23 @@ export const KIND_LABEL: Record<SubjectKind, string> = {
   workflow: "Workflow",
   tool: "Tool",
   environment: "Environment",
+  orchestra: "Orchestra",
+  workflow_node: "Workflow step",
 };
+
+/**
+ * Kinds a human may actually enroll. `workflow_node` is in the vocabulary (so
+ * an existing row still renders with a label and an icon) but the server
+ * refuses to create one until per-step capture exists — offering it in the
+ * picker would be a dead end that fails on submit.
+ */
+export const ENROLLABLE_KINDS: SubjectKind[] = [
+  "agent",
+  "orchestra",
+  "workflow",
+  "tool",
+  "environment",
+];
 
 export const LEVER_LABEL: Record<Lever, string> = {
   instructions: "Instructions",

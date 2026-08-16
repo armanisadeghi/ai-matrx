@@ -248,6 +248,23 @@ export function EnrollmentDetailPanel({
             </strong>{" "}
             per review
           </span>
+          {/* The lens is a setting the reviewer's whole verdict depends on —
+              invisible after enrollment, a reader can't tell why a review only
+              looked at 10 runs or never mentioned a tool call. */}
+          <span>
+            reads{" "}
+            <strong className="text-foreground">
+              {enrollment.window_mode === "last_n_runs"
+                ? `the last ${enrollment.window_n} runs`
+                : "everything new"}
+            </strong>
+          </span>
+          {enrollment.lens_visibility === "unit_only" && (
+            <span>
+              <strong className="text-foreground">inputs and outputs only</strong>{" "}
+              (machinery hidden)
+            </span>
+          )}
           <span>last review {fmtDate(enrollment.last_review_at)}</span>
         </div>
       </Card>

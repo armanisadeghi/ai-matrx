@@ -4878,6 +4878,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/broken-link-prospecting/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Broken Link Prospecting
+         * @description How many candidate pages this pass would open, before it opens any.
+         *
+         *     Nothing here is paid for — that is stated rather than omitted, because every
+         *     other prospecting preview quotes a price and a silent zero reads like an
+         *     oversight. Crawling other people's pages is still a real cost to them, so
+         *     the user sees the count first, and an empty run explains what to do instead.
+         */
+        post: operations["preview_broken_link_prospecting_seo_sites__site_id__broken_link_prospecting_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/broken-link-prospecting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Collect Broken Link Prospecting
+         * @description Find prospects who link to something that no longer exists.
+         *
+         *     The THIRD prospecting method, and the one DataForSEO has no endpoint for:
+         *     resource pages and listicles that SERP prospecting already found are opened
+         *     with matrx-scraper, their outbound links are checked with the ONE link
+         *     checker, and every dead one becomes evidence on the prospect that carries
+         *     it. The page's owner is the prospect and the dead link is the pitch.
+         *
+         *     Resumable by construction: each page's evidence is written the moment it is
+         *     checked, and the stamp is what the next pass skips — so a disconnect or a
+         *     deploy costs a delay, never a page.
+         */
+        post: operations["collect_broken_link_prospecting_seo_sites__site_id__broken_link_prospecting_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/prospect-import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Prospect Import
+         * @description What this list would do, entry by entry, before anything is written.
+         *
+         *     The CRM importer's dry-run doctrine: every line gets a verdict and a reason
+         *     — new, already a prospect, a duplicate inside the list, blocklisted, or not
+         *     a web address — plus the flat price of scoring what is new. Nobody should
+         *     learn what an import did after it did it.
+         */
+        post: operations["preview_prospect_import_seo_sites__site_id__prospect_import_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/prospect-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Prospect Import
+         * @description Import a list of URLs/domains into the ONE prospect triage surface.
+         *
+         *     The imported rows are indistinguishable from discovered ones afterwards:
+         *     same table, same review vocabulary, same Matrx Authority Score, same fold to
+         *     `crm.party`, and the broken-link pass can open them like any other candidate
+         *     page. The blocklist is enforced at ingestion, so a forbidden domain never
+         *     reaches the list at all.
+         */
+        post: operations["run_prospect_import_seo_sites__site_id__prospect_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/sites/{site_id}/crm/serp-prospects": {
         parameters: {
             query?: never;
@@ -8449,6 +8555,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/outreach/single/drafts/{draft_id}/personalization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revise Draft Personalization
+         * @description Reword the AI-written line(s) and re-render this exact message.
+         */
+        post: operations["revise_draft_personalization_outreach_single_drafts__draft_id__personalization_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/single/drafts/{draft_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Message Draft
+         * @description Cancel this message and take the member out of the sequence.
+         */
+        post: operations["reject_message_draft_outreach_single_drafts__draft_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/outreach/single/drafts/{draft_id}/send": {
         parameters: {
             query?: never;
@@ -8520,6 +8666,206 @@ export interface paths {
          * @description Create planned drafts (IC-6 queue) for personalized members — never sends.
          */
         post: operations["draft_personalized_outreach_personalization_lists__outreach_list_id__drafts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coverage/trackers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Trackers */
+        get: operations["get_trackers_coverage_trackers_get"];
+        put?: never;
+        /**
+         * Create Tracker
+         * @description Declare (or re-declare) one saved search. Idempotent by design — IC-8.
+         */
+        post: operations["create_tracker_coverage_trackers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coverage/trackers/{tracker_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Active */
+        post: operations["set_active_coverage_trackers__tracker_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coverage/trackers/{tracker_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run One Tracker
+         * @description Run ONE tracker now, ignoring its cadence. Same pass the scheduler runs.
+         */
+        post: operations["run_one_tracker_coverage_trackers__tracker_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coverage/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Feed
+         * @description The feed plus its share-of-voice rollup over the SAME rows.
+         */
+        get: operations["get_feed_coverage_feed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/replies/lists/{outreach_list_id}/members/{member_id}/thread": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Reply Thread
+         * @description Read one member's conversation and whether a reply may be drafted.
+         */
+        get: operations["get_reply_thread_outreach_replies_lists__outreach_list_id__members__member_id__thread_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/replies/lists/{outreach_list_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Replies
+         * @description Write the next message for every answerable thread on this campaign.
+         */
+        post: operations["run_replies_outreach_replies_lists__outreach_list_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/replies/lists/{outreach_list_id}/drafts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft Replies Route
+         * @description Create planned reply drafts (IC-6 queue) — never sends.
+         */
+        post: operations["draft_replies_route_outreach_replies_lists__outreach_list_id__drafts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/pitch-templates/merge-fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Merge Fields
+         * @description Every merge field an outreach template may use, derived from the real
+         *     bindings the renderer will be handed.
+         */
+        get: operations["get_merge_fields_outreach_pitch_templates_merge_fields_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/pitch-templates/validate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Validate Template
+         * @description Check a template against real bindings without saving anything.
+         */
+        post: operations["validate_template_outreach_pitch_templates_validate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/outreach/pitch-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Template
+         * @description Validate, then save the template. A template that cannot render is
+         *     refused here rather than stored to fail one recipient at a time.
+         */
+        post: operations["create_template_outreach_pitch_templates_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8684,6 +9030,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -13041,6 +13411,63 @@ export interface paths {
         get: operations["list_workflow_versions_workflows__definition_id__versions_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/engram": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Workflow Engram */
+        get: operations["get_workflow_engram_workflows__definition_id__engram_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/engram/promote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Promote Workflow Engram
+         * @description Move one step UP the ladder: improvised -> provisional -> compiled.
+         */
+        post: operations["promote_workflow_engram_workflows__definition_id__engram_promote_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{definition_id}/engram/demote": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Demote Workflow Engram
+         * @description Send a path back down. Never refused for policy — only for a missing reason.
+         */
+        post: operations["demote_workflow_engram_workflows__definition_id__engram_demote_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18013,6 +18440,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/judges/agreement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Agreement
+         * @description Per-judge / per-class agreement. `scored` counts only rows an
+         *     authoritative signal has settled — a rate over unsettled rows would be a lie.
+         */
+        get: operations["get_agreement_admin_judges_agreement_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/judges/{judge_key}/calibration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Calibration
+         * @description Cohen's kappa vs. human labels: <0.6 not usable, 0.6-0.8 usable,
+         *     >0.8 production (research #8 / D-14). Raw agreement is reported alongside
+         *     because it is what an operator expects to see — but kappa is the verdict.
+         */
+        get: operations["get_calibration_admin_judges__judge_key__calibration_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/judges/sweep-feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Sweep Feedback
+         * @description Settle judge verdicts whose subject already carries human feedback.
+         */
+        post: operations["post_sweep_feedback_admin_judges_sweep_feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/agent-context/organizations": {
         parameters: {
             query?: never;
@@ -20892,6 +21382,43 @@ export interface components {
             /** Changed At */
             changed_at?: string | null;
         };
+        /**
+         * AgreementRollup
+         * @description Per-judge / per-class agreement — the queryable accuracy record.
+         */
+        AgreementRollup: {
+            /** Rows */
+            rows?: components["schemas"]["AgreementRow"][];
+            /**
+             * Total Invocations
+             * @default 0
+             */
+            total_invocations?: number;
+            /**
+             * Total Scored
+             * @default 0
+             */
+            total_scored?: number;
+        };
+        /** AgreementRow */
+        AgreementRow: {
+            /** Judge Key */
+            judge_key: string;
+            /** Judge Version */
+            judge_version: number;
+            /** Subject Kind */
+            subject_kind: string;
+            /** Mode */
+            mode: string;
+            /** Invocations */
+            invocations: number;
+            /** Scored */
+            scored: number;
+            /** Agreed Count */
+            agreed_count: number;
+            /** Agreement Rate */
+            agreement_rate?: number | null;
+        };
         /** AiCatalogReloadSummary */
         AiCatalogReloadSummary: {
             /** Endpoints */
@@ -23087,82 +23614,6 @@ export interface components {
          */
         BlockerKind: "human_decision" | "approval" | "rate_limit" | "quota" | "external_data" | "schedule" | "upstream_failure" | "dependency" | "manual_hold";
         /** Body_add_attachment_vault_items__item_id__attachments_post */
-        SaveDraftBody: {
-            /** Organization Id */
-            organization_id?: string | null;
-            /** Project Id */
-            project_id?: string | null;
-            /** Task Id */
-            task_id?: string | null;
-            /** H1 */
-            h1: string;
-            /**
-             * Intro
-             * @default
-             */
-            intro: string;
-            /** Sections */
-            sections?: components["schemas"]["SaveDraftSectionBody"][];
-            /**
-             * Call To Action
-             * @default
-             */
-            call_to_action: string;
-            /**
-             * Meta Title
-             * @default
-             */
-            meta_title: string;
-            /**
-             * Meta Description
-             * @default
-             */
-            meta_description: string;
-            /**
-             * Note
-             * @default
-             */
-            note: string;
-        };
-        SaveDraftResult: {
-            /** Node Id */
-            node_id: string;
-            /**
-             * Route
-             * @default
-             */
-            route: string;
-            /** Artifact Id */
-            artifact_id: string;
-            /** Summary */
-            summary: string;
-            /**
-             * Superseded Review
-             * @default false
-             */
-            superseded_review: boolean;
-        };
-        SaveDraftSectionBody: {
-            /** Heading */
-            heading: string;
-            /**
-             * Level
-             * @default 2
-             */
-            level: number;
-            /**
-             * Intent
-             * @default
-             */
-            intent: string;
-            /**
-             * Body
-             * @default
-             */
-            body: string;
-            /** Bullets */
-            bullets?: string[];
-        };
         Body_add_attachment_vault_items__item_id__attachments_post: {
             /** File */
             file: string;
@@ -23876,6 +24327,69 @@ export interface components {
             /** Connected Mailboxes */
             connected_mailboxes: number;
         };
+        /** BrokenLinkProspectingBody */
+        BrokenLinkProspectingBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Variants */
+            variants?: string[];
+            /**
+             * Max Pages
+             * @default 25
+             */
+            max_pages?: number;
+            /**
+             * Max Links Per Page
+             * @default 60
+             */
+            max_links_per_page?: number;
+            /**
+             * Recheck
+             * @default false
+             */
+            recheck?: boolean;
+        };
+        /** BrokenLinkProspectingPreview */
+        BrokenLinkProspectingPreview: {
+            /** Site Id */
+            site_id: string;
+            /** Candidate Pages */
+            candidate_pages: number;
+            /**
+             * Eligible Pages
+             * @default 0
+             */
+            eligible_pages?: number;
+            /** Already Checked */
+            already_checked: number;
+            /**
+             * Unreachable
+             * @default 0
+             */
+            unreachable?: number;
+            /** Pages To Check */
+            pages_to_check: number;
+            /**
+             * Estimated Cost Usd
+             * @default 0
+             */
+            estimated_cost_usd?: number;
+            /** Reason */
+            reason?: string | null;
+        };
         /**
          * BrokeredCredential
          * @description The one envelope for every brokered credential, regardless of mode.
@@ -24522,6 +25036,44 @@ export interface components {
              * @default false
              */
             models?: boolean;
+        };
+        /**
+         * Calibration
+         * @description What the ledger says about one judge (optionally one subject class).
+         */
+        Calibration: {
+            /** Judge Key */
+            judge_key: string;
+            /** Judge Version */
+            judge_version?: number | null;
+            /** Subject Kind */
+            subject_kind?: string | null;
+            /**
+             * Cases
+             * @default 0
+             */
+            cases?: number;
+            /** Raw Agreement */
+            raw_agreement?: number | null;
+            /** Cohens Kappa */
+            cohens_kappa?: number | null;
+            /**
+             * Band
+             * @default insufficient_data
+             * @enum {string}
+             */
+            band?: "insufficient_data" | "not_usable" | "usable" | "production";
+            /** Confusion */
+            confusion?: {
+                [key: string]: {
+                    [key: string]: number;
+                };
+            };
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
         };
         /**
          * CallTimelineResponse
@@ -25891,6 +26443,39 @@ export interface components {
             /** Job Id */
             job_id: string;
         };
+        /**
+         * CmsFillCostEstimate
+         * @description What this job is about to cost, said BEFORE it runs.
+         *
+         *     The per-step pipeline multiplies a site's spend ~4x by design — that is the
+         *     point, not an accident — so the number is stated up front rather than
+         *     discovered on the invoice. There is deliberately NO hidden cap here: a cap
+         *     that silently truncates a build is worse than a build that costs what it
+         *     costs, and if one is ever wanted it is Arman's call to add.
+         */
+        CmsFillCostEstimate: {
+            /**
+             * Pages
+             * @default 0
+             */
+            pages?: number;
+            /**
+             * Calls
+             * @default 0
+             */
+            calls?: number;
+            /** Calls By Step */
+            calls_by_step?: {
+                [key: string]: number;
+            };
+            /** Usd */
+            usd?: number | null;
+            /**
+             * Basis
+             * @default
+             */
+            basis?: string;
+        };
         /** CmsFillItemOut */
         CmsFillItemOut: {
             /** Node Id */
@@ -25899,6 +26484,16 @@ export interface components {
             page_id: string;
             /** Route */
             route: string;
+            /**
+             * Step
+             * @default p6_build
+             */
+            step?: string;
+            /**
+             * Step Label
+             * @default
+             */
+            step_label?: string;
             /** Status */
             status: string;
             /** Attempts */
@@ -25934,11 +26529,20 @@ export interface components {
             task_id?: string | null;
             /** Cms Site */
             cms_site?: string | null;
+            /** Steps */
+            steps?: string[] | null;
+            /**
+             * Include Review
+             * @default true
+             */
+            include_review?: boolean;
             /**
              * Overwrite
              * @default false
              */
             overwrite?: boolean;
+            /** Overwrite Steps */
+            overwrite_steps?: string[] | null;
             /**
              * Include Published
              * @default false
@@ -25959,6 +26563,9 @@ export interface components {
             cms_site_slug: string;
             /** Seeded */
             seeded: number;
+            /** Steps */
+            steps?: string[];
+            estimate?: components["schemas"]["CmsFillCostEstimate"];
             /** Skipped */
             skipped?: string[];
         };
@@ -25985,6 +26592,11 @@ export interface components {
              */
             pending?: number;
             /**
+             * Blocked
+             * @default 0
+             */
+            blocked?: number;
+            /**
              * In Progress
              * @default 0
              */
@@ -25995,6 +26607,11 @@ export interface components {
              */
             succeeded?: number;
             /**
+             * Skipped
+             * @default 0
+             */
+            skipped?: number;
+            /**
              * Failed
              * @default 0
              */
@@ -26004,6 +26621,21 @@ export interface components {
              * @default 0
              */
             dead_letter?: number;
+            /**
+             * Pages
+             * @default 0
+             */
+            pages?: number;
+            /**
+             * Pages Built
+             * @default 0
+             */
+            pages_built?: number;
+            /** Steps */
+            steps?: components["schemas"]["CmsFillStepCounts"][];
+            /** Cost Usd */
+            cost_usd?: number | null;
+            estimate?: components["schemas"]["CmsFillCostEstimate"] | null;
             /** Started At */
             started_at?: string | null;
             /** Finished At */
@@ -26012,6 +26644,63 @@ export interface components {
             error?: string | null;
             /** Problems */
             problems?: components["schemas"]["CmsFillItemOut"][];
+        };
+        /**
+         * CmsFillStepCounts
+         * @description One step's live queue counts — the "12 written, 4 reviewed, 2 built" row.
+         *
+         *     Derived from item rows on every read, never from worker memory.
+         */
+        CmsFillStepCounts: {
+            /** Step */
+            step: string;
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /**
+             * Pending
+             * @default 0
+             */
+            pending?: number;
+            /**
+             * Blocked
+             * @default 0
+             */
+            blocked?: number;
+            /**
+             * In Progress
+             * @default 0
+             */
+            in_progress?: number;
+            /**
+             * Succeeded
+             * @default 0
+             */
+            succeeded?: number;
+            /**
+             * Skipped
+             * @default 0
+             */
+            skipped?: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed?: number;
+            /**
+             * Dead Letter
+             * @default 0
+             */
+            dead_letter?: number;
+            /** Cost Usd */
+            cost_usd?: number | null;
         };
         /**
          * CmsPageMapResult
@@ -27053,6 +27742,13 @@ export interface components {
              * @default false
              */
             force_refresh?: boolean;
+        };
+        /** CompetitorInput */
+        CompetitorInput: {
+            /** Key */
+            key: string;
+            /** Terms */
+            terms?: string[];
         };
         /** CompetitorLookupBody */
         CompetitorLookupBody: {
@@ -28182,6 +28878,25 @@ export interface components {
              */
             estimated_cost_usd?: number;
         };
+        /** CoverageFeed */
+        CoverageFeed: {
+            /** Site Id */
+            site_id: string;
+            /** Window Days */
+            window_days: number;
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /** Mentions */
+            mentions?: components["schemas"]["MentionView"][];
+            share_of_voice: components["schemas"]["ShareOfVoice"];
+            /** Unhealthy Trackers */
+            unhealthy_trackers?: {
+                [key: string]: string;
+            }[];
+        };
         /**
          * CreateAgentInput
          * @description Structured agent request. Goes through the trained agent-builder
@@ -28292,6 +29007,10 @@ export interface components {
             reputation_case_id?: string | null;
             /** Backlink Id */
             backlink_id?: string | null;
+            /** Thread Key */
+            thread_key?: string | null;
+            /** In Reply To */
+            in_reply_to?: string | null;
         };
         /** CreateFolderRequest */
         CreateFolderRequest: {
@@ -28429,6 +29148,38 @@ export interface components {
             expires_at?: string | null;
             /** Max Uses */
             max_uses?: number | null;
+        };
+        /** CreateTemplateBody */
+        CreateTemplateBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Label */
+            label: string;
+            /** Subject Template */
+            subject_template: string;
+            /** Body Template */
+            body_template: string;
+            /** Tags */
+            tags?: string[] | null;
+        };
+        /** CreateTemplateResponse */
+        CreateTemplateResponse: {
+            /** Template Id */
+            template_id: string | null;
+            verdict: components["schemas"]["TemplateVerdict"];
         };
         /** CreateTriggerRequest */
         CreateTriggerRequest: {
@@ -29296,6 +30047,88 @@ export interface components {
             /** Fields */
             fields?: string[] | null;
         };
+        /** DeclareTrackerBody */
+        DeclareTrackerBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Site Id */
+            site_id: string;
+            /** Name */
+            name: string;
+            /** Brand Key */
+            brand_key: string;
+            /** Brand Terms */
+            brand_terms: string[];
+            /**
+             * Exclude Terms
+             * @default []
+             */
+            exclude_terms?: string[];
+            /**
+             * Competitors
+             * @default []
+             */
+            competitors?: components["schemas"]["CompetitorInput"][];
+            /**
+             * Ignore Domains
+             * @default []
+             */
+            ignore_domains?: string[];
+            /** Language */
+            language?: string | null;
+            /** Country */
+            country?: string | null;
+            /**
+             * Timespan
+             * @default 1d
+             */
+            timespan?: string;
+            /**
+             * Max Records
+             * @default 100
+             */
+            max_records?: number;
+            /**
+             * Cadence Minutes
+             * @default 240
+             */
+            cadence_minutes?: number;
+            /**
+             * Alert Min Hit Score
+             * @default 60
+             */
+            alert_min_hit_score?: number;
+            /**
+             * Capture Pages
+             * @default true
+             */
+            capture_pages?: boolean;
+            /**
+             * Declared By
+             * @default user
+             */
+            declared_by?: string;
+            /**
+             * Declared Ref
+             * @default {}
+             */
+            declared_ref?: {
+                [key: string]: unknown;
+            };
+        };
         /** DedupResponse */
         DedupResponse: {
             /**
@@ -29818,6 +30651,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -31116,6 +31976,70 @@ export interface components {
             /** Vectors */
             vectors: number[][];
         };
+        /** EngramDemoteRequest */
+        EngramDemoteRequest: {
+            /**
+             * Reason
+             * @description Why this path is being sent back. Required — a demotion that teaches nobody anything is worse than none.
+             */
+            reason: string;
+        };
+        /**
+         * EngramStatus
+         * @description Everything the lifecycle surface renders for one path.
+         */
+        EngramStatus: {
+            /** Definition Id */
+            definition_id: string;
+            /**
+             * Engram State
+             * @enum {string}
+             */
+            engram_state: "improvised" | "provisional" | "compiled" | "demoted";
+            /** Confirmed Success Count */
+            confirmed_success_count: number;
+            /** Required K */
+            required_k: number;
+            /** Promotion Threshold K */
+            promotion_threshold_k?: number | null;
+            /** Grounding Score */
+            grounding_score?: number | null;
+            /** Compiled At */
+            compiled_at?: string | null;
+            /** Demoted At */
+            demoted_at?: string | null;
+            /** Demotion Reason */
+            demotion_reason?: string | null;
+            /** Version Tags Agents */
+            version_tags_agents?: components["schemas"]["EngramVersionTagAgent"][];
+            /** Version Tags Published Version */
+            version_tags_published_version?: number | null;
+            /** Staleness */
+            staleness?: string[];
+            /**
+             * Can Promote
+             * @default false
+             */
+            can_promote?: boolean;
+            /** Promotion Blocker */
+            promotion_blocker?: string | null;
+        };
+        /** EngramVersionTagAgent */
+        EngramVersionTagAgent: {
+            /** Agent Id */
+            agent_id: string;
+            /** Version */
+            version?: number | null;
+            /** Model Id */
+            model_id?: string | null;
+            /** Name */
+            name?: string | null;
+            /**
+             * Missing
+             * @default false
+             */
+            missing?: boolean;
+        };
         /**
          * EnrichDirective
          * @description What the extension should go fetch + why (RESEARCH_ENRICHMENT.md §3).
@@ -31168,11 +32092,17 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
+            /** Window Mode */
+            window_mode?: ("since_watermark" | "last_n_runs") | null;
+            /** Window N */
+            window_n?: number | null;
+            /** Lens Visibility */
+            lens_visibility?: ("with_context" | "unit_only") | null;
             /**
              * Subject Kind
              * @enum {string}
              */
-            subject_kind: "agent" | "workflow" | "tool" | "environment";
+            subject_kind: "agent" | "workflow" | "tool" | "environment" | "orchestra" | "workflow_node";
             /** Subject Id */
             subject_id?: string | null;
             /** Subject Ref */
@@ -31252,7 +32182,7 @@ export interface components {
              * Subject Kind
              * @enum {string}
              */
-            subject_kind: "agent" | "workflow" | "tool" | "environment";
+            subject_kind: "agent" | "workflow" | "tool" | "environment" | "orchestra" | "workflow_node";
             /** Subject Id */
             subject_id?: string | null;
             /** Subject Ref */
@@ -31269,6 +32199,20 @@ export interface components {
             max_examples_per_review: number;
             /** Goal */
             goal?: string | null;
+            /**
+             * Window Mode
+             * @default since_watermark
+             * @enum {string}
+             */
+            window_mode?: "since_watermark" | "last_n_runs";
+            /** Window N */
+            window_n?: number | null;
+            /**
+             * Lens Visibility
+             * @default with_context
+             * @enum {string}
+             */
+            lens_visibility?: "with_context" | "unit_only";
             /** Status */
             status: string;
             /** Example Watermark At */
@@ -31333,6 +32277,12 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
+            /** Window Mode */
+            window_mode?: ("since_watermark" | "last_n_runs") | null;
+            /** Window N */
+            window_n?: number | null;
+            /** Lens Visibility */
+            lens_visibility?: ("with_context" | "unit_only") | null;
             /** Status */
             status?: ("active" | "paused" | "archived") | null;
             /** Review Every N */
@@ -34920,6 +35870,25 @@ export interface components {
             };
         };
         /**
+         * ImportEntryPlan
+         * @description What will happen to one line of the user's list, and why.
+         */
+        ImportEntryPlan: {
+            /** Raw */
+            raw: string;
+            /** Domain */
+            domain?: string | null;
+            /** Url */
+            url?: string | null;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "new" | "existing" | "duplicate_in_list" | "blocklisted" | "unusable";
+            /** Why */
+            why: string;
+        };
+        /**
          * InboundClassification
          * @description One message, one verdict, with the human-readable WHY.
          *
@@ -35914,6 +36883,17 @@ export interface components {
             [key: string]: unknown;
         };
         JsonValue: unknown;
+        /**
+         * JudgeAccuracyReport
+         * @description One judge's calibration against human labels, plus its raw counts.
+         */
+        JudgeAccuracyReport: {
+            calibration: components["schemas"]["Calibration"];
+            /** Scored By Authority */
+            scored_by_authority?: {
+                [key: string]: number;
+            };
+        };
         /** KeyFindingEntry */
         KeyFindingEntry: {
             /** Label Category */
@@ -37999,6 +38979,69 @@ export interface components {
                 [key: string]: components["schemas"]["MemoryCostByEventType"];
             };
         };
+        /** MentionView */
+        MentionView: {
+            /** Id */
+            id: string;
+            /** Tracker Id */
+            tracker_id: string;
+            /** Brand Key */
+            brand_key: string;
+            /** Url */
+            url: string;
+            /** Domain */
+            domain: string;
+            /** Title */
+            title?: string | null;
+            /** Medium */
+            medium: string;
+            /** Author Name */
+            author_name?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /**
+             * Discovered At
+             * Format: date-time
+             */
+            discovered_at: string;
+            /** Capture Status */
+            capture_status: string;
+            /**
+             * Links To Site
+             * @default false
+             */
+            links_to_site?: boolean;
+            /** Sentiment */
+            sentiment?: string | null;
+            /** Sentiment Score */
+            sentiment_score?: number | null;
+            /** Prominence */
+            prominence?: string | null;
+            /** Topics */
+            topics?: string[];
+            /** Key Quote */
+            key_quote?: string | null;
+            /** Hit Score */
+            hit_score?: number | null;
+            /** Hit Reason */
+            hit_reason?: string | null;
+            /**
+             * Is Competitor
+             * @default false
+             */
+            is_competitor?: boolean;
+            /** Competitor Key */
+            competitor_key?: string | null;
+            /** Outcome Event Id */
+            outcome_event_id?: string | null;
+            /** Matched Terms */
+            matched_terms?: string[];
+        };
+        /** MergeFieldsResponse */
+        MergeFieldsResponse: {
+            /** Fields */
+            fields: components["schemas"]["NamespaceField"][];
+        };
         /** MergePdfSource */
         MergePdfSource: {
             media?: components["schemas"]["MediaRef"] | null;
@@ -38407,6 +39450,18 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** NamespaceField */
+        NamespaceField: {
+            /** Path */
+            path: string;
+            /**
+             * Conditional
+             * @default false
+             */
+            conditional?: boolean;
+            /** Note */
+            note?: string | null;
         };
         /** Narrative */
         Narrative: {
@@ -42355,6 +43410,54 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** ProspectImportBody */
+        ProspectImportBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Entries */
+            entries: string[];
+            /**
+             * Source Label
+             * @default Imported list
+             */
+            source_label?: string;
+            /**
+             * Enrich Authority
+             * @default true
+             */
+            enrich_authority?: boolean;
+        };
+        /** ProspectImportPreview */
+        ProspectImportPreview: {
+            /** Site Id */
+            site_id: string;
+            /** Entries */
+            entries: components["schemas"]["ImportEntryPlan"][];
+            /** New Domains */
+            new_domains: number;
+            /** Existing Domains */
+            existing_domains: number;
+            /** Skipped */
+            skipped: number;
+            /**
+             * Estimated Cost Usd
+             * @default 0
+             */
+            estimated_cost_usd?: string;
+        };
         /** ProspectQuery */
         ProspectQuery: {
             /** Query */
@@ -43710,6 +44813,55 @@ export interface components {
             /** Reason */
             reason?: string | null;
         };
+        /**
+         * RejectDraftRequest
+         * @description Why this message must not go out. The reason is stored on the draft and
+         *     on the member — a rejected draft the reviewer cannot explain is a decision
+         *     the next person has to make again.
+         */
+        RejectDraftRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * RejectDraftResponse
+         * @description Deliberately LEAN. Rejecting must not depend on re-rendering the message:
+         *     the template or the member may be exactly what is wrong with the draft, and
+         *     a rejection that fails after cancelling the row would show the reviewer an
+         *     error for work that already happened.
+         */
+        RejectDraftResponse: {
+            /** Id */
+            id: string;
+            /** Status */
+            status: string;
+            /** Member Id */
+            member_id?: string | null;
+            /** Member Status */
+            member_status?: string | null;
+            /**
+             * Rejected At
+             * Format: date-time
+             */
+            rejected_at: string;
+            /** Reason */
+            reason?: string | null;
+        };
         /** RemoveEdgeOp */
         RemoveEdgeOp: {
             /**
@@ -44152,6 +45304,95 @@ export interface components {
             verdict?: string | null;
             /** Reason */
             reason?: string | null;
+        };
+        /** ReplyDraftBody */
+        ReplyDraftBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Member Ids */
+            member_ids?: string[] | null;
+            /** Template Id */
+            template_id?: string | null;
+            /**
+             * Limit
+             * @default 25
+             */
+            limit?: number;
+        };
+        /** ReplyRunBody */
+        ReplyRunBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Member Ids */
+            member_ids?: string[] | null;
+            /**
+             * Limit
+             * @default 25
+             */
+            limit?: number;
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+        };
+        /**
+         * ReplyThreadView
+         * @description The conversation as the agent would see it, plus the verdict on whether
+         *     it may be answered. A refused thread always carries the human-readable
+         *     reason — never a silent empty result.
+         */
+        ReplyThreadView: {
+            /** Member Id */
+            member_id: string;
+            /** Party Id */
+            party_id: string;
+            /** Recipient */
+            recipient: {
+                [key: string]: string;
+            };
+            /** Subject */
+            subject?: string | null;
+            /** Latest Inbound Label */
+            latest_inbound_label?: string | null;
+            /** Messages */
+            messages: components["schemas"]["ThreadMessageView"][];
+            /** Record Facts */
+            record_facts: {
+                [key: string]: string;
+            }[];
+            /** Answerable */
+            answerable: boolean;
+            /** Refusal Code */
+            refusal_code?: string | null;
+            /** Refusal Reason */
+            refusal_reason?: string | null;
         };
         /** RepositoriesListResponse */
         RepositoriesListResponse: {
@@ -45047,6 +46288,34 @@ export interface components {
             /** Message Id */
             message_id: string;
         };
+        /**
+         * RevisePersonalizationRequest
+         * @description New text for one or more AI-written personalization lines, keyed by the
+         *     writer's own field names (`opening_line`, `ps_line`). Every other part of
+         *     the message is the template and is not editable here — see
+         *     `revise_personalization` for why.
+         */
+        RevisePersonalizationRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Fields */
+            fields: {
+                [key: string]: string;
+            };
+        };
         /** RichDataStoreMember */
         RichDataStoreMember: {
             /** Source Kind */
@@ -45622,6 +46891,29 @@ export interface components {
              */
             node_id?: string | null;
         };
+        /** RunTrackerBody */
+        RunTrackerBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Force
+             * @default true
+             */
+            force?: boolean;
+        };
         /** RunWorkflowRequest */
         RunWorkflowRequest: {
             /** Inputs */
@@ -45914,6 +47206,52 @@ export interface components {
             template_id: string;
         };
         /**
+         * SaveDraftBody
+         * @description A human's own revision of the page's words.
+         *
+         *     Field-for-field the writer's `PageDraft` — the same record, a different
+         *     author. Declared here rather than reusing the pydantic model directly so the
+         *     generated OpenAPI (and therefore the typed frontend client) shows the editor
+         *     exactly what a page draft is.
+         */
+        SaveDraftBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /** H1 */
+            h1: string;
+            /**
+             * Intro
+             * @default
+             */
+            intro?: string;
+            /** Sections */
+            sections?: components["schemas"]["SaveDraftSectionBody"][];
+            /**
+             * Call To Action
+             * @default
+             */
+            call_to_action?: string;
+            /**
+             * Meta Title
+             * @default
+             */
+            meta_title?: string;
+            /**
+             * Meta Description
+             * @default
+             */
+            meta_description?: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /**
          * SaveDraftRequest
          * @description Draft save body. Inherits the canonical ``expected_version``
          *     compare-and-swap field (a lost race is a global 409 version_conflict);
@@ -45933,6 +47271,47 @@ export interface components {
             description?: string | null;
             /** Expected Updated At */
             expected_updated_at?: string | null;
+        };
+        /** SaveDraftResult */
+        SaveDraftResult: {
+            /** Node Id */
+            node_id: string;
+            /**
+             * Route
+             * @default
+             */
+            route?: string;
+            /** Artifact Id */
+            artifact_id: string;
+            /** Summary */
+            summary: string;
+            /**
+             * Superseded Review
+             * @default false
+             */
+            superseded_review?: boolean;
+        };
+        /** SaveDraftSectionBody */
+        SaveDraftSectionBody: {
+            /** Heading */
+            heading: string;
+            /**
+             * Level
+             * @default 2
+             */
+            level?: number;
+            /**
+             * Intent
+             * @default
+             */
+            intent?: string;
+            /**
+             * Body
+             * @default
+             */
+            body?: string;
+            /** Bullets */
+            bullets?: string[];
         };
         /**
          * ScanQuad
@@ -46852,6 +48231,26 @@ export interface components {
              */
             document?: string;
         };
+        /** SetActiveBody */
+        SetActiveBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Is Active */
+            is_active: boolean;
+        };
         /** SetCanonicalCleanRequest */
         SetCanonicalCleanRequest: {
             /**
@@ -47061,6 +48460,13 @@ export interface components {
             use_count?: number | null;
         } & {
             [key: string]: unknown;
+        };
+        /** ShareOfVoice */
+        ShareOfVoice: {
+            /** Total Mentions */
+            total_mentions: number;
+            /** Entries */
+            entries?: components["schemas"]["VoiceShare"][];
         };
         /** SheetReadRequest */
         SheetReadRequest: {
@@ -47300,6 +48706,11 @@ export interface components {
              */
             max_spam_score?: number;
             /**
+             * Enrich Authority
+             * @default true
+             */
+            enrich_authority?: boolean;
+            /**
              * Force Refresh
              * @default false
              */
@@ -47326,6 +48737,16 @@ export interface components {
             confirmed_competitors: number;
             /** Total Competitors */
             total_competitors: number;
+            /**
+             * Enrich Authority
+             * @default true
+             */
+            enrich_authority?: boolean;
+            /**
+             * Estimated Enrichment Cost Usd
+             * @default 0
+             */
+            estimated_enrichment_cost_usd?: string;
         };
         /** SitePerformanceAutomation */
         SitePerformanceAutomation: {
@@ -49441,6 +50862,13 @@ export interface components {
              */
             trigger_type?: "manual" | "batch";
         };
+        /** SweepResult */
+        SweepResult: {
+            /** Stamped */
+            stamped: number;
+            /** Limit */
+            limit: number;
+        };
         /** SyncClustersRequest */
         SyncClustersRequest: {
             /**
@@ -50103,6 +51531,31 @@ export interface components {
             /** Guidance */
             guidance: string;
         };
+        /**
+         * TemplateVerdict
+         * @description Whether this template can render, in the author's language.
+         */
+        TemplateVerdict: {
+            /** Ok */
+            ok: boolean;
+            /** Unresolved */
+            unresolved?: string[];
+            /** Invalid */
+            invalid?: string[];
+            /** Variables */
+            variables?: string[];
+            /** Conditional Used */
+            conditional_used?: {
+                [key: string]: string;
+            };
+            /**
+             * Message
+             * @default
+             */
+            message?: string;
+            /** Available */
+            available?: string[];
+        };
         /** TestNodeRequest */
         TestNodeRequest: {
             /**
@@ -50204,6 +51657,21 @@ export interface components {
              * @default
              */
             text?: string;
+        };
+        /** ThreadMessageView */
+        ThreadMessageView: {
+            /** Seq */
+            seq: number;
+            /** Direction */
+            direction: string;
+            /** Sent At */
+            sent_at?: string | null;
+            /** Subject */
+            subject?: string | null;
+            /** Body */
+            body: string;
+            /** Label */
+            label?: string | null;
         };
         /** ToolCallPart */
         ToolCallPart: {
@@ -51107,6 +52575,47 @@ export interface components {
             modified_at: string;
             /** Is Header Only */
             is_header_only: boolean;
+        };
+        /** TrackerListResponse */
+        TrackerListResponse: {
+            /** Trackers */
+            trackers: components["schemas"]["TrackerView"][];
+        };
+        /** TrackerView */
+        TrackerView: {
+            /** Id */
+            id: string;
+            /** Site Id */
+            site_id: string;
+            /** Name */
+            name: string;
+            /** Brand Key */
+            brand_key: string;
+            /** Brand Terms */
+            brand_terms: string[];
+            /** Competitors */
+            competitors: components["schemas"]["CompetitorInput"][];
+            /** Is Active */
+            is_active: boolean;
+            /** Cadence Minutes */
+            cadence_minutes: number;
+            /** Timespan */
+            timespan: string;
+            /** Alert Min Hit Score */
+            alert_min_hit_score: number;
+            /** Declared By */
+            declared_by: string;
+            /** Last Run At */
+            last_run_at?: string | null;
+            /** Last Run Status */
+            last_run_status?: string | null;
+            /** Last Error */
+            last_error?: string | null;
+            /**
+             * Mention Count
+             * @default 0
+             */
+            mention_count?: number;
         };
         /** TranscriptInputPart */
         TranscriptInputPart: {
@@ -52477,6 +53986,28 @@ export interface components {
             sample_output?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
+        };
+        /** ValidateTemplateBody */
+        ValidateTemplateBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Subject Template */
+            subject_template: string;
+            /** Body Template */
+            body_template: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -53861,6 +55392,29 @@ export interface components {
             variant_errors?: {
                 [key: string]: string;
             };
+        };
+        /** VoiceShare */
+        VoiceShare: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Mentions */
+            mentions: number;
+            /** Share Pct */
+            share_pct: number;
+            /**
+             * Linked Mentions
+             * @default 0
+             */
+            linked_mentions?: number;
+            /** Avg Hit Score */
+            avg_hit_score?: number | null;
+            /**
+             * Is Brand
+             * @default false
+             */
+            is_brand?: boolean;
         };
         /**
          * WalkHop
@@ -63773,6 +65327,146 @@ export interface operations {
             };
         };
     };
+    preview_broken_link_prospecting_seo_sites__site_id__broken_link_prospecting_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokenLinkProspectingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokenLinkProspectingPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collect_broken_link_prospecting_seo_sites__site_id__broken_link_prospecting_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokenLinkProspectingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_prospect_import_seo_sites__site_id__prospect_import_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProspectImportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectImportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_prospect_import_seo_sites__site_id__prospect_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProspectImportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     fold_serp_prospects_endpoint_seo_sites__site_id__crm_serp_prospects_post: {
         parameters: {
             query?: never;
@@ -65282,6 +66976,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_page_draft_route_content_plan_nodes__node_id__draft_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                node_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveDraftBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveDraftResult"];
                 };
             };
             /** @description Validation Error */
@@ -69885,6 +71614,76 @@ export interface operations {
             };
         };
     };
+    revise_draft_personalization_outreach_single_drafts__draft_id__personalization_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisePersonalizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_message_draft_outreach_single_drafts__draft_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                draft_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RejectDraftResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     send_message_draft_outreach_single_drafts__draft_id__send_post: {
         parameters: {
             query?: never;
@@ -70012,6 +71811,363 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_trackers_coverage_trackers_get: {
+        parameters: {
+            query?: {
+                site_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackerListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_tracker_coverage_trackers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclareTrackerBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackerView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_active_coverage_trackers__tracker_id__active_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tracker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetActiveBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackerView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_one_tracker_coverage_trackers__tracker_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tracker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunTrackerBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_feed_coverage_feed_get: {
+        parameters: {
+            query: {
+                site_id: string;
+                brand_key: string;
+                window_days?: number;
+                tracker_id?: string | null;
+                include_competitors?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageFeed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_reply_thread_outreach_replies_lists__outreach_list_id__members__member_id__thread_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                outreach_list_id: string;
+                member_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplyThreadView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_replies_outreach_replies_lists__outreach_list_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                outreach_list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyRunBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draft_replies_route_outreach_replies_lists__outreach_list_id__drafts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                outreach_list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplyDraftBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_merge_fields_outreach_pitch_templates_merge_fields_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergeFieldsResponse"];
+                };
+            };
+        };
+    };
+    validate_template_outreach_pitch_templates_validate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateTemplateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateVerdict"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_template_outreach_pitch_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTemplateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateTemplateResponse"];
                 };
             };
             /** @description Validation Error */
@@ -70308,6 +72464,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -78498,6 +80689,103 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DefinitionRecord"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workflow_engram_workflows__definition_id__engram_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EngramStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    promote_workflow_engram_workflows__definition_id__engram_promote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EngramStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    demote_workflow_engram_workflows__definition_id__engram_demote_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                definition_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EngramDemoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EngramStatus"];
                 };
             };
             /** @description Validation Error */
@@ -87116,6 +89404,104 @@ export interface operations {
             };
         };
     };
+    get_agreement_admin_judges_agreement_get: {
+        parameters: {
+            query?: {
+                /** @description Restrict to one judge. */
+                judge_key?: string | null;
+                organization_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementRollup"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_calibration_admin_judges__judge_key__calibration_get: {
+        parameters: {
+            query?: {
+                judge_version?: number | null;
+                subject_kind?: string | null;
+            };
+            header?: never;
+            path: {
+                judge_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JudgeAccuracyReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_sweep_feedback_admin_judges_sweep_feedback_post: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SweepResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_context_organizations_admin_agent_context_organizations_get: {
         parameters: {
             query?: never;
@@ -89422,41 +91808,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabelMetadata"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    save_page_draft_route_content_plan_nodes__node_id__draft_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SaveDraftBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SaveDraftResult"];
                 };
             };
             /** @description Validation Error */

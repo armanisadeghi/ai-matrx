@@ -39,7 +39,49 @@ import { supabase } from "@/utils/supabase/client";
 
 import { enroll, listToolSubjects } from "../api";
 import type { EnrollRequest, SubjectKind } from "../types";
-import { KIND_LABEL } from "./tokens";
+import { ENROLLABLE_KINDS, KIND_LABEL } from "./tokens";
+
+type WindowMode = NonNullable<EnrollRequest["window_mode"]>;
+type LensVisibility = NonNullable<EnrollRequest["lens_visibility"]>;
+
+/**
+ * The lens, in the user's language. Our user is a subject-matter expert, not an
+ * engineer: "since_watermark" and "unit_only" mean nothing to them, so each
+ * option states what the reviewer will DO, and the hint states the trade.
+ */
+const WINDOW_MODE_OPTIONS: Array<{
+  value: WindowMode;
+  label: string;
+  hint: string;
+}> = [
+  {
+    value: "since_watermark",
+    label: "Everything new since the last review",
+    hint: "Nothing is ever reviewed twice, and nothing is skipped.",
+  },
+  {
+    value: "last_n_runs",
+    label: "The most recent runs, every time",
+    hint: "Always looks at fresh behaviour, even if that means re-reading a run.",
+  },
+];
+
+const LENS_VISIBILITY_OPTIONS: Array<{
+  value: LensVisibility;
+  label: string;
+  hint: string;
+}> = [
+  {
+    value: "with_context",
+    label: "The full picture",
+    hint: "Conversations, tool calls, failures and cost — how it got there.",
+  },
+  {
+    value: "unit_only",
+    label: "Only what it was asked and what it produced",
+    hint: "Hides the machinery so the reviewer judges the results on their own.",
+  },
+];
 
 interface PickerRow {
   id: string;
@@ -90,6 +132,10 @@ export function EnrollDialog({
   const [maxExamples, setMaxExamples] = useState(25);
   const [backfillDays, setBackfillDays] = useState(14);
   const [goal, setGoal] = useState("");
+  const [windowMode, setWindowMode] = useState<WindowMode>("since_watermark");
+  const [windowN, setWindowN] = useState(25);
+  const [lensVisibility, setLensVisibility] =
+    useState<LensVisibility>("with_context");
 
   // Switching kind must not carry a stale selection into the new form — but a
   // deep-linked tool IS the selection, so it survives the initial kind set.
@@ -121,6 +167,9 @@ export function EnrollDialog({
     setMaxExamples(25);
     setBackfillDays(14);
     setGoal("");
+    setWindowMode("since_watermark");
+    setWindowN(25);
+    setLensVisibility("with_context");
   }, [open, initialToolName]);
 
   const agents = useQuery<PickerRow[]>({
@@ -139,6 +188,45 @@ export function EnrollDialog({
       return (data ?? []) as PickerRow[];
     },
     enabled: open && kind === "agent",
+  });
+
+  /**
+   * Orchestras are not a table — an Orchestra is an orchestrator agent plus its
+   * `platform.associations` member edges. So the picker lists the agents that
+   * carry the orchestra marker self-edge, which is exactly what the server
+   * validates on enroll (a plain agent is refused with the reason).
+   */
+  const orchestras = useQuery<PickerRow[]>({
+    queryKey: ["hindsight", "picker", "orchestra", search],
+    queryFn: async () => {
+      const { data: markers, error: markerError } = await supabase
+        .schema("platform")
+        .from("associations")
+        .select("source_id")
+        .eq("source_type", "agent")
+        .eq("target_type", "agent")
+        .eq("role", "orchestra")
+        .is("deleted_at", null)
+        .limit(200);
+      if (markerError) throw new Error(markerError.message);
+      const ids = Array.from(
+        new Set((markers ?? []).map((m) => m.source_id as string)),
+      );
+      if (ids.length === 0) return [];
+      let q = supabase
+        .schema("agent")
+        .from("definition")
+        .select("id, name")
+        .in("id", ids)
+        .is("deleted_at", null)
+        .order("updated_at", { ascending: false })
+        .limit(50);
+      if (search) q = q.ilike("name", `%${search}%`);
+      const { data, error } = await q;
+      if (error) throw new Error(error.message);
+      return (data ?? []) as PickerRow[];
+    },
+    enabled: open && kind === "orchestra",
   });
 
   const workflows = useQuery<PickerRow[]>({
@@ -172,9 +260,16 @@ export function EnrollDialog({
         review_every_n: everyN,
         max_examples_per_review: maxExamples,
         backfill_days: backfillDays,
+        window_mode: windowMode,
+        // Only meaningful for `last_n_runs`, and the server refuses it
+        // otherwise — the mode owns its parameter.
+        ...(windowMode === "last_n_runs" ? { window_n: windowN } : {}),
+        lens_visibility: lensVisibility,
         ...(goal ? { goal } : {}),
       };
-      if (kind === "agent" || kind === "workflow") body.subject_id = subjectId;
+      if (kind === "agent" || kind === "workflow" || kind === "orchestra") {
+        body.subject_id = subjectId;
+      }
       if (kind === "tool") body.subject_ref = toolName;
       if (kind === "environment") {
         body.subject_selector = {
@@ -194,14 +289,19 @@ export function EnrollDialog({
   });
 
   const subjectChosen = useMemo(() => {
-    if (kind === "agent" || kind === "workflow") return subjectId.length > 0;
+    if (kind === "agent" || kind === "workflow" || kind === "orchestra") {
+      return subjectId.length > 0;
+    }
     if (kind === "tool") return toolName.length > 0;
     return Boolean(envType || envApp || envFeature);
   }, [kind, subjectId, toolName, envType, envApp, envFeature]);
 
   const canSubmit = subjectChosen && !enrollMutation.isPending;
 
-  const rows = kind === "agent" ? agents : workflows;
+  const rows =
+    kind === "agent" ? agents : kind === "orchestra" ? orchestras : workflows;
+  const subjectNoun =
+    kind === "orchestra" ? "orchestra" : kind === "agent" ? "agent" : "workflow";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -227,7 +327,7 @@ export function EnrollDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(KIND_LABEL) as SubjectKind[]).map((k) => (
+                {ENROLLABLE_KINDS.map((k) => (
                   <SelectItem key={k} value={k}>
                     {KIND_LABEL[k]}
                   </SelectItem>
@@ -236,11 +336,17 @@ export function EnrollDialog({
             </Select>
           </div>
 
-          {(kind === "agent" || kind === "workflow") && (
+          {(kind === "agent" || kind === "workflow" || kind === "orchestra") && (
             <div className="space-y-1.5">
-              <Label>{kind === "agent" ? "Agent" : "Workflow"}</Label>
+              <Label>{KIND_LABEL[kind]}</Label>
+              {kind === "orchestra" && (
+                <p className="text-xs text-muted-foreground">
+                  Pick the orchestrator. The reviewer reads its runs and sees the
+                  whole team it can delegate to.
+                </p>
+              )}
               <Input
-                placeholder={`Search ${kind}s…`}
+                placeholder={`Search ${subjectNoun}s…`}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -248,12 +354,16 @@ export function EnrollDialog({
                 {rows.isLoading && <Skeleton className="m-2 h-6" />}
                 {rows.isError && (
                   <p className="p-3 text-sm text-red-600 dark:text-red-400">
-                    Could not load {kind}s: {(rows.error as Error).message}
+                    Could not load {subjectNoun}s: {(rows.error as Error).message}
                   </p>
                 )}
                 {rows.data?.length === 0 && (
                   <p className="p-3 text-sm text-muted-foreground">
-                    No {kind}s match “{search}”.
+                    {search
+                      ? `No ${subjectNoun}s match “${search}”.`
+                      : kind === "orchestra"
+                        ? "No orchestras exist yet — build one on an agent first."
+                        : `No ${subjectNoun}s yet.`}
                   </p>
                 )}
                 {(rows.data ?? []).map((row) => (
@@ -371,6 +481,74 @@ export function EnrollDialog({
                 onChange={(e) => setMaxExamples(Number(e.target.value) || 25)}
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Which runs should the reviewer read?</Label>
+            <Select
+              value={windowMode}
+              onValueChange={(v) => setWindowMode(v as WindowMode)}
+            >
+              <SelectTrigger data-testid="hindsight-window-mode-trigger">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {WINDOW_MODE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {
+                WINDOW_MODE_OPTIONS.find((o) => o.value === windowMode)?.hint
+              }
+            </p>
+            {windowMode === "last_n_runs" && (
+              <div className="space-y-1.5 pt-1">
+                <Label>How many recent runs?</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={500}
+                  value={windowN}
+                  onChange={(e) => setWindowN(Number(e.target.value) || 25)}
+                  data-testid="hindsight-window-n"
+                />
+                {windowN > maxExamples && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    Only {maxExamples} will actually be read — raise “Max
+                    examples per review” to {windowN} to read them all.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>How much of each run should it see?</Label>
+            <Select
+              value={lensVisibility}
+              onValueChange={(v) => setLensVisibility(v as LensVisibility)}
+            >
+              <SelectTrigger data-testid="hindsight-lens-visibility-trigger">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {LENS_VISIBILITY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {
+                LENS_VISIBILITY_OPTIONS.find((o) => o.value === lensVisibility)
+                  ?.hint
+              }
+            </p>
           </div>
 
           <div className="space-y-1.5">

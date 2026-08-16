@@ -2,8 +2,9 @@
  * features/hindsight/subject-doors.ts
  *
  * The Door Law for Hindsight: every record this surface names must be
- * openable. Subjects (agent / workflow / tool), the real examples a review
- * read, the reviewer's own run, and every replay conversation all get a door.
+ * openable. Subjects (agent / orchestra / workflow / tool), the real examples a
+ * review read, the reviewer's own run, and every replay conversation all get a
+ * door.
  *
  * `environment` subjects have no record door on purpose — an environment is a
  * conversation SELECTOR (`conversation_type` / `source_app` / `source_feature`),
@@ -40,6 +41,17 @@ export function toolHref(toolId: string): string {
   return `/administration/agents/mcp-tools/${toolId}`;
 }
 
+/**
+ * An Orchestra has no table — it IS the orchestrator agent plus its member
+ * edges — so its identity is the orchestrator's id and its door is the
+ * Orchestra builder, which is where the roster the reviewer read actually
+ * lives. Opening the plain agent page instead would hide the members, which
+ * are the whole reason this subject kind exists.
+ */
+export function orchestraHref(orchestratorId: string): string {
+  return `/agents/orchestras/${orchestratorId}`;
+}
+
 export function workflowHref(definitionId: string): string {
   return `${WORKFLOWS_APP_URL}/workflows/${definitionId}`;
 }
@@ -67,6 +79,9 @@ export function subjectDoor(
   const { subject_kind: kind, subject_id: id } = enrollment;
   if (kind === "agent" && id) {
     return { href: agentHref(id, audience), label: "Open agent", external: false };
+  }
+  if (kind === "orchestra" && id) {
+    return { href: orchestraHref(id), label: "Open orchestra", external: false };
   }
   if (kind === "workflow" && id) {
     return { href: workflowHref(id), label: "Open workflow", external: true };
