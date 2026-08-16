@@ -38,6 +38,11 @@ import { EmploymentCard } from "./EmploymentCard";
 import { InteractionTimeline } from "./InteractionTimeline";
 import { PartyNotes } from "./PartyNotes";
 import { OutreachContactCandidatesCard } from "./OutreachContactCandidatesCard";
+import { ContactCandidatesCard } from "./ContactCandidatesCard";
+import {
+  JournalistIntelligenceCard,
+  storedJournalistActivity,
+} from "./JournalistIntelligenceCard";
 import { PartyProvenanceCard } from "./PartyProvenanceCard";
 
 interface Props {
@@ -225,6 +230,19 @@ export function PartyRecordPage({ partyId }: Props) {
                 <PartyProvenanceCard party={party} onChanged={refresh} />
                 {!isPerson && party.primary_domain && (
                   <OutreachContactCandidatesCard outletPartyId={party.id} />
+                )}
+                {/* The persisted candidate queue (IC-3): every producer — the
+                    crawl, the paid waterfall, the registries, the extension —
+                    writes ONE ranked list, and none of it is contactable until
+                    somebody confirms a row here. */}
+                <ContactCandidatesCard partyId={party.id} onChanged={refresh} />
+                {/* Only for people, and only when we have somewhere to look:
+                    "is this journalist still there, and what do they cover?" */}
+                {isPerson && (
+                  <JournalistIntelligenceCard
+                    partyId={party.id}
+                    storedActivity={storedJournalistActivity(party)}
+                  />
                 )}
                 <InteractionTimeline
                   partyId={party.id}

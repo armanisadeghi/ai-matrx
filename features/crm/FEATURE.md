@@ -579,6 +579,36 @@ current authors/editors/contributors without writing.
   state render as `Confirmed` / `Attached`, making reruns understandable rather
   than silently no-oping.
 
+## The candidate queue and journalist intelligence — WP3
+
+Two more cards on the SAME `/crm/[partyId]` record page. There is still no
+outreach-only console, and there is no second candidate list.
+
+- **`ContactCandidatesCard`** renders the persisted `crm.contact_candidate`
+  rows (IC-3) — the ONE ranked list every producer writes to: the crawl, the
+  paid waterfall, the open registries, the extension. `OutreachContactCandidatesCard`
+  above it stays exactly as it is: it is the zero-write authority on what a
+  crawled page *says*, and it folds into this same list. **Two lists on one page
+  would be the half-application the no-partial-application law names — these are
+  one list and its source.**
+  - **The two second-confirmations are two separate questions**, each with its
+    own reason, mirroring the server's two named arguments. There is no generic
+    "confirm anyway" here because there is none on the server.
+  - **Unverified is stated plainly** ("Not checked yet" / "We have not confirmed
+    this mailbox exists"), because no verification vendor is connected yet.
+    Dressing an unchecked address up as a good one is how a customer's own
+    sending domain gets burned.
+  - Refusing is durable — the server keeps the verdict through every later
+    re-discovery, so the user is never asked twice.
+- **`JournalistIntelligenceCard`** (people only) shows the activity verdict
+  already stamped on the party — rendered with **no request and no spend** —
+  plus the beat profile. Three honesty rules it renders rather than describes:
+  `inactive` is not a verdict (`active` / `stale` / `moved` / `unknown`, and
+  `moved` reads as a suspicion); a beat below four pieces we have actually read
+  is refused with the count; and a campaign fit is a VERDICT
+  (`strong`/`moderate`/`weak`/`none`) whose ABSENCE renders as "no campaign has
+  been described", never as `none`.
+
 ## Starting outreach where the opportunity was found — G9
 
 `features/crm/outreach-start/` (client bridge) + `features/crm/components/outreach-start/`
@@ -637,6 +667,14 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-16 — **The candidate queue and journalist intelligence landed on the
+  party record (WP3, round 2).** `ContactCandidatesCard` is the human half of
+  enrichment — the ONE persisted candidate list with one-click confirm through
+  `confirm_candidate`, its two named second-confirmations, durable refusal, and
+  a door to the page every address was read on. `JournalistIntelligenceCard`
+  renders the stored activity verdict with no request, and the beat profile with
+  its campaign-fit VERDICT (never a number — the server's first live run scored
+  a perfect-fit journalist 8/100). Typed client: `features/crm/enrichment/service.ts`.
 - 2026-08-16 — **A confirmed win now shows on the roster, and drafts are
   reviewed at volume (WP1, round 3).** Two halves of the same day's work:
   (1) **the outcome lands on the member.** The server sync

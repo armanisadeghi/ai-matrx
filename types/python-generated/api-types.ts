@@ -5774,6 +5774,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/prospect-capture/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Prospect Capture
+         * @description What capturing this page would do — and who we already know there.
+         *
+         *     IC-10's browser half. It answers the two questions a capture has that a
+         *     pasted list does not: which of the user's sites this prospect belongs to,
+         *     and whether the domain is ALREADY a relationship (previous messages,
+         *     campaigns, confirmed wins, do-not-contact). Nothing is written.
+         */
+        post: operations["preview_prospect_capture_seo_prospect_capture_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/prospect-capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Prospect Capture
+         * @description Capture this page's domain as a prospect, through the ONE import path.
+         *
+         *     Never a side door: the write is `prospect_import.run` with a source label
+         *     naming the capture, so the blocklist is enforced at ingestion, the domain is
+         *     normalized by the party resolver's own normalizer, dedupe is the triage
+         *     surface's, and the row is indistinguishable from a searched one afterwards.
+         */
+        post: operations["run_prospect_capture_seo_prospect_capture_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/endpoint-families/apply": {
         parameters: {
             query?: never;
@@ -8050,6 +8100,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hindsight/findings/{finding_id}/prove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Prove Finding Route
+         * @description Prove this finding's proposal against a real recorded call (C-31).
+         *
+         *     ADMIN-ONLY for the same reason the wire-replay endpoint is: every sample is
+         *     a fully-billed provider call, on both arms.
+         *
+         *     A finding with nothing replayable returns `status='unprovable'` with the
+         *     reason — a 200, not a 422. "There is no captured call of this unit" is an
+         *     ANSWER the surfaces need to render, not a malformed request.
+         */
+        post: operations["prove_finding_route_hindsight_findings__finding_id__prove_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hindsight/findings/{finding_id}/reject": {
         parameters: {
             query?: never;
@@ -8232,6 +8309,135 @@ export interface paths {
         get: operations["get_wire_replay_group_hindsight_wire_replays__replay_group_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/snapshots/{snapshot_id}/regression-case": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Snapshot Regression Case
+         * @description Make this recorded call a permanent test — the one-click surface.
+         *
+         *     ADMIN-ONLY for the same reason wire replay is: a snapshot is reachable
+         *     across conversations, and every later re-check of the case spends real
+         *     money.
+         */
+        post: operations["create_snapshot_regression_case_hindsight_snapshots__snapshot_id__regression_case_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/regression-cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Cases
+         * @description The suite. Filterable by snapshot (the viewer's door) and by finding (the
+         *     door back from a finding to the permanent tests it produced).
+         */
+        get: operations["list_cases_hindsight_regression_cases_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/regression-cases/{case_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Case */
+        get: operations["get_case_hindsight_regression_cases__case_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/regression-cases/{case_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Case
+         * @description Re-check one case now. Every sample is a fully-billed provider call.
+         */
+        post: operations["run_case_hindsight_regression_cases__case_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/regression-cases/{case_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Case Status
+         * @description Retire (or re-activate) a case.
+         *
+         *     Retire, never delete: a claim that stopped being true is history worth
+         *     keeping, and deleting the row would drop the snapshot pin that made the case
+         *     reproducible at all.
+         */
+        post: operations["set_case_status_hindsight_regression_cases__case_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/shadow-recompilation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Shadow Recompilation
+         * @description Re-prove the regression suite against a model change.
+         *
+         *     Bounded by CAPS in cases AND dollars; the report always carries
+         *     checked-vs-selected so a bounded pass can never read as a full one.
+         */
+        post: operations["trigger_shadow_recompilation_hindsight_shadow_recompilation_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8694,6 +8900,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/outreach/single/drafts/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approve Message Drafts
+         * @description Approve the rest of a queue the reviewer has already stepped through.
+         *
+         *     Ids only — never a filter. Each draft goes through the SAME `approve_draft`
+         *     (re-render, fingerprint check, stamp), and a refusal is reported per draft
+         *     rather than raised, so one broken template cannot discard the approvals
+         *     earned beside it.
+         */
+        post: operations["approve_message_drafts_outreach_single_drafts_approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/outreach/single/drafts/{draft_id}/personalization": {
         parameters: {
             query?: never;
@@ -8881,6 +9112,104 @@ export interface paths {
          * @description The feed plus its share-of-voice rollup over the SAME rows.
          */
         get: operations["get_feed_coverage_feed_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Panels */
+        get: operations["get_panels_ai_visibility_panels_get"];
+        put?: never;
+        /**
+         * Create Panel
+         * @description Declare (or re-declare) one panel. Idempotent by `dedupe_key`.
+         */
+        post: operations["create_panel_ai_visibility_panels_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels/{panel_id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Active */
+        post: operations["set_active_ai_visibility_panels__panel_id__active_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels/{panel_id}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview
+         * @description What running this panel now would ask, defer, and cost — before any spend.
+         */
+        get: operations["preview_ai_visibility_panels__panel_id__preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels/{panel_id}/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run One Panel
+         * @description Run ONE panel now, ignoring its cadence. The same pass the scheduler runs.
+         */
+        post: operations["run_one_panel_ai_visibility_panels__panel_id__run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai-visibility/panels/{panel_id}/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Trend
+         * @description Brand and key-message presence over time — a rollup, never a stored series.
+         */
+        get: operations["get_trend_ai_visibility_panels__panel_id__trend_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10878,6 +11207,130 @@ export interface paths {
          * @description Is this person still publishing where we think they are? (ListIQ-equivalent.)
          */
         post: operations["check_party_journalist_activity_crm_parties__party_id__journalist_activity_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/parties/{party_id}/journalist-beat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Party Journalist Beat
+         * @description The stored beat profile. Never re-derives, never spends. NULL = not derived yet.
+         */
+        get: operations["read_party_journalist_beat_crm_parties__party_id__journalist_beat_get"];
+        put?: never;
+        /**
+         * Derive Party Journalist Beat
+         * @description What does this journalist cover? Reads only pages we already crawled.
+         */
+        post: operations["derive_party_journalist_beat_crm_parties__party_id__journalist_beat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/outreach-lists/{list_id}/media-refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Media List Door
+         * @description Re-check this list's journalists now. Adds nobody, removes nobody.
+         */
+        post: operations["refresh_media_list_door_crm_outreach_lists__list_id__media_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/outreach-lists/{list_id}/media-refresh-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Media Refresh Policy Door
+         * @description How often this list re-checks itself, and what it is for.
+         */
+        put: operations["set_media_refresh_policy_door_crm_outreach_lists__list_id__media_refresh_policy_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/outreach-lists/{list_id}/media-search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Media List Search Door
+         * @description A news search becomes PROPOSED journalists. Enrollment stays the human act.
+         */
+        post: operations["media_list_search_door_crm_outreach_lists__list_id__media_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/enrichment/bulk/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Bulk Enrichment
+         * @description The dry run: what would happen, and what would be skipped and why.
+         */
+        post: operations["preview_bulk_enrichment_crm_enrichment_bulk_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crm/enrichment/bulk/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Bulk Enrichment Door
+         * @description Enrich a whole sheet through the SAME waterfall a single lookup uses.
+         */
+        post: operations["run_bulk_enrichment_door_crm_enrichment_bulk_run_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -22316,6 +22769,46 @@ export interface components {
              */
             source: "organization_policy" | "safe_default";
         };
+        /**
+         * ApproveDraftsRequest
+         * @description Approve several drafts a reviewer has ALREADY READ, one by one.
+         *
+         *     Ids, never a filter. "Approve everything in this queue" would approve
+         *     messages nobody has seen, which is the exact failure the ladder exists to
+         *     prevent; the client sends the drafts the human actually stepped through.
+         */
+        ApproveDraftsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Draft Ids */
+            draft_ids: string[];
+        };
+        /**
+         * ApproveDraftsResponse
+         * @description A per-draft ledger, never a count. A batch that silently approved 9 of 10
+         *     and reported success is worse than one that approved none.
+         */
+        ApproveDraftsResponse: {
+            /** Requested */
+            requested: number;
+            /** Approved */
+            approved: number;
+            /** Outcomes */
+            outcomes?: components["schemas"]["DraftOutcome"][];
+        };
         /** ArchiveOut */
         ArchiveOut: {
             /** Status */
@@ -23541,6 +24034,61 @@ export interface components {
             x1: number;
             /** Y1 */
             y1: number;
+        };
+        /**
+         * BeatProfile
+         * @description What this journalist covers. Every field is evidence-backed or NULL.
+         */
+        BeatProfile: {
+            /** Party Id */
+            party_id: string;
+            /** Person Name */
+            person_name: string;
+            /** Outlet Party Id */
+            outlet_party_id?: string | null;
+            /** Outlet Name */
+            outlet_name?: string | null;
+            /** Outlet Domain */
+            outlet_domain?: string | null;
+            /** Beats */
+            beats?: string[];
+            /**
+             * Beat Summary
+             * @default
+             */
+            beat_summary?: string;
+            /** Topics */
+            topics?: string[];
+            /**
+             * Typical Angle
+             * @default
+             */
+            typical_angle?: string;
+            /** Campaign Fit */
+            campaign_fit?: ("strong" | "moderate" | "weak" | "none") | null;
+            /** Campaign Fit Reason */
+            campaign_fit_reason?: string | null;
+            /** Campaign Context */
+            campaign_context?: string | null;
+            /**
+             * Insufficient Evidence
+             * @default false
+             */
+            insufficient_evidence?: boolean;
+            /**
+             * Pages Analyzed
+             * @default 0
+             */
+            pages_analyzed?: number;
+            /** Evidence Urls */
+            evidence_urls?: string[];
+            /** Derived At */
+            derived_at?: string | null;
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
         };
         /** BgRemoveParams */
         BgRemoveParams: {
@@ -24971,6 +25519,31 @@ export interface components {
              */
             status?: string | null;
         };
+        /** BulkEnrichmentRequest */
+        BulkEnrichmentRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rows */
+            rows?: components["schemas"]["BulkRow"][];
+            /**
+             * Use Paid Providers
+             * @default false
+             */
+            use_paid_providers?: boolean;
+        };
         /** BulkFileDeleteRequest */
         BulkFileDeleteRequest: {
             /** File Ids */
@@ -25074,6 +25647,109 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /**
+         * BulkPreview
+         * @description What a run WOULD do. Spends nothing, creates nothing.
+         */
+        BulkPreview: {
+            /**
+             * Rows Supplied
+             * @default 0
+             */
+            rows_supplied?: number;
+            /**
+             * Would Enrich
+             * @default 0
+             */
+            would_enrich?: number;
+            /**
+             * Blocked
+             * @default 0
+             */
+            blocked?: number;
+            /**
+             * Duplicates
+             * @default 0
+             */
+            duplicates?: number;
+            /**
+             * Unusable
+             * @default 0
+             */
+            unusable?: number;
+            /** Entries */
+            entries?: components["schemas"]["BulkRowResult"][];
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+        };
+        /** BulkReport */
+        BulkReport: {
+            /**
+             * Rows Supplied
+             * @default 0
+             */
+            rows_supplied?: number;
+            /**
+             * Rows Attempted
+             * @default 0
+             */
+            rows_attempted?: number;
+            /**
+             * Parties Created
+             * @default 0
+             */
+            parties_created?: number;
+            /**
+             * Candidates Found
+             * @default 0
+             */
+            candidates_found?: number;
+            /**
+             * Personal Found
+             * @default 0
+             */
+            personal_found?: number;
+            /**
+             * Blocked
+             * @default 0
+             */
+            blocked?: number;
+            /**
+             * Duplicates
+             * @default 0
+             */
+            duplicates?: number;
+            /**
+             * Unusable
+             * @default 0
+             */
+            unusable?: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed?: number;
+            /**
+             * Not Attempted
+             * @default 0
+             */
+            not_attempted?: number;
+            /**
+             * Budget Exhausted
+             * @default false
+             */
+            budget_exhausted?: boolean;
+            /** Results */
+            results?: components["schemas"]["BulkRowResult"][];
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+        };
         /** BulkResponse */
         BulkResponse: {
             /** Results */
@@ -25091,6 +25767,61 @@ export interface components {
             ok: boolean;
             /** Error */
             error?: string | null;
+        };
+        /**
+         * BulkRow
+         * @description One line of the user's sheet, as supplied.
+         */
+        BulkRow: {
+            /** Domain */
+            domain: string;
+            /** Person Name */
+            person_name?: string | null;
+            /** Company Name */
+            company_name?: string | null;
+        };
+        /** BulkRowResult */
+        BulkRowResult: {
+            /** Domain */
+            domain: string;
+            /**
+             * Normalized Domain
+             * @default
+             */
+            normalized_domain?: string;
+            /** Person Name */
+            person_name?: string | null;
+            /** Company Name */
+            company_name?: string | null;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "enriched" | "no_candidates" | "blocklisted" | "duplicate_in_sheet" | "unusable" | "budget_exhausted" | "failed";
+            /**
+             * Why
+             * @default
+             */
+            why?: string;
+            /** Party Id */
+            party_id?: string | null;
+            /**
+             * Party Created
+             * @default false
+             */
+            party_created?: boolean;
+            /**
+             * Candidates Found
+             * @default 0
+             */
+            candidates_found?: number;
+            /**
+             * Personal Found
+             * @default 0
+             */
+            personal_found?: number;
+            /** Candidates */
+            candidates?: components["schemas"]["ContactCandidateView"][];
         };
         /** BulkVerdictFailure */
         BulkVerdictFailure: {
@@ -25331,6 +26062,18 @@ export interface components {
             error?: string | null;
         };
         /**
+         * CaptureSite
+         * @description One site the caller may capture into.
+         */
+        CaptureSite: {
+            /** Site Id */
+            site_id: string;
+            /** Label */
+            label: string;
+            /** Organization Id */
+            organization_id: string;
+        };
+        /**
          * CapturedLink
          * @description One anchor on the captured page pointing at the requested target.
          *
@@ -25394,6 +26137,40 @@ export interface components {
              * @description Optional cap on materialized Cartesian combinations.
              */
             limit?: number | null;
+        };
+        /** CaseOutcome */
+        CaseOutcome: {
+            /** Case Id */
+            case_id: string;
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+            /**
+             * Result
+             * @default error
+             */
+            result?: string;
+            /**
+             * Reason
+             * @default
+             */
+            reason?: string;
+            /** Verdict */
+            verdict?: string | null;
+            /**
+             * Consecutive Failures
+             * @default 0
+             */
+            consecutive_failures?: number;
+            /** Replay Group Id */
+            replay_group_id?: string | null;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
         };
         /** CatalogEntryResponse */
         CatalogEntryResponse: {
@@ -30268,6 +31045,74 @@ export interface components {
             /** Fields */
             fields?: string[] | null;
         };
+        /** DeclarePanelBody */
+        DeclarePanelBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Site Id */
+            site_id: string;
+            /** Name */
+            name: string;
+            /**
+             * Prompts
+             * @default []
+             */
+            prompts?: components["schemas"]["PanelPrompt"][];
+            /**
+             * Key Messages
+             * @default []
+             */
+            key_messages?: components["schemas"]["KeyMessage"][];
+            /**
+             * Engines
+             * @default []
+             */
+            engines?: string[];
+            /**
+             * Country Iso
+             * @default US
+             */
+            country_iso?: string;
+            /** City */
+            city?: string | null;
+            /**
+             * Cadence Days
+             * @default 7
+             */
+            cadence_days?: number;
+            /**
+             * Max Prompts Per Run
+             * @default 10
+             */
+            max_prompts_per_run?: number;
+            /** Coverage Tracker Id */
+            coverage_tracker_id?: string | null;
+            /**
+             * Declared By
+             * @default user
+             */
+            declared_by?: string;
+            /**
+             * Declared Ref
+             * @default {}
+             */
+            declared_ref?: {
+                [key: string]: unknown;
+            };
+        };
         /** DeclareTrackerBody */
         DeclareTrackerBody: {
             /**
@@ -31721,6 +32566,22 @@ export interface components {
              */
             accept?: boolean;
         };
+        /**
+         * DraftOutcome
+         * @description What happened to ONE draft in a batch, in the reviewer's own terms.
+         */
+        DraftOutcome: {
+            /** Draft Id */
+            draft_id: string;
+            /** Approved */
+            approved: boolean;
+            /** Code */
+            code?: string | null;
+            /** Message */
+            message?: string | null;
+            /** Fix */
+            fix?: string | null;
+        };
         /** DraftResponse */
         DraftResponse: {
             /** Id */
@@ -32960,6 +33821,42 @@ export interface components {
             query_vector_preview?: number[];
             /** Elapsed Ms */
             elapsed_ms: number;
+        };
+        /**
+         * ExpectationVerdict
+         * @description The answer to "does this arm satisfy the case's claim?"
+         *
+         *     ``result`` is deliberately three-valued. ``error`` is NOT a failure of the
+         *     unit under test — it means the check itself could not be performed (the
+         *     replay errored, the judge was unavailable, the kind is unknown), and a
+         *     consumer that collapses it into ``fail`` will file findings about the wrong
+         *     thing.
+         */
+        ExpectationVerdict: {
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "pass" | "fail" | "error";
+            /** Reason */
+            reason: string;
+            /**
+             * Kind
+             * @default
+             */
+            kind?: string;
+            /**
+             * Samples Satisfying
+             * @default 0
+             */
+            samples_satisfying?: number;
+            /**
+             * Sample Count
+             * @default 0
+             */
+            sample_count?: number;
+            /** Verdict */
+            verdict?: string | null;
         };
         /**
          * ExpertCandidate
@@ -37215,6 +38112,26 @@ export interface components {
              */
             use_search?: boolean;
         };
+        /** JournalistBeatRequest */
+        JournalistBeatRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Campaign Context */
+            campaign_context?: string | null;
+        };
         /** JsonRpcResponse */
         JsonRpcResponse: {
             /**
@@ -37312,6 +38229,23 @@ export interface components {
             findings: {
                 [key: string]: components["schemas"]["KeyFindingEntry"][];
             };
+        };
+        /**
+         * KeyMessage
+         * @description A thing we want assistants to be SAYING about us.
+         *
+         *     Detection is deterministic term matching over the answer text — free,
+         *     instant, and explainable to the person who wrote the message. An LLM judging
+         *     "is this message present?" would cost money per answer to produce a verdict
+         *     nobody could audit.
+         */
+        KeyMessage: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Terms */
+            terms: string[];
         };
         /** Keyword */
         Keyword: {
@@ -39217,6 +40151,150 @@ export interface components {
             tools: components["schemas"]["McpDiscoveredTool"][];
         };
         /**
+         * MediaListProspect
+         * @description One journalist a news search surfaced. A proposal, never a member.
+         */
+        MediaListProspect: {
+            /** Party Id */
+            party_id: string;
+            /** Person Name */
+            person_name: string;
+            /** Outlet Domain */
+            outlet_domain: string;
+            /** Story Url */
+            story_url: string;
+            /** Story Title */
+            story_title?: string | null;
+            /** Published At */
+            published_at?: string | null;
+            /**
+             * Already On List
+             * @default false
+             */
+            already_on_list?: boolean;
+        };
+        /** MediaListRefreshRequest */
+        MediaListRefreshRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+        };
+        /** MediaListRefreshResult */
+        MediaListRefreshResult: {
+            /** List Id */
+            list_id: string;
+            /**
+             * List Name
+             * @default
+             */
+            list_name?: string;
+            /**
+             * Members Total
+             * @default 0
+             */
+            members_total?: number;
+            /**
+             * Members Checked
+             * @default 0
+             */
+            members_checked?: number;
+            /**
+             * Members Due Not Reached
+             * @default 0
+             */
+            members_due_not_reached?: number;
+            /**
+             * Role Changes
+             * @default 0
+             */
+            role_changes?: number;
+            /**
+             * Beats Derived
+             * @default 0
+             */
+            beats_derived?: number;
+            /**
+             * Assists Created
+             * @default 0
+             */
+            assists_created?: number;
+            /** Errors */
+            errors?: string[];
+            /** Members */
+            members?: components["schemas"]["MemberRefresh"][];
+            /** Ran At */
+            ran_at?: string | null;
+        };
+        /** MediaListSearchRequest */
+        MediaListSearchRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Query */
+            query: string;
+            /**
+             * Max Results
+             * @default 20
+             */
+            max_results?: number;
+        };
+        /** MediaListSearchResult */
+        MediaListSearchResult: {
+            /** Query */
+            query: string;
+            /**
+             * Articles Seen
+             * @default 0
+             */
+            articles_seen?: number;
+            /**
+             * Bylines Found
+             * @default 0
+             */
+            bylines_found?: number;
+            /** Prospects */
+            prospects?: components["schemas"]["MediaListProspect"][];
+            /**
+             * Search Failed
+             * @default false
+             */
+            search_failed?: boolean;
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+        };
+        /**
          * MediaRef
          * @description Canonical media reference shared across every API that takes media.
          */
@@ -39293,6 +40371,39 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * MediaRefreshPolicy
+         * @description `outreach_list.definition.media_refresh`. Every knob has a safe default.
+         */
+        MediaRefreshPolicy: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled?: boolean;
+            /**
+             * Cadence Days
+             * @default 14
+             */
+            cadence_days?: number;
+            /**
+             * Window Days
+             * @default 30
+             */
+            window_days?: number;
+            /**
+             * Use Search
+             * @default true
+             */
+            use_search?: boolean;
+            /**
+             * Derive Beats
+             * @default true
+             */
+            derive_beats?: boolean;
+            /** Campaign Context */
+            campaign_context?: string | null;
+        };
         /** MediaUpdate */
         MediaUpdate: {
             /** Is Relevant */
@@ -39331,6 +40442,38 @@ export interface components {
             source_kind: string;
             /** Source Id */
             source_id: string;
+        };
+        /** MemberRefresh */
+        MemberRefresh: {
+            /** Member Id */
+            member_id: string;
+            /** Party Id */
+            party_id: string;
+            /** Person Name */
+            person_name: string;
+            /**
+             * Checked
+             * @default false
+             */
+            checked?: boolean;
+            /** Skipped Reason */
+            skipped_reason?: string | null;
+            /** Previous Status */
+            previous_status?: string | null;
+            /** Status */
+            status?: string | null;
+            /**
+             * Role Changed
+             * @default false
+             */
+            role_changed?: boolean;
+            /**
+             * Beat Derived
+             * @default false
+             */
+            beat_derived?: boolean;
+            /** Error */
+            error?: string | null;
         };
         /** MemoryCostByEventType */
         MemoryCostByEventType: {
@@ -39514,6 +40657,24 @@ export interface components {
              * @default true
              */
             inclusive?: boolean;
+        };
+        /** MessageStanding */
+        MessageStanding: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Answers */
+            answers: number;
+            /** Present In */
+            present_in: number;
+            /** Presence Rate */
+            presence_rate?: number | null;
+            /**
+             * Verdict
+             * @default
+             */
+            verdict?: string;
         };
         /**
          * MessageUpdate
@@ -41703,6 +42864,143 @@ export interface components {
             /** Request Id */
             request_id?: string | null;
         };
+        /**
+         * PanelCostEstimate
+         * @description What a pass will cost, and how confident that number is.
+         */
+        PanelCostEstimate: {
+            /** Prompts */
+            prompts: number;
+            /** Engines */
+            engines: number;
+            /** Calls */
+            calls: number;
+            /** Cost Per Call Usd */
+            cost_per_call_usd: string;
+            /** Estimated Cost Usd */
+            estimated_cost_usd: string;
+            /** Measured */
+            measured: boolean;
+            /** Basis */
+            basis: string;
+        };
+        /** PanelListResponse */
+        PanelListResponse: {
+            /** Panels */
+            panels: components["schemas"]["PanelView"][];
+        };
+        /**
+         * PanelPreview
+         * @description What running this panel now would do, and cost — before any spend.
+         */
+        PanelPreview: {
+            /** Panel Id */
+            panel_id: string;
+            /** Name */
+            name: string;
+            /** Prompts This Pass */
+            prompts_this_pass?: components["schemas"]["PanelPrompt"][];
+            /** Prompts Deferred */
+            prompts_deferred?: components["schemas"]["PanelPrompt"][];
+            /** Engines */
+            engines?: string[];
+            estimate: components["schemas"]["PanelCostEstimate"];
+            /** Summary */
+            summary: string;
+        };
+        /**
+         * PanelPrompt
+         * @description One buyer question, in the user's words. Never inferred from a keyword.
+         */
+        PanelPrompt: {
+            /** Key */
+            key: string;
+            /** Text */
+            text: string;
+            /** Intent */
+            intent?: string | null;
+        };
+        /** PanelTrend */
+        PanelTrend: {
+            /** Panel Id */
+            panel_id: string;
+            /** Name */
+            name: string;
+            /** Site Id */
+            site_id: string;
+            /**
+             * Grain
+             * @enum {string}
+             */
+            grain: "day" | "week";
+            /**
+             * Since
+             * Format: date-time
+             */
+            since: string;
+            /**
+             * Answers
+             * @default 0
+             */
+            answers?: number;
+            /** Mention Rate */
+            mention_rate?: number | null;
+            /** Citation Rate */
+            citation_rate?: number | null;
+            /** Points */
+            points?: components["schemas"]["PresencePoint"][];
+            /** Prompts */
+            prompts?: components["schemas"]["PromptStanding"][];
+            /** Messages */
+            messages?: components["schemas"]["MessageStanding"][];
+            /**
+             * Headline
+             * @default
+             */
+            headline?: string;
+        };
+        /** PanelView */
+        PanelView: {
+            /** Id */
+            id: string;
+            /** Site Id */
+            site_id: string;
+            /** Name */
+            name: string;
+            /** Prompts */
+            prompts: components["schemas"]["PanelPrompt"][];
+            /** Key Messages */
+            key_messages: components["schemas"]["KeyMessage"][];
+            /** Engines */
+            engines: string[];
+            /** Country Iso */
+            country_iso: string;
+            /** City */
+            city?: string | null;
+            /** Cadence Days */
+            cadence_days: number;
+            /** Max Prompts Per Run */
+            max_prompts_per_run: number;
+            /** Is Active */
+            is_active: boolean;
+            /** Coverage Tracker Id */
+            coverage_tracker_id?: string | null;
+            /** Declared By */
+            declared_by: string;
+            /** Last Run At */
+            last_run_at?: string | null;
+            /** Last Run Status */
+            last_run_status?: string | null;
+            /** Last Error */
+            last_error?: string | null;
+            /** Last Run Cost Usd */
+            last_run_cost_usd?: string | null;
+            /**
+             * Run Count
+             * @default 0
+             */
+            run_count?: number;
+        };
         /** PatchFolderRequest */
         PatchFolderRequest: {
             /**
@@ -43235,6 +44533,31 @@ export interface components {
             status: string;
         };
         /**
+         * PresencePoint
+         * @description One bucket of the trend. Rates are None when nothing was measured.
+         */
+        PresencePoint: {
+            /**
+             * Bucket
+             * Format: date
+             */
+            bucket: string;
+            /** Answers */
+            answers: number;
+            /** Mentioned */
+            mentioned: number;
+            /** Cited */
+            cited: number;
+            /** Mention Rate */
+            mention_rate?: number | null;
+            /** Citation Rate */
+            citation_rate?: number | null;
+            /** Message Rates */
+            message_rates?: {
+                [key: string]: number;
+            };
+        };
+        /**
          * PresentationSpec
          * @description Canonical AI-authorable shape for a PowerPoint deck (.pptx).
          */
@@ -43449,6 +44772,44 @@ export interface components {
             organization_id?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * PriorRelationship
+         * @description What we already know about this domain, in the user's own CRM.
+         *
+         *     Present ONLY when a `crm.party` already exists for the captured domain. A
+         *     capture with no prior relationship simply omits it — an empty relationship
+         *     object rendered as "0 interactions" reads like a record we hold, and we hold
+         *     none.
+         */
+        PriorRelationship: {
+            /** Party Id */
+            party_id: string;
+            /** Display Name */
+            display_name: string;
+            /**
+             * Do Not Contact
+             * @default false
+             */
+            do_not_contact?: boolean;
+            /**
+             * Interaction Count
+             * @default 0
+             */
+            interaction_count?: number;
+            /** Last Interaction At */
+            last_interaction_at?: string | null;
+            /** Campaigns */
+            campaigns?: string[];
+            /**
+             * Confirmed Wins
+             * @default 0
+             */
+            confirmed_wins?: number;
+            /** Last Win At */
+            last_win_at?: string | null;
+            /** Summary */
+            summary: string;
         };
         /** ProcessBlocksRequest */
         ProcessBlocksRequest: {
@@ -43694,6 +45055,31 @@ export interface components {
              */
             source_edges?: number;
         };
+        /**
+         * PromptStanding
+         * @description Where ONE question stands right now, with its evidence door.
+         */
+        PromptStanding: {
+            /** Key */
+            key: string;
+            /** Text */
+            text: string;
+            /** Engines Mentioning */
+            engines_mentioning?: string[];
+            /** Engines Absent */
+            engines_absent?: string[];
+            /** Engines Unmeasured */
+            engines_unmeasured?: string[];
+            /** Last Measured At */
+            last_measured_at?: string | null;
+            /** Response Ids */
+            response_ids?: string[];
+            /**
+             * Verdict
+             * @default
+             */
+            verdict?: string;
+        };
         /** PromptStartRequest */
         PromptStartRequest: {
             /**
@@ -43803,6 +45189,131 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** ProofResult */
+        ProofResult: {
+            /** Finding Id */
+            finding_id: string;
+            /**
+             * Status
+             * @default unprovable
+             * @enum {string}
+             */
+            status?: "proven" | "unprovable" | "failed";
+            /**
+             * Evidence Class
+             * @default none
+             * @enum {string}
+             */
+            evidence_class?: "loop_iteration" | "same_unit_regression" | "none";
+            /** Snapshot Id */
+            snapshot_id?: string | null;
+            /** Replay Group Id */
+            replay_group_id?: string | null;
+            /** Verdict */
+            verdict?: string | null;
+            /** Control Faithful */
+            control_faithful?: boolean | null;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
+            /**
+             * Claim
+             * @default
+             */
+            claim?: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+            /** Error */
+            error?: string | null;
+            /** Arms */
+            arms?: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * ProspectCaptureBody
+         * @description One page, captured from wherever the user (or their agent) is standing.
+         */
+        ProspectCaptureBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Url */
+            url: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Page Title */
+            page_title?: string | null;
+        };
+        /**
+         * ProspectCapturePreview
+         * @description Everything the capture would do, before it does any of it.
+         */
+        ProspectCapturePreview: {
+            /** Url */
+            url: string;
+            /** Domain */
+            domain?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Site Label */
+            site_label?: string | null;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "new" | "existing" | "blocklisted" | "unusable";
+            /** Why */
+            why: string;
+            prior_relationship?: components["schemas"]["PriorRelationship"] | null;
+            /** Sites */
+            sites?: components["schemas"]["CaptureSite"][];
+            /**
+             * Site Choice Required
+             * @default false
+             */
+            site_choice_required?: boolean;
+        };
+        /**
+         * ProspectCaptureResult
+         * @description What the capture actually did.
+         */
+        ProspectCaptureResult: {
+            /** Url */
+            url: string;
+            /** Domain */
+            domain?: string | null;
+            /** Site Id */
+            site_id: string;
+            /** Site Label */
+            site_label?: string | null;
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "created" | "matched" | "skipped";
+            /** Why */
+            why: string;
+            prior_relationship?: components["schemas"]["PriorRelationship"] | null;
+            report?: components["schemas"]["ProspectImportReport"] | null;
+        };
         /** ProspectImportBody */
         ProspectImportBody: {
             /**
@@ -43850,6 +45361,40 @@ export interface components {
              * @default 0
              */
             estimated_cost_usd?: string;
+        };
+        /** ProspectImportReport */
+        ProspectImportReport: {
+            /** Site Id */
+            site_id: string;
+            /**
+             * Created
+             * @default 0
+             */
+            created?: number;
+            /**
+             * Matched
+             * @default 0
+             */
+            matched?: number;
+            /**
+             * Skipped
+             * @default 0
+             */
+            skipped?: number;
+            /**
+             * Enriched
+             * @default 0
+             */
+            enriched?: number;
+            /**
+             * Unmeasured
+             * @default 0
+             */
+            unmeasured?: number;
+            /** Entries */
+            entries?: components["schemas"]["ImportEntryPlan"][];
+            /** Errors */
+            errors?: string[];
         };
         /** ProspectQuery */
         ProspectQuery: {
@@ -45185,6 +46730,170 @@ export interface components {
             applied?: boolean;
             /** Skipped Reason */
             skipped_reason?: string | null;
+        };
+        /** RegressionCaseIn */
+        RegressionCaseIn: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+            /** Expectation */
+            expectation?: {
+                [key: string]: unknown;
+            };
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Origin
+             * @default human_click
+             * @enum {string}
+             */
+            origin?: "human_click" | "finding" | "walk" | "sweep";
+            /** Origin Finding Id */
+            origin_finding_id?: string | null;
+            /** Corrected Output Ref */
+            corrected_output_ref?: string | null;
+        };
+        /** RegressionCaseOut */
+        RegressionCaseOut: {
+            /** Id */
+            id: string;
+            /** Snapshot Id */
+            snapshot_id: string;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /**
+             * Title
+             * @default
+             */
+            title?: string;
+            /** Expectation */
+            expectation?: {
+                [key: string]: unknown;
+            };
+            /** Notes */
+            notes?: string | null;
+            /**
+             * Origin
+             * @default human_click
+             */
+            origin?: string;
+            /** Origin Finding Id */
+            origin_finding_id?: string | null;
+            /** Corrected Output Ref */
+            corrected_output_ref?: string | null;
+            /** Agent Definition Version */
+            agent_definition_version?: string | null;
+            /** Workflow Definition Version */
+            workflow_definition_version?: string | null;
+            /**
+             * Status
+             * @default active
+             */
+            status?: string;
+            /** Last Replay Group Id */
+            last_replay_group_id?: string | null;
+            /** Last Result */
+            last_result?: string | null;
+            /** Last Verdict */
+            last_verdict?: string | null;
+            /** Last Reason */
+            last_reason?: string | null;
+            /** Last Checked At */
+            last_checked_at?: string | null;
+            /** Last Cost Usd */
+            last_cost_usd?: number | null;
+            /**
+             * Consecutive Failures
+             * @default 0
+             */
+            consecutive_failures?: number;
+            /** Created At */
+            created_at?: string | null;
+        };
+        /** RegressionCaseRunIn */
+        RegressionCaseRunIn: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Delta */
+            delta?: {
+                [key: string]: unknown;
+            };
+            /** Samples */
+            samples?: number | null;
+            /** Judge */
+            judge?: boolean | null;
+        };
+        /** RegressionCaseStatusIn */
+        RegressionCaseStatusIn: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "retired";
+        };
+        /** RegressionRunResult */
+        RegressionRunResult: {
+            /** Case Id */
+            case_id: string;
+            /** Snapshot Id */
+            snapshot_id: string;
+            /** Replay Group Id */
+            replay_group_id?: string | null;
+            /** Evaluated Arm Key */
+            evaluated_arm_key?: string | null;
+            verdict: components["schemas"]["ExpectationVerdict"];
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
+            /** Faithful */
+            faithful?: boolean | null;
         };
         /** RejectCandidateRequest */
         RejectCandidateRequest: {
@@ -47119,6 +48828,29 @@ export interface components {
              */
             guidance?: string;
         };
+        /** RunPanelBody */
+        RunPanelBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Force
+             * @default true
+             */
+            force?: boolean;
+        };
         /** RunPipelineRequest */
         RunPipelineRequest: {
             /** Organization Id */
@@ -48815,6 +50547,99 @@ export interface components {
              * @default
              */
             guidance?: string;
+        };
+        /**
+         * ShadowSweepIn
+         * @description Explicitly sweep the suite under a model change.
+         *
+         *     Omitting `new_model` runs the STANDING drift check instead — same sweep, no
+         *     delta, asking whether the unchanged config still holds up.
+         */
+        ShadowSweepIn: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** New Model */
+            new_model?: string | null;
+            /** From Model */
+            from_model?: string | null;
+            /** Limit */
+            limit?: number | null;
+            /** Samples */
+            samples?: number | null;
+        };
+        /**
+         * ShadowSweepReport
+         * @description What one pass actually did — with the honesty fields first.
+         */
+        ShadowSweepReport: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok?: boolean;
+            /** New Model */
+            new_model?: string | null;
+            /** From Model */
+            from_model?: string | null;
+            /**
+             * Selected
+             * @default 0
+             */
+            selected?: number;
+            /**
+             * Checked
+             * @default 0
+             */
+            checked?: number;
+            /**
+             * Skipped For Budget
+             * @default 0
+             */
+            skipped_for_budget?: number;
+            /**
+             * Hit Cost Ceiling
+             * @default false
+             */
+            hit_cost_ceiling?: boolean;
+            /**
+             * Passed
+             * @default 0
+             */
+            passed?: number;
+            /**
+             * Failed
+             * @default 0
+             */
+            failed?: number;
+            /**
+             * Errored
+             * @default 0
+             */
+            errored?: number;
+            /**
+             * Total Cost Usd
+             * @default 0
+             */
+            total_cost_usd?: number;
+            /** Outcomes */
+            outcomes?: components["schemas"]["CaseOutcome"][];
+            /** Assist Id */
+            assist_id?: string | null;
+            /** Error */
+            error?: string | null;
         };
         /**
          * ShareLinkInfo
@@ -67238,6 +69063,72 @@ export interface operations {
             };
         };
     };
+    preview_prospect_capture_seo_prospect_capture_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProspectCaptureBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectCapturePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_prospect_capture_seo_prospect_capture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProspectCaptureBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectCaptureResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     apply_family_seo_endpoint_families_apply_post: {
         parameters: {
             query?: never;
@@ -71174,6 +73065,39 @@ export interface operations {
             };
         };
     };
+    prove_finding_route_hindsight_findings__finding_id__prove_post: {
+        parameters: {
+            query?: {
+                samples?: number;
+            };
+            header?: never;
+            path: {
+                finding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     reject_finding_route_hindsight_findings__finding_id__reject_post: {
         parameters: {
             query?: never;
@@ -71457,6 +73381,210 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WireReplayStepOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_snapshot_regression_case_hindsight_snapshots__snapshot_id__regression_case_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                snapshot_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegressionCaseIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegressionCaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_cases_hindsight_regression_cases_get: {
+        parameters: {
+            query?: {
+                snapshot_id?: string | null;
+                origin_finding_id?: string | null;
+                status?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegressionCaseOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_case_hindsight_regression_cases__case_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegressionCaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_case_hindsight_regression_cases__case_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegressionCaseRunIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegressionRunResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_case_status_hindsight_regression_cases__case_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                case_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegressionCaseStatusIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegressionCaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_shadow_recompilation_hindsight_shadow_recompilation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShadowSweepIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShadowSweepReport"];
                 };
             };
             /** @description Validation Error */
@@ -72366,6 +74494,39 @@ export interface operations {
             };
         };
     };
+    approve_message_drafts_outreach_single_drafts_approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApproveDraftsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApproveDraftsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     revise_draft_personalization_outreach_single_drafts__draft_id__personalization_post: {
         parameters: {
             query?: never;
@@ -72732,6 +74893,205 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoverageFeed"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_panels_ai_visibility_panels_get: {
+        parameters: {
+            query?: {
+                site_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanelListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_panel_ai_visibility_panels_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclarePanelBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanelView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_active_ai_visibility_panels__panel_id__active_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetActiveBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanelView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_ai_visibility_panels__panel_id__preview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanelPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_one_panel_ai_visibility_panels__panel_id__run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                panel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunPanelBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_trend_ai_visibility_panels__panel_id__trend_get: {
+        parameters: {
+            query?: {
+                days?: number;
+                grain?: string;
+            };
+            header?: never;
+            path: {
+                panel_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PanelTrend"];
                 };
             };
             /** @description Validation Error */
@@ -76354,6 +78714,243 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivityVerdict"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_party_journalist_beat_crm_parties__party_id__journalist_beat_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeatProfile"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    derive_party_journalist_beat_crm_parties__party_id__journalist_beat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                party_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JournalistBeatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeatProfile"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_media_list_door_crm_outreach_lists__list_id__media_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaListRefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaListRefreshResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_media_refresh_policy_door_crm_outreach_lists__list_id__media_refresh_policy_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaRefreshPolicy"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaRefreshPolicy"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    media_list_search_door_crm_outreach_lists__list_id__media_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                list_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaListSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaListSearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_bulk_enrichment_crm_enrichment_bulk_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkEnrichmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_bulk_enrichment_door_crm_enrichment_bulk_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkEnrichmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkReport"];
                 };
             };
             /** @description Validation Error */

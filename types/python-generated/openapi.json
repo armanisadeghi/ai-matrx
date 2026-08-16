@@ -14231,6 +14231,90 @@
         }
       }
     },
+    "/seo/prospect-capture/preview": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Preview Prospect Capture",
+        "description": "What capturing this page would do — and who we already know there.\n\nIC-10's browser half. It answers the two questions a capture has that a\npasted list does not: which of the user's sites this prospect belongs to,\nand whether the domain is ALREADY a relationship (previous messages,\ncampaigns, confirmed wins, do-not-contact). Nothing is written.",
+        "operationId": "preview_prospect_capture_seo_prospect_capture_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProspectCaptureBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProspectCapturePreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/prospect-capture": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Run Prospect Capture",
+        "description": "Capture this page's domain as a prospect, through the ONE import path.\n\nNever a side door: the write is `prospect_import.run` with a source label\nnaming the capture, so the blocklist is enforced at ingestion, the domain is\nnormalized by the party resolver's own normalizer, dedupe is the triage\nsurface's, and the row is indistinguishable from a searched one afterwards.",
+        "operationId": "run_prospect_capture_seo_prospect_capture_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProspectCaptureBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProspectCaptureResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/seo/endpoint-families/apply": {
       "post": {
         "tags": [
@@ -18708,7 +18792,7 @@
               "maximum": 2160,
               "exclusiveMinimum": 0,
               "description": "window size, hours",
-              "default": 24,
+              "default": 24.0,
               "title": "Hours"
             },
             "description": "window size, hours"
@@ -18756,7 +18840,7 @@
               "maximum": 2160,
               "exclusiveMinimum": 0,
               "description": "window size, hours",
-              "default": 24,
+              "default": 24.0,
               "title": "Hours"
             },
             "description": "window size, hours"
@@ -18804,7 +18888,7 @@
               "maximum": 2160,
               "exclusiveMinimum": 0,
               "description": "window size, hours",
-              "default": 24,
+              "default": 24.0,
               "title": "Hours"
             },
             "description": "window size, hours"
@@ -18903,7 +18987,7 @@
               "type": "number",
               "maximum": 21600,
               "exclusiveMinimum": 0,
-              "default": 300,
+              "default": 300.0,
               "title": "Lease Seconds"
             }
           }
@@ -20293,6 +20377,59 @@
         }
       }
     },
+    "/hindsight/findings/{finding_id}/prove": {
+      "post": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Prove Finding Route",
+        "description": "Prove this finding's proposal against a real recorded call (C-31).\n\nADMIN-ONLY for the same reason the wire-replay endpoint is: every sample is\na fully-billed provider call, on both arms.\n\nA finding with nothing replayable returns `status='unprovable'` with the\nreason — a 200, not a 422. \"There is no captured call of this unit\" is an\nANSWER the surfaces need to render, not a malformed request.",
+        "operationId": "prove_finding_route_hindsight_findings__finding_id__prove_post",
+        "parameters": [
+          {
+            "name": "finding_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Finding Id"
+            }
+          },
+          {
+            "name": "samples",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 2,
+              "title": "Samples"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProofResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/hindsight/findings/{finding_id}/reject": {
       "post": {
         "tags": [
@@ -20855,6 +20992,358 @@
                     "$ref": "#/components/schemas/WireReplayStepOut"
                   },
                   "title": "Response Get Wire Replay Group Hindsight Wire Replays  Replay Group Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/snapshots/{snapshot_id}/regression-case": {
+      "post": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Create Snapshot Regression Case",
+        "description": "Make this recorded call a permanent test — the one-click surface.\n\nADMIN-ONLY for the same reason wire replay is: a snapshot is reachable\nacross conversations, and every later re-check of the case spends real\nmoney.",
+        "operationId": "create_snapshot_regression_case_hindsight_snapshots__snapshot_id__regression_case_post",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Snapshot Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegressionCaseIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegressionCaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/regression-cases": {
+      "get": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "List Cases",
+        "description": "The suite. Filterable by snapshot (the viewer's door) and by finding (the\ndoor back from a finding to the permanent tests it produced).",
+        "operationId": "list_cases_hindsight_regression_cases_get",
+        "parameters": [
+          {
+            "name": "snapshot_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Snapshot Id"
+            }
+          },
+          {
+            "name": "origin_finding_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Origin Finding Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegressionCaseOut"
+                  },
+                  "title": "Response List Cases Hindsight Regression Cases Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/regression-cases/{case_id}": {
+      "get": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Get Case",
+        "operationId": "get_case_hindsight_regression_cases__case_id__get",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegressionCaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/regression-cases/{case_id}/run": {
+      "post": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Run Case",
+        "description": "Re-check one case now. Every sample is a fully-billed provider call.",
+        "operationId": "run_case_hindsight_regression_cases__case_id__run_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegressionCaseRunIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegressionRunResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/regression-cases/{case_id}/status": {
+      "post": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Set Case Status",
+        "description": "Retire (or re-activate) a case.\n\nRetire, never delete: a claim that stopped being true is history worth\nkeeping, and deleting the row would drop the snapshot pin that made the case\nreproducible at all.",
+        "operationId": "set_case_status_hindsight_regression_cases__case_id__status_post",
+        "parameters": [
+          {
+            "name": "case_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Case Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegressionCaseStatusIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegressionCaseOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hindsight/shadow-recompilation": {
+      "post": {
+        "tags": [
+          "Hindsight"
+        ],
+        "summary": "Trigger Shadow Recompilation",
+        "description": "Re-prove the regression suite against a model change.\n\nBounded by CAPS in cases AND dollars; the report always carries\nchecked-vs-selected so a bounded pass can never read as a full one.",
+        "operationId": "trigger_shadow_recompilation_hindsight_shadow_recompilation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShadowSweepIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShadowSweepReport"
                 }
               }
             }
@@ -22130,6 +22619,48 @@
         }
       }
     },
+    "/outreach/single/drafts/approve": {
+      "post": {
+        "tags": [
+          "Outreach / Single Send"
+        ],
+        "summary": "Approve Message Drafts",
+        "description": "Approve the rest of a queue the reviewer has already stepped through.\n\nIds only — never a filter. Each draft goes through the SAME `approve_draft`\n(re-render, fingerprint check, stamp), and a refusal is reported per draft\nrather than raised, so one broken template cannot discard the approvals\nearned beside it.",
+        "operationId": "approve_message_drafts_outreach_single_drafts_approve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApproveDraftsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApproveDraftsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/outreach/single/drafts/{draft_id}/personalization": {
       "post": {
         "tags": [
@@ -22706,6 +23237,307 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CoverageFeed"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels": {
+      "get": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Get Panels",
+        "operationId": "get_panels_ai_visibility_panels_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Site Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PanelListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Create Panel",
+        "description": "Declare (or re-declare) one panel. Idempotent by `dedupe_key`.",
+        "operationId": "create_panel_ai_visibility_panels_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeclarePanelBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PanelView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels/{panel_id}/active": {
+      "post": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Set Active",
+        "operationId": "set_active_ai_visibility_panels__panel_id__active_post",
+        "parameters": [
+          {
+            "name": "panel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Panel Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetActiveBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PanelView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels/{panel_id}/preview": {
+      "get": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Preview",
+        "description": "What running this panel now would ask, defer, and cost — before any spend.",
+        "operationId": "preview_ai_visibility_panels__panel_id__preview_get",
+        "parameters": [
+          {
+            "name": "panel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Panel Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PanelPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels/{panel_id}/run": {
+      "post": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Run One Panel",
+        "description": "Run ONE panel now, ignoring its cadence. The same pass the scheduler runs.",
+        "operationId": "run_one_panel_ai_visibility_panels__panel_id__run_post",
+        "parameters": [
+          {
+            "name": "panel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Panel Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunPanelBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai-visibility/panels/{panel_id}/trend": {
+      "get": {
+        "tags": [
+          "SEO / AI Visibility"
+        ],
+        "summary": "Get Trend",
+        "description": "Brand and key-message presence over time — a rollup, never a stored series.",
+        "operationId": "get_trend_ai_visibility_panels__panel_id__trend_get",
+        "parameters": [
+          {
+            "name": "panel_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Panel Id"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 730,
+              "minimum": 1,
+              "default": 90,
+              "title": "Days"
+            }
+          },
+          {
+            "name": "grain",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(day|week)$",
+              "default": "week",
+              "title": "Grain"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PanelTrend"
                 }
               }
             }
@@ -28133,6 +28965,351 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ActivityVerdict"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/parties/{party_id}/journalist-beat": {
+      "get": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Read Party Journalist Beat",
+        "description": "The stored beat profile. Never re-derives, never spends. NULL = not derived yet.",
+        "operationId": "read_party_journalist_beat_crm_parties__party_id__journalist_beat_get",
+        "parameters": [
+          {
+            "name": "party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Party Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BeatProfile"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Read Party Journalist Beat Crm Parties  Party Id  Journalist Beat Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Derive Party Journalist Beat",
+        "description": "What does this journalist cover? Reads only pages we already crawled.",
+        "operationId": "derive_party_journalist_beat_crm_parties__party_id__journalist_beat_post",
+        "parameters": [
+          {
+            "name": "party_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Party Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JournalistBeatRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BeatProfile"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/outreach-lists/{list_id}/media-refresh": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Refresh Media List Door",
+        "description": "Re-check this list's journalists now. Adds nobody, removes nobody.",
+        "operationId": "refresh_media_list_door_crm_outreach_lists__list_id__media_refresh_post",
+        "parameters": [
+          {
+            "name": "list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaListRefreshRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaListRefreshResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/outreach-lists/{list_id}/media-refresh-policy": {
+      "put": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Set Media Refresh Policy Door",
+        "description": "How often this list re-checks itself, and what it is for.",
+        "operationId": "set_media_refresh_policy_door_crm_outreach_lists__list_id__media_refresh_policy_put",
+        "parameters": [
+          {
+            "name": "list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaRefreshPolicy"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaRefreshPolicy"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/outreach-lists/{list_id}/media-search": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Media List Search Door",
+        "description": "A news search becomes PROPOSED journalists. Enrollment stays the human act.",
+        "operationId": "media_list_search_door_crm_outreach_lists__list_id__media_search_post",
+        "parameters": [
+          {
+            "name": "list_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "List Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaListSearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaListSearchResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/enrichment/bulk/preview": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Preview Bulk Enrichment",
+        "description": "The dry run: what would happen, and what would be skipped and why.",
+        "operationId": "preview_bulk_enrichment_crm_enrichment_bulk_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkEnrichmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkPreview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/crm/enrichment/bulk/run": {
+      "post": {
+        "tags": [
+          "CRM"
+        ],
+        "summary": "Run Bulk Enrichment Door",
+        "description": "Enrich a whole sheet through the SAME waterfall a single lookup uses.",
+        "operationId": "run_bulk_enrichment_door_crm_enrichment_bulk_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkEnrichmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkReport"
                 }
               }
             }
@@ -50543,8 +51720,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "An identical live schedule already existed; it is returned unchanged with `deduplicated: true` and nothing was created.",
+          "201": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
@@ -50553,8 +51730,8 @@
               }
             }
           },
-          "201": {
-            "description": "Successful Response",
+          "200": {
+            "description": "An identical live schedule already existed; it is returned unchanged with `deduplicated: true` and nothing was created.",
             "content": {
               "application/json": {
                 "schema": {
@@ -54625,15 +55802,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 10
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "default": 1
           },
@@ -54907,32 +56084,32 @@
           },
           "max_attempts": {
             "type": "integer",
-            "maximum": 20,
-            "minimum": 1,
+            "maximum": 20.0,
+            "minimum": 1.0,
             "title": "Max Attempts",
             "description": "Maximum execution attempts allowed for each item.",
             "default": 3
           },
           "lease_seconds": {
             "type": "integer",
-            "maximum": 86400,
-            "minimum": 30,
+            "maximum": 86400.0,
+            "minimum": 30.0,
             "title": "Lease Seconds",
             "description": "Seconds an item claim remains valid without renewal.",
             "default": 900
           },
           "max_concurrency": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Max Concurrency",
             "description": "Maximum assignment items executed concurrently by this run.",
             "default": 5
           },
           "retry_delay_seconds": {
             "type": "integer",
-            "maximum": 86400,
-            "minimum": 0,
+            "maximum": 86400.0,
+            "minimum": 0.0,
             "title": "Retry Delay Seconds",
             "description": "Delay before a retryable item becomes claimable again.",
             "default": 0
@@ -56475,16 +57652,16 @@
           },
           "max_iterations": {
             "type": "integer",
-            "maximum": 500,
-            "minimum": 1,
+            "maximum": 500.0,
+            "minimum": 1.0,
             "title": "Max Iterations",
             "description": "Maximum agent reasoning/tool-loop iterations.",
             "default": 100
           },
           "max_retries_per_iteration": {
             "type": "integer",
-            "maximum": 10,
-            "minimum": 0,
+            "maximum": 10.0,
+            "minimum": 0.0,
             "title": "Max Retries Per Iteration",
             "description": "Maximum provider retries allowed within one agent iteration.",
             "default": 2
@@ -56605,15 +57782,15 @@
           },
           "max_runtime_seconds": {
             "type": "integer",
-            "maximum": 86400,
-            "minimum": 1,
+            "maximum": 86400.0,
+            "minimum": 1.0,
             "title": "Max Runtime Seconds",
             "default": 600
           },
           "max_concurrent": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Max Concurrent",
             "default": 1
           }
@@ -57156,8 +58333,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 10
           },
@@ -57188,8 +58365,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "default": 1
           },
@@ -58480,8 +59657,8 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90,
-            "minimum": 1,
+            "maximum": 90.0,
+            "minimum": 1.0,
             "title": "Window Days",
             "default": 28
           },
@@ -58718,7 +59895,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -59096,7 +60273,7 @@
         "properties": {
           "input_tokens": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Input Tokens"
           }
         },
@@ -59723,8 +60900,8 @@
         "properties": {
           "trust_stage": {
             "type": "integer",
-            "maximum": 3,
-            "minimum": 0,
+            "maximum": 3.0,
+            "minimum": 0.0,
             "title": "Trust Stage"
           },
           "requirement": {
@@ -59742,8 +60919,8 @@
           },
           "sample_percent": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Sample Percent"
           },
           "source": {
@@ -59764,6 +60941,87 @@
           "source"
         ],
         "title": "ApprovalDecision"
+      },
+      "ApproveDraftsRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "draft_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Draft Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "draft_ids"
+        ],
+        "title": "ApproveDraftsRequest",
+        "description": "Approve several drafts a reviewer has ALREADY READ, one by one.\n\nIds, never a filter. \"Approve everything in this queue\" would approve\nmessages nobody has seen, which is the exact failure the ladder exists to\nprevent; the client sends the drafts the human actually stepped through."
+      },
+      "ApproveDraftsResponse": {
+        "properties": {
+          "requested": {
+            "type": "integer",
+            "title": "Requested"
+          },
+          "approved": {
+            "type": "integer",
+            "title": "Approved"
+          },
+          "outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/DraftOutcome"
+            },
+            "type": "array",
+            "title": "Outcomes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "requested",
+          "approved"
+        ],
+        "title": "ApproveDraftsResponse",
+        "description": "A per-draft ledger, never a count. A batch that silently approved 9 of 10\nand reported success is worse than one that approved none."
       },
       "ArchiveOut": {
         "properties": {
@@ -60223,7 +61481,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024,
+            "minimum": 1024.0,
             "title": "Max Inline Bytes",
             "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.",
             "default": 262144
@@ -60844,37 +62102,37 @@
           },
           "total_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Total Items",
             "description": "Total materialized items in the session."
           },
           "pending_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Pending Items",
             "description": "Items still waiting to be claimed."
           },
           "running_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Running Items",
             "description": "Items currently leased or executing."
           },
           "completed_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Completed Items",
             "description": "Items that completed successfully."
           },
           "failed_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Failed Items",
             "description": "Items that reached terminal failure."
           },
           "cancelled_items": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Cancelled Items",
             "description": "Items cancelled without execution completion."
           },
@@ -60934,8 +62192,8 @@
         "properties": {
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
+            "maximum": 604800.0,
+            "minimum": 60.0,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -61653,7 +62911,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -61673,7 +62931,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -61891,8 +63149,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 25
           },
@@ -62092,15 +63350,15 @@
           },
           "detail_limit": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
+            "maximum": 1000.0,
+            "minimum": 1.0,
             "title": "Detail Limit",
             "default": 1000
           },
           "detail_max_rows": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Detail Max Rows",
             "default": 10000
           },
@@ -62133,8 +63391,8 @@
           },
           "enrichment_limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Enrichment Limit",
             "default": 25
           }
@@ -62445,6 +63703,156 @@
         ],
         "title": "BboxInput"
       },
+      "BeatProfile": {
+        "properties": {
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "person_name": {
+            "type": "string",
+            "title": "Person Name"
+          },
+          "outlet_party_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Party Id"
+          },
+          "outlet_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Name"
+          },
+          "outlet_domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outlet Domain"
+          },
+          "beats": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Beats"
+          },
+          "beat_summary": {
+            "type": "string",
+            "title": "Beat Summary",
+            "default": ""
+          },
+          "topics": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Topics"
+          },
+          "typical_angle": {
+            "type": "string",
+            "title": "Typical Angle",
+            "default": ""
+          },
+          "campaign_fit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "strong",
+                  "moderate",
+                  "weak",
+                  "none"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Fit"
+          },
+          "campaign_fit_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Fit Reason"
+          },
+          "campaign_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Context"
+          },
+          "insufficient_evidence": {
+            "type": "boolean",
+            "title": "Insufficient Evidence",
+            "default": false
+          },
+          "pages_analyzed": {
+            "type": "integer",
+            "title": "Pages Analyzed",
+            "default": 0
+          },
+          "evidence_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Evidence Urls"
+          },
+          "derived_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Derived At"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "party_id",
+          "person_name"
+        ],
+        "title": "BeatProfile",
+        "description": "What this journalist covers. Every field is evidence-backed or NULL."
+      },
       "BgRemoveParams": {
         "properties": {
           "model": {
@@ -62740,22 +64148,22 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90,
-            "minimum": 1,
+            "maximum": 90.0,
+            "minimum": 1.0,
             "title": "Window Days",
             "default": 28
           },
           "max_query_fanout": {
             "type": "integer",
-            "maximum": 200,
-            "minimum": 1,
+            "maximum": 200.0,
+            "minimum": 1.0,
             "title": "Max Query Fanout",
             "default": 50
           },
           "max_calls": {
             "type": "integer",
-            "maximum": 500,
-            "minimum": 1,
+            "maximum": 500.0,
+            "minimum": 1.0,
             "title": "Max Calls",
             "default": 100
           },
@@ -63025,8 +64433,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Level",
             "default": 3
           },
@@ -63043,7 +64451,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024,
+            "minimum": 1024.0,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -63068,7 +64476,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024,
+            "minimum": 1024.0,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -63275,8 +64683,8 @@
           },
           "signed_url_ttl": {
             "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
+            "maximum": 604800.0,
+            "minimum": 60.0,
             "title": "Signed Url Ttl",
             "default": 3600
           },
@@ -63887,7 +65295,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -64634,19 +66042,19 @@
           },
           "transcript_bytes": {
             "type": "integer",
-            "maximum": 268435456,
-            "minimum": 0,
+            "maximum": 268435456.0,
+            "minimum": 0.0,
             "title": "Transcript Bytes"
           },
           "transcript_entry_count": {
             "type": "integer",
-            "maximum": 1000000,
-            "minimum": 0,
+            "maximum": 1000000.0,
+            "minimum": 0.0,
             "title": "Transcript Entry Count"
           },
           "transcript_mtime_ns": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Transcript Mtime Ns"
           },
           "source_complete": {
@@ -64655,8 +66063,8 @@
           },
           "corrupt_line_count": {
             "type": "integer",
-            "maximum": 1000000,
-            "minimum": 0,
+            "maximum": 1000000.0,
+            "minimum": 0.0,
             "title": "Corrupt Line Count",
             "default": 0
           }
@@ -64860,15 +66268,15 @@
           },
           "max_pages": {
             "type": "integer",
-            "maximum": 200,
-            "minimum": 1,
+            "maximum": 200.0,
+            "minimum": 1.0,
             "title": "Max Pages",
             "default": 25
           },
           "max_links_per_page": {
             "type": "integer",
-            "maximum": 500,
-            "minimum": 1,
+            "maximum": 500.0,
+            "minimum": 1.0,
             "title": "Max Links Per Page",
             "default": 60
           },
@@ -64876,6 +66284,14 @@
             "type": "boolean",
             "title": "Recheck",
             "default": false
+          },
+          "only_page_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 25,
+            "title": "Only Page Urls"
           }
         },
         "additionalProperties": false,
@@ -64913,7 +66329,7 @@
           "estimated_cost_usd": {
             "type": "number",
             "title": "Estimated Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "reason": {
             "anyOf": [
@@ -64925,6 +66341,13 @@
               }
             ],
             "title": "Reason"
+          },
+          "not_a_candidate": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Not A Candidate"
           }
         },
         "additionalProperties": false,
@@ -65044,8 +66467,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000,
-            "minimum": 1000,
+            "maximum": 30000.0,
+            "minimum": 1000.0,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -65131,8 +66554,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000,
-            "minimum": 1000,
+            "maximum": 30000.0,
+            "minimum": 1000.0,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -65930,6 +67353,60 @@
         "type": "object",
         "title": "BulkDeleteRequest"
       },
+      "BulkEnrichmentRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/BulkRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "use_paid_providers": {
+            "type": "boolean",
+            "title": "Use Paid Providers",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "BulkEnrichmentRequest"
+      },
       "BulkFileDeleteRequest": {
         "properties": {
           "file_ids": {
@@ -66216,6 +67693,125 @@
         "title": "BulkOperationResult",
         "description": "One row's result inside a BulkOperationResponse."
       },
+      "BulkPreview": {
+        "properties": {
+          "rows_supplied": {
+            "type": "integer",
+            "title": "Rows Supplied",
+            "default": 0
+          },
+          "would_enrich": {
+            "type": "integer",
+            "title": "Would Enrich",
+            "default": 0
+          },
+          "blocked": {
+            "type": "integer",
+            "title": "Blocked",
+            "default": 0
+          },
+          "duplicates": {
+            "type": "integer",
+            "title": "Duplicates",
+            "default": 0
+          },
+          "unusable": {
+            "type": "integer",
+            "title": "Unusable",
+            "default": 0
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/BulkRowResult"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BulkPreview",
+        "description": "What a run WOULD do. Spends nothing, creates nothing."
+      },
+      "BulkReport": {
+        "properties": {
+          "rows_supplied": {
+            "type": "integer",
+            "title": "Rows Supplied",
+            "default": 0
+          },
+          "rows_attempted": {
+            "type": "integer",
+            "title": "Rows Attempted",
+            "default": 0
+          },
+          "parties_created": {
+            "type": "integer",
+            "title": "Parties Created",
+            "default": 0
+          },
+          "candidates_found": {
+            "type": "integer",
+            "title": "Candidates Found",
+            "default": 0
+          },
+          "personal_found": {
+            "type": "integer",
+            "title": "Personal Found",
+            "default": 0
+          },
+          "blocked": {
+            "type": "integer",
+            "title": "Blocked",
+            "default": 0
+          },
+          "duplicates": {
+            "type": "integer",
+            "title": "Duplicates",
+            "default": 0
+          },
+          "unusable": {
+            "type": "integer",
+            "title": "Unusable",
+            "default": 0
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed",
+            "default": 0
+          },
+          "not_attempted": {
+            "type": "integer",
+            "title": "Not Attempted",
+            "default": 0
+          },
+          "budget_exhausted": {
+            "type": "boolean",
+            "title": "Budget Exhausted",
+            "default": false
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/BulkRowResult"
+            },
+            "type": "array",
+            "title": "Results"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "BulkReport"
+      },
       "BulkResponse": {
         "properties": {
           "results": {
@@ -66270,6 +67866,136 @@
           "ok"
         ],
         "title": "BulkResultItem"
+      },
+      "BulkRow": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "person_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Name"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "domain"
+        ],
+        "title": "BulkRow",
+        "description": "One line of the user's sheet, as supplied."
+      },
+      "BulkRowResult": {
+        "properties": {
+          "domain": {
+            "type": "string",
+            "title": "Domain"
+          },
+          "normalized_domain": {
+            "type": "string",
+            "title": "Normalized Domain",
+            "default": ""
+          },
+          "person_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Name"
+          },
+          "company_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Company Name"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "enriched",
+              "no_candidates",
+              "blocklisted",
+              "duplicate_in_sheet",
+              "unusable",
+              "budget_exhausted",
+              "failed"
+            ],
+            "title": "Verdict"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why",
+            "default": ""
+          },
+          "party_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Party Id"
+          },
+          "party_created": {
+            "type": "boolean",
+            "title": "Party Created",
+            "default": false
+          },
+          "candidates_found": {
+            "type": "integer",
+            "title": "Candidates Found",
+            "default": 0
+          },
+          "personal_found": {
+            "type": "integer",
+            "title": "Personal Found",
+            "default": 0
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/ContactCandidateView"
+            },
+            "type": "array",
+            "title": "Candidates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "domain",
+          "verdict"
+        ],
+        "title": "BulkRowResult"
       },
       "BulkVerdictFailure": {
         "properties": {
@@ -66818,6 +68544,31 @@
         "title": "CaptureHealth",
         "description": "Capture-failure counter over the alarm window."
       },
+      "CaptureSite": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "organization_id": {
+            "type": "string",
+            "title": "Organization Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id",
+          "label",
+          "organization_id"
+        ],
+        "title": "CaptureSite",
+        "description": "One site the caller may capture into."
+      },
       "CapturedLink": {
         "properties": {
           "target_url": {
@@ -66908,8 +68659,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000,
-                "minimum": 1
+                "maximum": 100000.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -66925,6 +68676,66 @@
           "variables"
         ],
         "title": "CartesianPlan"
+      },
+      "CaseOutcome": {
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "title": "Case Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "result": {
+            "type": "string",
+            "title": "Result",
+            "default": "error"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason",
+            "default": ""
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "title": "Consecutive Failures",
+            "default": 0
+          },
+          "replay_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replay Group Id"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "case_id"
+        ],
+        "title": "CaseOutcome"
       },
       "CatalogEntryResponse": {
         "properties": {
@@ -70561,8 +72372,8 @@
           },
           "max_turns": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Max Turns",
             "default": 20
           },
@@ -70570,8 +72381,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1000,
-                "exclusiveMinimum": 0
+                "maximum": 1000.0,
+                "exclusiveMinimum": 0.0
               },
               {
                 "type": "null"
@@ -73400,8 +75211,8 @@
           },
           "writer_lease_seconds": {
             "type": "integer",
-            "maximum": 3600,
-            "minimum": 30,
+            "maximum": 3600.0,
+            "minimum": 30.0,
             "title": "Writer Lease Seconds",
             "default": 300
           },
@@ -73409,7 +75220,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -73419,8 +75230,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
+            "maximum": 1000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 250
           },
@@ -74284,8 +76095,8 @@
           },
           "relevance_score": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Relevance Score"
           },
           "threat_level": {
@@ -74393,15 +76204,15 @@
           },
           "max_competitors": {
             "type": "integer",
-            "maximum": 15,
-            "minimum": 1,
+            "maximum": 15.0,
+            "minimum": 1.0,
             "title": "Max Competitors",
             "default": 5
           },
           "pages_per_competitor": {
             "type": "integer",
-            "maximum": 10,
-            "minimum": 1,
+            "maximum": 10.0,
+            "minimum": 1.0,
             "title": "Pages Per Competitor",
             "default": 3
           },
@@ -74576,8 +76387,8 @@
           },
           "max_competitors": {
             "type": "integer",
-            "maximum": 25,
-            "minimum": 1,
+            "maximum": 25.0,
+            "minimum": 1.0,
             "title": "Max Competitors",
             "default": 12
           },
@@ -74711,8 +76522,8 @@
           },
           "already_have_percentage": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Already Have Percentage"
           },
           "upgrade_page_ids": {
@@ -74856,8 +76667,8 @@
           },
           "variant_count": {
             "type": "integer",
-            "maximum": 8,
-            "minimum": 2,
+            "maximum": 8.0,
+            "minimum": 2.0,
             "title": "Variant Count",
             "default": 5
           }
@@ -77369,7 +79180,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -77520,7 +79331,7 @@
           "estimated_cost_usd": {
             "type": "number",
             "title": "Estimated Cost Usd",
-            "default": 0
+            "default": 0.0
           }
         },
         "type": "object",
@@ -78353,8 +80164,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           },
@@ -80571,8 +82382,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
+            "maximum": 1000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 50
           }
@@ -80642,6 +82453,132 @@
         ],
         "title": "DbRecordRef",
         "description": "Fetch one full row from a system table by primary key."
+      },
+      "DeclarePanelBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prompts": {
+            "items": {
+              "$ref": "#/components/schemas/PanelPrompt"
+            },
+            "type": "array",
+            "title": "Prompts",
+            "default": []
+          },
+          "key_messages": {
+            "items": {
+              "$ref": "#/components/schemas/KeyMessage"
+            },
+            "type": "array",
+            "title": "Key Messages",
+            "default": []
+          },
+          "engines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Engines",
+            "default": []
+          },
+          "country_iso": {
+            "type": "string",
+            "title": "Country Iso",
+            "default": "US"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "cadence_days": {
+            "type": "integer",
+            "title": "Cadence Days",
+            "default": 7
+          },
+          "max_prompts_per_run": {
+            "type": "integer",
+            "title": "Max Prompts Per Run",
+            "default": 10
+          },
+          "coverage_tracker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Tracker Id"
+          },
+          "declared_by": {
+            "type": "string",
+            "title": "Declared By",
+            "default": "user"
+          },
+          "declared_ref": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Declared Ref",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "site_id",
+          "name"
+        ],
+        "title": "DeclarePanelBody"
       },
       "DeclareTrackerBody": {
         "properties": {
@@ -82201,15 +84138,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -82287,8 +84224,8 @@
           },
           "ttl_seconds": {
             "type": "integer",
-            "maximum": 86400,
-            "minimum": 60,
+            "maximum": 86400.0,
+            "minimum": 60.0,
             "title": "Ttl Seconds",
             "description": "JWT expiry. Default 2h, min 60s, max 24h.",
             "default": 7200
@@ -82470,15 +84407,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 20
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "default": 1
           },
@@ -83158,7 +85095,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "status": {
             "type": "string",
@@ -83323,8 +85260,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000,
-            "minimum": 1,
+            "maximum": 20000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 2000
           }
@@ -84298,6 +86235,58 @@
         "type": "object",
         "title": "DraftBriefBody"
       },
+      "DraftOutcome": {
+        "properties": {
+          "draft_id": {
+            "type": "string",
+            "title": "Draft Id"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved"
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "fix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fix"
+          }
+        },
+        "type": "object",
+        "required": [
+          "draft_id",
+          "approved"
+        ],
+        "title": "DraftOutcome",
+        "description": "What happened to ONE draft in a batch, in the reviewer's own terms."
+      },
       "DraftResponse": {
         "properties": {
           "id": {
@@ -84442,8 +86431,8 @@
         "properties": {
           "limit": {
             "type": "integer",
-            "maximum": 500,
-            "minimum": 1,
+            "maximum": 500.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 50
           }
@@ -84921,8 +86910,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Count",
             "default": 1
           }
@@ -85458,8 +87447,8 @@
           },
           "output_dimensionality": {
             "type": "integer",
-            "maximum": 3072,
-            "minimum": 128,
+            "maximum": 3072.0,
+            "minimum": 128.0,
             "title": "Output Dimensionality",
             "default": 1536
           },
@@ -85855,8 +87844,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500,
-                "minimum": 1
+                "maximum": 500.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -85933,15 +87922,15 @@
           },
           "review_every_n": {
             "type": "integer",
-            "maximum": 500,
-            "minimum": 1,
+            "maximum": 500.0,
+            "minimum": 1.0,
             "title": "Review Every N",
             "default": 10
           },
           "max_examples_per_review": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Max Examples Per Review",
             "default": 25
           },
@@ -85963,8 +87952,8 @@
           },
           "backfill_days": {
             "type": "integer",
-            "maximum": 365,
-            "minimum": 0,
+            "maximum": 365.0,
+            "minimum": 0.0,
             "title": "Backfill Days",
             "default": 14
           }
@@ -85988,17 +87977,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0
+            "default": 0.0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0
+            "default": 0.0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0
+            "default": 0.0
           }
         },
         "additionalProperties": false,
@@ -86214,17 +88203,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0
+            "default": 0.0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0
+            "default": 0.0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0
+            "default": 0.0
           },
           "review_count": {
             "type": "integer",
@@ -86304,8 +88293,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500,
-                "minimum": 1
+                "maximum": 500.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -86348,8 +88337,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500,
-                "minimum": 1
+                "maximum": 500.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -86361,8 +88350,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100,
-                "minimum": 1
+                "maximum": 100.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -87521,8 +89510,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "default": 3
           },
@@ -87589,6 +89578,56 @@
           "elapsed_ms"
         ],
         "title": "ExpandResponse"
+      },
+      "ExpectationVerdict": {
+        "properties": {
+          "result": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "error"
+            ],
+            "title": "Result"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind",
+            "default": ""
+          },
+          "samples_satisfying": {
+            "type": "integer",
+            "title": "Samples Satisfying",
+            "default": 0
+          },
+          "sample_count": {
+            "type": "integer",
+            "title": "Sample Count",
+            "default": 0
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          }
+        },
+        "type": "object",
+        "required": [
+          "result",
+          "reason"
+        ],
+        "title": "ExpectationVerdict",
+        "description": "The answer to \"does this arm satisfy the case's claim?\"\n\n``result`` is deliberately three-valued. ``error`` is NOT a failure of the\nunit under test — it means the check itself could not be performed (the\nreplay errored, the judge was unavailable, the kind is unknown), and a\nconsumer that collapses it into ``fail`` will file findings about the wrong\nthing."
       },
       "ExpertCandidate": {
         "properties": {
@@ -88528,7 +90567,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -90813,7 +92852,7 @@
           },
           "attempt_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Attempt Count",
             "default": 0
           },
@@ -90851,7 +92890,7 @@
           },
           "chunk_count": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Chunk Count",
             "default": 0
           },
@@ -91672,8 +93711,8 @@
           },
           "max_hits_per_page": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Max Hits Per Page",
             "default": 5
           }
@@ -92748,15 +94787,15 @@
         "properties": {
           "x": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "X",
             "description": "0=left, 1=right"
           },
           "y": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Y",
             "description": "0=top, 1=bottom"
           }
@@ -92809,8 +94848,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
+            "maximum": 1000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 250
           },
@@ -92876,8 +94915,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
+            "maximum": 1000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 250
           },
@@ -92931,8 +94970,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
+            "maximum": 1000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 250
           },
@@ -93667,8 +95706,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -93917,8 +95956,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 4,
-            "minimum": 1,
+            "maximum": 4.0,
+            "minimum": 1.0,
             "title": "Count",
             "description": "Number of images to generate.",
             "default": 1
@@ -93981,8 +96020,8 @@
           },
           "max_nodes": {
             "type": "integer",
-            "maximum": 150,
-            "minimum": 10,
+            "maximum": 150.0,
+            "minimum": 10.0,
             "title": "Max Nodes",
             "default": 40
           },
@@ -94741,8 +96780,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90,
-                "minimum": 1
+                "maximum": 90.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -94906,17 +96945,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0
+            "default": 0.0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0
+            "default": 0.0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0
+            "default": 0.0
           },
           "review_count": {
             "type": "integer",
@@ -95149,17 +97188,17 @@
           "hard_bounce_rate": {
             "type": "number",
             "title": "Hard Bounce Rate",
-            "default": 0
+            "default": 0.0
           },
           "complaint_rate": {
             "type": "number",
             "title": "Complaint Rate",
-            "default": 0
+            "default": 0.0
           },
           "reply_rate": {
             "type": "number",
             "title": "Reply Rate",
-            "default": 0
+            "default": 0.0
           },
           "computed_at": {
             "type": "string",
@@ -95291,8 +97330,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Quality",
             "description": "Encoder quality from 1 to 100 for lossy output formats.",
             "default": 90
@@ -96206,8 +98245,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Count",
             "description": "Number of random assignments to materialize."
           },
@@ -96371,8 +98410,8 @@
           },
           "pages_per_chunk": {
             "type": "integer",
-            "maximum": 25,
-            "minimum": 1,
+            "maximum": 25.0,
+            "minimum": 1.0,
             "title": "Pages Per Chunk",
             "description": "Pages handed to the distiller per extraction chunk (documents only).",
             "default": 6
@@ -96517,8 +98556,8 @@
           },
           "chunk_words": {
             "type": "integer",
-            "maximum": 8000,
-            "minimum": 500,
+            "maximum": 8000.0,
+            "minimum": 500.0,
             "title": "Chunk Words",
             "description": "Words per extraction chunk.",
             "default": 2500
@@ -96590,8 +98629,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -98087,8 +100126,8 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 365,
-            "minimum": 1,
+            "maximum": 365.0,
+            "minimum": 1.0,
             "title": "Window Days",
             "default": 30
           },
@@ -98100,6 +100139,59 @@
         },
         "type": "object",
         "title": "JournalistActivityRequest"
+      },
+      "JournalistBeatRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "campaign_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Context"
+          }
+        },
+        "type": "object",
+        "title": "JournalistBeatRequest"
       },
       "JsonRpcResponse": {
         "properties": {
@@ -98434,6 +100526,35 @@
         ],
         "title": "KeyFindingsResponse"
       },
+      "KeyMessage": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "terms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Terms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "terms"
+        ],
+        "title": "KeyMessage",
+        "description": "A thing we want assistants to be SAYING about us.\n\nDetection is deterministic term matching over the answer text — free,\ninstant, and explainable to the person who wrote the message. An LLM judging\n\"is this message present?\" would cost money per answer to produce a verdict\nnobody could audit."
+      },
       "Keyword": {
         "properties": {
           "text": {
@@ -98512,8 +100633,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200,
-            "minimum": 1,
+            "maximum": 200.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 200
           }
@@ -100748,8 +102869,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200,
-            "minimum": 1,
+            "maximum": 200.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 20
           },
@@ -101975,8 +104096,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 10
           }
@@ -103465,7 +105586,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -103476,8 +105597,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -103775,6 +105896,284 @@
         ],
         "title": "McpToolsResponse"
       },
+      "MediaListProspect": {
+        "properties": {
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "person_name": {
+            "type": "string",
+            "title": "Person Name"
+          },
+          "outlet_domain": {
+            "type": "string",
+            "title": "Outlet Domain"
+          },
+          "story_url": {
+            "type": "string",
+            "title": "Story Url"
+          },
+          "story_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Story Title"
+          },
+          "published_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Published At"
+          },
+          "already_on_list": {
+            "type": "boolean",
+            "title": "Already On List",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "party_id",
+          "person_name",
+          "outlet_domain",
+          "story_url"
+        ],
+        "title": "MediaListProspect",
+        "description": "One journalist a news search surfaced. A proposal, never a member."
+      },
+      "MediaListRefreshRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "MediaListRefreshRequest"
+      },
+      "MediaListRefreshResult": {
+        "properties": {
+          "list_id": {
+            "type": "string",
+            "title": "List Id"
+          },
+          "list_name": {
+            "type": "string",
+            "title": "List Name",
+            "default": ""
+          },
+          "members_total": {
+            "type": "integer",
+            "title": "Members Total",
+            "default": 0
+          },
+          "members_checked": {
+            "type": "integer",
+            "title": "Members Checked",
+            "default": 0
+          },
+          "members_due_not_reached": {
+            "type": "integer",
+            "title": "Members Due Not Reached",
+            "default": 0
+          },
+          "role_changes": {
+            "type": "integer",
+            "title": "Role Changes",
+            "default": 0
+          },
+          "beats_derived": {
+            "type": "integer",
+            "title": "Beats Derived",
+            "default": 0
+          },
+          "assists_created": {
+            "type": "integer",
+            "title": "Assists Created",
+            "default": 0
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/MemberRefresh"
+            },
+            "type": "array",
+            "title": "Members"
+          },
+          "ran_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ran At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "list_id"
+        ],
+        "title": "MediaListRefreshResult"
+      },
+      "MediaListSearchRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "query": {
+            "type": "string",
+            "minLength": 2,
+            "title": "Query"
+          },
+          "max_results": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Max Results",
+            "default": 20
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "MediaListSearchRequest"
+      },
+      "MediaListSearchResult": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "articles_seen": {
+            "type": "integer",
+            "title": "Articles Seen",
+            "default": 0
+          },
+          "bylines_found": {
+            "type": "integer",
+            "title": "Bylines Found",
+            "default": 0
+          },
+          "prospects": {
+            "items": {
+              "$ref": "#/components/schemas/MediaListProspect"
+            },
+            "type": "array",
+            "title": "Prospects"
+          },
+          "search_failed": {
+            "type": "boolean",
+            "title": "Search Failed",
+            "default": false
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "MediaListSearchResult"
+      },
       "MediaRef": {
         "properties": {
           "file_id": {
@@ -103924,6 +106323,53 @@
         "description": "Canonical media reference shared across every API that takes media.",
         "x-contract-dynamic": "subclasses carry provider-display fields as extras; the canonical identifiers stay declared here"
       },
+      "MediaRefreshPolicy": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "cadence_days": {
+            "type": "integer",
+            "maximum": 180.0,
+            "minimum": 1.0,
+            "title": "Cadence Days",
+            "default": 14
+          },
+          "window_days": {
+            "type": "integer",
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Window Days",
+            "default": 30
+          },
+          "use_search": {
+            "type": "boolean",
+            "title": "Use Search",
+            "default": true
+          },
+          "derive_beats": {
+            "type": "boolean",
+            "title": "Derive Beats",
+            "default": true
+          },
+          "campaign_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campaign Context"
+          }
+        },
+        "type": "object",
+        "title": "MediaRefreshPolicy",
+        "description": "`outreach_list.definition.media_refresh`. Every knob has a safe default."
+      },
       "MediaUpdate": {
         "properties": {
           "is_relevant": {
@@ -104032,6 +106478,89 @@
         ],
         "title": "MemberRef"
       },
+      "MemberRefresh": {
+        "properties": {
+          "member_id": {
+            "type": "string",
+            "title": "Member Id"
+          },
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "person_name": {
+            "type": "string",
+            "title": "Person Name"
+          },
+          "checked": {
+            "type": "boolean",
+            "title": "Checked",
+            "default": false
+          },
+          "skipped_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skipped Reason"
+          },
+          "previous_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previous Status"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "role_changed": {
+            "type": "boolean",
+            "title": "Role Changed",
+            "default": false
+          },
+          "beat_derived": {
+            "type": "boolean",
+            "title": "Beat Derived",
+            "default": false
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "member_id",
+          "party_id",
+          "person_name"
+        ],
+        "title": "MemberRefresh"
+      },
       "MemoryCostByEventType": {
         "properties": {
           "count": {
@@ -104042,7 +106571,7 @@
           "cost": {
             "type": "number",
             "title": "Cost",
-            "default": 0
+            "default": 0.0
           },
           "input_tokens": {
             "type": "integer",
@@ -104573,6 +107102,51 @@
         "title": "MessageSelector",
         "description": "Reusable selection grammar for batch message operations.\n\nProvide EXACTLY ONE selection form. Mixed forms raise 422."
       },
+      "MessageStanding": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "answers": {
+            "type": "integer",
+            "title": "Answers"
+          },
+          "present_in": {
+            "type": "integer",
+            "title": "Present In"
+          },
+          "presence_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Presence Rate"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "answers",
+          "present_in"
+        ],
+        "title": "MessageStanding"
+      },
       "MessageUpdate": {
         "properties": {
           "content": {
@@ -104782,29 +107356,29 @@
         "properties": {
           "chunk_count": {
             "type": "integer",
-            "maximum": 10000,
-            "minimum": 1,
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Chunk Count",
             "default": 10
           },
           "chunk_delay_ms": {
             "type": "integer",
-            "maximum": 60000,
-            "minimum": 0,
+            "maximum": 60000.0,
+            "minimum": 0.0,
             "title": "Chunk Delay Ms",
             "default": 200
           },
           "heartbeat_interval_ms": {
             "type": "integer",
-            "maximum": 60000,
-            "minimum": 1000,
+            "maximum": 60000.0,
+            "minimum": 1000.0,
             "title": "Heartbeat Interval Ms",
             "default": 10000
           },
           "max_lifetime_ms": {
             "type": "integer",
-            "maximum": 600000,
-            "minimum": 1000,
+            "maximum": 600000.0,
+            "minimum": 1000.0,
             "title": "Max Lifetime Ms",
             "default": 120000
           },
@@ -107569,8 +110143,8 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Priority"
           },
           "impact": {
@@ -107593,8 +110167,8 @@
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Confidence"
           },
           "evidence": {
@@ -108535,16 +111109,16 @@
           },
           "fill_opacity": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Fill Opacity",
             "default": 0.18
           },
           "stroke_width": {
             "type": "number",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Stroke Width",
-            "default": 2
+            "default": 2.0
           },
           "label": {
             "anyOf": [
@@ -108559,9 +111133,9 @@
           },
           "font_size": {
             "type": "number",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Font Size",
-            "default": 10
+            "default": 10.0
           }
         },
         "type": "object",
@@ -109465,15 +112039,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
+            "maximum": 1000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 1000
           },
           "max_spam_score": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Max Spam Score",
             "default": 30
           },
@@ -110013,6 +112587,389 @@
         "type": "object",
         "title": "PagespeedSyncBody"
       },
+      "PanelCostEstimate": {
+        "properties": {
+          "prompts": {
+            "type": "integer",
+            "title": "Prompts"
+          },
+          "engines": {
+            "type": "integer",
+            "title": "Engines"
+          },
+          "calls": {
+            "type": "integer",
+            "title": "Calls"
+          },
+          "cost_per_call_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Cost Per Call Usd"
+          },
+          "estimated_cost_usd": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Estimated Cost Usd"
+          },
+          "measured": {
+            "type": "boolean",
+            "title": "Measured"
+          },
+          "basis": {
+            "type": "string",
+            "title": "Basis"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "prompts",
+          "engines",
+          "calls",
+          "cost_per_call_usd",
+          "estimated_cost_usd",
+          "measured",
+          "basis"
+        ],
+        "title": "PanelCostEstimate",
+        "description": "What a pass will cost, and how confident that number is."
+      },
+      "PanelListResponse": {
+        "properties": {
+          "panels": {
+            "items": {
+              "$ref": "#/components/schemas/PanelView"
+            },
+            "type": "array",
+            "title": "Panels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "panels"
+        ],
+        "title": "PanelListResponse"
+      },
+      "PanelPreview": {
+        "properties": {
+          "panel_id": {
+            "type": "string",
+            "title": "Panel Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prompts_this_pass": {
+            "items": {
+              "$ref": "#/components/schemas/PanelPrompt"
+            },
+            "type": "array",
+            "title": "Prompts This Pass"
+          },
+          "prompts_deferred": {
+            "items": {
+              "$ref": "#/components/schemas/PanelPrompt"
+            },
+            "type": "array",
+            "title": "Prompts Deferred"
+          },
+          "engines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Engines"
+          },
+          "estimate": {
+            "$ref": "#/components/schemas/PanelCostEstimate"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "panel_id",
+          "name",
+          "estimate",
+          "summary"
+        ],
+        "title": "PanelPreview",
+        "description": "What running this panel now would do, and cost — before any spend."
+      },
+      "PanelPrompt": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 3,
+            "title": "Text"
+          },
+          "intent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intent"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "text"
+        ],
+        "title": "PanelPrompt",
+        "description": "One buyer question, in the user's words. Never inferred from a keyword."
+      },
+      "PanelTrend": {
+        "properties": {
+          "panel_id": {
+            "type": "string",
+            "title": "Panel Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "grain": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week"
+            ],
+            "title": "Grain"
+          },
+          "since": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Since"
+          },
+          "answers": {
+            "type": "integer",
+            "title": "Answers",
+            "default": 0
+          },
+          "mention_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mention Rate"
+          },
+          "citation_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation Rate"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/PresencePoint"
+            },
+            "type": "array",
+            "title": "Points"
+          },
+          "prompts": {
+            "items": {
+              "$ref": "#/components/schemas/PromptStanding"
+            },
+            "type": "array",
+            "title": "Prompts"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageStanding"
+            },
+            "type": "array",
+            "title": "Messages"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "panel_id",
+          "name",
+          "site_id",
+          "grain",
+          "since"
+        ],
+        "title": "PanelTrend"
+      },
+      "PanelView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "prompts": {
+            "items": {
+              "$ref": "#/components/schemas/PanelPrompt"
+            },
+            "type": "array",
+            "title": "Prompts"
+          },
+          "key_messages": {
+            "items": {
+              "$ref": "#/components/schemas/KeyMessage"
+            },
+            "type": "array",
+            "title": "Key Messages"
+          },
+          "engines": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Engines"
+          },
+          "country_iso": {
+            "type": "string",
+            "title": "Country Iso"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "cadence_days": {
+            "type": "integer",
+            "title": "Cadence Days"
+          },
+          "max_prompts_per_run": {
+            "type": "integer",
+            "title": "Max Prompts Per Run"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "coverage_tracker_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coverage Tracker Id"
+          },
+          "declared_by": {
+            "type": "string",
+            "title": "Declared By"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "last_run_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run Status"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "last_run_cost_usd": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run Cost Usd"
+          },
+          "run_count": {
+            "type": "integer",
+            "title": "Run Count",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "site_id",
+          "name",
+          "prompts",
+          "key_messages",
+          "engines",
+          "country_iso",
+          "cadence_days",
+          "max_prompts_per_run",
+          "is_active",
+          "declared_by"
+        ],
+        "title": "PanelView"
+      },
       "PatchFolderRequest": {
         "properties": {
           "folder_path": {
@@ -110270,7 +113227,7 @@
           },
           "use_ocr_threshold": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Use Ocr Threshold",
             "default": 100
           }
@@ -110375,12 +113332,12 @@
         "properties": {
           "output_page": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Output Page"
           },
           "source_page": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Source Page"
           }
         },
@@ -110395,12 +113352,12 @@
         "properties": {
           "start": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Start"
           },
           "end": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "End"
           }
         },
@@ -110443,8 +113400,8 @@
           },
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800,
-            "minimum": 60,
+            "maximum": 604800.0,
+            "minimum": 60.0,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -110476,14 +113433,14 @@
           },
           "source_page_count": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Source Page Count"
           },
           "source_size_bytes": {
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -110493,7 +113450,7 @@
           },
           "source_bytes_fetched": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Source Bytes Fetched",
             "default": 0
           },
@@ -112078,7 +115035,7 @@
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0
+            "default": 0.0
           },
           "request": {
             "additionalProperties": {
@@ -112194,7 +115151,7 @@
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0
+            "default": 0.0
           },
           "error": {
             "type": "string",
@@ -112894,8 +115851,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 10,
-                "minimum": 1
+                "maximum": 10.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -112987,7 +115944,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -113000,7 +115957,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -113372,7 +116329,7 @@
             "type": "number",
             "title": "Total Cost Usd",
             "description": "What this run has cost in total.",
-            "default": 0
+            "default": 0.0
           },
           "progress": {
             "$ref": "#/components/schemas/RunProgress",
@@ -113494,7 +116451,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -113524,6 +116481,66 @@
           "status"
         ],
         "title": "PreferencesWriteResponse"
+      },
+      "PresencePoint": {
+        "properties": {
+          "bucket": {
+            "type": "string",
+            "format": "date",
+            "title": "Bucket"
+          },
+          "answers": {
+            "type": "integer",
+            "title": "Answers"
+          },
+          "mentioned": {
+            "type": "integer",
+            "title": "Mentioned"
+          },
+          "cited": {
+            "type": "integer",
+            "title": "Cited"
+          },
+          "mention_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mention Rate"
+          },
+          "citation_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation Rate"
+          },
+          "message_rates": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Message Rates"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "bucket",
+          "answers",
+          "mentioned",
+          "cited"
+        ],
+        "title": "PresencePoint",
+        "description": "One bucket of the trend. Rates are None when nothing was measured."
       },
       "PresentationSpec": {
         "properties": {
@@ -113789,8 +116806,8 @@
           },
           "n": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "N",
             "default": 5
           }
@@ -113869,12 +116886,12 @@
           },
           "width": {
             "type": "integer",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Width"
           },
           "height": {
             "type": "integer",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Height"
           },
           "format": {
@@ -113890,8 +116907,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Quality",
             "description": "Ignored for png",
             "default": 85
@@ -113975,6 +116992,77 @@
         "type": "object",
         "title": "PrincipalIn",
         "description": "The owning scope a call operates on. ``user`` == the authenticated\nactor, always."
+      },
+      "PriorRelationship": {
+        "properties": {
+          "party_id": {
+            "type": "string",
+            "title": "Party Id"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "do_not_contact": {
+            "type": "boolean",
+            "title": "Do Not Contact",
+            "default": false
+          },
+          "interaction_count": {
+            "type": "integer",
+            "title": "Interaction Count",
+            "default": 0
+          },
+          "last_interaction_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Interaction At"
+          },
+          "campaigns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Campaigns"
+          },
+          "confirmed_wins": {
+            "type": "integer",
+            "title": "Confirmed Wins",
+            "default": 0
+          },
+          "last_win_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Win At"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "party_id",
+          "display_name",
+          "summary"
+        ],
+        "title": "PriorRelationship",
+        "description": "What we already know about this domain, in the user's own CRM.\n\nPresent ONLY when a `crm.party` already exists for the captured domain. A\ncapture with no prior relationship simply omits it — an empty relationship\nobject rendered as \"0 interactions\" reads like a record we hold, and we hold\nnone."
       },
       "ProcessBlocksRequest": {
         "properties": {
@@ -114122,7 +117210,7 @@
           "heartbeat_interval_s": {
             "type": "number",
             "title": "Heartbeat Interval S",
-            "default": 15
+            "default": 15.0
           },
           "debug": {
             "type": "boolean",
@@ -114482,6 +117570,71 @@
           "matched_by"
         ],
         "title": "PromotedExpert"
+      },
+      "PromptStanding": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "engines_mentioning": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Engines Mentioning"
+          },
+          "engines_absent": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Engines Absent"
+          },
+          "engines_unmeasured": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Engines Unmeasured"
+          },
+          "last_measured_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Measured At"
+          },
+          "response_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Response Ids"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict",
+            "default": ""
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "key",
+          "text"
+        ],
+        "title": "PromptStanding",
+        "description": "Where ONE question stands right now, with its evidence door."
       },
       "PromptStartRequest": {
         "properties": {
@@ -114905,6 +118058,356 @@
         "type": "object",
         "title": "PromptWarmRequest"
       },
+      "ProofResult": {
+        "properties": {
+          "finding_id": {
+            "type": "string",
+            "title": "Finding Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "proven",
+              "unprovable",
+              "failed"
+            ],
+            "title": "Status",
+            "default": "unprovable"
+          },
+          "evidence_class": {
+            "type": "string",
+            "enum": [
+              "loop_iteration",
+              "same_unit_regression",
+              "none"
+            ],
+            "title": "Evidence Class",
+            "default": "none"
+          },
+          "snapshot_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot Id"
+          },
+          "replay_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replay Group Id"
+          },
+          "verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Verdict"
+          },
+          "control_faithful": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Control Faithful"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0.0
+          },
+          "claim": {
+            "type": "string",
+            "title": "Claim",
+            "default": ""
+          },
+          "note": {
+            "type": "string",
+            "title": "Note",
+            "default": ""
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "arms": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Arms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "finding_id"
+        ],
+        "title": "ProofResult"
+      },
+      "ProspectCaptureBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 3,
+            "title": "Url"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "page_title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Title"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "title": "ProspectCaptureBody",
+        "description": "One page, captured from wherever the user (or their agent) is standing."
+      },
+      "ProspectCapturePreview": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "site_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Id"
+          },
+          "site_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Label"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": [
+              "new",
+              "existing",
+              "blocklisted",
+              "unusable"
+            ],
+            "title": "Verdict"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why"
+          },
+          "prior_relationship": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriorRelationship"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sites": {
+            "items": {
+              "$ref": "#/components/schemas/CaptureSite"
+            },
+            "type": "array",
+            "title": "Sites"
+          },
+          "site_choice_required": {
+            "type": "boolean",
+            "title": "Site Choice Required",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url",
+          "verdict",
+          "why"
+        ],
+        "title": "ProspectCapturePreview",
+        "description": "Everything the capture would do, before it does any of it."
+      },
+      "ProspectCaptureResult": {
+        "properties": {
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "domain": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Domain"
+          },
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "site_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Label"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "created",
+              "matched",
+              "skipped"
+            ],
+            "title": "Outcome"
+          },
+          "why": {
+            "type": "string",
+            "title": "Why"
+          },
+          "prior_relationship": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PriorRelationship"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProspectImportReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "url",
+          "site_id",
+          "outcome",
+          "why"
+        ],
+        "title": "ProspectCaptureResult",
+        "description": "What the capture actually did."
+      },
       "ProspectImportBody": {
         "properties": {
           "organization_id": {
@@ -115013,6 +118516,59 @@
           "skipped"
         ],
         "title": "ProspectImportPreview"
+      },
+      "ProspectImportReport": {
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "title": "Site Id"
+          },
+          "created": {
+            "type": "integer",
+            "title": "Created",
+            "default": 0
+          },
+          "matched": {
+            "type": "integer",
+            "title": "Matched",
+            "default": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped",
+            "default": 0
+          },
+          "enriched": {
+            "type": "integer",
+            "title": "Enriched",
+            "default": 0
+          },
+          "unmeasured": {
+            "type": "integer",
+            "title": "Unmeasured",
+            "default": 0
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/ImportEntryPlan"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "site_id"
+        ],
+        "title": "ProspectImportReport"
       },
       "ProspectQuery": {
         "properties": {
@@ -115689,8 +119245,8 @@
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Confidence"
           },
           "evidence_refs": {
@@ -116051,8 +119607,8 @@
         "properties": {
           "overall_confidence": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Overall Confidence"
           },
           "accepted_cases": {
@@ -116189,8 +119745,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 10,
+            "maximum": 1000.0,
+            "minimum": 10.0,
             "title": "Anchor Size",
             "default": 100
           },
@@ -116542,8 +120098,8 @@
           },
           "cadence_days": {
             "type": "integer",
-            "maximum": 90,
-            "minimum": 1,
+            "maximum": 90.0,
+            "minimum": 1.0,
             "title": "Cadence Days",
             "default": 7
           },
@@ -116739,8 +120295,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90,
-                "minimum": 1
+                "maximum": 90.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -117352,8 +120908,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Confidence"
           },
           "run_id": {
@@ -117693,15 +121249,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Confidence",
             "default": 0.5
           },
@@ -117721,7 +121277,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "x0": {
@@ -117784,7 +121340,7 @@
           },
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -118076,7 +121632,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -118455,6 +122011,471 @@
         "type": "object",
         "title": "RegistrySyncReport"
       },
+      "RegressionCaseIn": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Title",
+            "default": ""
+          },
+          "expectation": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Expectation"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "origin": {
+            "type": "string",
+            "enum": [
+              "human_click",
+              "finding",
+              "walk",
+              "sweep"
+            ],
+            "title": "Origin",
+            "default": "human_click"
+          },
+          "origin_finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Finding Id"
+          },
+          "corrected_output_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Output Ref"
+          }
+        },
+        "type": "object",
+        "title": "RegressionCaseIn"
+      },
+      "RegressionCaseOut": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "title": "Snapshot Id"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "expectation": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Expectation"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin",
+            "default": "human_click"
+          },
+          "origin_finding_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Finding Id"
+          },
+          "corrected_output_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corrected Output Ref"
+          },
+          "agent_definition_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Definition Version"
+          },
+          "workflow_definition_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workflow Definition Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "active"
+          },
+          "last_replay_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Replay Group Id"
+          },
+          "last_result": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Result"
+          },
+          "last_verdict": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Verdict"
+          },
+          "last_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reason"
+          },
+          "last_checked_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Checked At"
+          },
+          "last_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Cost Usd"
+          },
+          "consecutive_failures": {
+            "type": "integer",
+            "title": "Consecutive Failures",
+            "default": 0
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "snapshot_id"
+        ],
+        "title": "RegressionCaseOut"
+      },
+      "RegressionCaseRunIn": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "delta": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Delta"
+          },
+          "samples": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Samples"
+          },
+          "judge": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Judge"
+          }
+        },
+        "type": "object",
+        "title": "RegressionCaseRunIn"
+      },
+      "RegressionCaseStatusIn": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "retired"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "RegressionCaseStatusIn"
+      },
+      "RegressionRunResult": {
+        "properties": {
+          "case_id": {
+            "type": "string",
+            "title": "Case Id"
+          },
+          "snapshot_id": {
+            "type": "string",
+            "title": "Snapshot Id"
+          },
+          "replay_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Replay Group Id"
+          },
+          "evaluated_arm_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Evaluated Arm Key"
+          },
+          "verdict": {
+            "$ref": "#/components/schemas/ExpectationVerdict"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0.0
+          },
+          "faithful": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Faithful"
+          }
+        },
+        "type": "object",
+        "required": [
+          "case_id",
+          "snapshot_id",
+          "verdict"
+        ],
+        "title": "RegressionRunResult"
+      },
       "RejectCandidateRequest": {
         "properties": {
           "organization_id": {
@@ -118803,8 +122824,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 300,
-            "minimum": 8,
+            "maximum": 300.0,
+            "minimum": 8.0,
             "title": "Dpi",
             "default": 150
           },
@@ -118822,8 +122843,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -118893,14 +122914,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page",
             "default": 1
           },
           "dpi": {
             "type": "integer",
-            "maximum": 600,
-            "minimum": 8,
+            "maximum": 600.0,
+            "minimum": 8.0,
             "title": "Dpi",
             "default": 150
           },
@@ -118918,8 +122939,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -118971,8 +122992,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 400,
-            "minimum": 36,
+            "maximum": 400.0,
+            "minimum": 36.0,
             "title": "Dpi",
             "default": 144
           },
@@ -119082,14 +123103,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page",
             "default": 1
           },
           "max_side": {
             "type": "integer",
-            "maximum": 2048,
-            "minimum": 16,
+            "maximum": 2048.0,
+            "minimum": 16.0,
             "title": "Max Side",
             "default": 256
           },
@@ -119106,8 +123127,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Jpeg Quality",
             "default": 80
           }
@@ -119402,8 +123423,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 2000,
-            "minimum": 1,
+            "maximum": 2000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 100
           },
@@ -120277,32 +124298,32 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Priority"
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Confidence"
           },
           "evidence_quality": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Evidence Quality"
           },
           "risk_score": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Risk Score"
           },
           "opportunity_score": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Opportunity Score"
           },
           "recommended_action": {
@@ -120558,8 +124579,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -121041,8 +125062,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000,
-            "minimum": 1,
+            "maximum": 20000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 2000
           }
@@ -121371,8 +125392,8 @@
           },
           "max_chars": {
             "type": "integer",
-            "maximum": 10000,
-            "minimum": 1,
+            "maximum": 10000.0,
+            "minimum": 1.0,
             "title": "Max Chars",
             "default": 5000
           }
@@ -121679,8 +125700,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           },
@@ -121820,7 +125841,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -121831,8 +125852,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -122136,7 +126157,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0
+            "default": 0.0
           }
         },
         "type": "object",
@@ -122910,7 +126931,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "total_input_tokens": {
             "type": "integer",
@@ -123154,8 +127175,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50,
-                "minimum": 1
+                "maximum": 50.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -123167,8 +127188,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20,
-                "minimum": 1
+                "maximum": 20.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -123375,6 +127396,53 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RunPageStepBody"
+      },
+      "RunPanelBody": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "default": true
+          }
+        },
+        "type": "object",
+        "title": "RunPanelBody"
       },
       "RunPipelineRequest": {
         "properties": {
@@ -124044,8 +128112,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           },
@@ -124053,8 +128121,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 256,
-                "minimum": 1
+                "maximum": 256.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -124103,7 +128171,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800
+            "default": 1800.0
           }
         },
         "type": "object",
@@ -124178,7 +128246,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800
+            "default": 1800.0
           },
           "idempotency_key": {
             "anyOf": [
@@ -124752,8 +128820,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 3,
-            "minimum": 2,
+            "maximum": 3.0,
+            "minimum": 2.0,
             "title": "Level",
             "default": 2
           },
@@ -125300,8 +129368,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 10,
+            "maximum": 1000.0,
+            "minimum": 10.0,
             "title": "Anchor Size",
             "default": 100
           },
@@ -125316,8 +129384,8 @@
           },
           "max_page_read": {
             "type": "integer",
-            "maximum": 20,
-            "minimum": 1,
+            "maximum": 20.0,
+            "minimum": 1.0,
             "title": "Max Page Read",
             "default": 10
           },
@@ -125397,8 +129465,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 10,
+            "maximum": 1000.0,
+            "minimum": 10.0,
             "title": "Anchor Size",
             "default": 100
           },
@@ -125416,8 +129484,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 30,
-            "minimum": 10,
+            "maximum": 30.0,
+            "minimum": 10.0,
             "title": "Total Results Per Keyword",
             "default": 10
           },
@@ -125506,8 +129574,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Total Results Per Keyword",
             "default": 5
           },
@@ -126997,8 +131065,8 @@
           },
           "depth": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 10,
+            "maximum": 100.0,
+            "minimum": 10.0,
             "title": "Depth",
             "default": 30
           },
@@ -127627,6 +131695,196 @@
         "type": "object",
         "title": "SetupAgentBody"
       },
+      "ShadowSweepIn": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "new_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Model"
+          },
+          "from_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Model"
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "samples": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Samples"
+          }
+        },
+        "type": "object",
+        "title": "ShadowSweepIn",
+        "description": "Explicitly sweep the suite under a model change.\n\nOmitting `new_model` runs the STANDING drift check instead — same sweep, no\ndelta, asking whether the unchanged config still holds up."
+      },
+      "ShadowSweepReport": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok",
+            "default": true
+          },
+          "new_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Model"
+          },
+          "from_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Model"
+          },
+          "selected": {
+            "type": "integer",
+            "title": "Selected",
+            "default": 0
+          },
+          "checked": {
+            "type": "integer",
+            "title": "Checked",
+            "default": 0
+          },
+          "skipped_for_budget": {
+            "type": "integer",
+            "title": "Skipped For Budget",
+            "default": 0
+          },
+          "hit_cost_ceiling": {
+            "type": "boolean",
+            "title": "Hit Cost Ceiling",
+            "default": false
+          },
+          "passed": {
+            "type": "integer",
+            "title": "Passed",
+            "default": 0
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed",
+            "default": 0
+          },
+          "errored": {
+            "type": "integer",
+            "title": "Errored",
+            "default": 0
+          },
+          "total_cost_usd": {
+            "type": "number",
+            "title": "Total Cost Usd",
+            "default": 0.0
+          },
+          "outcomes": {
+            "items": {
+              "$ref": "#/components/schemas/CaseOutcome"
+            },
+            "type": "array",
+            "title": "Outcomes"
+          },
+          "assist_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assist Id"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "title": "ShadowSweepReport",
+        "description": "What one pass actually did — with the honesty fields first."
+      },
       "ShareLinkInfo": {
         "properties": {
           "token": {
@@ -128005,8 +132263,8 @@
           },
           "event_spacing_ms": {
             "type": "integer",
-            "maximum": 5000,
-            "minimum": 0,
+            "maximum": 5000.0,
+            "minimum": 0.0,
             "title": "Event Spacing Ms",
             "description": "Milliseconds to wait between simulated events.",
             "default": 250
@@ -128351,15 +132609,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000,
-            "minimum": 1,
+            "maximum": 1000.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 1000
           },
           "max_spam_score": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Max Spam Score",
             "default": 30
           },
@@ -129664,7 +133922,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -129675,8 +133933,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000,
-            "minimum": 1,
+            "maximum": 100000.0,
+            "minimum": 1.0,
             "title": "Max Steps",
             "default": 1000
           }
@@ -130851,7 +135109,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": 1.0,
             "title": "Page Number"
           },
           "bbox": {
@@ -130859,10 +135117,10 @@
           },
           "expand_pad_pt": {
             "type": "number",
-            "maximum": 20,
-            "minimum": 0,
+            "maximum": 20.0,
+            "minimum": 0.0,
             "title": "Expand Pad Pt",
-            "default": 1
+            "default": 1.0
           }
         },
         "type": "object",
@@ -131755,7 +136013,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -132856,7 +137114,7 @@
           "confidence": {
             "type": "number",
             "title": "Confidence",
-            "default": 0
+            "default": 0.0
           },
           "reason": {
             "type": "string",
@@ -133026,15 +137284,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -137395,8 +141653,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200,
-            "minimum": 1,
+            "maximum": 200.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 50
           }
@@ -137464,7 +141722,7 @@
           "total_estimated_cost_usd": {
             "type": "number",
             "title": "Total Estimated Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "page_analyses": {
             "$ref": "#/components/schemas/CostBreakdownItem"
@@ -140424,8 +144682,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500,
-                "minimum": 1
+                "maximum": 500.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -140437,8 +144695,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 200,
-                "minimum": 1
+                "maximum": 200.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -140450,8 +144708,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 86400,
-                "minimum": 0
+                "maximum": 86400.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -140463,8 +144721,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 86400,
-                "minimum": 0
+                "maximum": 86400.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -140476,8 +144734,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 23,
-                "minimum": 0
+                "maximum": 23.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -140489,8 +144747,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 23,
-                "minimum": 0
+                "maximum": 23.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -142342,8 +146600,8 @@
           },
           "next_n": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Next N",
             "default": 5
           }
@@ -145153,15 +149411,15 @@
           },
           "max_urls": {
             "type": "integer",
-            "maximum": 20000,
-            "minimum": 1,
+            "maximum": 20000.0,
+            "minimum": 1.0,
             "title": "Max Urls",
             "default": 2000
           },
           "concurrency": {
             "type": "integer",
-            "maximum": 32,
-            "minimum": 1,
+            "maximum": 32.0,
+            "minimum": 1.0,
             "title": "Concurrency",
             "default": 8
           }
@@ -145204,18 +149462,18 @@
           "x": {
             "type": "number",
             "title": "X",
-            "default": 0
+            "default": 0.0
           },
           "y": {
             "type": "number",
             "title": "Y",
-            "default": 0
+            "default": 0.0
           },
           "zoom": {
             "type": "number",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Zoom",
-            "default": 1
+            "default": 1.0
           }
         },
         "type": "object",
@@ -145798,7 +150056,7 @@
         "properties": {
           "hop": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Hop"
           },
           "unit_kind": {
@@ -147052,7 +151310,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "pinned_model": {
             "anyOf": [
@@ -147187,7 +151445,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "reason": {
             "anyOf": [
@@ -147264,7 +151522,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "fidelity": {
             "additionalProperties": true,
@@ -147612,12 +151870,12 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "avg_run_cost_usd": {
             "type": "number",
             "title": "Avg Run Cost Usd",
-            "default": 0
+            "default": 0.0
           },
           "runs_per_day": {
             "items": {
@@ -147770,8 +152028,8 @@
           },
           "max_results": {
             "type": "integer",
-            "maximum": 50,
-            "minimum": 1,
+            "maximum": 50.0,
+            "minimum": 1.0,
             "title": "Max Results",
             "default": 25
           },
@@ -147830,8 +152088,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50,
-                "minimum": 1
+                "maximum": 50.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -147843,8 +152101,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1440,
-                "minimum": 1
+                "maximum": 1440.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -148723,8 +152981,8 @@
           },
           "max_hits": {
             "type": "integer",
-            "maximum": 2000,
-            "minimum": 1,
+            "maximum": 2000.0,
+            "minimum": 1.0,
             "title": "Max Hits",
             "default": 200
           },
@@ -148870,8 +153128,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100,
-            "minimum": 1,
+            "maximum": 100.0,
+            "minimum": 1.0,
             "title": "Limit",
             "default": 20
           },
@@ -148935,8 +153193,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5,
-            "minimum": 1,
+            "maximum": 5.0,
+            "minimum": 1.0,
             "title": "Multi Query",
             "description": "If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.",
             "default": 1
