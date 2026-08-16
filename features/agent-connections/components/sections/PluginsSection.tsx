@@ -117,7 +117,7 @@ export function PluginsSection({
     lastSeenAt: sessions[0]?.last_seen_at ?? null,
     history: sessions.map((session) => session.last_seen_at),
     readSucceeded: checkedAtMs === 0 ? null : error === null,
-    nowMs: checkedAtMs === 0 ? Date.now() : checkedAtMs,
+    nowMs: checkedAtMs,
   });
   const initialReadFailed =
     filteredSessions.length === 0 && sessions.length === 0 && error !== null;

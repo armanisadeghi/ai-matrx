@@ -56,20 +56,34 @@ vision:
 
 ## Remaining work (priority order)
 
-00. **🚨 CAPTURE DIED SILENTLY FOR ~24 HOURS AND NOTHING SAID SO (found 2026-08-16 22:30 PT, chipped).**
-    Newest ledger entry anywhere is `2026-08-15 23:02:47`; ZERO sessions created on 08-16 despite a
-    full day of Claude Code use (08-15 created 87). Production aidream is healthy — `/health/version`
-    200, `/api/mcp` 401 — so the server is not the failure. The cause is architectural and documented
-    in the plugin README: every hook rides the already-connected `plugin:matrx:aidream` MCP session,
-    **an MCP hook can never initiate OAuth**, and Claude treats hook failure as **non-blocking**. So a
-    dropped/lapsed MCP connection ends capture permanently and invisibly, recoverable only by the user
-    running `/mcp` and reauthorizing. An empty inbox is indistinguishable from a quiet day, which
-    makes every other feature here untrustworthy. Needs the honest staleness alarm on
-    `/work/conversations` + `/work/connections` (upgrade the passive `bridgeReadHealth()`), a
-    `/matrx:health` that truly proves THIS session is attached, and a decision on whether Claude hooks
-    should spool through Matrx Local's existing durable outbox like Codex/Cursor do — that is a second
-    transport, which the plugin deliberately declined once, so it is Arman's call, argued in one
-    paragraph, not an agent's to build unilaterally.
+00. **🚨 ARMAN'S DECISION NEEDED: should Claude hooks spool through Matrx Local's durable outbox?**
+    *(Detection and recovery for the 2026-08-16 silent-capture outage are DONE — see Done below.
+    What remains here is one architectural call that an agent may not make unilaterally.)*
+
+    **The argument for it.** Detection now tells the owner that capture stopped, but it cannot keep
+    capture running, and it cannot tell a broken connection from a quiet afternoon — because the
+    mirror is its own only sensor. Both halves of the fix already exist and are already running:
+    Matrx Local owns a durable loopback ingress and a background coding-session outbox
+    (`app/services/coding_sessions/`, started in `app/main.py`) that Codex and Cursor already use for
+    exactly this reason — their hooks cannot reuse MCP OAuth — and it already reads Claude's own
+    local session index and transcripts (`claude_session_index.py`, `claude_history.py`), so it can
+    independently observe *"Claude Code was active at T"* with no new sensor at all. Spooling Claude
+    hooks there when the MCP call fails would make capture survive a disconnect instead of ending at
+    one, and would let the platform say the thing it currently cannot: *"you were coding and nothing
+    arrived."* The plugin README declined a second transport once, but that was for a narrow
+    `claude -p` startup RACE where a later prompt re-attaches anyway — a timing edge, not durability;
+    this is a permanent, silent, user-manual-recovery-only data loss, which is a materially different
+    trade, and reusing a transport three other clients already depend on adds no new moving part to
+    run. **Against it:** it is still a second delivery path for one client, it only helps when Matrx
+    Local is installed and running, and THE PRIME RULE asks whether it makes the system simpler to
+    run and finish — a second path never does. **Recommendation:** adopt the *sensor* half
+    unconditionally (have Matrx Local report Claude local activity so the alarm stops guessing) and
+    treat the *spool* half as the genuine second transport it is, for Arman to accept or refuse.
+
+    Optional, independent, small: `BridgeHealth` carries no owner-level delivery facts, so a health
+    call without `provider_session_id` cannot say when anything last arrived. Adding
+    `last_observed_at` there would let `/matrx:health` state the gap numerically as well as from the
+    attach receipt. Not required — the receipt check already decides — so it is not built.
 0. **🚨 CONVERSATION MANAGEMENT + WAR ROOM INTEGRATION FIRST (Arman, 2026-08-15).** Before VS Code
    and distribution work: "the way they're managed is a disaster… they need to be fully integrated
    into the war room" so war-room agents "have awareness of these conversations and are able to
@@ -172,6 +186,18 @@ vision:
 
 ## Done
 
+- **Silent-capture detection + loud recovery (2026-08-16).** `captureGapVerdict()`
+  (`features/agent-connections/coding-sessions/captureGap.ts`) grades the gap since the last delivery
+  against the owner's OWN cadence — calibrated on the real production series, where the 23.5h outage
+  sat inside the 31.5h longest recorded quiet period, so neither "longer than ever" nor a flat
+  threshold would have worked. `<CaptureGapAlert>` is mounted on `/work/conversations`,
+  `/work/connections`, and `/agent-connections/plugins`, renders nothing while healthy/quiet, and
+  names the recovery (`/mcp`, reconnect aidream). Fixed the contributing lie: `freshnessOf()`'s
+  `live` window was 24h behind the present-tense label "Delivering", so a green *Delivering* pill
+  showed throughout the outage; now 1h. `/matrx:health` previously could NOT detect this — it called
+  the bridge `health` action without `provider_session_id`, the only input that resolves a session —
+  and now reads the attach receipt the bridge injects into the model's context on every successful
+  `UserPromptSubmit`. Verified end-to-end against the live DB with a seeded 23.5h fixture, removed after.
 - Contract + two `chat` tables + owner-only RLS + four-provider event mirror — contract FEATURE.md.
 - Claude plugin `0.2.0-alpha.6` (OAuth hooks, transcript locator, 16-partition asset sync), installed.
 - Codex `v0.2.0-alpha.3` transport certified; Cursor `v0.2.0-alpha.2` real installed-release E2E to

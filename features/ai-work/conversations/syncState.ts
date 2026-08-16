@@ -23,8 +23,19 @@ import {
 } from "@/features/ai-work/lib/codingSessionPresentation";
 import type { Json } from "@/types/database.types";
 
-/** How stale a delivery can be before it stops meaning "sync is working". */
-const FRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
+/**
+ * How stale a delivery can be before it stops meaning "sync is working".
+ *
+ * This was 24 hours, and the `live` label is the PRESENT-TENSE claim
+ * "Delivering" — so a bridge that had been silently dead for 23.5 hours still
+ * rendered a green "Delivering" pill during the 2026-08-16 capture outage. A
+ * day-wide window cannot support a present-tense claim. One hour can.
+ *
+ * Anything older now reads as `recent`/amber, which agrees with the
+ * capture-gap alarm (`features/agent-connections/coding-sessions/captureGap.ts`)
+ * instead of contradicting it.
+ */
+const FRESH_WINDOW_MS = 60 * 60 * 1000;
 const STALE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface SyncRow {

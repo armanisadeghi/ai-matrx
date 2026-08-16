@@ -31,7 +31,9 @@ export function useCaptureGap(): CaptureGapState {
     readSucceeded: checkedAtMs === 0 ? null : error === null,
     // The read's own timestamp, not render time: a verdict must describe the
     // moment the data was true, never drift as the component re-renders.
-    nowMs: checkedAtMs === 0 ? Date.now() : checkedAtMs,
+    // Before the first read completes this is 0 and unused — `readSucceeded`
+    // is null there, which short-circuits to the "checking" verdict.
+    nowMs: checkedAtMs,
   });
 
   return { verdict, lastSeenAt, loading, refresh };
