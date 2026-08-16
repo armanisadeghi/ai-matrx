@@ -144,6 +144,39 @@ export const selectRunEmissions = (runId: string) =>
       byRunId[runId]?.emissions ?? EMPTY_EMISSIONS,
   );
 
+const EMPTY_PHASES: Record<string, NodeAggregatePhase> = {};
+
+/** Aggregate phase for EVERY node of a run in one map — what surfaces that
+ * need the whole picture (trigger resolution, progress rails) read instead of
+ * mounting one selector per node. */
+export const selectNodeAggregatePhases = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): Record<string, NodeAggregatePhase> => {
+      const run = byRunId[runId];
+      if (!run || run.nodeOrder.length === 0) return EMPTY_PHASES;
+      const phases: Record<string, NodeAggregatePhase> = {};
+      for (const nodeId of run.nodeOrder) {
+        const aggregate = run.nodeAggregates[nodeId];
+        if (!aggregate) continue;
+        const invocations = aggregate.invocationKeys
+          .map((key) => run.nodes[key])
+          .filter((item): item is NodeInvocationState => item !== undefined);
+        phases[nodeId] = aggregatePhase(invocations, aggregate.expectedCount);
+      }
+      return phases;
+    },
+  );
+
+/** The child run a workflow/orchestra node linked (subgraph_run_linked), or
+ * null while the node hasn't run yet. */
+export const selectChildRunIdForNode = (runId: string, nodeId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): string | null =>
+      byRunId[runId]?.childRunsByNode[nodeId] ?? null,
+  );
+
 export const selectChildRunIds = (runId: string) =>
   createSelector(
     [selectByRunId],

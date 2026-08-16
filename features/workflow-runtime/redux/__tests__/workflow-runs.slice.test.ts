@@ -278,8 +278,22 @@ describe("workflow-runs slice", () => {
     state = apply(state, link);
 
     expect(state.byRunId[RUN_ID]?.childRunIds).toEqual(["run-child"]);
+    expect(state.byRunId[RUN_ID]?.childRunsByNode).toEqual({
+      sub: "run-child",
+    });
     expect(state.byRunId["run-child"]?.parentRunId).toBe(RUN_ID);
     expect(state.byRunId["run-child"]?.definitionId).toBe("def-9");
+
+    // A re-run of the node relinks to its fresh child — latest link wins.
+    state = apply(state, {
+      ...(link as unknown as Record<string, unknown>),
+      child_run_id: "run-child-2",
+    } as WorkflowRunEvent);
+    expect(state.byRunId[RUN_ID]?.childRunsByNode["sub"]).toBe("run-child-2");
+    expect(state.byRunId[RUN_ID]?.childRunIds).toEqual([
+      "run-child",
+      "run-child-2",
+    ]);
   });
 
   test("node_cost folds idempotently by invocation identity", () => {

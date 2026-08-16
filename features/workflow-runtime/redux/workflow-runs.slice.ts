@@ -125,6 +125,8 @@ export interface WorkflowRunState {
   /** By node_id; latest wave wins. */
   workSets: Record<string, WorkflowRunWorkSet>;
   childRunIds: string[];
+  /** subgraph_run_linked mapping — which node a child run belongs to. */
+  childRunsByNode: Record<string, string>;
   lastEventSeq: number | null;
   transportMode: "sse" | "polling" | "idle";
   attachedAt: number | null;
@@ -194,6 +196,7 @@ function makeRunState(
     emissions: [],
     workSets: {},
     childRunIds: [],
+    childRunsByNode: {},
     lastEventSeq: null,
     transportMode: "idle",
     attachedAt: null,
@@ -509,6 +512,9 @@ function applyEvent(
       if (!run.childRunIds.includes(event.child_run_id)) {
         run.childRunIds.push(event.child_run_id);
       }
+      // The node → child-run mapping the childRun readout follows. Latest
+      // link wins (a re-run of the node relinks to its fresh child).
+      run.childRunsByNode[event.node_id] = event.child_run_id;
       // Auto-attach the child through the SAME helper attachRun uses, so a
       // nested run's own events have a home the moment the link lands. The
       // parent pointer makes detachRun's cascade reach it.
