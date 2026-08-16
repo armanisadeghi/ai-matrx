@@ -21,7 +21,7 @@
  * volume check all live in `useSerpProspects`.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Ban,
@@ -489,8 +489,7 @@ export function SerpProspectsTab({
     return partyId ? [partyId] : [];
   });
 
-  const columns: MatrxColumnDef<SerpOpportunityRow>[] = useMemo(
-    () => [
+  const columns: MatrxColumnDef<SerpOpportunityRow>[] = [
       {
         id: "display_domain",
         accessorKey: "display_domain",
@@ -607,9 +606,7 @@ export function SerpProspectsTab({
           </Badge>
         ),
       },
-    ],
-    [prospects.partyByOpportunityId],
-  );
+  ];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
