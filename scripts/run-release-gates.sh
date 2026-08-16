@@ -103,6 +103,11 @@ if $STRICT; then
         # open item needs a publish decision from Arman, not a code fix, so
         # hard-failing would block every release on a question no agent may answer.
         "Media durability (mismatch class)|pnpm check:media-durability"
+        # HARDCODED AGENT DEFINITIONS — an agent's prompt/persona living in this
+        # repo instead of the DB (Arman, 2026-08-16: the codebase is the
+        # CONNECTION, never the definition). Advisory in both modes; the
+        # allowlist is a reason-required ratchet whose count only goes down.
+        "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
         # TYPE-ESCAPE RATCHET stays ADVISORY even in strict mode (no --strict on
         # the command), per Arman's standing rule: scream, never block the build.
         # It is listed here because NOTHING else runs it — no CI, no pre-commit
@@ -161,6 +166,11 @@ else
         # above for why this is advisory. Fix = <AccessGate/>.
         "Access errors (surfaces that guess why a read failed)|pnpm exec tsx scripts/access-errors/check-access-errors.ts"
         "Media durability (mismatch class)|pnpm check:media-durability"
+        # HARDCODED AGENT DEFINITIONS — an agent's prompt/persona living in this
+        # repo instead of the DB (Arman, 2026-08-16: the codebase is the
+        # CONNECTION, never the definition). Advisory in both modes; the
+        # allowlist is a reason-required ratchet whose count only goes down.
+        "Hardcoded agent definitions (prompts in code)|pnpm check:hardcoded-prompts"
         # New escape hatches vs the frozen baseline — advisory, loud. See the
         # strict list above for why this gate exists here at all (D136).
         "Type-escape hatch ratchet|pnpm check:hatches"

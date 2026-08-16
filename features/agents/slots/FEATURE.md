@@ -55,7 +55,50 @@ through `useLiveAgentRun` (`features/agents/hooks/useLiveAgentRun.ts`, takes
 `slotKey`) + `<LiveRunDisplay>`; keep `useSlotRunner` for genuinely invisible
 plumbing only.
 
+## A slot replaces a hardcoded PROMPT too, not just a hardcoded id
+
+The sweep above was about hardcoded agent **ids**. The 2026-08-16 purge closed
+the other half: a hardcoded agent **definition** — a system prompt, instruction
+block, role text, or persona written in this repo. Arman's ruling is that the
+codebase is the CONNECTION and can never be the definition; see the root
+`CLAUDE.md` bullet for the full text.
+
+**Every instance found had already gone wrong**, which is the argument against
+the pattern more than the doctrine is:
+
+| Surface | What the code held | How it had already failed |
+|---|---|---|
+| `/chat/voice` intro | An exact copy of the agent row's system message, used as a silent fallback | Correct only by luck — nothing kept the copy in sync, and a failed row load ran the copy without a word |
+| Scribe Live | A prompt that REPLACED the agent's own | Told the agent "you cannot edit the working document in live mode" long after it was given the mutator tools it uses every session |
+| Tool-UI generator | A ~20k-char prompt with **no consumer** | The agent's real prompt was 43,886 chars and materially different — the file read as authoritative and had zero effect |
+| Orchestrator | A prompt written OVER every generated agent | The codebase was the real definition of every orchestrator in the product; the `agent.template` row it "copied" was decoration a user could edit for no effect |
+
+Rules that follow:
+
+- **A fallback prompt is the same violation in disguise.** An unresolved slot
+  must fail loudly and refuse the affordance — never quietly run text from this
+  repo. (`useXaiVoiceSession.start()` is the worked example: it refuses on empty
+  instructions with a specific, visible error naming which agent failed and why.)
+- **Runtime DATA injected around the agent's own prompt is fine** — the working
+  document appended under Scribe Live's instructions is data, not a definition.
+  The test: would a user editing the agent in the builder expect to control it?
+- **If the DB's copy is wrong, fix the DB** — never override it from code. The
+  orchestrator template was rewritten live rather than patched around.
+- **One reader per question.** `features/voice-agent/agentInstructions.ts` is the
+  single answer to "what are this agent's instructions"
+  (`useSlotAgentInstructions` + `readInstructionsFromAgent`), so a second answer
+  cannot grow back.
+- **`useAgentLauncher().launchSlot(slotKey, opts)`** is the slot-aware launcher.
+  Its absence is part of why call sites reached for raw UUIDs.
+
+Guard: **`pnpm check:hardcoded-prompts`** — loud, advisory, in
+`run-release-gates.sh` in both modes. Allowlist
+(`scripts/hardcoded-prompts-allowlist.json`) is a reason-required ratchet; the
+count only goes DOWN, and `--write` never adds entries.
+
 ## Change Log
+
+- 2026-08-16 — Hardcoded-agent-definition purge. Four new client slots declared in aidream `client_slots.py` (`voice.intro`, `transcript_studio.scribe_live`, `tool_viz.component_generator`, `orchestras.role_describer`) and synced live. Deleted from this repo: `INTRO_INSTRUCTIONS`, `LIVE_BASE_INSTRUCTIONS`, `COMPONENT_GENERATOR_SYSTEM_PROMPT`, `ORCHESTRATOR_SUPERVISOR_PROMPT`, `ORCHESTRATOR_USER_TEMPLATE`, plus the raw UUIDs `VOICE_INTRO_AGENT_ID` / `SCRIBE_LIVE_AGENT_ID` / `COMPONENT_GENERATOR_PROMPT_ID` / `ORCHESTRA_ROLE_DESCRIBER_ID`. The orchestrator's `agent.template` b06689e3 was corrected in the live DB (supervisor prompt, marker intact) so the code override was no longer needed. New: `launchSlot` on `useAgentLauncher`, `features/voice-agent/agentInstructions.ts`, and the `check:hardcoded-prompts` guard. See the section above.
 
 - 2026-08-10 — W3 review hardening: `SlotAgentPicker`'s pre-flight now FAILS CLOSED when the candidate's execution payload can't be loaded (`agx_get_execution_minimal` returns no row — inaccessible/deleted agent): the apply is blocked with "Could not verify this agent — it may be inaccessible or deleted", even when the slot declares no contract requirements (an agent the RPC can't see is never silently bound). New optional `contractSource` prop: a consumer that DISPLAYS live system-agent requirements (research `AgentRoleCard`) passes that same live declaration so the pre-flight checks what the UI shows (`compareContracts`), falling back to the stored slot contract while it loads. `invalidateClientSlotCache` now also clears the `pinCache` entry, and admin `updateSlotDefinition` fires it after every definition write — so any mounted consumer (incl. the admin slots console, which now subscribes via `onSlotCacheInvalidated`) refreshes after a repin from ANY surface, including the Linked Agent Sync window.
 

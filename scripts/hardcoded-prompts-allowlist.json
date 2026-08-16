@@ -1,0 +1,27 @@
+[
+  {
+    "file": "features/agents/agent-creators/tabbed-builder/PromptBuilderContext.tsx",
+    "name": "PROMPT_TEMPLATE",
+    "reason": "NOT an agent definition — user-editable seed content. This is the scaffold the tabbed Prompt Builder assembles the USER's own prompt into: the <<TAB_N>> markers are replaced with what the user types tab by tab, and the result becomes THEIR agent. No agent in the platform runs this text as its instructions."
+  },
+  {
+    "file": "lib/deepgram/constants.ts",
+    "name": "systemContent",
+    "reason": "UNRESOLVED: a real hardcoded agent persona (\"Ava's AI Assistant\"), but lib/deepgram/ has ZERO consumers repo-wide — nothing imports the module at all. Per the unfinished-work alarm (common-docs/policies/unfinished-work-alarm.md) an agent may not recommend deleting purpose-built work, and there is no live call site to convert to a slot. Needs Arman's ruling: finish and wire the Deepgram voice surface (personas move to agent rows + slots), or declare the module dead in writing."
+  },
+  {
+    "file": "lib/deepgram/constants copy.ts",
+    "name": "systemContent",
+    "reason": "UNRESOLVED: byte-identical duplicate of lib/deepgram/constants.ts (same 6097-char persona), filename suggests an accidental Finder copy. Same unwired module, same alarm — see the constants.ts entry. Confirm before removing; not deleted on agent authority."
+  },
+  {
+    "file": "lib/deepgram/constants-roger.ts",
+    "name": "systemContent",
+    "reason": "UNRESOLVED: a hardcoded agent persona (\"Deepgram AI Persona\") in the same unwired lib/deepgram/ module — no consumers. See the constants.ts entry for the ruling needed."
+  },
+  {
+    "file": "lib/deepgram/constants-audrey.ts",
+    "name": "systemContent",
+    "reason": "UNRESOLVED: a hardcoded agent persona (\"Matrx AI Persona\") in the same unwired lib/deepgram/ module — no consumers. See the constants.ts entry for the ruling needed."
+  }
+]
