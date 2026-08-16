@@ -24500,6 +24500,8 @@ export interface components {
              * @default false
              */
             recheck?: boolean;
+            /** Only Page Urls */
+            only_page_urls?: string[];
         };
         /** BrokenLinkProspectingPreview */
         BrokenLinkProspectingPreview: {
@@ -24528,6 +24530,8 @@ export interface components {
             estimated_cost_usd?: number;
             /** Reason */
             reason?: string | null;
+            /** Not A Candidate */
+            not_a_candidate?: string[];
         };
         /**
          * BrokeredCredential

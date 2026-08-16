@@ -34,6 +34,7 @@ import {
   Loader2,
   Megaphone,
   Search,
+  Trophy,
   Unlink,
   Users,
 } from "lucide-react";
@@ -65,6 +66,10 @@ import {
   type SerpMentionRow,
   type SerpOpportunityRow,
 } from "@/features/marketing/data/serp-prospects";
+import {
+  promoterProofHref,
+  type PromoterSignal,
+} from "@/features/marketing/data/promoter-signal";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import {
   AUTHORITY_EXPLAINER,
@@ -135,6 +140,160 @@ function BrokenLinkCell({ row }: { row: SerpOpportunityRow }) {
     >
       {row.broken_link_count}
     </span>
+  );
+}
+
+export const PROMOTER_EXPLAINER =
+  "This company has already given you a confirmed win — they linked to you, covered you, or fixed a page for you. A publisher who said yes once is the highest-converting thing in a prospect list, because they have already made the decision your pitch is asking for. Only wins a human confirmed are counted.";
+
+/**
+ * "They linked to us before." A derived signal, never a stored score — it is
+ * read live from the confirmed outcomes, so the moment someone confirms the
+ * next win the chip appears without anything being recalculated.
+ *
+ * It is a DOOR, per the no-dead-ends law: the chip opens the proof — the
+ * outcome on the campaign that earned it, or the party when the win had no
+ * campaign.
+ */
+function PromoterChip({
+  signal,
+  compact = false,
+}: {
+  signal: PromoterSignal;
+  compact?: boolean;
+}) {
+  const href = promoterProofHref(signal);
+  const label = compact
+    ? signal.win_count > 1
+      ? `Won ×${signal.win_count}`
+      : "Won before"
+    : signal.win_count > 1
+      ? `${signal.win_count} confirmed wins`
+      : "Said yes before";
+  const body = (
+    <span
+      className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-px text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
+      title={signal.summary}
+    >
+      <Trophy className="h-2.5 w-2.5" />
+      {label}
+    </span>
+  );
+  if (!href) {
+    return (
+      <EntityRef
+        token="party"
+        id={signal.party_id}
+        name={label}
+        openInNewTab
+        showIcon={false}
+        className="shrink-0 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400"
+      />
+    );
+  }
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(event) => event.stopPropagation()}
+      className="shrink-0 hover:opacity-80"
+      title={`${signal.summary} Open the proof.`}
+    >
+      {body}
+    </a>
+  );
+}
+
+/**
+ * The priority band: prospects still awaiting a decision whose domain has
+ * ALREADY given this organization a confirmed win.
+ *
+ * A chip on the row is not prioritization. This list is drawn from the WINS
+ * (which are few and human-confirmed) rather than from the current page, so a
+ * promoter sitting on page four of an authority-sorted table still surfaces —
+ * which is the whole point, because they are the likeliest yes in the list.
+ * Every name is a door to the proof.
+ */
+function PromoterBand({ prospects }: { prospects: SerpProspects }) {
+  const entries = prospects.promoterProspects;
+  if (!entries.length) return null;
+  return (
+    <div className="space-y-1 rounded-md border border-emerald-500/40 bg-emerald-500/5 px-2.5 py-2">
+      <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+        <Trophy className="h-3.5 w-3.5" />
+        {entries.length} prospect{entries.length === 1 ? "" : "s"} here have
+        already said yes to you
+      </p>
+      <p className="text-[11px] leading-4 text-muted-foreground">
+        {PROMOTER_EXPLAINER}
+      </p>
+      <ul className="flex flex-wrap gap-x-3 gap-y-1 pt-0.5">
+        {entries.map((entry) => (
+          <li
+            key={entry.opportunity_id}
+            className="flex items-center gap-1.5"
+            title={entry.promoter.summary}
+          >
+            <span className="text-xs font-medium text-foreground">
+              {entry.display_domain}
+            </span>
+            <PromoterChip signal={entry.promoter} compact />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * "Check this page" — the affordance for the page in front of you.
+ *
+ * The sweep decides what to check NEXT: never-tried pages first, one page per
+ * domain, already-checked pages left alone. Those rules are right for a budget
+ * and wrong for a person reading ONE page's evidence and wondering whether it
+ * is still true. So a named page is always re-checked, and the button says
+ * which of the two things it is doing rather than hiding behind one label.
+ */
+function CheckThisPageButton({
+  mention,
+  prospects,
+}: {
+  mention: SerpMentionRow;
+  prospects: SerpProspects;
+}) {
+  const { brokenLinkRun } = prospects;
+  const checkedBefore = Boolean(mentionLinkCheck(mention));
+  const busy =
+    brokenLinkRun.status === "running" && brokenLinkRun.pageUrl === mention.url;
+  const otherRunBusy = brokenLinkRun.status === "running" && !busy;
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+      disabled={busy || otherRunBusy}
+      onClick={(event) => {
+        event.stopPropagation();
+        void prospects.checkOnePage(mention.url);
+      }}
+      title={
+        checkedBefore
+          ? "Open this page again and re-check every link on it."
+          : "Open this page now and check every link on it."
+      }
+    >
+      {busy ? (
+        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+      ) : (
+        <Unlink className="mr-1 h-3 w-3" />
+      )}
+      {busy
+        ? "Checking this page…"
+        : checkedBefore
+          ? "Re-check this page"
+          : "Check this page"}
+    </Button>
   );
 }
 
@@ -365,7 +524,13 @@ function ImportListDialog({
   );
 }
 
-function MentionEvidence({ row }: { row: SerpOpportunityRow }) {
+function MentionEvidence({
+  row,
+  prospects,
+}: {
+  row: SerpOpportunityRow;
+  prospects: SerpProspects;
+}) {
   const mentions = useQuery({
     queryKey: [
       ...marketingKeys.site(row.site_id),
@@ -427,6 +592,7 @@ function MentionEvidence({ row }: { row: SerpOpportunityRow }) {
                 </p>
               ) : null}
               <BrokenLinkList mention={mention} />
+              <CheckThisPageButton mention={mention} prospects={prospects} />
             </li>
           ))}
         </ul>
@@ -438,12 +604,23 @@ function MentionEvidence({ row }: { row: SerpOpportunityRow }) {
 function OpportunityDetail({
   row,
   partyId,
+  prospects,
 }: {
   row: SerpOpportunityRow;
   partyId: string | undefined;
+  prospects: SerpProspects;
 }) {
+  const promoter = prospects.promoterByDomain[row.normalized_domain];
   return (
     <div className="h-full space-y-2 overflow-y-auto p-2.5">
+      {promoter ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/5 px-2.5 py-1.5">
+          <PromoterChip signal={promoter} />
+          <p className="min-w-0 text-xs leading-5 text-emerald-800 dark:text-emerald-300">
+            {promoter.summary}
+          </p>
+        </div>
+      ) : null}
       <p className="text-xs leading-5 text-foreground">
         {row.priority_reason?.trim() ||
           `${row.display_domain} already ranks in ${row.mention_count} of your search${row.mention_count === 1 ? "" : "es"} — the search engines already trust it on your subject.`}
@@ -476,7 +653,7 @@ function OpportunityDetail({
         reason={row.priority_reason}
         metadata={row.metadata}
       />
-      <MentionEvidence row={row} />
+      <MentionEvidence row={row} prospects={prospects} />
     </div>
   );
 }
@@ -779,6 +956,7 @@ export function SerpProspectsTab({
         filter: "text",
         cell: (row) => {
           const partyId = prospects.partyByOpportunityId[row.id];
+          const promoter = prospects.promoterByDomain[row.normalized_domain];
           return (
             <span className="flex min-w-0 items-center gap-1.5">
               <a
@@ -792,6 +970,7 @@ export function SerpProspectsTab({
                 <span className="truncate">{row.display_domain}</span>
                 <ExternalLink className="h-3 w-3 shrink-0" />
               </a>
+              {promoter ? <PromoterChip signal={promoter} compact /> : null}
               {partyId ? (
                 <EntityRef
                   token="party"
@@ -1023,6 +1202,8 @@ export function SerpProspectsTab({
         </p>
       ) : null}
 
+      <PromoterBand prospects={prospects} />
+
       {prospects.isError ? (
         <InlineQueryError
           what="your prospect list"
@@ -1131,6 +1312,7 @@ export function SerpProspectsTab({
                 <OpportunityDetail
                   row={row}
                   partyId={prospects.partyByOpportunityId[row.id]}
+                  prospects={prospects}
                 />
               ),
             }}
@@ -1140,6 +1322,7 @@ export function SerpProspectsTab({
                 <OpportunityDetail
                   row={row}
                   partyId={prospects.partyByOpportunityId[row.id]}
+                  prospects={prospects}
                 />
               ),
               enabled: true,

@@ -257,6 +257,12 @@ export interface BrokenLinkProspectingReport {
   counts_healed: number;
   pages: BrokenLinkCheckedPage[];
   skipped: { page_url: string; domain: string; reason: string }[];
+  /**
+   * URLs a caller NAMED that are not candidate pages for this site. Reported
+   * rather than dropped — "I clicked and nothing happened" is the worst answer
+   * a one-click action can give.
+   */
+  not_a_candidate?: string[];
   errors: string[];
 }
 

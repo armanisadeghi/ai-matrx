@@ -36,6 +36,12 @@ import {
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import {
+  listPromoterProspects,
+  listPromoterSignals,
+  type PromoterSignal,
+  type PromoterSignals,
+} from "@/features/marketing/data/promoter-signal";
+import {
   listSerpOpportunities,
   listSerpPartyLinks,
   setSerpReviewStatus,
@@ -90,6 +96,11 @@ export interface SerpBrokenLinkRunState {
   status: "idle" | "running" | "done" | "error";
   /** The page the pass is on, in the server's own words. */
   stage?: string;
+  /**
+   * Set when the user asked for ONE named page rather than a sweep — the row
+   * that asked shows its own spinner instead of the whole tab looking busy.
+   */
+  pageUrl?: string;
   report?: BrokenLinkProspectingReport;
   error?: string;
 }
@@ -123,6 +134,22 @@ export interface SerpProspects {
   refetch: () => void;
   /** `{serp_opportunity_id: party_id}` for rows already folded into the CRM. */
   partyByOpportunityId: Record<string, string>;
+  /**
+   * Domains that have ALREADY given this organization a confirmed win, keyed by
+   * normalized domain (IC-5, read-only over `platform.outcome_event`). A domain
+   * with no win is ABSENT rather than zero — this measures nothing about a
+   * company we have never pitched.
+   */
+  promoterByDomain: PromoterSignals;
+  /**
+   * Every prospect still awaiting a decision whose domain has already given
+   * this organization a confirmed win — the priority band, ordered by wins.
+   */
+  promoterProspects: {
+    opportunity_id: string;
+    display_domain: string;
+    promoter: PromoterSignal;
+  }[];
   /** The seed keywords the user has authored (deduped, capped server-side). */
   keywords: string[];
   setKeywords: (keywords: string[]) => void;
@@ -153,6 +180,8 @@ export interface SerpProspects {
   /** The THIRD method: check the outbound links on this site's candidate pages. */
   brokenLinkRun: SerpBrokenLinkRunState;
   checkBrokenLinks: () => Promise<void>;
+  /** Check ONE named candidate page right now, checked before or not. */
+  checkOnePage: (pageUrl: string) => Promise<void>;
   /** The FOURTH method: import a list the user already has. */
   importState: SerpImportState;
   previewImport: (entries: string[], sourceLabel: string) => Promise<void>;
@@ -205,6 +234,37 @@ export function useSerpProspects(input: {
     queryFn: ({ signal }) =>
       listSerpPartyLinks(rowIdsKey ? rowIdsKey.split(",") : [], signal),
     enabled: Boolean(rowIdsKey) && enabled,
+    placeholderData: keepPreviousData,
+  });
+
+  // Promoters (IC-5): domains on THIS page that have already given the
+  // organization a confirmed win. A derived read, never a stored score — the
+  // moment a human confirms the next outcome, the next render says so.
+  const domainsKey = rows.map((row) => row.normalized_domain).join(",");
+  const promoters = useQuery({
+    queryKey: [
+      ...marketingKeys.site(siteId),
+      "backlinks",
+      "serp-promoters",
+      domainsKey,
+    ] as const,
+    queryFn: ({ signal }) =>
+      listPromoterSignals(domainsKey ? domainsKey.split(",") : [], signal),
+    enabled: Boolean(domainsKey) && enabled,
+    placeholderData: keepPreviousData,
+  });
+
+  // The prioritization half: promoters ANYWHERE in this site's pending list,
+  // not only on the page currently rendered. A promoter on page four of an
+  // authority-sorted table is exactly the prospect that gets missed.
+  const promoterProspects = useQuery({
+    queryKey: [
+      ...marketingKeys.site(siteId),
+      "backlinks",
+      "serp-promoter-prospects",
+    ] as const,
+    queryFn: ({ signal }) => listPromoterProspects(siteId, signal),
+    enabled: Boolean(siteId) && enabled,
     placeholderData: keepPreviousData,
   });
 
@@ -451,41 +511,85 @@ export function useSerpProspects(input: {
    * point at. No provider money — it crawls, so the preview shows the page
    * count before anything is opened.
    */
-  const checkBrokenLinks = useCallback(async () => {
-    if (!serverUrl) {
-      toast.error("Checking links is unavailable right now.");
-      return;
-    }
-    setBrokenLinkRun({ status: "running" });
-    try {
-      const token = await accessToken();
-      const report = await collectBrokenLinkProspects(
-        serverUrl,
-        token,
-        siteId,
-        {},
-        (event) => {
-          const payload = event.data as { message?: unknown } | undefined;
-          if (typeof payload?.message === "string") {
-            setBrokenLinkRun({ status: "running", stage: payload.message });
+  const runBrokenLinkPass = useCallback(
+    async (pageUrl?: string) => {
+      if (!serverUrl) {
+        toast.error("Checking links is unavailable right now.");
+        return;
+      }
+      setBrokenLinkRun({ status: "running", pageUrl });
+      try {
+        const token = await accessToken();
+        const report = await collectBrokenLinkProspects(
+          serverUrl,
+          token,
+          siteId,
+          pageUrl ? { only_page_urls: [pageUrl] } : {},
+          (event) => {
+            const payload = event.data as { message?: unknown } | undefined;
+            if (typeof payload?.message === "string") {
+              setBrokenLinkRun({
+                status: "running",
+                stage: payload.message,
+                pageUrl,
+              });
+            }
+          },
+        );
+        await queryClient.invalidateQueries({
+          queryKey: [...marketingKeys.site(siteId), "backlinks"],
+        });
+        setBrokenLinkRun({ status: "done", report, pageUrl });
+        // A NAMED page gets its own sentence. Reusing the sweep's "across N
+        // sites" copy for a single page reads as if we checked the whole list.
+        if (pageUrl) {
+          if (report.not_a_candidate?.length) {
+            toast.error(
+              "That page is not one of this site's candidate pages, so there is " +
+                "nothing to check on it.",
+            );
+          } else if (report.pages_checked === 0) {
+            toast.error(
+              report.skipped[0]?.reason ??
+                "That page could not be opened, so its links are still unchecked.",
+            );
+          } else {
+            toast.success(
+              report.dead_links === 0
+                ? `Checked ${report.outbound_checked} link${report.outbound_checked === 1 ? "" : "s"} on that page — all working.`
+                : `${report.dead_links} broken link${report.dead_links === 1 ? "" : "s"} on that page — that is your opening.`,
+            );
           }
-        },
-      );
-      await queryClient.invalidateQueries({
-        queryKey: [...marketingKeys.site(siteId), "backlinks"],
-      });
-      setBrokenLinkRun({ status: "done", report });
-      toast.success(
-        report.dead_links === 0
-          ? `Checked ${report.outbound_checked} links on ${report.pages_checked} page${report.pages_checked === 1 ? "" : "s"} — nothing broken this time.`
-          : `${report.dead_links} broken link${report.dead_links === 1 ? "" : "s"} found across ${report.opportunities_updated} site${report.opportunities_updated === 1 ? "" : "s"} — each one is a reason to write.`,
-      );
-    } catch (error) {
-      const message = backlinkAnalysisErrorMessage(error);
-      setBrokenLinkRun({ status: "error", error: message });
-      toast.error(message);
-    }
-  }, [accessToken, queryClient, serverUrl, siteId]);
+          return;
+        }
+        toast.success(
+          report.dead_links === 0
+            ? `Checked ${report.outbound_checked} links on ${report.pages_checked} page${report.pages_checked === 1 ? "" : "s"} — nothing broken this time.`
+            : `${report.dead_links} broken link${report.dead_links === 1 ? "" : "s"} found across ${report.opportunities_updated} site${report.opportunities_updated === 1 ? "" : "s"} — each one is a reason to write.`,
+        );
+      } catch (error) {
+        const message = backlinkAnalysisErrorMessage(error);
+        setBrokenLinkRun({ status: "error", error: message, pageUrl });
+        toast.error(message);
+      }
+    },
+    [accessToken, queryClient, serverUrl, siteId],
+  );
+
+  const checkBrokenLinks = useCallback(
+    () => runBrokenLinkPass(),
+    [runBrokenLinkPass],
+  );
+
+  /**
+   * "Check THIS page, now." The frontier rules pick what to do NEXT; a user
+   * looking at one page has already picked, so the server re-checks it
+   * regardless of whether it was checked before.
+   */
+  const checkOnePage = useCallback(
+    (pageUrl: string) => runBrokenLinkPass(pageUrl),
+    [runBrokenLinkPass],
+  );
 
   /**
    * The FOURTH method: a list the user already has. The preview is a real
@@ -600,6 +704,8 @@ export function useSerpProspects(input: {
     error: opportunities.error,
     refetch: () => void opportunities.refetch(),
     partyByOpportunityId: parties.data ?? {},
+    promoterByDomain: promoters.data ?? {},
+    promoterProspects: promoterProspects.data ?? [],
     keywords,
     setKeywords,
     variants,
@@ -623,6 +729,7 @@ export function useSerpProspects(input: {
     volumesError,
     checkVolumes,
     brokenLinkRun,
+    checkOnePage,
     checkBrokenLinks,
     importState,
     previewImport,
