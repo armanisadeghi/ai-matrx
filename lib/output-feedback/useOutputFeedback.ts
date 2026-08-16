@@ -18,7 +18,6 @@ import {
 } from "./service";
 import { loadOutputFeedback, loadOutputFeedbackMany } from "./batchLoader";
 import {
-  getOutputFeedbackRevision,
   peekOutputFeedback,
   setOutputFeedbackRecord,
   subscribeOutputFeedback,
@@ -64,14 +63,18 @@ function useStoreRecord(
   subject: OutputFeedbackSubject,
 ): OutputFeedbackRecord | null | undefined {
   const { subjectType, subjectId } = subject;
-  const revision = useSyncExternalStore(
+  // The record itself IS the snapshot. An earlier version subscribed to a
+  // revision counter and peeked the map beside it (`void revision`) — under
+  // the React Compiler the peek was memoized on [subjectType, subjectId]
+  // (the unused revision carries no data dependency), so bars NEVER
+  // re-rendered on store changes: verdicts saved but thumbs stayed grey.
+  // `peekOutputFeedback` returns a reference-stable value between emits,
+  // which is exactly what `getSnapshot` requires.
+  return useSyncExternalStore(
     subscribeOutputFeedback,
-    getOutputFeedbackRevision,
-    () => 0,
+    () => peekOutputFeedback({ subjectType, subjectId }),
+    () => undefined,
   );
-  // `revision` is the subscription; the value comes from the store map.
-  void revision;
-  return peekOutputFeedback({ subjectType, subjectId });
 }
 
 /**
