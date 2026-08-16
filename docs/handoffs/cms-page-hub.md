@@ -135,13 +135,27 @@ reused canonical component, never a rebuilt poorer one (Inventory Law).
    kind='research'`), the page's research distillation + cited sources join the Plan tab; a
    separate tab only if it grows an editor. Blocked on website-factory p3/p4/p5.
 
-## Decisions needed (Arman)
+## Arman's rulings — 2026-08-16 (all implemented same day, browser-verified)
 
-Both 2026-08-14 questions were built as recommended (fold to Code tab; SEO plan as a Plan-tab
-section) — ratify or reverse:
-
-1. Keep the Code-tab fold, or switch to an overflow menu?
-2. Keep SEO plan as a Plan-tab section, or promote to its own tab once it grows an editor?
+1. **Code-tab fold RATIFIED**, with two amendments, both done: Preview is the FIRST tab and the
+   landing default for existing pages (new pages land on Code), and the code sub-tabs are a
+   segmented pill group, not a second underline row.
+2. **The Plan tab is the REAL editor, not a partial view.** "Why not just render the full plan
+   page as a tab and allow full control using the same exact UI?" — done: the tab mounts the
+   canonical `NodePanel` (hosted) with the workspace's own hook composition; the read-only
+   PlanContextPanel branch is gone from the CMS (it remains the measured-page workspace's
+   BEFORE card). Shell widened 2xl→4xl (he flagged the narrow width).
+3. **Pipeline at the TOP** — moved first in both `NodePanel` and `PlanContextPanel`.
+4. **SEO plan: build the REAL thing, now.** No half-version that later becomes real; must work
+   for users who never touch the content-plan system (CMS-native planning); connect everything
+   we have, inventory exact current SEO capabilities, then design best-in-class. The inventory
+   ran 2026-08-16 (headline: the rich per-page plan already exists as `web.page.desired_values`
+   + the Plan-lane cards, but it's keyed to a CRAWLED page identity that a CMS page only gets
+   after publish+crawl; `keyword_strategy` and the desired-values link plan are two disconnected
+   internal-link prescription systems; the CMS SEO tab reuses none of the canonical SERP verdict
+   components). Interim: `SeoPlanSection` now renders inside NodePanel's Targeting section, so
+   the strategy view reaches both the CMS tab and the workspace. **The SEO-planning system
+   design is with Arman for the architecture call** (where the plan is rooted).
 
 ## Resources
 
