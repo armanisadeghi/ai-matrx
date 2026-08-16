@@ -7,6 +7,22 @@ import { isJsonObject } from "@/types/json";
 export type OutreachDraft = components["schemas"]["DraftResponse"];
 export type OutreachSendResult = components["schemas"]["SendResponse"];
 
+/**
+ * What a rejection returns — deliberately lean on the server too: rejecting must
+ * not depend on re-rendering a message whose template may be the very thing
+ * wrong with it. Hand-typed until the deployed OpenAPI spec carries the route;
+ * source of truth: aidream `outreach_single_send/models.py::RejectDraftResponse`.
+ */
+export interface OutreachRejectResult {
+  id: string;
+  status: string;
+  member_id: string | null;
+  /** `done` when the member left the sequence; null when there was no member. */
+  member_status: string | null;
+  rejected_at: string;
+  reason: string | null;
+}
+
 export interface OutreachProblem {
   code: string;
   message: string;
@@ -89,8 +105,8 @@ export async function reviseOutreachPersonalization(
 export async function rejectOutreachDraft(
   draftId: string,
   reason?: string,
-): Promise<OutreachDraft> {
-  const { data } = await postJson<OutreachDraft>(
+): Promise<OutreachRejectResult> {
+  const { data } = await postJson<OutreachRejectResult>(
     `/outreach/single/drafts/${encodeURIComponent(draftId)}/reject`,
     { reason: reason?.trim() || null },
   );
