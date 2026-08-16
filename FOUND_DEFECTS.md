@@ -14,6 +14,29 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D201 — `useNodeReality` takes non-null ids that two callers fake with `""` (2026-08-15)
+
+`UseNodeRealityArgs` declares `siteId: string; nodeId: string`
+(`features/marketing/content-plan/hooks/useNodeReality.ts:57`), but
+`CmsPageAiActionDialog.tsx:159` passes `site.web_site_id ?? ""` and
+`page.plan_node_id ?? ""` — both genuinely nullable (a CMS site with no linked
+marketing-plan site, a page with no plan node). The **types are lying**: `""` is
+not a site id.
+
+Not confirmed live, which is why it is filed rather than fixed. The read path is
+safe by accident — `usePlanNodes("")` sets `enabled: Boolean(siteId)` → false —
+and the write path is *probably* unreachable because the same component passes
+`cmsSiteId: site.web_site_id ? site.id : null`, so `judgePageReality` returns a
+not-linked verdict and the realize/publish buttons should not render. If that
+guard ever moves, `bridgeFillPreview(dispatch, "", { nodeId: "" })` fires a
+request with empty ids and fails server-side instead of being disabled client-side.
+
+**Fix:** widen `UseNodeRealityArgs` to `siteId: string | null; nodeId: string | null`
+(the hook's read path already tolerates null) and make the three write actions
+refuse early when either is null. That deletes the sentinel instead of guarding
+it. `NodePanel.tsx:285` is the other caller and passes real ids, so it is
+unaffected.
+
 ### D200 — creating a personal (user-scoped) agent shortcut is IMPOSSIBLE — every path throws (2026-08-15)
 
 Measured live on production as a signed-in admin. `agentShortcutToInsert`

@@ -64,11 +64,17 @@ function periodLabel(period: string | null): string {
 }
 
 function DimensionRow({ d }: { d: PlanDimension }) {
-  const unlimited = d.unlimited || d.limit === null;
-  const measured = d.used !== null;
+  // Narrow ONCE into locals the compiler can track. A boolean const like
+  // `measured` proves nothing at the use site, which is exactly what forced the
+  // `!` assertions this replaced — and an assertion here would outlive any
+  // future change to how "unlimited" or "not measured" is decided.
+  // `limit === null` is the single meaning of unlimited (explicit flag OR no
+  // ceiling); `used === null` is "billing does not count this", never zero.
+  const limit = d.unlimited ? null : d.limit;
+  const used = d.used;
   const pct =
-    !unlimited && measured && d.limit
-      ? Math.min(100, Math.round((d.used! / d.limit) * 100))
+    used !== null && limit !== null && limit > 0
+      ? Math.min(100, Math.round((used / limit) * 100))
       : 0;
   // Colour only earns attention near the top of the range; a bar that is red at
   // 40% teaches people to ignore it.
@@ -88,31 +94,31 @@ function DimensionRow({ d }: { d: PlanDimension }) {
           ) : null}
         </span>
         <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
-          {unlimited ? (
+          {limit === null ? (
             <span className="inline-flex items-center gap-1">
               <InfinityIcon className="h-3.5 w-3.5" aria-hidden />
               Unlimited
             </span>
-          ) : d.limit === 0 ? (
+          ) : limit === 0 ? (
             // "0 of 0" is technically true and reads like a bug. A plan that
             // includes none of something should say so in words.
             <span className="text-muted-foreground">Not included</span>
-          ) : measured ? (
+          ) : used !== null ? (
             <>
               <span className="text-foreground">
-                {formatValue(d.capability, d.used!)}
+                {formatValue(d.capability, used)}
               </span>
               {" of "}
-              {formatValue(d.capability, d.limit!)}
+              {formatValue(d.capability, limit)}
             </>
           ) : (
             // We know the ceiling but billing does not count the usage. Say so.
-            <>{formatValue(d.capability, d.limit!)} included</>
+            <>{formatValue(d.capability, limit)} included</>
           )}
         </span>
       </div>
 
-      {!unlimited && measured ? (
+      {limit !== null && used !== null ? (
         <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-muted">
           <div
             className={cn("h-full rounded-full transition-all", tone)}
@@ -122,7 +128,7 @@ function DimensionRow({ d }: { d: PlanDimension }) {
       ) : null}
 
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-        {!unlimited && measured && d.resetsAt ? (
+        {limit !== null && used !== null && d.resetsAt ? (
           <span>
             Resets {new Date(d.resetsAt).toLocaleDateString(undefined, {
               month: "short",
@@ -132,7 +138,7 @@ function DimensionRow({ d }: { d: PlanDimension }) {
         ) : null}
         {/* Say WHICH system knows the number, so "we don't count it here" reads
             as a pointer rather than a shrug. */}
-        {!measured && !unlimited && d.limit !== 0 ? (
+        {used === null && limit !== null && limit !== 0 ? (
           <span>
             {d.capability.endsWith("_bytes")
               ? "Current usage is tracked with your files"
@@ -140,11 +146,11 @@ function DimensionRow({ d }: { d: PlanDimension }) {
           </span>
         ) : null}
         {/* The honest disclosure: is this limit real today, or just visible? */}
-        {!d.enforced && !unlimited && d.limit !== 0 ? (
+        {!d.enforced && limit !== null && limit !== 0 ? (
           <span>Shown for planning — not enforced yet</span>
         ) : null}
-        {d.nextPlanLimit != null && !unlimited && d.limit != null &&
-        d.nextPlanLimit > d.limit ? (
+        {d.nextPlanLimit != null && limit != null &&
+        d.nextPlanLimit > limit ? (
           <span>
             Next plan: {formatValue(d.capability, d.nextPlanLimit)}
             {periodLabel(d.period) ? ` ${periodLabel(d.period)}` : ""}
