@@ -61,32 +61,47 @@ export const NEW_SESSION_DEFAULT_TITLE = "New Session";
 // streaming content. Past this gap, autoscroll pauses for that column.
 export const AUTOSCROLL_BOTTOM_THRESHOLD_PX = 80;
 
-// ── Default shortcut ids for the per-column agents ──
-// These are the platform defaults; per-session overrides land via Phase 8's
-// settings sidebar (`studio_session_settings.cleaning_shortcut_id`).
+// ── Default AGENT SHORTCUT ids for the per-column agents ──
 //
-// "Live Transcription Cleaner" — owns the resume-marker contract and the
-// prior_cleaned_suffix / raw_window / session_title / module_id variable
-// surface. See features/transcript-studio/FEATURE.md for the agent spec.
+// These are SHORTCUT ids (`agent.shortcut`), not agent ids and not agent
+// slots. Agent Shortcuts are their own first-class system
+// (`features/agent-shortcuts/FEATURE.md`): a stored invocation of a specific
+// agent version whose variables auto-map from the surrounding UI. That is the
+// right primitive here — the studio's columns are user-selectable invocations,
+// picked per session in the settings sidebar and persisted as
+// `studio_session_settings.cleaning_shortcut_id` / `concept_shortcut_id`, and
+// per module as `ModuleDefinition.defaultShortcutId`. The constants below are
+// only the DEFAULT the picker starts on. Do not "migrate" them to slot keys.
+//
+// 🚨 THE CONTRACT BELONGS TO THE AGENT, NOT TO THIS FILE. The shortcut's
+// bound agent version owns its variable surface and its output shape; this
+// code only maps values in (`buildScope`) and parses what comes back
+// (`parseRun`). The per-agent notes below are a reader's aid recorded when the
+// shortcuts were authored — nothing keeps them in sync with the DB, so verify
+// against the agent before trusting one. If a contract is wrong, fix the agent
+// in the builder; never restate or override its definition from this repo.
+
+// "Live Transcription Cleaner" — the resume-marker contract, mapped from
+// prior_cleaned_suffix / raw_window / session_title / module_id.
 export const DEFAULT_CLEANING_SHORTCUT_ID =
   "e8df1e93-2419-4545-a2d0-935f4958de85";
 
-// Concept extraction agent. Variable surface: raw_window / prior_concepts /
-// session_title / module_id. Output: single JSON code fence with a
+// Concept extraction. Mapped from raw_window / prior_concepts / session_title
+// / module_id; `parseRun` expects one JSON code fence with a
 // `concepts: [{ kind, label, description?, t_start?, t_end? }]` array.
-// See FEATURE.md for the full agent spec.
 export const DEFAULT_CONCEPT_SHORTCUT_ID =
   "633d7da7-e8ec-40b4-bae3-251d2f4a7ee4";
 
-// Tasks module agent (Column 4 default). Variable surface: cleaned_window /
-// prior_tasks / session_title. Output: a markdown checklist that
-// BlockRenderer's `tasks` block can render directly. See FEATURE.md for spec.
+// Tasks module (Column 4 default). Mapped from cleaned_window / prior_tasks /
+// session_title; `parseRun` expects a markdown checklist that BlockRenderer's
+// `tasks` block renders directly.
 export const DEFAULT_TASKS_SHORTCUT_ID =
   "c32f3884-65f1-41dd-b426-727d60cb7d6b";
 
-// V1.5 module agents — placeholders until the corresponding shortcuts are
-// authored. Each module declares the agent contract via the FEATURE.md spec
-// and validates the response shape in its own `parseRun`.
+// V1.5 modules — the all-zero UUID is a DELIBERATE "no shortcut authored yet"
+// sentinel, never a real row. Each module still ships its `buildScope` and
+// `parseRun`, so authoring the shortcut in the DB and pasting its id here is
+// the whole remaining step. Until then these modules cannot run.
 export const DEFAULT_FLASHCARDS_SHORTCUT_ID =
   "00000000-0000-0000-0000-000000000000";
 export const DEFAULT_DECISIONS_SHORTCUT_ID =
@@ -98,10 +113,20 @@ export const DEFAULT_QUIZ_SHORTCUT_ID =
 // metadata; per-session overrides land in studio_session_settings.
 export const MODULE_INTERVAL_DEFAULT_MS = 120_000;
 
-// The audio-first studio assistant — a builtin agx_agent that receives the
-// session's transcripts as named context objects and edits the working
-// document (studio_documents) via ctx_patch. Seeded in
+// The audio-first studio assistant — a builtin `agent.definition` row that
+// receives the session's transcripts as named context objects and edits the
+// working document (studio_documents) via ctx_patch. Seeded in
 // migrations/studio_audio_assistant_agent.sql.
+//
+// 🚨 HARDCODED AGENT ID, READ AT RUN TIME — a known gap, ROLLOUT.md row F7.
+// `resolveDefaultAssistantAgentId` (redux/assistantRoster.ts) falls back to it
+// below the surface-config `assistant` role, and ensureAssistantConversation
+// uses it as the last-resort agent for legacy sessions. So the DB does not
+// fully own which agent assists here. The canonical form is a declared slot
+// resolved at run time; the surface manifest's `defaultAgentId`
+// (features/surfaces/manifests/transcript-scribe.manifest.ts) may keep it as a
+// documented SEED MIRROR, but a runtime read is a defect and no new one may be
+// added. Law: /Users/armanisadeghi/code/common-docs/systems/agent-slots/FEATURE.md.
 export const AUDIO_ASSISTANT_AGENT_ID =
   "86564a0c-fe79-40a7-bf97-6349fb352a9d";
 

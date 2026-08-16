@@ -12,7 +12,8 @@
  * Built on the shared `CreateWithAiTabs` primitive, so switching tabs never
  * resizes or flashes the chrome and the agent is never remounted.
  *
- * The AI tab is gated OFF until `TASK_CREATE_AGENT_ID` is set to a real agent,
+ * The AI tab is gated OFF until the task-create agent is wired (see
+ * `TASK_CREATE_AGENT_ID` below — it needs a SLOT, never a pasted UUID),
  * and is also hidden when a `source` is present (source-linked capture is a
  * manual-only flow). When the AI tab is off, this renders exactly the bare
  * `TaskQuickCreateCore` — no switcher, no behavior change.
@@ -32,9 +33,22 @@ import {
 } from "./TaskQuickCreateCore";
 
 /**
- * The agent that powers the "Use AI" create-task flow.
- * TODO: set this to the real task-create agent UUID. Until then the AI tab is
- * hidden (the panel renders just the manual form).
+ * The agent that powers the "Use AI" create-task flow — NOT YET WIRED.
+ *
+ * 🚨 Do NOT set this to an agent UUID. A raw agent id in this repo is exactly
+ * what the Agent Slots system exists to annihilate; the sibling feature is the
+ * worked reference (`features/projects/debug/projectCreateAiDebug.ts` —
+ * `PROJECT_CREATE_SLOT_KEY = "projects.create_assistant"`, resolved by
+ * `ProjectCreatePanel` via `useAgentSlot`, with the id demoted to a documented
+ * seed mirror that nothing runs).
+ *
+ * TODO: declare a `tasks.create_assistant` slot in aidream
+ * `services/agent_slots/client_slots.py`, resolve it here (`useAgentSlot` /
+ * `launchAgentExecution({slotKey})`) and gate the AI tab on resolution, then
+ * delete this constant. Recipe: `features/agents/slots/FEATURE.md`; law:
+ * /Users/armanisadeghi/code/common-docs/systems/agent-slots/FEATURE.md.
+ *
+ * Until then the AI tab is hidden (the panel renders just the manual form).
  */
 export const TASK_CREATE_AGENT_ID = "";
 /** Source feature reported by traces for the "Use AI" tab. */

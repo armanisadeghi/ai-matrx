@@ -1,9 +1,3 @@
-// app/(dev)/demos/chat/_lib/agents.ts
-//
-// Hardcoded agent data for server-side rendering.
-// This avoids any DB call for the initial render. The client will
-// hydrate the full agent config from the database after mount.
-
 import type { WelcomeAgent } from "@/features/cx-chat/components/ChatWelcomeServer";
 
 /**

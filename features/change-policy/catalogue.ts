@@ -384,9 +384,11 @@ export const CHANGE_TYPE_CATALOGUE: readonly ChangeTypeDef[] = [
         description: "Author new executable capability.",
         defaultMode: "review",
         // Doc says "(plus the existing context-starved code reviewer)". That
-        // reviewer EXISTS since D-18 (2026-08-15, pinned version 1215a990-…)
-        // but is not wired into any apply path yet — so this row ships as
-        // plain Review. See FEATURE.md § Row 25.
+        // reviewer EXISTS since D-18 (2026-08-15) but is not wired into any
+        // apply path yet — so this row ships as plain Review. Which VERSION of
+        // it runs is DB-owned (the agent's pin, repinnable at
+        // /administration/agents/slots); naming a version id here would rot on
+        // the next repin. See FEATURE.md § Row 25.
         note: "Will additionally route through the context-starved code reviewer once that guard is wired into the apply path.",
         subject: "tool",
     },

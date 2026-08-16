@@ -32,15 +32,25 @@ import {
 import { normalizeLanguage } from "@/features/code-editor/config/languages";
 import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agents";
 
-// Shortcut IDs that map to code-editor agents (from the TODO comment spec)
+// A hardcoded agent-UUID → shortcut-UUID lookup: a SECOND frozen pin layered on
+// top of the frozen agent ids in `agent-code-editor/agents.ts`. Both halves are
+// the known gap tracked as row F6 of
+// /Users/armanisadeghi/code/common-docs/systems/agent-slots/ROLLOUT.md — the
+// canonical form is a declared agent slot resolved at run time, after which
+// this map and its keys both disappear.
+//
+// The labels below name the DB rows these ids pointed at when the map was
+// written; the DB owns those names and this comment cannot follow a rename.
+// Nothing verifies either id still resolves, so an unknown key surfaces as a
+// loud error state rather than a silent fallback (see the launch effect).
 const SHORTCUT_FOR_AGENT: Record<string, string> = {
-  // generic-code-editor agent → "Master Code Editor" shortcut
+  // "Code Editor" agent → "Master Code Editor" shortcut
   "87efa869-9c11-43cf-b3a8-5b7c775ee415":
     "00836ba6-10af-4a95-8c7e-6b5a03c0b3e4",
-  // code-editor-dynamic-context agent → "Dynamic Context Code Editor" shortcut
+  // "Code Editor (Dynamic Context)" agent → "Dynamic Context Code Editor" shortcut
   "970856c5-3b9d-4034-ac9d-8d8a11fb3dba":
     "2c301ba1-e870-4a3f-abe6-8148c72a7425",
-  // prompt-app-ui-editor agent → "Update Prompt App Code" shortcut
+  // "Prompt App Code Editor" agent → "Update Prompt App Code" shortcut
   "c1c1f092-ba0d-4d6c-b352-b22fe6c48272":
     "6231578b-a52d-47c5-a41d-831000ddfa9e",
 };

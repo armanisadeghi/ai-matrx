@@ -1,13 +1,31 @@
 /**
- * Code-editor agent registry.
+ * Code-editor agent constants — HARDCODED AGENT IDS, and a KNOWN GAP.
  *
- * Single source of truth for the three system agents that back the
- * code-editing surfaces. The IDs match `agx_agent` rows; `codeVariableKey`
- * is the agent's variable that receives the editor's current code on the
- * first turn (read directly off the agent's `variable_definitions`).
+ * 🚨 This module is NOT a source of truth for anything. It is three raw
+ * `agent.definition` UUIDs frozen into the codebase, read at run time by
+ * `agentForPromptKey` from six call sites (`CodeBlock`, `MultiFileCodeEditor`,
+ * `AICodeEditorModalV2`, both `ContextAwareCodeEditor*`, `useAICodeEditor`).
+ * The database no longer controls which agent edits code here: an admin
+ * repointing the code editor changes nothing until someone edits this file.
  *
- * These same UUIDs were the prompt-builtin IDs in the legacy system, so
- * any caller that already had a hardcoded UUID is correct without remap.
+ * **The canonical answer is an AGENT SLOT.** Code names a `slot_key`; the DB
+ * decides which agent runs it. Declare `code_editor.generic`,
+ * `code_editor.prompt_app_ui`, and `code_editor.dynamic_context` in aidream
+ * `services/agent_slots/client_slots.py` (seeded on the ids below), then
+ * resolve them here via `useAgentSlot` / `launchAgentExecution({slotKey})` /
+ * `useAgentLauncher().launchSlot`, and DELETE these constants. Recipe:
+ * `features/agents/slots/FEATURE.md`; law + worklist:
+ * /Users/armanisadeghi/code/common-docs/systems/agent-slots/FEATURE.md and
+ * ROLLOUT.md (row F6).
+ *
+ * **A NEW read of these constants is a defect.** Nothing here is an exception:
+ * exactly one exists platform-wide (aidream's conversation labeler) and it is
+ * not this. Do not add a fourth agent to this file — declare a slot instead.
+ *
+ * `codeVariableKey` mirrors the agent's own `variable_definitions` entry that
+ * receives the editor's current code on the first turn. The AGENT owns that
+ * declaration; this string is a code-side mapping that drifts silently if the
+ * agent is edited in the builder.
  */
 import type { CodeEditorAgentConfig } from "./types";
 
