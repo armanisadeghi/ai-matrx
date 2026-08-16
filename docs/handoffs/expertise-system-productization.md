@@ -105,22 +105,29 @@ seeded with the run context, so complaints become draft rules through the same t
   version-conflict saves self-recover, owner-gated interview/feedback entries, run-id-stamped
   feedback seeds that re-stage per run.
 
-**Ledgered from the adversarial reviews (real, not yet built):** ① "Try your desk" IN PLACE on
-the desks page — the payoff moment currently exits to workflow studio (MISMATCH RULE violation;
-top vision gap); ② the benchmark intake question ("if you handed this to ChatGPT today, how
-good/what cost?" — doc 20 calls it the highest-value follow-up) + the examples-of-good-output
-early ask; ③ deterministic elicitation chips above the composer (menu moves + the six
-wrong-categories as buttons); ④ stakes → default severity/gate intensity (currently inert);
-⑤ file/PDF/audio lane + intake-aware empty states; ⑥ AccessGate + share-levels on both pages
-(canEdit is owner-only; edit-level sharees read-only silently); ⑦ vocabulary polish (pack vs
-rulebook, compile-speak, code-font rule ids) + a door to the interview conversation from a
-rule's provenance; ⑧ coverage/progress strip on the pack header; ⑨ desks-page toast fires on
-ANY version bump while feedback panel open (false "drafts captured" on unrelated edits).
+**Shipped 2026-08-16 (second batch):** "Try your desk" IN PLACE on each desk card
+(`TryDeskBox` — typed `POST /workflows/{id}/runs` + `adoptForeignStream` +
+`followWorkflowRunStream`, real node-stage narration, verdict/corrected-text via
+`getDeskRunVerdict` rendered through RichDocument; studio demoted to "Open in studio");
+"Compare to the original" (`BacktestDialog` → `/expertise-desks/backtest`, verdict +
+rule findings + gap drafts, owner-only); the benchmark intake band
+(`metadata.intake.benchmark`); one-tap elicitation chips above the interview composer
+(stage editable text, never auto-send). Types resynced once the deploy carried the
+backtest path.
 
-Next, in order: ① "Try your desk" in place + a backtest FE surface (paste reference → verdict
-+ gap drafts); ② benchmark intake question + elicitation chips; ③ the honest test —
-`arman-seo-method` with Arman (needs him); ④ file/PDF/audio ingest via content_processing;
-⑤ pack version snapshots + structured outputs; ⑥ the distillation→Engram interface.
+**Ledger (real, not yet built):** ④ stakes → default severity/gate intensity (currently
+inert); ⑤ file/PDF/audio lane + intake-aware empty states; ⑥ AccessGate + share-levels on
+both pages (canEdit is owner-only; edit-level sharees read-only silently); ⑦ vocabulary
+polish + a door to the interview conversation from a rule's provenance; ⑧ coverage/progress
+strip on the pack header; ⑨ desks-page toast fires on ANY version bump while feedback panel
+open (false "drafts captured" on unrelated edits); ⑩ TryDeskBox run recovery after page
+refresh (the run survives server-side and lands in Recent runs, but the in-place stage view
+resets — persist last run_id and re-attach via `GET /runs/{run_id}`); ⑪ prefill the backtest
+candidate from a finished TryDeskBox run (prop exists, not yet wired).
+
+Next, in order: ① the honest test — `arman-seo-method` with Arman (needs him); ② file/PDF/
+audio ingest via content_processing; ③ pack version snapshots + structured outputs; ④ the
+distillation→Engram interface (candidate task classes + acceptance criteria alongside rules).
 
 ## PRIOR STATUS (2026-08-10) — Phases 1-3 SHIPPED
 
@@ -162,10 +169,8 @@ Next, in order: ① "Try your desk" in place + a backtest FE surface (paste refe
   strike that item). Still open: structured outputs (json_schema) for auditor/editor/maker; pack
   version snapshots (diff view); run-history surface on the desks page (workflow.run/node_outcome);
   file/PDF ingest via content_processing + page_extraction jobs (deliberately NOT a parallel
-  pipeline — see aidream/services/expertise_ingest/FEATURE.md); Hopkins desk recompile with the
-  generate shape (one click on /expertise once aidream deploys); regen FE api-types/stream-events
-  (`pnpm sync-types`) after the aidream release, then drop the two path casts + switch
-  listConfig sourceFeature "agents-other" → "expertise".
+  pipeline — see aidream/services/expertise_ingest/FEATURE.md). Path casts, sourceFeature slug,
+  Hopkins recompile, and run-history are all done.
 - **2026-08-16:** Hopkins recompiled onto the generate shape via the production compiler —
   desk `b0865c3b-774c-44a3-91e4-ddaef205ae67`, pack-stamped v1 (old unstamped desk
   `0001b1ba…` left as history). Exemplar ingest mode shipped + prod-verified; desk
