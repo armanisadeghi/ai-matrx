@@ -152,6 +152,59 @@ export async function softDeletePack(packId: string): Promise<void> {
   if (error) throw error;
 }
 
+/** One recorded state of a pack (history.row_versions, via the gated RPC). */
+export interface PackVersionEntry {
+  version: number;
+  operation: string;
+  occurred_at: string;
+  actor_id: string | null;
+  actor_tier: string | null;
+  rule_count: number;
+}
+
+/**
+ * The pack's version log. Reads history.row_versions through
+ * `public.expertise_pack_versions` — the `history` schema is not exposed to the
+ * browser, and the RPC's gate mirrors the table's own std_select RLS predicate.
+ */
+export async function listPackVersions(
+  packId: string,
+): Promise<PackVersionEntry[]> {
+  const { data, error } = await supabase.rpc("expertise_pack_versions", {
+    p_pack_id: packId,
+  });
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    version: row.version,
+    operation: row.operation,
+    occurred_at: row.occurred_at,
+    actor_id: row.actor_id,
+    actor_tier: row.actor_tier,
+    rule_count: row.rule_count,
+  }));
+}
+
+/**
+ * The pack's rules AS THEY WERE at one version — the left-hand side of a desk
+ * drift diff. `null` means that version predates version capture (packs created
+ * before 2026-08-16): say so, never invent a diff from the current rules.
+ */
+export async function getPackSnapshotPrinciples(
+  packId: string,
+  version: number,
+): Promise<PackPrinciple[] | null> {
+  const { data, error } = await supabase.rpc("expertise_pack_snapshot", {
+    p_pack_id: packId,
+    p_version: version,
+  });
+  if (error) throw error;
+  if (!data || typeof data !== "object") return null;
+  const principles = (data as { principles?: unknown }).principles;
+  return Array.isArray(principles)
+    ? (principles as unknown as PackPrinciple[])
+    : [];
+}
+
 export interface DeskRun {
   id: string;
   status: string;

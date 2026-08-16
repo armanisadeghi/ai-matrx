@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   ExternalLink,
   MessageCircleQuestion,
-  Scale,
   Workflow,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -19,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { PackInterviewPanel } from "../detail/PackInterviewPanel";
 import { BacktestDialog } from "./BacktestDialog";
+import { PackDriftDialog } from "./PackDriftDialog";
 import { TryDeskBox } from "./TryDeskBox";
 import {
   getPack,
@@ -115,7 +115,15 @@ export function PackDesksPage({ packId }: { packId: string }) {
   // that silently captures nothing would be a dead end.
   const userId = useAppSelector(selectUserId);
   const [feedbackSeed, setFeedbackSeed] = useState<string | null>(null);
-  const [backtestOpen, setBacktestOpen] = useState(false);
+  // The backtest, optionally prefilled with a finished run's own output —
+  // "Compare to the original" beside a verdict is the same dialog, one paste
+  // shorter. `null` = closed.
+  const [backtestCandidate, setBacktestCandidate] = useState<string | null>(
+    null,
+  );
+  // THE DOOR ON THE DRIFT FLAG: "the pack has newer rules" is a timestamp, not a
+  // verdict, until the expert can see WHICH rules moved. Holds the drifted desk.
+  const [driftDesk, setDriftDesk] = useState<PackDesk | null>(null);
   const isOwner =
     pack !== null && userId !== null && pack.created_by === userId;
 
@@ -245,10 +253,17 @@ export function PackDesksPage({ packId }: { packId: string }) {
                       </p>
                     ) : null}
                     {drifted ? (
-                      <p className="mt-1.5 flex items-center gap-1 text-xs text-primary">
+                      <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-primary">
                         <AlertTriangle className="h-3.5 w-3.5" />
                         The pack has newer rules (v{pack.version}) than this
                         desk was built from — recompile the desk to adopt them.
+                        <button
+                          type="button"
+                          onClick={() => setDriftDesk(desk)}
+                          className="underline underline-offset-2 hover:text-primary/80"
+                        >
+                          See what changed
+                        </button>
                       </p>
                     ) : null}
                   </div>
@@ -282,18 +297,12 @@ export function PackDesksPage({ packId }: { packId: string }) {
                     deskId={desk.id}
                     deskKind={desk.desk_kind}
                     onRunFinished={() => void refreshRuns()}
+                    onCompare={
+                      isOwner
+                        ? (candidate) => setBacktestCandidate(candidate)
+                        : undefined
+                    }
                   />
-                  {isOwner ? (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="mt-2 text-xs text-muted-foreground"
-                      onClick={() => setBacktestOpen(true)}
-                    >
-                      <Scale className="mr-1 h-3.5 w-3.5" />
-                      Compare to the original
-                    </Button>
-                  ) : null}
                 </div>
                 {(runsByDesk[desk.id] ?? []).length > 0 ? (
                   <div className="mt-3 border-t border-border pt-2">
@@ -323,11 +332,27 @@ export function PackDesksPage({ packId }: { packId: string }) {
           })}
         </div>
       )}
+      {driftDesk !== null && driftDesk.pack_version !== null ? (
+        <PackDriftDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setDriftDesk(null);
+          }}
+          packId={packId}
+          deskName={driftDesk.name}
+          deskVersion={driftDesk.pack_version}
+          currentVersion={pack.version}
+          currentPrinciples={pack.principles}
+        />
+      ) : null}
       {isOwner ? (
         <BacktestDialog
-          open={backtestOpen}
-          onOpenChange={setBacktestOpen}
+          open={backtestCandidate !== null}
+          onOpenChange={(open) => {
+            if (!open) setBacktestCandidate(null);
+          }}
           packId={packId}
+          initialCandidate={backtestCandidate ?? undefined}
         />
       ) : null}
       {isOwner ? (
