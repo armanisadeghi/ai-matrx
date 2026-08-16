@@ -33332,43 +33332,25 @@ export type Database = {
         Args: { p_subject_id: string; p_subject_type: string }
         Returns: boolean
       }
-      create_entity_table:
-        | {
-            Args: {
-              p_category?: boolean
-              p_default_visibility?: string
-              p_fields?: string[]
-              p_label?: string
-              p_listed?: boolean
-              p_org_default?: boolean
-              p_schema: string
-              p_soft_delete?: boolean
-              p_table: string
-              p_token: string
-              p_variant?: string
-              p_versioned?: boolean
-              p_visibility?: boolean
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_category: boolean
-              p_fields: string[]
-              p_gin_jsonb: boolean
-              p_label: string
-              p_listed: boolean
-              p_org_default: boolean
-              p_schema: string
-              p_soft_delete: boolean
-              p_table: string
-              p_token: string
-              p_variant: string
-              p_versioned: boolean
-              p_visibility: string
-            }
-            Returns: string
-          }
+      create_entity_table: {
+        Args: {
+          p_category: boolean
+          p_fields: string[]
+          p_gin_jsonb: boolean
+          p_label: string
+          p_listed: boolean
+          p_org_default: boolean
+          p_parents?: string[]
+          p_schema: string
+          p_soft_delete: boolean
+          p_table: string
+          p_token: string
+          p_variant: string
+          p_versioned: boolean
+          p_visibility: string
+        }
+        Returns: string
+      }
       dead_relation_read: {
         Args: { p_new: string; p_old: string }
         Returns: boolean
