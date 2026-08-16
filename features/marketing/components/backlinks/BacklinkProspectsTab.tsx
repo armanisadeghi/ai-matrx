@@ -57,18 +57,19 @@ import {
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import {
   AUTHORITY_EXPLAINER,
-  AUTHORITY_TONE_CLASS,
-  authorityTone,
   LINK_GAP_REVIEW_STATUSES,
   linkGapReviewLabel,
   MATCH_COUNT_EXPLAINER,
   matchCountLabel,
-  parseMatrxAuthority,
   prospectHeadline,
   seededCompetitorLabel,
   spamToneForScore,
   UNMEASURED_LABEL,
 } from "@/features/marketing/components/backlinks/lib/link-gap";
+import {
+  AuthorityBreakdown,
+  AuthorityScoreCell,
+} from "@/features/marketing/components/backlinks/MatrxAuthorityScore";
 import { headerWithTooltip } from "@/features/marketing/components/backlinks/lib/columns";
 import type { LinkGapProspects } from "@/features/marketing/components/backlinks/useLinkGapProspects";
 import {
@@ -78,95 +79,11 @@ import {
 import { cn } from "@/lib/utils";
 
 function scoreCell(row: LinkGapDomainRow) {
-  const tone = authorityTone(row.priority_score);
   return (
-    <span
-      className={cn(
-        "text-xs font-medium tabular-nums",
-        AUTHORITY_TONE_CLASS[tone],
-      )}
-      title={row.priority_reason ?? AUTHORITY_EXPLAINER}
-    >
-      {row.priority_score === null ? UNMEASURED_LABEL : row.priority_score}
-    </span>
-  );
-}
-
-/** The score, opened up: every component, what it added, and what is missing. */
-function AuthorityBreakdown({ row }: { row: LinkGapDomainRow }) {
-  const authority = parseMatrxAuthority(row.metadata);
-  const tone = authorityTone(row.priority_score);
-  return (
-    <section className="rounded-md border border-border">
-      <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-2.5 py-1.5">
-        <span className="text-xs font-semibold text-foreground">
-          Matrx Authority Score
-        </span>
-        <span className="flex items-baseline gap-2">
-          <span
-            className={cn(
-              "text-base font-semibold tabular-nums",
-              AUTHORITY_TONE_CLASS[tone],
-            )}
-          >
-            {row.priority_score === null
-              ? UNMEASURED_LABEL
-              : row.priority_score}
-          </span>
-          {authority.band ? (
-            <Badge variant="secondary" className="text-[11px]">
-              {authority.band}
-            </Badge>
-          ) : null}
-          {authority.confidence ? (
-            <span className="text-[11px] text-muted-foreground">
-              {authority.confidence} confidence
-            </span>
-          ) : null}
-        </span>
-      </header>
-      {authority.why || row.priority_reason ? (
-        <p className="border-b border-border px-2.5 py-1.5 text-xs leading-5 text-foreground">
-          {authority.why ?? row.priority_reason}
-        </p>
-      ) : null}
-      {authority.components.length ? (
-        <ul className="divide-y divide-border">
-          {authority.components.map((component) => (
-            <li
-              key={component.key}
-              className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 px-2.5 py-1.5"
-            >
-              <span className="min-w-0 text-xs font-medium text-foreground">
-                {component.label}
-              </span>
-              <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
-                {component.raw === null ? UNMEASURED_LABEL : component.raw}
-                {component.contribution === null
-                  ? null
-                  : ` · ${component.contribution > 0 ? "+" : ""}${component.contribution}`}
-              </span>
-              {component.why ? (
-                <span className="col-span-2 text-[11px] leading-4 text-muted-foreground">
-                  {component.why}
-                </span>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="px-2.5 py-1.5 text-xs text-muted-foreground">
-          We have not scored this site yet — that is why it reads{" "}
-          {UNMEASURED_LABEL.toLowerCase()} rather than zero. Run the comparison
-          again to measure it.
-        </p>
-      )}
-      {authority.missing.length ? (
-        <p className="border-t border-border px-2.5 py-1.5 text-[11px] text-muted-foreground">
-          Not measured: {authority.missing.join(", ")}
-        </p>
-      ) : null}
-    </section>
+    <AuthorityScoreCell
+      score={row.priority_score}
+      reason={row.priority_reason}
+    />
   );
 }
 
@@ -310,7 +227,11 @@ function ProspectDetail({
           </span>
         )}
       </div>
-      <AuthorityBreakdown row={row} />
+      <AuthorityBreakdown
+        score={row.priority_score}
+        reason={row.priority_reason}
+        metadata={row.metadata}
+      />
       <ProspectEvidence row={row} sitePath={sitePath} />
     </div>
   );
