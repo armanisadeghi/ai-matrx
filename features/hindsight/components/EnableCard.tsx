@@ -1,34 +1,28 @@
 "use client";
 
 /**
- * AgentHindsightPanel — Hindsight for ONE agent the user owns (Layer 2).
- *
- * The admin console watches the whole platform; this panel is the product
- * surface: a user turns on continuous review for their own agent, and from
- * then on a reviewer agent periodically reads the agent's REAL conversations
- * and proposes concrete improvements the user can apply or reject with one
- * click — no prompt engineering required.
- *
- * The server scopes everything to the caller (a non-admin only ever sees
- * their own enrollments), so this component simply asks for the enrollment
- * matching this agent. Doors render for the product audience: the agent opens
- * at /agents/{id}, transcripts at /chat/{id}.
+ * EnableCard — the "turn on continuous review" onboarding card for one agent
+ * the user owns. Enrolling invalidates the hindsight cache, so the host
+ * surface re-renders into its enrolled state on success.
  */
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Sparkles } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Eye, Telescope } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 
-import { enroll, listEnrollments } from "../api";
-import { DoorAudienceProvider } from "./door-audience";
-import { EnrollmentDetailPanel } from "./EnrollmentDetailPanel";
+import { enroll } from "../api";
 
-function EnableCard({ agentId, agentName }: { agentId: string; agentName: string }) {
+export function EnableCard({
+  agentId,
+  agentName,
+}: {
+  agentId: string;
+  agentName: string;
+}) {
   const queryClient = useQueryClient();
   const [goal, setGoal] = useState("");
 
@@ -50,7 +44,7 @@ function EnableCard({ agentId, agentName }: { agentId: string; agentName: string
     <Card className="mx-auto max-w-2xl p-6">
       <div className="flex items-start gap-3">
         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <Sparkles className="h-5 w-5" />
+          <Telescope className="h-5 w-5" />
         </span>
         <div>
           <h2 className="text-lg font-semibold">
@@ -89,44 +83,5 @@ function EnableCard({ agentId, agentName }: { agentId: string; agentName: string
         {enable.isPending ? "Turning on…" : "Turn on continuous review"}
       </Button>
     </Card>
-  );
-}
-
-export function AgentHindsightPanel({
-  agentId,
-  agentName,
-}: {
-  agentId: string;
-  agentName: string;
-}) {
-  const enrollments = useQuery({
-    queryKey: ["hindsight", "enrollments"],
-    queryFn: () => listEnrollments(),
-  });
-
-  if (enrollments.isLoading) return <Skeleton className="h-64" />;
-  if (enrollments.isError) {
-    return (
-      <Card className="p-4 text-sm text-red-600 dark:text-red-400">
-        Could not load review status: {(enrollments.error as Error).message}
-      </Card>
-    );
-  }
-
-  const mine = (enrollments.data ?? []).find(
-    (e) => e.subject_kind === "agent" && e.subject_id === agentId,
-  );
-
-  return (
-    <DoorAudienceProvider audience="product">
-      {mine ? (
-        <EnrollmentDetailPanel
-          enrollmentId={mine.id}
-          onArchived={() => enrollments.refetch()}
-        />
-      ) : (
-        <EnableCard agentId={agentId} agentName={agentName} />
-      )}
-    </DoorAudienceProvider>
   );
 }

@@ -9,7 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { Check, ChevronDown, ChevronRight, MessageSquare, X } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,9 +39,16 @@ function proposalBody(finding: Finding): string {
 export function FindingCard({
   finding,
   onChanged,
+  onGuide,
 }: {
   finding: Finding;
   onChanged: () => void;
+  /**
+   * When provided, "Guide" hands the finding to the host's conversation
+   * surface (the workspace's center chat) instead of expanding an inline
+   * DiscussPanel. The admin console omits it and keeps the inline panel.
+   */
+  onGuide?: (finding: Finding) => void;
 }) {
   const audience = useDoorAudience();
   const [expanded, setExpanded] = useState(false);
@@ -130,6 +137,10 @@ export function FindingCard({
             variant="outline"
             title="Tell the reviewer what it missed"
             onClick={() => {
+              if (onGuide) {
+                onGuide(finding);
+                return;
+              }
               setDiscussing((v) => !v);
               setExpanded(true);
             }}

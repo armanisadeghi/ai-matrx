@@ -5,10 +5,8 @@
  * what Hindsight has SPENT on it, how close it is to its next review, its
  * findings, and its review history.
  */
-import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Archive, Eye, Pause, Play, RefreshCw } from "lucide-react";
-import { toast } from "@/lib/toast";
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
@@ -19,50 +17,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 
-import {
-  archiveEnrollment,
-  getEnrollment,
-  triggerReview,
-  updateEnrollment,
-} from "../api";
+import { getEnrollment } from "../api";
+import { useEnrollmentActions } from "../hooks/useEnrollmentActions";
 import { subjectDoor } from "../subject-doors";
 import { DoorLink } from "./DoorLink";
 import { useDoorAudience } from "./door-audience";
 import { FindingCard } from "./FindingCard";
+import { ReviewProgress } from "./ReviewProgress";
 import { ReviewRow } from "./ReviewRow";
-import { fmtCost, fmtDate, fmtElapsed, KIND_COLOR, KIND_ICON, KIND_LABEL } from "./tokens";
-
-/**
- * A review runs the whole reviewer agent inline over every transcript in the
- * window — minutes, not seconds. A bare spinner reads as "hung", so this shows
- * elapsed time and exactly what is happening.
- */
-function ReviewProgress({ startedAt, examples }: { startedAt: number; examples: number }) {
-  const [elapsed, setElapsed] = useState(0);
-  useEffect(() => {
-    const t = setInterval(
-      () => setElapsed(Math.floor((Date.now() - startedAt) / 1000)),
-      1000,
-    );
-    return () => clearInterval(t);
-  }, [startedAt]);
-
-  return (
-    <div className="mt-3 rounded-lg border border-border bg-muted/40 p-3 text-sm">
-      <div className="flex items-center gap-2 font-medium">
-        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-        Reviewing — {fmtElapsed(elapsed)} elapsed
-      </div>
-      <p className="mt-1 text-xs text-muted-foreground">
-        The reviewer agent is reading{" "}
-        {examples > 0 ? `up to ${examples} real transcripts` : "the real transcripts"}{" "}
-        end to end and writing findings. This normally takes one to several
-        minutes. Leaving this page does not stop it — the review runs on the
-        server and the results appear here when it lands.
-      </p>
-    </div>
-  );
-}
+import { fmtCost, fmtDate, KIND_COLOR, KIND_ICON, KIND_LABEL } from "./tokens";
 
 export function EnrollmentDetailPanel({
   enrollmentId,
@@ -72,8 +35,8 @@ export function EnrollmentDetailPanel({
   onArchived: () => void;
 }) {
   const audience = useDoorAudience();
-  const queryClient = useQueryClient();
-  const reviewStartedAt = useRef<number>(0);
+  const { runReview, toggleStatus, archive, invalidate, reviewStartedAt } =
+    useEnrollmentActions(enrollmentId, { onArchived });
 
   const detail = useQuery({
     queryKey: ["hindsight", "enrollment", enrollmentId],
@@ -97,50 +60,6 @@ export function EnrollmentDetailPanel({
       return data?.id ?? null;
     },
     enabled: enrollment?.subject_kind === "tool" && Boolean(enrollment?.subject_ref),
-  });
-
-  const invalidate = () => {
-    queryClient.invalidateQueries({ queryKey: ["hindsight"] });
-  };
-
-  const runReview = useMutation({
-    mutationFn: () => {
-      reviewStartedAt.current = Date.now();
-      return triggerReview(enrollmentId);
-    },
-    onSuccess: (res) => {
-      if (res.status === "completed") {
-        toast.success(
-          `Review done — ${res.findings_created} finding(s) from ${res.example_count} real run(s), ${fmtCost(res.cost_usd)} spent`,
-        );
-      } else {
-        toast.info(
-          `Review ${res.status}${res.reason ? `: ${res.reason}` : ""}`,
-        );
-      }
-      invalidate();
-    },
-    onError: (err: Error) => toast.error(`Review failed: ${err.message}`),
-  });
-
-  const toggleStatus = useMutation({
-    mutationFn: (status: "active" | "paused") =>
-      updateEnrollment(enrollmentId, { status }),
-    onSuccess: (row) => {
-      toast.success(row.status === "active" ? "Resumed" : "Paused");
-      invalidate();
-    },
-    onError: (err: Error) => toast.error(`Could not update: ${err.message}`),
-  });
-
-  const archive = useMutation({
-    mutationFn: () => archiveEnrollment(enrollmentId),
-    onSuccess: () => {
-      toast.success("Archived");
-      invalidate();
-      onArchived();
-    },
-    onError: (err: Error) => toast.error(`Could not archive: ${err.message}`),
   });
 
   if (detail.isLoading) return <Skeleton className="h-64" />;
@@ -258,7 +177,7 @@ export function EnrollmentDetailPanel({
 
         {runReview.isPending && (
           <ReviewProgress
-            startedAt={reviewStartedAt.current}
+            startedAt={reviewStartedAt}
             examples={Math.min(
               enrollment.max_examples_per_review,
               data.pending_examples ?? 0,
