@@ -21,7 +21,7 @@ _(none)_
 ## Active
 
 ### TASK-005: Build the real AI Work composer and Saved Requests foundation
-- **Status:** ready
+- **Status:** done (2026-08-15)
 - **Created:** 2026-08-15
 - **Source:** Arman wants one place to create work, choose skills/context/home, run it now, and reuse it later.
 
@@ -29,11 +29,14 @@ _(none)_
 Ship `/work/new` with AI Matrx execution first, then persist the smallest reusable Saved Request that composes existing agents, skills, context, associations, schedules, and workflows instead of reviving a prompt library.
 
 **Subtasks**
-- [ ] Inventory agent shortcuts/apps, schedule payloads, workflow inputs, skill selection, resource pickers, Active Context, and Project/Task/War Room association primitives before choosing storage.
-- [ ] Build one plain-language progressive composer: request, expert system, skills, context, home, timing, review.
-- [ ] Run through the existing AI Matrx agent execution path and retain canonical conversation/run doors.
-- [ ] Save, reopen, version, and run the same request manually; add schedule/workflow handoff only through existing engines.
-- [ ] Production-certify `/work/new` as a non-technical user; update `features/ai-work/FEATURE.md` and the cross-repo handoff.
+- [x] Inventory agent shortcuts/apps, schedule payloads, workflow inputs, skill selection, resource pickers, Active Context, and Project/Task/War Room association primitives before choosing storage.
+- [x] Build one plain-language progressive composer: request, expert system, skills, context, home, timing, review.
+- [x] Run through the existing AI Matrx agent execution path and retain canonical conversation/run doors.
+- [x] Save, reopen, version, and run the same request manually; add schedule/workflow handoff only through existing engines. *(Schedule handoff = prefilled `/schedules/new`. A workflow handoff has no door yet — no workflow-start form takes an ad-hoc request today.)*
+- [x] Production-certify `/work/new` as a non-technical user; update `features/ai-work/FEATURE.md` and the cross-repo handoff.
+
+**Outcome**
+Saved Request = an `agent.shortcut` row under the seeded `ai-work-saved-requests` category; rationale + rejected alternatives at the top of `features/ai-work/compose/savedRequests.ts`. Verified live: run streams and completes, save/reopen/re-run round-trips, a Home pick writes a real `conversation → task` edge. Filed D202 (`conversation → project` unregistered — also breaks the shipped inspector's Project picker; Arman's ruling).
 
 **Notes**
 Product contract: `/Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md`. Retired prompt tables are not candidates. This is the foundation consumed by TASK-006.

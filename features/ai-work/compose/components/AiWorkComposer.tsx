@@ -79,6 +79,20 @@ import { HomeStep } from "./HomeStep";
 const HOME_ATTACH_ATTEMPTS = 4;
 const HOME_ATTACH_DELAY_MS = 600;
 
+/**
+ * The ONE retryable failure: the edge was written before the server committed
+ * the conversation row, so the RPC's `iam.has_access` check saw nothing to
+ * authorize. Everything else is permanent and must surface immediately.
+ */
+function isConversationNotReadyYet(message: string): boolean {
+  const lowered = message.toLowerCase();
+  return (
+    lowered.includes("access") ||
+    lowered.includes("not authorized") ||
+    lowered.includes("not found")
+  );
+}
+
 export interface AiWorkComposerProps {
   /** SSR-resolved default agent (the `chat.default_new_chat` slot). */
   defaultAgentId: string | null;
@@ -222,8 +236,10 @@ function ComposerBody({
   /**
    * Applies the Home picks as REAL canonical edges once the conversation row
    * exists. `assoc_add` authorizes against the conversation, and turn 1 creates
-   * it, so the first attempt can legitimately be too early — it retries a
-   * bounded number of times and then SCREAMS rather than dropping the link.
+   * it, so the FIRST attempt can legitimately be too early — that one failure
+   * mode, and only that one, is worth retrying. Anything else (an unregistered
+   * pair, a revoked permission) is permanent: retrying it four times would just
+   * be four identical errors in the console before the same honest report.
    */
   const attachHomes = async (runConversationId: string) => {
     for (const home of homes) {
@@ -251,8 +267,10 @@ function ComposerBody({
             break;
           }
           lastError = result.error.message;
+          if (!isConversationNotReadyYet(lastError)) break;
         } catch (error) {
           lastError = error instanceof Error ? error.message : String(error);
+          if (!isConversationNotReadyYet(lastError)) break;
         }
         await new Promise((resolve) =>
           setTimeout(resolve, HOME_ATTACH_DELAY_MS),
@@ -531,7 +549,7 @@ function ComposerBody({
             </div>
             {saved && (
               <p className="text-xs text-muted-foreground">
-                Saved as version {saved.version}.{" "}
+                Saved. Update replaces it.{" "}
                 <Link
                   href="/work/requests"
                   className="text-primary hover:underline"

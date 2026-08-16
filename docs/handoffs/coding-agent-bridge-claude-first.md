@@ -84,9 +84,11 @@ vision:
    (start/stream/resume/cancel/fork). Consume capabilities + NDJSON + cancel in `/work/new` and
    conversation detail. Native Resume/Fork strictly capability-gated; everything else is a labeled
    seeded handoff, never a generic "Resume".
-3. **AI Work composer + Saved Requests (`TASK-005`).** AI Matrx execution first, composing existing
-   agents, skills, context, files, associations, schedules, workflows. Retired prompt tables are
-   not candidates; inventory shortcuts/apps/schedules before proposing any new table.
+3. **~~AI Work composer + Saved Requests (`TASK-005`)~~ — DONE 2026-08-15.** `/work/new` ships the
+   eight-step composer on real AI Matrx execution; `/work/requests` ships Saved Requests as
+   `agent.shortcut` rows under one seeded category (no new table). The composer's destination slot
+   exists and is capability-gated — item 2 is what makes a provider destination selectable.
+   `/work/automations` and a workflow handoff are still absent; Timing doors into `/schedules/new`.
 4. **One-click installed history reconciliation (`TASK-007`).** Certify installed Matrx Local
    `v1.4.26`, then make **Sync Claude Code now** reach preview/import/status/retry/discard and
    report exact inspected/imported/updated/duplicate/conflict/unsupported counts.

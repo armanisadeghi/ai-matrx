@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/hooks/useUser";
+import { formatRelativeTime } from "@/utils/datetime";
 import {
   deleteSavedRequest,
   listSavedRequests,
@@ -140,7 +141,7 @@ export function SavedRequestsList() {
                   {request.requestText || "No request text"}
                 </span>
                 <span className="mt-0.5 block text-xs text-muted-foreground/80">
-                  Version {request.version}
+                  Updated {formatRelativeTime(request.updatedAt, { style: "long" })}
                   {request.skillIds.length > 0 &&
                     ` · ${request.skillIds.length} skill${request.skillIds.length === 1 ? "" : "s"}`}
                   {request.homes.length > 0 &&

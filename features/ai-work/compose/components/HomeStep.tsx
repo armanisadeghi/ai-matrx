@@ -20,8 +20,15 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import type { EntityTypeToken } from "@/types/generated/entity-types.generated";
 import type { SavedRequestHome, WorkHomeToken } from "../savedRequests";
 
+/**
+ * Only the containers a conversation can ACTUALLY be filed under. `conversation
+ * → task` and `conversation → war_room` are registered in
+ * `platform.association_types`; `conversation → project` is NOT, so offering it
+ * would be a control that always fails. Projects are reached through their
+ * tasks — see FOUND_DEFECTS D-AIWORK-1, which is a product-semantics ruling
+ * (whether a conversation may belong directly to a project), not a code fix.
+ */
 export const HOME_TOKENS = [
-  "project",
   "task",
   "war_room",
 ] as const satisfies readonly EntityTypeToken[];
@@ -96,7 +103,8 @@ export function HomeStep({
 
       <p className="text-xs text-muted-foreground">
         These links are created when the run starts, so the conversation exists
-        before it is filed.
+        before it is filed. To file work under a project, pick one of that
+        project&apos;s tasks.
       </p>
     </div>
   );

@@ -1,8 +1,8 @@
 # FEATURE.md — `ai-work`
 
-**Status:** `active` — the production overview, unified AI Matrx/provider conversation inbox, direct work associations, truthful connections surface, and a paginated provider transcript with real tool activity are live; compose, saved requests, provider execution (certification-gated), and unified automation remain planned. Historical Claude sync is live in the Matrx Local desktop app and honestly doored from here.
+**Status:** `active` — the production overview, unified AI Matrx/provider conversation inbox, direct work associations, truthful connections surface, a paginated provider transcript with real tool activity, the `/work/new` composer with real AI Matrx execution, and Saved Requests are live; provider execution (certification-gated) and unified automation remain planned. Historical Claude sync is live in the Matrx Local desktop app and honestly doored from here.
 **Tier:** `1`
-**Last updated:** `2026-08-12`
+**Last updated:** `2026-08-15`
 
 ---
 
@@ -19,6 +19,8 @@ Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/arm
 **Routes**
 
 - `/work` — truthful directory of the capabilities a user can use now.
+- `/work/new` — the eight-step composer: destination, request, expert system, skills, context, home, timing, review. AI Matrx execution only.
+- `/work/requests` — the caller's own Saved Requests; open reloads the composer at `/work/new?request=<id>`.
 - `/work/conversations` — one paginated canonical conversation history across AI Matrx and provider mirrors, with a selected-row facts/organization inspector.
 - `/work/conversations/[conversationId]` — RLS-safe, read-only normalized transcript for agentless provider mirrors.
 - `/work/connections` — provider account/detection/delivery facts plus the live managed-Claude capability check and an honest historical-sync boundary.
@@ -26,7 +28,12 @@ Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/arm
 
 **Components**
 
-- `components/AiWorkHeader.tsx` — one responsive route switcher for Overview, Conversations, and Connections.
+- `components/AiWorkHeader.tsx` — one responsive route switcher for Overview, Start work, Conversations, Saved requests, and Connections.
+- `compose/components/AiWorkComposer.tsx` — the composer. Owns no execution, no picker, and no store: it composes `useAgentLauncher`/`launchAgentExecution`, `AgentListDropdown`, `RunSkillPicker`, `SmartAgentResourcePickerButton` + `useAttachResource`, `AttachedDocumentChips`, `SmartAgentResourceChips`, `ContextLensBar`, `UniversalAssociationPicker`, and the floating `LiveRunWindow`.
+- `compose/components/DestinationStep.tsx` — every destination with its REAL availability reason.
+- `compose/components/HomeStep.tsx` — pre-launch Task / War Room picks over the canonical picker.
+- `compose/components/ComposerSection.tsx` — one numbered step.
+- `compose/components/SavedRequestsList.tsx` — mine-scoped Saved Requests with open/delete doors.
 - `components/AiWorkOverview.tsx` — doors to live chat, provider conversations, projects, tasks, War Rooms, skills, connections, and schedules.
 - `components/AiWorkConversationsInbox.tsx` — composes the canonical scope-keyed conversation history and selected binding facts without another conversation store.
 - `components/ConversationOrganizationPanel.tsx` — adapts canonical association edges and the War Room mapper into one Project/Task/War Room picker.
@@ -41,9 +48,12 @@ Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/arm
 - `service/providerConversationClient.ts` — browser RLS reads for the transcript: earlier-message pages (position keyset) and the post-mutation archive/KG state reconcile.
 - `lib/providerConversationMessage.ts` — shared message columns, page size, and normalization used by both reads.
 - `lib/providerTimeline.ts` — pure merge of the two paginated streams (messages by position, `chat.tool_call` by `started_at`) with **THE HONESTY FLOOR**: when either stream has unloaded older rows, items from the other stream older than that boundary are withheld, never rendered against a gap. Guarded by `__tests__/provider-timeline.test.ts`.
+- `lib/managedClaudeCapability.ts` — the ONE reader of `GET /coding-sessions/claude/capabilities`, shared by `/work/connections` and the composer's destination gate. Two surfaces asking the same question must never disagree.
+- `compose/destinations.ts` — the destination catalog and `destinationAvailability()`, the single place a destination's runnability is decided.
+- `compose/savedRequests.ts` — Saved Request read/create/update/delete over `agent.shortcut`.
 - `lib/codingSessionPresentation.ts` — `providerAccountIdentity(metadata)`: tolerant reader that prefers the display-safe `provider_account_label`, falls back to the opaque fingerprint keys (`provider_account_key` → `provider_account_fingerprint` → `account_fingerprint`, root or nested `source_metadata`), and otherwise states "No account identity reported". Never renders emails, tokens, or arbitrary metadata. `workspaceName(metadata)` reads the bridge-stamped `workspace_name` (last path segment of the provider working directory, aidream v0.2.40+) the same tolerant way — chip on the inbox inspector binding, the transcript header, the technical session rows (also search-matchable), and a per-provider "Workspaces (N)" grouping on `/work/connections`; sessions predating the contract simply show nothing.
 - Selected provider facts use the narrow owner-scoped `fetchCodingSessionBindings(conversationId)` projection; the diagnostics/connections list is `useCodingSessions`, now keyset-paginated (`loadOlder`/`hasMore`) over `fetchCodingSessions`.
-- No API route, database table, or Redux slice.
+- No API route, Redux slice, or new table. The only DB change AI Work has ever made is one seeded category row (`migrations/mtx_ai_work_saved_requests_category.sql`).
 
 ---
 
@@ -85,7 +95,13 @@ Selected conversation → `ConversationOrganizationPanel` → canonical `Associa
 
 ## Invariants & gotchas
 
-- **Only advertise live routes.** `/work/new`, `/work/requests`, imports, provider launch, and provider automations stay absent until their real execution paths ship.
+- **Only advertise live routes.** Imports, provider launch, and provider automations stay absent until their real execution paths ship. `/work/new` and `/work/requests` shipped 2026-08-15 because their execution path is real.
+- **A destination is offered with its REAL reason or not at all.** `destinationAvailability()` is the only place that decides; Claude Code's state comes from the live capability contract, never a guess. Even `available: true` stays UNSELECTABLE until the managed-launch UI is certified (TASK-006) — an enabled button with nothing behind it is the fake Resume this product forbids.
+- **The composer executes through the ONE path.** `launchAgentExecution` via `useAgentLauncher`, leaving a canonical conversation with all its normal doors. It never posts to an agent endpoint itself and never renders a stream by hand — the run floats in `LiveRunWindow` (never a spinner, never a block at the top of the page).
+- **A Saved Request IS an `agent.shortcut` row**, filed under the seeded `ai-work-saved-requests` category, `enabled_features: []` so it never leaks into shortcut rails. No new table, no new RPC, and the retired `prompts` / `prompt_templates` tables are never candidates. Versioning is the canonical `version` column via `guardedUpdate`; history rides the existing `_history` trigger. The rationale and the rejected alternatives are documented at the top of `compose/savedRequests.ts` — read it before adding any storage here.
+- **`version` is machinery, not user copy.** Neither surface shows a version number; the composer says "Saved. Update replaces it." and the list shows a relative updated time.
+- **Home picks are applied AFTER the run starts, never faked.** `assoc_add` authorizes against the conversation, which the server creates on turn 1. The composer retries ONLY the not-ready-yet failure and SCREAMS on anything else — a link that could not be written is reported to the user with a door to fix it, never dropped silently.
+- **Only registered association pairs are offered as a Home.** Task and War Room work; `conversation → project` is unregistered (FOUND_DEFECTS D202) and is therefore not offered. Never add a picker token without checking `platform.association_types`.
 - **Codex is not ChatGPT.** No UI labels coding sessions as ChatGPT history.
 - **Mirrored is not native.** Fidelity and continuation language come from the existing coding-session verdict; no generic Resume action is allowed.
 - **Never route an agentless mirror into runnable chat.** Provider inbox doors use `/work/conversations/[conversationId]`; no fake `initial_agent_id` may be assigned.
@@ -132,12 +148,19 @@ No data primitive, endpoint, helper, slice, table, or provider capability was ad
 
 ## Current work / migration state
 
-The third production slice makes the provider transcript complete (backward pagination, real tool activity, canonical conversation actions and organization) and makes connections account-aware with a capability-gated launch entry point. Grant identity and one-click reconnect remain backend/client work; compose, saved requests, and certified provider execution are still absent.
+Compose and Saved Requests shipped 2026-08-15 (TASK-005). Open work, in the plan's own order:
+
+- **Certified provider execution (TASK-006).** The composer's destination slot exists and is gated; wiring a real managed-Claude start/stream/cancel is Lane 5's job, and no destination becomes selectable before that pass.
+- **Automations.** `/work/automations` is absent. The composer's Timing step hands off to the EXISTING schedule builder at `/schedules/new` with the agent and request prefilled; it does not create a schedule itself, and a workflow handoff has no door yet.
+- **Attribution.** Composer runs stamp `sourceFeature: "chat"` because `SOURCE_FEATURES` (generated from aidream) has no `ai-work` value. Registering one is an aidream change; until then the composer must NOT invent a string.
+- **Saved Request scope.** Mine only. Sharing one, or scoping it to an org, needs the list-scope RPCs the canonical entity-list shell expects — not built.
+- Grant identity and one-click reconnect (TASK-008) remain backend/client work.
 
 ---
 
 ## Change log
 
+- `2026-08-15` — Claude: shipped `/work/new` (the eight-step composer, real AI Matrx execution through `launchAgentExecution`, floating `LiveRunWindow`, canonical skill/resource/context/association pickers reused verbatim, provider destinations gated on the live capability contract) and `/work/requests` (Saved Requests as `agent.shortcut` rows under one seeded category — no new table). Extracted the managed-Claude capability read into the shared `lib/managedClaudeCapability.ts` now consumed by both `/work/connections` and the composer. Filed D202: `conversation → project` is not a registered association type, which also breaks the shipped inspector's Project picker.
 - `2026-08-12` — Claude: surfaced the bridge's new `workspace_name` provenance (tolerant `workspaceName()` reader): workspace chips on the inbox inspector, transcript header (owner-scoped binding read), and technical session rows (+ search match), plus per-provider "Workspaces (N)" groupings on `/work/connections`. Verified the backfilled real conversation titles render across the inbox/transcript (they read canonical `chat.conversation.title`, so no frontend change was needed).
 - `2026-08-12` — Claude: transcript backward pagination + interleaved `chat.tool_call` activity via canonical tool components (honesty-floor merge in `lib/providerTimeline.ts`); canonical conversation menu + organization panel on the transcript; tolerant `providerAccountIdentity` reader (prefers `provider_account_label`) with account chips/grouping on the inbox inspector and connections cards; capability-gated "Start a Claude Code session" card; honest Matrx Local Claude-history door; keyset pagination for `fetchCodingSessions`/`useCodingSessions` (PluginsSection "Load older sessions").
 - `2026-08-12` — Codex: replaced the provider-only 100-row product inbox with the canonical all-conversation history and real range pagination; added selected provider/account/fidelity/state facts, direct Project/Task/War Room organization through existing association primitives, `/work/connections`, and a typed managed-Claude capability check. Historical sync is explicitly unavailable until the real Matrx Local preview/import/status seam lands; technical `/agent-connections/plugins` remains intact.

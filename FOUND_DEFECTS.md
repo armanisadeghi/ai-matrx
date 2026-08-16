@@ -14,6 +14,30 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D202 — `conversation → project` is not a registered association type, so the AI Work inspector's Project picker always fails (2026-08-15)
+
+`platform.association_types` registers `conversation → task` (`container_side
+= target`) and `conversation → war_room` (`none`), but **not** `conversation →
+project`. `assoc_add` therefore raises `23514 Unknown association type:
+conversation -> project`.
+
+`ConversationOrganizationPanel`
+(`features/ai-work/components/ConversationOrganizationPanel.tsx:13`) offers
+`project` in `ORGANIZATION_TOKENS` and routes it through
+`relationships.add({targetType: "project"})` — every Project attach on
+`/work/conversations` and on the provider transcript hits that error. Measured
+live 2026-08-15 while wiring the `/work/new` Home step, which is why that step
+now offers only Task and War Room.
+
+**Arman decides, not an agent:** whether a conversation may belong *directly*
+to a project, or only through one of the project's tasks. Direction and
+conveyance are product semantics. If the answer is yes, the fix is one row in
+`platform.association_types` (`conversation → project`, `container_side =
+target`, matching every other `* → project` pair) plus re-enabling `project` in
+`HOME_TOKENS` (`features/ai-work/compose/components/HomeStep.tsx`). If the
+answer is no, `ORGANIZATION_TOKENS` must drop `project` so the panel stops
+offering a control that cannot work.
+
 ### D201 — `useNodeReality` takes non-null ids that two callers fake with `""` (2026-08-15)
 
 `UseNodeRealityArgs` declares `siteId: string; nodeId: string`
@@ -65,6 +89,13 @@ set" prompt). Stamping from the active org would also collide with db-rules §6
 `organization_id` nullable for user-scoped rows; or resolve the owner's personal
 org server-side from `auth.uid()`; or route creates through the
 `createShortcutForAgent` RPC, which already takes `p_organization_id`.
+
+**The RPC candidate is now proven.** AI Work's Saved Requests create personal
+shortcuts through `agx_create_shortcut` with no org argument
+(`features/ai-work/compose/savedRequests.ts`), verified live 2026-08-15: the
+`_stamp_org_default` BEFORE INSERT trigger fills `organization_id`, so the RPC
+path works today where the three converter callsites cannot. Whether to route
+the other three through it is still Arman's call.
 
 Found while mounting `LinkAgentToShortcutModal` (that mount shipped, v0.4.660/664).
 Everything upstream of the insert is verified working live: both entry points,
