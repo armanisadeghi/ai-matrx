@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 372 active entity tokens. A token here is FK-valid for
+// 375 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -230,6 +230,7 @@ export type EntityTypeToken =
   | "plan_node_artifact"
   | "plan_node_step"
   | "plan_profile"
+  | "platform_outcome_event"
   | "processed_document"
   | "processed_document_page"
   | "project"
@@ -295,6 +296,8 @@ export type EntityTypeToken =
   | "seo_referring_domain_profile"
   | "seo_reputation_case"
   | "seo_search_performance_daily"
+  | "seo_serp_mention"
+  | "seo_serp_opportunity"
   | "seo_serp_result"
   | "seo_serp_snapshot"
   | "seo_site_keyword_value"
@@ -629,6 +632,8 @@ export type ComponentEntityToken =
   | "seo_referring_domain_profile"
   | "seo_reputation_case"
   | "seo_search_performance_daily"
+  | "seo_serp_mention"
+  | "seo_serp_opportunity"
   | "seo_serp_result"
   | "seo_serp_snapshot"
   | "seo_site_keyword_value"
@@ -858,6 +863,7 @@ export type ScopeableEntityToken =
   | "plan_node_artifact"
   | "plan_node_step"
   | "plan_profile"
+  | "platform_outcome_event"
   | "processed_document"
   | "processed_document_page"
   | "project"
@@ -923,6 +929,8 @@ export type ScopeableEntityToken =
   | "seo_referring_domain_profile"
   | "seo_reputation_case"
   | "seo_search_performance_daily"
+  | "seo_serp_mention"
+  | "seo_serp_opportunity"
   | "seo_serp_result"
   | "seo_serp_snapshot"
   | "seo_site_keyword_value"
@@ -1068,6 +1076,7 @@ export type ListedEntityToken =
   | "party"
   | "plan_entity"
   | "plan_node"
+  | "platform_outcome_event"
   | "research_context_bundle"
   | "structured_list"
   | "surface"
@@ -1271,6 +1280,7 @@ export const ENTITY_TYPE_METADATA = {
   "plan_node_artifact": { token: "plan_node_artifact", schema: "plan", table: "node_artifact", label: "Plan Node Artifact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "plan_node_step": { token: "plan_node_step", schema: "plan", table: "node_step", label: "Plan Node Step", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "plan_profile": { token: "plan_profile", schema: "plan", table: "profile", label: "Plan Vertical Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "vertical", contentRole: null, referenceCategory: null },
+  "platform_outcome_event": { token: "platform_outcome_event", schema: "platform", table: "outcome_event", label: "Outcome Event", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
@@ -1336,6 +1346,8 @@ export const ENTITY_TYPE_METADATA = {
   "seo_referring_domain_profile": { token: "seo_referring_domain_profile", schema: "seo", table: "referring_domain_profile", label: "Referring Domain Profile", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_reputation_case": { token: "seo_reputation_case", schema: "seo", table: "reputation_case", label: "Reputation Case", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_search_performance_daily": { token: "seo_search_performance_daily", schema: "seo", table: "search_performance_daily", label: "Search Performance Daily", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_serp_mention": { token: "seo_serp_mention", schema: "seo", table: "serp_mention", label: "SERP Prospect Mention", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "seo_serp_opportunity": { token: "seo_serp_opportunity", schema: "seo", table: "serp_opportunity", label: "SERP Prospect Opportunity", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_serp_result": { token: "seo_serp_result", schema: "seo", table: "serp_result", label: "SERP Result", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_serp_snapshot": { token: "seo_serp_snapshot", schema: "seo", table: "serp_snapshot", label: "SERP Snapshot", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "marketing", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "seo_site_keyword_value": { token: "seo_site_keyword_value", schema: "seo", table: "site_keyword_value", label: "Site Keyword Value", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "seo", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1647,6 +1659,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "plan_node_artifact",
   "plan_node_step",
   "plan_profile",
+  "platform_outcome_event",
   "processed_document",
   "processed_document_page",
   "project",
@@ -1712,6 +1725,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "seo_referring_domain_profile",
   "seo_reputation_case",
   "seo_search_performance_daily",
+  "seo_serp_mention",
+  "seo_serp_opportunity",
   "seo_serp_result",
   "seo_serp_snapshot",
   "seo_site_keyword_value",
