@@ -119,6 +119,7 @@ carry no agent-run import at all. That is the signature to search on next time.
 | `features/pdf/scanner/{processing.ts,useScanSaveFlow.ts,components/ProcessingView.tsx}` — `/tools/scanner` | Step 3 "AI cleanup" = 2s DB poll for per-page cleaned_text COUNTS + a progress bar. The multi-LLM step, the expensive one, showed a percentage while the model's rewrite of the user's own scan stayed invisible. | The poll pulls each page's cleaned TEXT once it lands (`fetchCleanedPageText`, only pages that newly turned cleaned — one small select per page, never the whole doc per tick) and the step renders it in an auto-following pane. Counter + ledger stay, **under** the output. |
 | `features/transcription-cleanup/components/CleanupPad.tsx` — `/transcripts/cleanup` | "record → auto-clean → refine with ANY number of agents" fires up to 4 runs at once, but custom slots are tab pills (one visible) and an embedded host can hide Clean entirely. Every hidden pass streamed into a pane nobody could see, behind a 12px tab spinner. | A pass whose pane is not visible floats in `LiveRunWindow` — one per slot, stable `instanceId` so a re-run rebinds instead of stacking. Switching to a pass's own tab closes its window (the pane is the better home when it is on screen). |
 | `features/transcript-studio/redux/{runCleaningPass,runConceptPass,runModulePass,cleanRecording}.thunk.ts` — `/transcripts/studio`, `/transcripts/scribe` | All four passes launched `displayMode: "background"` and discarded the run; the column header spun a `RefreshCw` and segments appeared only when the whole pass finished. | Each thunk binds its conversation at `onConversationCreated` (`redux/liveRunWatch.ts`) and floats `liveRunWindow` for user-initiated causes; interval passes bind without stealing the screen and stay one click away via `<WatchRunButton>`. Batch re-clean narrates "Cleaning recording 2 of 7" into ONE window. Live-verified on a real session. |
+| `features/education/{study/components/SessionDetailView.tsx,study/reviewRun.ts,tutor/lanes/reviewSession.ts}` — `/education/flashcards/sessions/[id]` | The holistic coach review was launched fire-and-forget on drill completion with its identity discarded; the detail page polled `getSession` every 3s for up to 2 minutes waiting for `session_review`. | The lane stamps a DURABLE handle (`metadata.ai.reviewRun` — conversationId + terminal status) the instant the conversation exists, and floats `LiveRunWindow` when the caller owns no window. The page reattaches to a live handle (`reconnectServerOperation`, cold-load), floats it, and reads the row once on terminal. Poll deleted; a pending review with no live run offers "Write my review" instead of an endless spinner. |
 | `features/marketing/discovery/youtube/{service.ts,YouTubeResearchActions.tsx}` | Minutes of AI work (watch → transcribe → analyze → check claims) narrated real phases and threw the stream body away. | `adoptForeignStream` + floated `LiveRunWindow`. Phase/info events still drive the stage line; content never goes through `onEvent`. |
 
 ### Verified compliant — do not re-audit
@@ -144,14 +145,6 @@ carry no agent-run import at all. That is the signature to search on next time.
 
 ### Open — found, not fixed
 
-- **`features/education/study/components/SessionDetailView.tsx:158`** — the
-  FastFire holistic coach review is launched fire-and-forget when the drill
-  completes; this page then polls `studyService.getSession` every 3s for up to
-  **2 minutes** waiting for `session_review` to land. A textbook
-  poll-the-DB-for-an-AI-result. **Not fixable here:** the launcher discards the
-  run's identity, and the learner can arrive after it started, so the fix needs
-  a DURABLE handle (persist the conversation/request id on the session row, then
-  reattach + float on load) — the `useSiteCrawlActivity` shape, class D. Chip it.
 - **The scanner's clean step still cannot truly stream.** The pipeline runs
   detached server-side after `/pdf/from-images` returns and exposes no
   client-reachable stream, so reading its rows as it writes them is the ceiling.

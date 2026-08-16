@@ -53,6 +53,7 @@ import type {
   SessionCoachTip,
   SessionHelpAnswer,
   SessionProgressNarrative,
+  SessionReviewRun,
 } from "../types";
 
 const EDU = () => supabase.schema("education");
@@ -352,6 +353,14 @@ export const studyService = {
             ai: { ...ai, progressNarrative: artifact.entry as unknown as Json },
           };
         }
+        // The review-run handle is a POINTER to one run, not a log — a second
+        // stamp (the terminal one) replaces the first.
+        if (artifact.kind === "reviewRun") {
+          return {
+            ...current,
+            ai: { ...ai, reviewRun: artifact.entry as unknown as Json },
+          };
+        }
         const key = artifact.kind === "coachTip" ? "coachTips" : "helpAnswers";
         const prior = Array.isArray(ai[key]) ? (ai[key] as Json[]) : [];
         return {
@@ -402,6 +411,14 @@ export const studyService = {
       progressNarrative:
         ai.progressNarrative && typeof ai.progressNarrative === "object"
           ? (ai.progressNarrative as unknown as SessionProgressNarrative)
+          : undefined,
+      reviewRun:
+        ai.reviewRun &&
+        typeof ai.reviewRun === "object" &&
+        !Array.isArray(ai.reviewRun) &&
+        typeof (ai.reviewRun as { conversationId?: unknown }).conversationId ===
+          "string"
+          ? (ai.reviewRun as unknown as SessionReviewRun)
           : undefined,
     };
   },

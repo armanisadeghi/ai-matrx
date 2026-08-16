@@ -219,18 +219,43 @@ export interface SessionProgressNarrative {
   at: string;
 }
 
+/**
+ * 🚨 THE DURABLE HANDLE to the end-of-session coach review RUN.
+ *
+ * The review is launched fire-and-forget when a session completes, so without
+ * this the run's identity died with the tab that started it — and the session
+ * detail page could only POLL the row for a result while the learner watched a
+ * spinner (THE FLOATING LAW, `features/window-panels/FEATURE.md`). Stamped the
+ * moment the conversation exists, so any later page load can REATTACH to the
+ * run and float it instead of guessing when it will land.
+ *
+ * `finishedAt` is what tells a cold page "this run is over" — its absence (plus
+ * a recent `startedAt`) is the only signal that watching is still worthwhile.
+ */
+export interface SessionReviewRun {
+  /** The agent conversation — what `LiveRunWindow` binds to. */
+  conversationId: string;
+  /** ISO stamp of the launch. */
+  startedAt: string;
+  /** ISO stamp of the terminal outcome; absent while the run is working. */
+  finishedAt?: string;
+  status: "running" | "complete" | "failed";
+}
+
 /** The whole `metadata.ai` block. Every key is optional — sessions start empty. */
 export interface SessionAiJournal {
   coachTips?: SessionCoachTip[];
   helpAnswers?: SessionHelpAnswer[];
   progressNarrative?: SessionProgressNarrative;
+  reviewRun?: SessionReviewRun;
 }
 
 /** The artifact kinds `appendSessionArtifact` accepts, as a closed vocabulary. */
 export type SessionArtifact =
   | { kind: "coachTip"; entry: SessionCoachTip }
   | { kind: "helpAnswer"; entry: SessionHelpAnswer }
-  | { kind: "progressNarrative"; entry: SessionProgressNarrative };
+  | { kind: "progressNarrative"; entry: SessionProgressNarrative }
+  | { kind: "reviewRun"; entry: SessionReviewRun };
 
 // ─── Planner (Phase 6 — real study_goal CRUD) ─────────────────────────────────
 /**

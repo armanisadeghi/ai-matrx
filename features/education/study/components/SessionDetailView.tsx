@@ -12,7 +12,7 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -26,7 +26,22 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { useLiveRunStatus } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useLiveRunHandle } from "@/features/agents/hooks/useLiveRunHandle";
+import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
+import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
+import { reviewSession } from "@/features/education/tutor/lanes/reviewSession";
+import {
+  buildReviewAggregate,
+  type ReviewAttempt,
+} from "@/features/education/tutor/lanes/learnerContext";
 import { studyService } from "../service/studyService";
+import {
+  REVIEW_RUN_LABEL,
+  studyReviewWindowId,
+  watchableReviewRun,
+} from "../reviewRun";
 import type { SessionWithAttempts, StudyAttemptRow } from "../types";
 import { SessionAudio } from "./SessionAudio";
 import { CoachReviewPanel } from "./CoachReviewPanel";
@@ -100,12 +115,21 @@ export function SessionDetailView({
   ) => Promise<Record<string, ItemLabel>>;
 }) {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [data, setData] = useState<SessionWithAttempts | null>(null);
   const [labels, setLabels] = useState<Record<string, ItemLabel>>({});
   const [loading, setLoading] = useState(true);
   // The raw failure, never a sentence — the gate decides what it means.
   const [loadError, setLoadError] = useState<unknown>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  /**
+   * The review run this page is watching. Latched when a session row arrives
+   * carrying a live run (or when the learner starts one here) and deliberately
+   * never cleared — the window outlives the run, per THE FLOATING LAW.
+   */
+  const [watchedConversationId, setWatchedConversationId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,6 +144,11 @@ export function SessionDetailView({
         return;
       }
       setData(res.data);
+      // Latch the in-flight review run at the moment the row arrives, never in
+      // an effect body — and NEVER unlatch: dropping it when the review lands
+      // would close the window at the instant its content finished arriving.
+      const liveRun = watchableReviewRun(res.data.session);
+      if (liveRun) setWatchedConversationId(liveRun.conversationId);
       setLoadError(null);
       setLoading(false);
       if (labelResolver) {
@@ -136,47 +165,92 @@ export function SessionDetailView({
     };
   }, [sessionId, labelResolver, reloadKey]);
 
-  // FastFire's holistic review is fire-and-forget after complete — if the learner
-  // opens this page before the agent finishes, poll until session_review lands.
+  // ── THE COACH REVIEW, REATTACHED (never polled) ─────────────────────────
+  // The holistic review is launched fire-and-forget when a session completes,
+  // so the learner can land here while it is still writing. The run stamped its
+  // identity on the session row, so this page REATTACHES to it and floats it
+  // (THE FLOATING LAW) instead of polling the row for a result.
+  const liveReviewRun = watchableReviewRun(data?.session);
+  const liveReviewConversationId = liveReviewRun?.conversationId ?? null;
+
+  // A cold load has no client-side stream for this conversation — a dropped
+  // socket is not a failed run, so ask the runtime spine what the server is
+  // still doing and follow it to terminal. Stands down on its own when a live
+  // stream already owns the conversation in this tab.
+  const reattachedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!data?.session) return undefined;
-    const { session } = data;
-    if (
-      !isAwaitingCoachReview(
-        session.mode,
-        session.status,
-        session.session_review,
-      )
-    ) {
-      return undefined;
-    }
-
+    if (!liveReviewConversationId) return undefined;
+    if (reattachedRef.current === liveReviewConversationId) return undefined;
+    reattachedRef.current = liveReviewConversationId;
     let cancelled = false;
-    const poll = async (): Promise<void> => {
+    void dispatch(
+      reconnectServerOperation({
+        conversationId: liveReviewConversationId,
+        source: "cold-load",
+      }),
+    ).then(async () => {
+      // Terminal (or nothing to follow) — the review row is the content truth.
       const res = await studyService.getSession(sessionId);
-      if (cancelled || !res.data) return;
-      setData(res.data);
-    };
-
-    const interval = window.setInterval(() => {
-      void poll();
-    }, 3000);
-    const timeout = window.setTimeout(() => {
-      window.clearInterval(interval);
-    }, 120_000);
-
+      if (!cancelled && res.data) setData(res.data);
+    });
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
-      window.clearTimeout(timeout);
     };
-  }, [
-    sessionId,
-    data?.session?.id,
-    data?.session?.mode,
-    data?.session?.status,
-    data?.session?.session_review,
-  ]);
+  }, [liveReviewConversationId, sessionId, dispatch]);
+
+  // When the run this tab IS streaming goes terminal, read the row once. This
+  // replaces the poll entirely: the stream itself says when to look.
+  const reviewRunStatus = useLiveRunStatus(watchedConversationId);
+  const reviewWasActiveRef = useRef(false);
+  useEffect(() => {
+    if (reviewRunStatus.isActive) {
+      reviewWasActiveRef.current = true;
+      return undefined;
+    }
+    if (!reviewWasActiveRef.current) return undefined;
+    reviewWasActiveRef.current = false;
+    let cancelled = false;
+    void (async () => {
+      const res = await studyService.getSession(sessionId);
+      if (!cancelled && res.data) setData(res.data);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [reviewRunStatus.isActive, sessionId]);
+
+  /** Run the review now — the door when no run is live and none produced one. */
+  const reviewRunHandle = useLiveRunHandle();
+  const [generatingReview, setGeneratingReview] = useState(false);
+  const runCoachReview = () => {
+    if (!data || generatingReview) return;
+    setGeneratingReview(true);
+    const attempts: ReviewAttempt[] = data.attempts.map((a, i) => ({
+      front: labels[a.item_id]?.question ?? `Item ${i + 1}`,
+      result: (a.result as ReviewAttempt["result"]) ?? null,
+      score: a.score_value != null ? Number(a.score_value) : null,
+      transcript: a.response_transcript ?? "",
+    }));
+    void dispatch(
+      reviewSession({
+        sessionId,
+        attempts,
+        aggregate: buildReviewAggregate(attempts, data.attempts.length),
+        // THIS page owns the window for a run it started, so the lane doesn't
+        // float a second one. The handle owns the conversation's lifetime, so
+        // the finished output survives to be read.
+        onConversationCreated: (conversationId) => {
+          reviewRunHandle.claim(conversationId);
+          setWatchedConversationId(conversationId);
+        },
+      }),
+    )
+      .then(async () => {
+        const res = await studyService.getSession(sessionId);
+        if (res.data) setData(res.data);
+      })
+      .finally(() => setGeneratingReview(false));
+  };
 
   // Patches one attempt in place after a manual score override — the
   // ledger row it came from (study_override_attempt) is already durable;
@@ -207,6 +281,16 @@ export function SessionDetailView({
 
   return (
     <div className="min-h-full w-full bg-textured">
+      {/* The review floats — never a live block above the learner's ledger.
+          Sizing is the window's own; a per-surface override would only be
+          right after watching this kind render badly in the default box. */}
+      {watchedConversationId && (
+        <LiveRunWindowController
+          instanceId={studyReviewWindowId(sessionId)}
+          conversationId={watchedConversationId}
+          label={REVIEW_RUN_LABEL}
+        />
+      )}
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8">
         <Button
           variant="ghost"
@@ -292,10 +376,21 @@ export function SessionDetailView({
               </section>
             )}
 
-            {/* Holistic review */}
+            {/* Holistic review — watched, never polled for */}
             <CoachReviewPanel
               review={coachReview}
               pending={coachReviewPending}
+              watching={Boolean(watchedConversationId) && !coachReview}
+              onGenerate={
+                // Only when there is something to review AND nothing is live —
+                // an offer that would quietly no-op is its own dead end.
+                coachReviewPending &&
+                !liveReviewConversationId &&
+                data.attempts.length > 0
+                  ? runCoachReview
+                  : undefined
+              }
+              generating={generatingReview}
             />
 
             {/* Attempt ledger */}

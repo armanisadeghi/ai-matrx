@@ -8,6 +8,12 @@
 // so `CoachReviewPanel` + `SessionScorecard` on the session detail page
 // display it for free everywhere, with zero per-surface UI work.
 //
+// DURABLE (2026-08-15): the run's conversation id is stamped on the session row
+// (`metadata.ai.reviewRun`) the instant it exists, and stamped terminal on every
+// exit path — so a learner who reloads, or who opens the session detail page
+// after the drill finished, REATTACHES to the run and watches it in the
+// floating window instead of a page polling the row for a result.
+//
 // OPTIONAL: with no review agent configured this is a clean no-op.
 // The agent round-trip runs through the canonical headless primitive
 // (`runHeadlessAgentJson`, D126) — this lane only owns variables, coercion,
@@ -18,7 +24,13 @@ import {
   livePosture,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { studyService } from "@/features/education/study/service/studyService";
+import {
+  REVIEW_RUN_LABEL,
+  stampReviewRun,
+  studyReviewWindowId,
+} from "@/features/education/study/reviewRun";
 import { getFcTutorAgentConfig } from "./config";
 import type { ReviewAggregate, ReviewAttempt } from "./learnerContext";
 
@@ -28,7 +40,12 @@ export interface ReviewSessionArgs {
   aggregate: ReviewAggregate;
   /** Override the configured `fc_review_batch` agent id (rare — testing only). */
   agentId?: string | null;
-  /** Live handle — the review streams where the caller mounts it. */
+  /**
+   * Live handle — the review streams where the caller mounts it. A caller that
+   * passes one owns the window (`StudyDeck` does); when it is omitted this lane
+   * floats the canonical `LiveRunWindow` itself, so a fire-and-forget review is
+   * never invisible work behind a spinner.
+   */
   onConversationCreated?: (conversationId: string) => void;
 }
 
@@ -53,6 +70,53 @@ export function reviewSession(args: ReviewSessionArgs) {
     if (!agentId) return null; // optional lane — clean skip
     if (args.attempts.length === 0) return null; // nothing to review
 
+    const sessionId = args.sessionId;
+    const startedAt = new Date().toISOString();
+
+    /**
+     * The moment the conversation exists, two things happen — and both must,
+     * because the learner may never be looking at the surface that launched
+     * this: the run's identity lands on the session row so ANY later page load
+     * can reattach to it, and the run floats so the learner sees it write.
+     */
+    let boundConversationId: string | null = null;
+    const bindRun = (conversationId: string) => {
+      boundConversationId = conversationId;
+      if (sessionId) {
+        void stampReviewRun(sessionId, {
+          conversationId,
+          startedAt,
+          status: "running",
+        });
+        // A caller with its own window binds it through the callback below;
+        // otherwise this lane owns the float.
+        if (!args.onConversationCreated) {
+          dispatch(
+            openLiveRunWindowAction({
+              instanceId: studyReviewWindowId(sessionId),
+              conversationId,
+              label: REVIEW_RUN_LABEL,
+            }),
+          );
+        }
+      }
+      args.onConversationCreated?.(conversationId);
+    };
+
+    /** The terminal stamp — what tells a cold page to stop watching. */
+    const settleRun = async (
+      conversationId: string | undefined,
+      status: "complete" | "failed",
+    ): Promise<void> => {
+      if (!sessionId || !conversationId) return;
+      await stampReviewRun(sessionId, {
+        conversationId,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        status,
+      });
+    };
+
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
         agentId,
@@ -61,6 +125,7 @@ export function reviewSession(args: ReviewSessionArgs) {
         // Fires automatically at end-of-session — not a user gesture.
         initiation: "auto",
         ...livePosture(args.onConversationCreated),
+        onConversationCreated: bindRun,
         variables: {
           transcript: args.attempts
             .map((a) => a.transcript)
@@ -76,16 +141,22 @@ export function reviewSession(args: ReviewSessionArgs) {
 
       // Partial-tolerant: an errored stream may still carry a usable object.
       const raw = result.data;
-      if (!raw || typeof raw !== "object") return null;
-      const r = raw as Record<string, unknown>;
-      const summary = typeof r.summary === "string" ? r.summary : "";
-      if (!summary) return null;
+      const r =
+        raw && typeof raw === "object" ? (raw as Record<string, unknown>) : null;
+      const summary = typeof r?.summary === "string" ? r.summary : "";
+      if (!r || !summary) {
+        // Terminal with nothing usable. Stamped as such so a page watching this
+        // run stops watching and offers to run it again — never a dead spinner.
+        await settleRun(result.conversationId, "failed");
+        return null;
+      }
 
-      if (args.sessionId) {
-        await studyService.updateSession(args.sessionId, {
+      if (sessionId) {
+        await studyService.updateSession(sessionId, {
           session_review: raw as never,
         });
       }
+      await settleRun(result.conversationId, "complete");
 
       return {
         summary,
@@ -98,6 +169,9 @@ export function reviewSession(args: ReviewSessionArgs) {
       };
     } catch (err) {
       console.error("[flashcards.reviewSession] failed:", err);
+      // Close the durable handle too — a page reattaching to this run must be
+      // told it ended, not left watching a conversation that will never write.
+      await settleRun(boundConversationId ?? undefined, "failed");
       return null;
     }
   };
