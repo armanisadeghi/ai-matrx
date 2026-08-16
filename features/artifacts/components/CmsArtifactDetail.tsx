@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { LucideIcon } from "lucide-react";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { ArtifactRenderDynamic as ArtifactRender } from "@/features/canvas/artifact-types/ArtifactRenderDynamic";
@@ -103,9 +102,11 @@ interface MetaRowProps {
   icon: LucideIcon;
   label: string;
   value: string | null | undefined;
+  /** THE DOOR LAW: a row naming a record with an identity opens it (new tab). */
+  href?: string | null;
 }
 
-function MetaRow({ icon: Icon, label, value }: MetaRowProps) {
+function MetaRow({ icon: Icon, label, value, href }: MetaRowProps) {
   if (!value) return null;
   return (
     <div className="flex items-start gap-2.5 py-2">
@@ -114,7 +115,18 @@ function MetaRow({ icon: Icon, label, value }: MetaRowProps) {
         <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium mb-0.5">
           {label}
         </p>
-        <p className="text-sm text-foreground break-all">{value}</p>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-primary break-all hover:underline underline-offset-2"
+          >
+            {value}
+          </a>
+        ) : (
+          <p className="text-sm text-foreground break-all">{value}</p>
+        )}
       </div>
     </div>
   );
@@ -154,24 +166,14 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
     }
   };
 
+  // The artifact's AFTER — the real html_pages row it became. `externalId` IS
+  // that row's id (see features/canvas/artifact-types/persistence/html-adapter.ts),
+  // so the door is the real editor route, never a content-less preview overlay
+  // (the old htmlPreview dispatch with content:"" opened an empty editor —
+  // present-but-broken, worse than absent).
   const handleOpenEditor = () => {
-    if (!artifact) return;
-    if (artifact.artifactType === "html_page") {
-      dispatch(
-        openOverlay({
-          overlayId: "htmlPreview",
-          data: {
-            content: "",
-            messageId: artifact.messageId,
-            conversationId: artifact.conversationId,
-            title: artifact.title ?? "HTML Page Editor",
-            description: "Edit markdown, preview HTML, and publish your content",
-            showSaveButton: false,
-            isAgentSystem: false,
-          },
-        }),
-      );
-    }
+    if (!artifact?.externalId) return;
+    router.push(`/cms/html-pages/${artifact.externalId}`);
   };
 
   if (isRefreshing) {
@@ -225,7 +227,7 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
           href: artifact.externalUrl,
         }
       : null,
-    artifact.artifactType === "html_page"
+    artifact.artifactType === "html_page" && artifact.externalId
       ? {
           label: "Open HTML Editor",
           icon: Globe,
@@ -366,6 +368,11 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
                   ? `Message ${artifact.messageId.slice(0, 8)}…`
                   : null
               }
+              href={
+                artifact.conversationId
+                  ? `/chat/${artifact.conversationId}`
+                  : null
+              }
             />
             <MetaRow
               icon={MessageSquare}
@@ -375,16 +382,27 @@ export function CmsArtifactDetail({ artifactId }: CmsArtifactDetailProps) {
                   ? `Conversation ${artifact.conversationId.slice(0, 8)}…`
                   : null
               }
+              href={
+                artifact.conversationId
+                  ? `/chat/${artifact.conversationId}`
+                  : null
+              }
             />
             <MetaRow
               icon={ExternalLink}
-              label="External ID"
+              label="HTML Page"
               value={artifact.externalId}
+              href={
+                artifact.artifactType === "html_page" && artifact.externalId
+                  ? `/cms/html-pages/${artifact.externalId}`
+                  : null
+              }
             />
             <MetaRow
               icon={Globe}
               label="Live URL"
               value={artifact.externalUrl}
+              href={artifact.externalUrl}
             />
           </CardContent>
         </Card>

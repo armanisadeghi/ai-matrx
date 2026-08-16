@@ -2,6 +2,7 @@ import {
   ExternalLink,
   Eye,
   FilePenLine,
+  Gauge,
   Hammer,
   Map,
   Pencil,
@@ -20,6 +21,8 @@ export interface CmsPageMenuContext {
   previewHref: string;
   liveHref: string | null;
   planHref: string | null;
+  /** The page's AFTER — the editor's Measure tab; null until `web_page_id` joins. */
+  measureHref: string | null;
   onAi: () => void;
   onReview: () => void;
   onPublish: () => void | Promise<void>;
@@ -93,6 +96,15 @@ export function buildCmsPageMenu(ctx: CmsPageMenuContext): ItemMenuConfig {
             href: ctx.planHref ?? ctx.editorHref,
             target: "_blank",
             hidden: !ctx.planHref,
+          },
+          {
+            id: "measure",
+            kind: "link",
+            label: "Open measurement",
+            icon: Gauge,
+            href: ctx.measureHref ?? ctx.editorHref,
+            target: "_blank",
+            hidden: !ctx.measureHref,
           },
         ],
       },

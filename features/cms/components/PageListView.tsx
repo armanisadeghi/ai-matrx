@@ -374,6 +374,11 @@ export default function PageListView({
                     site.web_site_id && page.plan_node_id
                       ? `${marketingRoutes.contentPlanSite(site.web_site_id)}?node=${encodeURIComponent(page.plan_node_id)}`
                       : null;
+                  // The page's AFTER: measured pages open the editor's Measure
+                  // tab (the join is web_page_id, already on the summary row).
+                  const measureHref = page.web_page_id
+                    ? cmsPageEditorHref(site.id, page.id, "measure")
+                    : null;
 
                   return (
                     <tr
@@ -506,6 +511,7 @@ export default function PageListView({
                               previewHref,
                               liveHref,
                               planHref,
+                              measureHref,
                               onAi: () =>
                                 setAiTarget({ page, intent: "build-edit" }),
                               onReview: () =>

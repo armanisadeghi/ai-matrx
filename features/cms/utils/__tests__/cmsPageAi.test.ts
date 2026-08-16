@@ -48,6 +48,7 @@ function menuFor(record: ClientPageSummary) {
     previewHref: "/preview",
     liveHref: null,
     planHref: "/plan",
+    measureHref: null,
     onAi: noop,
     onReview: noop,
     onPublish: noop,

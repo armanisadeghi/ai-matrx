@@ -31,8 +31,11 @@ import {
   Database,
   Settings,
   ExternalLink,
+  Gauge,
+  Map as MapIcon,
   Plus,
 } from "lucide-react";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
@@ -346,6 +349,24 @@ export default function SiteLayoutClient({
           },
         ]}
         actions={[
+          // The site's BEFORE and AFTER (before/during/after doctrine,
+          // docs/handoffs/cms-page-hub.md): the content plan it is built from
+          // and the measured site it becomes. Doors exist only when the
+          // web_site_id pairing exists — never a fake door.
+          ...(site.web_site_id
+            ? [
+                {
+                  label: "Content plan",
+                  icon: MapIcon,
+                  href: marketingRoutes.contentPlanSite(site.web_site_id),
+                },
+                {
+                  label: "Site measurement",
+                  icon: Gauge,
+                  href: marketingRoutes.site(null, site.web_site_id),
+                },
+              ]
+            : []),
           {
             label: "Open live site",
             icon: ExternalLink,

@@ -52,6 +52,112 @@ import {
 
 type EditorTab = "meta" | "html" | "preview";
 
+/**
+ * One promotion record from `context_metadata.promotions[]` (written by the
+ * promote route's `append_html_page_promotion`). Parsed defensively — the
+ * column is jsonb written by more than one actor.
+ */
+interface PromotionEntry {
+  client_page_id: string;
+  client_site_id: string;
+  promoted_at: string | null;
+}
+
+function readPromotions(
+  contextMetadata: Record<string, unknown> | null,
+): PromotionEntry[] {
+  const raw = contextMetadata?.promotions;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return [];
+    const rec = entry as Record<string, unknown>;
+    if (
+      typeof rec.client_page_id !== "string" ||
+      typeof rec.client_site_id !== "string"
+    )
+      return [];
+    return [
+      {
+        client_page_id: rec.client_page_id,
+        client_site_id: rec.client_site_id,
+        promoted_at:
+          typeof rec.promoted_at === "string" ? rec.promoted_at : null,
+      },
+    ];
+  });
+}
+
+/**
+ * The page's BEFORE (the conversation/artifact that produced it) and AFTER
+ * (every CMS page it was promoted into) — doors, never bare uuids
+ * (before/during/after doctrine, docs/handoffs/cms-page-hub.md item 6; the
+ * old block here printed `source_message_id: <uuid>` as monospace text).
+ */
+function HtmlPageLineage({ page }: { page: HtmlPageRecord }) {
+  const promotions = readPromotions(page.context_metadata);
+  const hasBefore = Boolean(page.source_conv_id || page.artifact_id);
+  if (!hasBefore && promotions.length === 0) return null;
+
+  const doorClass =
+    "inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline underline-offset-2";
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
+      {hasBefore ? (
+        <div className="space-y-1">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Where it came from
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {page.source_conv_id ? (
+              <a
+                href={`/chat/${page.source_conv_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={doorClass}
+              >
+                Open the conversation
+              </a>
+            ) : null}
+            {page.artifact_id ? (
+              <a
+                href={`/artifacts/${page.artifact_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={doorClass}
+              >
+                Open the artifact
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      {promotions.length > 0 ? (
+        <div className="space-y-1">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            Promoted into
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {promotions.map((promo) => (
+              <a
+                key={promo.client_page_id}
+                href={`/cms/${promo.client_site_id}/pages/${promo.client_page_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={doorClass}
+              >
+                CMS page
+                {promo.promoted_at
+                  ? ` (${new Date(promo.promoted_at).toLocaleDateString()})`
+                  : ""}
+              </a>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 const TABS: { id: EditorTab; label: string; icon: LucideIcon }[] = [
   { id: "meta", label: "Metadata", icon: SearchIcon },
   { id: "html", label: "HTML", icon: Code2 },
@@ -487,17 +593,7 @@ export default function HtmlPageEditor({
           Off by default (noindex) to avoid duplicate-content issues.
         </p>
 
-        {(page.source_message_id || page.artifact_id) && (
-          <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1 text-[11px] text-muted-foreground font-mono">
-            {page.source_message_id && (
-              <div>source_message_id: {page.source_message_id}</div>
-            )}
-            {page.source_conv_id && (
-              <div>source_conv_id: {page.source_conv_id}</div>
-            )}
-            {page.artifact_id && <div>artifact_id: {page.artifact_id}</div>}
-          </div>
-        )}
+        <HtmlPageLineage page={page} />
       </div>
     </EditableContextMenu>
   );

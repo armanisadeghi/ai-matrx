@@ -40,6 +40,57 @@ interface PagePlanTabProps {
   onPageChanged: () => void | Promise<void>;
 }
 
+/**
+ * The page's OTHER origin story (before/during/after doctrine): a page
+ * promoted from a quick-publish HTML page, an artifact, or a conversation
+ * carries those ids — each one is a door, never a forgotten step. Renders
+ * nothing for pages with no recorded origin.
+ */
+function PageOriginSection({ page }: { page: ClientPage }) {
+  const doors = [
+    page.source_html_page_id
+      ? {
+          label: "Quick-publish HTML page",
+          href: `/cms/html-pages/${page.source_html_page_id}`,
+        }
+      : null,
+    page.source_artifact_id
+      ? { label: "Artifact", href: `/artifacts/${page.source_artifact_id}` }
+      : null,
+    page.source_conv_id
+      ? { label: "Conversation", href: `/chat/${page.source_conv_id}` }
+      : null,
+  ].filter((door): door is { label: string; href: string } => door !== null);
+
+  if (doors.length === 0) return null;
+
+  return (
+    <section className="space-y-1.5">
+      <h3 className="text-xs font-semibold text-foreground">Origin</h3>
+      <p className="text-xs text-muted-foreground">
+        This page was promoted into the CMS — where it came from is still
+        reachable:
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {doors.map((door) => (
+          <Button
+            key={door.href}
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            asChild
+          >
+            <Link href={door.href} target="_blank" rel="noopener noreferrer">
+              {door.label}
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </Button>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-full overflow-auto">
@@ -189,6 +240,8 @@ export default function PagePlanTab({
   site,
   onPageChanged,
 }: PagePlanTabProps) {
+  // The plan is one origin; a promoted page has another (quick-publish page /
+  // artifact / conversation). Both render — neither step is forgotten.
   if (page.plan_node_id) {
     return (
       <Shell>
@@ -197,6 +250,7 @@ export default function PagePlanTab({
           fallbackSiteId={site.web_site_id}
           intro="This page was planned before it was built. The brief, target keyword, and status below are edited in the plan workspace — this tab shows what the page is supposed to be while you write it."
         />
+        <PageOriginSection page={page} />
       </Shell>
     );
   }
@@ -209,6 +263,7 @@ export default function PagePlanTab({
           webSiteId={site.web_site_id}
           onPageChanged={onPageChanged}
         />
+        <PageOriginSection page={page} />
       </Shell>
     );
   }
@@ -239,6 +294,7 @@ export default function PagePlanTab({
           </Link>
         </Button>
       </div>
+      <PageOriginSection page={page} />
     </Shell>
   );
 }
