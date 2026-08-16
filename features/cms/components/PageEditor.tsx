@@ -191,9 +191,11 @@ const CODE_SUB_TABS: { id: CodeSubTab; label: string; icon: React.ElementType }[
     { id: "js", label: "JS", icon: FileCode2 },
   ];
 
+// Preview leads (Arman, 2026-08-16): landing on a page should show the pretty
+// rendered page, never a wall of code.
 const TABS: { id: TopTab; label: string; icon: React.ElementType }[] = [
-  { id: "code", label: "Code", icon: Code2 },
   { id: "preview", label: "Preview", icon: Eye },
+  { id: "code", label: "Code", icon: Code2 },
   { id: "plan", label: "Plan", icon: MapIcon },
   { id: "seo", label: "SEO", icon: SearchIcon },
   { id: "measure", label: "Measure", icon: Gauge },
@@ -231,7 +233,10 @@ export default function PageEditor({
   const [activeTab, setActiveTabState] = useState<TopTab>(() => {
     const requestedTab = searchParams.get("tab");
     if (isCodeSubTab(requestedTab)) return "code";
-    return isTopTab(requestedTab) ? requestedTab : "code";
+    if (isTopTab(requestedTab)) return requestedTab;
+    // Land on the rendered page, not the code — except a brand-new page,
+    // which has nothing to preview and needs its content typed first.
+    return page ? "preview" : "code";
   });
   const [codeTab, setCodeTabState] = useState<CodeSubTab>(() => {
     const requestedTab = searchParams.get("tab");
@@ -885,27 +890,31 @@ export default function PageEditor({
               {/* Code — HTML/CSS/JS behind one tab with an inner switcher */}
               {activeTab === "code" && (
                 <div className="flex h-full flex-col">
-                  <div className="flex flex-none items-center gap-0.5 border-b border-border/50 bg-muted/10 px-4">
-                    {CODE_SUB_TABS.map((sub) => {
-                      const SubIcon = sub.icon as React.FC<{
-                        className?: string;
-                      }>;
-                      const isSubActive = codeTab === sub.id;
-                      return (
-                        <button
-                          key={sub.id}
-                          onClick={() => setCodeTab(sub.id)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium border-b-2 transition-colors ${
-                            isSubActive
-                              ? "border-primary text-primary"
-                              : "border-transparent text-muted-foreground hover:text-foreground"
-                          }`}
-                        >
-                          <SubIcon className="h-3 w-3" />
-                          {sub.label}
-                        </button>
-                      );
-                    })}
+                  {/* Segmented buffer switcher — a pill group, not a second
+                      underline row fighting the main tab strip for attention. */}
+                  <div className="flex flex-none items-center border-b border-border/50 px-4 py-1.5">
+                    <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
+                      {CODE_SUB_TABS.map((sub) => {
+                        const SubIcon = sub.icon as React.FC<{
+                          className?: string;
+                        }>;
+                        const isSubActive = codeTab === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            onClick={() => setCodeTab(sub.id)}
+                            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium transition-colors ${
+                              isSubActive
+                                ? "bg-background text-foreground shadow-sm"
+                                : "text-muted-foreground hover:text-foreground"
+                            }`}
+                          >
+                            <SubIcon className="h-3 w-3" />
+                            {sub.label}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   <div className="relative flex-1 min-h-0">
                     {codeTab === "html" && (

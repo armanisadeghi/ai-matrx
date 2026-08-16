@@ -82,6 +82,7 @@ import { NodeRealityCard } from "./NodeRealityCard";
 import { NodeMeasureCard } from "./NodeMeasureCard";
 import { NodeStepRail } from "./NodeStepRail";
 import { NodeSeoIntentEditor } from "./NodeSeoIntentEditor";
+import { planNodeHref, SeoPlanSection } from "./PlanContextPanel";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
@@ -145,6 +146,9 @@ export function NodePanel({
 }) {
   const update = useUpdatePlanNode(siteId);
   const remove = useDeletePlanNode(siteId);
+  // Whole-site node list — resolves the SEO plan's cross-page routes to real
+  // node doors (shared react-query key with the workbench; no double fetch).
+  const siteNodes = usePlanNodes(siteId);
   const deepening = deepen.run.status === "running";
   const deepeningThisNode = deepening && deepen.nodeId === node.id;
 
@@ -907,6 +911,21 @@ export function NodePanel({
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-4">
+            {/* The Website Factory production axis (plan.node_step /
+          node_artifact) — distinct from the editorial plan_status. FIRST, by
+          Arman's ruling (2026-08-16): where the page is in production is the
+          orientation everything below hangs off, never a footnote. Pending
+          steps are deliberately visible: the pipeline exists in data even
+          where today's fill still skips it. */}
+            <PanelSection title="Pipeline">
+              <NodeStepRail
+                nodeId={node.id}
+                siteId={siteId}
+                pageLabel={node.route ?? node.label}
+                progress={pipelineProgress ?? null}
+              />
+            </PanelSection>
+
             <PanelSection title="Page">
               <div className="grid grid-cols-2 gap-x-3 gap-y-3">
                 <div className="col-span-2">
@@ -1104,19 +1123,6 @@ export function NodePanel({
               />
             </PanelSection>
 
-            {/* The Website Factory production axis (plan.node_step /
-          node_artifact) — distinct from the editorial plan_status. Pending
-          steps are deliberately visible: the pipeline exists in data even
-          where today's fill still skips it. */}
-            <PanelSection title="Pipeline">
-              <NodeStepRail
-                nodeId={node.id}
-                siteId={siteId}
-                pageLabel={node.route ?? node.label}
-                progress={pipelineProgress ?? null}
-              />
-            </PanelSection>
-
             <PanelSection title="Targeting">
               <div>
                 <NodeSeoIntentEditor
@@ -1164,6 +1170,18 @@ export function NodePanel({
                     )}
                   </p>
                 ) : null}
+
+                {/* The applied site-wide keyword strategy — page role, money
+                    routes this page feeds, and the strategist's planned
+                    internal links. ONE component, shared with the measured
+                    page's plan-context card. */}
+                <div className="mt-4">
+                  <SeoPlanSection
+                    planNode={node}
+                    siteNodes={siteNodes.data ?? []}
+                    workspaceHref={planNodeHref(siteId, node.id)}
+                  />
+                </div>
               </div>
             </PanelSection>
 

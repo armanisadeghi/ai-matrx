@@ -5,32 +5,46 @@
  *
  * "Just because some step happens before we get here doesn't mean we forget it
  * once we're here." A CMS page realized from a content plan carries
- * `client_pages.plan_node_id`; this tab makes that node's context (label,
- * route, status, brief, target keyword, pipeline steps) visible where the page
- * is actually edited, and gives the node a real door into the plan workspace.
+ * `client_pages.plan_node_id`; this tab IS that node's editor.
  *
- * READ-FOCUSED BY DESIGN. Editing a brief/keyword/status stays in the plan
- * workspace's NodePanel — the ONE editor for a plan node. Duplicating those
- * editors here would fork the canonical component (THE CANONICAL COMPONENT
- * LAW). The one write this tab owns is the thing the plan workspace cannot do
- * from here: adopting a plan-less page into the plan.
+ * FULLY EDITABLE — Arman's ruling 2026-08-16: a partial read-only view that
+ * bounces the user to the plan workspace makes no sense when we can mount the
+ * SAME exact editor. The tab renders the canonical `NodePanel` (the ONE plan
+ * node editor, `hosted`) with the same hooks the workspace composes — brief,
+ * keyword, status, placement, attributes are all edited right here. The
+ * workspace door remains for whole-plan context (the tree around this page).
+ * The one write unique to this tab: adopting a plan-less page into the plan.
  *
  * Plan reads go DIRECT to Supabase (`content-plan/data/service.ts`); the adopt
  * is real server work behind aidream's `cms_align` (`setup/bridge.ts`).
- *
- * The plan context itself is the canonical `PlanContextPanel` — the SAME
- * component the measured page's workspace renders as its BEFORE.
  */
 import { useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Loader2, Map as MapIcon, Plus } from "lucide-react";
+import {
+  AlertCircle,
+  ExternalLink,
+  Loader2,
+  Map as MapIcon,
+  Plus,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { PlanContextPanel } from "@/features/marketing/content-plan/components/PlanContextPanel";
+import { NodePanel } from "@/features/marketing/content-plan/components/NodePanel";
+import {
+  usePlanEntities,
+  usePlanNode,
+  usePlanProfiles,
+  useSiteParties,
+  useNodeSteps,
+} from "@/features/marketing/content-plan/data/hooks";
+import { usePlanDeepen } from "@/features/marketing/content-plan/hooks/useContentPlanAi";
+import { useCmsPageMap } from "@/features/marketing/content-plan/hooks/useCmsPageMap";
+import { buildNodePipelineProgress } from "@/features/marketing/content-plan/lib/pipeline-progress";
 import { bridgeAdopt } from "@/features/marketing/content-plan/setup/bridge";
+import { useSite } from "@/features/marketing/data/hooks";
 import type { ClientPage, ClientSite } from "@/features/cms/types";
 
 interface PagePlanTabProps {
@@ -94,7 +108,115 @@ function PageOriginSection({ page }: { page: ClientPage }) {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-full overflow-auto">
-      <div className="mx-auto max-w-2xl space-y-5 p-6">{children}</div>
+      {/* max-w-4xl, not the editor's usual 2xl form column — this tab hosts a
+          full editor panel and Arman flagged the narrow width (2026-08-16). */}
+      <div className="mx-auto max-w-4xl space-y-5 p-6">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * The page's plan, fully editable in place — the canonical NodePanel with the
+ * exact prop composition ContentPlanWorkbench uses, resolved from this CMS
+ * page's own joins. Same component, same capabilities, zero forks.
+ */
+function EditablePlanNode({
+  planNodeId,
+  cmsSite,
+  onPageChanged,
+}: {
+  planNodeId: string;
+  cmsSite: ClientSite;
+  onPageChanged: () => void | Promise<void>;
+}) {
+  const node = usePlanNode(planNodeId);
+  const planSiteId = node.data?.site_id ?? cmsSite.web_site_id ?? null;
+  const marketingSite = useSite(planSiteId ?? "");
+  const entities = usePlanEntities(planSiteId);
+  const parties = useSiteParties(planSiteId);
+  const profiles = usePlanProfiles(
+    marketingSite.data?.organization_id ?? null,
+  );
+  const deepen = usePlanDeepen(planSiteId);
+  const nodeSteps = useNodeSteps(planSiteId);
+  const cmsPages = useCmsPageMap(planSiteId, cmsSite.id);
+  const workspaceHref = planSiteId
+    ? `/marketing/content-plan/${planSiteId}?node=${planNodeId}`
+    : "/marketing/content-plan";
+
+  if (node.isLoading) {
+    return (
+      <div className="flex items-center justify-center gap-2 py-10 text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm">Loading the plan for this page…</span>
+      </div>
+    );
+  }
+
+  if (node.error || !node.data) {
+    return (
+      <div className="space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+        <p className="flex items-center gap-2 text-sm font-medium text-destructive">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          This page points at a plan entry that could not be read.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {node.error instanceof Error
+            ? node.error.message
+            : "The plan entry may have been deleted, or it belongs to a plan you cannot see."}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => void node.refetch()}>
+            Retry
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={workspaceHref} target="_blank" rel="noopener noreferrer">
+              Open the plan workspace
+              <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const pipelineProgress =
+    buildNodePipelineProgress(nodeSteps.data ?? []).get(node.data.id) ?? null;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          This is the page&apos;s live plan — every change here saves to the
+          same plan the workspace shows.
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0 gap-1.5 text-xs"
+          asChild
+        >
+          <Link href={workspaceHref} target="_blank" rel="noopener noreferrer">
+            Open in plan workspace
+            <ExternalLink className="h-3.5 w-3.5" />
+          </Link>
+        </Button>
+      </div>
+      <NodePanel
+        key={node.data.id}
+        node={node.data}
+        siteId={node.data.site_id}
+        entities={entities.data ?? []}
+        parties={parties.data ?? []}
+        profiles={profiles.data ?? []}
+        onDeleted={() => void onPageChanged()}
+        deepen={deepen}
+        cmsPage={cmsPages.pagesByNodeId.get(node.data.id) ?? null}
+        cmsSiteId={cmsSite.id}
+        cmsPagesByNodeId={cmsPages.pagesByNodeId}
+        pipelineProgress={pipelineProgress}
+        hosted
+      />
     </div>
   );
 }
@@ -245,10 +367,10 @@ export default function PagePlanTab({
   if (page.plan_node_id) {
     return (
       <Shell>
-        <PlanContextPanel
+        <EditablePlanNode
           planNodeId={page.plan_node_id}
-          fallbackSiteId={site.web_site_id}
-          intro="This page was planned before it was built. The brief, target keyword, and status below are edited in the plan workspace — this tab shows what the page is supposed to be while you write it."
+          cmsSite={site}
+          onPageChanged={onPageChanged}
         />
         <PageOriginSection page={page} />
       </Shell>

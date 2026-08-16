@@ -307,6 +307,15 @@ export function PlanContextPanel({
 
       {intro ? <p className="text-xs text-muted-foreground">{intro}</p> : null}
 
+      {/* Pipeline FIRST (Arman, 2026-08-16): where the page is in production
+          orients everything below it — never buried at the bottom. */}
+      {showPipeline ? (
+        <section className="space-y-1.5">
+          <h3 className="text-xs font-semibold text-foreground">Pipeline</h3>
+          <NodeStepRail nodeId={planNode.id} progress={progress} />
+        </section>
+      ) : null}
+
       <section className="space-y-1.5">
         <h3 className="text-xs font-semibold text-foreground">Target keyword</h3>
         {primaryKeyword ? (
@@ -376,13 +385,6 @@ export function PlanContextPanel({
               </p>
             ) : null}
           </div>
-        </section>
-      ) : null}
-
-      {showPipeline ? (
-        <section className="space-y-1.5">
-          <h3 className="text-xs font-semibold text-foreground">Pipeline</h3>
-          <NodeStepRail nodeId={planNode.id} progress={progress} />
         </section>
       ) : null}
     </div>
