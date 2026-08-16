@@ -96,7 +96,10 @@ function readEnv(name: string): string {
     const direct = process.env[name];
     if (direct) return direct;
     try {
-        const envFile = readFileSync(join(process.cwd(), ".env.local"), "utf8");
+        const envFile = readFileSync(
+            join(/* turbopackIgnore: true */ process.cwd(), ".env.local"),
+            "utf8",
+        );
         const match = envFile.match(new RegExp(`^${name}=(.*)$`, "m"));
         if (match) return match[1].trim().replace(/^"|"$/g, "");
     } catch {

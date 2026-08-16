@@ -93,5 +93,8 @@ function's editor.**
 
 ## Change log
 
+- 2026-08-16 — Bounded the seed generator's dynamic `.env.local` filesystem
+  root for Turbopack so importing the utility cannot trace the whole repository
+  into a server bundle.
 - 2026-08-16 — Built end-to-end (C-18): catalogue, DB (tables/RPCs/resolver,
   live + ledgered), org surface, admin twin, aidream consult wiring.
