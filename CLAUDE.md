@@ -26,6 +26,8 @@ Arman plus dozens of concurrent agents edit this ONE checkout simultaneously; th
 
 **AI Matrx is where expertise becomes reliable, reusable, and accountable** — not a no-code platform, not an app builder, not a prompt library. Canonical (Arman's words): `/Users/armanisadeghi/code/common-docs/systems/ai-dream-platform/ai-matrx-core.md`. The build test: does this make expertise more reliable, more reusable, or more accountable? If not, cut it.
 
+**What things are called — THE CANONICAL VOCABULARY:** `/Users/armanisadeghi/code/common-docs/systems/vocabulary/FEATURE.md` is the ONE lexicon (Masterwork, Encore, Expert, Operator, plan node, Hindsight, …). Never coin or rename a product/system/role/concept name — a name not in the lexicon is a proposal for Arman. Contradictory language is a defect: fix on sight where the lexicon settles it, report it where it doesn't. UI strings, routes, code identifiers, and docs all use the same words.
+
 ## 🚨 WE ARE OUR OWN CUSTOMER — no privileged internal path, no partial application
 
 **Every capability we sell, we consume as a tenant of our own product** — same tables, same code paths, same UI. Already true of AI: every agent interaction in this platform runs on the SAME agent system users build and run. Canonical law: **`/Users/armanisadeghi/code/common-docs/policies/we-are-our-own-customer.md`** — read it before building any internal/admin surface.
