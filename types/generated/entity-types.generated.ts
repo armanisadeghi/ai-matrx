@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 367 active entity tokens. A token here is FK-valid for
+// 372 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -186,6 +186,11 @@ export type EntityTypeToken =
   | "hindsight_replay"
   | "hindsight_review"
   | "industry_curator"
+  | "interview_document_revision"
+  | "interview_hole"
+  | "interview_question"
+  | "interview_session"
+  | "interview_turn"
   | "invitation"
   | "invitation_code"
   | "invitation_request"
@@ -567,6 +572,10 @@ export type ComponentEntityToken =
   | "hindsight_finding"
   | "hindsight_replay"
   | "hindsight_review"
+  | "interview_document_revision"
+  | "interview_hole"
+  | "interview_question"
+  | "interview_turn"
   | "message"
   | "party_contact_point"
   | "pc_studio_run_asset"
@@ -805,6 +814,11 @@ export type ScopeableEntityToken =
   | "hindsight_replay"
   | "hindsight_review"
   | "industry_curator"
+  | "interview_document_revision"
+  | "interview_hole"
+  | "interview_question"
+  | "interview_session"
+  | "interview_turn"
   | "invitation"
   | "invitation_code"
   | "invitation_request"
@@ -1048,6 +1062,7 @@ export type ListedEntityToken =
   | "dataset"
   | "expertise_pack"
   | "growth_loop_run"
+  | "interview_session"
   | "learn_doc"
   | "marketing_initiative"
   | "party"
@@ -1212,6 +1227,11 @@ export const ENTITY_TYPE_METADATA = {
   "hindsight_replay": { token: "hindsight_replay", schema: "hindsight", table: "replay", label: "Hindsight Replay", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "hindsight_review": { token: "hindsight_review", schema: "hindsight", table: "review", label: "Hindsight Review", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "industry_curator": { token: "industry_curator", schema: "iam", table: "industry_curators", label: "Industry Curator", baseTier: 2, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "interview_document_revision": { token: "interview_document_revision", schema: "interview", table: "document_revision", label: "Interview Document Revision", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "interview_hole": { token: "interview_hole", schema: "interview", table: "hole", label: "Interview Adversary Hole", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "interview_question": { token: "interview_question", schema: "interview", table: "question", label: "Interview Open Question", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "interview_session": { token: "interview_session", schema: "interview", table: "session", label: "Vision Interview Session", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "interview_turn": { token: "interview_turn", schema: "interview", table: "turn", label: "Interview Turn", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "invitation": { token: "invitation", schema: "iam", table: "invitations", label: "Invitation", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "invitation_code": { token: "invitation_code", schema: "users", table: "invitation_codes", label: "Invitation Code", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "invitation_request": { token: "invitation_request", schema: "users", table: "invitation_requests", label: "Invitation Request", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1583,6 +1603,11 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "hindsight_replay",
   "hindsight_review",
   "industry_curator",
+  "interview_document_revision",
+  "interview_hole",
+  "interview_question",
+  "interview_session",
+  "interview_turn",
   "invitation",
   "invitation_code",
   "invitation_request",
