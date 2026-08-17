@@ -11,7 +11,7 @@
  *
  * This is intentionally the simplest-possible combination of the two
  * systems. Richer per-file context mappings (e.g. exposing every open
- * file as a separate `vsc_*` context slot) are a follow-up — the event
+ * file as a separate `vsc_*` context policy) are a follow-up — the event
  * surface in `callbacks.ts` is designed to support them without touching
  * this component.
  *

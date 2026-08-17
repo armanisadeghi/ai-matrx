@@ -23,7 +23,7 @@
  *
  * Context items are passed as PROPER context entries (the fix for the old
  * "questionable" handling):
- *   - an item whose key matches an agent-declared context slot fills that
+ *   - an item whose key matches an agent-declared context policy fills that
  *     slot directly (slotMatched: true);
  *   - if NO item matched any slot and the agent declares slots, the items are
  *     combined into the agent's first declared slot (legacy system-cleaner
@@ -276,7 +276,7 @@ export function useAiPostProcess() {
           const firstOpenSlot = slots.find((s) => !taken.has(s.key));
           if (slotMatchedItems.length === 0 && firstOpenSlot) {
             // Legacy system-cleaner behavior: free-form context fills the
-            // agent's declared context slot.
+            // agent's declared context policy.
             entries.push({
               key: firstOpenSlot.key,
               value: combined,

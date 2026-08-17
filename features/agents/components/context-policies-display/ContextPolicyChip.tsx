@@ -3,7 +3,7 @@
 /**
  * ContextPolicyChip
  *
- * One context slot value on a user message — tile layout matching
+ * One context policy value on a user message — tile layout matching
  * ResourceAttachmentTile. Click → ContextPolicyDetailSheet.
  */
 
@@ -25,8 +25,8 @@ interface ContextPolicyChipProps {
   conversationId: string;
   agentId: string | null;
   entry: InstanceContextEntry;
-  /** Matching slot definition if the key is declared on the agent. */
-  slot?: ContextPolicy;
+  /** Matching policy definition if the key is declared on the agent. */
+  policy?: ContextPolicy;
   className?: string;
 }
 
@@ -34,16 +34,16 @@ export function ContextPolicyChip({
   conversationId,
   agentId,
   entry,
-  slot,
+  policy,
   className,
 }: ContextPolicyChipProps) {
   const [open, setOpen] = useState(false);
 
-  const type: ContextObjectType = slot?.type ?? entry.type;
+  const type: ContextObjectType = policy?.type ?? entry.type;
   const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
   const typeLabel = CONTEXT_TYPE_TILE_LABEL[type] ?? "Context";
 
-  const label = slot?.label?.trim() || entry.label?.trim() || entry.key;
+  const label = policy?.label?.trim() || entry.label?.trim() || entry.key;
   const liveEntry = useAppSelector(
     selectInstanceContextEntry(conversationId, entry.key),
   );

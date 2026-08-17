@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Gallery of user-message chip surfaces — context slots + resource attachments.
+ * Gallery of user-message chip surfaces — context policies + resource attachments.
  * Dev-only preview at /demos/agents/user-message-chips.
  */
 
@@ -236,10 +236,10 @@ export function UserMessageChipsDemo() {
 
         <UserMessageHybridTileSamples specs={DEMO_COMPARISON_ATTACHMENTS} />
 
-        {/* ── Context slots ── */}
+        {/* ── Context policies ── */}
         <div className="space-y-6">
           <h2 className="text-base font-semibold text-foreground border-b border-border pb-2">
-            Context slots
+            Context policies
           </h2>
 
           <DemoBubble
@@ -281,13 +281,13 @@ export function UserMessageChipsDemo() {
               </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              {DEMO_TYPE_ENTRIES.map(({ type, entry, slot }) => (
+              {DEMO_TYPE_ENTRIES.map(({ type, entry, policy }) => (
                 <DemoBubble key={type} title={type} className="max-w-none">
                   <ContextPolicyChip
                     conversationId="demo-user-msg-ctx-types"
                     agentId={null}
                     entry={entry}
-                    slot={slot}
+                    policy={policy}
                   />
                 </DemoBubble>
               ))}

@@ -14,7 +14,7 @@ import type { AgentUsageRow, UsageDriftFinding } from "@/features/agents/redux/u
 const DRIFT_CLASS_LABEL: Record<string, string> = {
   missing_variable: "Variable removed",
   unmet_required_variable: "Required variable not supplied",
-  missing_context_slot: "Context slot renamed or removed",
+  missing_context_slot: "Context policy renamed or removed",
   stale_pin: "Pinned behind the active version",
   source_snapshot_stale: "Behind its source agent",
   agent_unavailable: "Agent archived or disabled",
@@ -77,7 +77,7 @@ export function UsageRowDetail({ row }: { row: AgentUsageRow }) {
       {effective && (
         <div className="grid gap-2 sm:grid-cols-2 text-[11px]">
           <ContractColumn label="Declared variables" items={effective.variables ?? []} required={effective.required_variables ?? []} />
-          <ContractColumn label="Declared context slots" items={effective.context_slots ?? []} />
+          <ContractColumn label="Declared context policies" items={effective.context_slots ?? []} />
         </div>
       )}
 

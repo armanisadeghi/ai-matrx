@@ -213,7 +213,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
           <button
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
             onClick={() => openBatchImport({ agentId })}
-            title="Batch add variables and context slots from a scope type"
+            title="Batch add variables and context policies from a scope type"
           >
             <Layers className="w-3.5 h-3.5" />
             Batch add

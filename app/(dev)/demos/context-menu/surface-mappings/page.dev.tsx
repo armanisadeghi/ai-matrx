@@ -509,7 +509,7 @@ export default function SurfaceMappingsDemoPage() {
               <span className="text-foreground">{output.surfaceName}</span> —
               agent declares {output.variableDefNames.length} variable(s) [
               {output.variableDefNames.join(", ") || "none"}] and{" "}
-              {output.contextPolicyKeys.length} context slot(s) [
+              {output.contextPolicyKeys.length} context policy(s) [
               {output.contextPolicyKeys.join(", ") || "none"}].
             </p>
 
@@ -524,7 +524,7 @@ export default function SurfaceMappingsDemoPage() {
                   No binding rows found for this agent × surface (including
                   inherited parent surfaces). Only the legacy auto-name-match
                   pass applies — scope keys that exactly match a variable name
-                  or context slot still land; everything else falls through as
+                  or context policy still land; everything else falls through as
                   ad-hoc context.
                 </p>
               ) : (

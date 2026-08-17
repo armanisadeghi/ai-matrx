@@ -6,14 +6,14 @@
  * Engineer-facing surface for setting the `context` dict that accompanies
  * every submission. Two sections:
  *
- *   1. **Declared slots** — whatever `contextPolicies` the agent defines.
- *      Always rendered, even when empty, with the slot's type/label/description.
+ *   1. **Declared policies** — whatever `contextPolicies` the agent defines.
+ *      Always rendered, even when empty, with the policy's type/label/description.
  *      Values round-trip through localStorage (see useBuilderContextSeed)
  *      so the engineer doesn't have to re-enter them after reload, reset,
  *      or auto-clear split.
  *
  *   2. **Ad-hoc keys** — free-form additions for testing what happens when
- *      the agent is called with context keys outside its declared slots
+ *      the agent is called with context keys outside its declared policies
  *      (useful for probing ctx_get's unknown-key behavior).
  *
  * All edits dispatch `setContextEntry` AND persist to localStorage so the
@@ -159,7 +159,7 @@ export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) 
     ),
   );
 
-  const declaredSlots =
+  const declaredPolicies =
     useAppSelector((state) =>
       agentId ? selectAgentContextPolicies(state, agentId) : undefined,
     ) ?? EMPTY_SLOTS;
@@ -173,12 +173,12 @@ export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) 
     ) ?? EMPTY_MAP;
 
   // Split existing entries into declared vs ad-hoc based on whether the key
-  // matches any declared slot key. We don't trust `slotMatched` alone —
-  // declared slots should always render even when the user hasn't set a
+  // matches any declared policy key. We don't trust `slotMatched` alone —
+  // declared policies should always render even when the user hasn't set a
   // value yet.
   const declaredKeys = useMemo(
-    () => new Set(declaredSlots.map((s) => s.key)),
-    [declaredSlots],
+    () => new Set(declaredPolicies.map((s) => s.key)),
+    [declaredPolicies],
   );
 
   const adHocEntries = useMemo(
@@ -243,27 +243,27 @@ export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) 
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-2 space-y-4">
-        {/* Declared slots section */}
+        {/* Declared policies section */}
         <section>
           <SectionHeader
-            title="Declared slots"
-            count={declaredSlots.length}
+            title="Declared policies"
+            count={declaredPolicies.length}
             description="Defined on the agent. Values are saved per agent across sessions."
           />
-          {declaredSlots.length === 0 ? (
+          {declaredPolicies.length === 0 ? (
             <div className="mt-2 px-3 py-2 text-[11px] text-muted-foreground border border-dashed border-border rounded-md">
-              This agent defines no context slots. Use the Ad-hoc section below
+              This agent defines no context policies. Use the Ad-hoc section below
               to test with arbitrary keys.
             </div>
           ) : (
             <div className="mt-2 space-y-2">
-              {declaredSlots.map((slot) => (
-                <DeclaredSlotRow
-                  key={slot.key}
-                  slot={slot}
-                  entry={contextEntries[slot.key]}
+              {declaredPolicies.map((policy) => (
+                <DeclaredPolicyRow
+                  key={policy.key}
+                  policy={policy}
+                  entry={contextEntries[policy.key]}
                   onWrite={writeEntry}
-                  onClear={() => removeEntry(slot.key)}
+                  onClear={() => removeEntry(policy.key)}
                 />
               ))}
             </div>
@@ -276,7 +276,7 @@ export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) 
             title="Ad-hoc context"
             count={adHocEntries.length}
             description="Extra keys sent to the server that aren't declared on the agent."
-            rightSlot={
+            rightPolicy={
               hasAnyValues ? (
                 <button
                   type="button"
@@ -337,12 +337,12 @@ function SectionHeader({
   title,
   count,
   description,
-  rightSlot,
+  rightPolicy,
 }: {
   title: string;
   count: number;
   description: string;
-  rightSlot?: React.ReactNode;
+  rightPolicy?: React.ReactNode;
 }) {
   return (
     <div className="flex items-start justify-between gap-3">
@@ -359,7 +359,7 @@ function SectionHeader({
           {description}
         </p>
       </div>
-      {rightSlot}
+      {rightPolicy}
     </div>
   );
 }
@@ -378,16 +378,16 @@ function TypeBadge({ type }: { type: ContextObjectType }) {
 }
 
 // =============================================================================
-// Declared slot row
+// Declared policy row
 // =============================================================================
 
-function DeclaredSlotRow({
-  slot,
+function DeclaredPolicyRow({
+  policy,
   entry,
   onWrite,
   onClear,
 }: {
-  slot: ContextPolicy;
+  policy: ContextPolicy;
   entry: InstanceContextEntry | undefined;
   onWrite: (
     key: string,
@@ -398,21 +398,21 @@ function DeclaredSlotRow({
   ) => void;
   onClear: () => void;
 }) {
-  const type = slot.type;
-  const label = slot.label ?? slot.key;
+  const type = policy.type;
+  const label = policy.label ?? policy.key;
   const initialString = valueToEditorString(entry?.value, type);
 
   return (
     <ValueEditorCard
-      keyText={slot.key}
+      keyText={policy.key}
       labelText={label}
       type={type}
       typeEditable={false}
-      description={slot.description}
+      description={policy.description}
       initialString={initialString}
       onCommit={(text) => {
         const { value } = editorStringToValue(text, type);
-        onWrite(slot.key, value, type, label, /* slotMatched */ true);
+        onWrite(policy.key, value, type, label, /* slotMatched */ true);
       }}
       rightAction={
         entry !== undefined ? (
@@ -590,7 +590,7 @@ function ValueEditorCard({
         {rightAction}
       </div>
 
-      {/* Description (declared slots only) */}
+      {/* Description (declared policies only) */}
       {description && (
         <div className="px-2 py-1 text-[10px] text-muted-foreground/80 border-b border-border/50">
           {description}

@@ -514,7 +514,7 @@ export interface InstanceContextEntry {
   key: string;
   value: unknown;
 
-  /** Whether this key matched an agent-defined context slot */
+  /** Whether this key matched an agent-defined context policy */
   slotMatched: boolean;
 
   /** If mandate-matched, the mandate's type. Otherwise inferred. */

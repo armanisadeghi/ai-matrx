@@ -4,7 +4,7 @@
  * ADMIN SURFACE. Drives `/administration/agents/system-agents/**` — the
  * super-admin console for BUILTIN (platform-owned) agents: the roster grid,
  * one open system agent, and that agent's full authored configuration
- * (messages, variables, tools, context slots, model tiers, gates) plus its
+ * (messages, variables, tools, context policies, model tiers, gates) plus its
  * version standing.
  *
  * What an agent bound here may safely do: read and reason about the system
@@ -73,7 +73,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Agent configuration",
     sortOrder: 300,
     description:
-      "The authored definition of the open agent: prompt messages, variables, tools, context slots, model routing, and gates.",
+      "The authored definition of the open agent: prompt messages, variables, tools, context policies, model routing, and gates.",
   },
   {
     key: "version_state",
@@ -315,9 +315,9 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "agent_context_slots",
-    label: "Context slots",
+    label: "Context policies",
     description:
-      "Declared context slots the open agent fills at invocation time. Absent when no agent is open or it declares none.",
+      "Declared context policies the open agent fills at invocation time. Absent when no agent is open or it declares none.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 800,
@@ -596,7 +596,7 @@ export const adminSystemAgentsManifest: SurfaceManifest = {
   intro: `<surface_intro>
 This is an ADMIN surface: the super-admin console for the platform's SYSTEM (builtin) agents, at /administration/agents/system-agents.
 
-The admin here browses the roster of builtin agents and opens one to inspect or edit its authored definition — prompt messages, input variables, tools and custom tools, context slots, model and model tiers, run settings, output schema, UI gates — plus its version standing.
+The admin here browses the roster of builtin agents and opens one to inspect or edit its authored definition — prompt messages, input variables, tools and custom tools, context policies, model and model tiers, run settings, output schema, UI gates — plus its version standing.
 
 How to read the values: roster_* describes the LIST the admin is looking at; agent_* describes the ONE agent currently open (all agent_* values are absent on list and hub pages). agent_type tells you whether the open record is genuinely a system agent — anything other than "builtin" means a personal agent was opened here by mistake, and the route says so loudly.
 
@@ -604,7 +604,7 @@ What you may safely do: read, summarise, compare, critique, and PROPOSE changes 
 
 What you may WRITE, on the agent detail page only, is the CATALOG PROSE of the open agent: agent_description, agent_name, agent_category, agent_tags. Describing a system agent well is the case you are genuinely better at — read agent_messages first, then say what the agent actually does. These four save IMMEDIATELY once the admin approves the confirm dialog (each write also snapshots the previous definition as a new version, so nothing is lost). agent_tags replaces the whole set, so read it first and re-send what should stay.
 
-Everything else is human-only and you will be refused if you reach for it: the prompt messages, variables, context slots, tools, custom tools, MCP servers, output schema, skills, model and model tiers — changing what a SYSTEM agent does or may reach affects every user of the platform and is not a copy edit — and is_active / is_archived, which are publication and trust controls an agent must never operate on itself or its siblings. Propose those in your answer instead of trying to apply them.
+Everything else is human-only and you will be refused if you reach for it: the prompt messages, variables, context policies, tools, custom tools, MCP servers, output schema, skills, model and model tiers — changing what a SYSTEM agent does or may reach affects every user of the platform and is not a copy edit — and is_active / is_archived, which are publication and trust controls an agent must never operate on itself or its siblings. Propose those in your answer instead of trying to apply them.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

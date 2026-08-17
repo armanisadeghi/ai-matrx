@@ -1,7 +1,7 @@
 /**
  * Agent edit access — the "can the agent change this slot?" wire contract.
  *
- * Guards the bug this replaced: a context slot the user marked agent-editable
+ * Guards the bug this replaced: a context policy the user marked agent-editable
  * had to actually come out the other side carrying `mutable: true`, and a
  * read-only one had to carry no mutation fields at all.
  */
@@ -12,7 +12,7 @@ import {
   decodeAgentEditAccess,
   SCOPE_ITEM_DEFAULT_SAVE_MODE,
 } from "@/features/agents/utils/agent-edit-access";
-import { buildContextPolicyFromItem } from "@/features/agents/utils/context-item-slot-mapping";
+import { buildContextPolicyFromItem } from "@/features/agents/utils/context-item-policy-mapping";
 import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
 

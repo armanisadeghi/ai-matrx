@@ -212,7 +212,7 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   cleanupAgentId?: string | null;
   /**
    * Context blocks the host page wants the cleanup agent to receive. Each item
-   * whose `key` matches an agent-declared context slot fills that slot; the
+   * whose `key` matches an agent-declared context policy fills that slot; the
    * rest ride as ad-hoc context entries (same handling as the cleanup page).
    */
   cleanupContextItems?: SessionContextItem[];

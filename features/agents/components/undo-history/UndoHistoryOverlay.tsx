@@ -46,7 +46,7 @@ const FIELD_LABELS: Partial<Record<string, string>> = {
   tools: "Tools",
   customTools: "Custom Tools",
   variableDefinitions: "Variables",
-  contextPolicies: "Context Slots",
+  contextPolicies: "Context Policies",
   modelId: "Model",
   modelTiers: "Model Tiers",
   outputSchema: "Output Schema",

@@ -210,7 +210,7 @@ export function ConversationContextRail({
     };
   }, [conversationId, dispatch]);
 
-  // ── Does this agent declare a context slot sourced from a scope's context
+  // ── Does this agent declare a context policy sourced from a scope's context
   // item whose scope TYPE isn't currently active? An unrelated org/scope being
   // active (e.g. a law-firm org while this agent needs a "Goal" scope) must
   // still nudge — checking active layers alone would wrongly stay silent just

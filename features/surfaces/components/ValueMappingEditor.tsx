@@ -35,7 +35,7 @@ import type {
 } from "@/features/surfaces/types";
 
 /**
- * A target the editor can bind. Used for both agent variables/context slots
+ * A target the editor can bind. Used for both agent variables/context policies
  * and tool args. The editor doesn't care which — it just renders rows.
  */
 export interface MappingTarget {
@@ -174,7 +174,7 @@ export function ValueMappingEditor({
   if (targets.length === 0) {
     return (
       <div className="rounded-md border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-        No variables, context slots, or args to map.
+        No variables, context policies, or args to map.
       </div>
     );
   }

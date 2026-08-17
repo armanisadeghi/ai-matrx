@@ -3,7 +3,7 @@
  *
  * The `surfaces_client.binding_mapper` mandate agent receives the surface's
  * declared values + write targets and the target agent's input contract
- * (variables AND context slots — the context-mandate doctrine is written into
+ * (variables AND context policies — the context-mandate doctrine is written into
  * the agent's DB definition), and returns a structured proposal. This module
  * owns both directions of that wire:
  *

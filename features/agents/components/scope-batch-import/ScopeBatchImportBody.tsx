@@ -3,12 +3,12 @@
 /**
  * ScopeBatchImportBody
  *
- * Shortcut for batch-creating agent Variables and Context Slots from a scope
+ * Shortcut for batch-creating agent Variables and Context Policies from a scope
  * type's context items — org → scope type → per-item opt-in checkboxes, with
- * an "add all" per column. Every created Variable/Context Slot is bound to its
+ * an "add all" per column. Every created Variable/Context Policy is bound to its
  * source item via the same shapes `AgentContextPoliciesManager` and
  * `ContextItemBindingEditor` already produce for a single manual bind
- * (see `features/agents/utils/context-item-slot-mapping.ts`), so a batch-created
+ * (see `features/agents/utils/context-item-policy-mapping.ts`), so a batch-created
  * entry is indistinguishable from one bound by hand.
  */
 
@@ -62,7 +62,7 @@ import {
   buildVariableFromItem,
   suggestKeyFromContextItem,
   uniquifyKey,
-} from "@/features/agents/utils/context-item-slot-mapping";
+} from "@/features/agents/utils/context-item-policy-mapping";
 import { AgentEditAccessToggle } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
 import {
   applyAgentEditAccess,
@@ -147,7 +147,7 @@ export function ScopeBatchImportBody({
     [variables],
   );
   // Context item → the index of the slot already bound to it. Those rows stay
-  // checked + disabled in the "Context slot" column (a re-run can never
+  // checked + disabled in the "Context policy" column (a re-run can never
   // double-add) but their agent access REMAINS EDITABLE here — that's the whole
   // point of reopening the tool, and disabling it was the bug this replaced.
   const boundSlotIndexByItemId = useMemo(() => {
@@ -353,7 +353,7 @@ export function ScopeBatchImportBody({
         ? `Added ${newVariables.length} variable${newVariables.length === 1 ? "" : "s"}`
         : null,
       newSlots.length > 0
-        ? `${newVariables.length > 0 ? "" : "Added "}${newSlots.length} context slot${newSlots.length === 1 ? "" : "s"}`
+        ? `${newVariables.length > 0 ? "" : "Added "}${newSlots.length} context policy${newSlots.length === 1 ? "" : "s"}`
         : null,
       updatedSlots.length > 0
         ? `updated agent access on ${updatedSlots.length} slot${updatedSlots.length === 1 ? "" : "s"}`
@@ -449,7 +449,7 @@ export function ScopeBatchImportBody({
                 </TableHead>
                 <TableHead className="w-[140px]">
                   <div className="flex items-center justify-between gap-2">
-                    <span>Context slot</span>
+                    <span>Context policy</span>
                     <ColumnAllToggle
                       total={items.length}
                       selectedCount={selectedSlotCount}
@@ -526,7 +526,7 @@ export function ScopeBatchImportBody({
                         value={accessForItem(item.id)}
                         onChange={(access) => setAccess(item.id, access)}
                         disabled={!hasSlot}
-                        disabledReason="Add this as a context slot first, then choose whether the agent can edit it."
+                        disabledReason="Add this as a context policy first, then choose whether the agent can edit it."
                       />
                     </TableCell>
                   </TableRow>
@@ -542,7 +542,7 @@ export function ScopeBatchImportBody({
           {canSubmit
             ? [
                 `${selectedVariableCount} variable${selectedVariableCount === 1 ? "" : "s"}`,
-                `${selectedSlotCount} context slot${selectedSlotCount === 1 ? "" : "s"} to add`,
+                `${selectedSlotCount} context policy${selectedSlotCount === 1 ? "" : "s"} to add`,
                 updatedSlots.length > 0
                   ? `${updatedSlots.length} existing slot${updatedSlots.length === 1 ? "" : "s"} to update`
                   : null,

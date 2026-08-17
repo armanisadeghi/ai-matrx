@@ -52,7 +52,7 @@ export const DRIFT_SEVERITY_META: Record<DriftSeverity, DriftSeverityMeta> = {
   silent_breaking: {
     label: "Silent break",
     description:
-      "A context slot was renamed. The value is still injected, but as plain default context — the slot's rules are silently ignored.",
+      "A context policy was renamed. The value is still injected, but as plain default context — the slot's rules are silently ignored.",
     icon: EyeOff,
     textClass: "text-warning",
     bgClass: "bg-warning/15",

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 
 export interface DefaultContextPolicyValuesEditorProps {
-  /** Declared context slots on the agent. */
+  /** Declared context policies on the agent. */
   contextPolicies: ContextPolicy[];
   /** Per-slot overrides persisted on the shortcut. Keyed by slot key. */
   values: Record<string, unknown> | null;
@@ -17,11 +17,11 @@ export interface DefaultContextPolicyValuesEditorProps {
 }
 
 /**
- * One row per declared context slot. The user can pre-seed a value that will
+ * One row per declared context policy. The user can pre-seed a value that will
  * be set on the instance at launch (before any scope → context-policy mapping
  * or runtime context entries arrive). Blank = no override.
  *
- * Context slots don't carry default values on the agent itself — defaults
+ * Context policies don't carry default values on the agent itself — defaults
  * here come from the shortcut.
  */
 export function DefaultContextPolicyValuesEditor({
@@ -50,7 +50,7 @@ export function DefaultContextPolicyValuesEditor({
   if (!hasSlots) {
     return (
       <div className="text-xs text-muted-foreground italic px-3 py-2 border border-border rounded-md bg-muted/30">
-        This agent has no context slots declared.
+        This agent has no context policies declared.
       </div>
     );
   }

@@ -3,7 +3,7 @@
 /**
  * useBuilderContextSeed
  *
- * Persists agent-builder context slot values in localStorage, keyed by agentId,
+ * Persists agent-builder context policy values in localStorage, keyed by agentId,
  * and seeds them back into every new instance's Redux state when the builder
  * mounts or the conversation id changes (including after auto-clear split).
  *

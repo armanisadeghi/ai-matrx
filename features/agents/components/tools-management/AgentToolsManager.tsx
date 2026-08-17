@@ -39,7 +39,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
   Tooltip,
@@ -75,6 +74,7 @@ import {
   setAgentMcpServers,
 } from "@/features/agents/redux/agent-definition/slice";
 import { setAgentAutoToolsDisabled } from "@/features/agents/redux/agent-definition/thunks";
+import { AutoInjectionSwitch } from "@/features/agents/components/shared/AutoInjectionSwitch";
 import {
   selectMcpCatalog,
   selectMcpCatalogStatus,
@@ -483,35 +483,26 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
       {/* Allow automated tool injection — agent-global; governs every tab.
           When off, the server's `auto_tools_disabled` kill switch drops ALL
           surface/automatic tools so the agent runs with only the tools
-          selected here. See tool-injection.types.ts. */}
-      <label
-        htmlFor={`allow-auto-tools-${agentId}`}
-        className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border bg-muted/30 shrink-0 cursor-pointer"
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          <Zap
-            className={`w-3.5 h-3.5 shrink-0 ${autoToolsDisabled ? "text-muted-foreground" : "text-primary"}`}
-          />
-          <div className="min-w-0">
-            <span className="text-xs font-medium text-foreground">
-              Allow automated tool injection
-            </span>
-            <p className="text-[11px] text-muted-foreground leading-tight">
-              {autoToolsDisabled
-                ? "Off — this agent only ever gets the tools selected here. No surface or automatic tools are added."
-                : "On — the active surface may add its default tools on top of your selection."}
-            </p>
-          </div>
-        </div>
-        <Switch
-          id={`allow-auto-tools-${agentId}`}
-          checked={!autoToolsDisabled}
-          onCheckedChange={(allow) =>
-            dispatch(setAgentAutoToolsDisabled({ agentId, disabled: !allow }))
-          }
-          className="shrink-0"
-        />
-      </label>
+          selected here. See tool-injection.types.ts.
+
+          Rendered through the SHARED AutoInjectionSwitch so this and the
+          context kill switch (AgentContextInjectionSwitch) can never drift
+          into looking like different mechanisms — they are the same idea
+          applied to the two automatic input channels. */}
+      <AutoInjectionSwitch
+        id={`allow-auto-tools-${agentId}`}
+        label="Allow automated tool injection"
+        icon={<Zap className="w-3.5 h-3.5" />}
+        disabled={autoToolsDisabled}
+        statusText={
+          autoToolsDisabled
+            ? "Off — this agent only ever gets the tools selected here. No surface or automatic tools are added."
+            : "On — the active surface may add its default tools on top of your selection."
+        }
+        onChange={(disabled) =>
+          dispatch(setAgentAutoToolsDisabled({ agentId, disabled }))
+        }
+      />
 
       {/* Model capability advisory — non-blocking. The selected model can't use
           tools; the server drops all of them at run time. Never blocks saving. */}

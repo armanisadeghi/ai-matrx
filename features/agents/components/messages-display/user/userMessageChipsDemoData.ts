@@ -146,7 +146,7 @@ export const DEMO_SINGLE_ENTRY: InstanceContextEntry = {
   type: "text",
   slotMatched: true,
   value:
-    "This is a working document context slot with a short preview snippet for the chip.",
+    "This is a working document context policy with a short preview snippet for the chip.",
 };
 
 export const DEMO_MULTI_ENTRIES: InstanceContextEntry[] = [
@@ -219,7 +219,7 @@ export const DEMO_MULTI_ENTRIES: InstanceContextEntry[] = [
 export const DEMO_TYPE_ENTRIES: {
   type: ContextObjectType;
   entry: InstanceContextEntry;
-  slot?: ContextPolicy;
+  policy?: ContextPolicy;
 }[] = [
   {
     type: "text",
@@ -231,7 +231,7 @@ export const DEMO_TYPE_ENTRIES: {
       value:
         "Plain text context with markdown **support** in the detail sheet.",
     },
-    slot: {
+    policy: {
       key: "type_text",
       type: "text",
       label: "Text Slot",

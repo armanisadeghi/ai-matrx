@@ -65,7 +65,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Request and inputs",
     sortOrder: 300,
     description:
-      "What was asked: the user's message, the resolved variables, and the context slots that were filled.",
+      "What was asked: the user's message, the resolved variables, and the context policies that were filled.",
   },
   {
     key: "run_response",
@@ -292,7 +292,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "context_entries",
     label: "Context entries",
     description:
-      "Array of context slot entries available to the agent on this run, each with its key, value, and whether it matched a declared slot. Empty array when no context was attached.",
+      "Array of context policy entries available to the agent on this run, each with its key, value, and whether it matched a declared slot. Empty array when no context was attached.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 1500,

@@ -271,7 +271,7 @@ export function AgentUserMessage({
               <FirstTurnVariables conversationId={conversationId} />
             )}
 
-            {/* Context slot chips — the TRUE per-turn context this message
+            {/* Context policy chips — the TRUE per-turn context this message
                 carried, read ONLY from this message's own data: the server's
                 `model_context` column (authoritative; wins on reload) or, before
                 that record lands, the optimistic `metadata.context_snapshot`

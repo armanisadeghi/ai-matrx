@@ -8,7 +8,7 @@
  *   Template value  →  Batch "set for all"  →  Per-row override
  *
  * A *field* (any column of `agx_shortcut`) and each *binding target* (an agent
- * variable / context slot) is independently in one of three modes:
+ * variable / context policy) is independently in one of three modes:
  *   - "inherit" : ADD → copy from template (or standard defaults).
  *                 UPDATE → leave the existing value untouched.
  *   - "all"     : one value applied to every row. Not a grid column.

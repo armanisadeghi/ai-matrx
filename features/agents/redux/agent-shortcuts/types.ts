@@ -54,7 +54,7 @@ export interface AgentShortcut {
   isVersion: boolean;
 
   // ── Agent contract (snapshotted with the shortcut at load time) ─────
-  //     These are the agent's declared variables + context slots at the
+  //     These are the agent's declared variables + context policies at the
   //     shortcut's pinned version. They live on the shortcut so launch
   //     time never has to look up the agent slice — this is what keeps
   //     version-pinned shortcuts safe and keeps "agent not loaded" from

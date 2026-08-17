@@ -354,12 +354,12 @@ function PrettyView({
         </section>
       )}
 
-      {/* Context slots */}
+      {/* Context policies */}
       {data.context_slots && data.context_slots.length > 0 && (
         <section className="border-t pt-2">
           <SectionHeader
             icon={Puzzle}
-            label={`Context Slots (${data.context_slots.length})`}
+            label={`Context Policies (${data.context_slots.length})`}
           />
           <ContextPoliciesTable slots={data.context_slots} />
         </section>

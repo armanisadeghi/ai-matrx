@@ -167,7 +167,7 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
 
     // Derived execution target — this converter reads the raw DB row (no
     // agent join) so we compute the resolved id/flag locally. Variable
-    // definitions + context slots stay empty; the RPC loaders populate them
+    // definitions + context policies stay empty; the RPC loaders populate them
     // on the menu path.
     resolvedId:
       row.use_latest === false && row.agent_version_id

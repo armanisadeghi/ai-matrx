@@ -136,7 +136,7 @@ export default function TopicAgentsPage() {
             <p className="mt-1 max-w-xl text-[13.5px] leading-relaxed text-muted-foreground">
               Replace any of the system agents that power this topic&apos;s
               research pipeline. Your agent must declare every variable and
-              context slot the system agent does — extras are fine.
+              context policy the system agent does — extras are fine.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export default function TopicAgentsPage() {
       </div>
 
       <p className="mt-6 text-center text-[11.5px] text-muted-foreground/70">
-        Validation checks declared variables and context slots only — it
+        Validation checks declared variables and context policies only — it
         doesn&apos;t execute the agent.
       </p>
     </div>

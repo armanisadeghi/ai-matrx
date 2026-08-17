@@ -16,12 +16,12 @@ interface ContextPolicyLike {
   description?: string;
 }
 
-function formatSlot(slot: ContextPolicyLike | undefined): string {
-  if (!slot) return "—";
-  const parts = [slot.key];
-  if (slot.type) parts.push(`[${slot.type}]`);
-  if (slot.label) parts.push(`"${slot.label}"`);
-  if (slot.description) parts.push(`\n${slot.description}`);
+function formatPolicy(policy: ContextPolicyLike | undefined): string {
+  if (!policy) return "—";
+  const parts = [policy.key];
+  if (policy.type) parts.push(`[${policy.type}]`);
+  if (policy.label) parts.push(`"${policy.label}"`);
+  if (policy.description) parts.push(`\n${policy.description}`);
   return parts.join(" ");
 }
 
@@ -51,14 +51,14 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
   return (
     <>
       {node.children.map((child, i) => {
-        const oldSlot = child.oldValue as ContextPolicyLike | undefined;
-        const newSlot = child.newValue as ContextPolicyLike | undefined;
-        const slotKey = newSlot?.key ?? oldSlot?.key ?? child.key;
+        const oldPolicy = child.oldValue as ContextPolicyLike | undefined;
+        const newPolicy = child.newValue as ContextPolicyLike | undefined;
+        const slotKey = newPolicy?.key ?? oldPolicy?.key ?? child.key;
 
-        // Edited slot → word/line-level diff so only the changed text is tinted.
-        if (child.changeType === "modified" && oldSlot && newSlot) {
-          const oldText = formatSlot(oldSlot);
-          const newText = formatSlot(newSlot);
+        // Edited policy → word/line-level diff so only the changed text is tinted.
+        if (child.changeType === "modified" && oldPolicy && newPolicy) {
+          const oldText = formatPolicy(oldPolicy);
+          const newText = formatPolicy(newPolicy);
           if (oldText !== "" && newText !== "") {
             return (
               <div
@@ -94,7 +94,7 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
                 child.changeType === "added" ? "text-muted-foreground/50" : "",
               )}
             >
-              {formatSlot(oldSlot)}
+              {formatPolicy(oldPolicy)}
             </div>
             <div
               className={cn(
@@ -107,7 +107,7 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
                   : "",
               )}
             >
-              {formatSlot(newSlot)}
+              {formatPolicy(newPolicy)}
             </div>
           </div>
         );
@@ -117,14 +117,14 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
 }
 
 export const ContextPoliciesAdapter: FieldAdapter = {
-  label: "Context Slots",
+  label: "Context Policies",
   icon: Layers,
   renderDiff: ContextPoliciesDiffRenderer,
   toSummaryText: (node) => {
-    if (!node.children) return "Context slots changed";
+    if (!node.children) return "Context policies changed";
     const changed = node.children.filter(
       (c) => c.changeType !== "unchanged",
     ).length;
-    return `${changed} slot${changed !== 1 ? "s" : ""} changed`;
+    return `${changed} policy${changed !== 1 ? "s" : ""} changed`;
   },
 };

@@ -312,7 +312,7 @@ describe("compareAgentSyncSnapshots — per-field detection", () => {
   });
 
   it("never drops an array item because two entries share an identity key", () => {
-    // Two context slots keyed "a" vs one: nothing in the schema forbids the
+    // Two context policies keyed "a" vs one: nothing in the schema forbids the
     // duplicate, and key-based matching used to collapse them to equal.
     const result = compareAgentSyncSnapshots(
       snapshot({ context_slots: [{ key: "a", v: 1 }, { key: "a", v: 2 }] }),

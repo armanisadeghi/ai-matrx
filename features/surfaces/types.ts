@@ -9,7 +9,7 @@
  *
  * The `ValueMapping` discriminated union is the JSONB shape stored in
  * agent↔surface binding value_mappings (platform.associations edge metadata). A single resolver consumes it for
- * agent variables and agent context slots.
+ * agent variables and agent context policies.
  *
  * See:
  *   - `features/surfaces/manifests/registry.ts`   (the registry)

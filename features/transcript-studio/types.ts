@@ -239,7 +239,7 @@ export interface StudioDocument {
 
 /**
  * One user-authored context item for a session. Items are passed to agents as
- * proper context entries at invocation time (key → context slot when the key
+ * proper context entries at invocation time (key → context policy when the key
  * matches an agent-declared slot; ad-hoc otherwise). `key` is derived from
  * `label` (slugified) unless the user names it explicitly.
  */

@@ -252,7 +252,7 @@ export function AgentShortcutsPanel({
                   build: () => ({
                     kind: "agent-shortcuts-panel-full",
                     location,
-                    description: `Every shortcut targeting ${agentName}: the rendered rows plus the complete underlying records (execution config, mappings, variable definitions, context slots).`,
+                    description: `Every shortcut targeting ${agentName}: the rendered rows plus the complete underlying records (execution config, mappings, variable definitions, context policies).`,
                     data: { ...pageView(), records: shortcuts },
                     summary: pageHuman(),
                     attributes: { ...kpis, agent_id: agentId },

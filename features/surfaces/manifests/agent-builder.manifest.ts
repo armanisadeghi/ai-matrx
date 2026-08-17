@@ -4,7 +4,7 @@
  * The agent creation and editing interface (route `/agents/[id]/build`, plus
  * the mobile builder). Every field on the agent definition is editable here:
  * system instruction, model, messages, tools, custom tools, MCP servers,
- * context slots, variable definitions, output schema, skills, tags, settings.
+ * context policies, variable definitions, output schema, skills, tags, settings.
  *
  * Why this surface matters: agent-builder is the natural home for
  * "judge an agent" / "improve this prompt" / "rewrite this system
@@ -65,7 +65,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Agent inputs",
     sortOrder: 400,
     description:
-      "The agent's declared variables and context slots — what binding editors wire surface values into.",
+      "The agent's declared variables and context policies — what binding editors wire surface values into.",
   },
   {
     key: "agent_governance",
@@ -309,12 +309,12 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 368,
   },
 
-  // ── Inputs: variables + context slots (365-374) ───────────────────────
+  // ── Inputs: variables + context policies (365-374) ───────────────────────
   {
     name: "agent_context_slots",
-    label: "Agent context slots",
+    label: "Agent context policies",
     description:
-      "Array of context slot definitions the agent expects at runtime. Each slot has a name, type, and source binding. Empty array when none or no agent is open.",
+      "Array of context policy definitions the agent expects at runtime. Each slot has a name, type, and source binding. Empty array when none or no agent is open.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 800,
@@ -684,7 +684,7 @@ export const agentBuilderManifest: SurfaceManifest = {
   urlPattern: "/agents/[id]/build",
   intro: `<surface_intro>
 The Agent Builder is where a user authors one agent: its system instruction,
-model, message templates, tools, custom tools, MCP servers, context slots,
+model, message templates, tools, custom tools, MCP servers, context policies,
 variable definitions, output schema, skills, and settings.
 
 Read the values this way:

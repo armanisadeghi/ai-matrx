@@ -36,7 +36,7 @@ import type { VariableDefinition } from "@/features/agents/types/agent-definitio
  *
  * Keys are *source* scope names provided by the UI.
  * Values are *target* names on the agent — either a variable name (mapped
- * into the returned record) or a context slot / ad-hoc context key (ignored
+ * into the returned record) or a context policy / ad-hoc context key (ignored
  * here; handled by `mapScopeToInstance`).
  */
 export type ScopeMappings = Record<string, string> | null | undefined;

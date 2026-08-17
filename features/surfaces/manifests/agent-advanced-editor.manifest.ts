@@ -80,7 +80,7 @@
  * Identity and ownership (`agent_id`, user/org, lineage, version records),
  * governance (`is_public`, `is_active`, `is_archived`, favorites, the Share
  * tab's access grants), and capability/wiring (model, model tiers, tools,
- * custom tools, MCP servers, skill config, Matrx-action policy, context slots,
+ * custom tools, MCP servers, skill config, Matrx-action policy, context policies,
  * variable definitions, UI gates) are all human-only: changing what an agent
  * may REACH, or who may see it, is not a copy edit. Message templates
  * (`agent_messages`) are excluded too — they are nested block arrays with no
@@ -371,7 +371,7 @@ export const agentAdvancedEditorManifest: SurfaceManifest = {
 The Agent Advanced Editor is a windowed, whole-agent editor for ONE agent,
 opened over whatever page the user was on. Its tabs cover the agent's system
 instruction, message templates, settings and output schema, variables, tools,
-context slots, sharing, run, history and versions.
+context policies, sharing, run, history and versions.
 
 Read the values this way:
 - \`editor_field\` is the tab the user has open and \`editor_content\` is the
@@ -387,7 +387,7 @@ You can WRITE here, but only to the authored body: the system instruction
 (\`editor_system_instruction\` to replace, \`editor_append_system_instruction\`
 to add), the output schema, and the catalog profile (description,
 category, tags). Everything that decides what this agent can REACH or who can
-see it — model, tools, MCP servers, skills, variables, context slots,
+see it — model, tools, MCP servers, skills, variables, context policies,
 visibility, sharing — is human-only, so propose those in your answer instead
 of trying to apply them. The agent's name is not writable from this window
 either.

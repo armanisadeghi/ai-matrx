@@ -57,7 +57,7 @@ export const CONTEXT_SLOT_TILE_THEMES: Record<string, ContextPolicyTileTheme> = 
       "bg-gradient-to-br from-slate-100 via-slate-50/95 to-white/80 dark:from-slate-900/60 dark:via-slate-900/40 dark:to-slate-950/20",
     icon: "text-slate-600 dark:text-slate-400",
   },
-  /** Collapsed multi-slot summary chip — secondary violet wash. */
+  /** Collapsed multi-policy summary chip — secondary violet wash. */
   "context-group": {
     surface:
       "bg-gradient-to-br from-violet-100 via-violet-50/95 to-white/80 dark:from-violet-950/50 dark:via-violet-950/25 dark:to-violet-950/10",

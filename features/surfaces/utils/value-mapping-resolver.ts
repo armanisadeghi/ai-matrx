@@ -76,7 +76,7 @@ export interface ResolveOptions {
   /**
    * When true, the auto-name-match pass also runs at the end (keys that
    * appear in `applicationScope` but had no explicit mapping AND match an
-   * agent variable or context slot are auto-bound). Defaults to true.
+   * agent variable or context policy are auto-bound). Defaults to true.
    */
   autoNameMatch?: boolean;
 }

@@ -11,7 +11,7 @@
 // and adds the ONE thing that makes it a tutor: grounding injection. On a fresh
 // conversation we assemble the learner's cross-session memory + their own study
 // material (assembleTutorGrounding) and feed them into the tutor agent's
-// declared CONTEXT SLOTS (not user-facing variables — the composer stays clean)
+// declared CONTEXT POLICIES (not user-facing variables — the composer stays clean)
 // so it opens already knowing the learner and can cite their material.
 //
 // Two mount paths mirror ChatRoomClient: fresh (no conversationId → launcher
@@ -201,7 +201,7 @@ export function EducationTutorClient({
 
   // ── Grounding injection (fresh route) ────────────────────────────────────
   // Assemble the learner's memory + study material and feed them into the
-  // tutor's declared CONTEXT SLOTS (learner_memory / study_material /
+  // tutor's declared CONTEXT POLICIES (learner_memory / study_material /
   // teaching_mode / personality_style) — NOT user-facing variables, so nothing
   // shows in the chat composer. `setContextEntries` auto-inits the per-
   // conversation slot (no create-race), and `request.context` is re-sent on

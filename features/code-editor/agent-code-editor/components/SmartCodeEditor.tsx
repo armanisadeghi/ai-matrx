@@ -22,7 +22,7 @@
  *   - Widget tool calls BUFFER — they don't mutate `code` live. At stream-
  *     end `useSmartCodeEditor` flushes the buffer and transitions the UI
  *     to the full 4-tab `ReviewStage`.
- *   - IDE context + other-file context slots dispatch into the active
+ *   - IDE context + other-file context policies dispatch into the active
  *     conversation's `instanceContext` on every relevant change.
  *   - First-turn variable is seeded from the active file's code per agent
  *     (`codeVariableKey`).
@@ -251,7 +251,7 @@ export function SmartCodeEditor({
     agentSkills,
   });
 
-  // ── Other-files context slots (multi-file only) ───────────────────────────
+  // ── Other-files context policies (multi-file only) ───────────────────────────
   useEffect(() => {
     if (!activeConversationId || !isMultiFile) return;
     const entries = currentFiles

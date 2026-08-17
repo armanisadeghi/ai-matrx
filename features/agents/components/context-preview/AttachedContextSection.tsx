@@ -215,7 +215,7 @@ export function AttachedContextSection({
       icon: e.slotMatched ? Braces : TypeIcon,
       title,
       kindLine: e.slotMatched
-        ? "Fills one of this agent's declared context slots."
+        ? "Fills one of this agent's declared context policies."
         : "Extra context you or the agent attached to this chat.",
       onRemove: () =>
         dispatch(removeContextEntry({ conversationId, key: e.key })),

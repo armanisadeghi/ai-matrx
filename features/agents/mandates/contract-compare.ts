@@ -3,12 +3,12 @@
  * (matched / missing / extra) compare between what a mandate requires and what
  * a candidate agent declares. Absorbed from research's per-topic agents page
  * (the proven superset rule): the candidate must declare AT LEAST every
- * required variable name and context slot key; extras PASS — they are
+ * required variable name and context policy key; extras PASS — they are
  * informational only (the pipeline simply won't supply them).
  *
  * Two entry points, one core:
  * - `compareContracts` — full-declaration form: system agent's live
- *   `variableDefinitions` / `contextSlots` vs the candidate's (rows carry
+ *   `variableDefinitions` / `contextPolicies` vs the candidate's (rows carry
  *   type/helpText for rich display).
  * - `compareStoredContract` — stored-contract form: a mandate's persisted
  *   `{required_variables, required_context_slots}` (names only) vs the
@@ -19,7 +19,7 @@
  */
 
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import type { MandateContract } from "./overrides";
 
 export interface ContractRow {
@@ -36,10 +36,10 @@ export interface ComparisonResult {
   missingVariables: ContractRow[];
   /** Variables on the candidate beyond the contract. Informational only. */
   extraVariables: ContractRow[];
-  /** Same shape, but for context slots. */
-  matchedSlots: ContractRow[];
-  missingSlots: ContractRow[];
-  extraSlots: ContractRow[];
+  /** Same shape, but for context policies. */
+  matchedPolicies: ContractRow[];
+  missingPolicies: ContractRow[];
+  extraPolicies: ContractRow[];
   /** True when nothing required is missing. Extras don't fail the check. */
   passing: boolean;
 }
@@ -52,7 +52,7 @@ function variableToRow(v: VariableDefinition): ContractRow {
   };
 }
 
-function slotToRow(s: ContextSlot): ContractRow {
+function policyToRow(s: ContextPolicy): ContractRow {
   return {
     name: s.key,
     type: s.type,
@@ -79,16 +79,16 @@ function diffRows(
 /**
  * Compares a system agent's declared contract against the candidate's.
  * Rule: the candidate must declare **at least** every variable name and
- * context slot key the system agent declares. Extras pass.
+ * context policy key the system agent declares. Extras pass.
  */
 export function compareContracts(
   system: {
     variableDefinitions: VariableDefinition[] | null;
-    contextSlots: ContextSlot[];
+    contextPolicies: ContextPolicy[];
   },
   candidate: {
     variableDefinitions: VariableDefinition[] | null;
-    contextSlots: ContextSlot[];
+    contextPolicies: ContextPolicy[];
   },
 ): ComparisonResult {
   const vars = diffRows(
@@ -96,16 +96,16 @@ export function compareContracts(
     (candidate.variableDefinitions ?? []).map(variableToRow),
   );
   const slots = diffRows(
-    (system.contextSlots ?? []).map(slotToRow),
-    (candidate.contextSlots ?? []).map(slotToRow),
+    (system.contextPolicies ?? []).map(policyToRow),
+    (candidate.contextPolicies ?? []).map(policyToRow),
   );
   return {
     matchedVariables: vars.matched,
     missingVariables: vars.missing,
     extraVariables: vars.extra,
-    matchedSlots: slots.matched,
-    missingSlots: slots.missing,
-    extraSlots: slots.extra,
+    matchedPolicies: slots.matched,
+    missingPolicies: slots.missing,
+    extraPolicies: slots.extra,
     passing: vars.missing.length === 0 && slots.missing.length === 0,
   };
 }
@@ -118,7 +118,7 @@ export function compareContracts(
  */
 export function compareStoredContract(
   contract: MandateContract,
-  candidate: { variableNames: string[]; contextSlotKeys: string[] },
+  candidate: { variableNames: string[]; contextPolicyKeys: string[] },
 ): ComparisonResult {
   const toRow = (name: string): ContractRow => ({ name });
   const vars = diffRows(
@@ -126,16 +126,16 @@ export function compareStoredContract(
     candidate.variableNames.map(toRow),
   );
   const slots = diffRows(
-    contract.requiredContextSlots.map(toRow),
-    candidate.contextSlotKeys.map(toRow),
+    contract.requiredContextPolicyKeys.map(toRow),
+    candidate.contextPolicyKeys.map(toRow),
   );
   return {
     matchedVariables: vars.matched,
     missingVariables: vars.missing,
     extraVariables: vars.extra,
-    matchedSlots: slots.matched,
-    missingSlots: slots.missing,
-    extraSlots: slots.extra,
+    matchedPolicies: slots.matched,
+    missingPolicies: slots.missing,
+    extraPolicies: slots.extra,
     passing: vars.missing.length === 0 && slots.missing.length === 0,
   };
 }
@@ -143,10 +143,10 @@ export function compareStoredContract(
 /** Returns just the contract rows for a system agent, for display. */
 export function systemContractRows(system: {
   variableDefinitions: VariableDefinition[] | null;
-  contextSlots: ContextSlot[];
+  contextPolicies: ContextPolicy[];
 }): { variables: ContractRow[]; slots: ContractRow[] } {
   return {
     variables: (system.variableDefinitions ?? []).map(variableToRow),
-    slots: (system.contextSlots ?? []).map(slotToRow),
+    slots: (system.contextPolicies ?? []).map(policyToRow),
   };
 }

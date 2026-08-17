@@ -47,6 +47,7 @@ import { SystemMessage } from "@/features/agents/components/builder/message-buil
 import { AgentVariablesPanel } from "@/features/agents/components/variables-management/AgentVariablesPanel";
 import { AgentToolsManager } from "@/features/agents/components/tools-management/AgentToolsManager";
 import { AgentContextPoliciesManager } from "@/features/agents/components/context-policies-management/AgentContextPoliciesManager";
+import { AgentContextInjectionSwitch } from "@/features/agents/components/context-policies-management/AgentContextInjectionSwitch";
 import { AgentSettingsForm } from "@/features/agents/components/settings/AgentSettingsForm";
 import { AgentSettingsCore } from "@/features/agents/components/settings-management/AgentSettingsCore";
 import { AgentSharePanel } from "@/features/agents/components/sharing/AgentSharePanel";
@@ -560,11 +561,17 @@ export function TabContent({
       {activeTab === "tools" && <AgentToolsManager agentId={agentId} />}
 
       {activeTab === "context" && (
-        <ScrollArea className="h-full">
-          <div className="p-3">
-            <AgentContextPoliciesManager agentId={agentId} />
-          </div>
-        </ScrollArea>
+        <div className="flex flex-col h-full min-h-0">
+          {/* The kill switch sits ABOVE the policies it governs, exactly as the
+              tools switch sits above the tool tabs — same primitive, same
+              placement, so the two read as one mechanism. */}
+          <AgentContextInjectionSwitch agentId={agentId} />
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-3">
+              <AgentContextPoliciesManager agentId={agentId} />
+            </div>
+          </ScrollArea>
+        </div>
       )}
 
       {activeTab === "overview" && <AgentSettingsForm agentId={agentId} />}

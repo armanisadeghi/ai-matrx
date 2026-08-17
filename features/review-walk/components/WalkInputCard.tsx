@@ -33,7 +33,7 @@ const PRODUCER_LABELS: Record<string, string> = {
   tool_call: "tool call",
   agent: "agent definition",
   pending_injection: "injected context",
-  context_slot: "context slot",
+  context_slot: "context policy",
   user: "the user",
 };
 

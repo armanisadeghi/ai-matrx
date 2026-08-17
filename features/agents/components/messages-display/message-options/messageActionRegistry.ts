@@ -1241,7 +1241,7 @@ function deleteMessageItem(ctx: MessageActionContext): MenuItem {
 // `RequestStatsPanel`, etc.) and the window components are thin wrappers.
 //
 // Only items that make sense per-message are exposed here. Input-bound
-// settings (system prompt editor, run settings, context slots, widget
+// settings (system prompt editor, run settings, context policies, widget
 // invoker, reset conversation) are intentionally omitted because they
 // are not tied to an individual message.
 // ============================================================================

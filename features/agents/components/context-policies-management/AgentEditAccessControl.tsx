@@ -4,7 +4,7 @@
  * AgentEditAccessControl — the canonical "can the agent change this?" controls.
  *
  * ONE set of controls, shared by every surface that shows or sets a context
- * slot's access (the slot editor, the scope batch importer, the read-only detail
+ * policy's access (the policy editor, the scope batch importer, the read-only detail
  * sheet). Same shape as `InlinePolicyControl`: pure and presentational, owning no
  * persistence — just the value.
  *
@@ -12,7 +12,7 @@
  * and the encode/decode against the `mutable` + `persist` wire shape live in the
  * React-free core: `@/features/agents/utils/agent-edit-access`. Read its header
  * before touching this — in particular why `persist:"auto"` is not offered for
- * every slot (aidream silently drops writeback for an unhandled `source.kind`).
+ * every policy (aidream silently drops writeback for an unhandled `source.kind`).
  */
 
 import { Lock, PencilLine } from "lucide-react";
@@ -29,7 +29,7 @@ import {
 const ACCESS_ICON = { read_only: Lock, editable: PencilLine } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Full control — the slot editor
+// Full control — the policy editor
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function AgentEditAccessControl({

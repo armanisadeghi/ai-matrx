@@ -55,7 +55,7 @@ export interface BindingTarget {
   description?: string;
   /** Whether the agent has the target marked as required. */
   required?: boolean;
-  /** Agent-authored default for variables; omitted for context slots. */
+  /** Agent-authored default for variables; omitted for context policies. */
   defaultValue?: unknown;
 }
 
@@ -610,7 +610,7 @@ export function SurfaceVariableBindingList({
   if (targets.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
-        This agent declares no variables or context slots.
+        This agent declares no variables or context policies.
       </div>
     );
   }

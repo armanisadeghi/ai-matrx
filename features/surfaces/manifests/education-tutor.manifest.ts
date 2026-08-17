@@ -6,7 +6,7 @@
  * infrastructure as `/chat` and given the ONE thing that makes it a tutor —
  * grounding injection. On session start (and after every turn) the client
  * assembles the learner's cross-session memory + their own study material and
- * feeds them into the tutor agent's declared context slots.
+ * feeds them into the tutor agent's declared context policies.
  *
  * Deliberately does NOT `inheritsFrom: "matrx-user/education"`. The hub's
  * vocabulary (discovery axes, the study-tool registry, hub entry points, the

@@ -17,7 +17,7 @@ import type { DbRpcRow } from "@/types/supabase-rpc";
  *   breaking        — a variable the usage stores no longer exists, or a
  *                     required variable is unmet on a non-interactive usage, or
  *                     the agent was archived/disabled. The usage will fail.
- *   silent_breaking — a stored context slot no longer matches a declared slot:
+ *   silent_breaking — a stored context policy no longer matches a declared slot:
  *                     the value still gets injected, but as plain default
  *                     context, so the slot's rules (always/never inline) are
  *                     silently ignored. Works, but wrong — and undetectable

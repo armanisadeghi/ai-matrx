@@ -297,7 +297,7 @@ export type CustomToolDefinition = components["schemas"]["CustomTool"];
 // =============================================================================
 
 /**
- * Agent-defined context slot.
+ * Agent-defined context policy.
  *
  * Stored in prompts.context_slots / agent.definition.context_slots JSONB column.
  * Loaded as part of the agent definition and carried on Agent.context_slots,

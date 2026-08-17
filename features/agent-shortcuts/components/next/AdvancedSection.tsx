@@ -221,7 +221,7 @@ export function AdvancedSection({
 
           <JsonFieldRow
             title="Context overrides"
-            hint="Per-key values that override what the surface ships into context slots."
+            hint="Per-key values that override what the surface ships into context policies."
             value={value.contextOverrides}
             onChange={(v) =>
               onChange(

@@ -177,7 +177,7 @@ export default function SmartCodeEditorDemoPage() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Context slots</CardTitle>
+            <CardTitle className="text-sm">Context policies</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <SlotInput

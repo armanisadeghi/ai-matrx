@@ -31,7 +31,7 @@ import type {
  * Promote a legacy inverse-direction map (surface key → agent target name)
  * into the canonical DSL (agent target name → surface_value mapping).
  * Used for both `scope_mappings` (targets = variables) and
- * `context_mappings` (targets = context slots) — the resolver classifies
+ * `context_mappings` (targets = context policies) — the resolver classifies
  * targets itself, so both promote identically.
  */
 export function adaptLegacyScopeMappings(

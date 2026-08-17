@@ -4,7 +4,7 @@
  * SurfaceAgentBindPanel — surface-first "add my agent here" composer.
  *
  * Fixed `surfaceName` → pick an agent → pick scope → map surface values to
- * the agent's variables / context slots → save.
+ * the agent's variables / context policies → save.
  *
  * Reuses AgentListInlinePicker, ShortcutScopePicker, SurfaceVariableBindingList.
  *  * (the retired junction is gone — associations are the only path).
@@ -348,7 +348,7 @@ export function SurfaceAgentBindPanel({
           </p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             Pick an agent, then map this surface&apos;s values to its variables
-            and context slots.
+            and context policies.
           </p>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden">
@@ -461,7 +461,7 @@ export function SurfaceAgentBindPanel({
             </div>
           ) : targets.length === 0 ? (
             <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
-              This agent has no variables or context slots to map. You can still
+              This agent has no variables or context policies to map. You can still
               bind it — it will appear on the surface with no wired inputs.
             </p>
           ) : mapTab === "suggest" ? (
@@ -490,7 +490,7 @@ export function SurfaceAgentBindPanel({
           ) : (
             <>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                For each agent variable or context slot, choose what this
+                For each agent variable or context policy, choose what this
                 surface should supply — or leave the agent&apos;s default /
                 prompt the user.
               </p>

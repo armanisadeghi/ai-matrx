@@ -227,7 +227,7 @@ export function AgentRoleCard({
           ) : systemRows.variables.length === 0 &&
             systemRows.slots.length === 0 ? (
             <p className="text-[12.5px] text-muted-foreground italic">
-              This agent declares no variables or context slots — any agent
+              This agent declares no variables or context policies — any agent
               with valid execution metadata will pass.
             </p>
           ) : (
@@ -251,7 +251,7 @@ export function AgentRoleCard({
               ) : null}
 
               {systemRows.slots.length > 0 ? (
-                <SectionList label={`Context slots (${systemRows.slots.length})`}>
+                <SectionList label={`Context policies (${systemRows.slots.length})`}>
                   <ul className="divide-y divide-border/30">
                     {systemRows.slots.map((row) => (
                       <ContractItem

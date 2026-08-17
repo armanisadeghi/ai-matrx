@@ -4,7 +4,7 @@
  * Returns the agent-definition half of the scope (everything an action that
  * operates on "the agent being edited" needs): identity, system instruction,
  * message templates, model + tiers, tools, custom tools, MCP servers, skills,
- * Matrx actions, context slots, variable definitions, output schema, UI gates,
+ * Matrx actions, context policies, variable definitions, output schema, UI gates,
  * settings, governance/lineage (visibility, access, version), the dirty-state
  * tracking, and the full agent serialized as JSON.
  *

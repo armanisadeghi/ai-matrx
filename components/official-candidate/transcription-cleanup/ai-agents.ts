@@ -2,7 +2,7 @@
  * AI post-processing agents available in the TranscriptionCleanup pad.
  *
  * Each agent declares the variable key that should receive the transcribed
- * text and, optionally, either a context slot OR a context variable that
+ * text and, optionally, either a context policy OR a context variable that
  * should receive free-form user context. Variable and slot keys differ per
  * agent — the pad wires them up by name when it launches the agent.
  *
@@ -16,7 +16,7 @@ export interface AiPostProcessAgent {
   name: string;
   /** Variable key that receives the full transcribed text. */
   transcriptVariableKey: string;
-  /** Optional context slot key for user-typed context (slot-based agents). */
+  /** Optional context policy key for user-typed context (slot-based agents). */
   contextPolicyKey?: string;
   /** Optional variable key for user-typed context (variable-based agents). */
   contextVariableKey?: string;
@@ -25,7 +25,7 @@ export interface AiPostProcessAgent {
 export const AI_POST_PROCESS_AGENTS: AiPostProcessAgent[] = [
   {
     id: "9cae3831-9895-4ddb-97cd-2ded3d3f443b",
-    name: "Transcription Cleaner Context Slots",
+    name: "Transcription Cleaner Context Policies",
     transcriptVariableKey: "transcribed_text",
     contextPolicyKey: "transcription_user_context",
   },

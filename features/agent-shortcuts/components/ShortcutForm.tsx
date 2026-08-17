@@ -379,7 +379,7 @@ export function ShortcutForm({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // ── Load the agent's variable definitions + context slots from Redux ────
+  // ── Load the agent's variable definitions + context policies from Redux ────
   // When the selected agent changes, fetch its minimal execution payload so
   // the mapping + default editors below can render real dropdowns / rows.
   const selectedAgentId = formData.agentId;
@@ -754,9 +754,9 @@ export function ShortcutForm({
       <div className="space-y-2">
         <LabelWithHelp
           className="text-sm font-semibold"
-          help="Same as variable mappings, but routes a scope key into a context slot instead. Takes precedence over default slot values and ad-hoc context at launch."
+          help="Same as variable mappings, but routes a scope key into a context policy instead. Takes precedence over default slot values and ad-hoc context at launch."
         >
-          Scope → Context Slot Mappings
+          Scope → Context Policy Mappings
         </LabelWithHelp>
         <ContextPolicyMappingEditor
           contextPolicies={contextPolicies}
@@ -1019,9 +1019,9 @@ export function ShortcutForm({
         <div className="space-y-1.5">
           <LabelWithHelp
             className="text-xs"
-            help="Pre-seed a value for any declared context slot on launch. Scope → Context Slot mappings and runtime context entries still override."
+            help="Pre-seed a value for any declared context policy on launch. Scope → Context Policy mappings and runtime context entries still override."
           >
-            Default Context Slot Values
+            Default Context Policy Values
           </LabelWithHelp>
           <DefaultContextPolicyValuesEditor
             contextPolicies={contextPolicies}

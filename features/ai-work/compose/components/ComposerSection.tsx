@@ -4,7 +4,7 @@
  * ComposerSection — one numbered step of the `/work/new` progressive form.
  *
  * The composer is read top-to-bottom by someone who does not know what an
- * agent, a skill, or a context slot is, so every step states its question in
+ * agent, a skill, or a context policy is, so every step states its question in
  * plain language and shows its current answer in the header. A step that is
  * not ready yet says WHY instead of disappearing — a step that vanishes is a
  * dead end.

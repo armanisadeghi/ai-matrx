@@ -1,12 +1,12 @@
 /**
  * Kind ↔ agent-spec bridge (SHAPE_SYSTEM.md ruling R5) — pure translators
  * between the Shape System's KindSchema field model and the production agent
- * input system (VariableDefinition) and context slots (ContextPolicy).
+ * input system (VariableDefinition) and context policies (ContextPolicy).
  *
  * Three converters, all pure (no React / Redux / Supabase):
  *   1. kindFieldsToVariableDefinitions — kind fields (+ sidecar) → agent variables
  *   2. variableDefinitionsToKindFields — agent variables → kind fields + sidecar
- *   3. contextPoliciesToKindFields        — agent context slots → kind fields
+ *   3. contextPoliciesToKindFields        — agent context policies → kind fields
  *
  * FIDELITY MODEL (W3-A agent-input bridge, 2026-07-15) — the conversion is
  * faithful along two channels:
@@ -817,7 +817,7 @@ function convertVariable(v: VariableDefinition): VariableConversion {
 // ---------------------------------------------------------------------------
 
 /**
- * Agent context slots → kind field schemas, with an explicit loss report.
+ * Agent context policies → kind field schemas, with an explicit loss report.
  * (Slots have no component/binding provenance — the sidecar is always empty.)
  *
  * MAPPING TABLE:

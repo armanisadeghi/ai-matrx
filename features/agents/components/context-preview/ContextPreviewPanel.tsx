@@ -149,7 +149,7 @@ function buildCopyAllText(data: ContextPreviewResponse): string {
   tier("Variables — searchable", data.variables?.searchable);
   if (data.bindings) {
     tier("Agent variables (scope-filled)", data.bindings.variables);
-    tier("Agent context slots (scope-filled)", data.bindings.context);
+    tier("Agent context policies (scope-filled)", data.bindings.context);
   }
   return parts.join("\n\n");
 }
@@ -341,7 +341,7 @@ function ResolvedBody({
             }
           />
           <VariableGroup
-            title="Context slots"
+            title="Context policies"
             hint="scope-filled"
             vars={data.bindings.context as Record<string, unknown> | undefined}
           />

@@ -3,7 +3,7 @@
 /**
  * AgentContextPoliciesManager
  *
- * Smart component — manages context slots for the active agent.
+ * Smart component — manages context policies for the active agent.
  * UI matches Variables row: compact chips (key only) + Dialog/Drawer editor.
  *
  * Persists the full `ContextPolicy` shape per the server contract
@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ContextItemPicker } from "@/features/scope-system/components/ContextItemPicker";
-import { contextItemValueTypeToSlotType } from "@/features/agents/utils/context-item-slot-mapping";
+import { contextItemValueTypeToPolicyType } from "@/features/agents/utils/context-item-policy-mapping";
 import {
   Select,
   SelectContent,
@@ -106,7 +106,7 @@ const SUGGESTED_INLINE_MODE_BY_TYPE: Record<
 // Form state
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface SlotFormState {
+interface PolicyFormState {
   key: string;
   label: string;
   description: string;
@@ -124,7 +124,7 @@ interface SlotFormState {
   sourceId: string;
   sourceField: string;
   sourceExtra: string; // JSON string in the textarea
-  // Scope-context binding (source.kind="ctx_item") — fills the slot from the active scope.
+  // Scope-context binding (source.kind="ctx_item") — fills the policy from the active scope.
   // Independent of mutable/persist (read-fill always; writeback only if mutable+auto).
   ctxBound: boolean;
   ctxItemId: string;
@@ -133,7 +133,7 @@ interface SlotFormState {
   ctxOnMissing: string;
 }
 
-const EMPTY_FORM: SlotFormState = {
+const EMPTY_FORM: PolicyFormState = {
   key: "",
   label: "",
   description: "",
@@ -155,39 +155,39 @@ const EMPTY_FORM: SlotFormState = {
 };
 
 /**
- * Legacy stored slots (pre-`key` rename) carried an `id` field instead.
+ * Legacy stored policies (pre-`key` rename) carried an `id` field instead.
  * `ContextPolicy` no longer declares it; read it defensively without widening
  * the type.
  */
-function legacySlotId(slot: ContextPolicy): string | undefined {
-  return "id" in slot && typeof slot.id === "string" ? slot.id : undefined;
+function legacyPolicyId(policy: ContextPolicy): string | undefined {
+  return "id" in policy && typeof policy.id === "string" ? policy.id : undefined;
 }
 
-function getSlotKey(slot: ContextPolicy): string {
-  if (slot.key) return slot.key;
-  return legacySlotId(slot) ?? "";
+function getPolicyKey(policy: ContextPolicy): string {
+  if (policy.key) return policy.key;
+  return legacyPolicyId(policy) ?? "";
 }
 
-function slotToForm(slot: ContextPolicy): SlotFormState {
-  const legacyId = legacySlotId(slot);
+function policyToForm(policy: ContextPolicy): PolicyFormState {
+  const legacyId = legacyPolicyId(policy);
 
   // Decode max_inline_chars into the three-mode UI (shared canonical helper).
   const { mode: inlineMode, customChars: inlineCustomChars } =
-    decodeInlinePolicy(slot.max_inline_chars);
+    decodeInlinePolicy(policy.max_inline_chars);
 
-  const source = slot.source;
+  const source = policy.source;
   const isCtx = source?.kind === "ctx_item";
 
   return {
-    key: slot.key || legacyId || "",
-    label: slot.label ?? "",
-    description: slot.description ?? "",
-    type: slot.type ?? "text",
+    key: policy.key || legacyId || "",
+    label: policy.label ?? "",
+    description: policy.description ?? "",
+    type: policy.type ?? "text",
     inlineMode,
     inlineCustomChars,
-    summaryAgentId: slot.summary_agent_id ?? "",
-    mutable: slot.mutable ?? false,
-    persist: slot.persist ?? "never",
+    summaryAgentId: policy.summary_agent_id ?? "",
+    mutable: policy.mutable ?? false,
+    persist: policy.persist ?? "never",
     // Manual source inputs are only for non-ctx_item kinds.
     sourceKind: isCtx ? "" : (source?.kind ?? ""),
     sourceId: isCtx ? "" : (source?.id ?? ""),
@@ -204,17 +204,17 @@ function slotToForm(slot: ContextPolicy): SlotFormState {
   };
 }
 
-function formToContextPolicy(form: SlotFormState): {
-  slot: ContextPolicy | null;
+function formToContextPolicy(form: PolicyFormState): {
+  policy: ContextPolicy | null;
   error: string | null;
 } {
   const key = form.key.trim() ? sanitizeVariableName(form.key) : "";
-  if (!key) return { slot: null, error: "Key is required." };
+  if (!key) return { policy: null, error: "Key is required." };
 
-  const slot: ContextPolicy = { key, type: form.type };
+  const policy: ContextPolicy = { key, type: form.type };
 
-  if (form.label.trim()) slot.label = form.label.trim();
-  if (form.description.trim()) slot.description = form.description.trim();
+  if (form.label.trim()) policy.label = form.label.trim();
+  if (form.description.trim()) policy.description = form.description.trim();
 
   // max_inline_chars (shared canonical encode; default → omit so server uses 200).
   const encodedInline = encodeInlinePolicy({
@@ -222,31 +222,31 @@ function formToContextPolicy(form: SlotFormState): {
     customChars: form.inlineCustomChars,
   });
   if ("error" in encodedInline)
-    return { slot: null, error: encodedInline.error };
+    return { policy: null, error: encodedInline.error };
   if (encodedInline.maxInlineChars !== null) {
-    slot.max_inline_chars = encodedInline.maxInlineChars;
+    policy.max_inline_chars = encodedInline.maxInlineChars;
   }
 
   if (form.summaryAgentId.trim()) {
-    slot.summary_agent_id = form.summaryAgentId.trim();
+    policy.summary_agent_id = form.summaryAgentId.trim();
   }
 
   if (form.mutable) {
-    slot.mutable = true;
-    slot.persist = form.persist;
+    policy.mutable = true;
+    policy.persist = form.persist;
   }
 
-  // Scope-context binding (independent of agent access): fills the slot from the active
+  // Scope-context binding (independent of agent access): fills the policy from the active
   // scope, and — when also agent-editable + save-to-source — is the same source used for
   // write-back.
   if (form.ctxBound) {
     if (!form.ctxItemId.trim()) {
       return {
-        slot: null,
-        error: "Choose a context item to bind this slot to.",
+        policy: null,
+        error: "Choose a context item to bind this policy to.",
       };
     }
-    slot.source = {
+    policy.source = {
       kind: "ctx_item",
       id: form.ctxItemId.trim(),
       scope_type_id: form.ctxScopeTypeId.trim() || undefined,
@@ -256,7 +256,7 @@ function formToContextPolicy(form: SlotFormState): {
   } else if (form.mutable && form.persist === "auto") {
     if (!form.sourceKind.trim()) {
       return {
-        slot: null,
+        policy: null,
         error:
           "Source 'kind' is required when the agent's edits save to the source.",
       };
@@ -270,39 +270,39 @@ function formToContextPolicy(form: SlotFormState): {
         if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
           source.extra = parsed as Record<string, unknown>;
         } else {
-          return { slot: null, error: "Source extra must be a JSON object." };
+          return { policy: null, error: "Source extra must be a JSON object." };
         }
       } catch {
-        return { slot: null, error: "Source extra is not valid JSON." };
+        return { policy: null, error: "Source extra is not valid JSON." };
       }
     }
-    slot.source = source;
+    policy.source = source;
   }
 
-  return { slot, error: null };
+  return { policy, error: null };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Editor — UI
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface SlotEditorFieldsProps {
-  form: SlotFormState;
-  onChange: (patch: Partial<SlotFormState>) => void;
+interface PolicyEditorFieldsProps {
+  form: PolicyFormState;
+  onChange: (patch: Partial<PolicyFormState>) => void;
   isEdit: boolean;
   keyDuplicate: boolean;
   keyRulesOk: boolean;
   formError: string | null;
 }
 
-function SlotEditorFields({
+function PolicyEditorFields({
   form,
   onChange,
   isEdit,
   keyDuplicate,
   keyRulesOk,
   formError,
-}: SlotEditorFieldsProps) {
+}: PolicyEditorFieldsProps) {
   const sourceDisabled = !form.mutable || form.persist !== "auto";
 
   return (
@@ -310,7 +310,7 @@ function SlotEditorFields({
       {/* ──────────────────── Scope binding ──────────────────── */}
       <Section
         title="Scope binding"
-        subtitle="Bind to a context item to fill this slot's key, label, description, and type from it automatically — you can still edit any of them below. Leave unbound to configure a fully custom slot."
+        subtitle="Bind to a context item to fill this policy's key, label, description, and type from it automatically — you can still edit any of them below. Leave unbound to configure a fully custom policy."
       >
         <Field>
           <label className="flex items-center gap-2 cursor-pointer">
@@ -329,14 +329,14 @@ function SlotEditorFields({
                 contextItemId: form.ctxItemId,
               }}
               onChange={(sel) => {
-                const patch: Partial<SlotFormState> = {
+                const patch: Partial<PolicyFormState> = {
                   ctxItemId: sel.contextItemId,
                   ctxScopeTypeId: sel.scopeTypeId,
                   ctxItemKey: sel.itemKey,
                 };
                 if (sel.item) {
                   // Pick auto-fills identity from the item; the key stays
-                  // locked once a slot exists (its key can't be renamed).
+                  // locked once a policy exists (its key can't be renamed).
                   if (!isEdit) {
                     const suggestedKey = sanitizeVariableName(
                       sel.item.key || sel.item.display_name,
@@ -345,7 +345,7 @@ function SlotEditorFields({
                   }
                   patch.label = sel.item.display_name;
                   patch.description = sel.item.description ?? "";
-                  const nextType = contextItemValueTypeToSlotType(
+                  const nextType = contextItemValueTypeToPolicyType(
                     sel.item.value_type,
                   );
                   patch.type = nextType;
@@ -368,7 +368,7 @@ function SlotEditorFields({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="empty">
-                    Empty — leave the slot unfilled
+                    Empty — leave the policy unfilled
                   </SelectItem>
                   <SelectItem value="skip">Skip — same as empty</SelectItem>
                   <SelectItem value="error">
@@ -391,11 +391,11 @@ function SlotEditorFields({
         }
       >
         <Field>
-          <Label htmlFor="slot-key" className="text-xs">
+          <Label htmlFor="policy-key" className="text-xs">
             Context key
           </Label>
           <Input
-            id="slot-key"
+            id="policy-key"
             value={form.key}
             onChange={(e) => onChange({ key: e.target.value })}
             placeholder="clipboard_content"
@@ -413,7 +413,7 @@ function SlotEditorFields({
         </Field>
 
         <Field>
-          <Label htmlFor="slot-type" className="text-xs">
+          <Label htmlFor="policy-type" className="text-xs">
             Type
           </Label>
           <Select
@@ -429,7 +429,7 @@ function SlotEditorFields({
               });
             }}
           >
-            <SelectTrigger id="slot-type" className="text-sm w-full">
+            <SelectTrigger id="policy-type" className="text-sm w-full">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -443,14 +443,14 @@ function SlotEditorFields({
         </Field>
 
         <Field>
-          <Label htmlFor="slot-label" className="text-xs">
+          <Label htmlFor="policy-label" className="text-xs">
             Label{" "}
             <span className="text-muted-foreground font-normal">
               (optional)
             </span>
           </Label>
           <Input
-            id="slot-label"
+            id="policy-label"
             value={form.label}
             onChange={(e) => onChange({ label: e.target.value })}
             placeholder="Clipboard content"
@@ -459,17 +459,17 @@ function SlotEditorFields({
         </Field>
 
         <Field>
-          <Label htmlFor="slot-desc" className="text-xs">
+          <Label htmlFor="policy-desc" className="text-xs">
             Description{" "}
             <span className="text-muted-foreground font-normal">
               (shown to the model — be specific)
             </span>
           </Label>
           <Textarea
-            id="slot-desc"
+            id="policy-desc"
             value={form.description}
             onChange={(e) => onChange({ description: e.target.value })}
-            placeholder="What this slot provides at runtime. The model uses this to decide whether to fetch via ctx_get…"
+            placeholder="What this policy provides at runtime. The model uses this to decide whether to fetch via ctx_get…"
             className="min-h-[72px] resize-y"
             style={{ fontSize: "16px" }}
           />
@@ -492,7 +492,7 @@ function SlotEditorFields({
       {/* ──────────────────── Summary sub-agent ──────────────────── */}
       <Section
         title="Summary sub-agent"
-        subtitle="When set, the model can call ctx_get(mode='summary') and the slot content is routed through this agent. Optional."
+        subtitle="When set, the model can call ctx_get(mode='summary') and the policy content is routed through this agent. Optional."
       >
         <Field>
           <div className="flex items-stretch gap-2">
@@ -542,9 +542,9 @@ function SlotEditorFields({
             saveMode: form.persist,
           }}
           onChange={(next) => {
-            // Turning ON edit for a scope-bound slot defaults to writing back to the
+            // Turning ON edit for a scope-bound policy defaults to writing back to the
             // scope cell — that's what "the agent can edit this" means for a scope
-            // value. An unbound slot has no source yet, so it stays conversation-only
+            // value. An unbound policy has no source yet, so it stays conversation-only
             // until the author names one.
             const enabling = next.access === "editable" && !form.mutable;
             const saveMode =
@@ -679,11 +679,11 @@ function Field({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Context slot stack — a single "N context slots" chip that opens a popover
+// Context policy stack — a single "N context policies" chip that opens a popover
 // with the full, scrollable, searchable list. Agents can carry dozens of
-// slots (batch-import makes that the common case, not the exception), so the
+// policies (batch-import makes that the common case, not the exception), so the
 // row this lives in must stay one line regardless of count. This is purely a
-// design-time view of the agent's defined slots — it never reads a resolved
+// design-time view of the agent's defined policies — it never reads a resolved
 // runtime value or active scope, so it renders identically whether or not
 // the agent has ever been run.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -691,11 +691,11 @@ function Field({
 const SEARCH_THRESHOLD = 6;
 
 function ContextPolicyStackTrigger({
-  slots,
+  policies,
   onEdit,
   onDelete,
 }: {
-  slots: ContextPolicy[];
+  policies: ContextPolicy[];
   onEdit: (idx: number) => void;
   onDelete: (idx: number) => void;
 }) {
@@ -703,20 +703,20 @@ function ContextPolicyStackTrigger({
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
-    const indexed = slots.map((slot, i) => ({ slot, i }));
+    const indexed = policies.map((policy, i) => ({ policy, i }));
     const q = search.trim().toLowerCase();
     if (!q) return indexed;
-    return indexed.filter(({ slot }) => {
-      const key = getSlotKey(slot).toLowerCase();
-      const label = (slot.label ?? "").toLowerCase();
-      const description = (slot.description ?? "").toLowerCase();
+    return indexed.filter(({ policy }) => {
+      const key = getPolicyKey(policy).toLowerCase();
+      const label = (policy.label ?? "").toLowerCase();
+      const description = (policy.description ?? "").toLowerCase();
       return (
         key.includes(q) || label.includes(q) || description.includes(q)
       );
     });
-  }, [slots, search]);
+  }, [policies, search]);
 
-  if (slots.length === 0) return null;
+  if (policies.length === 0) return null;
 
   return (
     <Popover
@@ -733,12 +733,12 @@ function ContextPolicyStackTrigger({
         >
           <Layers className="w-3.5 h-3.5" />
           <span>
-            {slots.length} context slot{slots.length === 1 ? "" : "s"}
+            {policies.length} context policy{policies.length === 1 ? "" : "s"}
           </span>
         </button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start">
-        {slots.length > SEARCH_THRESHOLD && (
+        {policies.length > SEARCH_THRESHOLD && (
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-border/50">
             <Search className="w-3 h-3 text-muted-foreground shrink-0" />
             <input
@@ -746,7 +746,7 @@ function ContextPolicyStackTrigger({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Filter context slots…"
+              placeholder="Filter context policies…"
               className="flex-1 min-w-0 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
               style={{ fontSize: "16px" }}
             />
@@ -758,14 +758,14 @@ function ContextPolicyStackTrigger({
               No matches
             </p>
           ) : (
-            filtered.map(({ slot, i }) => {
-              const key = getSlotKey(slot);
-              const detail = slot.label?.trim()
-                ? slot.label
-                : slot.description?.trim()
-                  ? slot.description
+            filtered.map(({ policy, i }) => {
+              const key = getPolicyKey(policy);
+              const detail = policy.label?.trim()
+                ? policy.label
+                : policy.description?.trim()
+                  ? policy.description
                   : "";
-              const isBound = slot.source?.kind === "ctx_item";
+              const isBound = policy.source?.kind === "ctx_item";
               return (
                 <div
                   key={`${key}-${i}`}
@@ -787,7 +787,7 @@ function ContextPolicyStackTrigger({
                         variant="outline"
                         className="text-[9px] px-1 py-0 font-normal shrink-0"
                       >
-                        {slot.type}
+                        {policy.type}
                       </Badge>
                       {isBound && (
                         <Link2
@@ -795,7 +795,7 @@ function ContextPolicyStackTrigger({
                           aria-label="Bound to a scope context item"
                         />
                       )}
-                      {slot.mutable && (
+                      {policy.mutable && (
                         <Pencil
                           className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0"
                           aria-label="Mutable"
@@ -811,7 +811,7 @@ function ContextPolicyStackTrigger({
                   <button
                     type="button"
                     onClick={() => onDelete(i)}
-                    title="Remove context slot"
+                    title="Remove context policy"
                     className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all shrink-0"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -840,17 +840,17 @@ export function AgentContextPoliciesManager({
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const openBatchImport = useOpenScopeBatchImportWindow();
-  const slotsRaw = useAppSelector((state) =>
+  const policiesRaw = useAppSelector((state) =>
     selectAgentContextPolicies(state, agentId),
   );
-  const slots = useMemo(() => slotsRaw ?? [], [slotsRaw]);
+  const policies = useMemo(() => policiesRaw ?? [], [policiesRaw]);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editIndex, setEditIndex] = useState<number | null>(null);
-  const [form, setForm] = useState<SlotFormState>(EMPTY_FORM);
+  const [form, setForm] = useState<PolicyFormState>(EMPTY_FORM);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const patchForm = useCallback((patch: Partial<SlotFormState>) => {
+  const patchForm = useCallback((patch: Partial<PolicyFormState>) => {
     setForm((prev) => ({ ...prev, ...patch }));
     setFormError(null);
   }, []);
@@ -859,8 +859,8 @@ export function AgentContextPoliciesManager({
   const keyValid =
     /^[a-z_][a-z0-9_]*$/.test(sanitizedKey) && sanitizedKey.length > 0;
 
-  const existingKeys = slots
-    .map((s, i) => (i !== editIndex ? getSlotKey(s) : ""))
+  const existingKeys = policies
+    .map((s, i) => (i !== editIndex ? getPolicyKey(s) : ""))
     .filter(Boolean);
 
   const keyDuplicate =
@@ -880,9 +880,9 @@ export function AgentContextPoliciesManager({
   };
 
   const openEdit = (idx: number) => {
-    const slot = slots[idx];
-    if (!slot) return;
-    setForm(slotToForm(slot));
+    const policy = policies[idx];
+    if (!policy) return;
+    setForm(policyToForm(policy));
     setEditIndex(idx);
     setFormError(null);
     setEditorOpen(true);
@@ -890,15 +890,15 @@ export function AgentContextPoliciesManager({
 
   const handleSave = () => {
     if (!canSave) return;
-    const { slot: newSlot, error } = formToContextPolicy(form);
-    if (!newSlot) {
+    const { policy: newPolicy, error } = formToContextPolicy(form);
+    if (!newPolicy) {
       setFormError(error);
       return;
     }
     const next: ContextPolicy[] =
       editIndex === null
-        ? [...slots, newSlot]
-        : slots.map((s, i) => (i === editIndex ? newSlot : s));
+        ? [...policies, newPolicy]
+        : policies.map((s, i) => (i === editIndex ? newPolicy : s));
 
     dispatch(
       setAgentContextPolicies({
@@ -913,20 +913,20 @@ export function AgentContextPoliciesManager({
     dispatch(
       setAgentContextPolicies({
         id: agentId,
-        contextPolicies: slots.filter((_, i) => i !== idx),
+        contextPolicies: policies.filter((_, i) => i !== idx),
       }),
     );
   };
 
-  const title = editIndex === null ? "Add context slot" : "Edit context slot";
+  const title = editIndex === null ? "Add context policy" : "Edit context policy";
   const description =
     editIndex === null
       ? "Define a context key clients can pass in the request `context` object. Keys listed here get typed handling, labels, inline behaviour, and optional mutation."
-      : "Update this slot's metadata, inline policy, summary agent, or whether the agent can edit it.";
+      : "Update this policy's metadata, inline policy, summary agent, or whether the agent can edit it.";
 
   const editorBody = (
     <>
-      <SlotEditorFields
+      <PolicyEditorFields
         form={form}
         onChange={patchForm}
         isEdit={editIndex !== null}
@@ -939,7 +939,7 @@ export function AgentContextPoliciesManager({
           Cancel
         </Button>
         <Button onClick={handleSave} disabled={!canSave}>
-          {editIndex === null ? "Add slot" : "Save changes"}
+          {editIndex === null ? "Add policy" : "Save changes"}
         </Button>
       </div>
     </>
@@ -953,7 +953,7 @@ export function AgentContextPoliciesManager({
         </Label>
 
         <ContextPolicyStackTrigger
-          slots={slots}
+          policies={policies}
           onEdit={openEdit}
           onDelete={handleDelete}
         />
@@ -972,7 +972,7 @@ export function AgentContextPoliciesManager({
             type="button"
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
             onClick={() => openBatchImport({ agentId })}
-            title="Batch add variables and context slots from a scope type"
+            title="Batch add variables and context policies from a scope type"
           >
             <Layers className="w-3.5 h-3.5" />
             Batch add

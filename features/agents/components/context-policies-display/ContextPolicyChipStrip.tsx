@@ -3,7 +3,7 @@
 /**
  * ContextPolicyChipStrip
  *
- * Renders context slot chips for a conversation's live context entries.
+ * Renders context policy chips for a conversation's live context entries.
  * One entry → single chip. Multiple → collapsed "Context Items (N)" popover.
  *
  * Use this anywhere you want to show "what context is currently attached to
@@ -55,14 +55,14 @@ export function ContextPolicyChipStrip({
   // is passed at all (the live "next request" surfaces).
   const entries = entriesProp ?? liveEntries;
 
-  const slots = useAppSelector((state: RootState): ContextPolicy[] | undefined =>
+  const policies = useAppSelector((state: RootState): ContextPolicy[] | undefined =>
     agentId ? selectAgentContextPolicies(state, agentId) : undefined,
   );
-  const slotByKey = useMemo(() => {
+  const policyByKey = useMemo(() => {
     const map = new Map<string, ContextPolicy>();
-    for (const s of slots ?? []) map.set(s.key, s);
+    for (const s of policies ?? []) map.set(s.key, s);
     return map;
-  }, [slots]);
+  }, [policies]);
 
   // Only render chips for entries that actually have a value.
   const visibleEntries = useMemo(
@@ -94,7 +94,7 @@ export function ContextPolicyChipStrip({
           conversationId={conversationId}
           agentId={agentId}
           entry={entry}
-          slot={slotByKey.get(entry.key)}
+          policy={policyByKey.get(entry.key)}
         />
       </div>
     );
@@ -107,7 +107,7 @@ export function ContextPolicyChipStrip({
         conversationId={conversationId}
         agentId={agentId}
         entries={visibleEntries}
-        slotByKey={slotByKey}
+        policyByKey={policyByKey}
       />
     </div>
   );

@@ -821,6 +821,7 @@ export const createAgent = createAsyncThunk<
     settings: partial.settings ?? ({} as AgentDefinition["settings"]),
     tools: partial.tools ?? [],
     contextPolicies: partial.contextPolicies ?? [],
+    autoContextDisabled: partial.autoContextDisabled ?? false,
     modelTiers: partial.modelTiers ?? null,
     outputSchema: partial.outputSchema ?? null,
     customTools: partial.customTools ?? [],

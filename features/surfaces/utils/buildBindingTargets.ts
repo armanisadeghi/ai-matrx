@@ -2,7 +2,7 @@ import type { AgentDefinition } from "@/features/agents/types/agent-definition.t
 import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 
 /**
- * Build the list of agent variables + context slots that a surface binding
+ * Build the list of agent variables + context policies that a surface binding
  * form can map. Shared by the agent-first BindingColumn and the surface-first
  * SurfaceAgentBindPanel.
  */

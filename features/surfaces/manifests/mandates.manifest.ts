@@ -188,7 +188,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_mandate_overrides",
     label: "Selected mandate overrides",
     description:
-      "Per-principal slot_binding overrides for the open mandate: principal type, override agent name (null = settings-only), config overrides, enabled flag. Empty array when the mandate has none; absent when no row is selected. Bindable rather than auto-context.",
+      "Per-principal mandate_binding overrides for the open mandate: principal type, override agent name (null = settings-only), config overrides, enabled flag. Empty array when the mandate has none; absent when no row is selected. Bindable rather than auto-context.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 500,

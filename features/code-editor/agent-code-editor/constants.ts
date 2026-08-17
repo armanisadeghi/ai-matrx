@@ -1,8 +1,8 @@
 /**
- * Constants — context slot keys.
+ * Constants — context policy keys.
  *
  * Names match the server team's `IdeState.to_variables()` convention so any
- * agent that declares them as variables OR context slots sees the same
+ * agent that declares them as variables OR context policies sees the same
  * payload shape without extra mapping.
  */
 
@@ -10,7 +10,7 @@
 export const SMART_CODE_EDITOR_SURFACE_KEY = "code-editor" as const;
 
 /**
- * Atomic VSCode-style context slot keys. The server team lists these as the
+ * Atomic VSCode-style context policy keys. The server team lists these as the
  * canonical names; we mirror them exactly.
  */
 export const VSC_CONTEXT_KEYS = {
@@ -40,7 +40,7 @@ export type VscContextKey =
   (typeof VSC_CONTEXT_KEYS)[keyof typeof VSC_CONTEXT_KEYS];
 
 /**
- * Non-VSCode context slot keys owned by this system.
+ * Non-VSCode context policy keys owned by this system.
  *
  * `agent_skills` is a manual slot for now — it gets populated from whatever
  * the caller provides and the agent can retrieve via `ctx_get`. In the
@@ -54,7 +54,7 @@ export const AGENT_CONTEXT_KEYS = {
 export type AgentContextKey =
   (typeof AGENT_CONTEXT_KEYS)[keyof typeof AGENT_CONTEXT_KEYS];
 
-/** Every context slot key this editor can populate. Useful for listings. */
+/** Every context policy key this editor can populate. Useful for listings. */
 export const ALL_CONTEXT_KEYS = [
   ...Object.values(VSC_CONTEXT_KEYS),
   ...Object.values(AGENT_CONTEXT_KEYS),

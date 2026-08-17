@@ -36,7 +36,7 @@ interface ContextPolicyItemsPopoverProps {
   conversationId: string;
   agentId: string | null;
   entries: InstanceContextEntry[];
-  slotByKey: Map<string, ContextPolicy>;
+  policyByKey: Map<string, ContextPolicy>;
   className?: string;
 }
 
@@ -44,7 +44,7 @@ export function ContextPolicyItemsPopover({
   conversationId,
   agentId,
   entries,
-  slotByKey,
+  policyByKey,
   className,
 }: ContextPolicyItemsPopoverProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -93,8 +93,8 @@ export function ContextPolicyItemsPopover({
           </p>
           <div className="max-h-64 overflow-y-auto space-y-0.5">
             {entries.map((entry) => {
-              const slot = slotByKey.get(entry.key);
-              const type: ContextObjectType = slot?.type ?? entry.type;
+              const policy = policyByKey.get(entry.key);
+              const type: ContextObjectType = policy?.type ?? entry.type;
               const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
               const theme = resolveContextPolicyTileTheme(type);
               const typeLabel =
@@ -102,7 +102,7 @@ export function ContextPolicyItemsPopover({
                 CONTEXT_TYPE_TILE_LABEL[type] ??
                 "Context";
               const label =
-                slot?.label?.trim() || entry.label?.trim() || entry.key;
+                policy?.label?.trim() || entry.label?.trim() || entry.key;
               const preview = contextPolicyEntryPreview(
                 entry,
                 type,

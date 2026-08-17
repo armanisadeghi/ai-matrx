@@ -21,8 +21,8 @@ import type {
   ContextItemBinding,
 } from "@/features/agents/types/agent-definition.types";
 
-/** Loose mapping used to suggest a slot `type` when binding to a context item. */
-export function contextItemValueTypeToSlotType(
+/** Loose mapping used to suggest a policy `type` when binding to a context item. */
+export function contextItemValueTypeToPolicyType(
   valueType: ContextItem["value_type"],
 ): ContextObjectType {
   switch (valueType) {
@@ -47,7 +47,7 @@ export function suggestKeyFromContextItem(
 
 /**
  * Given a proposed key/name and the set already taken, appends `_2`, `_3`, … until unique.
- * Use when batch-creating several slots/variables in one pass where sanitized keys can collide.
+ * Use when batch-creating several policies/variables in one pass where sanitized keys can collide.
  */
 export function uniquifyKey(base: string, taken: Set<string>): string {
   if (!taken.has(base)) return base;
@@ -64,13 +64,13 @@ export function buildContextPolicyFromItem(
     onMissing?: string;
     /** Whether the agent may change the value, or only read it. Defaults read-only. */
     access?: AgentEditAccess;
-    /** Where an editable slot's edits go. Defaults conversation-only. */
+    /** Where an editable policy's edits go. Defaults conversation-only. */
     saveMode?: ContextPolicyPersist;
   },
 ): ContextPolicy {
-  const slot: ContextPolicy = {
+  const policy: ContextPolicy = {
     key: opts?.key ?? suggestKeyFromContextItem(item),
-    type: contextItemValueTypeToSlotType(item.value_type),
+    type: contextItemValueTypeToPolicyType(item.value_type),
     label: item.display_name,
     description: item.description || undefined,
     source: {
@@ -81,7 +81,7 @@ export function buildContextPolicyFromItem(
       on_missing: opts?.onMissing ?? "empty",
     },
   };
-  return applyAgentEditAccess(slot, {
+  return applyAgentEditAccess(policy, {
     access: opts?.access ?? "read_only",
     saveMode: opts?.saveMode ?? "never",
   });

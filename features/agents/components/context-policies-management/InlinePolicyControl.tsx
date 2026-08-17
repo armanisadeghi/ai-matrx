@@ -8,7 +8,7 @@
  *   0              → "never"  (always deferred behind ctx_get / retrieval)
  *   N (1..5000)    → "custom" ceiling
  *
- * Extracted so every surface that owns an inline policy — agent context slots
+ * Extracted so every surface that owns an inline policy — agent context policies
  * AND per-owner Custom Dictionary settings — shares ONE implementation instead
  * of forking the radio rows + clamp logic. Pure/presentational: it owns no
  * persistence, just the value shape.

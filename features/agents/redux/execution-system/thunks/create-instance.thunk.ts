@@ -373,7 +373,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
   //   (2) risk reading the CURRENT agent when the shortcut is pinned to
   //       an older frozen version.
   // Everything below comes directly off the shortcut record that was
-  // populated by the shortcut-menu RPCs (variable defs + context slots are
+  // populated by the shortcut-menu RPCs (variable defs + context policies are
   // snapshotted alongside the shortcut).
   // ──────────────────────────────────────────────────────────────────────
   const {

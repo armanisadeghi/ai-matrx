@@ -3,11 +3,11 @@
 /**
  * ContextPolicyDetailSheet
  *
- * Right-side sheet that shows the full detail of a single context slot value
+ * Right-side sheet that shows the full detail of a single context policy value
  * attached to a request: key, type, label, description, inline policy, and
  * the value rendered by type (markdown / JSON / link / entity card).
  *
- * Reads the slot definition (if any) from the agent definition keyed by
+ * Reads the policy definition (if any) from the agent definition keyed by
  * `agentId`, and the live value from `state.instanceContext.byConversationId`.
  */
 
@@ -58,10 +58,10 @@ export function ContextPolicyDetailSheet({
   contextKey,
   snapshotValue,
 }: ContextPolicyDetailSheetProps) {
-  const slot = useAppSelector((state: RootState): ContextPolicy | undefined => {
+  const policy = useAppSelector((state: RootState): ContextPolicy | undefined => {
     if (!agentId) return undefined;
-    const slots = selectAgentContextPolicies(state, agentId);
-    return slots?.find((s) => s.key === contextKey);
+    const policies = selectAgentContextPolicies(state, agentId);
+    return policies?.find((s) => s.key === contextKey);
   });
 
   const entry = useAppSelector(
@@ -81,12 +81,12 @@ export function ContextPolicyDetailSheet({
     [contextKey, snapshotValue, entry?.label, entry?.value],
   );
 
-  const type: ContextObjectType = slot?.type ?? entry?.type ?? "text";
+  const type: ContextObjectType = policy?.type ?? entry?.type ?? "text";
   const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
   const chipClass =
     CONTEXT_TYPE_CHIP_CLASS[type] ?? CONTEXT_TYPE_CHIP_CLASS.text;
 
-  const label = slot?.label?.trim() || entry?.label?.trim() || contextKey;
+  const label = policy?.label?.trim() || entry?.label?.trim() || contextKey;
   // Doc-like keys (working document, scratchpad, future doc kinds) route to
   // the EDITABLE documents workspace — never the readonly value dump below.
   const docKind = docKindForContextKey(contextKey);
@@ -102,12 +102,12 @@ export function ContextPolicyDetailSheet({
   );
 
   const inlinePolicyText = useMemo(() => {
-    const mic = slot?.max_inline_chars;
+    const mic = policy?.max_inline_chars;
     if (mic === undefined || mic === null)
       return "Default — inline if ≤ 200 chars.";
     if (mic === 0) return "Never inline — always fetched via ctx_get.";
     return `Custom ceiling — inline up to ${mic} chars.`;
-  }, [slot?.max_inline_chars]);
+  }, [policy?.max_inline_chars]);
 
   return (
     <MatrxDynamicPanelHost
@@ -133,7 +133,7 @@ export function ContextPolicyDetailSheet({
           </span>
         )
       }
-      expandButtonLabel="Context slot"
+      expandButtonLabel="Context policy"
       position="right"
       defaultSize={docKind !== null ? 44 : 34}
       contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
@@ -144,10 +144,10 @@ export function ContextPolicyDetailSheet({
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto">
-          {slot?.description && (
+          {policy?.description && (
             <DetailSection title="Description">
               <p className="whitespace-pre-wrap text-xs text-foreground/85">
-                {slot.description}
+                {policy.description}
               </p>
             </DetailSection>
           )}
@@ -164,31 +164,31 @@ export function ContextPolicyDetailSheet({
             <p className="text-xs text-muted-foreground">{inlinePolicyText}</p>
           </DetailSection>
 
-          {slot?.summary_agent_id && (
+          {policy?.summary_agent_id && (
             <DetailSection title="Summary sub-agent">
               <p className="break-all font-mono text-[11px] text-muted-foreground">
-                {slot.summary_agent_id}
+                {policy.summary_agent_id}
               </p>
             </DetailSection>
           )}
 
-          {slot && (
+          {policy && (
             <DetailSection title="Agent access">
-              <AgentEditAccessBadge access={decodeAgentEditAccess(slot).access} />
-              {slot.mutable && (
+              <AgentEditAccessBadge access={decodeAgentEditAccess(policy).access} />
+              {policy.mutable && (
                 <p className="mt-1.5 text-xs text-muted-foreground">
-                  {AGENT_EDIT_SAVE_SUMMARY[slot.persist ?? "never"]}
+                  {AGENT_EDIT_SAVE_SUMMARY[policy.persist ?? "never"]}
                 </p>
               )}
-              {slot.mutable && slot.persist === "auto" && slot.source && (
+              {policy.mutable && policy.persist === "auto" && policy.source && (
                 <pre className="mt-1.5 overflow-x-auto rounded border border-border bg-muted/40 p-2 font-mono text-[11px]">
-                  {JSON.stringify(slot.source, null, 2)}
+                  {JSON.stringify(policy.source, null, 2)}
                 </pre>
               )}
             </DetailSection>
           )}
 
-          {!slot && (
+          {!policy && (
             <DetailSection title="Ad-hoc key">
               <p className="text-[11px] text-muted-foreground">
                 This key isn't declared on the agent. Type is inferred at

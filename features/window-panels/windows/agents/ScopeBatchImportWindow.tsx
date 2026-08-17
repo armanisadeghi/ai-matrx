@@ -3,9 +3,9 @@
 /**
  * ScopeBatchImportWindow
  *
- * Floating-window shortcut for batch-creating Variables and Context Slots
+ * Floating-window shortcut for batch-creating Variables and Context Policies
  * from a scope type's context items, opened from either the Variables or
- * Context Slots chip rows in the agent builder. Content is the route-shared
+ * Context Policies chip rows in the agent builder. Content is the route-shared
  * `ScopeBatchImportBody` — this file is only the WindowPanel shell.
  */
 

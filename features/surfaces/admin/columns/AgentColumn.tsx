@@ -28,7 +28,7 @@ import { formatVariableDisplayName } from "@/features/agents/utils/variable-util
  * Column 2 — Agent.
  *
  * Three clearly-separated blocks: identity (top, on card bg), variables
- * (its own card), context slots (its own card). The blocks float on a
+ * (its own card), context policies (its own card). The blocks float on a
  * tinted page background so they read as distinct surfaces.
  *
  * Variable rows surface the three load-bearing facts at a glance:
@@ -88,13 +88,13 @@ export function AgentColumn({ agent }: { agent: AgentDefinition }) {
         </SectionCard>
 
         <SectionCard
-          title="Context Slots"
+          title="Context Policies"
           icon={Boxes}
           count={slots.length}
           accent="text-sky-600 bg-sky-500/10"
         >
           {slots.length === 0 ? (
-            <EmptyRow label="No context slots declared" />
+            <EmptyRow label="No context policies declared" />
           ) : (
             <ul className="divide-y divide-border/60">
               {slots.map((s) => (
@@ -319,7 +319,7 @@ function VariableDetailDialog({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Context slot row
+// Context policy row
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ContextPolicyRow({

@@ -29,7 +29,7 @@ export interface UseProTextareaAgentActionResult {
   error: string | null;
   /**
    * Launch `agentId` over `text`. No-op (returns false) without both.
-   * `contextItems` ride as declared context slots or ad-hoc entries — same
+   * `contextItems` ride as declared context policies or ad-hoc entries — same
    * handling as the cleanup page.
    */
   run: (

@@ -22,7 +22,7 @@ import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 
 export interface ContextPolicyMappingEditorProps {
   /**
-   * Context slots declared on the agent. Used to populate the right-hand
+   * Context policies declared on the agent. Used to populate the right-hand
    * dropdown. If empty, the editor disables its selects and shows a hint.
    */
   contextPolicies: ContextPolicy[];
@@ -45,7 +45,7 @@ function helpForScope(scope: string): string | null {
 }
 
 /**
- * Parity with ScopeMappingEditor but routes scope keys to agent CONTEXT SLOTS
+ * Parity with ScopeMappingEditor but routes scope keys to agent CONTEXT POLICIES
  * instead of variables. Takes precedence over default context-policy values and
  * ad-hoc context at launch.
  */
@@ -102,8 +102,8 @@ export function ContextPolicyMappingEditor({
   const renderSlotSelect = (scopeName: string, isEnabled: boolean) => {
     const currentSlotKey = mappings[scopeName] ?? "";
     const placeholder = hasSlots
-      ? "Select context slot..."
-      : "Agent has no context slots";
+      ? "Select context policy..."
+      : "Agent has no context policies";
 
     return (
       <Select

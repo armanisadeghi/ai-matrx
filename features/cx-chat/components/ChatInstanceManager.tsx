@@ -80,7 +80,7 @@ export function ChatInstanceManager(props: ChatInstanceManagerProps) {
         }
       }
 
-      // 2. Ensure agent execution data (variables, context slots) is loaded.
+      // 2. Ensure agent execution data (variables, context policies) is loaded.
       await dispatch(fetchAgentExecutionMinimal(agentId));
 
       // 3. Reuse a previously created conversation for this agent if still alive.

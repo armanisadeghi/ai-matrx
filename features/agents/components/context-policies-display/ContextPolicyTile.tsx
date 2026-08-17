@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Context slot tile — same E3 stacked layout + adaptive chrome as
+ * Context policy tile — same E3 stacked layout + adaptive chrome as
  * ResourceAttachmentTile, with per-type context gradients.
  */
 

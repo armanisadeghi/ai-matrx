@@ -48,7 +48,7 @@ export interface BindingSuggestionsTabProps {
   /** Declared + baseline values the manual editor also offers. */
   availableSurfaceValues: SurfaceValue[];
   writeTargets: readonly SurfaceWriteTarget[];
-  /** Agent input names (variables + context slots) — the valid targets. */
+  /** Agent input names (variables + context policies) — the valid targets. */
   targetNames: readonly string[];
   disabled?: boolean;
   /**
@@ -173,7 +173,7 @@ export function BindingSuggestionsTab({
           </Button>
           {targetNames.length === 0 && (
             <p className="text-[10px] text-muted-foreground">
-              This agent has no variables or context slots to map.
+              This agent has no variables or context policies to map.
             </p>
           )}
         </div>

@@ -5,7 +5,7 @@
  * everything the Agent Builder exposes — per variation. Locked across
  * variations: only the test input (variables + user message). Varied per
  * variation: the ENTIRE editable agent definition (model, settings, system
- * prompt, seed messages, variables, context slots, tools, MCP).
+ * prompt, seed messages, variables, context policies, tools, MCP).
  *
  * Like System-Prompt / Tools / Tuning modes, each variation owns a
  * SYNTHETIC clone of the template (a `cmp-<uuid>` AgentDefinition record in

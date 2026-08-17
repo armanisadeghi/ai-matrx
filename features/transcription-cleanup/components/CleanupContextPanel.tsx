@@ -6,7 +6,7 @@
  * Each block is a real CONTEXT ITEM ({ id, key, label, value }) that the page
  * passes to agents as a proper context entry and persists per-session in
  * `studio_session_settings.context_items`. The `key` is derived from the
- * title (slugified, deduped) — name a block to match an agent's context slot
+ * title (slugified, deduped) — name a block to match an agent's context policy
  * (e.g. "Client Brief" → `client_brief`) and it fills that slot directly.
  *
  * Notes integration (unchanged from the original tool):

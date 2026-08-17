@@ -9,7 +9,7 @@
  *   1. scopeMappings   — explicit UI key → agent variable/context target
  *   2. contextMappings — explicit UI key → agent context-policy key
  *   3. Ad-hoc         — key falls through as a context entry; if the key
- *                       matches an agent context slot, slotMatched=true.
+ *                       matches an agent context policy, slotMatched=true.
  */
 
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";

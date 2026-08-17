@@ -593,13 +593,13 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
           </CardContent>
         </Card>
 
-        {/* ── Context slots (from the agent definition) ───────────────── */}
+        {/* ── Context policies (from the agent definition) ───────────────── */}
         {contextPolicyCount > 0 && agentContextPolicies && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Layers className="w-4 h-4 text-cyan-500" />
-                Context slots
+                Context policies
                 <span className="text-xs font-normal text-muted-foreground">
                   ({contextPolicyCount})
                 </span>
@@ -635,7 +635,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                     )}
                     <CopyButtons
                       size="xs"
-                      label={`Context slot ${slot.key ?? i}`}
+                      label={`Context policy ${slot.key ?? i}`}
                       className="opacity-0 group-hover/x:opacity-100 focus-within:opacity-100 shrink-0"
                       human={() =>
                         [slot.key, slot.label, slot.description]
@@ -645,8 +645,8 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                       json={() => slot}
                       agent={() => ({
                         kind: "agent-app-context-policy",
-                        location: `AI Matrx — Agent App — ${app.name} — Context slots`,
-                        description: "A single context slot from the app's agent.",
+                        location: `AI Matrx — Agent App — ${app.name} — Context policies`,
+                        description: "A single context policy from the app's agent.",
                         data: slot,
                         attributes: { key: slot.key ?? String(i) },
                       })}

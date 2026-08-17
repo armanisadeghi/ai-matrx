@@ -9,7 +9,7 @@
  * TAB inside a single floating WindowPanel. Each tab renders the real
  * `AgentBuilderLeftPanel` pointed at that variation's synthetic agent id —
  * so the user edits everything the Agent Builder exposes (model, settings,
- * system prompt, seed messages, variables, context slots, tools, MCP) and
+ * system prompt, seed messages, variables, context policies, tools, MCP) and
  * those edits flow into the variation's manual run with no special routing.
  *
  * Nothing here persists to the agents table: the panel's editing components

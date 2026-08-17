@@ -14,7 +14,7 @@ export const EDU_TUTOR_AGENTS = {
   /**
    * The persistent, memory-carrying, grounded conversational tutor. A streaming
    * TEXT agent (markdown out) with NO user-facing variables (clean composer) —
-   * grounding rides declared CONTEXT SLOTS the FE fills silently every turn:
+   * grounding rides declared CONTEXT POLICIES the FE fills silently every turn:
    *   learner_memory · study_material · teaching_mode · personality_style
    * Each slot has a `max_inline_chars` ceiling; content is inlined into the
    * model's view up to that limit. Also carries platform DATA TOOLS so it can
@@ -32,7 +32,7 @@ export const EDU_TUTOR_AGENTS = {
    * See features/education/tutor/FEATURE.md → Trust.
    *
    * Superseded `d80cc27e-…` (the prior streaming tutor with the same four
-   * context slots but NO per-turn structured channel — grounding-derived strip
+   * context policies but NO per-turn structured channel — grounding-derived strip
    * only). See LIVE_AGENTS.md for the supersession chain.
    */
   tutor: "cb268e29-f123-4281-9fe9-d017882025dc",

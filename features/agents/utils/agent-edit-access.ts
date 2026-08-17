@@ -1,5 +1,5 @@
 /**
- * Agent edit access — the pure core of "can the agent change this context slot?".
+ * Agent edit access — the pure core of "can the agent change this context policy?".
  *
  * The wire shape is `mutable` + `persist` on `ContextPolicy` (see `agent-api-types`),
  * but "mutable" is jargon nobody outside this codebase reads correctly, so it
@@ -15,7 +15,7 @@
  *   The app saves it        → persist "client"  (client owns persistence)
  *
  * WRITEBACK IS NOT UNIVERSAL. `persist: "auto"` only lands if aidream has a
- * writeback handler registered for the slot's `source.kind`
+ * writeback handler registered for the policy's `source.kind`
  * (`aidream/services/conversation_context/context_writeback.py` — today: note,
  * studio_document, working_document, canvas_item, cx_ai_data_records, and
  * ctx_item). A kind with no handler is a SILENT server-side no-op — offering
@@ -23,7 +23,7 @@
  * you let a new `source.kind` be agent-editable + auto, CHECK that a handler
  * exists; if it doesn't, the fix is to write the handler, not to hide the option.
  *
- * Scope-bound (`ctx_item`) slots DO write back as of 2026-07-12: the agent's edit
+ * Scope-bound (`ctx_item`) policies DO write back as of 2026-07-12: the agent's edit
  * lands on the exact `(context_item_id, scope_id)` cell it was read from, via the
  * `set_context_value` RPC — append-only (new version, previous `is_current` flipped),
  * stamped `source_type='ai_enriched'` + `authored_by`, and re-checked against the
@@ -38,7 +38,7 @@ import type {
   ContextPolicyPersist,
 } from "@/features/agents/types/agent-api-types";
 
-/** What the agent is allowed to do with a slot. The UI never says "mutable". */
+/** What the agent is allowed to do with a policy. The UI never says "mutable". */
 export type AgentEditAccess = "read_only" | "editable";
 
 export interface AgentEditAccessValue {
@@ -58,7 +58,7 @@ export const AGENT_EDIT_ACCESS_LABEL: Record<AgentEditAccess, string> = {
 };
 
 /**
- * The save mode a scope-bound (`ctx_item`) slot defaults to when the user makes it
+ * The save mode a scope-bound (`ctx_item`) policy defaults to when the user makes it
  * agent-editable: write the edit back to the scope cell it came from. Every write is
  * a new version stamped `ai_enriched` — nothing is overwritten in place.
  */
@@ -79,7 +79,7 @@ export const AGENT_EDIT_SAVE_MODES: AgentEditSaveMode[] = [
   {
     id: "auto",
     label: "Save to the source",
-    hint: "The agent's edits are written back to the record this slot came from — saved as a new version, never overwritten in place.",
+    hint: "The agent's edits are written back to the record this policy came from — saved as a new version, never overwritten in place.",
   },
   {
     id: "client",
@@ -88,31 +88,31 @@ export const AGENT_EDIT_SAVE_MODES: AgentEditSaveMode[] = [
   },
 ];
 
-/** One-line plain-English summary of where an editable slot's edits go. */
+/** One-line plain-English summary of where an editable policy's edits go. */
 export const AGENT_EDIT_SAVE_SUMMARY: Record<ContextPolicyPersist, string> =
   AGENT_EDIT_SAVE_MODES.reduce(
     (acc, mode) => ({ ...acc, [mode.id]: mode.hint }),
     {} as Record<ContextPolicyPersist, string>,
   );
 
-/** Read a slot's access. Absent `mutable` means read-only — the server default. */
+/** Read a policy's access. Absent `mutable` means read-only — the server default. */
 export function decodeAgentEditAccess(
-  slot: Pick<ContextPolicy, "mutable" | "persist"> | undefined | null,
+  policy: Pick<ContextPolicy, "mutable" | "persist"> | undefined | null,
 ): AgentEditAccessValue {
-  if (!slot?.mutable) return DEFAULT_AGENT_EDIT_ACCESS;
-  return { access: "editable", saveMode: slot.persist ?? "never" };
+  if (!policy?.mutable) return DEFAULT_AGENT_EDIT_ACCESS;
+  return { access: "editable", saveMode: policy.persist ?? "never" };
 }
 
 /**
- * Write access onto a slot. Read-only strips `mutable`/`persist` entirely rather
+ * Write access onto a policy. Read-only strips `mutable`/`persist` entirely rather
  * than writing `mutable: false` — an absent flag is the server's own default and
- * keeps stored slots clean.
+ * keeps stored policies clean.
  */
 export function applyAgentEditAccess<T extends ContextPolicy>(
-  slot: T,
+  policy: T,
   value: AgentEditAccessValue,
 ): T {
-  const next = { ...slot };
+  const next = { ...policy };
   if (value.access === "editable") {
     next.mutable = true;
     next.persist = value.saveMode;
@@ -123,7 +123,7 @@ export function applyAgentEditAccess<T extends ContextPolicy>(
   return next;
 }
 
-/** True when the two values would produce a different stored slot. */
+/** True when the two values would produce a different stored policy. */
 export function agentEditAccessChanged(
   a: AgentEditAccessValue,
   b: AgentEditAccessValue,

@@ -638,7 +638,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
               />
               <StatChip
                 icon={Layers}
-                label="context slots"
+                label="context policies"
                 count={contextPolicyCount}
                 accent="text-cyan-500"
               />
@@ -770,17 +770,17 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
               </Card>
             )}
 
-            {/* Context Slots */}
+            {/* Context Policies */}
             {contextPolicies && contextPolicyCount > 0 && (
               <Card>
                 <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
                   <CardTitle className="flex items-center gap-2 text-sm">
                     <Layers className="w-4 h-4 text-cyan-500" />
-                    Context Slots ({contextPolicyCount})
+                    Context Policies ({contextPolicyCount})
                   </CardTitle>
                   <CopyButtons
                     size="xs"
-                    label="Context slots"
+                    label="Context policies"
                     human={() =>
                       contextPolicies
                         .map((slot) =>
@@ -798,7 +798,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                     agent={() => ({
                       kind: "agent-context-policies",
                       location: "AI Matrx — Agent view",
-                      description: "Context slot definitions for this agent.",
+                      description: "Context policy definitions for this agent.",
                       data: contextPolicies,
                       attributes: {
                         agentId: liveAgentId,
