@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-06-24`
+**Last updated:** `2026-08-17`
 
 ---
 
@@ -66,7 +66,7 @@
 
 1. **Metrics load.** `MetricsStrip` → `useDashboardMetrics()` → `supabase.rpc("get_user_dashboard_metrics")` (cached 60s). Zero counts render the `emptyHint` nudge ("Build your first agent").
 2. **Pin from Discover.** Hover a Discover card → `<PinButton>` → `usePinned().toggle()` → **both** the `toggleFavorite` reducer (prefs cache, debounced upsert + cross-tab broadcast) **and** `favoritesService.setFavorite(...)` (canonical `user_entity_state` flag, `ues_set`). The item appears in `PinnedSection` and `FavoritesNavGroup` immediately (same Redux read).
-3. **Discover rotation.** `useDiscoverRotation(DISCOVER_POOL, 6)` returns a window seeded by day + per-mount cursor; "Show more" advances it. First page load is deterministic (offset based on values computed in `useState` initializers) → no hydration mismatch.
+3. **Discover rotation.** `useDiscoverRotation(DISCOVER_POOL, 6)` returns a window seeded by day + per-mount cursor; "Show more" advances it. First page load is deterministic; date and per-mount variation begin only after hydration.
 
 ---
 
@@ -78,6 +78,7 @@
 - **Discover never hand-lists routes.** `DISCOVER_POOL` derives from `primaryNavItems`; add a nav entry with `dashboard: true` + a `description` and it auto-appears. Curate (hide/reorder/add) only via `dashboard.config.ts`.
 - **`Star` must stay in `shellIconMap`.** The sidebar Favorites entry renders its icon via `ShellIcon name="Star"`; if `Star` is dropped from `features/shell/shellIconMap.ts` the collapsed entry becomes an empty hole.
 - **RPC takes no argument.** Call `supabase.rpc("get_user_dashboard_metrics")` with no params; identity is `auth.uid()`.
+- **First-render text is timezone-neutral.** `DashboardGreeting` supplies `Welcome back` as its `useSyncExternalStore` server snapshot, then switches to the user's local time-aware client snapshot after hydration. Never read the clock in a render initializer: server UTC and browser local time can produce different text.
 
 ---
 
@@ -106,6 +107,7 @@
 
 ## Change log
 
+- `2026-08-17` — Codex: Made the dashboard greeting timezone-safe: SSR and hydration now share a deterministic `Welcome back` snapshot, then the browser applies the local time-aware greeting. Added a regression that hydrates across conflicting server/browser clocks without React errors.
 - `2026-07-21` — Claude: Fixed the `/dashboard` hydration mismatch in `PinnedSection` — favorites live only in the client Redux store (synced after boot), so SSR always renders the empty state while the client's first render could show pinned items. Now gated on `useIsMounted()` (existing `hooks/use-is-mounted.ts` primitive): renders empty until mounted so SSR and the client first render match. Verified in browser — no hydration warnings; pinned grid appears post-mount.
 - `2026-07-14` — Claude: Header-conformance fix. `/dashboard` had no injected shell header (empty center zone); added `<PageHeader><HeaderIconTitle icon="LayoutDashboard" title="Dashboard" /></PageHeader>` in `page.tsx` (the exact pattern documented in `features/shell/components/header/variants/USAGE.md`). `DashboardClient`'s root wrapper now uses `h-full overflow-y-auto` (was unconstrained `overflow-y-auto`) with `pt-[calc(var(--shell-header-h)+1.5rem)]` clearance on the inner content column so the greeting/metrics/quick-actions don't render behind the glass header on first paint. Verified desktop + mobile (375×812) via browser.
 - `2026-06-24` — Claude: **Favorites now persist to the canonical `platform.user_entity_state` ledger** via the new **`favoritesService`** chokepoint (`ues_*` RPCs); the `user_preferences` blob is now the presentation cache + transition-continuity read (every toggle dual-writes). `FavoriteKind` folded onto canonical `EntityType | "nav"` (`features/scopes/types.ts`) — parallel union deleted. `nav` favorites key by `uuidv5(href)` under entity_type `"nav"`. `usePinned` / `PinButton` / `FavoritesNavGroup` public APIs unchanged. Verified live: toggle on `/dashboard` → `ues_set` 204 → row read back from `user_entity_state` via `ues_list`.
