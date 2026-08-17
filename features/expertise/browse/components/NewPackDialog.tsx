@@ -12,9 +12,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProInput } from "@/components/official/ProInput";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -188,12 +188,16 @@ export function NewPackDialog({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="intake-goal">What are you trying to build?</Label>
-            <Textarea
+            <ProTextarea
               id="intake-goal"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               placeholder="e.g. An assistant that does keyword research exactly the way I do it"
-              rows={2}
+              autoGrow
+              minHeight={64}
+              maxHeight={160}
+              enableTextStats={false}
+              auxiliaryControlsLabel="what you are trying to build"
               autoFocus
             />
           </div>
@@ -225,11 +229,12 @@ export function NewPackDialog({
             <Label htmlFor="pack-name">
               Name it <span className="text-muted-foreground">(optional)</span>
             </Label>
-            <Input
+            <ProInput
               id="pack-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Our SEO Keyword Method"
+              auxiliaryControlsLabel="expertise name"
             />
           </div>
         </div>

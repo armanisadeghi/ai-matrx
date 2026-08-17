@@ -113,6 +113,7 @@
 
 ## Change log
 
+- 2026-08-17 — Guided-start authoring fields now use the canonical `ProTextarea` / `ProInput` primitives. The build-description field supports voice transcription, copy, cleanup, and bounded auto-grow while intentionally hiding text-statistics chrome.
 - 2026-08-10 — Feature created (Phase 1): list, detail rule editor (add/edit/retire, version bump,
   optimistic lock), desks page with drift flags, admin map, sidebar + entity registry wiring.
 - 2026-08-10 — Phase 2 FE: CompileDeskDialog ("Create a desk", streams /api/expertise-desks/compile).
