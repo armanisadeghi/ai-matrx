@@ -280,6 +280,40 @@ built** — Arman floated it and was explicitly unsure it earns its cost.
 4. **Distillation → Engram interface** (`common-docs/systems/engram/VISION.md` §5): emit
    candidate specialists/contracts/acceptance criteria, not just rules.
 
+## The Approach build list — Arman's ruling 2026-08-17: "No idea is turned away until we test it and it sucks"
+
+Every Approach below gets BUILT. The goal: so many ways of distilling that it is impossible
+to get it wrong. Status moves here as lanes land.
+
+**Pitched, awaiting Arman's per-lane answers (agents parked, briefs self-contained):**
+1. Understudy (runs from minute one) · 2. Corpus / "Everything you've published" ·
+3. Resource dump (+ company SOPs framing) · 4. Approach selector + move ledger + bad-draft
+critique lane · 5. AI-transcript import (provider gallery + guides + zero-upload AI Matrx card)
+
+**The creative ten (all approved to build; sequence after the five above):**
+6. Meeting Scavenger — distill judgment moments from meetings the expert already records
+   (MUST tap the platform's own meeting/transcript machinery)
+7. Shadow-the-inbox — Understudy drafts real replies; the expert's edit diff is distilled
+8. Red-Pen lane — markup + 5-second mic "why?" per strike-through
+9. Bad Example probe — "what's wrong with this?" over generated decoys (feeds `detection`)
+10. Oracle tap — capture the questions colleagues ask the expert + the answers. Arman's
+    channel spec: (a) email-in address, (b) SMS (we have text messaging), (c) in-app: the
+    message "..." actions menu gets "Add to Rulebook" beside create-task/create-note, and
+    (d) the thumbs up/down on ANY agent response gets a tiny non-disruptive follow-up
+    popover: "does this belong in one of your Rulebooks?" — a thumbs-up is Rulebook
+    material whether or not a Masterwork produced it.
+11. Hardest-Case Debrief — Critical Decision Method over one war story (interview variant)
+12. Exception Hunter — "when does this rule NOT apply?" per approved rule
+13. Triad game — which two of three cases are alike, and why (repertory grid)
+14. Prediction Ledger — cheap predictions on real cases, scored against outcomes
+15. Vacation Trigger — succession-framed interview variant (one registry row)
+Plus the cross-cutting **Masterwork M&M** — a standing 15-minute weekly worst-run review
+ritual (delivery vehicle for 9/12 and the failure lever, not a lane).
+
+An overlap map (which existing platform systems each idea taps — meetings, SMS, message
+actions, thumbs feedback, PDF annotation, education machinery) is being produced and belongs
+beside this list when it lands.
+
 ## Working notes that save hours
 
 - Live ids: Rulebooks `hopkins-scientific-advertising` `f6267bca-…`, `strunk-elements-of-style`
