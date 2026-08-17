@@ -113,10 +113,10 @@ import {
 } from "@/lib/redux/slices/apiConfigSlice";
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
-  selectEffectiveOrganizationId,
   selectProjectId,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
+import { requireExecutionOrganizationId } from "../utils/required-organization";
 import { resolveEndpointPath } from "@/lib/api/resolve-endpoint-path";
 import {
   createRequest,
@@ -463,18 +463,18 @@ export async function assembleManualRequest(
 
   // Global active context scope — org / project / task. Mirrors what callApi
   // and execute-instance already send so the Builder's manual path is not the
-  // odd one out (org-id enforcement is coming app-wide). Only fields that are
-  // actually set ride the wire; absent ones are omitted.
+  // odd one out. Organization is required; optional project/task fields ride
+  // only when selected.
   // Org: the conversation's own value wins on any turn after the first — it is
   // decided at creation and never moves (same rule as assembleRequest /
   // resume-instance). Ambient is the source only for a brand-new conversation.
-  const organization_id =
-    state.conversations.byConversationId[conversationId]?.organizationId ??
-    selectEffectiveOrganizationId(state) ??
-    undefined;
+  const organization_id = requireExecutionOrganizationId(
+    state,
+    conversationId,
+  );
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
-  if (organization_id) request.organization_id = organization_id;
+  request.organization_id = organization_id;
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
 
@@ -573,6 +573,10 @@ export const executeManualInstance = createAsyncThunk<
       if (!instance) {
         throw new Error(`Conversation ${conversationId} not found`);
       }
+
+      // Manual/Builder callers can bypass smartExecute. Refuse before the
+      // optimistic bubble or request tracking mutates local state.
+      requireExecutionOrganizationId(state, conversationId);
 
       const userInputEntry =
         state.instanceUserInput.byConversationId[conversationId];

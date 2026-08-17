@@ -33,19 +33,19 @@ export function ContractItem({
   row,
   state,
   showCheck,
-  iconMandate,
+  iconSlot,
 }: {
   row: ContractRow;
   state: ContractRowState;
   showCheck: boolean;
   /** Optional leading icon (e.g., Hash for variables, key for mandates). */
-  iconMandate?: React.ReactNode;
+  iconSlot?: React.ReactNode;
 }) {
   const Status = STATUS_ICON[state];
   return (
     <li className="flex items-start gap-2.5 py-1.5">
-      {iconMandate ? (
-        <span className="mt-0.5 text-muted-foreground/60">{iconMandate}</span>
+      {iconSlot ? (
+        <span className="mt-0.5 text-muted-foreground/60">{iconSlot}</span>
       ) : null}
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">

@@ -145,8 +145,11 @@ describe("mandate owner bench service", () => {
   });
 
   it("loads the live code-truth report through the typed client", async () => {
+    // `slots` is aidream's wire field name and stays until the server half of
+    // the Mandate rename lands — renaming it here would silently make the
+    // guard accept a shape the server never sends.
     const response = {
-      mandates: [],
+      slots: [],
       import_failures: [],
       counts: { total: 0 },
     };

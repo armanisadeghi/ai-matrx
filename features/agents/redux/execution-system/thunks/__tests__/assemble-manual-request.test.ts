@@ -44,6 +44,7 @@ import type { RootState } from "@/lib/redux/store";
 
 const AGENT_ID = "agent-1";
 const CONVERSATION_ID = "conv-1";
+const SELECTED_ORGANIZATION_ID = "org-selected";
 
 /**
  * Builds a minimal RootState shape sufficient for `assembleManualRequest`.
@@ -63,6 +64,9 @@ function makeState(
     isVersion?: boolean;
     history?: Array<{ id: string; role: string; content: unknown }>;
     userInput?: string;
+    organizationId?: string | null;
+    personalOrganizationId?: string | null;
+    conversationOrganizationId?: string | null;
     resourcePolicies?: Record<string, { promote?: Array<{ representation: string; max_chars?: number }>; exclude?: string[] }>;
   } = {},
 ): RootState {
@@ -101,6 +105,7 @@ function makeState(
           status: "idle",
           isEphemeral: false,
           initialAgentVersionId: null,
+          organizationId: partial.conversationOrganizationId ?? null,
         },
       },
       allConversationIds: [CONVERSATION_ID],
@@ -176,9 +181,16 @@ function makeState(
     // Read by the `editor-state` client-capability provider that
     // `buildToolInjection` walks. Same reducer-derived rule as above.
     editorState: editorStateReducer(undefined, { type: "@@INIT" }),
-    // `selectEffectiveOrganizationId` (active-org resolution) is read while
-    // assembling the request envelope.
-    appContext: appContextReducer(undefined, { type: "@@INIT" }),
+    // AI execution reads ONLY the explicit active organization. The personal
+    // organization remains distinct so tests catch any reintroduced fallback.
+    appContext: {
+      ...appContextReducer(undefined, { type: "@@INIT" }),
+      organization_id:
+        "organizationId" in partial
+          ? (partial.organizationId ?? null)
+          : SELECTED_ORGANIZATION_ID,
+      personal_organization_id: partial.personalOrganizationId ?? null,
+    },
     // Desktop target routing is a real RootState slice. Derive defaults from
     // its reducer so this partial fixture cannot drift from production state.
     adminPreferences: adminPreferencesReducer(undefined, { type: "@@INIT" }),
@@ -193,6 +205,45 @@ function makeState(
 // ---------------------------------------------------------------------------
 
 describe("assembleManualRequest — live read contract", () => {
+  test("both request assemblers carry the explicitly selected organization", async () => {
+    const state = makeState();
+
+    expect(
+      (await assembleManualRequest(state, CONVERSATION_ID))!.organization_id,
+    ).toBe(SELECTED_ORGANIZATION_ID);
+    expect(assembleRequest(state, CONVERSATION_ID)!.organization_id).toBe(
+      SELECTED_ORGANIZATION_ID,
+    );
+  });
+
+  test("missing selection is rejected even when a personal organization exists", async () => {
+    const state = makeState({
+      organizationId: null,
+      personalOrganizationId: "org-personal",
+    });
+
+    await expect(
+      assembleManualRequest(state, CONVERSATION_ID),
+    ).rejects.toThrow("Select an organization before sending this message");
+    expect(() => assembleRequest(state, CONVERSATION_ID)).toThrow(
+      "Select an organization before sending this message",
+    );
+  });
+
+  test("a saved conversation organization wins over a changed active selection", async () => {
+    const state = makeState({
+      organizationId: "org-sidebar-now",
+      conversationOrganizationId: "org-conversation",
+    });
+
+    expect(
+      (await assembleManualRequest(state, CONVERSATION_ID))!.organization_id,
+    ).toBe("org-conversation");
+    expect(assembleRequest(state, CONVERSATION_ID)!.organization_id).toBe(
+      "org-conversation",
+    );
+  });
+
   test("ai_model_id reflects the current agent.modelId", async () => {
     const state = makeState({ modelId: "model-XYZ" });
     const payload = await assembleManualRequest(state, CONVERSATION_ID);

@@ -128,7 +128,7 @@ export function AgentRoleCard({
             variableDefinitions: systemPayload.variableDefinitions,
             contextSlots: systemPayload.contextSlots,
           })
-        : { variables: [], mandates: [] },
+        : { variables: [], slots: [] },
     [systemPayload],
   );
 
@@ -225,7 +225,7 @@ export function AgentRoleCard({
           {!systemPayload.isReady ? (
             <ContractSkeleton />
           ) : systemRows.variables.length === 0 &&
-            systemRows.mandates.length === 0 ? (
+            systemRows.slots.length === 0 ? (
             <p className="text-[12.5px] text-muted-foreground italic">
               This agent declares no variables or context slots — any agent
               with valid execution metadata will pass.
@@ -243,23 +243,23 @@ export function AgentRoleCard({
                         row={row}
                         state="pending"
                         showCheck={false}
-                        iconMandate={<Hash className="h-3 w-3" />}
+                        iconSlot={<Hash className="h-3 w-3" />}
                       />
                     ))}
                   </ul>
                 </SectionList>
               ) : null}
 
-              {systemRows.mandates.length > 0 ? (
-                <SectionList label={`Context mandates (${systemRows.mandates.length})`}>
+              {systemRows.slots.length > 0 ? (
+                <SectionList label={`Context slots (${systemRows.slots.length})`}>
                   <ul className="divide-y divide-border/30">
-                    {systemRows.mandates.map((row) => (
+                    {systemRows.slots.map((row) => (
                       <ContractItem
                         key={row.name}
                         row={row}
                         state="pending"
                         showCheck={false}
-                        iconMandate={<KeyRound className="h-3 w-3" />}
+                        iconSlot={<KeyRound className="h-3 w-3" />}
                       />
                     ))}
                   </ul>

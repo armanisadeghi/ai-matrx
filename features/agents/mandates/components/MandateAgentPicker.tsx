@@ -187,7 +187,7 @@ export function MandateAgentPicker({
         setPreflight(
           `That agent can't run this step — missing: ${[
             ...check.missingVariables,
-            ...check.missingMandates,
+            ...check.missingSlots,
           ]
             .map((r) => r.name)
             .join(", ")}`,

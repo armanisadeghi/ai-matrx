@@ -66,11 +66,11 @@ import {
 } from "../conversations/conversations.slice";
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
-  selectEffectiveOrganizationId,
   selectProjectId,
   selectScopeSelectionsContext,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
+import { requireExecutionOrganizationId } from "../utils/required-organization";
 import {
   createRequest,
   setRequestStatus,
@@ -168,6 +168,10 @@ export const resumeInstance = createAsyncThunk<
         return rejectWithValue(`Conversation ${conversationId} not found`);
       }
 
+      // A resume is still an AI execution request. Never let a missing saved
+      // org fall through to a personal-organization default on the server.
+      requireExecutionOrganizationId(state, conversationId);
+
       // Don't auto-resume after a user cancel or a stream error. The user
       // either explicitly stopped the run or saw a failure surface — either
       // way, silently restarting the loop would be surprising. The instance is
@@ -237,10 +241,10 @@ export const resumeInstance = createAsyncThunk<
       // (hydrated from chat.conversation.organization_id) is the truth; ambient
       // is only a fallback for a record that never hydrated. See the identical
       // rule in assembleRequest — org never moves once a conversation exists.
-      const organization_id =
-        instance.organizationId ??
-        selectEffectiveOrganizationId(state) ??
-        undefined;
+      const organization_id = requireExecutionOrganizationId(
+        state,
+        conversationId,
+      );
       const project_id = selectProjectId(state) ?? undefined;
       const task_id = selectTaskId(state) ?? undefined;
       const scope_ids = Object.values(
@@ -263,7 +267,7 @@ export const resumeInstance = createAsyncThunk<
           injection.client?.state?.["desktop-native"] && {
             target_instance_id: desktopTargetInstanceId,
           }),
-        ...(organization_id && { organization_id }),
+        organization_id,
         ...(project_id && { project_id }),
         ...(task_id && { task_id }),
         ...(scope_ids.length > 0 && { scope_ids }),

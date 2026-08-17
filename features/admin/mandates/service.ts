@@ -513,13 +513,13 @@ function isStringArray(value: unknown): boolean {
 function isMandateCodeTruthReport(value: unknown): value is MandateCodeTruthReport {
   if (!isJsonObject(value)) return false;
   if (
-    !Array.isArray(value.mandates) ||
+    !Array.isArray(value.slots) ||
     !isStringArray(value.import_failures) ||
     !isJsonObject(value.counts)
   ) {
     return false;
   }
-  return value.mandates.every((mandate) => {
+  return value.slots.every((mandate) => {
     if (!isJsonObject(mandate)) return false;
     if (
       typeof mandate.slot_key !== "string" ||

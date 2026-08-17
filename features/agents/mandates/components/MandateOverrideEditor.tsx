@@ -516,8 +516,8 @@ function ContractResult({
   contractSize: number;
 }) {
   const missing =
-    contract.missingVariables.length + contract.missingMandates.length;
-  const extras = contract.extraVariables.length + contract.extraMandates.length;
+    contract.missingVariables.length + contract.missingSlots.length;
+  const extras = contract.extraVariables.length + contract.extraSlots.length;
   const passing = contract.passing;
   if (contractSize === 0) {
     return (
@@ -530,7 +530,7 @@ function ContractResult({
   const requiredRows = (
     rows: ComparisonResult["matchedVariables"],
     state: ContractRowState,
-    kind: "variable" | "mandate",
+    kind: "variable" | "slot",
   ) =>
     rows.map((row) => (
       <ContractItem
@@ -538,7 +538,7 @@ function ContractResult({
         row={row}
         state={state}
         showCheck
-        iconMandate={
+        iconSlot={
           kind === "variable" ? (
             <Hash className="h-3 w-3" />
           ) : (
@@ -576,8 +576,8 @@ function ContractResult({
       <ul className="mt-1.5 divide-y divide-border/30">
         {requiredRows(contract.matchedVariables, "matched", "variable")}
         {requiredRows(contract.missingVariables, "missing", "variable")}
-        {requiredRows(contract.matchedMandates, "matched", "mandate")}
-        {requiredRows(contract.missingMandates, "missing", "mandate")}
+        {requiredRows(contract.matchedSlots, "matched", "slot")}
+        {requiredRows(contract.missingSlots, "missing", "slot")}
       </ul>
       {extras > 0 ? (
         <div className="mt-1.5 border-t border-border/30 pt-1.5">
@@ -586,7 +586,7 @@ function ContractResult({
           </p>
           <ul className="divide-y divide-border/30">
             {requiredRows(contract.extraVariables, "extra", "variable")}
-            {requiredRows(contract.extraMandates, "extra", "mandate")}
+            {requiredRows(contract.extraSlots, "extra", "slot")}
           </ul>
           <p className="text-[11px] leading-relaxed text-muted-foreground/80">
             These won&apos;t be supplied by this step. Make sure they have

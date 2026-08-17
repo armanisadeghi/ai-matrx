@@ -65,11 +65,11 @@ import {
   isFirstTurn,
 } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import {
-  selectEffectiveOrganizationId,
   selectProjectId,
   selectScopeSelectionsContext,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
+import { requireExecutionOrganizationId } from "../utils/required-organization";
 import {
   resolveBackendForConversation,
   warmLocalEngineForConversation,
@@ -255,18 +255,10 @@ export function assembleRequest(
   // right org even if appContextSlice hasn't bootstrapped yet (both
   // organization_id and personal_organization_id are null during that window,
   // so the ambient read would have silently omitted the field entirely).
-  const ambientOrganizationId =
-    selectEffectiveOrganizationId(state) ?? undefined;
-  const organization_id = instance.organizationId ?? ambientOrganizationId;
-  if (!organization_id && instance.messageCount) {
-    // A continuation with NO org from either source is a defect, not a shrug:
-    // it is how a request reaches the server with no identity at all.
-    console.error(
-      `[assembleRequest] conversation ${conversationId} is a continuation with NO organization_id — ` +
-        `neither the conversation record nor appContext supplied one. The server will have to ` +
-        `recover it from the conversation row; fix the hydration path that dropped it.`,
-    );
-  }
+  const organization_id = requireExecutionOrganizationId(
+    state,
+    conversationId,
+  );
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
   // Active scope selections (multi-scope, keyed by scope id — any number of
@@ -314,7 +306,7 @@ export function assembleRequest(
   }
   if (config_overrides) request.config_overrides = config_overrides;
   if (context) request.context = context;
-  if (organization_id) request.organization_id = organization_id;
+  request.organization_id = organization_id;
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
   if (scope_ids.length > 0) request.scope_ids = scope_ids;
@@ -445,6 +437,11 @@ export const executeInstance = createAsyncThunk<
       if (!instance) {
         throw new Error(`Conversation ${conversationId} not found`);
       }
+
+      // Second client-side boundary behind smartExecute. Several internal
+      // surfaces invoke this thunk directly; they must not mutate draft or
+      // optimistic-message state before discovering that execution has no org.
+      requireExecutionOrganizationId(state, conversationId);
 
       // ── Concurrent-turn guard (second layer behind smartExecute) ──────────
       // A live abort controller means a stream is OPEN on this conversation.

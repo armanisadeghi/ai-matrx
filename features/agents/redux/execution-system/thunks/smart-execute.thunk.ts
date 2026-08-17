@@ -25,6 +25,7 @@ import { enqueueInboxMessage } from "../inbox/inbox.thunks";
 import { callCancelRequest } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
+import { requireExecutionOrganizationId } from "../utils/required-organization";
 
 interface SmartExecuteArgs {
   conversationId: string;
@@ -67,6 +68,21 @@ export const smartExecute = createAsyncThunk<
     { getState, dispatch },
   ) => {
     let state = getState();
+
+    // Organization is a hard execution boundary. A personal organization is
+    // not an implicit substitute for an empty picker: keep the draft intact,
+    // show the person the one-click corrective action, and make no request.
+    try {
+      requireExecutionOrganizationId(state, conversationId);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Select an organization before sending this message.";
+      console.error(`[smart-execute] ${message}`, { conversationId });
+      toast.error("Select an organization", { description: message });
+      return;
+    }
 
     // A pending resource has only a local preview; it has no durable file_id
     // and is intentionally excluded from selectResourcePayloads. Sending now

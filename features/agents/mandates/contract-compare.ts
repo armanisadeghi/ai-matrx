@@ -37,9 +37,9 @@ export interface ComparisonResult {
   /** Variables on the candidate beyond the contract. Informational only. */
   extraVariables: ContractRow[];
   /** Same shape, but for context slots. */
-  matchedMandates: ContractRow[];
-  missingMandates: ContractRow[];
-  extraMandates: ContractRow[];
+  matchedSlots: ContractRow[];
+  missingSlots: ContractRow[];
+  extraSlots: ContractRow[];
   /** True when nothing required is missing. Extras don't fail the check. */
   passing: boolean;
 }
@@ -52,7 +52,7 @@ function variableToRow(v: VariableDefinition): ContractRow {
   };
 }
 
-function mandateToRow(s: ContextSlot): ContractRow {
+function slotToRow(s: ContextSlot): ContractRow {
   return {
     name: s.key,
     type: s.type,
@@ -95,18 +95,18 @@ export function compareContracts(
     (system.variableDefinitions ?? []).map(variableToRow),
     (candidate.variableDefinitions ?? []).map(variableToRow),
   );
-  const mandates = diffRows(
-    (system.contextSlots ?? []).map(mandateToRow),
-    (candidate.contextSlots ?? []).map(mandateToRow),
+  const slots = diffRows(
+    (system.contextSlots ?? []).map(slotToRow),
+    (candidate.contextSlots ?? []).map(slotToRow),
   );
   return {
     matchedVariables: vars.matched,
     missingVariables: vars.missing,
     extraVariables: vars.extra,
-    matchedMandates: mandates.matched,
-    missingMandates: mandates.missing,
-    extraMandates: mandates.extra,
-    passing: vars.missing.length === 0 && mandates.missing.length === 0,
+    matchedSlots: slots.matched,
+    missingSlots: slots.missing,
+    extraSlots: slots.extra,
+    passing: vars.missing.length === 0 && slots.missing.length === 0,
   };
 }
 
@@ -125,7 +125,7 @@ export function compareStoredContract(
     contract.requiredVariables.map(toRow),
     candidate.variableNames.map(toRow),
   );
-  const mandates = diffRows(
+  const slots = diffRows(
     contract.requiredContextSlots.map(toRow),
     candidate.contextSlotKeys.map(toRow),
   );
@@ -133,10 +133,10 @@ export function compareStoredContract(
     matchedVariables: vars.matched,
     missingVariables: vars.missing,
     extraVariables: vars.extra,
-    matchedMandates: mandates.matched,
-    missingMandates: mandates.missing,
-    extraMandates: mandates.extra,
-    passing: vars.missing.length === 0 && mandates.missing.length === 0,
+    matchedSlots: slots.matched,
+    missingSlots: slots.missing,
+    extraSlots: slots.extra,
+    passing: vars.missing.length === 0 && slots.missing.length === 0,
   };
 }
 
@@ -144,9 +144,9 @@ export function compareStoredContract(
 export function systemContractRows(system: {
   variableDefinitions: VariableDefinition[] | null;
   contextSlots: ContextSlot[];
-}): { variables: ContractRow[]; mandates: ContractRow[] } {
+}): { variables: ContractRow[]; slots: ContractRow[] } {
   return {
     variables: (system.variableDefinitions ?? []).map(variableToRow),
-    mandates: (system.contextSlots ?? []).map(mandateToRow),
+    slots: (system.contextSlots ?? []).map(slotToRow),
   };
 }

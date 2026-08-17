@@ -210,8 +210,9 @@ export function MandateOverridesPage() {
       <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
           <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-muted-foreground">
-            Every step below runs a system-provided agent. Swap in one of your
-            own agents, or keep the system agent and override its settings.
+            Every Mandate below is a named job, fulfilled by default by a
+            system agent. Swap in one of your own agents, or keep the system
+            agent and override its settings.
           </p>
           <OverriddenCountBadge
             overridden={
