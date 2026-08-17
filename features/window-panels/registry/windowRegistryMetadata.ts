@@ -977,6 +977,20 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Masterwork Final Checkup ────────────────────────────────────────────
+  // Ephemeral: the checkup belongs to ONE Rulebook and its run is remembered
+  // server-side (platform.masterwork_run) — reopening it from a saved
+  // workspace on some other page would restore a window with no subject.
+  {
+    slug: "masterwork-checkup-window",
+    overlayId: "masterworkCheckupWindow",
+    kind: "window",
+    label: "Final Checkup",
+    defaultData: { rulebookId: null },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Image Annotation ─────────────────────────────────────────────────────
   {
     slug: "image-annotation-window",

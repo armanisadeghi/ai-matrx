@@ -614,6 +614,10 @@ const MarketingMediaAssetWindow = lazyOverlay(
     import("@/features/window-panels/windows/marketing/MarketingMediaAssetWindow"),
   { ssr: false },
 );
+const MasterworkCheckupWindow = lazyOverlay(
+  () => import("@/features/masterwork/checkup/CheckupWindow"),
+  { ssr: false },
+);
 const InstanceUIStateWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/admin/InstanceUIStateWindow"),
   { ssr: false },
@@ -1056,6 +1060,9 @@ export default function OverlayController() {
     agentRunHistoryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentRunHistoryWindow"),
     ),
+    masterworkCheckupWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "masterworkCheckupWindow"),
+    ),
     agentRunWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentRunWindow"),
     ),
@@ -1385,6 +1392,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     agentRunHistoryWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentRunHistoryWindow"),
+    ) as Record<string, unknown> | null,
+    masterworkCheckupWindow: useAppSelector((s) =>
+      selectOverlayData(s, "masterworkCheckupWindow"),
     ) as Record<string, unknown> | null,
     agentRunWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentRunWindow"),
@@ -2479,6 +2489,26 @@ export default function OverlayController() {
                 ? data.initialSelectedConversationId
                 : null
             }
+          />
+        );
+      })()}
+
+      {/* masterworkCheckupWindow */}
+      {(() => {
+        const isOpen = isOpenById.masterworkCheckupWindow;
+        const data = dataById.masterworkCheckupWindow as
+          Record<string, unknown> | null | undefined;
+        const rulebookId =
+          typeof data?.rulebookId === "string" ? data.rulebookId : null;
+        // No Rulebook, no checkup — the window has nothing to be about.
+        if (!isOpen || !rulebookId) return null;
+        return (
+          <MasterworkCheckupWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "masterworkCheckupWindow" }))
+            }
+            rulebookId={rulebookId}
           />
         );
       })()}

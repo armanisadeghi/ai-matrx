@@ -14,8 +14,10 @@ import {
   MessageCircleQuestion,
   MessageSquareWarning,
   Pencil,
+  Stethoscope,
   Plus,
   RotateCcw,
+  Quote,
   Workflow,
   XCircle,
 } from "lucide-react";
@@ -49,6 +51,8 @@ import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 import { RuleFeedbackDialog, type RuleFeedbackMode } from "./RuleFeedbackDialog";
 import { RuleReviewWizard } from "./RuleReviewWizard";
 import { computeKpis, RulebookKpiStrip } from "./RulebookKpiStrip";
+// The Final Checkup window (features/masterwork/checkup/) — its one entry point.
+import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/masterworkCheckupWindow";
 
 /**
  * The Expert surface: read your Rulebook, correct it, grow it. Rules are
@@ -396,6 +400,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // reports gaps and the Expert chooses "Interview me about the gaps".
   const [interviewSeed, setInterviewSeed] = useState<string | undefined>();
   const userId = useAppSelector(selectUserId);
+  const openCheckup = useOpenMasterworkCheckupWindow();
 
   const reloadRulebook = useCallback(async () => {
     const r = await getRulebook(rulebookId);
@@ -728,6 +733,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 Build a Masterwork
               </Button>
             ) : null}
+            {/* THE RECORD — everything the Expert has said about this
+                Rulebook. Their words are the most valuable thing here; they
+                are never more than one click away. */}
+            <Button asChild size="sm" variant="outline">
+              <Link href={`/masterwork/${rulebook.id}/record`}>
+                <Quote className="mr-1 h-4 w-4" />
+                Your words
+              </Link>
+            </Button>
             <Button asChild size="sm" variant="outline">
               <Link href={`/masterwork/${rulebook.id}/masterworks`}>
                 <Workflow className="mr-1 h-4 w-4" />
