@@ -26,7 +26,10 @@ import { AudioLines, Loader2, Mic, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { SpokenFrontPlayer } from "@/features/flashcards/fast-fire/components/SpokenFrontPlayer";
-import { generateSpokenFront } from "@/features/flashcards/fast-fire/spoken-front/generateSpokenFront.thunk";
+import {
+  generateSpokenFront,
+  getCachedSpokenFrontFileId,
+} from "@/features/flashcards/fast-fire/spoken-front/generateSpokenFront.thunk";
 import type { VoiceTutorCardContext } from "./VoiceTutorPanel";
 
 const VoiceTutorPanel = lazy(() =>
@@ -68,6 +71,13 @@ export function CardAudioHelp({
   // finds it via the prop; local state only bridges the current visit.
 
   async function hearCard() {
+    // Tapping while "Playing…" STOPS — the button is never a dead end, even
+    // if the file URL fails to mint or autoplay is blocked (cases where the
+    // player can't fire onEnded).
+    if (playing) {
+      setPlaying(false);
+      return;
+    }
     setFailed(false);
     if (fileId) {
       // Remount the player → it plays from the top.
@@ -76,13 +86,18 @@ export function CardAudioHelp({
       return;
     }
     setGenerating(true);
-    const generated = await dispatch(generateSpokenFront({ id: cardId, front }, 0, 1));
+    // The deck's details prop can be stale (audio generated on a previous
+    // visit to this card, or by the voice test) — check the DB cache before
+    // paying for a fresh generation.
+    const cached = await getCachedSpokenFrontFileId(cardId);
+    const resolved =
+      cached ?? (await dispatch(generateSpokenFront({ id: cardId, front }, 0, 1)));
     setGenerating(false);
-    if (!generated) {
+    if (!resolved) {
       setFailed(true);
       return;
     }
-    setFileId(generated);
+    setFileId(resolved);
     setPlayToken((t) => t + 1);
     setPlaying(true);
   }
@@ -96,7 +111,7 @@ export function CardAudioHelp({
           size="sm"
           className="flex-1 gap-1.5 text-xs"
           onClick={() => void hearCard()}
-          disabled={generating || playing}
+          disabled={generating}
         >
           {generating ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -108,7 +123,7 @@ export function CardAudioHelp({
           {generating
             ? "Narrating this card…"
             : playing
-              ? "Playing…"
+              ? "Playing — tap to stop"
               : "Hear this card"}
         </Button>
         <Button
