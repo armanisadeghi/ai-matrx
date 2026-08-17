@@ -6,6 +6,8 @@
 >
 > **Follow-on, in progress:** `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/PLAN.md` (ratified 2026-07-26) — destination-login items, one-to-one sharing/transfer/assignment, and agent-safe browser login. Read it before touching scopes, sharing, transfer, or item metadata.
 >
+> **Cloud Browser follow-on:** `/Users/armanisadeghi/code/common-docs/projects/persistent-cloud-browser/PLAN.md` — read it before adding server-side profile login, unattended credential use, MFA delegation, session-health automation, or Cloud Browser controls.
+>
 > **Picking this up cold?** `/Users/armanisadeghi/code/common-docs/projects/credential-sharing-browser-login/HANDOFF.md` — vision, gap analysis, cross-repo architecture, next steps, and landmines. Start there.
 
 ONE definition-driven vault for both principals — personal and organization — covering env values, API keys, logins, tokens, service accounts, and multi-field credential bundles. A **credential item** (`users.credential_items`) owns one or more encrypted **fields** (`users.user_secrets`); non-secret **definitions and provider presets** come from Remote Catalogs (`public.catalog_entries`, kind `credential_definition`, app `matrx`, 120+ active).
