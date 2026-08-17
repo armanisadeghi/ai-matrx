@@ -16,6 +16,17 @@
 - **ONE-BOUNDARY LAW:** `AudioSystemHost → AudioSystemHostImpl` is the only unconditional `ssr:false` boundary for audio. Inside the Impl everything imports statically; only condition-gated rare-event leaves (recovery toast body, audio modal body) keep their own lazy imports (OverlayController leaf pattern). ESLint (`audioSystemStaticImportBan` in `eslint.config.mjs`) bans static value imports of `useChunkedRecordAndTranscribe` / `useCartesiaStreamingSpeaker` / `useAutoVoiceResponse` outside their single legal importers.
 - **Nothing is lost while dormant:** the audio slices are always registered, and the framework-free singletons (`playbackQueue`, `audioSessionRegistry`, `voicePlaybackBus`) accumulate state and replay the current snapshot on subscribe — `enqueuePlayback` even _plays_ (adapters are lazily imported) before any host mounts; the hosts are mirrors/UI.
 
+## THE RECORDING ORIGIN — a dictation knows where it came from (2026-08-17)
+
+Every recording made through the shared recorder is auto-persisted as a `transcripts.transcripts` row with its audio (`useChunkedRecordAndTranscribe` → `saveAudioToStorage` + `saveDraftTranscript`). It used to land titled "Voice Pad Recording" in the general Recordings folder with **no idea what it belonged to** — which is how the most valuable audio in the product became unfindable.
+
+- **`features/audio/recordingOrigin.ts`** (framework-free) owns the shape: `RecordingOrigin = {surface, conversationId?, entityToken?, entityId?, label?, href?}`, plus `recordingTitleFor` / `recordingDescriptionFor` / `parseRecordingOrigin` and **`buildDictationDraft`** — the ONE builder for the auto-persisted row (previously duplicated across the upload-succeeded and upload-failed branches, which is how a stamp could apply to only one of them).
+- **`RecordingOriginProvider.tsx`** is how a surface declares one: wrap the subtree, and any recording started inside it is stamped. **Never thread an `origin` prop** — the mic sits under ProTextarea → smart input → `InputActionButtons` → `AgentMicrophoneButton` → `MicrophoneIconButton` → `Core` → `useVoiceCapture`, all shared by the whole platform. A surface that declares nothing keeps the exact pre-2026-08-17 behaviour (no `origin` key on the context, no `metadata` on the row).
+- **The path:** provider → `useVoiceCapture` (context read; an explicit `origin` option wins) → `RecordingContext.origin` → `GlobalRecordingEngine` → `recorder.startRecording({origin})` → `buildDictationDraft` → `metadata.origin`. `RecordingContext` carries `origin?` on every kind, not just `field`.
+- **Persistence needed no schema change** — `transcripts.transcripts.metadata` is an existing jsonb column. Readers query `metadata->origin->>conversationId` and must go through `parseRecordingOrigin` (every row written before this date has no origin at all).
+- **The door back** is `features/transcripts/components/RecordingOriginRef.tsx`, rendered in `TranscriptViewer`.
+- **Guarded by `__tests__/recordingOrigin.test.tsx`.** The microphone cannot be driven in a headless browser, so these are the only tests that can prove the write path; a regression here breaks nothing visible — recording keeps working and the words silently become unfindable again.
+
 > Combined doc covering the three audio-adjacent features. This doc lives under `features/audio/` as the umbrella.
 
 ---

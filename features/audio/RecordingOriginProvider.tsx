@@ -42,7 +42,6 @@ export function RecordingOriginProvider({
   // context value is referentially stable across renders.
   const value = useMemo(
     () => origin,
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- structural identity, not reference identity
     [
       origin?.surface,
       origin?.conversationId,

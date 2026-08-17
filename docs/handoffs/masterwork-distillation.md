@@ -32,9 +32,18 @@
   shows every message, upload, and recording for one Rulebook with doors + copy-everything.
   `getExpertCorpus(rulebookId, rules)` is the ONE corpus contract the Final Checkup auditor should
   consume — do not re-derive it. Also extracted `features/agents/hooks/useConversationResume.ts`,
-  the canonical resume sequence previously inline in `ChatRoomClient`. Open: dictated-audio
-  attribution (audio IS persisted; the transcript row just carries no link back) — see
-  `features/masterwork/FEATURE.md` § The Record.
+  the canonical resume sequence previously inline in `ChatRoomClient`.
+- **DICTATED AUDIO IS NOW ATTRIBUTED AND PLAYS IN THE RECORD (2026-08-17, Arman's "we need that
+  full tracking").** New generic `RecordingOrigin` (`features/audio/recordingOrigin.ts`) +
+  `RecordingOriginProvider` — a surface WRAPS its subtree and every recording started inside is
+  stamped at `transcripts.transcripts.metadata.origin` (existing jsonb column, **no schema
+  change**); nothing was threaded through the shared mic chain and no other ProTextarea changed.
+  `getExpertCorpus` gained `contribution.dictations[]` (additive), matched to a message only by
+  VERBATIM substring — never guessed; unmatched audio becomes its own contribution. Door back on
+  the transcript via `RecordingOriginRef`. **Arman's own 7 recordings are backfilled** onto
+  conversation `4706f9c0…` at contiguous verbatim offsets. Open: pre-2026-08-17 dictations cannot
+  be attributed without guessing, so they stay unattached. See `features/masterwork/FEATURE.md`
+  § The Record and `features/audio/FEATURE.md` § The Recording Origin.
 - **The Final Checkup UI is BUILT (2026-08-17)** — `features/masterwork/checkup/`, the
   `masterworkCheckupWindow` split-pane WindowPanel opened from the Rulebook header: findings streamed
   one at a time off the durable `checkup` run (`useMasterworkRun` surface `checkup`, final event

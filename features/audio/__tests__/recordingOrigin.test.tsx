@@ -76,10 +76,12 @@ async function startRecordingInside(
   options: Parameters<typeof useVoiceCapture>[0],
 ): Promise<void> {
   const store = configureStore({ reducer: { recordings: recordingsReducer } });
-  let start: (() => Promise<void>) | null = null;
+  // A holder rather than a plain `let`: TypeScript cannot see the assignment
+  // that React makes inside the component, and narrows a `let` to `null`.
+  const handle: { start: (() => Promise<void>) | null } = { start: null };
 
   function MicConsumer() {
-    start = useVoiceCapture(options).start;
+    handle.start = useVoiceCapture(options).start;
     return null;
   }
 
@@ -96,9 +98,10 @@ async function startRecordingInside(
     );
   });
 
-  if (!start) throw new Error("the mic consumer never mounted");
+  const press = handle.start;
+  if (!press) throw new Error("the mic consumer never mounted");
   await act(async () => {
-    await start!();
+    await press();
   });
 
   await act(async () => {
@@ -165,7 +168,9 @@ describe("the row the recorder writes", () => {
     expect(draft.title).toContain("SEO Keyword Optimization");
     expect(draft.title).not.toBe("Voice Pad Recording");
     expect(draft.description).toBe("Dictated into SEO Keyword Optimization.");
-    expect(draft.audio_file_path).toBeUndefined();
+    // The upload id is added by the caller once the upload lands — the builder
+    // never invents one, so the words survive an upload failure.
+    expect("audio_file_path" in draft).toBe(false);
     expect(draft.segments[0]).toMatchObject({ seconds: 350 });
   });
 

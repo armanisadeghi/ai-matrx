@@ -161,7 +161,15 @@ function ContributionCard({
                   <span>· {spokenFor(d.durationSec)}</span>
                 ) : null}
               </div>
-              <InlineMediaRef ref={d.fileId} size="fill" />
+              {/* Two things this renderer needs and a bare file id can't give
+                  it. (1) `as="audio"`: with no mime type to infer from it
+                  falls back to an <img> and shows a broken-image tile instead
+                  of a player. (2) A HEIGHT: `size="fill"` means `h-full`, and
+                  a parent with auto height renders the player at 0px — audible
+                  to no one. */}
+              <div className="h-[54px] w-full">
+                <InlineMediaRef ref={d.fileId} as="audio" size="fill" />
+              </div>
             </div>
           ))}
         </div>
@@ -170,7 +178,12 @@ function ContributionCard({
       {/* The audio / the file itself — canonical renderer, never a raw tag. */}
       {c.fileId ? (
         <div className="mt-3 space-y-2">
-          <InlineMediaRef ref={c.fileId} size="fill" />
+          {/* Same height rule as the dictation player below: `size="fill"` is
+              `h-full`, so the parent must state a height or the media renders
+              at 0px. */}
+          <div className="h-64 w-full">
+            <InlineMediaRef ref={c.fileId} size="fill" fit="contain" />
+          </div>
           <Button asChild size="sm" variant="outline" className="h-9">
             <Link
               href={`/files/f/${c.fileId}`}

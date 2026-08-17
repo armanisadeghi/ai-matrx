@@ -218,19 +218,43 @@ timeRange?, pageExtractionJobId?, rulesProduced? }`, ordered oldest first. Assis
 excluded on purpose — this is the Expert's record, not a chat log. **The Final Checkup auditor and
 any future Hindsight pass consume this function; a second assembly of the same corpus is a defect.**
 
-**Audio — the honest state.** ProTextarea dictation IS persisted: the shared recorder uploads the
-full recording through the canonical file handler and writes a `transcripts.transcripts` row with
-`audio_file_path` pointing at it (`features/audio/hooks/useChunkedRecordAndTranscribe.ts` →
-`saveAudioToStorage` + `saveDraftTranscript`). **The gap is ATTRIBUTION, not persistence:** that
-transcript row carries no link to the conversation, message, or Rulebook it was dictated into — it
-is titled "Voice Pad Recording" and lands in the Expert's general Recordings folder. So the Record
-today plays audio for a **recording the Expert deliberately uploaded** (`source_ref.file_id`, via
-`InlineMediaRef`), but cannot yet attach the audio of a dictated interview turn to that turn.
-Closing it means threading the recording context (`RecordingContext` already carries
-`{kind:"field", instanceId, label}`) through `MicrophoneIconButton` → `MicrophoneIconButtonCore` →
-`useVoiceCapture` → the engine → the hook, so `saveDraftTranscript` can stamp the origin. That is a
-change across shared audio infrastructure, deliberately not made in this pass — tracked as a
-follow-up, not silently dropped.
+**Audio — the Expert's actual voice, in the Record (2026-08-17).** Arman: _"If any of it was
+audio — because I transcribed it using the smart agent input — we should even have the audio…
+The bottom line is we need that full tracking."_ Dictation was always PERSISTED (the shared
+recorder uploads the recording through the canonical file handler and writes a
+`transcripts.transcripts` row with `audio_file_path`); what was missing was ATTRIBUTION — the row
+knew nothing about the conversation or Rulebook it was dictated into, so it landed nameless in the
+general Recordings folder.
+
+- **The stamp is generic, not Masterwork's.** `RecordingOrigin`
+  (`features/audio/recordingOrigin.ts`) — `{surface, conversationId?, entityToken?, entityId?,
+  label?, href?}` — persisted at `transcripts.transcripts.metadata.origin` (an existing jsonb
+  column; **no schema change was needed**). A surface declares it ONCE by wrapping its subtree in
+  `RecordingOriginProvider`; `useVoiceCapture` reads it from context, so **nothing was threaded
+  through the shared mic chain** and every ProTextarea that declares no origin writes exactly the
+  row it always wrote. `ScoutInterviewPanel`'s interview column declares
+  `{surface:"masterwork.interview", entityToken:"rulebook", entityId, conversationId, label}`.
+- **In the Record.** `getExpertCorpus` gained a THIRD source — additively; it is still the ONE
+  corpus assembly: `ExpertContribution.dictations[]`, each `{transcriptId, fileId, title, when,
+  durationSec, charOffset}`, rendered as a player via `InlineMediaRef` (`as="audio"` and an
+  explicit container height — a bare file id has no mime to infer and `size="fill"` is `h-full`)
+  with an `EntityRef` door to the recording. **The match is evidence, not inference:** a dictation
+  attaches to a message only when the transcript's first 120 characters appear VERBATIM in it, and
+  `charOffset` is where. A dictation that matches nothing becomes its own `transcript`
+  contribution rather than being guessed onto the nearest message — a wrong attribution is worse
+  than none.
+- **The door back.** `RecordingOriginRef` (`features/transcripts/components/`) renders the origin
+  on the transcript itself — "You dictated this into &lt;Rulebook&gt; · the conversation".
+- **Arman's own interview is backfilled.** All 7 recordings behind conversation `4706f9c0…`,
+  matched by verbatim substring at contiguous offsets (0 → 11080 in one message; 0, 5415, 7998,
+  14742, 15519 in the 20,007-character one), stamped with the same origin plus
+  `metadata.origin_backfill_evidence`. Two other recordings he made the same day matched nothing
+  and were correctly left alone.
+- **Still open, honestly:** a dictation made before this stamp existed cannot be attributed
+  without guessing, so older recordings stay unattached. And the microphone cannot be driven in a
+  headless browser, so the write path is proved by
+  `features/audio/__tests__/recordingOrigin.test.tsx` (origin → `provider.start()`; origin → the
+  persisted row) rather than by a live recording.
 
 ## The Final Checkup — `checkup/` (2026-08-17)
 
