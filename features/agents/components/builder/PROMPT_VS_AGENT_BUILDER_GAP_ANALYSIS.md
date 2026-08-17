@@ -43,7 +43,7 @@ Working document comparing [`features/prompts/components/builder`](../../prompts
 ## 4. Left panel layout & polish
 
 - **Prompt:** [`PromptBuilderLeftPanel.tsx`](../../prompts/components/builder/PromptBuilderLeftPanel.tsx) — `bg-textured`, `scrollbar-thin`, `scrollbarGutter: "stable"`, `overflowAnchor: "none"`, single scroll region for model + variables + tools + system + messages; **fixed** bottom “Add message”.
-- **Agent:** [`AgentBuilderLeftPanel.tsx`](../builder/AgentBuilderLeftPanel.tsx) — **split**: non-scrolling top stack (model, variables, context slots) vs scrolling messages; no `bg-textured`; bottom **User** / **Assistant** add buttons.
+- **Agent:** [`AgentBuilderLeftPanel.tsx`](../builder/AgentBuilderLeftPanel.tsx) — **split**: non-scrolling top stack (model, variables, context policies) vs scrolling messages; no `bg-textured`; bottom **User** / **Assistant** add buttons.
 - **Work:** Optional parity: shared scroll behavior, textured background, stable scrollbar for long system prompts. **Effort: S–M** (mostly CSS/layout).
 
 ---
@@ -134,7 +134,7 @@ Working document comparing [`features/prompts/components/builder`](../../prompts
 
 ## 15. Agent-only builder capabilities (not in prompt builder)
 
-- [`AgentContextSlotsManager`](../../agents/components/context-slots-management/AgentContextSlotsManager.tsx) — context slots.
+- [`AgentContextSlotsManager`](../../agents/components/context-slots-management/AgentContextSlotsManager.tsx) — context policies.
 - Redux-backed definition + **test instance** lifecycle.
 - **Rich blocks** in priming messages and system message.
 - **Dual** variables entry (chip manager + header modal).

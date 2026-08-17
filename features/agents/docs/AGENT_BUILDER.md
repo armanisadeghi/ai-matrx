@@ -10,7 +10,7 @@
 
 ## Purpose
 
-The Builder is the forge where engineers craft an agent's identity — instructions, model, settings, tools, variables, context slots, permissions. **It is the only surface that ships the full agent definition in the API payload.** Every other surface (Runner, Chat, Shortcut, App) sends only the agent ID and lets the server hydrate the definition from cache.
+The Builder is the forge where engineers craft an agent's identity — instructions, model, settings, tools, variables, context policies, permissions. **It is the only surface that ships the full agent definition in the API payload.** Every other surface (Runner, Chat, Shortcut, App) sends only the agent ID and lets the server hydrate the definition from cache.
 
 Permanent content is configured separately under **Agent Resources**. The
 Builder stores only the durable `resource → agent` association; execution reads
@@ -41,7 +41,7 @@ This payload difference is the Builder's reason to exist: it lets engineers test
 - Model choice + settings (temperature, thinking budget, token limits)
 - Tool access — which tools are exposed to the agent
 - Variable definitions — name, default UI component, help text, required/optional
-- Context slot definitions — name, source hints, whether the slot is exposed to consumers
+- Context policy definitions — name, source hints, whether the slot is exposed to consumers
 - Permissions — whether consumers may see or override model settings
 - Advanced settings (`BuilderAdvancedSettings`): `debug`, `store`, `maxIterations`, `maxRetriesPerIteration`
 
@@ -97,21 +97,21 @@ This is also why **Builder-specific settings** (`maxIterations`, `maxRetriesPerI
 
 When persistence is enabled, each manual request gets a fresh server wire conversation even though the test panel keeps one stable local Redux key for multi-turn continuity. Persisted-message consumers must therefore derive database conversation identity from the reserved `chat.message` row; they must never treat the local panel key as a database foreign key.
 
-### Flow 3 — Variable / context slot declaration
+### Flow 3 — Variable / context policy declaration
 
 1. Engineer defines a variable `X` with default UI component `TextInput` and help text.
 2. When any consumer surface loads this agent, the agent-load response includes variable + slot definitions — **but never system prompt or instructions**. Those are server-owned secrets.
 3. Consumer surface renders the declared UI components; the user fills them in; values come back to the server via `invocation.inputs.variables`.
 
-### Flow 3b — Agent access on a context slot ("can the agent edit this?")
+### Flow 3b — Agent access on a context policy ("can the agent edit this?")
 
-Every context slot declares whether the agent may CHANGE its value or only READ it. The wire shape is `mutable` + `persist` on `ContextSlot`, but **the word "mutable" never reaches the UI** — users see `Read-only` (lock) vs `Agent can edit` (pencil), and, for an editable slot, "Where the agent's edits go": *This conversation only* (`persist:"never"`) / *Save to the source* (`"auto"`) / *The app saves it* (`"client"`).
+Every context policy declares whether the agent may CHANGE its value or only READ it. The wire shape is `mutable` + `persist` on `ContextSlot`, but **the word "mutable" never reaches the UI** — users see `Read-only` (lock) vs `Agent can edit` (pencil), and, for an editable slot, "Where the agent's edits go": *This conversation only* (`persist:"never"`) / *Save to the source* (`"auto"`) / *The app saves it* (`"client"`).
 
 - **One primitive owns this everywhere:** `components/context-slots-management/AgentEditAccessControl.tsx` — `AgentEditAccessControl` (slot editor), `AgentEditAccessToggle` (dense table rows), `AgentEditAccessBadge` (read-only surfaces), plus `decodeAgentEditAccess` / `applyAgentEditAccess` / `agentEditAccessChanged`. Never re-derive `mutable`/`persist` by hand; never reintroduce the word.
 - **Read-only stores NO flags.** `applyAgentEditAccess` deletes `mutable`/`persist` rather than writing `mutable:false` — absent is the server's own default.
 - **`persist:"auto"` only works where aidream has a writeback handler** registered for the slot's `source.kind` (`context_writeback.py`: `note`, `studio_document`, `working_document`, `canvas_item`, `cx_ai_data_records`, `ctx_item`). **A kind with no handler is a SILENT server-side no-op** — the agent's edit is dropped with only a debug line. Before making a new `source.kind` agent-editable + auto, confirm a handler exists; if it doesn't, write the handler — never just hide the option.
 - **Scope-bound slots DO write back** (2026-07-12). An agent-editable `ctx_item` slot defaults to "Save to the source": the edit lands on the exact `(context_item_id, scope_id)` cell it was read from, through the `set_context_value` RPC — append-only (new version, previous `is_current` flipped), stamped `source_type='ai_enriched'` + `authored_by`, and re-checked against the user's write access to that scope. **`scope_id` is never authored on the slot** — it depends on the caller's active scope set, so aidream's `scope_binding_resolution` attaches it at run time; without it the writeback refuses rather than guess a scope.
-- **The batch importer edits access on slots that already exist.** Rows already bound to a context item stay checked+disabled in the *Context slot* column (a re-run can't double-add) but their **Agent access stays live** and submitting patches the stored slot in place. Disabling it was a real bug: it made an already-added slot's access unreachable from batch.
+- **The batch importer edits access on slots that already exist.** Rows already bound to a context item stay checked+disabled in the *Context policy* column (a re-run can't double-add) but their **Agent access stays live** and submitting patches the stored slot in place. Disabling it was a real bug: it made an already-added slot's access unreachable from batch.
 
 ### Flow 4 — Variable help and option picklists
 

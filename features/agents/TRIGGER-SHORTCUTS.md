@@ -106,13 +106,13 @@ await triggerShortcut(getStore()!.dispatch, {
 | `file_path`, `file_name`, `language` | Editor surface info |
 
 Custom keys work too — set whatever the shortcut author expects. The
-shortcut's **Scope → Variable Mappings** and **Scope → Context Slot Mappings**
+shortcut's **Scope → Variable Mappings** and **Scope → Context Policy Mappings**
 dictate how each key is routed to the agent.
 
 ## The resolution order (so you know what you're overriding)
 
-1. Agent's declared `defaultValue` on variables / context slot declarations
-2. Shortcut's **Default Variable Values** / **Default Context Slot Values**
+1. Agent's declared `defaultValue` on variables / context policy declarations
+2. Shortcut's **Default Variable Values** / **Default Context Policy Values**
 3. Shortcut's scope → variable / scope → context-slot mappings applied against
    the `scope` you pass in
 4. Runtime user edits (variable panel) and the pre-execution gate text, if

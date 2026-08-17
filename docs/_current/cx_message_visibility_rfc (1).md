@@ -149,7 +149,7 @@ For agent template messages, `user_content` contains the user-provided parts ext
 - Variable values (from `cx_conversation.variables`)
 - `__agent_user_input__` text
 - Attachments/media content parts (images, files, audio)
-- Context slot values that came from the user
+- Context policy values that came from the user
 
 The template wrapping text (the secret prompt engineering) is stripped out. Only what the user typed or uploaded appears.
 

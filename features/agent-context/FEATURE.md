@@ -6,7 +6,7 @@
 
 > **`features/brokers/` is DELETED (2026-08-11) — there is no broker layer.** This doc previously described brokers as a production SQL-backed resolver sitting in the invocation path. That was never true in code and is now false in the database too: aidream dropped all nine broker-value RPC overloads on 2026-08-09, every `broker*` table lives in `graveyard`, and `graveyard.broker_values` holds **0 rows** — the value store had never been written to. The frontend feature had zero importers outside itself and was never wired to an agent run. See § Removal record. **Real resolution is server-side via the `resolve_full_context` RPC**; the hierarchy below is that resolver's conceptual model, not a client-side chain.
 
-> **agent-context** is the thin consumer that auto-fills declared context slots on an agent at invocation time. It does **not** own scope as a data concept — that lives in [`features/scopes/`](../scopes/FEATURE.md). Read that first; this doc covers the resolution mechanics that *consume* scope.
+> **agent-context** is the thin consumer that auto-fills declared context policies on an agent at invocation time. It does **not** own scope as a data concept — that lives in [`features/scopes/`](../scopes/FEATURE.md). Read that first; this doc covers the resolution mechanics that *consume* scope.
 
 ---
 
@@ -14,7 +14,7 @@
 
 - **Agent context** (`features/agent-context/`): the thin consumer that, at invocation time, builds the agent's context payload by:
   1. Calling the scope resolver in [`features/scopes/`](../scopes/FEATURE.md) for the request's resolved scope bundle (active scopes, entity tags, project, task — already merged into `ResolvedContext`).
-  2. Walking the agent's declared **variables** (required) and **context slots** (optional auto-fills).
+  2. Walking the agent's declared **variables** (required) and **context policies** (optional auto-fills).
   3. Filling each slot from the resolved scope bundle + ambient sources (user profile, conversation history, selection). Resolution itself runs server-side in `resolve_full_context`.
   4. Never blocking on missing slots.
 
@@ -22,12 +22,12 @@ Scope CRUD, scope pickers, scope assignment to entities, the active-context side
 
 ---
 
-## The core distinction — variables vs context slots
+## The core distinction — variables vs context policies
 
-> **Variables would leave the agent confused if missing. Context slots are things the agent can use to do an even better job.**
+> **Variables would leave the agent confused if missing. Context policies are things the agent can use to do an even better job.**
 
 - **Variables** — named, declared inputs the agent **requires**. Each has a default UI component + help text (defined in Builder). Bound by name from `invocation.inputs.variables`. Block invocation when missing.
-- **Context slots** — named, declared inputs **auto-filled** from ambient sources. Absence is graceful — the agent proceeds without them.
+- **Context policies** — named, declared inputs **auto-filled** from ambient sources. Absence is graceful — the agent proceeds without them.
 - **Everything else** — ambient data the agent hasn't declared a slot for — is reachable via **tool call**, not injection. The agent pulls what it needs.
 
 ---
@@ -138,7 +138,7 @@ Returned by `selectResolvedContext()` (client) and `resolve_local_context()` / `
 
 ### Flow 1 — Slot fill at invocation
 
-1. Agent declares a context slot `org_brand_voice`.
+1. Agent declares a context policy `org_brand_voice`.
 2. Client builds the invocation payload. For each declared slot:
    - Look up the key in `ResolvedContext.values` (from `features/scopes`). Hit → use it.
    - Miss → server-side `resolve_full_context` walks the hierarchy: AI task → AI run → task → project → scope → org → user → global. First non-null wins.
@@ -177,7 +177,7 @@ Returned by `selectResolvedContext()` (client) and `resolve_local_context()` / `
 
 ## Invariants & gotchas
 
-- **Variables block; context slots don't.** Never gate invocation on a missing slot.
+- **Variables block; context policies don't.** Never gate invocation on a missing slot.
 - **Nearest scope wins** in resolution. Declare a value at the correct level — wrong-level declarations are silently misleading.
 - **Context values are read, not mutated, during invocation.** Writes happen through dedicated RPC paths.
 - **`appContext` is the top-level client truth.** Keep it narrow — it rides on every API call.

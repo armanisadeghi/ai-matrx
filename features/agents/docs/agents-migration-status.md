@@ -322,7 +322,7 @@ export interface ContextSlot {
 
 **`context_slots`** = live runtime data accessed via `ctx_get` tools during execution.
 
-**`scope_mappings`** keys serve double duty as the list of available scopes (old `available_scopes` column was dropped as redundant). Variable names and context slot keys must not collide within an agent.
+**`scope_mappings`** keys serve double duty as the list of available scopes (old `available_scopes` column was dropped as redundant). Variable names and context policy keys must not collide within an agent.
 
 **`agent_shortcuts` hierarchy** is independently set per column — no auto_fill. A shortcut scoped to a task is ONLY for that task. Duplicate shortcuts (pointing to the same agent) for multi-context availability.
 

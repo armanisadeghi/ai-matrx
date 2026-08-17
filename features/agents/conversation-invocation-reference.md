@@ -115,7 +115,7 @@ The active org/project/task scope context for this invocation.
 
 | Field | Type | Default | What it does |
 |---|---|---|---|
-| `applicationScope` | `ApplicationScope?` | `undefined` | The scope context (org / project / task) the invocation inherits. Stamped onto `cx_conversation.organization_id` / `project_id` / `task_id`, and surfaced to **context resolvers** so context slots can pull org-scoped data. Read at invocation time from `appContextSlice`. Type lives at [`features/agents/utils/scope-mapping.ts`](features/agents/utils/scope-mapping.ts); shape is `{ selection?; content?; context?; [key: string]: unknown }`. |
+| `applicationScope` | `ApplicationScope?` | `undefined` | The scope context (org / project / task) the invocation inherits. Stamped onto `cx_conversation.organization_id` / `project_id` / `task_id`, and surfaced to **context resolvers** so context policies can pull org-scoped data. Read at invocation time from `appContextSlice`. Type lives at [`features/agents/utils/scope-mapping.ts`](features/agents/utils/scope-mapping.ts); shape is `{ selection?; content?; context?; [key: string]: unknown }`. |
 
 ---
 

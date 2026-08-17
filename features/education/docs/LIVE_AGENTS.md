@@ -579,8 +579,8 @@ Contract + surface live in `features/education/tutor/` (see its `FEATURE.md`).
 Superseded: `df4a4142-…` (first draft, `learner_memory`/`study_material` never wired as prompt variables) →
 recreated as `46b7b357-…` (variable-based, live-verified 2026-07-07) → recreated again same day as
 `d80cc27e-…` (context-slot version — variables rendered as an awkward editable strip in the composer;
-context slots are silent and re-sent per turn) → re-authored 2026-07-14 as `cb268e29-…`
-("Education AI Tutor (Structured Trust)", the current live id — SAME four context slots + model, adds
+context policies are silent and re-sent per turn) → re-authored 2026-07-14 as `cb268e29-…`
+("Education AI Tutor (Structured Trust)", the current live id — SAME four context policies + model, adds
 the per-turn hidden `MATRX_TRUST_V1` envelope). Do not point new code at the earlier ids.
 `df4a4142-…` + `46b7b357-…` are deactivated; `d80cc27e-…` is left active (only superseded) so any
 in-flight conversation that still references it keeps resolving. Two accidental duplicate builds from

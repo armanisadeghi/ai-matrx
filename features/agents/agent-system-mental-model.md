@@ -22,9 +22,9 @@ The system runs in three stages — **Build → Test → Consume** — with thre
 
 **Path:** [`app/(authenticated)/agents/[id]/build/page.tsx`](app/(authenticated)/agents/[id]/build/page.tsx) · **API:** `POST /prompts` · **`apiEndpointMode: "manual"`**
 
-Where engineers craft an agent's identity: instructions, model, settings, tools, variables, and context slots. The interface is a manual chat that hits the `prompts` endpoint with raw API calls (similar in spirit to Anthropic / OpenAI / Google direct APIs, but Matrx-shaped). Every request stands alone and is fully editable — nothing is hidden, nothing is implicit. This is the only surface with that level of control.
+Where engineers craft an agent's identity: instructions, model, settings, tools, variables, and context policies. The interface is a manual chat that hits the `prompts` endpoint with raw API calls (similar in spirit to Anthropic / OpenAI / Google direct APIs, but Matrx-shaped). Every request stands alone and is fully editable — nothing is hidden, nothing is implicit. This is the only surface with that level of control.
 
-**What gets tuned here:** system prompt, model, temperature, thinking budget, token limits, tool access, variable definitions, context slots, permissions (e.g., whether consumers may see or override model settings), and the **default UI component + help text for each variable** (used when Runner or Chat needs to render an input for it).
+**What gets tuned here:** system prompt, model, temperature, thinking budget, token limits, tool access, variable definitions, context policies, permissions (e.g., whether consumers may see or override model settings), and the **default UI component + help text for each variable** (used when Runner or Chat needs to render an input for it).
 
 **Builder-specific advanced settings** are captured in `BuilderAdvancedSettings` and travel on `ConversationInvocation.builder`:
 
@@ -44,23 +44,23 @@ Where engineers craft an agent's identity: instructions, model, settings, tools,
 
 ---
 
-## 2. Variables vs. Context Slots
+## 2. Variables vs. Context Policies
 
 A core distinction the rest of the doc relies on.
 
-> **Variables are things that would leave the agent confused if missing. Context slots are things the agent can use to do an even better job.**
+> **Variables are things that would leave the agent confused if missing. Context policies are things the agent can use to do an even better job.**
 
 **Variables** — named, declared inputs the agent *requires*. Each is defined in the Builder with a default UI component and help text. Bound **by name** from whatever the caller provides via `invocation.inputs.variables`.
 
-**Context slots** — named, declared inputs that are **auto-filled in the background** from ambient sources when available: user profile, organization settings, active project, scope presets, conversation history, selection, and so on. Their absence is graceful; they enhance, they don't block.
+**Context policies** — named, declared inputs that are **auto-filled in the background** from ambient sources when available: user profile, organization settings, active project, scope presets, conversation history, selection, and so on. Their absence is graceful; they enhance, they don't block.
 
 **Everything else in context** — ambient data the agent hasn't declared a slot for — is still reachable, but **via tool call** rather than injection. The agent pulls what it needs.
 
-*Variables are required inputs. Context slots are optional auto-fills. Anything else is fetched on demand.*
+*Variables are required inputs. Context policies are optional auto-fills. Anything else is fetched on demand.*
 
 ### Scope mapping
 
-The `invocation.scope.applicationScope` object carries surface-level context (selection, content, broader context blob) that a resolver uses to fill variables and context slots. Shape lives at [`features/agents/utils/scope-mapping.ts`](features/agents/utils/scope-mapping.ts):
+The `invocation.scope.applicationScope` object carries surface-level context (selection, content, broader context blob) that a resolver uses to fill variables and context policies. Shape lives at [`features/agents/utils/scope-mapping.ts`](features/agents/utils/scope-mapping.ts):
 
 ```ts
 interface ApplicationScope {
@@ -71,7 +71,7 @@ interface ApplicationScope {
 }
 ```
 
-Resolution: if the target name matches a declared variable → fills the variable. If it matches a context slot → fills the slot. Otherwise → surfaces as ad-hoc context the agent can reach via tool call. Stamped onto `cx_conversation.organization_id` / `project_id` / `task_id`.
+Resolution: if the target name matches a declared variable → fills the variable. If it matches a context policy → fills the slot. Otherwise → surfaces as ad-hoc context the agent can reach via tool call. Stamped onto `cx_conversation.organization_id` / `project_id` / `task_id`.
 
 ---
 
@@ -98,7 +98,7 @@ Where users converse with any agent they have access to. Identical runtime to Ru
 ### The request lifecycle (this is how Runner and Chat both work)
 
 **First request** → `POST /ai/agents/{id}`
-Client sends: `variables`, `scope`, `overrides`, `userInput`. That's the entire payload. The client **never sees** the agent's instructions, system prompt, model choice, or internals — those are the engineer's secrets, owned by the server. What the client *does* get back when loading an agent is the list of variable and context slots it needs to fill, with their default UI components and help text. (The engineer may opt to expose model choice and settings for override, but that is a deliberate permission, not the default.)
+Client sends: `variables`, `scope`, `overrides`, `userInput`. That's the entire payload. The client **never sees** the agent's instructions, system prompt, model choice, or internals — those are the engineer's secrets, owned by the server. What the client *does* get back when loading an agent is the list of variable and context policies it needs to fill, with their default UI components and help text. (The engineer may opt to expose model choice and settings for override, but that is a deliberate permission, not the default.)
 
 **Every request after** → `POST /ai/conversations/{conversationId}`
 Client sends: the new `userInput`, plus any permitted `overrides`. Nothing else. The server holds history, state, tool results, and everything else.

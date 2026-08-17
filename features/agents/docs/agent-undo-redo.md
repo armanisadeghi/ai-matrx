@@ -1,6 +1,6 @@
 # Agents Feature
 
-Agent builder and execution system for AI Matrx. Allows users to create, configure, and run AI agents with custom system prompts, messages, tools, context slots, and model settings.
+Agent builder and execution system for AI Matrx. Allows users to create, configure, and run AI agents with custom system prompts, messages, tools, context policies, and model settings.
 
 ## Undo/Redo System
 

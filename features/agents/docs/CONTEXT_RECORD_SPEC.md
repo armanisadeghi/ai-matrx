@@ -108,7 +108,7 @@ The backend already has code that writes `metadata.context_manifest = { rendered
 interface InstanceContextEntry {
   key: string;
   value: unknown;
-  slotMatched: boolean;                 // matched an agent-defined context slot?
+  slotMatched: boolean;                 // matched an agent-defined context policy?
   type: ContextObjectType;              // union below
   label: string;
 }

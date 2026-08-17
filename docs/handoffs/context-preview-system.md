@@ -95,7 +95,7 @@ descriptions are fragments or absent.
   "Context Binding Test Agent" (`agent.definition` id
   `02894aa7-18c5-4b51-901a-91118442dce4`, Castellano & Reyes org): two
   `ctx_item`-bound variables on the clients scope type (`client_type` with
-  `onMissing:"error"`, `claims_administrator`) + one bound context slot
+  `onMissing:"error"`, `claims_administrator`) + one bound context policy
   (`client_primary_contact`). Verified in `/chat/a/<id>`: CSV Pharmacy and
   Golden State each render their own scope-filled values in "Agent variable &
   slot fill"; deselecting the Client scope renders the loud 422

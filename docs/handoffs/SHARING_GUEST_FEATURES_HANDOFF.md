@@ -20,7 +20,7 @@ repos: [matrx-frontend, aidream]
 
 - On shareability: "**nearly everything should be shareable** — the gate is per-type safety, not restriction."
 - **The run/share/fork rule for agents (verbatim — this is the load-bearing model):**
-  - *Public (no share needed):* "The non-secret parts of all agents is public so it doesn't require sharing (id, name, description, variables, context slots, and the other things that don't include model, settings and messages or other secret stuff) — these are public so sharing is not required and that means you can 'use them' but you can never actually see them so you **CANNOT fork/duplicate** them."
+  - *Public (no share needed):* "The non-secret parts of all agents is public so it doesn't require sharing (id, name, description, variables, context policies, and the other things that don't include model, settings and messages or other secret stuff) — these are public so sharing is not required and that means you can 'use them' but you can never actually see them so you **CANNOT fork/duplicate** them."
   - *Shared:* "when I share my agent with you, I'm not sharing the ability to run it, I'm sharing all of the secrets with you so you can see it in the agent builder and **YES, you can fork it**. If you can see the secret stuff, you can copy them too."
   - *Edit access* → also forkable (superset of a view-share: see secrets + modify the original + fork).
   - **Corollary:** running is a PUBLIC capability of every agent (guests included) and never needs a share; a share/permission is the ONLY thing that reveals secrets (builder visibility) and thereby unlocks fork. `/s/[token]` for an agent is a **builder view + Fork**, NOT a run form.

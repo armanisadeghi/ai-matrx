@@ -80,7 +80,7 @@ The broadest synthetic-fork mode. Where System Prompt / Tools / Tuning each
 vary ONE axis, **Variations varies the ENTIRE editable agent definition per
 column**. It reuses the Agent Builder's whole left panel
 (`AgentBuilderLeftPanel`) — model, settings, system prompt, seed messages,
-variables, context slots, tools, MCP — pointed at each column's synthetic
+variables, context policies, tools, MCP — pointed at each column's synthetic
 agent id. Because the full builder panel is large, the per-variation editors
 live as TABS inside one floating `WindowPanel` (one tab per variation,
 `VariationsEditorWindow`) instead of inline in each column; the run columns

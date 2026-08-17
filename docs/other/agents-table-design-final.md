@@ -141,7 +141,7 @@ CREATE TABLE public.agents (
 
 | Column | Type | Why |
 |---|---|---|
-| `context_slots` | jsonb DEFAULT '[]' | Array of `ContextSlot` objects (see §4). Pre-defined named context items with types, labels, truncation rules, and summary agent references. Distinct from `variable_definitions`: variables are string-substituted into messages at build time, context slots are live runtime data the agent accesses via tools during execution |
+| `context_slots` | jsonb DEFAULT '[]' | Array of `ContextSlot` objects (see §4). Pre-defined named context items with types, labels, truncation rules, and summary agent references. Distinct from `variable_definitions`: variables are string-substituted into messages at build time, context policies are live runtime data the agent accesses via tools during execution |
 
 ### Organization
 
@@ -228,7 +228,7 @@ always override to any model, but the tier badges signal intent.
 
 ---
 
-## 4. Context Slots (for reference)
+## 4. Context Policies (for reference)
 
 Stored in `context_slots` jsonb column. Each slot:
 
@@ -245,7 +245,7 @@ Stored in `context_slots` jsonb column. Each slot:
 
 **Slot vs Variable:**
 - **Variable** (`variable_definitions`): Static string substitution at prompt build time. User fills in a form field, value is injected into `{{variable_name}}` in messages. Done before the API call.
-- **Context slot** (`context_slots`): Live runtime data. Listed in system message as available context. Agent accesses via `ctx_get` tool during execution. Stays fresh across conversation turns. Supports pagination and summarization.
+- **Context policy** (`context_slots`): Live runtime data. Listed in system message as available context. Agent accesses via `ctx_get` tool during execution. Stays fresh across conversation turns. Supports pagination and summarization.
 
 ---
 

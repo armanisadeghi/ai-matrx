@@ -136,7 +136,7 @@ When the doc and the code (`features/files/utils/file-types.ts` / `FilePreview.t
 | # | Slot | Where |
 |---|---|---|
 | 44 | 🟡 Inline file-chip | `FileResourceChip` (generic) — could be richer per kind |
-| 45 | 🔴 Drag-to-slot adapter (drop a file onto an agent / data source / context slot) | Not implemented |
+| 45 | 🔴 Drag-to-slot adapter (drop a file onto an agent / data source / context policy) | Not implemented |
 | 46 | 🟡 Citation deep-links (e.g. `?tab=document&page=N&chunk=…`; `filePreviewWindow` `{ fileId, pageNumber }`) | PDF only |
 | 47 | 🔴 Embeddability policy (CDN-friendly / signed-only / never) | Not modeled |
 | 48 | 🟡 Upload-accept rules per surface | Per-uploader, no central policy |

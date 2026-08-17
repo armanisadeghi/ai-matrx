@@ -45,7 +45,7 @@ that makes it a tutor: **grounding injection**.
 - `learnerMemory.ts` — **the ONE cross-session memory assembler.** Reads the study spine
   (sessions, attempts, `item_mastery` FSRS state, streak, goals) → a `LearnerMemory` snapshot +
   a compact `summaryText`.
-- `grounding.ts` — `assembleTutorGrounding()` → the context slots (`learner_memory`,
+- `grounding.ts` — `assembleTutorGrounding()` → the context policies (`learner_memory`,
   `study_material` [seed + weak-card digest], `teaching_mode`, `personality_style`) **plus the
   surface `trust` envelope** (`deriveGroundingTrust` — the FALLBACK strip's envelope: real
   citations from the known sources, an honest `inferred` floor, `not_in_material` when nothing is
@@ -85,7 +85,7 @@ queries the learner's notes/flashcards/quiz live when the injected material is t
 
 > **Why not variables:** passing this as agent variables rendered them as an awkward editable
 > strip in the chat composer ("Study Material: Paste the student's own content here…"). Grounding
-> data is context, not user input — hence context slots. (Arman, 2026-07-07.)
+> data is context, not user input — hence context policies. (Arman, 2026-07-07.)
 
 ## Trust (P0)
 
@@ -185,7 +185,7 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   `@/lib/redux/store` in behind them. Live-verified with a real Badass Agent run (see
   `features/surfaces/FEATURE.md`).
 - **2026-07-14** — **Per-turn STRUCTURED trust (target state reached).** Re-authored the tutor agent
-  (`d80cc27e` → `cb268e29`, "Education AI Tutor (Structured Trust)", same four context slots + model)
+  (`d80cc27e` → `cb268e29`, "Education AI Tutor (Structured Trust)", same four context policies + model)
   to emit a hidden per-turn `TrustEnvelope` on the final line of every markdown answer
   (`<!--MATRX_TRUST_V1 …-->`) — mirroring how `helpLive` threads its envelope, adapted to a streaming
   turn. Added `turnTrust.ts` (`extractTurnTrust`, parses it via the canonical `coerceTrustEnvelope`)
