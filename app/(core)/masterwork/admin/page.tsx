@@ -1,72 +1,72 @@
-// app/(core)/expertise/admin/page.tsx — per-feature admin map (doctrine).
+// app/(core)/masterwork/admin/page.tsx — per-feature admin map (doctrine).
 
 import FeatureAdminPage from "@/features/admin/components/FeatureAdminPage";
 import type { FeatureAdminMap } from "@/features/admin/types/featureAdminMap";
 
-const EXPERTISE_ADMIN_MAP: FeatureAdminMap = {
-  name: "Expertise",
-  slug: "expertise",
+const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
+  name: "Masterwork",
+  slug: "masterwork",
   description:
-    "Expertise Packs (platform.expertise_pack): the versioned, citable rulebook primitive. Desks (workflows) compile FROM packs; auditors consume principles verbatim; every verdict cites a rule id.",
+    "Rulebooks (platform.rulebook): the versioned, citable capture of one Expert's judgment. Masterworks (workflows) are built FROM Rulebooks; auditors consume rules verbatim; every verdict cites a rule id.",
   docs: [
-    { label: "FEATURE.md", href: "/features/expertise/FEATURE.md" },
+    { label: "FEATURE.md", href: "/features/masterwork/FEATURE.md" },
   ],
-  routeScanPath: "app/(core)/expertise",
+  routeScanPath: "app/(core)/masterwork",
   routes: [
     {
-      url: "/expertise",
-      label: "Pack list",
-      description: "Canonical entity-list shell over platform.expertise_pack.",
-      filePath: "app/(core)/expertise/page.tsx",
+      url: "/masterwork",
+      label: "Masterwork Studio (Rulebook list)",
+      description: "Canonical entity-list shell over platform.rulebook.",
+      filePath: "app/(core)/masterwork/page.tsx",
       status: "Live",
     },
     {
-      url: "/expertise/[id]",
-      label: "Pack detail (rule editor)",
+      url: "/masterwork/[id]",
+      label: "Rulebook detail (rule editor)",
       description:
         "Read/edit/add/retire rules grouped by section; version bumps on save.",
-      filePath: "app/(core)/expertise/[id]/page.tsx",
+      filePath: "app/(core)/masterwork/[id]/page.tsx",
       status: "Live",
     },
     {
-      url: "/expertise/[id]/desks",
-      label: "Desks for a pack",
+      url: "/masterwork/[id]/masterworks",
+      label: "Masterworks for a Rulebook",
       description:
-        "workflow.definition rows stamped compiled_from_pack, with version drift flags and run links.",
-      filePath: "app/(core)/expertise/[id]/desks/page.tsx",
+        "workflow.definition rows stamped built_from_rulebook, with version drift flags and run links.",
+      filePath: "app/(core)/masterwork/[id]/masterworks/page.tsx",
       status: "Live",
     },
   ],
   components: [
     {
-      name: "expertiseListConfig",
-      filePath: "features/expertise/browse/listConfig.tsx",
+      name: "rulebookListConfig",
+      filePath: "features/masterwork/browse/listConfig.tsx",
       description: "EntityListConfig for the list shell.",
       tier: "internal",
     },
     {
       name: "browse service",
-      filePath: "features/expertise/browse/service.ts",
+      filePath: "features/masterwork/browse/service.ts",
       description:
         "Scoped list reads (mine / orgs / public) — plain PostgREST, THE VIEW LAW predicates.",
       tier: "internal",
     },
     {
-      name: "pack service",
-      filePath: "features/expertise/service.ts",
+      name: "rulebook service",
+      filePath: "features/masterwork/service.ts",
       description:
-        "Detail reads/writes: getPack, savePrinciples (optimistic version bump), createDraftPack, listDesksForPack.",
+        "Detail reads/writes: getRulebook, saveRules (optimistic version bump), createDraftRulebook, listMasterworksForRulebook.",
       tier: "internal",
     },
     {
-      name: "PackDetailPage",
-      filePath: "features/expertise/components/detail/PackDetailPage.tsx",
-      description: "The expert rule editor surface.",
+      name: "RulebookDetailPage",
+      filePath: "features/masterwork/components/detail/RulebookDetailPage.tsx",
+      description: "The Expert rule editor surface.",
       tier: "candidate",
     },
     {
       name: "RuleEditorDialog",
-      filePath: "features/expertise/components/detail/RuleEditorDialog.tsx",
+      filePath: "features/masterwork/components/detail/RuleEditorDialog.tsx",
       description: "Plain-language add/edit rule form.",
       tier: "candidate",
     },
@@ -75,12 +75,12 @@ const EXPERTISE_ADMIN_MAP: FeatureAdminMap = {
     {
       name: "Agents / workflows",
       description:
-        "Desks are workflows; compile service lands in aidream services/expertise_desks (Phase 2).",
+        "Masterworks are workflows; the Build service lands in aidream (POST /masterworks/build).",
       adminUrl: "/agents/admin",
     },
   ],
 };
 
-export default function ExpertiseAdminPage() {
-  return <FeatureAdminPage map={EXPERTISE_ADMIN_MAP} />;
+export default function MasterworkAdminPage() {
+  return <FeatureAdminPage map={MASTERWORK_ADMIN_MAP} />;
 }

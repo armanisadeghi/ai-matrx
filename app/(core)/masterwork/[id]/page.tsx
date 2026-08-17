@@ -1,15 +1,15 @@
-// app/(core)/expertise/[id]/page.tsx
+// app/(core)/masterwork/[id]/page.tsx
 //
-// Pack detail — THE expert surface: read and edit your rulebook.
+// Rulebook detail — THE Expert surface: read and edit your Rulebook.
 
 "use client";
 
 import { use } from "react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { PackDetailPage } from "@/features/expertise/components/detail/PackDetailPage";
+import { RulebookDetailPage } from "@/features/masterwork/components/detail/RulebookDetailPage";
 
-export default function ExpertisePackRoute({
+export default function RulebookRoute({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -20,15 +20,18 @@ export default function ExpertisePackRoute({
       <RouteHeader
         left={
           <>
-            <ChevronLeftTapButton href="/expertise" ariaLabel="Back to Expertise" />
+            <ChevronLeftTapButton
+              href="/masterwork"
+              ariaLabel="Back to Masterwork Studio"
+            />
             <h1 className="ml-2 truncate text-sm font-medium text-foreground">
-              Expertise pack
+              Rulebook
             </h1>
           </>
         }
       />
       <div className="h-full overflow-y-auto bg-textured pt-[calc(var(--shell-header-h)+1rem)]">
-        <PackDetailPage packId={id} />
+        <RulebookDetailPage rulebookId={id} />
       </div>
     </>
   );
