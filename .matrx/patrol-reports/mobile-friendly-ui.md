@@ -128,8 +128,11 @@ product-layout choice requiring Arman was found.
 
 The first exact candidate was **REJECTED** because this report said 15 findings
 instead of 16 and misstated the durable detector's 21 → 8 line delta. The
-product diff passed every adversarial check. Those projection defects are now
-corrected; the new exact candidate is pending independent re-certification.
+product diff passed every adversarial check, but no partial certification was
+granted. The second exact candidate was **REJECTED** because one append-only
+fixing event inaccurately called that reviewed product diff “certified.” The
+record now carries an appended clarification without rewriting history. The
+new exact candidate is pending independent re-certification.
 
 ## Recursive learning
 

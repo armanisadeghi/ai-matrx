@@ -79,6 +79,42 @@
       ],
       "previousEventHash": "c3c2389de2420b43e1b7ec7a0a73c18fa39e361dfd89cb1868f0e181c2ffba9b",
       "eventHash": "3091e1dbda1862660f66655708d6420a8776ba8bc4f76e8323f6e42ab6cc9dd4"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-17T13:32:16.930Z",
+      "actor": "/root/p3_certifier",
+      "summary": "REJECTED candidate 5a573413d: an append-only event inaccurately called the reviewed product diff certified although no certified event exists.",
+      "evidence": [
+        "Totals, detector delta, product-byte identity, prior rejection, hash chain, latest projection, diff-check, and clean worktree all passed."
+      ],
+      "previousEventHash": "3091e1dbda1862660f66655708d6420a8776ba8bc4f76e8323f6e42ab6cc9dd4",
+      "eventHash": "a41e430baa63410443043222c1668d55dcbac02cbf4519b8506d5bee9887c948"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-17T13:32:17.474Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "CLARIFICATION: sequence 5 used the phrase certified product diff in error; it meant the unchanged product diff that passed the prior adversarial checks. No partial certification existed or was claimed by a certified event.",
+      "evidence": [
+        "History remains append-only; the erroneous event was not rewritten."
+      ],
+      "previousEventHash": "a41e430baa63410443043222c1668d55dcbac02cbf4519b8506d5bee9887c948",
+      "eventHash": "01d410db0c96fc64104de83e6da53c9685c8eb0db1558045ea0b6f981ee215b3"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-17T13:32:18.025Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Clarified candidate is ready for independent exact-SHA re-certification.",
+      "evidence": [
+        "Product files remain byte-identical to 90218e7c8; report and run record now state both prior rejections accurately."
+      ],
+      "previousEventHash": "01d410db0c96fc64104de83e6da53c9685c8eb0db1558045ea0b6f981ee215b3",
+      "eventHash": "b6ea2884ce99591bed0f9781ee1ca74348293b0a4c5c5b71bc1961417f88ffcf"
     }
   ]
 }
