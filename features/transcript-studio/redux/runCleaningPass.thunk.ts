@@ -39,6 +39,7 @@ import { DEFAULT_CLEANING_SHORTCUT_ID } from "../constants";
 import type { TriggerCause } from "../types";
 import { cleanedSegmentApplied, runUpserted } from "./slice";
 import { watchLiveRun } from "./liveRunWatch";
+import { applyWindowMetadata } from "./studioApplyWindow";
 
 interface RunCleaningPassArgs {
   sessionId: string;
@@ -86,8 +87,22 @@ export const runCleaningPassThunk = createAsyncThunk<
     return { status: "skipped", reason: "no-new-raw" };
   }
 
+  // Compute the next pass index. Active cleaned segments carry the index of
+  // the run that produced them; we use lastIndex+1 for the new pass.
+  const lastPassIndex = cleanedSegments.reduce(
+    (max, s) => (s.passIndex > max ? s.passIndex : max),
+    -1,
+  );
+  const passIndex = lastPassIndex + 1;
+  const replaceToTime = window.replaceToTime ?? window.replaceFromTime;
+
   // Insert the audit row. Column 2 will show this run as "running" until
   // we finalize at the end of the pass.
+  //
+  // 🚨 The replace-window is stamped HERE, before the launch. It is computed
+  // from live Redux state, so a tab that reloads mid-pass can never re-derive
+  // it — without this stamp a recovered output can only be read, never applied
+  // (`studioApplyWindow.ts`).
   let run;
   try {
     run = await insertAgentRun({
@@ -97,20 +112,19 @@ export const runCleaningPassThunk = createAsyncThunk<
       triggerCause,
       resumeMarker: "[[RESUME]]",
       inputCharRange: window.inputCharRange,
+      metadata: applyWindowMetadata({
+        kind: "cleaned",
+        passIndex,
+        tStart: window.replaceFromTime,
+        tEnd: replaceToTime,
+        triggerCause,
+      }),
     });
     dispatch(runUpserted({ run }));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to record run";
     return { status: "failed", runId: null, error: message };
   }
-
-  // Compute the next pass index. Active cleaned segments carry the index of
-  // the run that produced them; we use lastIndex+1 for the new pass.
-  const lastPassIndex = cleanedSegments.reduce(
-    (max, s) => (s.passIndex > max ? s.passIndex : max),
-    -1,
-  );
-  const passIndex = lastPassIndex + 1;
 
   let conversationId: string | null = null;
   let responseText: string | undefined;
@@ -204,7 +218,7 @@ export const runCleaningPassThunk = createAsyncThunk<
       runId: run.id,
       passIndex,
       tStart: window.replaceFromTime,
-      tEnd: window.replaceToTime ?? window.replaceFromTime,
+      tEnd: replaceToTime,
       text: cleanedText,
       triggerCause,
     });

@@ -877,8 +877,10 @@ export interface InsertAgentRunInput {
   /**
    * Where this run's output belongs on the surface that started it — the ONLY
    * thing a reattaching tab cannot re-derive. The cleanup pad writes
-   * `{ target: "clean" | "<docKind>" }` here so a reload can put a recovered
-   * output back in the container it came from. See `reattachStudioRun.ts`.
+   * `{ target: "clean" | "<docKind>" }`; a Transcript Studio pass writes
+   * `{ apply: <StudioApplyWindow> }` (its replace-window / parse context) so a
+   * reload can persist a recovered output as a real segment. See
+   * `redux/studioApplyWindow.ts` and `redux/reattachStudioRun.ts`.
    */
   metadata?: Record<string, unknown>;
 }

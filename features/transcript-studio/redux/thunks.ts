@@ -7,7 +7,7 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { TRANSCRIPT_STUDIO_FETCH_SESSIONS } from "./actionTypes";
-import type { RootState } from "@/lib/redux/store";
+import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { toast } from "@/lib/toast";
 import type { ChunkCompleteInfo } from "@/features/audio/hooks/useChunkedRecordAndTranscribe";
 import {
@@ -104,6 +104,7 @@ import {
   isResumableStudioRun,
   reattachStudioRun,
 } from "./reattachStudioRun";
+import { studioApplyRecoveredOutput } from "./studioApplyWindow";
 
 interface CreateSessionThunkArg extends CreateSessionInput {
   /** auth.users.id of the caller — passed in to avoid an extra fetch in the thunk. */
@@ -410,12 +411,13 @@ const RUN_LABEL_BY_COLUMN: Record<number, string> = {
  * through the shared `reattachStudioRun` primitive: its window floats
  * immediately and the row is settled from server truth when the pass ends.
  *
- * No `applyRecoveredOutput` here on purpose. A studio pass's replace-window
- * (`replaceFromTime` / `passIndex`, computed from live state at launch) is not
- * recorded on the row, so a reattaching tab cannot honestly re-apply the
- * output — it says so on the row instead of inventing a segment. Recording the
- * window so a reattach CAN apply is tracked as follow-up work in
- * `docs/handoffs/live-run-streaming-sweep.md`.
+ * The recovered output is APPLIED, not just read: every pass stamps its
+ * replace-window (`replaceFromTime` / `passIndex` / the module parse context)
+ * onto `studio_runs.metadata.apply` at launch, and `studioApplyRecoveredOutput`
+ * replays it through the same persistence calls the live path uses. A row with
+ * no stamped window (a pre-2026-08-17 run) has no honest way to place its
+ * output, so it settles `failed` with a sentence saying so rather than
+ * inventing a segment.
  */
 export const fetchAgentRunsThunk = createAsyncThunk<
   AgentRun[],
@@ -434,6 +436,10 @@ export const fetchAgentRunsThunk = createAsyncThunk<
           run,
           label: RUN_LABEL_BY_COLUMN[run.columnIdx] ?? "AI pass",
           instanceId: studioLiveRunInstanceId(sessionId, run.columnIdx),
+          applyRecoveredOutput: studioApplyRecoveredOutput(
+            dispatch as AppDispatch,
+            run,
+          ),
         });
       }
       return runs;

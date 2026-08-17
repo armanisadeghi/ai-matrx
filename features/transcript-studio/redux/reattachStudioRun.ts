@@ -106,10 +106,12 @@ export interface ReattachStudioRunArgs {
   /** Stable per-subject window id — the SAME one this surface uses live. */
   instanceId: string;
   /**
-   * Put a recovered output back where it belongs. Omit when the surface cannot
-   * re-apply it (a Transcript Studio pass's replace-window is not recorded, so
-   * it cannot be replayed) — the run is then settled `failed` with a sentence
-   * telling the user to run it again.
+   * Put a recovered output back where it belongs. Every surface records what it
+   * needs at LAUNCH — the cleanup pad stamps `metadata.target`, a studio pass
+   * stamps its replace-window at `metadata.apply` (`studioApplyWindow.ts`).
+   * Omit only when the row carries no such stamp (a pre-2026-08-17 run, or a
+   * container that no longer exists); the run is then settled `failed` with a
+   * sentence telling the user to run it again.
    */
   applyRecoveredOutput?: (text: string, run: AgentRun) => Promise<void> | void;
 }

@@ -46,6 +46,7 @@ import type {
 } from "../types";
 import { cleanedSegmentApplied, runUpserted } from "./slice";
 import { watchLiveRun } from "./liveRunWatch";
+import { applyWindowMetadata } from "./studioApplyWindow";
 
 interface CleanRecordingArgs {
   sessionId: string;
@@ -127,6 +128,13 @@ export const cleanRecordingThunk = createAsyncThunk<
   );
   const passIndex = lastPassIndex + 1;
 
+  const applyTStart = window.tStart ?? recording.tStart;
+  const applyTEnd = window.tEnd ?? recording.tEnd ?? recording.tStart;
+
+  // The replace-window is stamped at LAUNCH — it is derived from live Redux
+  // state, so a tab that reloads mid-pass could not otherwise re-derive it and
+  // the recovered clean would be readable but unappliable
+  // (`studioApplyWindow.ts`).
   let run;
   try {
     run = await insertAgentRun({
@@ -135,6 +143,15 @@ export const cleanRecordingThunk = createAsyncThunk<
       shortcutId,
       triggerCause,
       resumeMarker: "[[RESUME]]",
+      metadata: applyWindowMetadata({
+        kind: "cleaned",
+        passIndex,
+        tStart: applyTStart,
+        tEnd: applyTEnd,
+        triggerCause,
+        recordingSegmentId,
+        processorKey: "clean",
+      }),
     });
     dispatch(runUpserted({ run }));
   } catch (err) {
@@ -188,8 +205,8 @@ export const cleanRecordingThunk = createAsyncThunk<
       sessionId,
       runId: run.id,
       passIndex,
-      tStart: window.tStart ?? recording.tStart,
-      tEnd: window.tEnd ?? recording.tEnd ?? recording.tStart,
+      tStart: applyTStart,
+      tEnd: applyTEnd,
       text: cleanedText,
       triggerCause,
       recordingSegmentId,

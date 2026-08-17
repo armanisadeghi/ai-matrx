@@ -32,6 +32,7 @@ import {
   runUpserted,
 } from "./slice";
 import { watchLiveRun } from "./liveRunWatch";
+import { applyWindowMetadata } from "./studioApplyWindow";
 
 interface RunModulePassArgs {
   sessionId: string;
@@ -127,7 +128,16 @@ export const runModulePassThunk = createAsyncThunk<
   const coverageStart = Math.round(scopeResult.windowStartTime * 1000);
   const coverageEnd = Math.round(scopeResult.windowEndTime * 1000);
 
-  // Audit run row.
+  const lastModulePassIndex = priorModuleSegments.reduce(
+    (max, s) => (s.passIndex > max ? s.passIndex : max),
+    -1,
+  );
+  const passIndex = lastModulePassIndex + 1;
+
+  // Audit run row. The parse context (`passIndex` + the window bounds) is
+  // computed from live Redux state, so it is stamped before the launch — that
+  // stamp is what lets a reloaded tab APPLY a recovered output, not just read
+  // it (`studioApplyWindow.ts`).
   let run;
   try {
     run = await insertAgentRun({
@@ -136,18 +146,19 @@ export const runModulePassThunk = createAsyncThunk<
       shortcutId,
       triggerCause,
       inputCharRange: [coverageStart, coverageEnd],
+      metadata: applyWindowMetadata({
+        kind: "module",
+        moduleId: session.moduleId,
+        passIndex,
+        windowStart: scopeResult.windowStartTime,
+        windowEnd: scopeResult.windowEndTime,
+      }),
     });
     dispatch(runUpserted({ run }));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to record run";
     return { status: "failed", runId: null, error: message };
   }
-
-  const lastModulePassIndex = priorModuleSegments.reduce(
-    (max, s) => (s.passIndex > max ? s.passIndex : max),
-    -1,
-  );
-  const passIndex = lastModulePassIndex + 1;
 
   let conversationId: string | null = null;
   let responseText: string | undefined;

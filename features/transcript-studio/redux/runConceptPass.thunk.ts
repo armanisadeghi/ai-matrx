@@ -38,6 +38,7 @@ import { DEFAULT_CONCEPT_SHORTCUT_ID } from "../constants";
 import type { TriggerCause } from "../types";
 import { conceptsAppended, runUpserted } from "./slice";
 import { watchLiveRun } from "./liveRunWatch";
+import { applyWindowMetadata } from "./studioApplyWindow";
 
 interface RunConceptPassArgs {
   sessionId: string;
@@ -116,6 +117,16 @@ export const runConceptPassThunk = createAsyncThunk<
   const coverageStart = Math.round((window.windowStartTime ?? 0) * 1000);
   const coverageEnd = Math.round(window.windowEndTime * 1000);
 
+  // Compute pass index (monotonic per session per column).
+  const lastConceptPassIndex = conceptItems.reduce(
+    (max, c) => (c.passIndex > max ? c.passIndex : max),
+    -1,
+  );
+  const passIndex = lastConceptPassIndex + 1;
+
+  // The pass index is derived from live Redux state — stamp it before the
+  // launch so a reloaded tab can apply a recovered output instead of only
+  // reading it (`studioApplyWindow.ts`).
   let run;
   try {
     run = await insertAgentRun({
@@ -124,19 +135,13 @@ export const runConceptPassThunk = createAsyncThunk<
       shortcutId,
       triggerCause,
       inputCharRange: [coverageStart, coverageEnd],
+      metadata: applyWindowMetadata({ kind: "concept", passIndex }),
     });
     dispatch(runUpserted({ run }));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to record run";
     return { status: "failed", runId: null, error: message };
   }
-
-  // Compute pass index (monotonic per session per column).
-  const lastConceptPassIndex = conceptItems.reduce(
-    (max, c) => (c.passIndex > max ? c.passIndex : max),
-    -1,
-  );
-  const passIndex = lastConceptPassIndex + 1;
 
   let conversationId: string | null = null;
   let responseText: string | undefined;
