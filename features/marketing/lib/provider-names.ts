@@ -11,3 +11,10 @@ export const GOOGLE_SEARCH_CONSOLE_PROVIDER = {
   fullName: "Google Search Console",
   explainedLabel: "GSC (Google Search Console)",
 } as const;
+
+export const BING_PROVIDER = {
+  key: "bing_webmaster",
+  label: "Bing",
+  fullName: "Bing Webmaster Tools",
+  explainedLabel: "Bing (Bing Webmaster Tools)",
+} as const;

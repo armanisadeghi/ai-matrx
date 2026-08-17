@@ -15,6 +15,10 @@
  */
 
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import {
+  BING_PROVIDER,
+  GOOGLE_SEARCH_CONSOLE_PROVIDER,
+} from "@/features/marketing/lib/provider-names";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 
 export interface MarketingNavEntry {
@@ -632,9 +636,9 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     description: "The plumbing — provider connections and automation.",
     iconName: "Plug",
     landingItems: [
-      "GSC",
+      GOOGLE_SEARCH_CONSOLE_PROVIDER.label,
       "GA4 + PageSpeed",
-      "Bing Webmaster",
+      BING_PROVIDER.label,
       "DataForSEO",
     ],
     landingStatus: "Bring your own",

@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCompleteBingOAuth } from "@/features/marketing/bing/hooks";
+import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
 
 type CallbackStatus = "working" | "success" | "error";
 
@@ -67,7 +68,7 @@ export function BingOAuthCallback() {
         <h1 className="mt-3 text-base font-semibold">
           {status === "error"
             ? "Bing connection needs attention"
-            : "Connecting Bing Webmaster"}
+            : `Connecting ${BING_PROVIDER.label}`}
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
         {status === "error" ? (

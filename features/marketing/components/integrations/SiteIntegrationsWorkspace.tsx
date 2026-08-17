@@ -105,7 +105,10 @@ import {
 import type { MarketingSite } from "@/features/marketing/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
-import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
+import {
+  BING_PROVIDER,
+  GOOGLE_SEARCH_CONSOLE_PROVIDER,
+} from "@/features/marketing/lib/provider-names";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { isJsonObject } from "@/types/json";
 import {
@@ -1852,7 +1855,7 @@ function CustomProviderRow({
             id={`${prefix}-label`}
             className="h-8 text-xs"
             value={value.label}
-            placeholder="Bing Webmaster"
+            placeholder={BING_PROVIDER.label}
             onChange={(event) =>
               onChange({ ...value, label: event.target.value })
             }

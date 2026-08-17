@@ -5,13 +5,16 @@
  * duplicate these at a callsite.
  */
 
-import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
+import {
+  BING_PROVIDER,
+  GOOGLE_SEARCH_CONSOLE_PROVIDER,
+} from "@/features/marketing/lib/provider-names";
 import type { SiteKeywordPerformanceRow } from "./types";
 import { keywordWorkflowStage } from "./workflow-status";
 
 const PROVIDER_LABELS: Record<string, string> = {
   gsc: GOOGLE_SEARCH_CONSOLE_PROVIDER.label,
-  bing_webmaster: "Bing Webmaster",
+  bing_webmaster: BING_PROVIDER.label,
 };
 
 export function providerLabel(provider: string | null): string {

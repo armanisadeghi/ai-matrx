@@ -46,6 +46,10 @@ import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import {
+  BING_PROVIDER,
+  GOOGLE_SEARCH_CONSOLE_PROVIDER,
+} from "@/features/marketing/lib/provider-names";
+import {
   archiveKeywords,
   restoreKeywords,
 } from "@/features/marketing/seo/keyword-research/data/queries";
@@ -1053,8 +1057,8 @@ function KeywordProviderEvidence({
             <Badge variant="outline" className="uppercase">
               {providerStatus?.label ??
                 (provider === "gsc"
-                  ? "GSC"
-                  : "Bing Webmaster")}
+                  ? GOOGLE_SEARCH_CONSOLE_PROVIDER.label
+                  : BING_PROVIDER.label)}
             </Badge>
             {providerStatus ? (
               <Badge

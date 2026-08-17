@@ -28,6 +28,7 @@ import type {
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -105,7 +106,7 @@ const surfaceSpecific: SurfaceValue[] = [
   },
   {
     name: "bing_connected",
-    label: "Bing Webmaster connected",
+    label: `${BING_PROVIDER.label} connected`,
     description:
       "True when this site has an enabled Bing Webmaster binding, so Bing query evidence can be synced from here. False when only Google Search Console (or nothing) is connected.",
     valueType: "boolean",
@@ -179,7 +180,10 @@ visible_keyword_rows is only the current table page under table_query's search/f
 Every metric here is stored provider evidence. Trust it as given, never re-derive or invent a number, and read an empty result as "not synced yet" rather than "the site ranks for nothing". The strongest matched page per query is the site's best current answer to that query — cannibalization, mismatched intent, and near-page-one positions are the highest-value things to point out.
 </surface_intro>`,
   groups,
-  values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  values: mergeBaselineValues(
+    pickBaseline("selection", "context"),
+    surfaceSpecific,
+  ),
   writeTargets,
   agentRoles: [
     {

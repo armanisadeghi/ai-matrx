@@ -39,6 +39,7 @@ import {
 import type { BingConnectionSummary } from "@/features/marketing/bing/types";
 import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
 import type { MarketingSite } from "@/features/marketing/types";
+import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
 
 const BING_WEBMASTER_URL = "https://www.bing.com/webmasters";
 
@@ -228,7 +229,9 @@ export function BingConnectionsWorkspace() {
               >
                 Connections
               </Link>
-              <h2 className="mt-0.5 text-sm font-semibold">Bing Webmaster</h2>
+              <h2 className="mt-0.5 text-sm font-semibold">
+                {BING_PROVIDER.label}
+              </h2>
               <p className="mt-0.5 max-w-3xl text-xs text-muted-foreground">
                 Connect Bing once, then choose which managed sites should
                 receive Bing search-performance data.
@@ -245,7 +248,7 @@ export function BingConnectionsWorkspace() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-sm font-semibold">
-                      Step 1 — Connect Bing Webmaster
+                      Step 1 — Connect {BING_PROVIDER.label}
                     </h2>
                     <Badge
                       variant={
@@ -420,7 +423,7 @@ export function BingConnectionsWorkspace() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          Open Bing Webmaster
+                          Open {BING_PROVIDER.label}
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       </Button>
@@ -725,7 +728,7 @@ export function BingConnectionsWorkspace() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          Open Bing Webmaster
+                          Open {BING_PROVIDER.label}
                           <ExternalLink className="h-3.5 w-3.5" />
                         </a>
                       </Button>

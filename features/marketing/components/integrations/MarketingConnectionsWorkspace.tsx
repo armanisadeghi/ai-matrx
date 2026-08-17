@@ -1,6 +1,7 @@
 "use client";
 
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -208,9 +209,7 @@ function MarketingConnectionsContent() {
                 </span>
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-sm font-semibold">
-                      GSC
-                    </h2>
+                    <h2 className="text-sm font-semibold">GSC</h2>
                     <Badge
                       variant={
                         inventory.isLoading
@@ -473,7 +472,9 @@ function MarketingConnectionsContent() {
                   <Globe2 className="h-4 w-4" />
                 </span>
                 <div>
-                  <h2 className="text-sm font-semibold">Bing Webmaster</h2>
+                  <h2 className="text-sm font-semibold">
+                    {BING_PROVIDER.label}
+                  </h2>
                   <p className="mt-0.5 text-[10px] text-muted-foreground">
                     Connect an API key and bind a verified Bing property to each
                     managed site on its own page.
@@ -482,7 +483,7 @@ function MarketingConnectionsContent() {
               </div>
               <Button asChild size="sm" variant="outline" className="h-8">
                 <Link href={marketingRoutes.connectionsBing()}>
-                  Manage Bing Webmaster
+                  Manage Bing
                   <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Link>
               </Button>

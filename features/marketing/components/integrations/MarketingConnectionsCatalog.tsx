@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { BING_PROVIDER } from "@/features/marketing/lib/provider-names";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { parseSiteIntegrations } from "@/features/marketing/data/integrations-schema";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
@@ -176,7 +177,9 @@ export function MarketingConnectionsCatalog() {
 
             <div className="mt-3 flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-semibold">Bing Webmaster</h2>
+                <h2 className="text-base font-semibold">
+                  {BING_PROVIDER.label}
+                </h2>
                 <p className="text-xs text-muted-foreground">
                   Connect Bing Webmaster Tools to your managed sites.
                 </p>
@@ -199,7 +202,7 @@ export function MarketingConnectionsCatalog() {
             </div>
 
             <p className="mt-3 text-xs font-medium text-primary">
-              Manage Bing Webmaster connection
+              Manage Bing connection
             </p>
           </Link>
         </div>

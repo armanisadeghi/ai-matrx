@@ -33,7 +33,10 @@ import { useMarketingSite } from "@/features/marketing/components/site/Marketing
 import { useOpenKeywordWindow } from "@/features/overlays/openers/keywordWindow";
 import { useMarketingTableState } from "@/features/marketing/data/query-state";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
+import {
+  BING_PROVIDER,
+  GOOGLE_SEARCH_CONSOLE_PROVIDER,
+} from "@/features/marketing/lib/provider-names";
 import { parseBingSiteBinding } from "@/features/marketing/bing/binding";
 import { syncBingSearchPerformance } from "@/features/marketing/bing/service";
 import { extractErrorMessage } from "@/utils/errors";
@@ -253,7 +256,7 @@ export function SiteKeywordPerformanceWorkspace() {
       filter: "select",
       filterOptions: [
         { value: "gsc", label: GOOGLE_SEARCH_CONSOLE_PROVIDER.label },
-        { value: "bing_webmaster", label: "Bing Webmaster" },
+        { value: "bing_webmaster", label: BING_PROVIDER.label },
       ],
       cell: (row) => (
         <Badge variant="outline" className="whitespace-nowrap">
@@ -510,23 +513,18 @@ export function SiteKeywordPerformanceWorkspace() {
     />
     <main className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto bg-textured p-3 sm:p-4">
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="flex items-center gap-2 text-sm font-semibold">
             <BarChart3 className="h-4 w-4 text-primary" />
             Organic keyword performance
           </h1>
-          <p className="mt-0.5 text-[11px] text-muted-foreground">
-            Persisted 28-day query evidence for {site.domain} across every
-            connected source ({GOOGLE_SEARCH_CONSOLE_PROVIDER.label}, Bing Webmaster),
-            enriched with stored DataForSEO market data when available.
-          </p>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            SEO stage records what you plan to do with each keyword. Click a
-            stage to change it, then Save. “Not tracked” means no decision has
-            been made yet.
+          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+            28-day query performance for {site.domain} from{" "}
+            {GOOGLE_SEARCH_CONSOLE_PROVIDER.label} and {BING_PROVIDER.label},
+            with market data and editable SEO stages.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {bingBinding?.enabled ? (
             <Button
               size="sm"
@@ -544,31 +542,29 @@ export function SiteKeywordPerformanceWorkspace() {
             </Button>
           ) : (
             <Button asChild size="sm" variant="outline" className="h-8">
-              <Link href={marketingRoutes.connectionsBing()}>Connect Bing Webmaster</Link>
+              <Link href={marketingRoutes.connectionsBing()}>Connect Bing</Link>
             </Button>
           )}
-          <div className="group/stat relative rounded-md border border-border bg-muted/30 px-3 py-1.5 text-right">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+          <div className="flex h-8 items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Matching queries
-            </p>
-            <p className="text-lg font-semibold tabular-nums">
+            </span>
+            <span className="text-sm font-semibold tabular-nums">
               {Intl.NumberFormat().format(total)}
-            </p>
-            <div className="absolute left-1 top-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/stat:opacity-100">
-              <CopyButtons
-                size="xs"
-                label="Matching queries"
-                human={() => humanMatchingQueriesStat(total, site.domain)}
-                agent={() => ({
-                  kind: "keyword-performance-summary",
-                  location: pageLocation,
-                  description: `Matching query count for ${site.domain}.`,
-                  data: { matching_queries: total, site: site.domain },
-                  summary: humanMatchingQueriesStat(total, site.domain),
-                })}
-              />
-            </div>
+            </span>
           </div>
+          <CopyButtons
+            size="xs"
+            label="Matching queries"
+            human={() => humanMatchingQueriesStat(total, site.domain)}
+            agent={() => ({
+              kind: "keyword-performance-summary",
+              location: pageLocation,
+              description: `Matching query count for ${site.domain}.`,
+              data: { matching_queries: total, site: site.domain },
+              summary: humanMatchingQueriesStat(total, site.domain),
+            })}
+          />
           <CopyButtons
             size="icon"
             label={`Keyword performance page (${site.domain})`}
@@ -678,7 +674,7 @@ export function SiteKeywordPerformanceWorkspace() {
                   icon: <Search className="h-8 w-8 text-muted-foreground" />,
                   title: "No search queries stored yet",
                   description:
-                    "Connect GSC or Bing Webmaster and run a search-performance sync to populate this site.",
+                    "Connect GSC or Bing and run a search-performance sync to populate this site.",
                 }
           }
           detail={{

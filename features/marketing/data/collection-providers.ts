@@ -26,7 +26,10 @@ import {
   marketingRoutes,
   marketingSiteSettingsHref,
 } from "@/features/marketing/lib/routes";
-import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
+import {
+  BING_PROVIDER,
+  GOOGLE_SEARCH_CONSOLE_PROVIDER,
+} from "@/features/marketing/lib/provider-names";
 
 /** Keys are `seo.collection_run.provider` values — never invent a new spelling. */
 export type CollectionProviderKey =
@@ -99,7 +102,7 @@ export const COLLECTION_PROVIDERS: CollectionProviderSpec[] = [
   },
   {
     key: "bing_webmaster",
-    label: "Bing Webmaster",
+    label: BING_PROVIDER.label,
     icon: SearchCheck,
     what: "The same search picture from Bing and Copilot — a second opinion on how this site is found.",
     rowUnit: "stored search rows",
