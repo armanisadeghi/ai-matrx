@@ -10,9 +10,9 @@
 // engine — the moment Redux holds BOTH a default-org preference and a
 // membership list containing it, an unset active org is filled in.
 //
-// It fires loudly (`reportRecoveredDefaultOrg`) because reaching this layer
-// means the primary path did not do its job — a recovery that fires silently
-// is a bug that never gets fixed.
+// It warns loudly when it fires, because reaching this layer means the primary
+// path did not do its job — a recovery that fires silently is a bug that never
+// gets fixed.
 
 "use client";
 
@@ -25,6 +25,18 @@ import {
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
 import { selectDefaultOrganizationId } from "@/lib/redux/preferences/userPreferenceSelectors";
 import type { OrgNode } from "@/features/scopes/types";
+
+/**
+ * How long to let the primary path finish before recovering.
+ *
+ * `orgBootstrapResolved` goes true on ANY appContext rehydrate — including a
+ * hollow cached record whose `cacheSatisfies` miss has just kicked off the
+ * cold-boot fetch. Firing the instant that flag flips would race the resolver
+ * and print a "resolve failed" warning that is simply early. A short grace
+ * makes the warning mean what it says: after this long with a stated default
+ * and no active org, the primary path really did not deliver.
+ */
+const PRIMARY_RESOLVE_GRACE_MS = 2000;
 
 /**
  * Auto-select the user's default organization when nothing is active yet.
@@ -49,12 +61,18 @@ export function useDefaultOrganizationAutoSelect(
     const match = organizations.find((o) => o.id === defaultOrganizationId);
     if (!match) return;
 
-    console.warn(
-      "[organizations] Active org was empty while a default organization is set — selecting it. " +
-        "The appContextPolicy resolve should have done this; if you are seeing this line, that path failed.",
-      { defaultOrganizationId },
-    );
-    dispatch(chooseActiveOrganization({ id: match.id, name: match.name }));
+    // Give the primary resolve its grace period, then re-check: an org that
+    // landed in the meantime cancels the recovery (the effect re-runs on
+    // `activeOrgId`, and this timer is cleared on the way out).
+    const timer = setTimeout(() => {
+      console.warn(
+        "[organizations] Active org was empty while a default organization is set — selecting it. " +
+          "The appContextPolicy resolve should have done this; if you are seeing this line, that path failed.",
+        { defaultOrganizationId },
+      );
+      dispatch(chooseActiveOrganization({ id: match.id, name: match.name }));
+    }, PRIMARY_RESOLVE_GRACE_MS);
+    return () => clearTimeout(timer);
   }, [
     dispatch,
     activeOrgId,

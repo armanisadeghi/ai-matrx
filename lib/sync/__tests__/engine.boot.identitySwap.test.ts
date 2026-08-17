@@ -12,7 +12,8 @@
 
 import "fake-indexeddb/auto";
 import { configureStore, createSlice } from "@reduxjs/toolkit";
-import { resyncForIdentity } from "../engine/boot";
+import { bootSync, resyncForIdentity } from "../engine/boot";
+import type { SyncChannel } from "../channel";
 import { definePolicy } from "../policies/define";
 import { isRehydrateAction, type RehydrateAction } from "../engine/rehydrate";
 import { clearAll, writeSlice } from "../persistence/idb";
@@ -123,5 +124,41 @@ describe("resyncForIdentity", () => {
         await Promise.resolve();
 
         expect(fetchCalled).toBe(false);
+    });
+
+    // The other half of the swap: boot's own async IDB pass is still running
+    // for the OUTGOING identity when the sign-in lands. Its late record must
+    // not be dispatched over the signed-in session's state, and its cold-boot
+    // fetches belong to the resync, not to boot.
+    it("bootSync drops its late IDB pass when the identity swapped underneath it", async () => {
+        let fetchCalled = false;
+        await writeSlice("guest:fp", "warm", 1, { items: ["guest-cache"] });
+        const { policy, store } = makeSetup(async () => {
+            fetchCalled = true;
+            return null;
+        });
+        const channel: SyncChannel = {
+            available: false,
+            post: () => {},
+            subscribe: () => () => {},
+            setIdentity: () => {},
+            close: () => {},
+        };
+
+        const result = await bootSync({
+            store,
+            identity: guest,
+            policies: [policy],
+            openChannel: () => channel,
+            // The store has already moved on to the signed-in user.
+            getIdentity: () => authed,
+        });
+        expect(await result.idbHydration).toEqual([]);
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(store.getState().warm.items).toEqual([]);
+        expect(fetchCalled).toBe(false);
+        result.stale.cancelAll();
     });
 });
