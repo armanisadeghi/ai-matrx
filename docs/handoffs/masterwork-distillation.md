@@ -21,6 +21,20 @@
 
 ## STATUS — live and verified (compressed)
 
+- **THE UNDERSTUDY SHIPPED (2026-08-17, Arman approved all recommendations + ruled Gemini 3.7
+  Flash).** The system runs from minute one: every Rulebook gets ONE free one-agent Masterwork
+  (`ask -> understudy -> show`; mandate `masterwork.understudy`, DB agent `8bb1d53f-…`, model on
+  the row) built at Rulebook creation with ZERO rules, rebuilt free + in place on every rules
+  save from BOTH funnels (FE `saveRules`/`createDraftRulebook` → `POST
+  /masterworks/understudy/refresh`; server `rulebook_writes` pokes itself for Scout writes).
+  Approved rules are doctrine, drafts ride in a labeled unconfirmed block, rejected/retired never
+  appear; every run ends with "How this gets better". Row: `metadata.understudy=true`,
+  `engram_state='improvised'` (ladder untouched), never releasable, filtered out of the built
+  list. FE: `features/masterwork/understudy/` — the "Your system is already running — try it"
+  card on `/masterwork/[id]` (TryMasterworkBox verbatim, self-heals old Rulebooks) + KPI `live`
+  hook. Verified live on Strunk: Understudy `118b9509-…`, refresh idempotence asserted, a REAL
+  run completed on Gemini 3.7 Flash obeying the approved rules. Details: aidream
+  `services/masterworks/FEATURE.md` § The Understudy.
 - Scout `pack_id` variable residue: **FIXED live 2026-08-17** — `variable_definitions` renamed to `rulebook_id` with Rulebook-vocabulary helpText (direct DB write; agent_author refuses variables edits).
 
 - **THE GUIDED START REBUILT IN THE HOUSE PATTERN (2026-08-17, Arman's "those stupid little small

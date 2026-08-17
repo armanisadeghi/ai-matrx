@@ -99,6 +99,7 @@ function stageLabel(nodeId: string): string {
   if (nodeId === "maker") return "Writing variants";
   if (nodeId === "editor") return "Applying corrections";
   if (nodeId === "chief") return "The expert's final ruling";
+  if (nodeId === "understudy") return "Doing the whole job (first cut)";
   return nodeId.replaceAll("_", " ");
 }
 

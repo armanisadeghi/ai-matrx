@@ -106,7 +106,17 @@ function Tile({
   );
 }
 
-export function RulebookKpiStrip({ kpis }: { kpis: RulebookKpis }) {
+export function RulebookKpiStrip({
+  kpis,
+  live = false,
+}: {
+  kpis: RulebookKpis;
+  /**
+   * True when the Rulebook's Understudy exists — the system is already
+   * running, and every approval visibly improves it (vision doc 13).
+   */
+  live?: boolean;
+}) {
   const done = kpis.progressPct >= 100 && kpis.approved > 0;
   return (
     <div className="space-y-2">
@@ -150,6 +160,12 @@ export function RulebookKpiStrip({ kpis }: { kpis: RulebookKpis }) {
           <span className="flex items-center gap-1 font-medium text-foreground">
             {done ? <Trophy className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : null}
             Review progress
+            {live ? (
+              <span className="ml-1 flex items-center gap-1 text-[10px] font-normal text-emerald-600 dark:text-emerald-400">
+                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                system live — every approval improves it
+              </span>
+            ) : null}
           </span>
           <span className="tabular-nums text-muted-foreground">
             {kpis.progressPct}%

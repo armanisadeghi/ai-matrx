@@ -178,12 +178,15 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
     let cancelled = false;
     (async () => {
       try {
-        const [r, m] = await Promise.all([
+        const [r, allRows] = await Promise.all([
           getRulebook(rulebookId),
           listMasterworksForRulebook(rulebookId),
         ]);
         if (cancelled) return;
         setRulebook(r);
+        // The Understudy (running-from-minute-one) lives on the Rulebook page
+        // and is never releasable — this page manages the BUILT Masterworks.
+        const m = allRows.filter((mw) => !mw.understudy);
         setMasterworks(m);
         if (!r)
           setError("This Rulebook doesn't exist, or you don't have access.");

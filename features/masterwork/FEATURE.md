@@ -16,6 +16,20 @@
 
 ## Status
 
+- **THE UNDERSTUDY — the system that runs from minute one (2026-08-17, vision doc 13;
+  vocabulary ruled).** Every Rulebook has ONE Understudy: a crude one-agent Masterwork
+  (mandate `masterwork.understudy`, Gemini 3.7 Flash on the DB agent row) that does the
+  WHOLE job from the moment the Rulebook exists — zero rules included — and is rebuilt
+  FREE and in place on every rules save, so the Expert watches it get better instead of
+  filling a form and waiting for value. FE half: `understudy/refresh.ts` (fire-and-forget
+  pokes wired into `saveRules` and `createDraftRulebook` — ONE funnel covers the editor,
+  wizard, approve-all, and checkup apply; the Scout's server-side writes poke aidream's
+  own funnel) + `understudy/UnderstudyCard.tsx` on `/masterwork/[id]` ("Your system is
+  already running — try it", live pulse, reuses `TryMasterworkBox` verbatim, self-heals a
+  pre-Understudy Rulebook with one free refresh) + a `live` hook on `RulebookKpiStrip`.
+  The Understudy row carries `metadata.understudy=true`: it is filtered OUT of the built
+  Masterworks list (`MasterworksPage`) and is never releasable to Encore. Server half:
+  aidream `aidream/services/masterworks/FEATURE.md` § The Understudy.
 - **Live:** `/masterwork` (the module landing — guests get the marketing page,
   signed-in Experts get the Masterwork HOME; see § The landing below),
   `/masterwork/all` (Masterwork Studio — entity-list shell over platform.rulebook),
@@ -398,6 +412,23 @@ icon in a tinted square, label + one-line helper, color-coded per question) — 
 mobile-first, dark-mode-safe semantic tokens only. `/masterwork/new` is this feature's
 implementation.
 
+## The improvement brain — assist chips + the `?assist=` launch contract (2026-08-17)
+
+The Rulebook detail page mounts `<AssistStrip surfaceName="matrx-user/masterwork-rulebook">`
+(entity-filtered to the open Rulebook) under the KPI strip. The producer is
+`aidream/services/masterwork_assists/` (its FEATURE.md is the system of record): a mostly
+deterministic hourly pass that offers ONE concrete elicitation move per chip — a section-scoped
+interview for a thin/one-sided section, critique-a-bad-draft (the weak draft is generated
+server-side via the `masterwork.bad_draft` Mandate and rides the seed), the audition failure
+lever, or an exemplar request — with the `masterwork.approach_selector` Mandate firing only when
+the deterministic layer found nothing (once/day cap). Every chip's action is `navigate` back to
+`/masterwork/[id]?assist=<dedupe_key>`; the page resolves the row through
+`features/masterwork/assists.ts::fetchAssistLaunch` and its `metadata.launch` contract opens the
+Scout panel with the composer SEEDED (never auto-sent — the Expert always presses send) or the
+ingest dialog. The move ledger lives on `rulebook.metadata.elicitation` (server-owned; this
+surface never writes it). A chip repeating what the page renders (the draft-review backlog) is
+deliberately never produced.
+
 ## Registration
 
 - Entity token `rulebook` (platform.entity_types; renamed from `expertise_pack`) + FE overlay in
@@ -428,6 +459,13 @@ implementation.
    never types, unless they want to.
 
 ## Change log
+
+- 2026-08-17 — **The Understudy shipped** (running-from-minute-one, § Status top bullet):
+  `understudy/refresh.ts` + `understudy/UnderstudyCard.tsx`, pokes wired into `saveRules` +
+  `createDraftRulebook`, `Masterwork.understudy` flag parsed in `parseMasterworkRow`,
+  Understudy filtered out of `MasterworksPage` and the built-count button, KPI strip `live`
+  hook, `stageLabel("understudy")`. Server half + live verification (real Gemini 3.7 Flash
+  run on Strunk): aidream `services/masterworks/FEATURE.md`.
 
 - 2026-08-17 — **The Oracle tap (in-app) + two interview-variant Approaches shipped.** New
   `oracle/` (service + AddToRulebookDialog + RulebookNudge, overlay `addToRulebookDialog`),
