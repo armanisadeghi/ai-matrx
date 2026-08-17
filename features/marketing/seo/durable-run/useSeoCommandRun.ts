@@ -34,10 +34,17 @@
  * ## Anonymous surfaces work too
  *
  * `/seo/page-audit`, `/seo/robots-tester` and `/seo/structured-data` serve
- * signed-out visitors. That is fine: a guest is an ordinary `auth.users` row
- * minted by aidream's AuthMiddleware from the browser's stable
- * `X-Fingerprint-ID`, so a guest OWNS its command rows and can rejoin them by
- * id with no Supabase session anywhere in the picture.
+ * signed-out visitors. A guest is an ordinary `auth.users` row minted by
+ * aidream's AuthMiddleware from the browser's stable `X-Fingerprint-ID`, so a
+ * guest OWNS its command rows — no Supabase session anywhere in the picture.
+ *
+ * 🚨 `POST /seo/collections/{run_id}/rejoin` is NOT that route: its router is
+ * mounted behind `require_authenticated` and answers a guest 401
+ * `token_required` (measured against production, 2026-08-17). The guest-safe
+ * twin is `POST /seo/public/runs/{run_id}/rejoin` — same `rejoin_stream`, same
+ * `collection_run_readable` ownership check, guest-or-above gate. Every
+ * consumer here uses it, signed in or not: one path, and the ownership check
+ * (not the gate) is what keeps a run private.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -229,7 +236,6 @@ export function useSeoCommandRun<TResult>(
         return;
       }
 
-      console.log("[seo-cmd-debug]", ctx.rejoin, event.event, JSON.stringify(event.data).slice(0,120));
       const data = eventRecord(event);
       if (!data) return;
       const kind = typeof data.kind === "string" ? data.kind : null;

@@ -733,7 +733,8 @@ function ContextPolicyStackTrigger({
         >
           <Layers className="w-3.5 h-3.5" />
           <span>
-            {policies.length} context policy{policies.length === 1 ? "" : "s"}
+            {policies.length} context{" "}
+            {policies.length === 1 ? "policy" : "policies"}
           </span>
         </button>
       </PopoverTrigger>
