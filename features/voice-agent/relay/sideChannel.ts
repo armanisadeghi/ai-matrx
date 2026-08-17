@@ -68,20 +68,47 @@ function escapeXml(text: string): string {
 }
 
 /**
+ * The context system inlines a rich value into the prompt only up to
+ * min(max_inline_chars, 5000); past that it defers behind ctx_get, which the
+ * brain may never call. The serialized block therefore stays under 5000 —
+ * newest turns win, and a truncation marker says so.
+ */
+export const VOICE_EXCHANGE_INLINE_BUDGET_CHARS = 4_800;
+
+/**
  * Format drained turns as the `<voice_exchange>` block for the brain. Empty
- * input → empty string (callers prepend nothing).
+ * input → empty string (callers prepend nothing). Bounded to
+ * VOICE_EXCHANGE_INLINE_BUDGET_CHARS so the block always rides INLINE in the
+ * prompt (never falls into deferred/ctx_get territory) — oldest turns are
+ * dropped first, loudly marked.
  */
 export function formatVoiceExchange(turns: VoiceExchangeTurn[]): string {
   if (turns.length === 0) return "";
-  const body = turns
-    .map((t) => `  <${t.speaker}>${escapeXml(t.text)}</${t.speaker}>`)
-    .join("\n");
-  return (
+  const header =
     `<voice_exchange note="A voice agent is speaking your responses to the user ` +
     `and asking your questions on your behalf. These are the spoken turns since ` +
-    `your last message — for your context only; the user's actual reply follows ` +
-    `after this block.">\n${body}\n</voice_exchange>`
+    `your last message — for your context only; the user's actual reply is the ` +
+    `message itself.">`;
+  const footer = "</voice_exchange>";
+  const lines = turns.map(
+    (t) => `  <${t.speaker}>${escapeXml(t.text)}</${t.speaker}>`,
   );
+  // Keep the NEWEST lines that fit the inline budget.
+  const budget =
+    VOICE_EXCHANGE_INLINE_BUDGET_CHARS - header.length - footer.length - 64;
+  const kept: string[] = [];
+  let used = 0;
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const cost = lines[i].length + 1;
+    if (used + cost > budget) break;
+    kept.unshift(lines[i]);
+    used += cost;
+  }
+  const dropped = lines.length - kept.length;
+  const body =
+    (dropped > 0 ? `  <note>${dropped} earlier spoken turns omitted</note>\n` : "") +
+    kept.join("\n");
+  return `${header}\n${body}\n${footer}`;
 }
 
 /**

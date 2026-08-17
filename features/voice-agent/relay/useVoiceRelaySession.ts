@@ -168,8 +168,14 @@ export function useVoiceRelaySession(
         void dispatch(smartExecute({ conversationId: targetConversationId }));
       },
       // THE SIDE CHANNEL (ruling 6): everything spoken in the voice layer is
-      // published into the brain conversation's deferred context, so EVERY
-      // send — typed or spoken — carries it, invisible to the user's bubble.
+      // published into the brain conversation's context, so EVERY send —
+      // typed or spoken — carries it without polluting the user's message
+      // bubble. The rich value raises max_inline_chars to the 5000 ceiling
+      // and the block is budgeted under it (sideChannel), so it is INLINED
+      // into the prompt — model-visible with no ctx_get round-trip. It also
+      // renders as a labeled context chip on the user's message: deliberate
+      // (ruling 1 — the text is never hidden; the chip is the receipt of
+      // exactly what the brain was told).
       onExchangeUpdated: (serializedBlock) => {
         const targetConversationId = conversationIdRef.current;
         if (!targetConversationId) return;
@@ -178,9 +184,14 @@ export function useVoiceRelaySession(
             setContextEntry({
               conversationId: targetConversationId,
               key: "voice_exchange",
-              value: serializedBlock,
+              value: {
+                content: serializedBlock,
+                type: "text",
+                label: "Spoken conversation (voice layer)",
+                max_inline_chars: 5000,
+              },
               type: "text",
-              label: "Spoken voice-layer turns since your last reply",
+              label: "Spoken conversation (voice layer)",
             }),
           );
         } else {

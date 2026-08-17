@@ -90,6 +90,20 @@ describe("sideChannel", () => {
     const [turn] = log.drain();
     expect(turn.text.length).toBeLessThanOrEqual(1_501);
   });
+
+  it("keeps the serialized block under the inline budget, newest turns first", () => {
+    const turns = Array.from({ length: 20 }, (_, i) => ({
+      speaker: "communicator" as const,
+      text: `turn ${i} ${"y".repeat(400)}`,
+    }));
+    const block = formatVoiceExchange(turns);
+    // Must stay inline-eligible (the context system defers past 5000 chars).
+    expect(block.length).toBeLessThanOrEqual(5_000);
+    // Newest turns survive; oldest are dropped with a loud marker.
+    expect(block).toContain("turn 19");
+    expect(block).not.toContain("turn 0 ");
+    expect(block).toContain("earlier spoken turns omitted");
+  });
 });
 
 // ── Question ledger ─────────────────────────────────────────────────────────
