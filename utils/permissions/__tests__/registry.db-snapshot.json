@@ -209,17 +209,6 @@
     "is_active": true
   },
   {
-    "resource_type": "expertise_pack",
-    "table_name": "expertise_pack",
-    "id_column": "id",
-    "owner_column": "created_by",
-    "is_public_column": null,
-    "display_label": "Expertise Pack",
-    "url_path_template": "/expertise/{id}",
-    "rls_uses_has_permission": true,
-    "is_active": true
-  },
-  {
     "resource_type": "fc_card",
     "table_name": "fc_card",
     "id_column": "id",
@@ -370,6 +359,17 @@
     "is_public_column": null,
     "display_label": "Hindsight Enrollment",
     "url_path_template": "/administration/agents/hindsight?enrollment={id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "interview_session",
+    "table_name": "session",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Vision Interview",
+    "url_path_template": "/vision-interview/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -535,6 +535,17 @@
     "is_public_column": null,
     "display_label": "Research Topic",
     "url_path_template": "/research/topics/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "rulebook",
+    "table_name": "rulebook",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Rulebook",
+    "url_path_template": "/masterwork/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -897,6 +908,17 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Run",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "workflow_runtime_surface",
+    "table_name": "runtime_surface",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Run Surface",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
