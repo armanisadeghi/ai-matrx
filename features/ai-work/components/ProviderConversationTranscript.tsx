@@ -406,8 +406,11 @@ function TranscriptConversationMenu({
   title: string;
 }) {
   const dispatch = useAppDispatch();
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [favoriteStateKnown, setFavoriteStateKnown] = useState(false);
+  // Seeded from the server read, which already resolved the canonical
+  // user_entity_state flag — so the Favorite item is present and correct on
+  // first paint instead of appearing a round-trip later.
+  const [isFavorite, setIsFavorite] = useState(conversation.is_favorite);
+  const [favoriteStateKnown, setFavoriteStateKnown] = useState(true);
   const [isArchived, setIsArchived] = useState(
     conversation.status === "archived",
   );

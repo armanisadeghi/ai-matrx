@@ -10,7 +10,7 @@ import { isProviderSourceApp } from "../lib/providerSource";
 
 export { PROVIDER_TRANSCRIPT_PAGE_SIZE };
 
-export type ProviderConversation = Pick<
+export type ProviderConversationRow = Pick<
   Tables<{ schema: "chat" }, "conversation">,
   | "id"
   | "title"
@@ -29,16 +29,28 @@ export type ProviderConversation = Pick<
   | "conversation_type"
   | "origin_class"
   | "visibility"
-  | "is_favorite"
   | "created_by"
   | "organization_id"
   | "task_id"
 >;
 
+export type ProviderConversation = ProviderConversationRow & {
+  /**
+   * The caller's favorite flag, from `platform.user_entity_state` via
+   * `ues_get_bulk` — NOT the retired `chat.conversation.is_favorite` column.
+   *
+   * A favorite is per-USER state, so it never belonged on the shared row. Every
+   * star in the app writes user_entity_state through the `ues_set` chokepoint;
+   * this panel used to project the column, which nothing has written since the
+   * cutover, and so reported the opposite of what the user had just clicked.
+   */
+  is_favorite: boolean;
+};
+
 // One literal, not a concatenation: supabase-js infers the row type from the
 // select STRING, and a `+`-built value degrades it to GenericStringError.
 const CONVERSATION_COLUMNS =
-  "id, title, description, source_app, source_feature, status, message_count, initial_agent_id, exclude_from_kg, created_at, updated_at, conversation_type, origin_class, visibility, is_favorite, created_by, organization_id, task_id" as const;
+  "id, title, description, source_app, source_feature, status, message_count, initial_agent_id, exclude_from_kg, created_at, updated_at, conversation_type, origin_class, visibility, created_by, organization_id, task_id" as const;
 
 export type { ProviderConversationMessage };
 
@@ -102,13 +114,31 @@ export async function readProviderConversation(
     };
   }
 
-  if (!isProviderSourceApp(conversationResult.data.source_app)) {
+  // The favorite comes from the store that is written, not from the row. A
+  // failed read renders "No" rather than blocking the page — the same loud
+  // degrade `applyFavoritesFromUes` uses on the list side.
+  const favoriteResult = await supabase.rpc("ues_get_bulk", {
+    p_entity_type: "conversation",
+    p_entity_ids: [conversationId],
+  });
+  if (favoriteResult.error) {
+    console.error(
+      "[providerConversation] favorite read failed — rendering favorite unset",
+      favoriteResult.error,
+    );
+  }
+  const conversation: ProviderConversation = {
+    ...conversationResult.data,
+    is_favorite: (favoriteResult.data ?? []).some((row) => row.is_favorite),
+  };
+
+  if (!isProviderSourceApp(conversation.source_app)) {
     return {
       state: "not-provider",
       detail: null,
       error: null,
-      conversation: conversationResult.data,
-      initialAgentId: conversationResult.data.initial_agent_id,
+      conversation,
+      initialAgentId: conversation.initial_agent_id,
     };
   }
 
@@ -136,7 +166,7 @@ export async function readProviderConversation(
   return {
     state: "ready",
     detail: {
-      conversation: conversationResult.data,
+      conversation,
       messages: [...messagesResult.data]
         .reverse()
         .map(normalizeProviderMessage),
