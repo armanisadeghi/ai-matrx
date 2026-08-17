@@ -415,6 +415,11 @@ const nextConfig = {
             // so old bookmarks, share links, and external references keep working.
             { source: '/cloud-files/:path*', destination: '/files/:path*', permanent: true },
             { source: '/cloud-files', destination: '/files', permanent: true },
+            // "Agent slots" became Mandates (Arman, 2026-08-16). Permanent
+            // redirects because every doc, handoff, and sibling repo written
+            // before the rename points at the old paths.
+            { source: '/agents/slots', destination: '/agents/mandates', permanent: true },
+            { source: '/administration/agents/slots', destination: '/administration/agents/mandates', permanent: true },
             // Short alias for the phone scanner surface (canonical: /tools/scanner).
             { source: '/scan', destination: '/tools/scanner', permanent: false },
             // /org/* (old slug-only path) and /organizations/[id]/* (old UUID-only settings path)
