@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   MessageCircle,
+  BookOpen,
   Webhook,
   FolderOpen,
   StickyNote,
@@ -170,6 +171,14 @@ export const MODULE_LANDING_DIRECTORY: ModuleLandingDirectoryEntry[] = [
   },
 
   // Build & Run
+  {
+    label: "Masterwork",
+    href: "/masterwork",
+    icon: BookOpen,
+    teaser:
+      "Your expertise as rules you approve — built into a system that works exactly your way, proven against plain AI.",
+    group: "Build & Run",
+  },
   {
     label: "Tasks",
     href: "/tasks",

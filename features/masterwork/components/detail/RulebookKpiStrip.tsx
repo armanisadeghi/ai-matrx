@@ -30,7 +30,7 @@ export interface RulebookKpis {
   progressPct: number;
 }
 
-export function computeKpis(rulebook: Rulebook): RulebookKpis {
+export function computeKpis(rulebook: Pick<Rulebook, "rules">): RulebookKpis {
   let approved = 0;
   let drafts = 0;
   let rejected = 0;
