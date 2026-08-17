@@ -4,7 +4,7 @@
 - **Run id:** `2026-08-17T131440Z`
 - **Base:** `244042ddc314ba7995e3d8e8a3ed79aae9e5baca` (`v0.4.762`)
 - **Run kind:** structural-novelty scope + open-sighting verification + periodic full viewport/fixed-bottom pass
-- **Current state:** exact candidate pending independent certification
+- **Current state:** certified exact candidate queued for fast integration
 - **Findings:** 16 verified occurrences in 14 files
 - **Fixed in candidate:** 16
 - **Approvals needed:** 0
@@ -131,8 +131,12 @@ instead of 16 and misstated the durable detector's 21 → 8 line delta. The
 product diff passed every adversarial check, but no partial certification was
 granted. The second exact candidate was **REJECTED** because one append-only
 fixing event inaccurately called that reviewed product diff “certified.” The
-record now carries an appended clarification without rewriting history. The
-new exact candidate is pending independent re-certification.
+record now carries an appended clarification without rewriting history.
+Independent adversarial review then **CERTIFIED** exact candidate
+`e8a5e84287f0d68962bcbcd067419432d706fcc2`: product files remained
+byte-identical to the tested batch, the hash chain and finding arithmetic were
+correct, and no concrete batch-caused defect remained. Delivery is queued with
+that candidate preserved as the required ancestor.
 
 ## Recursive learning
 
