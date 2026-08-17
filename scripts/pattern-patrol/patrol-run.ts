@@ -1,5 +1,6 @@
 #!/usr/bin/env tsx
 import { existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
 import {
@@ -52,7 +53,7 @@ function now(args: Args): string {
 
 function usage(): never {
   throw new Error(
-    "usage: patrol-run init|transition|verify --patrol P# --run <task-id> [command options]",
+    "usage: patrol-run init|transition|verify|certify|deliver|record-escape --patrol P# --run <task-id> [command options]",
   );
 }
 
@@ -170,6 +171,47 @@ function main(): void {
           candidateSha,
           certifierTaskId,
           checks: many(args, "check"),
+        },
+      });
+      publishPatrolRunAuthority({
+        repoRoot,
+        record: next,
+        candidateSha,
+        authorityRef,
+        actor,
+      });
+      return savePatrolRun(repoRoot, next);
+    });
+    console.log(savedPath);
+    return;
+  }
+  if (args.command === "deliver") {
+    const authorityRef = one(args, "authority-ref");
+    const candidateSha = one(args, "candidate");
+    const integratedSha = one(args, "integrated-sha");
+    const release = one(args, "release");
+    const actor = one(args, "actor");
+    execFileSync("git", ["merge-base", "--is-ancestor", candidateSha, integratedSha], {
+      cwd: repoRoot,
+      stdio: "ignore",
+    });
+    execFileSync("git", ["merge-base", "--is-ancestor", integratedSha, "origin/main"], {
+      cwd: repoRoot,
+      stdio: "ignore",
+    });
+    const savedPath = withPatrolRunLease(repoRoot, patrolId, runId, () => {
+      const record = loadPatrolRun(path);
+      const next = appendPatrolRunEvent(record, {
+        state: "delivered",
+        at: now(args),
+        actor,
+        summary: one(args, "summary"),
+        evidence: many(args, "evidence"),
+        delivery: {
+          candidateSha,
+          preservedRef: authorityRef,
+          integratedSha,
+          release,
         },
       });
       publishPatrolRunAuthority({

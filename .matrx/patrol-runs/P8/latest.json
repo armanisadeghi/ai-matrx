@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "01a0009c-dfb8-7991-a488-441139eb6a50",
-  "state": "certifying",
-  "updatedAt": "2026-08-15T18:50:11.705Z",
-  "summary": "Prepared the exact 12-file loader candidate for independent adversarial review.",
+  "state": "delivered",
+  "updatedAt": "2026-08-17T19:19:55.690Z",
+  "summary": "DELIVERED: the independently certified contextual-loader candidate is on origin/main and included in v0.4.702.",
   "source": "01a0009c-dfb8-7991-a488-441139eb6a50.json",
-  "eventHash": "4b6062f145a5e93692be091cf8b2b26b8d99e954a716880fc85ebadb52b90fb1"
+  "eventHash": "4f37ffe6a2b184489c4cab5f334859ce33de6778f8027c327fcca4892ca21564"
 }

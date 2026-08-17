@@ -19,7 +19,7 @@
 ## Approval routing and findings
 
 - Verified findings: **83 files**.
-- Standing-authority fixes: **15 files** — the original 3-file batch is delivered; the 12-file compact batch is implemented and awaiting independent certification.
+- Standing-authority fixes: **15 files** — both the original 3-file batch and the 12-file compact batch are independently certified and delivered.
 - Genuine human decisions required: **0**.
 - Backlog retained: **68 files** — 32 compact/control or identity cases still lack a verified direct primitive mapping, and 36 page/panel/list/tree/editor/preview cases need a surface-shaped skeleton or chunk-boundary decision.
 - Excluded as compliant or false positive: the other 76 post-fix signature files. These render an existing component-library loader/skeleton or contextual indicator, are ARIA-only, are comments/docs/diagnostics, or contain the term only in non-loading error/empty/copy data.
@@ -37,7 +37,7 @@ Each wrapper now renders `SuspenseLoader centered={false}` with one polite live 
 
 ### Standing-authority compact-loader follow-up
 
-Arman granted standing authority on 2026-08-15 for verified generic loaders with one clearly superior, professional, behavior-preserving repair. These 12 compact states have direct React-node slots and deterministic user-relevant nouns, so they were implemented immediately with `SuspenseLoader centered={false}` while preserving each owning wrapper, dimensions, data/control flow, interaction, theme, viewport behavior, and chunk entry. The batch remains in certification; no human decision is pending.
+Arman granted standing authority on 2026-08-15 for verified generic loaders with one clearly superior, professional, behavior-preserving repair. These 12 compact states have direct React-node slots and deterministic user-relevant nouns, so they were implemented immediately with `SuspenseLoader centered={false}` while preserving each owning wrapper, dimensions, data/control flow, interaction, theme, viewport behavior, and chunk entry. Exact candidate `e67fb5fd9b3820fc76962879ce1f43ab5b75b97a` is independently certified and delivered; no human decision is pending.
 
 - `components/admin/server-logs/CoolifyLogViewer.tsx` → `Loading server logs…`
 - `features/agent-apps/components/inputs/AgentAppCategoryPicker.tsx` → `Loading app categories…`
@@ -150,17 +150,18 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 ### 12-file standing-authority follow-up
 
 - Focused P8 literal detector: PASS; no bare `Loading…` literal remains in the 12 changed files.
-- Changed-file TypeScript diagnostics: PASS; the full repository type-check remains red only in unrelated concurrent CRM/admin work.
+- Changed-file TypeScript diagnostics: PASS; the current full repository type-check also passes.
 - `git diff --check`: PASS.
 - Manifest tests: 6/6 PASS; repository and live automation contract validation PASS.
-- Independent adversarial certification: **PENDING**. The candidate must remain on its remote branch until a second reviewer records an exact-candidate verdict; this is not a human-approval state.
+- Independent adversarial certification: **CERTIFIED** for exact candidate `e67fb5fd9b3820fc76962879ce1f43ab5b75b97a`. The reviewer inspected all 12 files / 14 repaired callsites, found no control-flow, wrapper, responsive, theme, or chunk-entry change, and repeated the focused detector, diff, type, manifest, and record checks.
+- Delivery: candidate ancestry is preserved by integration commit `fe22be55481e9ffb29318261a888444aabd6c08a`; `v0.4.702` is the first containing release. The durable authority ref is `refs/heads/patrol-runs/P8/01a0009c-dfb8-7991-a488-441139eb6a50`.
 
 ## Structural baseline for the next run
 
 - Route-tree baseline: 1,007 tracked `page.tsx` / `page.dev.tsx` leaves; sorted path-list SHA-256 `4bb37671087282c6b408b8a496278ae6cf01952cb7522f1f9281ef443d51bfb7`.
 - P8 signature baseline: 156 files; sorted path-list SHA-256 `ab8a4ee320f9a1b866bb60d8264ad6b8546bc8c5a4a47410bcbc00f1ba3812a8`.
 - Feature-directory baseline: 121 top-level directories; sorted basename SHA-256 `b7fe66d584074bd0df19cd37f41cb65f8b4ae6415e7864ca558fe6592a0cb52a`.
-- Open verified P8 inventory: 80 files — 12 awaiting manual approval and 68 retained with the missing mapping/design evidence above.
+- Open verified P8 inventory: 68 files retained with the missing mapping/design evidence above; no human approval is pending.
 - Next non-monthly run: compare structural route/signature/feature sets, verify the open P8 ledger item, auto-fix only the exact Suspense class, and keep the three approval routes separate.
 - Next monthly run: repeat the full repository pass regardless of structural deltas.
 

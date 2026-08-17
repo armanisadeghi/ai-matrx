@@ -90,6 +90,34 @@ describe("Pattern Patrol permanent run record", () => {
     ).toThrow("durable preservedRef");
   });
 
+  it("records delivery only after the exact certified candidate is queued", () => {
+    const queued = appendPatrolRunEvent(certifiedRun(), {
+      state: "delivery_queued",
+      at: "2026-08-14T12:04:00.000Z",
+      actor: "delivery-controller",
+      summary: "Queued",
+      delivery: {
+        candidateSha: CANDIDATE,
+        preservedRef: "refs/heads/patrol-runs/P9/run-1",
+      },
+    });
+    const delivered = appendPatrolRunEvent(queued, {
+      state: "delivered",
+      at: "2026-08-14T12:05:00.000Z",
+      actor: "delivery-controller",
+      summary: "Delivered",
+      delivery: {
+        candidateSha: CANDIDATE,
+        preservedRef: "refs/heads/patrol-runs/P9/run-1",
+        integratedSha: "d".repeat(40),
+        release: "v0.4.700",
+      },
+    });
+
+    expect(validatePatrolRunRecord(delivered)).toEqual([]);
+    expect(delivered.events.at(-1)?.delivery?.candidateSha).toBe(CANDIDATE);
+  });
+
   it("keeps certification and delivery out of generic worker transitions", () => {
     expect(isPrivilegedPatrolState("certified")).toBe(true);
     expect(isPrivilegedPatrolState("delivery_queued")).toBe(true);
