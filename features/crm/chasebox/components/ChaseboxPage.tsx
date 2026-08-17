@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowRight, Inbox, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,6 +41,7 @@ import {
   chaseboxFixHref,
   chaseboxFixLabel,
   EMPTY_CHASEBOX_COUNTS,
+  isChaseboxQueue,
   type ChaseboxCounts,
   type ChaseboxQueue,
   type ChaseboxRow,
@@ -49,13 +51,26 @@ import { ChaseboxDraftDialog } from "./ChaseboxDraftDialog";
 const PAGE_SIZE = 25;
 
 export function ChaseboxPage() {
+  // THE DOOR LAW: an assist chip (or any link) that names a queue must be able
+  // to OPEN it. `?queue=` is the address of a queue — read on arrival, and
+  // rewritten as the user moves so the page they are looking at is the page
+  // they can send someone.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requestedQueue = searchParams.get("queue");
+
   const [scope, setScope] = useState<ListScope>(makeScope("mine"));
   const [counts, setCounts] = useState<ChaseboxCounts | null>(null);
   const [scopeTotals, setScopeTotals] = useState<EntityScopeCounts>({
     byKind: {},
     narrow: {},
   });
-  const [queue, setQueue] = useState<ChaseboxQueue>("fresh_replies");
+  const [queue, setQueue] = useState<ChaseboxQueue>(
+    requestedQueue && isChaseboxQueue(requestedQueue)
+      ? requestedQueue
+      : "fresh_replies",
+  );
   const [rows, setRows] = useState<ChaseboxRow[] | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -71,6 +86,30 @@ export function ChaseboxPage() {
   const [reloadToken, setReloadToken] = useState(0);
 
   const refresh = useCallback(() => setReloadToken((n) => n + 1), []);
+
+  const openQueue = useCallback(
+    (next: ChaseboxQueue) => {
+      setQueue(next);
+      setPage(1);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("queue", next);
+      // `replace`, not `push`: switching queues is looking around one page, and
+      // it should not bury the page the user arrived from under Back presses.
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    },
+    [pathname, router, searchParams],
+  );
+
+  // A later navigation to the same route with a different `?queue=` (an assist
+  // chip clicked while already on the Chasebox) re-mounts nothing, so the URL
+  // is the only thing that changes — follow it.
+  useEffect(() => {
+    if (requestedQueue && isChaseboxQueue(requestedQueue)) {
+      setQueue((current) =>
+        current === requestedQueue ? current : requestedQueue,
+      );
+    }
+  }, [requestedQueue]);
 
   // Counts for BOTH scopes, so the scope tabs carry true totals rather than a
   // number that only describes the tab you are already on.
@@ -193,10 +232,7 @@ export function ChaseboxPage() {
                 key={id}
                 type="button"
                 aria-pressed={active}
-                onClick={() => {
-                  setQueue(id);
-                  setPage(1);
-                }}
+                onClick={() => openQueue(id)}
                 className={cn(
                   "flex min-h-11 flex-col items-start gap-0.5 rounded-lg border p-2 text-left transition-colors",
                   active

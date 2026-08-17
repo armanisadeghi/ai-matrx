@@ -85,10 +85,7 @@ import {
   type ShapePlanResult,
 } from "../ai";
 import { applyEntityAttachments } from "../entity-attach";
-import {
-  applyKeywordStrategy,
-  readNodeKeywordStrategy,
-} from "../keyword-strategy";
+import { applyKeywordStrategy } from "../keyword-strategy";
 import {
   clearSetupDraft,
   fetchFreshSite,
@@ -1359,6 +1356,7 @@ export function SetupView() {
     setApplyingKeywords(true);
     try {
       const result = await applyKeywordStrategy({
+        dispatch,
         siteId,
         assignments: keywordStrategy.assignments,
       });
@@ -1372,7 +1370,7 @@ export function SetupView() {
           `Bound ${result.bound} page(s). These routes are not in the plan and were skipped: ${result.unknownRoutes.join(", ")}`,
         );
       }
-      if (result.bound > 0 || result.secondaryEdges > 0) {
+      if (result.bound > 0 || result.secondaryKeywords > 0) {
         setKeywordsAppliedAt(new Date().toISOString());
         // Each page keeps its own share in `attributes.keyword_strategy`; the
         // strategist's whole-plan summary and warnings belong to no page, so
@@ -1389,7 +1387,7 @@ export function SetupView() {
           );
         }
         toast.success(
-          `Keywords applied: ${result.bound} primary, ${result.secondaryEdges} secondary` +
+          `Keywords applied: ${result.bound} primary, ${result.secondaryKeywords} secondary` +
             (result.createdKeywords > 0
               ? `, ${result.createdKeywords} new phrase(s) added to the library.`
               : "."),

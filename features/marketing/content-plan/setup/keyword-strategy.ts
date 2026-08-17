@@ -54,6 +54,31 @@ import type { KeywordAssignment } from "./ai";
  */
 export const STRATEGY_LINK_PREFIX = "strategy:";
 
+/** Legacy read key retained only while plan nodes without a web.page still exist. */
+export const KEYWORD_STRATEGY_ATTR_KEY = "keyword_strategy";
+
+/** Legacy plan-node projection. New writes use PageKeywordPlan on web.page. */
+export interface NodeKeywordStrategy {
+  page_role: KeywordAssignment["pageRole"];
+  supports_routes: string[];
+  internal_links: Array<{ to_route: string; anchor_text: string }>;
+  secondary_keywords: string[];
+  reason: string;
+}
+
+/** Read old plan-node data during the storage migration; never writes it. */
+export function readNodeKeywordStrategy(
+  node: PlanNodeRow,
+): NodeKeywordStrategy | null {
+  const attributes = node.attributes;
+  if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) {
+    return null;
+  }
+  const value = (attributes as Record<string, unknown>)[KEYWORD_STRATEGY_ATTR_KEY];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as NodeKeywordStrategy;
+}
+
 export interface KeywordApplyResult {
   /** Pages whose primary keyword was bound. */
   bound: number;

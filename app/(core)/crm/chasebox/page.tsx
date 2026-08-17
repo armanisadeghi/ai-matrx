@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ListChecks } from "lucide-react";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { ModuleSignInGate } from "@/features/auth/components/module-landing/ModuleSignInGate";

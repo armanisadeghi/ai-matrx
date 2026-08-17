@@ -33,7 +33,6 @@ import {
   planNodeHref,
 } from "@/features/marketing/content-plan/components/PlanContextPanel";
 import { planKeys } from "@/features/marketing/content-plan/data/hooks";
-import { readNodeKeywordStrategy } from "@/features/marketing/content-plan/setup/keyword-strategy";
 import type { PlanNodeRow } from "@/features/marketing/content-plan/types";
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { useCmsPushFacts } from "@/features/marketing/components/pages/cards/PushToCmsCard";
@@ -72,7 +71,10 @@ export function readPlanContextFromCache(
     primary_keyword:
       keywordRows?.find((row) => row.id === node.primary_keyword_id)?.phrase ??
       null,
-    keyword_strategy: readNodeKeywordStrategy(node),
+    // The page's SEO plan is deliberately NOT here: it has ONE store
+    // (`web.page.desired_values.keyword_plan`) and this surface already
+    // carries it as its own value. A second copy read off the plan node is
+    // exactly the duplication invariant 9 removed.
   };
 }
 
