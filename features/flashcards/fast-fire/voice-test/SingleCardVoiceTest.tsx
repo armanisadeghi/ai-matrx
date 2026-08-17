@@ -39,6 +39,10 @@ import type { SpokenGrade } from "../agents/grading-core";
 import { verdictResult, type GradeResult } from "@/features/education/trust/types";
 import { VoiceTestAudioSetup } from "./VoiceTestAudioSetup";
 import { VoiceAnswerMicMeter } from "./VoiceAnswerMicMeter";
+import {
+  getErrorSolution,
+  isMicrophonePermissionDenial,
+} from "@/features/audio/utils/microphone-diagnostics";
 
 type Phase =
   "setup" | "preparing" | "asking" | "answering" | "grading" | "result";
@@ -198,13 +202,21 @@ export function SingleCardVoiceTest({
         }
         capturingRef.current = true;
       } catch (err) {
-        console.error("[voice-test] mic start failed:", err);
+        const permissionDenied = isMicrophonePermissionDenial(err);
+        if (!permissionDenied) {
+          console.error("[voice-test] mic start failed:", err);
+        }
         capturingRef.current = false;
-        setStartError(
-          err instanceof Error
-            ? err.message
-            : "Couldn't access the microphone. Check your audio settings above.",
-        );
+        if (permissionDenied) {
+          const solution = getErrorSolution(err);
+          setStartError(`${solution.message}. ${solution.solution}`);
+        } else {
+          setStartError(
+            err instanceof Error
+              ? err.message
+              : "Couldn't access the microphone. Check your audio settings above.",
+          );
+        }
         setPhase("setup");
         setStarting(false);
         return;
@@ -344,8 +356,15 @@ export function SingleCardVoiceTest({
           await startContinuousCapture();
           capturingRef.current = isContinuousCaptureActive();
         } catch (err) {
-          console.error("[voice-test] mic re-warm failed on go-again:", err);
-          setError("Mic session ended — tap Done and start again.");
+          const permissionDenied = isMicrophonePermissionDenial(err);
+          if (!permissionDenied) {
+            console.error("[voice-test] mic re-warm failed on go-again:", err);
+          }
+          setError(
+            permissionDenied
+              ? "Microphone access is blocked. Allow it in your browser settings, then try again."
+              : "Mic session ended — tap Done and start again.",
+          );
           setPhase("setup");
           capturingRef.current = false;
           return;

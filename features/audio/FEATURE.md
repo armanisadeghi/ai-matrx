@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-08-17`
 
 ---
 
@@ -210,12 +210,15 @@ The canonical "what mic/speaker is selected and is the mic permission granted" s
 - **Input device → mic singleton:** `setInput` calls `micStream.setPreferredInputDeviceId` (applied as an `{ideal}` constraint on the next acquire — graceful if the device is gone).
 - **Output device → speaker (`setSinkId`):** `features/audio/audioOutputSink.ts` is the output half. `<audio>`/`<video>` route via `HTMLMediaElement.setSinkId` through `InlineMediaRef` (using `useOutputSinkRef`, re-applied on device change). Web Audio playback routes through `features/audio/sinkAwarePlayer.ts` (`SinkAwarePlayer` — creates its own sink-aware `AudioContext`, re-routes mid-utterance on device change). The old global `AudioContext` constructor monkeypatch (`installAudioContextSinkRouting`) is **deleted** — never reintroduce it; new Web Audio playback goes through `SinkAwarePlayer`. **All `setSinkId` is feature-detected; Safari has neither API and no-ops** (the speaker picker is hidden behind `outputSelectionSupported`, with a "choose output in macOS/iOS settings" note).
 - **UI:** the **Devices tab** of the unified `audioControlWindow` (`AudioControlWindow`, titled **"Media"** — Playback / Recording / Camera / Devices tabs; the Camera tab belongs to `features/media-capture`) = `MediaDevicesPanel` (formerly `AudioDevicesPanel`; mic + speaker + camera pickers, independent mic/camera permission rows + Grant buttons, live "Test mic" meter, "Test speaker" tone, opt-in "Test camera" preview via a camera lease with a live resolution/fps readout — never auto-starts). Opened from the avatar-menu **Media** entry (`SETTINGS_ITEMS`); the `useOpenAudioDevices` opener targets the Devices tab via overlay `data`. The reusable `components/audio/MicDeviceMenu.tsx` caret sits next to the mic in `ProInput` / `ProTextarea`.
+- **A user declining mic permission is not a system error.** Classify `NotAllowedError` / legacy `PermissionDeniedError` with `isMicrophonePermissionDenial()` from `utils/microphone-diagnostics.ts`; show the repair path inline and reserve `console.error` for unexpected capture failures.
 
 ## Test coverage (honest)
 
 Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and transcription finalization decisions; the device manager is covered in `features/media-devices/__tests__/deviceManager.test.ts`. MediaRecorder lifecycle, playback queue, session registry, TTS hooks, and providers still require manual/in-browser verification — do not claim otherwise.
 
 ## Change log
+
+- `2026-08-17` — Voice-test mic denial now uses the canonical microphone classifier, stays visible as actionable inline guidance, and no longer enters the `system_error` queue as a red console fault. Unexpected capture failures remain loud.
 
 - `2026-08-15` — The shared microphone maps its `xs` shell size to the status components' smallest supported `sm` size. Recording and transcription states no longer pass `xs` through type casts into missing size-map entries; `sm` / `md` / `lg` behavior is unchanged. Removed the now-unnecessary exhaustive-deps suppression on its mount-only auto-start effect.
 

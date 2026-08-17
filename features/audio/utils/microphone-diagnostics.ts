@@ -133,12 +133,12 @@ export async function runMicrophoneDiagnostics(): Promise<DiagnosticResult> {
       await acquireMicStream();
       releaseMicStream();
       result.canRequestPermission = true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       result.canRequestPermission = false;
       result.issues.push({
         severity: 'error',
         code: 'ACCESS_TEST_FAILED',
-        message: err.name || 'Microphone access test failed',
+        message: errorStringField(err, 'name') || 'Microphone access test failed',
         solution: 'Try refreshing the page or checking your browser settings.',
       });
     }
@@ -198,15 +198,27 @@ function getBrowserInfo() {
   return info;
 }
 
+function errorStringField(error: unknown, field: 'name' | 'message'): string {
+  if (!error || typeof error !== 'object' || !(field in error)) return '';
+  const value = (error as Record<'name' | 'message', unknown>)[field];
+  return typeof value === 'string' ? value : '';
+}
+
+/** Browser permission refusal is an expected user outcome, not a system fault. */
+export function isMicrophonePermissionDenial(error: unknown): boolean {
+  const errorName = errorStringField(error, 'name');
+  return errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError';
+}
+
 /**
  * Get human-readable error message with solution
  */
-export function getErrorSolution(error: any): { message: string; solution: string; code: string } {
-  const errorName = error?.name || '';
-  const errorMessage = error?.message || '';
+export function getErrorSolution(error: unknown): { message: string; solution: string; code: string } {
+  const errorName = errorStringField(error, 'name');
+  const errorMessage = errorStringField(error, 'message');
 
   // Permission denied
-  if (errorName === 'NotAllowedError' || errorName === 'PermissionDeniedError') {
+  if (isMicrophonePermissionDenial(error)) {
     return {
       code: 'PERMISSION_DENIED',
       message: 'Microphone access was denied',
@@ -309,4 +321,3 @@ export function getFixInstructions(diagnostics: DiagnosticResult): string[] {
 
   return instructions;
 }
-

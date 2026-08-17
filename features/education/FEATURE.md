@@ -1,6 +1,6 @@
 # Education Hub — FEATURE.md
 
-**Status:** scaffolded · **Tier:** 1 · **Last updated:** 2026-07-13
+**Status:** scaffolded · **Tier:** 1 · **Last updated:** 2026-08-17
 
 > 🔴 **THE SOURCE OF TRUTH IS THE VISION DOC, NOT THIS FILE.**
 > [`app/(core)/education/VISION-education-hub.md`](../../app/(core)/education/VISION-education-hub.md) defines WHAT the Education Hub is and does. This FEATURE.md documents only HOW it is built. **If anything here — or in the code — drifts from the vision, the vision wins, and you must report the drift to the user immediately. Do not silently "fix" the vision to match the code.** When the user approves a change that expands or improves the vision, update the vision doc first, then this file.
@@ -52,6 +52,7 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 - **Funnel markers are display-only.** `AccessTierBadge` (free/trial/premium) signals; it does **not** enforce. Enforcement is the forked system — see [`docs/proposals/ENTITLEMENTS_AND_BILLING_REQUIREMENTS.md`](../../docs/proposals/ENTITLEMENTS_AND_BILLING_REQUIREMENTS.md).
 - **Taxonomy is evidence-backed** (Khan/IXL/Quizlet/Course Hero, June 2026): subject-first; Levels is a three-band model (per-grade K–5 → bands → professional); Exam Prep is its own flat cross-cutting axis. Don't restructure without re-checking the research + the user.
 - **Relocation wired:** old `(public)/education/*` deleted; `nav-data.ts` + `features/math` back-links repoint to `quick-math`; `Target` added to `shellIconMap.ts`.
+- **A learner declining microphone permission is expected input, not a crash.** Voice-test surfaces show the browser-settings repair path inline and must not send `NotAllowedError` / `PermissionDeniedError` through `console.error`; unexpected mic failures stay loud.
 
 ## Related features
 
@@ -67,6 +68,8 @@ The hub lives in `app/(core)/education/`, not `(public)`. `(core)` does **not** 
 Structure, demos, AND the full marketing/content fanout are shipped + live-verified — every axis registry entry (subjects/levels/exam-prep/study-aids/features) and the 8 `/learn` study guides. The **`/learn` content engine (P6-A) is now DB-backed** (`education.learn_doc` + super-admin authoring + ISR + dynamic sitemap + OG images + FAQPage/Course JSON-LD) — see [`publishing/FEATURE.md`](./publishing/FEATURE.md). Pending: P6 Phase B (exam hub, consumes P1) + Phase C (community library, consumes P7); app tools continue to graduate off placeholders.
 
 ## Change log
+
+- **2026-08-17** — Flashcard voice tests no longer report a learner's microphone-permission denial as a system fault. They reuse the canonical audio classifier, keep the denial visible with browser-settings guidance, and still report unexpected mic startup failures.
 
 - **2026-08-17** — **FastFire graded nothing for an entire session, and said the wrong thing about
   why.** The grader agent (`FastFire: Grade Spoken Answer`) is configured `reasoning_effort:
