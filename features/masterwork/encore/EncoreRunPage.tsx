@@ -41,12 +41,16 @@ function runWhen(run: EncoreRun): string {
 const RUN_STATUS_STYLES: Record<string, string> = {
   completed: "bg-primary",
   failed: "bg-destructive",
+  errored: "bg-destructive",
+  abandoned: "bg-destructive",
   cancelled: "bg-muted-foreground",
 };
 
 const RUN_STATUS_LABELS: Record<string, string> = {
   completed: "Finished",
   failed: "Didn't finish",
+  errored: "Didn't finish",
+  abandoned: "Didn't finish",
   cancelled: "Stopped",
   running: "Working",
   pending: "Starting",

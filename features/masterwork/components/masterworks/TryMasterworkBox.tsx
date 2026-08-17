@@ -47,7 +47,16 @@ interface StageRow {
   status: "running" | "done" | "failed";
 }
 
-const TERMINAL_STATUSES = ["completed", "failed", "cancelled"];
+// workflow.run's terminal vocabulary — "errored" is what a mid-run node
+// failure writes (proven live 2026-08-17: a run erroring left this box
+// "Working…" forever because the list missed it).
+const TERMINAL_STATUSES = [
+  "completed",
+  "failed",
+  "errored",
+  "cancelled",
+  "abandoned",
+];
 
 /**
  * The last run started for this Masterwork, remembered for the tab's lifetime
