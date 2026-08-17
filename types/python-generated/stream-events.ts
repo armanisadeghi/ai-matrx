@@ -808,6 +808,12 @@ export interface LegalSyncEventData {
   error?: string | null;
 }
 
+export interface MasterworkAuditionProgressData {
+  type?: "masterwork_audition_progress";
+  step: string;
+  message: string;
+}
+
 export interface AuditionRuleFinding {
   rule_id: string;
   winner: string;
@@ -823,6 +829,19 @@ export interface MasterworkAuditionVerdictData {
   gaps?: string[];
   gaps_captured?: number;
   rulebook_version?: number | null;
+  quality_score?: number | null;
+  judge_confidence?: number | null;
+  vanilla_compared?: boolean;
+  vanilla_score?: number | null;
+  vanilla_verdict?: string | null;
+  vanilla_findings?: AuditionRuleFinding[];
+  vanilla_text?: string | null;
+  vanilla_model?: string | null;
+  vanilla_error?: string | null;
+  beat_vanilla_rules?: number | null;
+  lost_to_vanilla_rules?: number | null;
+  vanilla_rules_compared?: number | null;
+  verdict_sentence?: string | null;
 }
 
 export interface MasterworkBuildCompleteData {
@@ -842,6 +861,70 @@ export interface MasterworkBuildProgressData {
   message: string;
   agent_id?: string | null;
   agent_name?: string | null;
+}
+
+export interface CheckupFinding {
+  id: string;
+  kind: string;
+  target_rule_id?: string | null;
+  proposed?: Record<string, unknown> | null;
+  alternatives?: Record<string, unknown>[];
+  reason?: string;
+  evidence?: string;
+  evidence_ref?: Record<string, unknown>;
+  confidence?: number;
+  source?: string;
+}
+
+export interface MasterworkCheckupCompleteData {
+  type?: "masterwork_checkup_complete";
+  rulebook_id: string;
+  rulebook_version: number;
+  findings?: CheckupFinding[];
+  producers_run?: string[];
+  producers_failed?: string[];
+  evidence_rejected?: number;
+  already_dismissed?: number;
+  corpus_segments?: number;
+  corpus_chars?: number;
+  corpus_cleaned?: boolean;
+  notes?: string[];
+}
+
+export interface MasterworkCheckupFindingData {
+  type?: "masterwork_checkup_finding";
+  rulebook_id: string;
+  finding: CheckupFinding;
+}
+
+export interface MasterworkCheckupProgressData {
+  type?: "masterwork_checkup_progress";
+  step: string;
+  message: string;
+  producer?: string | null;
+  findings_found?: number | null;
+  findings_dropped?: number | null;
+}
+
+export interface MasterworkCorpusCleanedData {
+  type?: "masterwork_corpus_cleaned";
+  rulebook_id: string;
+  rulebook_version: number;
+  segments?: number;
+  cleaned?: number;
+  reused?: number;
+  failed?: number;
+  total_chars?: number;
+  text?: string;
+}
+
+export interface MasterworkCorpusProgressData {
+  type?: "masterwork_corpus_progress";
+  step: string;
+  message: string;
+  segment_label?: string | null;
+  segment_index?: number | null;
+  total_segments?: number | null;
 }
 
 export interface MasterworkIngestCompleteData {
@@ -1600,9 +1683,15 @@ export type TypedDataPayload =
   | ImageStudioProcessCompleteData
   | ImageStudioVariantData
   | LegalSyncEventData
+  | MasterworkAuditionProgressData
   | MasterworkAuditionVerdictData
   | MasterworkBuildCompleteData
   | MasterworkBuildProgressData
+  | MasterworkCheckupCompleteData
+  | MasterworkCheckupFindingData
+  | MasterworkCheckupProgressData
+  | MasterworkCorpusCleanedData
+  | MasterworkCorpusProgressData
   | MasterworkIngestCompleteData
   | MasterworkIngestProgressData
   | MasterworkRunData

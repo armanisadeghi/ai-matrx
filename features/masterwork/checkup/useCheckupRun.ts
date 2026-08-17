@@ -21,12 +21,11 @@ import {
  */
 
 /**
- * The endpoint aidream is building for this surface. It is not in the
- * generated OpenAPI types until that lands and `pnpm sync-types` runs — the
- * route name is the contract, so it is written ONCE, here. When the types
- * carry it, this line becomes a plain constant.
+ * The checkup endpoint. Now present in the generated OpenAPI types (the aidream
+ * route shipped 2026-08-17), so this is a plain typed constant — the cast that
+ * stood in while the server half was being built is gone.
  */
-export const CHECKUP_PATH = "/masterworks/checkup" as unknown as keyof paths;
+export const CHECKUP_PATH = "/masterworks/checkup" satisfies keyof paths;
 
 /** One finding, streamed as it is found. */
 const CHECKUP_FINDING_EVENT = "masterwork_checkup_finding";

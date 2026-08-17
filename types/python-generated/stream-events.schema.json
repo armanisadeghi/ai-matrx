@@ -1036,7 +1036,7 @@
                 "type": "null"
               }
             ],
-            "default": 0,
+            "default": 0.0,
             "title": "Cost"
           }
         },
@@ -1226,7 +1226,7 @@
             "title": "Total Cost"
           },
           "known_cost_subtotal": {
-            "default": 0,
+            "default": 0.0,
             "title": "Known Cost Subtotal",
             "type": "number"
           },
@@ -1394,7 +1394,7 @@
             "type": "null"
           }
         ],
-        "default": 0,
+        "default": 0.0,
         "title": "Cost"
       }
     },
@@ -1584,7 +1584,7 @@
         "title": "Total Cost"
       },
       "known_cost_subtotal": {
-        "default": 0,
+        "default": 0.0,
         "title": "Known Cost Subtotal",
         "type": "number"
       },
@@ -2030,7 +2030,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0,
+        "default": 0.0,
         "title": "Progress",
         "type": "number"
       },
@@ -4355,7 +4355,7 @@
         "type": "string"
       },
       "elapsed_seconds": {
-        "default": 0,
+        "default": 0.0,
         "title": "Elapsed Seconds",
         "type": "number"
       },
@@ -5467,7 +5467,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -5527,7 +5527,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -6495,7 +6495,7 @@
         "title": "Bottom Left"
       },
       "confidence": {
-        "default": 0,
+        "default": 0.0,
         "title": "Confidence",
         "type": "number"
       },
@@ -7470,6 +7470,32 @@
     "title": "MasterworkIngestCompleteData",
     "type": "object"
   },
+  "MasterworkAuditionProgressData": {
+    "additionalProperties": false,
+    "description": "One stage of an Audition (vanilla arm generation, per-arm judging).",
+    "properties": {
+      "type": {
+        "const": "masterwork_audition_progress",
+        "default": "masterwork_audition_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      }
+    },
+    "required": [
+      "step",
+      "message"
+    ],
+    "title": "MasterworkAuditionProgressData",
+    "type": "object"
+  },
   "MasterworkAuditionVerdictData": {
     "$defs": {
       "AuditionRuleFinding": {
@@ -7498,7 +7524,7 @@
       }
     },
     "additionalProperties": false,
-    "description": "Terminal result of POST /masterworks/audition — the R2 outcome\nsignal: Masterwork output vs the real published exemplar, judged rule-by-rule\nagainst the Rulebook.",
+    "description": "Terminal result of POST /masterworks/audition — the R2 outcome\nsignal: Masterwork output vs the real published exemplar, judged rule-by-rule\nagainst the Rulebook.\n\n``quality_score`` is DERIVED 0-100 (win 1 / tie 0.5 / loss 0 over the\njudged rules) — the judge's verdicts stay enumerated. The ``vanilla_*``\nfields exist only for three-way runs (``compare_vanilla``): the same judge\nscored a raw no-Rulebook model of the Masterwork's own tier against the\nsame reference, and ``verdict_sentence`` states the result plainly.",
     "properties": {
       "type": {
         "const": "masterwork_audition_verdict",
@@ -7550,6 +7576,151 @@
         ],
         "default": null,
         "title": "Rulebook Version"
+      },
+      "quality_score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Quality Score"
+      },
+      "judge_confidence": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Judge Confidence"
+      },
+      "vanilla_compared": {
+        "default": false,
+        "title": "Vanilla Compared",
+        "type": "boolean"
+      },
+      "vanilla_score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Score"
+      },
+      "vanilla_verdict": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Verdict"
+      },
+      "vanilla_findings": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/AuditionRuleFinding"
+        },
+        "title": "Vanilla Findings",
+        "type": "array"
+      },
+      "vanilla_text": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Text"
+      },
+      "vanilla_model": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Model"
+      },
+      "vanilla_error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Error"
+      },
+      "beat_vanilla_rules": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Beat Vanilla Rules"
+      },
+      "lost_to_vanilla_rules": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Lost To Vanilla Rules"
+      },
+      "vanilla_rules_compared": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Rules Compared"
+      },
+      "verdict_sentence": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Sentence"
       }
     },
     "required": [
@@ -7558,6 +7729,448 @@
       "summary"
     ],
     "title": "MasterworkAuditionVerdictData",
+    "type": "object"
+  },
+  "MasterworkCorpusProgressData": {
+    "additionalProperties": false,
+    "description": "One step of cleaning up everything the Expert said.",
+    "properties": {
+      "type": {
+        "const": "masterwork_corpus_progress",
+        "default": "masterwork_corpus_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "segment_label": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Segment Label"
+      },
+      "segment_index": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Segment Index"
+      },
+      "total_segments": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Total Segments"
+      }
+    },
+    "required": [
+      "step",
+      "message"
+    ],
+    "title": "MasterworkCorpusProgressData",
+    "type": "object"
+  },
+  "MasterworkCorpusCleanedData": {
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/clean-corpus.\n\n``text`` is the whole cleaned corpus, labelled and in order — what the\nExpert is shown so they can see what they actually have. The same text is\npersisted on the Rulebook (``metadata.expert_corpus``), so this event is a\nconvenience, never the only copy.",
+    "properties": {
+      "type": {
+        "const": "masterwork_corpus_cleaned",
+        "default": "masterwork_corpus_cleaned",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "rulebook_version": {
+        "title": "Rulebook Version",
+        "type": "integer"
+      },
+      "segments": {
+        "default": 0,
+        "title": "Segments",
+        "type": "integer"
+      },
+      "cleaned": {
+        "default": 0,
+        "title": "Cleaned",
+        "type": "integer"
+      },
+      "reused": {
+        "default": 0,
+        "title": "Reused",
+        "type": "integer"
+      },
+      "failed": {
+        "default": 0,
+        "title": "Failed",
+        "type": "integer"
+      },
+      "total_chars": {
+        "default": 0,
+        "title": "Total Chars",
+        "type": "integer"
+      },
+      "text": {
+        "default": "",
+        "title": "Text",
+        "type": "string"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "rulebook_version"
+    ],
+    "title": "MasterworkCorpusCleanedData",
+    "type": "object"
+  },
+  "MasterworkCheckupProgressData": {
+    "additionalProperties": false,
+    "description": "One step of a Final Checkup — including per-producer start/finish, so a\nslow producer never looks like a hung run.",
+    "properties": {
+      "type": {
+        "const": "masterwork_checkup_progress",
+        "default": "masterwork_checkup_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "producer": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Producer"
+      },
+      "findings_found": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Findings Found"
+      },
+      "findings_dropped": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Findings Dropped"
+      }
+    },
+    "required": [
+      "step",
+      "message"
+    ],
+    "title": "MasterworkCheckupProgressData",
+    "type": "object"
+  },
+  "MasterworkCheckupFindingData": {
+    "$defs": {
+      "CheckupFinding": {
+        "description": "ONE thing the Checkup believes we got wrong or missed.\n\nThis is the contract every producer emits and every consumer reads. The\ntwo fields that make it trustworthy rather than noise: ``evidence`` is a\nVERBATIM quote of what the Expert actually said (mechanically verified\nagainst the corpus before it is emitted — an unverifiable quote is dropped,\nnever shown), and ``confidence`` is the producer's honest certainty.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "target_rule_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Rule Id"
+          },
+          "proposed": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Proposed"
+          },
+          "alternatives": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Alternatives",
+            "type": "array"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          },
+          "evidence": {
+            "default": "",
+            "title": "Evidence",
+            "type": "string"
+          },
+          "evidence_ref": {
+            "additionalProperties": true,
+            "title": "Evidence Ref",
+            "type": "object"
+          },
+          "confidence": {
+            "default": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "source": {
+            "default": "",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind"
+        ],
+        "title": "CheckupFinding",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "One finding, streamed the moment its producer returns it.",
+    "properties": {
+      "type": {
+        "const": "masterwork_checkup_finding",
+        "default": "masterwork_checkup_finding",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "finding": {
+        "$ref": "#/$defs/CheckupFinding"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "finding"
+    ],
+    "title": "MasterworkCheckupFindingData",
+    "type": "object"
+  },
+  "MasterworkCheckupCompleteData": {
+    "$defs": {
+      "CheckupFinding": {
+        "description": "ONE thing the Checkup believes we got wrong or missed.\n\nThis is the contract every producer emits and every consumer reads. The\ntwo fields that make it trustworthy rather than noise: ``evidence`` is a\nVERBATIM quote of what the Expert actually said (mechanically verified\nagainst the corpus before it is emitted — an unverifiable quote is dropped,\nnever shown), and ``confidence`` is the producer's honest certainty.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "target_rule_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Target Rule Id"
+          },
+          "proposed": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Proposed"
+          },
+          "alternatives": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Alternatives",
+            "type": "array"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          },
+          "evidence": {
+            "default": "",
+            "title": "Evidence",
+            "type": "string"
+          },
+          "evidence_ref": {
+            "additionalProperties": true,
+            "title": "Evidence Ref",
+            "type": "object"
+          },
+          "confidence": {
+            "default": 0.0,
+            "title": "Confidence",
+            "type": "number"
+          },
+          "source": {
+            "default": "",
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind"
+        ],
+        "title": "CheckupFinding",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/checkup — the full finding set.\n\n``findings: []`` with ``producers_failed: 0`` is a GOOD outcome, not an\nempty one: it means nothing is demonstrably wrong with the Rulebook.",
+    "properties": {
+      "type": {
+        "const": "masterwork_checkup_complete",
+        "default": "masterwork_checkup_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "rulebook_version": {
+        "title": "Rulebook Version",
+        "type": "integer"
+      },
+      "findings": {
+        "items": {
+          "$ref": "#/$defs/CheckupFinding"
+        },
+        "title": "Findings",
+        "type": "array"
+      },
+      "producers_run": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Producers Run",
+        "type": "array"
+      },
+      "producers_failed": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Producers Failed",
+        "type": "array"
+      },
+      "evidence_rejected": {
+        "default": 0,
+        "title": "Evidence Rejected",
+        "type": "integer"
+      },
+      "already_dismissed": {
+        "default": 0,
+        "title": "Already Dismissed",
+        "type": "integer"
+      },
+      "corpus_segments": {
+        "default": 0,
+        "title": "Corpus Segments",
+        "type": "integer"
+      },
+      "corpus_chars": {
+        "default": 0,
+        "title": "Corpus Chars",
+        "type": "integer"
+      },
+      "corpus_cleaned": {
+        "default": false,
+        "title": "Corpus Cleaned",
+        "type": "boolean"
+      },
+      "notes": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Notes",
+        "type": "array"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "rulebook_version"
+    ],
+    "title": "MasterworkCheckupCompleteData",
     "type": "object"
   },
   "PdfExtractStartedData": {

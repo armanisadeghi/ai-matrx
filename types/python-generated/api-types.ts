@@ -5052,6 +5052,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/seo/sites/{site_id}/bing/intelligence/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Bing Site Intelligence
+         * @description Collect Bing's free crawl, index, sitemap, backlink-count, fetched-URL,
+         *     and submission-quota evidence for one bound site through the canonical
+         *     collection ledger.
+         */
+        post: operations["sync_bing_site_intelligence_seo_sites__site_id__bing_intelligence_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/seo/providers/dataforseo/operations": {
         parameters: {
             query?: never;
@@ -8763,6 +8785,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/clean-corpus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clean Expert Corpus Endpoint
+         * @description Clean up everything the Expert said about this Rulebook, and save it.
+         *
+         *     Manual on purpose (Arman, 2026-08-17: "for now have it as a manual option
+         *     and later decide when to trigger it") — the Checkup consumes the saved
+         *     result but never launches this pass on its own.
+         */
+        post: operations["clean_expert_corpus_endpoint_masterworks_clean_corpus_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/checkup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Checkup Masterwork Endpoint
+         * @description The Final Checkup — every registered producer, in parallel, streaming
+         *     findings as they arrive.
+         */
+        post: operations["checkup_masterwork_endpoint_masterworks_checkup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/rulebook/restore-write": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore Rulebook Write
+         * @description Replay one Rulebook write that died on an infrastructure failure.
+         *
+         *     The one-click end of the recovery assist a failed capture writes (see
+         *     ``services/distillation/write_recovery.py``). The wire carries only the
+         *     assist id — the content stays server-side on that row — and the replay runs
+         *     the ordinary ``rulebook`` tool, so it lands through the ONE CAS write path
+         *     as drafts. Running it twice cannot duplicate anything.
+         */
+        post: operations["restore_rulebook_write_masterworks_rulebook_restore_write_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/runs/{run_id}/rejoin": {
         parameters: {
             query?: never;
@@ -9685,6 +9778,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23784,6 +23901,17 @@ export interface components {
              * @default true
              */
             capture_gaps?: boolean;
+            /**
+             * Compare Vanilla
+             * @description Three-way harness: also run a RAW vanilla model (same tier as the Masterwork's primary agent, no Rulebook) on vanilla_input and judge it against the same reference. A paid call — opt-in.
+             * @default false
+             */
+            compare_vanilla?: boolean;
+            /**
+             * Vanilla Input
+             * @description compare_vanilla only: the SAME input the Masterwork was given (the text to edit, or the job brief), so the vanilla arm is a fair fight.
+             */
+            vanilla_input?: string | null;
         };
         /** AuthorityCandidate */
         AuthorityCandidate: {
@@ -24494,6 +24622,36 @@ export interface components {
             connection_id: string;
             /** Organization Id */
             organization_id?: string | null;
+        };
+        /** BingIntelligenceSyncBody */
+        BingIntelligenceSyncBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Max Link Pages
+             * @default 1
+             */
+            max_link_pages?: number;
+            /**
+             * Force Refresh
+             * @default false
+             */
+            force_refresh?: boolean;
+            /** Request Id */
+            request_id?: string | null;
         };
         /** BingOAuthExchangeRequest */
         BingOAuthExchangeRequest: {
@@ -27293,6 +27451,52 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * CheckupRequest
+         * @description The Final Checkup — run every registered producer over the Rulebook and
+         *     stream back the findings.
+         *
+         *     ``producers`` names which producers to run; omitted = all registered ones.
+         *     ``use_cleaned`` consumes the SAVED cleaned corpus when one exists. It never
+         *     triggers a clean pass on its own — a hidden paid call is exactly what
+         *     "manual option" rules out — it just says which corpus the producers read.
+         */
+        CheckupRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Producers
+             * @description Producer keys to run. None = every registered producer.
+             */
+            producers?: string[] | null;
+            /**
+             * Use Cleaned
+             * @description Prefer the saved cleaned corpus over the raw one when it exists.
+             * @default true
+             */
+            use_cleaned?: boolean;
+            /**
+             * Min Confidence
+             * @description Drop findings below this certainty before they reach the Expert.
+             * @default 0
+             */
+            min_confidence?: number;
+        };
         /** ChunkDetail */
         ChunkDetail: {
             /** Chunk Id */
@@ -27639,6 +27843,45 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
+        };
+        /**
+         * CleanCorpusRequest
+         * @description Clean everything the Expert ever said about this Rulebook, and SAVE it.
+         *
+         *     Arman's instruction (2026-08-17): "for now have it as a manual option and
+         *     later decide when to trigger it… It would take everything the user said,
+         *     sort of clean it up, and then show it to them so they see what they have,
+         *     and we save it so it's persistent."
+         *
+         *     So this is its own endpoint, never a hidden step inside the checkup — a
+         *     paid pass the Expert asks for. It is idempotent by content: a segment whose
+         *     raw text hasn't changed since the last clean is reused, not re-cleaned,
+         *     unless ``force`` says otherwise.
+         */
+        CleanCorpusRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Force
+             * @description Re-clean every segment even when a cached clean of the same raw text exists.
+             * @default false
+             */
+            force?: boolean;
         };
         /** CleanRequest */
         CleanRequest: {
@@ -32512,6 +32755,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -39252,7 +39522,7 @@ export interface components {
          */
         JsonSchemaProperty: {
             /** Type */
-            type?: ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null") | ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null")[] | null;
+            type?: ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string") | ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string")[] | null;
             /** Description */
             description?: string | null;
             /** Enum */
@@ -49999,6 +50269,44 @@ export interface components {
             session_key_b64: string;
             /** Text */
             text: string;
+        };
+        /** RestoreWriteRequest */
+        RestoreWriteRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Assist Id
+             * Format: uuid
+             */
+            assist_id: string;
+        };
+        /** RestoreWriteResponse */
+        RestoreWriteResponse: {
+            /** Restored */
+            restored: boolean;
+            /**
+             * Assist Id
+             * Format: uuid
+             */
+            assist_id: string;
+            /** Action */
+            action?: string | null;
+            /** Rules Restored */
+            rules_restored?: number | null;
+            detail?: components["schemas"]["JsonValue"] | null;
         };
         /** ResumeRunRequest */
         ResumeRunRequest: {
@@ -70134,6 +70442,41 @@ export interface operations {
             };
         };
     };
+    sync_bing_site_intelligence_seo_sites__site_id__bing_intelligence_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BingIntelligenceSyncBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     dataforseo_operations_seo_providers_dataforseo_operations_get: {
         parameters: {
             query?: never;
@@ -76244,6 +76587,105 @@ export interface operations {
             };
         };
     };
+    clean_expert_corpus_endpoint_masterworks_clean_corpus_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CleanCorpusRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    checkup_masterwork_endpoint_masterworks_checkup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_rulebook_write_masterworks_rulebook_restore_write_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreWriteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreWriteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     rejoin_masterwork_run_masterworks_runs__run_id__rejoin_post: {
         parameters: {
             query?: never;
@@ -77968,6 +78410,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -93488,6 +93965,8 @@ export interface operations {
             query?: {
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
@@ -93530,6 +94009,8 @@ export interface operations {
                 search?: string | null;
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
@@ -93564,6 +94045,8 @@ export interface operations {
             query?: {
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
@@ -93598,6 +94081,8 @@ export interface operations {
             query?: {
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
@@ -93633,6 +94118,8 @@ export interface operations {
             query?: {
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
@@ -93668,6 +94155,8 @@ export interface operations {
             query?: {
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
@@ -93703,6 +94192,8 @@ export interface operations {
             query?: {
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
@@ -93737,6 +94228,8 @@ export interface operations {
             query?: {
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
@@ -93791,6 +94284,8 @@ export interface operations {
             query?: {
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
@@ -93825,6 +94320,8 @@ export interface operations {
             query?: {
                 /** @description PostgreSQL schema name */
                 schema?: string | null;
+                /** @description Registered database project name */
+                database?: string | null;
             };
             header?: never;
             path: {
