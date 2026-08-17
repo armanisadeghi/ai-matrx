@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ContextSlotItemsPopover
+ * ContextPolicyItemsPopover
  *
  * Collapsed summary tile for multiple context entries on a user message.
  * Click → popover list; row click → detail sheet.
@@ -19,34 +19,34 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import type {
   ContextObjectType,
-  ContextSlot,
+  ContextPolicy,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import { CONTEXT_TYPE_ICON, FALLBACK_CONTEXT_ICON } from "./contextSlotIcons";
+import { CONTEXT_TYPE_ICON, FALLBACK_CONTEXT_ICON } from "./contextPolicyIcons";
 import {
   CONTEXT_TYPE_TILE_LABEL,
-  resolveContextSlotTileTheme,
-} from "./contextSlotTile.theme";
-import { contextSlotEntryPreview } from "./contextSlotPreview";
+  resolveContextPolicyTileTheme,
+} from "./contextPolicyTile.theme";
+import { contextPolicyEntryPreview } from "./contextPolicyPreview";
 import { getKnownContextDefinition } from "./knownContextValues";
-import { ContextSlotDetailSheet } from "./ContextSlotDetailSheet";
-import { ContextSlotTile } from "./ContextSlotTile";
+import { ContextPolicyDetailSheet } from "./ContextPolicyDetailSheet";
+import { ContextPolicyTile } from "./ContextPolicyTile";
 
-interface ContextSlotItemsPopoverProps {
+interface ContextPolicyItemsPopoverProps {
   conversationId: string;
   agentId: string | null;
   entries: InstanceContextEntry[];
-  slotByKey: Map<string, ContextSlot>;
+  slotByKey: Map<string, ContextPolicy>;
   className?: string;
 }
 
-export function ContextSlotItemsPopover({
+export function ContextPolicyItemsPopover({
   conversationId,
   agentId,
   entries,
   slotByKey,
   className,
-}: ContextSlotItemsPopoverProps) {
+}: ContextPolicyItemsPopoverProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] =
@@ -74,7 +74,7 @@ export function ContextSlotItemsPopover({
     <>
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
-          <ContextSlotTile
+          <ContextPolicyTile
             typeLabel="Context"
             title={`Context Items (${count})`}
             icon={Boxes}
@@ -96,14 +96,14 @@ export function ContextSlotItemsPopover({
               const slot = slotByKey.get(entry.key);
               const type: ContextObjectType = slot?.type ?? entry.type;
               const Icon = CONTEXT_TYPE_ICON[type] ?? FALLBACK_CONTEXT_ICON;
-              const theme = resolveContextSlotTileTheme(type);
+              const theme = resolveContextPolicyTileTheme(type);
               const typeLabel =
                 getKnownContextDefinition(entry.key)?.typeLabel ??
                 CONTEXT_TYPE_TILE_LABEL[type] ??
                 "Context";
               const label =
                 slot?.label?.trim() || entry.label?.trim() || entry.key;
-              const preview = contextSlotEntryPreview(
+              const preview = contextPolicyEntryPreview(
                 entry,
                 type,
                 liveValueByKey.get(entry.key),
@@ -143,7 +143,7 @@ export function ContextSlotItemsPopover({
       </Popover>
 
       {selectedEntry && (
-        <ContextSlotDetailSheet
+        <ContextPolicyDetailSheet
           open={detailOpen}
           onOpenChange={setDetailOpen}
           conversationId={conversationId}

@@ -176,7 +176,7 @@ export const selectAgentCanExecute = createSelector(
     if (!record) return false;
     return (
       hasField(record._loadedFields, "variableDefinitions") &&
-      hasField(record._loadedFields, "contextSlots")
+      hasField(record._loadedFields, "contextPolicies")
     );
   },
 );
@@ -196,18 +196,18 @@ export const selectAgentExecutionPayload = createSelector(
         resolvedId: null,
         isVersion: false as const,
         variableDefinitions: null,
-        contextSlots: [],
+        contextPolicies: [],
       };
     }
     const isReady =
       hasField(record._loadedFields, "variableDefinitions") &&
-      hasField(record._loadedFields, "contextSlots");
+      hasField(record._loadedFields, "contextPolicies");
     return {
       isReady,
       resolvedId: record.id,
       isVersion: record.isVersion,
       variableDefinitions: record.variableDefinitions,
-      contextSlots: record.contextSlots,
+      contextPolicies: record.contextPolicies,
     };
   },
 );
@@ -222,7 +222,7 @@ export const selectAgentCustomExecutionPayload = createSelector(
   (record) => {
     const required: (keyof AgentDefinition)[] = [
       "variableDefinitions",
-      "contextSlots",
+      "contextPolicies",
       "settings",
       "tools",
       "customTools",
@@ -234,7 +234,7 @@ export const selectAgentCustomExecutionPayload = createSelector(
         resolvedId: null,
         isVersion: false as const,
         variableDefinitions: null,
-        contextSlots: [],
+        contextPolicies: [],
         settings: null,
         tools: [],
         customTools: [],
@@ -247,7 +247,7 @@ export const selectAgentCustomExecutionPayload = createSelector(
       resolvedId: record.id,
       isVersion: record.isVersion,
       variableDefinitions: record.variableDefinitions,
-      contextSlots: record.contextSlots,
+      contextPolicies: record.contextPolicies,
       settings: record.settings,
       tools: record.tools,
       customTools: record.customTools,
@@ -333,9 +333,9 @@ export const selectAgentVariableDefinitions = createSelector(
   (record) => record?.variableDefinitions ?? null,
 );
 
-export const selectAgentContextSlots = createSelector(
+export const selectAgentContextPolicies = createSelector(
   [selectAgentById],
-  (record) => record?.contextSlots,
+  (record) => record?.contextPolicies,
 );
 
 export const selectAgentSettings = createSelector(
@@ -817,7 +817,7 @@ export const selectActiveAgentCanExecute = createSelector(
     if (!record) return false;
     return (
       hasField(record._loadedFields, "variableDefinitions") &&
-      hasField(record._loadedFields, "contextSlots")
+      hasField(record._loadedFields, "contextPolicies")
     );
   },
 );
@@ -832,18 +832,18 @@ export const selectActiveAgentExecutionPayload = createSelector(
         resolvedId: null,
         isVersion: false as const,
         variableDefinitions: null,
-        contextSlots: [],
+        contextPolicies: [],
       };
     }
     const isReady =
       hasField(record._loadedFields, "variableDefinitions") &&
-      hasField(record._loadedFields, "contextSlots");
+      hasField(record._loadedFields, "contextPolicies");
     return {
       isReady,
       resolvedId: record.id,
       isVersion: record.isVersion,
       variableDefinitions: record.variableDefinitions,
-      contextSlots: record.contextSlots,
+      contextPolicies: record.contextPolicies,
     };
   },
 );

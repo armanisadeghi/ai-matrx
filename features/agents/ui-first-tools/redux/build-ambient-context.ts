@@ -6,7 +6,7 @@
  * Critical design points:
  *   1. This does NOT write to the `instanceContext` Redux slice. That slice
  *      is for user-bound, explicitly-attached context — its entries render
- *      as chips above each user message via `ContextSlotChipStrip`. Putting
+ *      as chips above each user message via `ContextPolicyChipStrip`. Putting
  *      ambient keys there would make them appear as chips on every message,
  *      which is wrong for "I'm telling the agent about itself once."
  *   2. This only runs on the first turn of a conversation. After that, the

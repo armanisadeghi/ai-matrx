@@ -136,5 +136,5 @@ export interface DictConsumption {
   customEntries: DictEntryDraft[];
 }
 
-/** The 200-char default ceiling, mirrored from the agent context-slot policy. */
+/** The 200-char default ceiling, mirrored from the agent context-policy policy. */
 export const DICT_DEFAULT_INLINE_CHARS = 200;

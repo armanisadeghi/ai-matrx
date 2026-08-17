@@ -431,7 +431,7 @@ export function SurfaceBindingsBatchEditor({
 
           {/* Shared mappings */}
           <section className="space-y-1.5">
-            <Label className="text-xs">Value &amp; context-slot mappings</Label>
+            <Label className="text-xs">Value &amp; context-policy mappings</Label>
             <SurfaceVariableBindingList
               targets={targets}
               value={sharedMappings}

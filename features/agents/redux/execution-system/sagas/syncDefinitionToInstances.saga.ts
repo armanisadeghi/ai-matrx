@@ -20,7 +20,7 @@
  *                            base model stays in sync with the agent.
  *   - upsertAgent          — full server refresh; next startNewConversation re-snapshots
  *   - mergePartialAgent    — same reason as upsertAgent
- *   - setAgentTools / setAgentContextSlots / etc. — not rendered by instance UI
+ *   - setAgentTools / setAgentContextPolicies / etc. — not rendered by instance UI
  *
  * Performance:
  *   In production the loop iterates over active instances; for any agent that

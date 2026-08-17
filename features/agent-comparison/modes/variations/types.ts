@@ -28,7 +28,7 @@ export interface VariationAgentSnapshot {
   settings: AgentDefinition["settings"];
   messages: AgentDefinition["messages"];
   variableDefinitions: AgentDefinition["variableDefinitions"];
-  contextSlots: AgentDefinition["contextSlots"];
+  contextPolicies: AgentDefinition["contextPolicies"];
   tools: AgentDefinition["tools"];
   customTools: AgentDefinition["customTools"];
   mcpServers: AgentDefinition["mcpServers"];

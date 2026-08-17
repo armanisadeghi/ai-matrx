@@ -44,7 +44,7 @@ import {
   decodeInlinePolicy,
   encodeInlinePolicy,
   type InlinePolicyValue,
-} from "@/features/agents/components/context-slots-management/InlinePolicyControl";
+} from "@/features/agents/components/context-policies-management/InlinePolicyControl";
 import { DICT_LEVEL_LABELS } from "@/features/dictionary/constants";
 import type { DictEntry, DictEntryDraft, DictLevel } from "@/features/dictionary/types";
 

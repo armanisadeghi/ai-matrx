@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * ContextSlotsTab — Agent Builder / Context tab
+ * ContextPoliciesTab — Agent Builder / Context tab
  *
  * Engineer-facing surface for setting the `context` dict that accompanies
  * every submission. Two sections:
  *
- *   1. **Declared slots** — whatever `contextSlots` the agent defines.
+ *   1. **Declared slots** — whatever `contextPolicies` the agent defines.
  *      Always rendered, even when empty, with the slot's type/label/description.
  *      Values round-trip through localStorage (see useBuilderContextSeed)
  *      so the engineer doesn't have to re-enter them after reload, reset,
@@ -26,10 +26,10 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import type {
   ContextObjectType,
-  ContextSlot,
+  ContextPolicy,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
 import {
   setContextEntry,
   removeContextEntry,
@@ -47,7 +47,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 // Selectors
 // =============================================================================
 
-const EMPTY_SLOTS: ContextSlot[] = [];
+const EMPTY_SLOTS: ContextPolicy[] = [];
 
 function makeSelectAgentIdForConversation(conversationId: string) {
   return (state: RootState): string | null =>
@@ -144,11 +144,11 @@ function editorStringToValue(
 // Component
 // =============================================================================
 
-interface ContextSlotsTabProps {
+interface ContextPoliciesTabProps {
   conversationId: string;
 }
 
-export function ContextSlotsTab({ conversationId }: ContextSlotsTabProps) {
+export function ContextPoliciesTab({ conversationId }: ContextPoliciesTabProps) {
   const dispatch = useAppDispatch();
   const [clearAllOpen, setClearAllOpen] = useState(false);
 
@@ -161,7 +161,7 @@ export function ContextSlotsTab({ conversationId }: ContextSlotsTabProps) {
 
   const declaredSlots =
     useAppSelector((state) =>
-      agentId ? selectAgentContextSlots(state, agentId) : undefined,
+      agentId ? selectAgentContextPolicies(state, agentId) : undefined,
     ) ?? EMPTY_SLOTS;
 
   const contextEntries =
@@ -387,7 +387,7 @@ function DeclaredSlotRow({
   onWrite,
   onClear,
 }: {
-  slot: ContextSlot;
+  slot: ContextPolicy;
   entry: InstanceContextEntry | undefined;
   onWrite: (
     key: string,

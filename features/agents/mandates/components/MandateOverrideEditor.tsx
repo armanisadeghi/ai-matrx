@@ -232,7 +232,7 @@ export function MandateOverrideEditor({
     try {
       await putMandateBinding(
         dispatch,
-        mandate.slot_key,
+        mandate.mandate_key,
         {
           principalType: principal.kind,
           organizationId:
@@ -261,7 +261,7 @@ export function MandateOverrideEditor({
     if (!binding) return;
     setRemoving(true);
     try {
-      await removeMandateBinding(dispatch, mandate.slot_key, {
+      await removeMandateBinding(dispatch, mandate.mandate_key, {
         principalType: principal.kind,
         organizationId:
           principal.kind === "org"

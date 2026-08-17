@@ -9,8 +9,8 @@
  * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md
  *
  * Resolution here mirrors the aidream funnel's shape, browser-scoped:
- * system default (agent.slot_definition, public-visible) → the caller's OWN
- * user binding (agent.slot_binding, RLS returns only rows they can see).
+ * system default (agent.mandate, public-visible) → the caller's OWN
+ * user binding (agent.mandate_binding, RLS returns only rows they can see).
  * Org-layer bindings are deliberately NOT applied client-side yet — the org
  * that owns a run's context is a server-side question; when a client surface
  * needs org bindings it goes through the server resolver, not a guess at the
@@ -70,9 +70,9 @@ export async function resolveMandate(mandateKey: string): Promise<ResolvedMandat
   const supabase = createClient();
   const { data: mandate, error } = await supabase
     .schema("agent")
-    .from("slot_definition")
-    .select("id, slot_key, default_agent_id, default_agent_version_id, use_latest, is_enabled")
-    .eq("slot_key", mandateKey)
+    .from("mandate")
+    .select("id, mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled")
+    .eq("mandate_key", mandateKey)
     .is("deleted_at", null)
     .maybeSingle();
   if (error) throw error;
@@ -101,9 +101,9 @@ export async function resolveMandate(mandateKey: string): Promise<ResolvedMandat
   if (userId) {
     const { data: binding, error: bindingError } = await supabase
       .schema("agent")
-      .from("slot_binding")
+      .from("mandate_binding")
       .select("agent_id, agent_version_id, use_latest, config_overrides, is_enabled")
-      .eq("slot_id", mandate.id)
+      .eq("mandate_id", mandate.id)
       .eq("principal_type", "user")
       .eq("subject_user_id", userId)
       .is("deleted_at", null)
@@ -171,32 +171,32 @@ export async function fetchMandatePins(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("slot_definition")
-    .select("slot_key, default_agent_id, default_agent_version_id, use_latest, is_enabled")
-    .in("slot_key", missing)
+    .from("mandate")
+    .select("mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled")
+    .in("mandate_key", missing)
     .is("deleted_at", null);
   if (error) throw error;
 
   const found = new Set<string>();
   for (const row of data ?? []) {
-    found.add(row.slot_key);
+    found.add(row.mandate_key);
     if (!row.default_agent_id) {
       // Master id is backfilled on every research mandate; a NULL here is a data
       // defect worth screaming about, not silently skipping.
       console.error(
-        `[mandates] mandate "${row.slot_key}" has no default_agent_id — backfill the master id on agent.slot_definition`,
+        `[mandates] mandate "${row.mandate_key}" has no default_agent_id — backfill the master id on agent.mandate`,
       );
       continue;
     }
     const value: MandatePin = {
-      mandateKey: row.slot_key,
+      mandateKey: row.mandate_key,
       agentId: row.default_agent_id,
       versionId: row.default_agent_version_id,
       useLatest: row.use_latest ?? false,
       isEnabled: row.is_enabled ?? true,
     };
-    pinCache.set(row.slot_key, { at: Date.now(), value });
-    out[row.slot_key] = value;
+    pinCache.set(row.mandate_key, { at: Date.now(), value });
+    out[row.mandate_key] = value;
   }
   for (const key of missing) {
     if (!found.has(key)) {

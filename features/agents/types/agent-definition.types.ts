@@ -1,5 +1,5 @@
 import type {
-  ContextSlot,
+  ContextPolicy,
   CustomToolDefinition,
   LLMParams,
 } from "@/features/agents/types/agent-api-types";
@@ -272,7 +272,24 @@ export interface AgentDefinition {
   variableDefinitions: VariableDefinition[] | null;
   settings: LLMParams;
   tools: string[]; // uuid[] → ToolRegistry
-  contextSlots: ContextSlot[];
+  contextPolicies: ContextPolicy[];
+
+  /**
+   * THE CONTEXT KILL SWITCH — the exact mirror of `autoToolsDisabled`.
+   *
+   * When true, ONLY the Context Policies declared above deliver: no ambient
+   * Scope-derived Item Values and no Surface-derived values
+   * (`current_page_content`, `selection`, `open_tabs`) reach the model.
+   * When false (the default), declared policies govern their own keys and
+   * undeclared context still flows.
+   *
+   * A gate may only NARROW: a Mandate can close what this agent would have
+   * accepted, but can never reopen what the agent refused.
+   *
+   * Persisted in `agent.definition.auto_context_disabled`. Defaults false.
+   */
+  autoContextDisabled: boolean;
+
   modelTiers: ModelTiers | null;
   outputSchema: OutputSchema | null;
   customTools: CustomToolDefinition[];
@@ -458,7 +475,8 @@ export interface PromoteVersionResult {
 export interface AgentExecutionMinimal {
   id: string;
   variable_definitions: VariableDefinition[] | null;
-  context_slots: ContextSlot[] | null;
+  context_slots: ContextPolicy[] | null;
+  auto_context_disabled: boolean;
 }
 
 /** Returned by `agx_get_execution_full(agent_id)`. */
@@ -469,7 +487,8 @@ export interface AgentExecutionFull {
   settings: LLMParams;
   tools: string[];
   custom_tools: CustomToolDefinition[];
-  context_slots: ContextSlot[] | null;
+  context_slots: ContextPolicy[] | null;
+  auto_context_disabled: boolean;
   // FE-only model-gated UI flags — projected so the chat/execution path can gate
   // attachment inputs (previously read from settings before the 2026-06 move).
   ui_gates: UiGates;
@@ -547,7 +566,8 @@ export interface AgentVersionSnapshot {
   output_schema: AgentDefinition["outputSchema"];
   tools: string[];
   custom_tools: AgentDefinition["customTools"];
-  context_slots: AgentDefinition["contextSlots"];
+  context_slots: AgentDefinition["contextPolicies"];
+  auto_context_disabled: boolean;
   category: string;
   tags: string[];
   is_active: boolean;
@@ -635,7 +655,7 @@ true satisfies typeof _agentExecutionFull;
  *
  *   null             — record exists in state but no fetch has completed yet
  *   "list"           — display fields only (name, tags, category, access metadata, …)
- *   "execution"      — minimal execution fields: variableDefinitions + contextSlots
+ *   "execution"      — minimal execution fields: variableDefinitions + contextPolicies
  *   "customExecution"— execution + settings, tools, customTools, modelId (pre-run overrides)
  *   "full"           — complete agents table row; marks record clean
  *   "versionSnapshot"— full content from agx_version; marks record clean

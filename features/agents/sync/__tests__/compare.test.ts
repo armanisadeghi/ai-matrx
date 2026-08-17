@@ -319,7 +319,7 @@ describe("compareAgentSyncSnapshots — per-field detection", () => {
       snapshot({ context_slots: [{ key: "a", v: 2 }] }),
     );
     expect(result.verdict).toBe("differs");
-    expect(result.changed.map((c) => c.field)).toEqual(["contextSlots"]);
+    expect(result.changed.map((c) => c.field)).toEqual(["contextPolicies"]);
   });
 
   it("does not let a nested key merely SPELLED like a root field go unchecked", () => {

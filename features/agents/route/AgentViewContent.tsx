@@ -10,7 +10,7 @@ import {
   selectAgentSettings,
   selectAgentTools,
   selectAgentCustomTools,
-  selectAgentContextSlots,
+  selectAgentContextPolicies,
   selectAgentModelId,
   selectAgentVersion,
   selectAgentTags,
@@ -325,8 +325,8 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
   const customTools = useAppSelector((state) =>
     selectAgentCustomTools(state, agentId),
   );
-  const contextSlots = useAppSelector((state) =>
-    selectAgentContextSlots(state, agentId),
+  const contextPolicies = useAppSelector((state) =>
+    selectAgentContextPolicies(state, agentId),
   );
   const modelId = useAppSelector((state) => selectAgentModelId(state, agentId));
   const modelLabel = useAppSelector((state) =>
@@ -372,7 +372,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
     : [];
   const totalTools = (tools?.length ?? 0) + (customTools?.length ?? 0);
   const variableCount = variables?.length ?? 0;
-  const contextSlotCount = contextSlots?.length ?? 0;
+  const contextPolicyCount = contextPolicies?.length ?? 0;
   const settingsCount = settingsEntries.length;
   const mcpCount = mcpServers?.length ?? 0;
 
@@ -639,7 +639,7 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
               <StatChip
                 icon={Layers}
                 label="context slots"
-                count={contextSlotCount}
+                count={contextPolicyCount}
                 accent="text-cyan-500"
               />
               <StatChip
@@ -771,18 +771,18 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
             )}
 
             {/* Context Slots */}
-            {contextSlots && contextSlotCount > 0 && (
+            {contextPolicies && contextPolicyCount > 0 && (
               <Card>
                 <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
                   <CardTitle className="flex items-center gap-2 text-sm">
                     <Layers className="w-4 h-4 text-cyan-500" />
-                    Context Slots ({contextSlotCount})
+                    Context Slots ({contextPolicyCount})
                   </CardTitle>
                   <CopyButtons
                     size="xs"
                     label="Context slots"
                     human={() =>
-                      contextSlots
+                      contextPolicies
                         .map((slot) =>
                           [
                             slot.key,
@@ -794,22 +794,22 @@ export function AgentViewContent({ agentId }: { agentId: string }) {
                         )
                         .join("\n")
                     }
-                    json={() => contextSlots}
+                    json={() => contextPolicies}
                     agent={() => ({
-                      kind: "agent-context-slots",
+                      kind: "agent-context-policies",
                       location: "AI Matrx — Agent view",
                       description: "Context slot definitions for this agent.",
-                      data: contextSlots,
+                      data: contextPolicies,
                       attributes: {
                         agentId: liveAgentId,
-                        count: contextSlotCount,
+                        count: contextPolicyCount,
                       },
                     })}
                   />
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-2">
-                    {contextSlots.map((slot, i) => (
+                    {contextPolicies.map((slot, i) => (
                       <div
                         key={i}
                         className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/30"

@@ -38,7 +38,7 @@ import {
   setAgentSettings,
   setAgentMessages,
   setAgentVariableDefinitions,
-  setAgentContextSlots,
+  setAgentContextPolicies,
   setAgentTools,
   setAgentCustomTools,
   setAgentMcpServers,
@@ -98,7 +98,7 @@ function extractVariationSnapshot(
     settings: a.settings ?? ({} as AgentDefinition["settings"]),
     messages: a.messages ?? [],
     variableDefinitions: a.variableDefinitions ?? null,
-    contextSlots: a.contextSlots ?? [],
+    contextPolicies: a.contextPolicies ?? [],
     tools: a.tools ?? [],
     customTools: a.customTools ?? [],
     mcpServers: a.mcpServers ?? [],
@@ -127,7 +127,7 @@ function applyVariationSnapshot(
     }),
   );
   dispatch(
-    setAgentContextSlots({ id: agentId, contextSlots: snap.contextSlots }),
+    setAgentContextPolicies({ id: agentId, contextPolicies: snap.contextPolicies }),
   );
   dispatch(setAgentTools({ id: agentId, tools: snap.tools }));
   dispatch(setAgentCustomTools({ id: agentId, customTools: snap.customTools }));
@@ -406,7 +406,7 @@ export const promoteVariationToAgent = createAsyncThunk<
         settings: synthetic.settings,
         tools: synthetic.tools ?? [],
         customTools: synthetic.customTools ?? [],
-        contextSlots: synthetic.contextSlots ?? [],
+        contextPolicies: synthetic.contextPolicies ?? [],
         mcpServers: synthetic.mcpServers ?? [],
       }),
     ).unwrap();

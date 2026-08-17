@@ -6,7 +6,7 @@
  * Shortcut for batch-creating agent Variables and Context Slots from a scope
  * type's context items — org → scope type → per-item opt-in checkboxes, with
  * an "add all" per column. Every created Variable/Context Slot is bound to its
- * source item via the same shapes `AgentContextSlotsManager` and
+ * source item via the same shapes `AgentContextPoliciesManager` and
  * `ContextItemBindingEditor` already produce for a single manual bind
  * (see `features/agents/utils/context-item-slot-mapping.ts`), so a batch-created
  * entry is indistinguishable from one bound by hand.
@@ -48,22 +48,22 @@ import {
   selectItemsLoadedForType,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import {
-  selectAgentContextSlots,
+  selectAgentContextPolicies,
   selectAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/selectors";
 import {
-  setAgentContextSlots,
+  setAgentContextPolicies,
   setAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/slice";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import {
-  buildContextSlotFromItem,
+  buildContextPolicyFromItem,
   buildVariableFromItem,
   suggestKeyFromContextItem,
   uniquifyKey,
 } from "@/features/agents/utils/context-item-slot-mapping";
-import { AgentEditAccessToggle } from "@/features/agents/components/context-slots-management/AgentEditAccessControl";
+import { AgentEditAccessToggle } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
 import {
   applyAgentEditAccess,
   decodeAgentEditAccess,
@@ -79,16 +79,16 @@ interface ScopeBatchImportBodyProps {
 
 interface RowSelection {
   variable: boolean;
-  contextSlot: boolean;
+  contextPolicy: boolean;
 }
 
 const EMPTY_SELECTION: RowSelection = {
   variable: false,
-  contextSlot: false,
+  contextPolicy: false,
 };
 
 const EMPTY_VARIABLES: VariableDefinition[] = [];
-const EMPTY_SLOTS: ContextSlot[] = [];
+const EMPTY_SLOTS: ContextPolicy[] = [];
 
 /**
  * An agent-editable scope slot writes its edits back to the scope cell it was read
@@ -131,7 +131,7 @@ export function ScopeBatchImportBody({
   const rawVariables = useAppSelector((s) =>
     selectAgentVariableDefinitions(s, agentId),
   );
-  const rawSlots = useAppSelector((s) => selectAgentContextSlots(s, agentId));
+  const rawSlots = useAppSelector((s) => selectAgentContextPolicies(s, agentId));
   const variables = rawVariables ?? EMPTY_VARIABLES;
   const slots = rawSlots ?? EMPTY_SLOTS;
 
@@ -187,17 +187,17 @@ export function ScopeBatchImportBody({
   /** A row can set access once it HAS a slot — either already added, or being added now. */
   const rowHasSlot = (itemId: string): boolean =>
     boundSlotIndexByItemId.has(itemId) ||
-    Boolean(selection[itemId]?.contextSlot);
+    Boolean(selection[itemId]?.contextPolicy);
 
-  const toggle = (itemId: string, column: "variable" | "contextSlot") => {
+  const toggle = (itemId: string, column: "variable" | "contextPolicy") => {
     setSelection((prev) => {
       const current = prev[itemId] ?? EMPTY_SELECTION;
       return { ...prev, [itemId]: { ...current, [column]: !current[column] } };
     });
     // Deselecting a not-yet-added slot drops the (now meaningless) access pick.
-    if (column === "contextSlot" && !boundSlotIndexByItemId.has(itemId)) {
+    if (column === "contextPolicy" && !boundSlotIndexByItemId.has(itemId)) {
       setAccessEdits((prev) => {
-        if (selection[itemId]?.contextSlot !== true) return prev;
+        if (selection[itemId]?.contextPolicy !== true) return prev;
         const next = { ...prev };
         delete next[itemId];
         return next;
@@ -205,7 +205,7 @@ export function ScopeBatchImportBody({
     }
   };
 
-  const addAll = (column: "variable" | "contextSlot") => {
+  const addAll = (column: "variable" | "contextPolicy") => {
     setSelection((prev) => {
       const next = { ...prev };
       for (const item of items) {
@@ -223,7 +223,7 @@ export function ScopeBatchImportBody({
     });
   };
 
-  const clearAll = (column: "variable" | "contextSlot") => {
+  const clearAll = (column: "variable" | "contextPolicy") => {
     setSelection((prev) => {
       const next = { ...prev };
       for (const item of items) {
@@ -232,7 +232,7 @@ export function ScopeBatchImportBody({
       }
       return next;
     });
-    if (column === "contextSlot") {
+    if (column === "contextPolicy") {
       setAccessEdits((prev) => {
         const next = { ...prev };
         for (const item of items) {
@@ -259,7 +259,7 @@ export function ScopeBatchImportBody({
     (i) => selection[i.id]?.variable && !boundVariableItemIds.has(i.id),
   ).length;
   const selectedSlotCount = items.filter(
-    (i) => selection[i.id]?.contextSlot && !boundSlotIndexByItemId.has(i.id),
+    (i) => selection[i.id]?.contextPolicy && !boundSlotIndexByItemId.has(i.id),
   ).length;
 
   // Every row that has (or is getting) a slot can set access.
@@ -284,7 +284,7 @@ export function ScopeBatchImportBody({
     const existingSlotKeys = new Set(slots.map((s) => s.key));
 
     const newVariables: VariableDefinition[] = [];
-    const newSlots: ContextSlot[] = [];
+    const newSlots: ContextPolicy[] = [];
 
     for (const item of items) {
       const row = selection[item.id];
@@ -296,14 +296,14 @@ export function ScopeBatchImportBody({
         existingVarNames.add(name);
         newVariables.push(buildVariableFromItem(item, { name }));
       }
-      if (row?.contextSlot && !boundSlotIndexByItemId.has(item.id)) {
+      if (row?.contextPolicy && !boundSlotIndexByItemId.has(item.id)) {
         const key = uniquifyKey(
           suggestKeyFromContextItem(item),
           existingSlotKeys,
         );
         existingSlotKeys.add(key);
         newSlots.push(
-          buildContextSlotFromItem(item, {
+          buildContextPolicyFromItem(item, {
             key,
             access: accessForItem(item.id),
             saveMode: AGENT_EDITABLE_SAVE_MODE,
@@ -341,9 +341,9 @@ export function ScopeBatchImportBody({
     }
     if (newSlots.length > 0 || updatedSlots.length > 0) {
       dispatch(
-        setAgentContextSlots({
+        setAgentContextPolicies({
           id: agentId,
-          contextSlots: [...patchedSlots, ...newSlots],
+          contextPolicies: [...patchedSlots, ...newSlots],
         }),
       );
     }
@@ -454,8 +454,8 @@ export function ScopeBatchImportBody({
                       total={items.length}
                       selectedCount={selectedSlotCount}
                       boundCount={boundSlotIndexByItemId.size}
-                      onAddAll={() => addAll("contextSlot")}
-                      onClearAll={() => clearAll("contextSlot")}
+                      onAddAll={() => addAll("contextPolicy")}
+                      onClearAll={() => clearAll("contextPolicy")}
                     />
                   </div>
                 </TableHead>
@@ -515,10 +515,10 @@ export function ScopeBatchImportBody({
                     </TableCell>
                     <TableCell>
                       <RowCheckbox
-                        checked={slotBound || row.contextSlot}
+                        checked={slotBound || row.contextPolicy}
                         disabled={slotBound}
                         badge={slotBound ? "Added" : undefined}
-                        onCheckedChange={() => toggle(item.id, "contextSlot")}
+                        onCheckedChange={() => toggle(item.id, "contextPolicy")}
                       />
                     </TableCell>
                     <TableCell>

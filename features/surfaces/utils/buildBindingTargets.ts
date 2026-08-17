@@ -7,7 +7,7 @@ import type { BindingTarget } from "@/features/surfaces/admin/columns/SurfaceVar
  * SurfaceAgentBindPanel.
  */
 export function buildBindingTargets(
-  agent: Pick<AgentDefinition, "variableDefinitions" | "contextSlots">,
+  agent: Pick<AgentDefinition, "variableDefinitions" | "contextPolicies">,
 ): BindingTarget[] {
   const targets: BindingTarget[] = [];
   const seen = new Set<string>();
@@ -21,7 +21,7 @@ export function buildBindingTargets(
       defaultValue: v.defaultValue,
     });
   }
-  for (const slot of agent.contextSlots ?? []) {
+  for (const slot of agent.contextPolicies ?? []) {
     if (seen.has(slot.key)) continue;
     seen.add(slot.key);
     targets.push({

@@ -1,7 +1,7 @@
 /**
  * Canonical mapping from a scope `ContextItem` to the two agent-side shapes that
- * can bind to it: `VariableDefinition.binding` and `ContextSlot.source` (kind
- * "ctx_item"). Used by the context-slot editor's "bind to a context item" flow
+ * can bind to it: `VariableDefinition.binding` and `ContextPolicy.source` (kind
+ * "ctx_item"). Used by the context-policy editor's "bind to a context item" flow
  * and by the scope batch-import tool — kept in one place so both never drift.
  */
 
@@ -13,8 +13,8 @@ import {
 import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
 import type {
   ContextObjectType,
-  ContextSlot,
-  ContextSlotPersist,
+  ContextPolicy,
+  ContextPolicyPersist,
 } from "@/features/agents/types/agent-api-types";
 import type {
   VariableDefinition,
@@ -38,7 +38,7 @@ export function contextItemValueTypeToSlotType(
   }
 }
 
-/** Suggests a `{{variable}}`/context-slot key from a context item's key or display name. */
+/** Suggests a `{{variable}}`/context-policy key from a context item's key or display name. */
 export function suggestKeyFromContextItem(
   item: Pick<ContextItem, "key" | "display_name">,
 ): string {
@@ -56,8 +56,8 @@ export function uniquifyKey(base: string, taken: Set<string>): string {
   return `${base}_${n}`;
 }
 
-/** Builds a `ContextSlot` bound to `item` via `source.kind = "ctx_item"`. */
-export function buildContextSlotFromItem(
+/** Builds a `ContextPolicy` bound to `item` via `source.kind = "ctx_item"`. */
+export function buildContextPolicyFromItem(
   item: ContextItem,
   opts?: {
     key?: string;
@@ -65,10 +65,10 @@ export function buildContextSlotFromItem(
     /** Whether the agent may change the value, or only read it. Defaults read-only. */
     access?: AgentEditAccess;
     /** Where an editable slot's edits go. Defaults conversation-only. */
-    saveMode?: ContextSlotPersist;
+    saveMode?: ContextPolicyPersist;
   },
-): ContextSlot {
-  const slot: ContextSlot = {
+): ContextPolicy {
+  const slot: ContextPolicy = {
     key: opts?.key ?? suggestKeyFromContextItem(item),
     type: contextItemValueTypeToSlotType(item.value_type),
     label: item.display_name,

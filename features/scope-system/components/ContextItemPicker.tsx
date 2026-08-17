@@ -4,7 +4,7 @@
  * ContextItemPicker — the ONE reusable control for choosing a scope context item:
  * organization → scope type → context item. Loads its own data and does NOT assume the
  * user has an active scope/org set (an agent author may have none). Used by both the
- * variable-binding editor and the context-slot-binding editor so they never drift.
+ * variable-binding editor and the context-policy-binding editor so they never drift.
  */
 
 import { useEffect } from "react";

@@ -25,7 +25,7 @@
  *
  * It is the ONE rail — adding a future source (artifacts, canvas items, …) is a
  * single push into `items`, never a new bespoke strip. It reuses the existing
- * openers (`ContextSlotDetailSheet`, `TaskPanel`, `ActiveContextLensChip`) — it
+ * openers (`ContextPolicyDetailSheet`, `TaskPanel`, `ActiveContextLensChip`) — it
  * does not reinvent any detail surface.
  *
  * Mobile-friendly: the most important pills stay inline; the rest collapse into
@@ -74,8 +74,8 @@ import type { InstanceContextEntry } from "@/features/agents/types/instance.type
 import {
   CONTEXT_TYPE_ICON,
   FALLBACK_CONTEXT_ICON,
-} from "@/features/agents/components/context-slots-display/contextSlotIcons";
-import { ContextSlotDetailSheet } from "@/features/agents/components/context-slots-display/ContextSlotDetailSheet";
+} from "@/features/agents/components/context-policies-display/contextPolicyIcons";
+import { ContextPolicyDetailSheet } from "@/features/agents/components/context-policies-display/ContextPolicyDetailSheet";
 import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
 import {
   isCanvasItemContextKey,
@@ -102,7 +102,7 @@ import {
   unsubscribeAgentLists,
 } from "@/features/agents/ui-first-tools/redux/agent-lists.thunks";
 import { TaskPanel } from "@/features/agents/ui-first-tools/ui/lists/TaskPanel";
-import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
 import { ActiveContextButton } from "@/features/scopes/components/active-context/ActiveContextButton";
 import { selectActiveScopeIdsByType } from "@/features/scopes/redux/selectors/active-context";
 
@@ -216,18 +216,18 @@ export function ConversationContextRail({
   // still nudge — checking active layers alone would wrongly stay silent just
   // because *something* is active. Missing this means the slot silently
   // resolves to nothing server-side with no visible explanation. ────────────
-  const agentContextSlots = useAppSelector((state) =>
-    agentId ? selectAgentContextSlots(state, agentId) : undefined,
+  const agentContextPolicies = useAppSelector((state) =>
+    agentId ? selectAgentContextPolicies(state, agentId) : undefined,
   );
   const activeScopeIdsByType = useAppSelector(selectActiveScopeIdsByType);
   const needsScope = useMemo(
     () =>
-      (agentContextSlots ?? []).some((s) => {
+      (agentContextPolicies ?? []).some((s) => {
         if (s.source?.kind !== "ctx_item") return false;
         const scopeTypeId = s.source.scope_type_id;
         return !scopeTypeId || !activeScopeIdsByType[scopeTypeId]?.length;
       }),
-    [agentContextSlots, activeScopeIdsByType],
+    [agentContextPolicies, activeScopeIdsByType],
   );
   const showSetScopeCta = needsScope;
 
@@ -682,7 +682,7 @@ function DetailSurfaces({
   return (
     <>
       {activeEntry && (
-        <ContextSlotDetailSheet
+        <ContextPolicyDetailSheet
           open={detailOpen}
           onOpenChange={setDetailOpen}
           conversationId={conversationId}

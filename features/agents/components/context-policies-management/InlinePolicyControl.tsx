@@ -3,7 +3,7 @@
 /**
  * InlinePolicyControl — the canonical three-mode inline-policy editor.
  *
- * One control + its encode/decode for the agent context-slot inline policy:
+ * One control + its encode/decode for the agent context-policy inline policy:
  *   null/undefined → "default" (the system 200-char threshold)
  *   0              → "never"  (always deferred behind ctx_get / retrieval)
  *   N (1..5000)    → "custom" ceiling

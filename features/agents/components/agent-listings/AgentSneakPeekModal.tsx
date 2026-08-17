@@ -78,7 +78,7 @@ function buildExecutionCoreJson(record: AgentDefinitionRecord): string {
       id: record.id,
       name: record.name,
       variables: (record.variableDefinitions ?? []).map((v) => v.name),
-      context_slots: (record.contextSlots ?? []).map((s) => s.key),
+      context_slots: (record.contextPolicies ?? []).map((s) => s.key),
     },
     null,
     2,

@@ -8,9 +8,9 @@
 import { createElement, forwardRef, type ComponentType } from "react";
 import { cn } from "@/lib/utils";
 import { RESOURCE_ATTACHMENT_TILE_SHELL_ADAPTIVE } from "@/features/agents/components/messages-display/user/resourceAttachmentTile.theme";
-import { resolveContextSlotTileTheme } from "./contextSlotTile.theme";
+import { resolveContextPolicyTileTheme } from "./contextPolicyTile.theme";
 
-export interface ContextSlotTileProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ContextPolicyTileProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   typeLabel: string;
   title: string;
   icon: ComponentType<{ className?: string }>;
@@ -19,10 +19,10 @@ export interface ContextSlotTileProps extends React.ButtonHTMLAttributes<HTMLBut
   tooltip?: string;
 }
 
-export const ContextSlotTile = forwardRef<
+export const ContextPolicyTile = forwardRef<
   HTMLButtonElement,
-  ContextSlotTileProps
->(function ContextSlotTile(
+  ContextPolicyTileProps
+>(function ContextPolicyTile(
   {
     typeLabel,
     title,
@@ -35,7 +35,7 @@ export const ContextSlotTile = forwardRef<
   },
   ref,
 ) {
-  const theme = resolveContextSlotTileTheme(themeKey);
+  const theme = resolveContextPolicyTileTheme(themeKey);
 
   return (
     <button

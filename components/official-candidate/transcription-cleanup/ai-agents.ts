@@ -17,7 +17,7 @@ export interface AiPostProcessAgent {
   /** Variable key that receives the full transcribed text. */
   transcriptVariableKey: string;
   /** Optional context slot key for user-typed context (slot-based agents). */
-  contextSlotKey?: string;
+  contextPolicyKey?: string;
   /** Optional variable key for user-typed context (variable-based agents). */
   contextVariableKey?: string;
 }
@@ -27,7 +27,7 @@ export const AI_POST_PROCESS_AGENTS: AiPostProcessAgent[] = [
     id: "9cae3831-9895-4ddb-97cd-2ded3d3f443b",
     name: "Transcription Cleaner Context Slots",
     transcriptVariableKey: "transcribed_text",
-    contextSlotKey: "transcription_user_context",
+    contextPolicyKey: "transcription_user_context",
   },
   {
     id: "5840be74-58e9-41c7-ae26-7deced75a5e0",

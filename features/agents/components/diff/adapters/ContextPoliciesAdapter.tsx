@@ -9,14 +9,14 @@ import type {
 import type { DiffNode } from "@/components/diff/engine/types";
 import { InlineTextDiff } from "@/components/diff/adapters/InlineTextDiff";
 
-interface ContextSlotLike {
+interface ContextPolicyLike {
   key: string;
   type?: string;
   label?: string;
   description?: string;
 }
 
-function formatSlot(slot: ContextSlotLike | undefined): string {
+function formatSlot(slot: ContextPolicyLike | undefined): string {
   if (!slot) return "—";
   const parts = [slot.key];
   if (slot.type) parts.push(`[${slot.type}]`);
@@ -25,7 +25,7 @@ function formatSlot(slot: ContextSlotLike | undefined): string {
   return parts.join(" ");
 }
 
-function ContextSlotsDiffRenderer({ node }: FieldDiffProps) {
+function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
   if (!node.children || node.children.length === 0) {
     const oldJson =
       node.oldValue != null ? JSON.stringify(node.oldValue, null, 2) : "—";
@@ -51,8 +51,8 @@ function ContextSlotsDiffRenderer({ node }: FieldDiffProps) {
   return (
     <>
       {node.children.map((child, i) => {
-        const oldSlot = child.oldValue as ContextSlotLike | undefined;
-        const newSlot = child.newValue as ContextSlotLike | undefined;
+        const oldSlot = child.oldValue as ContextPolicyLike | undefined;
+        const newSlot = child.newValue as ContextPolicyLike | undefined;
         const slotKey = newSlot?.key ?? oldSlot?.key ?? child.key;
 
         // Edited slot → word/line-level diff so only the changed text is tinted.
@@ -116,10 +116,10 @@ function ContextSlotsDiffRenderer({ node }: FieldDiffProps) {
   );
 }
 
-export const ContextSlotsAdapter: FieldAdapter = {
+export const ContextPoliciesAdapter: FieldAdapter = {
   label: "Context Slots",
   icon: Layers,
-  renderDiff: ContextSlotsDiffRenderer,
+  renderDiff: ContextPoliciesDiffRenderer,
   toSummaryText: (node) => {
     if (!node.children) return "Context slots changed";
     const changed = node.children.filter(

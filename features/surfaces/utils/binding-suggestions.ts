@@ -35,7 +35,7 @@ export interface MapperAgentInfo {
   name: string;
   description?: string | null;
   variableDefinitions: AgentDefinition["variableDefinitions"];
-  contextSlots: AgentDefinition["contextSlots"];
+  contextPolicies: AgentDefinition["contextPolicies"];
 }
 
 /** Build the mapper mandate's variable payload from live client state. */
@@ -74,7 +74,7 @@ export function buildMapperVariables(args: {
       required: v.required ?? false,
       default_value: v.defaultValue ?? null,
     })),
-    ...(args.agent.contextSlots ?? []).map((s) => ({
+    ...(args.agent.contextPolicies ?? []).map((s) => ({
       name: s.key,
       kind: "context_slot" as const,
       label: s.label ?? s.key,

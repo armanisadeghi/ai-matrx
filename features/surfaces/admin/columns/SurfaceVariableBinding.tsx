@@ -47,7 +47,7 @@ import {
  */
 
 export interface BindingTarget {
-  /** Variable / context-slot name as stored on the agent. */
+  /** Variable / context-policy name as stored on the agent. */
   name: string;
   /** Optional pre-formatted label. Falls back to the prettified name. */
   label?: string;

@@ -11,7 +11,7 @@
  */
 
 export interface ValuePromptField {
-  /** Target name on the agent (variable or context-slot key). */
+  /** Target name on the agent (variable or context-policy key). */
   name: string;
   /** Prompt text shown above the input. */
   prompt: string;

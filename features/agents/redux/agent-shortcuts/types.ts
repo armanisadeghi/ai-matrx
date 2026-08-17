@@ -1,5 +1,5 @@
 import type {
-  ContextSlot,
+  ContextPolicy,
   LLMParams,
 } from "@/features/agents/types/agent-api-types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
@@ -61,7 +61,7 @@ export interface AgentShortcut {
   //     silently dropping every variable.
   agentName: string | null;
   variableDefinitions: VariableDefinition[];
-  contextSlots: ContextSlot[];
+  contextPolicies: ContextPolicy[];
 
   // ── Where the shortcut appears + scope→agent key routing ────────────
   /** App features/surfaces where this shortcut is available (chat, notes, code-editor, …). */
@@ -76,7 +76,7 @@ export interface AgentShortcut {
   scopeMappings: Record<string, string> | null;
   /**
    * Successor to `scopeMappings`. Canonical DSL direction: keyed by AGENT
-   * variable / context-slot name; each value is a rich ValueMapping
+   * variable / context-policy name; each value is a rich ValueMapping
    * (surface_value | direct_value | prompt_user | unmapped) whose `target`
    * names the surface value. Reads should go through
    * `resolveShortcutMappings()`, which layers this over the promoted legacy
@@ -93,7 +93,7 @@ export interface AgentShortcut {
    * absent as null.
    */
   writePolicies?: WritePolicyMap | null;
-  /** UI scope key → agent context-slot key. Parity with scopeMappings. */
+  /** UI scope key → agent context-policy key. Parity with scopeMappings. */
   contextMappings: Record<string, string> | null;
 
   // ── AgentExecutionConfig bundle (persisted) ──────────────────────────
@@ -207,7 +207,7 @@ export interface AgentShortcutInitialRow {
   // Agent data from the RESOLVED version (ready for execution — no second fetch needed)
   agent_name: string;
   agent_variable_definitions: VariableDefinition[] | null;
-  agent_context_slots: ContextSlot[] | null;
+  agent_context_slots: ContextPolicy[] | null;
 }
 type _CheckAgentShortcutInitialRow =
   AgentShortcutInitialRow extends Database["public"]["Functions"]["agx_get_shortcuts_initial"]["Returns"][number]
@@ -300,7 +300,7 @@ export interface AgentShortcutMenuItem {
   agent: {
     name: string;
     variable_definitions: VariableDefinition[] | null;
-    context_slots: ContextSlot[] | null;
+    context_slots: ContextPolicy[] | null;
   } | null;
 }
 

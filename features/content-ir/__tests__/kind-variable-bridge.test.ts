@@ -16,7 +16,7 @@
  */
 
 import {
-  contextSlotsToKindFields,
+  contextPoliciesToKindFields,
   kindFieldsToVariableDefinitions,
   LIST_HELP_TEXT,
   structuredJsonHelpText,
@@ -35,7 +35,7 @@ import {
 } from "@/features/agents/types/agent-definition.types";
 import type {
   ContextObjectType,
-  ContextSlot,
+  ContextPolicy,
 } from "@/features/agents/types/agent-api-types";
 
 const makeSchema = (fields: KindSchema["fields"]): KindSchema => ({
@@ -548,10 +548,10 @@ describe("variableDefinitionsToKindFields", () => {
 });
 
 // ---------------------------------------------------------------------------
-// 3) contextSlotsToKindFields — every ContextObjectType member
+// 3) contextPoliciesToKindFields — every ContextObjectType member
 // ---------------------------------------------------------------------------
 
-describe("contextSlotsToKindFields", () => {
+describe("contextPoliciesToKindFields", () => {
   // Compile-time exhaustive over ContextObjectType.
   const SLOT_EXPECTATIONS: Record<
     ContextObjectType,
@@ -574,15 +574,15 @@ describe("contextSlotsToKindFields", () => {
       [ContextObjectType, { type: FieldSchema["type"]; loss: boolean }]
     >;
     for (const [slotType, expected] of entries) {
-      const slot: ContextSlot = { key: `k_${slotType}`, type: slotType };
-      const { fields, losses } = contextSlotsToKindFields([slot]);
+      const slot: ContextPolicy = { key: `k_${slotType}`, type: slotType };
+      const { fields, losses } = contextPoliciesToKindFields([slot]);
       expect(fields[`k_${slotType}`].type).toBe(expected.type);
       expect(losses.length > 0).toBe(expected.loss);
     }
   });
 
   it("text → string with no loss and no required (slots are always optional)", () => {
-    const { fields, losses } = contextSlotsToKindFields([
+    const { fields, losses } = contextPoliciesToKindFields([
       { key: "summary", type: "text", label: "Summary" },
     ]);
     expect(fields.summary).toStrictEqual({ type: "string" });
@@ -590,7 +590,7 @@ describe("contextSlotsToKindFields", () => {
   });
 
   it("json → record-of-strings with an explicit narrowing loss", () => {
-    const { fields, losses } = contextSlotsToKindFields([
+    const { fields, losses } = contextPoliciesToKindFields([
       { key: "payload", type: "json" },
     ]);
     expect(fields.payload).toStrictEqual({ type: "record", values: "string" });
@@ -599,7 +599,7 @@ describe("contextSlotsToKindFields", () => {
   });
 
   it("structured reference slots → string with a loss naming the slot type", () => {
-    const { fields, losses } = contextSlotsToKindFields([
+    const { fields, losses } = contextPoliciesToKindFields([
       { key: "row", type: "db_ref" },
     ]);
     expect(fields.row).toStrictEqual({ type: "string" });
@@ -608,7 +608,7 @@ describe("contextSlotsToKindFields", () => {
   });
 
   it("duplicate slot keys overwrite (last wins) and record a loss", () => {
-    const { fields, losses } = contextSlotsToKindFields([
+    const { fields, losses } = contextPoliciesToKindFields([
       { key: "dup", type: "text" },
       { key: "dup", type: "text" },
     ]);

@@ -28,7 +28,7 @@ import {
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { UserActionBar } from "./UserActionBar";
 import { FirstTurnVariables } from "./FirstTurnVariables";
-import { ContextSlotChipStrip } from "@/features/agents/components/context-slots-display/ContextSlotChipStrip";
+import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
@@ -40,7 +40,7 @@ import type { RootState } from "@/lib/redux/store";
 /**
  * User-attached resource block types (`input_notes`, `input_task`, media, …).
  * These are ALWAYS rendered as attachment chips from `content[]` — never in the
- * context-slot strip. Mixing them in was the "note shows twice / id-only
+ * context-policy strip. Mixing them in was the "note shows twice / id-only
  * context chip" bug: `model_context.input_items` duplicates what content blocks
  * already carry, and attachments are auto-included for the model — unlike
  * ambient context entries the agent may defer-fetch via ctx_get.
@@ -97,7 +97,7 @@ export function AgentUserMessage({
   compact = false,
 }: AgentUserMessageProps) {
   const record = useAppSelector(selectMessageById(conversationId, messageId));
-  // The agent driving this conversation — used by ContextSlotChipStrip to
+  // The agent driving this conversation — used by ContextPolicyChipStrip to
   // resolve slot definitions for type/label/description on each chip.
   const agentId = useAppSelector(
     (state: RootState) =>
@@ -280,7 +280,7 @@ export function AgentUserMessage({
                 bubble lie, showing the current context as if the model had seen
                 it. Neither source → show nothing (honest). */}
             {contextSnapshot && contextSnapshot.length > 0 && (
-              <ContextSlotChipStrip
+              <ContextPolicyChipStrip
                 conversationId={conversationId}
                 agentId={agentId}
                 entries={contextSnapshot}

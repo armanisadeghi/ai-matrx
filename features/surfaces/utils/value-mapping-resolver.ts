@@ -4,7 +4,7 @@
  * values + context entries + pending user-prompts.
  *
  * Direction note: this resolver runs in the **forward** direction —
- *   keys = agent variable / context-slot / tool-arg names
+ *   keys = agent variable / context-policy / tool-arg names
  *   values = `ValueMapping` describing where each target gets its data.
  *
  * The legacy resolver in `features/agents/utils/scope-mapping.ts` runs in the
@@ -24,7 +24,7 @@ import type {
 } from "@/features/agents/types/scope.types";
 import type {
   ContextObjectType,
-  ContextSlot,
+  ContextPolicy,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
@@ -39,7 +39,7 @@ import { isValueMappingMap } from "@/features/surfaces/types";
 // ---------------------------------------------------------------------------
 
 export interface PendingPrompt {
-  /** Target name on the agent (variable or context-slot key). */
+  /** Target name on the agent (variable or context-policy key). */
   targetName: string;
   /** Whether this resolves into a `variable` or a `contextEntry`. */
   targetKind: "variable" | "context_slot";
@@ -101,7 +101,7 @@ function inferContextType(value: unknown): ContextObjectType {
 function classifyTarget(
   name: string,
   variableNames: Set<string>,
-  slotMap: Map<string, ContextSlot | { key: string; type?: ContextObjectType; label?: string }>,
+  slotMap: Map<string, ContextPolicy | { key: string; type?: ContextObjectType; label?: string }>,
 ): "variable" | "context_slot" | "unknown" {
   if (variableNames.has(name)) return "variable";
   if (slotMap.has(name)) return "context_slot";
@@ -112,7 +112,7 @@ function pushContextEntry(
   out: InstanceContextEntry[],
   targetName: string,
   value: unknown,
-  slotMap: Map<string, ContextSlot | { key: string; type?: ContextObjectType; label?: string }>,
+  slotMap: Map<string, ContextPolicy | { key: string; type?: ContextObjectType; label?: string }>,
 ): void {
   const slot = slotMap.get(targetName);
   out.push({
@@ -132,7 +132,7 @@ export function resolveValueMappings(
   applicationScope: ApplicationScope,
   valueMappings: ValueMappingMap | null | undefined,
   variableDefinitions: VariableDefinition[] | null | undefined,
-  contextSlots:
+  contextPolicies:
     | Array<{ key: string; type?: ContextObjectType; label?: string }>
     | null
     | undefined,
@@ -141,7 +141,7 @@ export function resolveValueMappings(
   const { forToolArgs = false, autoNameMatch = true } = opts;
 
   const defs = variableDefinitions ?? [];
-  const slots = contextSlots ?? [];
+  const slots = contextPolicies ?? [];
   const variableNames = new Set(defs.map((v) => v.name));
   const slotMap = new Map<string, { key: string; type?: ContextObjectType; label?: string }>(
     slots.map((s) => [s.key, s]),
@@ -320,13 +320,13 @@ function writeResolvedValue(
 export function applyResolvedPrompts(
   result: ValueMappingResolveResult,
   answers: Record<string, unknown>,
-  contextSlots:
+  contextPolicies:
     | Array<{ key: string; type?: ContextObjectType; label?: string }>
     | null
     | undefined,
 ): ValueMappingResolveResult {
   const slotMap = new Map<string, { key: string; type?: ContextObjectType; label?: string }>(
-    (contextSlots ?? []).map((s) => [s.key, s]),
+    (contextPolicies ?? []).map((s) => [s.key, s]),
   );
   for (const prompt of result.pendingPrompts) {
     const v = answers[prompt.targetName];

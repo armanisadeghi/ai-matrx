@@ -243,11 +243,17 @@ export function buildSiteIntegrations(
     );
   }
   const root = isRecord(existing) ? existing : {};
+  const existingMarketing = isRecord(root.marketing) ? root.marketing : {};
+  const existingProviders = isRecord(existingMarketing.providers)
+    ? existingMarketing.providers
+    : {};
   return {
     ...root,
     marketing: {
+      ...existingMarketing,
       schema_version: 1,
       providers: {
+        ...existingProviders,
         google_search_console: providerDocument(draft.googleSearchConsole),
         google_analytics_4: providerDocument(draft.googleAnalytics4),
         pagespeed_insights: providerDocument(draft.pageSpeedInsights),

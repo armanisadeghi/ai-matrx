@@ -471,7 +471,7 @@ export function SurfaceAgentBindPanel({
                 name: agentName,
                 description: agent?.description ?? "",
                 variableDefinitions: agent?.variableDefinitions ?? [],
-                contextSlots: agent?.contextSlots ?? [],
+                contextPolicies: agent?.contextPolicies ?? [],
               }}
               availableSurfaceValues={availableSurfaceValues}
               writeTargets={getManifest(surfaceName)?.writeTargets ?? []}

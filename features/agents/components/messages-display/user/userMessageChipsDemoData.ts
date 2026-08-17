@@ -1,6 +1,6 @@
 import type {
   ContextObjectType,
-  ContextSlot,
+  ContextPolicy,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
@@ -219,7 +219,7 @@ export const DEMO_MULTI_ENTRIES: InstanceContextEntry[] = [
 export const DEMO_TYPE_ENTRIES: {
   type: ContextObjectType;
   entry: InstanceContextEntry;
-  slot?: ContextSlot;
+  slot?: ContextPolicy;
 }[] = [
   {
     type: "text",

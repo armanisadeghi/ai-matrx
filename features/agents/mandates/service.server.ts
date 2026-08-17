@@ -6,7 +6,7 @@ import "server-only";
  * before first paint (`/chat/new`, the cx-chat demo pages).
  *
  * Same doctrine as the client resolver (see service.ts): system default
- * (agent.slot_definition, public-visible) → the caller's OWN user binding
+ * (agent.mandate, public-visible) → the caller's OWN user binding
  * (RLS-scoped). Org bindings stay server-of-aidream business. Floating-only —
  * a version-pinned mandate throws, because the client run path the page hands
  * off to has no version channel.
@@ -30,11 +30,11 @@ export async function resolveMandateServer(
   const supabase = await createClient();
   const { data: mandate, error } = await supabase
     .schema("agent")
-    .from("slot_definition")
+    .from("mandate")
     .select(
-      "id, slot_key, default_agent_id, default_agent_version_id, use_latest, is_enabled",
+      "id, mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled",
     )
-    .eq("slot_key", mandateKey)
+    .eq("mandate_key", mandateKey)
     .is("deleted_at", null)
     .maybeSingle();
   if (error) throw error;
@@ -61,9 +61,9 @@ export async function resolveMandateServer(
   if (userId) {
     const { data: binding, error: bindingError } = await supabase
       .schema("agent")
-      .from("slot_binding")
+      .from("mandate_binding")
       .select("agent_id, agent_version_id, use_latest, config_overrides, is_enabled")
-      .eq("slot_id", mandate.id)
+      .eq("mandate_id", mandate.id)
       .eq("principal_type", "user")
       .eq("subject_user_id", userId)
       .is("deleted_at", null)

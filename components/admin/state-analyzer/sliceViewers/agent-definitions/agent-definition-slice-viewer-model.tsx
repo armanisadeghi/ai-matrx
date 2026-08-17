@@ -85,7 +85,7 @@ export function useAgentDefinitionSliceViewModel(
         : null,
     })) ?? [];
 
-  const slots = record?.contextSlots ?? [];
+  const slots = record?.contextPolicies ?? [];
   const slotRows = slots.map((s) => [
     s.key,
     String(s.type),

@@ -458,7 +458,7 @@ type EditableShortcut = Omit<
   | "isVersion"
   | "agentName"
   | "variableDefinitions"
-  | "contextSlots"
+  | "contextPolicies"
   | "agentId"
 > & SettingsFields;
 
@@ -552,7 +552,7 @@ function editableToFormData(form: EditableShortcut, agent: AgentDefinition) {
     agentId: agent.id,
     agentName: agent.name,
     variableDefinitions: agent.variableDefinitions ?? [],
-    contextSlots: agent.contextSlots ?? [],
+    contextPolicies: agent.contextPolicies ?? [],
     resolvedId: form.useLatest ? agent.id : form.agentVersionId ?? agent.id,
     isVersion: !form.useLatest && form.agentVersionId != null,
   };
@@ -580,7 +580,7 @@ function buildBindingTargets(agent: AgentDefinition): BindingTarget[] {
       required: v.required ?? false,
     });
   }
-  for (const slot of agent.contextSlots ?? []) {
+  for (const slot of agent.contextPolicies ?? []) {
     if (seen.has(slot.key)) continue;
     seen.add(slot.key);
     out.push({ name: slot.key, label: slot.label, description: slot.description });

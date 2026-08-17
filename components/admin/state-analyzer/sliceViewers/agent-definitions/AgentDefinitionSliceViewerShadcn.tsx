@@ -291,7 +291,7 @@ export default function AgentDefinitionSliceViewerShadcn({
               <CompactPre>{safeFormat(record.settings)}</CompactPre>
 
               <Separator className="my-1" />
-              <SectionTitle>contextSlots</SectionTitle>
+              <SectionTitle>contextPolicies</SectionTitle>
               {slotRows.length === 0 ? (
                 <div className="text-[11px] text-muted-foreground">—</div>
               ) : (

@@ -68,7 +68,7 @@ const KNOWN_TOP_LEVEL_KEYS = new Set([
   "settings",
   "tools",
   "context_slots",
-  "contextSlots",
+  "contextPolicies",
   "model_tiers",
   "modelTiers",
   "output_schema",
@@ -761,7 +761,7 @@ function analyzeTopLevelShape(
   analyzeTools(raw.tools, toolIndex, issues);
 
   const arrayFields: Array<[string, unknown]> = [
-    ["context_slots", raw.context_slots ?? raw.contextSlots],
+    ["context_slots", raw.context_slots ?? raw.contextPolicies],
     ["custom_tools", raw.custom_tools ?? raw.customTools],
     ["mcp_servers", raw.mcp_servers ?? raw.mcpServers],
   ];

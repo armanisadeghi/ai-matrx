@@ -103,7 +103,7 @@ export function useAgentSaveAction(
             settings: agentRecord.settings,
             tools: agentRecord.tools,
             customTools: agentRecord.customTools,
-            contextSlots: agentRecord.contextSlots,
+            contextPolicies: agentRecord.contextPolicies,
             category: agentRecord.category,
             tags: agentRecord.tags,
             isActive: agentRecord.isActive,

@@ -124,7 +124,7 @@ export const refreshSurfaceScope = createAsyncThunk<
       shortcut?.scopeMappings ?? null,
       surfaceMappings,
       variableDefinitions,
-      agent?.contextSlots ?? [],
+      agent?.contextPolicies ?? [],
       shortcut?.contextMappings ?? null,
     );
 

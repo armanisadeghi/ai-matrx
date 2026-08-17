@@ -123,7 +123,7 @@ function makeState(
           mcpServers: partial.mcpServers ?? [],
           settings: partial.settings ?? {},
           variableDefinitions: partial.variableDefinitions ?? [],
-          contextSlots: [],
+          contextPolicies: [],
           parentAgentId: partial.parentAgentId ?? null,
           isVersion: partial.isVersion ?? false,
         },

@@ -111,6 +111,13 @@ const groups: SurfaceValueGroup[] = [
       "The connected Google accounts and the Search Console / Analytics properties they expose — reference metadata only, never credentials.",
   },
   {
+    key: "search_discovery",
+    label: "Search discovery",
+    sortOrder: 250,
+    description:
+      "How URL changes enter the discovery pipeline and the latest evidence returned by IndexNow and Google.",
+  },
+  {
     key: "editor_state",
     label: "Editor state",
     sortOrder: 300,
@@ -153,6 +160,53 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 2,
     sortOrder: 420,
     group: "bindings",
+  },
+
+  // ── URL change discovery ─────────────────────────────────────────────
+  {
+    name: "url_change_discovery",
+    label: "URL change intake",
+    description:
+      "Composite URL-change setup and evidence shown on this page: automatic Matrx CMS/crawler sources, external-webhook configuration, IndexNow key location, evidence loading/error state, and recent provider receipts. Always present; evidence is an empty array before the first change or while loading.",
+    valueType: "object",
+    alwaysAvailable: true,
+    typicalCharCount: 2500,
+    sortOrder: 450,
+    group: "search_discovery",
+  },
+  {
+    name: "url_change_webhook_configured",
+    label: "External webhook configured",
+    description:
+      "True when this site has a stored external-CMS URL-change webhook hash or the user generated one in the current session. Always present; no token or hash is included.",
+    valueType: "boolean",
+    alwaysAvailable: true,
+    typicalCharCount: 5,
+    sortOrder: 460,
+    group: "search_discovery",
+  },
+  {
+    name: "indexnow_key_location",
+    label: "IndexNow key location",
+    description:
+      "The exact public root URL where this site must serve its deterministic IndexNow ownership key. Always present; Matrx CMS serves it automatically and external sites must publish it themselves.",
+    valueType: "string",
+    alwaysAvailable: true,
+    typicalCharCount: 120,
+    sortOrder: 470,
+    group: "search_discovery",
+  },
+  {
+    name: "url_change_evidence",
+    label: "Recent provider evidence",
+    description:
+      "Up to twelve recent IndexNow and Google URL Inspection rows shown on this page: canonical page id/URL, provider, check time, and provider evidence. Always present; empty before the first change or while evidence is loading.",
+    valueType: "array",
+    alwaysAvailable: true,
+    typicalCharCount: 2200,
+    autoContext: false,
+    sortOrder: 480,
+    group: "search_discovery",
   },
 
   // ── Google account inventory ──────────────────────────────────────────
@@ -263,6 +317,10 @@ export function createMarketingIntegrationsScope(values: {
   // Own alwaysAvailable: true → required
   provider_bindings: Record<string, unknown>;
   custom_provider_count: number;
+  url_change_discovery: Record<string, unknown>;
+  url_change_webhook_configured: boolean;
+  indexnow_key_location: string;
+  url_change_evidence: ReadonlyArray<Record<string, unknown>>;
   unsaved_changes: boolean;
   configuration_issues: ReadonlyArray<Record<string, unknown>>;
   // alwaysAvailable: false → optional

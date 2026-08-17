@@ -89,7 +89,7 @@ export interface SurfaceValue {
   /**
    * Whether this value is AUTOMATICALLY added to the agent's context when the
    * surface emits it at launch (true, the default), or only available for
-   * explicit variable/context-slot mapping (false). The point of `false` is
+   * explicit variable/context-policy mapping (false). The point of `false` is
    * signal-to-noise: a surface can declare 25 values so binding UIs offer
    * them, while auto-context stays limited to what an agent on this surface
    * genuinely needs (an id, the content, the cursor) — everything else is
@@ -533,7 +533,7 @@ export type ValueMapping =
       mapType: "unmapped";
     };
 
-/** Keys are agent variable / context-slot names, or tool arg names. */
+/** Keys are agent variable / context-policy names, or tool arg names. */
 export type ValueMappingMap = Record<string, ValueMapping>;
 
 // ---------------------------------------------------------------------------

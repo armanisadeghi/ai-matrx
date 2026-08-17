@@ -34,7 +34,7 @@ export { parsePasted } from "./agent-import-parse";
 const SNAKE_TO_CAMEL: Record<string, keyof AgentDefinition> = {
   variable_definitions: "variableDefinitions",
   model_id: "modelId",
-  context_slots: "contextSlots",
+  context_slots: "contextPolicies",
   agent_type: "agentType",
   model_tiers: "modelTiers",
   output_schema: "outputSchema",
@@ -134,8 +134,8 @@ export function applyAgentDefaults(
     variableDefinitions: partial.variableDefinitions ?? null,
     settings: partial.settings ?? ({} as AgentDefinition["settings"]),
     tools: Array.isArray(partial.tools) ? partial.tools : [],
-    contextSlots: Array.isArray(partial.contextSlots)
-      ? partial.contextSlots
+    contextPolicies: Array.isArray(partial.contextPolicies)
+      ? partial.contextPolicies
       : [],
     modelTiers: partial.modelTiers ?? null,
     outputSchema: partial.outputSchema ?? null,

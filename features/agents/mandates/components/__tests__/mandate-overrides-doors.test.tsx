@@ -53,7 +53,7 @@ jest.mock("../../overrides", () => ({
             mandates: [
                 {
                     id: "mandate1",
-                    slot_key: "research.analyze",
+                    mandate_key: "research.analyze",
                     label: "Analyze findings",
                     description: null,
                     is_enabled: true,
@@ -69,7 +69,7 @@ jest.mock("../../overrides", () => ({
             bindings: [
                 {
                     id: "b1",
-                    slot_id: "mandate1",
+                    mandate_id: "mandate1",
                     principal_type: "org",
                     organization_id: "org-9",
                     subject_user_id: null,

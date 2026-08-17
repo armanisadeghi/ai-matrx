@@ -293,7 +293,7 @@ export default function AgentDefinitionSliceViewer({
 
             <section className="space-y-px">
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                contextSlots
+                contextPolicies
               </div>
               <MiniTable
                 headers={[

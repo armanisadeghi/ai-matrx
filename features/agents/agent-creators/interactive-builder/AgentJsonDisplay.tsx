@@ -361,7 +361,7 @@ function PrettyView({
             icon={Puzzle}
             label={`Context Slots (${data.context_slots.length})`}
           />
-          <ContextSlotsTable slots={data.context_slots} />
+          <ContextPoliciesTable slots={data.context_slots} />
         </section>
       )}
 
@@ -577,7 +577,7 @@ function VariablesTable({
   );
 }
 
-function ContextSlotsTable({
+function ContextPoliciesTable({
   slots,
 }: {
   slots: NonNullable<PartialAgentData["context_slots"]>;

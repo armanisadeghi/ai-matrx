@@ -320,14 +320,14 @@ export type CustomToolDefinition = components["schemas"]["CustomTool"];
  *   - "never":  in-memory only — never persisted.
  *   - "client": client owns persistence; server emits a `context_changed` event.
  */
-export type ContextSlotPersist = "auto" | "never" | "client";
+export type ContextPolicyPersist = "auto" | "never" | "client";
 
 /**
  * Tells the server-side writeback dispatcher where the row lives for a
  * mutable, auto-persisted slot. Schema is intentionally open — the dispatcher
  * interprets `kind` and uses `id` / `field` / `extra` per handler.
  */
-export interface ContextSlotSource {
+export interface ContextPolicySource {
   kind: string;
   id?: string;
   field?: string;
@@ -348,7 +348,7 @@ export interface ContextSlotSource {
   on_missing?: string;
 }
 
-export interface ContextSlot {
+export interface ContextPolicy {
   key: string;
   type: ContextObjectType;
   label?: string;
@@ -375,10 +375,10 @@ export interface ContextSlot {
    * `false`. Persistence behaviour is controlled by `persist`.
    */
   mutable?: boolean;
-  /** Only meaningful when `mutable=true`. See `ContextSlotPersist`. */
-  persist?: ContextSlotPersist;
+  /** Only meaningful when `mutable=true`. See `ContextPolicyPersist`. */
+  persist?: ContextPolicyPersist;
   /** Required when `persist="auto"`. */
-  source?: ContextSlotSource;
+  source?: ContextPolicySource;
 }
 
 /** Response from ctx_get(mode="full") */

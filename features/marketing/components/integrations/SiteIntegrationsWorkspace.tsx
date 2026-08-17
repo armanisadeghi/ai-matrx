@@ -2,7 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import {
   AlertTriangle,
   BarChart3,
@@ -35,7 +40,11 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import { createMarketingIntegrationsScope } from "@/features/surfaces/manifests/marketing-integrations.manifest";
+import {
+  createMarketingIntegrationsScope,
+  marketingIntegrationsManifest,
+} from "@/features/surfaces/manifests/marketing-integrations.manifest";
+import { surfaceValueLabels } from "@/features/surfaces/utils/surface-display";
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import {
@@ -59,7 +68,7 @@ import { marketingKeys } from "@/features/marketing/data/hooks";
 import { syncGsc } from "@/features/marketing/crawler/direct-client";
 import { useSiteCommandRun } from "@/features/marketing/data/useSiteCommandRun";
 import { syncGscSearchPerformance } from "@/features/marketing/search-console/sync";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   BackendFailureDetails,
   formatCompactDate,
@@ -97,6 +106,61 @@ import type { MarketingSite } from "@/features/marketing/types";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 import { GOOGLE_SEARCH_CONSOLE_PROVIDER } from "@/features/marketing/lib/provider-names";
+import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { isJsonObject } from "@/types/json";
+import {
+  listUrlChangeEvidence,
+  type UrlChangeEvidenceRow,
+} from "@/features/marketing/data/url-change-evidence";
+
+const integrationValueLabels = surfaceValueLabels(
+  marketingIntegrationsManifest,
+);
+
+interface UrlChangeWebhookSetup {
+  webhookUrl: string;
+}
+
+function base64Url(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function hex(bytes: ArrayBuffer): string {
+  return [...new Uint8Array(bytes)]
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function indexNowKeyLocation(site: MarketingSite): string {
+  const key = site.id.toLowerCase().replace(/[^0-9a-f]/g, "");
+  return `${site.root_url.replace(/\/$/, "")}/${key}.txt`;
+}
+
+function urlChangeWebhookConfigured(site: MarketingSite): boolean {
+  if (!isJsonObject(site.integrations)) return false;
+  const marketing = isJsonObject(site.integrations.marketing)
+    ? site.integrations.marketing
+    : {};
+  const webhook = isJsonObject(marketing.url_change_webhook)
+    ? marketing.url_change_webhook
+    : {};
+  return typeof webhook.token_sha256 === "string";
+}
+
+function urlChangeEvidenceForScope(
+  rows: UrlChangeEvidenceRow[] | undefined,
+): Array<Record<string, unknown>> {
+  return (rows ?? []).map((row) => ({
+    page_id: row.page_id,
+    url: row.page?.url ?? null,
+    provider: row.source_type,
+    last_checked_at: row.last_checked_at,
+    evidence: isJsonObject(row.evidence) ? row.evidence : {},
+  }));
+}
 
 const authorityLabels: Record<CredentialAuthority, string> = {
   user_secret: "Personal vault credential",
@@ -152,9 +216,14 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
   const { getBaseValues } = useMarketingSiteSurfaceBase();
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
+  const apiBaseUrl = useAppSelector(selectResolvedBaseUrl);
   const googleInventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
   const google = useGoogleAPI();
+  const urlChangeEvidenceQuery = useQuery({
+    queryKey: ["marketing", "url-change-evidence", site.id],
+    queryFn: () => listUrlChangeEvidence(site.id),
+  });
   const [googleConnectionOwner, setGoogleConnectionOwner] = useState<
     "organization" | "user" | null
   >(null);
@@ -163,6 +232,8 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
     "organization" | "user" | null
   >(null);
   const [ga4DisclosureAccepted, setGa4DisclosureAccepted] = useState(false);
+  const [urlChangeWebhook, setUrlChangeWebhook] =
+    useState<UrlChangeWebhookSetup | null>(null);
   const initial = useMemo(
     () => parseSiteIntegrations(site.integrations),
     [site],
@@ -211,6 +282,54 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
       void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
     },
     onError: (error) => toast.error(error.message),
+  });
+  const configureUrlChangeWebhook = useMutation({
+    mutationFn: async () => {
+      if (!apiBaseUrl) {
+        throw new Error("The Matrx server address is not configured.");
+      }
+      const tokenBytes = crypto.getRandomValues(new Uint8Array(32));
+      const token = base64Url(tokenBytes);
+      const tokenSha256 = hex(
+        await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)),
+      );
+      const root = isJsonObject(site.integrations) ? site.integrations : {};
+      const marketing = isJsonObject(root.marketing) ? root.marketing : {};
+      const integrations = {
+        ...root,
+        marketing: {
+          ...marketing,
+          url_change_webhook: {
+            enabled: true,
+            token_sha256: tokenSha256,
+            rotated_at: new Date().toISOString(),
+          },
+        },
+      };
+      const updatedSite = await updateSiteIntegrations({
+        siteId: site.id,
+        expectedVersion: site.version,
+        integrations,
+      });
+      return {
+        updatedSite,
+        setup: {
+          webhookUrl: `${apiBaseUrl.replace(/\/$/, "")}/web-url-changes/${site.id}/${token}`,
+        } satisfies UrlChangeWebhookSetup,
+      };
+    },
+    onSuccess: ({ setup, updatedSite }) => {
+      queryClient.setQueryData(marketingKeys.site(site.id), updatedSite);
+      void queryClient.invalidateQueries({ queryKey: marketingKeys.root });
+      setUrlChangeWebhook(setup);
+      toast.success("URL change webhook ready", {
+        description: "Copy it now. Rotating again invalidates this token.",
+      });
+    },
+    onError: (error) =>
+      toast.error("Could not configure URL change intake", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      }),
   });
 
   const setBuiltIn = (
@@ -676,6 +795,24 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
             display_name: resource.display_name,
           })),
           gsc_synced_at: site.gsc_synced_at ?? undefined,
+          url_change_webhook_configured:
+            urlChangeWebhookConfigured(site) || urlChangeWebhook !== null,
+          indexnow_key_location: indexNowKeyLocation(site),
+          url_change_evidence: urlChangeEvidenceForScope(
+            urlChangeEvidenceQuery.data,
+          ),
+          url_change_discovery: {
+            managed_cms_automatic: true,
+            crawler_detection_automatic: true,
+            external_webhook_configured:
+              urlChangeWebhookConfigured(site) || urlChangeWebhook !== null,
+            indexnow_key_location: indexNowKeyLocation(site),
+            evidence: urlChangeEvidenceForScope(urlChangeEvidenceQuery.data),
+            evidence_loading: urlChangeEvidenceQuery.isLoading,
+            evidence_error: urlChangeEvidenceQuery.isError
+              ? urlChangeEvidenceQuery.error.message
+              : null,
+          },
         })
       }
     >
@@ -848,6 +985,14 @@ function SiteIntegrationsEditor({ site }: { site: MarketingSite }) {
               />
             ))}
           </div>
+
+          <UrlChangeIntakeCard
+            site={site}
+            setup={urlChangeWebhook}
+            evidenceQuery={urlChangeEvidenceQuery}
+            configuring={configureUrlChangeWebhook.isPending}
+            onConfigure={() => configureUrlChangeWebhook.mutate()}
+          />
 
           <section className="rounded-lg border border-border bg-card">
             <div className="flex min-h-10 items-center justify-between gap-3 border-b border-border px-3 py-1.5">
@@ -1300,6 +1445,230 @@ function BuiltInProviderCard({
           </Button>
         ) : null}
         {footer}
+      </div>
+    </section>
+  );
+}
+
+function UrlChangeIntakeCard({
+  site,
+  setup,
+  evidenceQuery,
+  configuring,
+  onConfigure,
+}: {
+  site: MarketingSite;
+  setup: UrlChangeWebhookSetup | null;
+  evidenceQuery: UseQueryResult<UrlChangeEvidenceRow[], Error>;
+  configuring: boolean;
+  onConfigure: () => void;
+}) {
+  const integrations = isJsonObject(site.integrations) ? site.integrations : {};
+  const marketing = isJsonObject(integrations.marketing)
+    ? integrations.marketing
+    : {};
+  const storedWebhook = isJsonObject(marketing.url_change_webhook)
+    ? marketing.url_change_webhook
+    : {};
+  const configured =
+    typeof storedWebhook.token_sha256 === "string" || setup !== null;
+  const keyLocation = indexNowKeyLocation(site);
+  const exampleRequest = {
+    changes: [
+      {
+        url: `${site.root_url.replace(/\/$/, "")}/new-page`,
+        kind: "updated",
+        occurred_at: new Date().toISOString(),
+        event_id: "your-cms-publish-id",
+      },
+    ],
+  };
+  const exampleBody = JSON.stringify(exampleRequest, null, 2);
+  const copy = setup
+    ? webCopy({
+        kind: "web-url-change-intake",
+        label: "URL change webhook setup",
+        description:
+          "One-time client CMS webhook credential plus its public IndexNow ownership file.",
+        surface: `Integrations — URL changes — ${site.domain}`,
+        data: {
+          webhook_url: setup.webhookUrl,
+          indexnow_key_location: keyLocation,
+          request_body: exampleRequest,
+        },
+        lines: [
+          ["Webhook URL", setup.webhookUrl],
+          ["IndexNow key file", keyLocation],
+          ["POST body", exampleBody],
+        ],
+        attributes: { site_id: site.id },
+      })
+    : null;
+
+  return (
+    <section className="rounded-lg border border-border bg-card">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-3">
+        <div className="flex min-w-0 gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <Radio className="h-4 w-4" />
+          </span>
+          <div>
+            <h2
+              className="text-xs font-semibold"
+              data-surface-value="url_change_discovery"
+            >
+              {integrationValueLabels.url_change_discovery}
+            </h2>
+            <p className="mt-0.5 max-w-3xl text-[10px] leading-4 text-muted-foreground">
+              Matrx CMS publishes automatically. Other CMSs can call this
+              webhook immediately; scheduled crawls independently detect added,
+              changed, and removed pages and trigger the same search discovery
+              process.
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {copy ? <CopyButtons size="icon" {...copy} /> : null}
+          <Badge variant={configured ? "default" : "outline"}>
+            {configured ? "Webhook configured" : "Crawler detection active"}
+          </Badge>
+        </div>
+      </div>
+      <div className="grid gap-3 p-3 lg:grid-cols-2">
+        <div
+          className="space-y-2 rounded-md border border-border bg-muted/20 p-3"
+          data-surface-value="indexnow_key_location"
+        >
+          <p className="text-[11px] font-medium">1. Prove IndexNow ownership</p>
+          <p className="text-[10px] leading-4 text-muted-foreground">
+            Serve the exact key as plain text at the root file below. Matrx CMS
+            sites already do this automatically.
+          </p>
+          <Input className="h-8 text-[10px]" readOnly value={keyLocation} />
+          <a
+            className="inline-flex text-[10px] text-primary underline"
+            href={keyLocation}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Open verification file
+          </a>
+        </div>
+        <div className="space-y-2 rounded-md border border-border bg-muted/20 p-3">
+          <p className="text-[11px] font-medium">
+            2. Notify on publish or delete
+          </p>
+          <p className="text-[10px] leading-4 text-muted-foreground">
+            Generate a site-scoped URL once, then POST the shown JSON shape from
+            WordPress, Shopify, Webflow, or another publishing system. The token
+            is shown only after generation.
+          </p>
+          {setup ? (
+            <>
+              <Input
+                className="h-8 text-[10px]"
+                readOnly
+                value={setup.webhookUrl}
+              />
+              <pre className="max-h-40 overflow-auto rounded bg-background p-2 text-[9px]">
+                {exampleBody}
+              </pre>
+            </>
+          ) : null}
+          <Button
+            size="sm"
+            variant={configured ? "outline" : "default"}
+            className="h-8 gap-1.5"
+            disabled={configuring}
+            onClick={onConfigure}
+          >
+            {configuring ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <KeyRound className="h-3.5 w-3.5" />
+            )}
+            {configured ? "Rotate webhook token" : "Generate webhook token"}
+          </Button>
+        </div>
+      </div>
+      <div className="border-t border-border p-3">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <div>
+            <p
+              className="text-[11px] font-medium"
+              data-surface-value="url_change_evidence"
+            >
+              {integrationValueLabels.url_change_evidence}
+            </p>
+            <p className="text-[10px] text-muted-foreground">
+              What IndexNow accepted and what Google reported after a change.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1.5 text-[10px]"
+            disabled={evidenceQuery.isFetching}
+            onClick={() => void evidenceQuery.refetch()}
+          >
+            {evidenceQuery.isFetching ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3 w-3" />
+            )}
+            Refresh
+          </Button>
+        </div>
+        {evidenceQuery.isError ? (
+          <Alert variant="destructive" className="py-2">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <AlertTitle className="text-[11px]">
+              Provider evidence could not be loaded
+            </AlertTitle>
+            <AlertDescription className="text-[10px]">
+              {evidenceQuery.error.message}
+            </AlertDescription>
+          </Alert>
+        ) : evidenceQuery.data?.length ? (
+          <div className="grid gap-1.5 lg:grid-cols-2">
+            {evidenceQuery.data.map((row) => {
+              const evidence = isJsonObject(row.evidence) ? row.evidence : {};
+              const status =
+                typeof evidence.status === "string"
+                  ? evidence.status.replace(/_/g, " ")
+                  : "recorded";
+              return (
+                <Link
+                  key={`${row.page_id}:${row.source_type}`}
+                  href={marketingRoutes.sitePage(null, site.id, row.page_id)}
+                  className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-border px-2.5 py-2 hover:bg-muted/40"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-[10px] font-medium">
+                      {row.page?.url ?? row.page_id}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground">
+                      {row.source_type === "indexnow"
+                        ? "IndexNow"
+                        : "Google URL Inspection"}
+                      {row.last_checked_at
+                        ? ` · ${formatCompactDate(row.last_checked_at)}`
+                        : ""}
+                    </span>
+                  </span>
+                  <Badge variant="outline" className="shrink-0 text-[9px]">
+                    {status}
+                  </Badge>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="rounded-md border border-dashed border-border p-3 text-[10px] text-muted-foreground">
+            No provider evidence yet. It appears after the next CMS publish,
+            external webhook, or crawler-detected change.
+          </p>
+        )}
       </div>
     </section>
   );

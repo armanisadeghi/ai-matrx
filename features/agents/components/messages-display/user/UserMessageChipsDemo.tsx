@@ -24,8 +24,8 @@ import {
   initInstanceContext,
   setContextEntry,
 } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { ContextSlotChipStrip } from "@/features/agents/components/context-slots-display/ContextSlotChipStrip";
-import { ContextSlotChip } from "@/features/agents/components/context-slots-display/ContextSlotChip";
+import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
+import { ContextPolicyChip } from "@/features/agents/components/context-policies-display/ContextPolicyChip";
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ResourceAttachmentTile } from "./ResourceAttachmentTile";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
@@ -208,7 +208,7 @@ export function UserMessageChipsDemo() {
             Production tiles in{" "}
             <code className="text-xs">AgentUserMessage</code>,{" "}
             <code className="text-xs">SmartAgentResourceChips</code>, and{" "}
-            <code className="text-xs">ContextSlotChipStrip</code> (single +
+            <code className="text-xs">ContextPolicyChipStrip</code> (single +
             group). Style explorations below are kept for future tuning.
           </p>
         </header>
@@ -246,7 +246,7 @@ export function UserMessageChipsDemo() {
             title="Single context item"
             description="One slot → full chip with label + preview. Click opens detail sheet."
           >
-            <ContextSlotChipStrip
+            <ContextPolicyChipStrip
               conversationId={DEMO_CONV_SINGLE}
               agentId={null}
             />
@@ -259,7 +259,7 @@ export function UserMessageChipsDemo() {
             title="Multiple context items"
             description="Two or more → collapsed “Context Items (N)” popover."
           >
-            <ContextSlotChipStrip
+            <ContextPolicyChipStrip
               conversationId={DEMO_CONV_MULTI}
               agentId={null}
             />
@@ -283,7 +283,7 @@ export function UserMessageChipsDemo() {
             <div className="grid gap-4 sm:grid-cols-2">
               {DEMO_TYPE_ENTRIES.map(({ type, entry, slot }) => (
                 <DemoBubble key={type} title={type} className="max-w-none">
-                  <ContextSlotChip
+                  <ContextPolicyChip
                     conversationId="demo-user-msg-ctx-types"
                     agentId={null}
                     entry={entry}
@@ -357,7 +357,7 @@ export function UserMessageChipsDemo() {
             description="Order in AgentUserMessage: context strip → attachment row → message text."
             className="max-w-lg"
           >
-            <ContextSlotChipStrip
+            <ContextPolicyChipStrip
               conversationId={DEMO_CONV_MULTI}
               agentId={null}
             />

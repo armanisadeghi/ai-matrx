@@ -96,9 +96,9 @@ const DICTIONARY_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       name: "InlinePolicyControl",
-      filePath: "features/agents/components/context-slots-management/InlinePolicyControl.tsx",
+      filePath: "features/agents/components/context-policies-management/InlinePolicyControl.tsx",
       description:
-        "Shared three-mode inline-policy editor (default 200 / custom ceiling / never). Used by both the dictionary manager and the agent context-slot builder.",
+        "Shared three-mode inline-policy editor (default 200 / custom ceiling / never). Used by both the dictionary manager and the agent context-policy builder.",
       tier: "internal",
     },
   ],
@@ -129,7 +129,7 @@ const DICTIONARY_ADMIN_MAP: FeatureAdminMap = {
       name: "Agents",
       adminUrl: "/agents/admin",
       description:
-        "Three builtin agents (Dictionary Assistant, Terminology Curator, Pronunciation Coach) + two skills (dictionary-management, pronunciation-authoring) drive the `dictionary` tool. The inline-policy control is shared with the agent context-slot builder.",
+        "Three builtin agents (Dictionary Assistant, Terminology Curator, Pronunciation Coach) + two skills (dictionary-management, pronunciation-authoring) drive the `dictionary` tool. The inline-policy control is shared with the agent context-policy builder.",
     },
     {
       name: "Podcasts",

@@ -1,7 +1,7 @@
 /**
  * Agent edit access — the pure core of "can the agent change this context slot?".
  *
- * The wire shape is `mutable` + `persist` on `ContextSlot` (see `agent-api-types`),
+ * The wire shape is `mutable` + `persist` on `ContextPolicy` (see `agent-api-types`),
  * but "mutable" is jargon nobody outside this codebase reads correctly, so it
  * appears NOWHERE in the UI. Users pick between:
  *
@@ -30,12 +30,12 @@
  * user's write access to that scope. Attributed, auditable, revertible.
  *
  * Pure — no React, no persistence. The controls live in
- * `components/context-slots-management/AgentEditAccessControl.tsx`.
+ * `components/context-policies-management/AgentEditAccessControl.tsx`.
  */
 
 import type {
-  ContextSlot,
-  ContextSlotPersist,
+  ContextPolicy,
+  ContextPolicyPersist,
 } from "@/features/agents/types/agent-api-types";
 
 /** What the agent is allowed to do with a slot. The UI never says "mutable". */
@@ -44,7 +44,7 @@ export type AgentEditAccess = "read_only" | "editable";
 export interface AgentEditAccessValue {
   access: AgentEditAccess;
   /** Where the agent's edits go. Only meaningful when access === "editable". */
-  saveMode: ContextSlotPersist;
+  saveMode: ContextPolicyPersist;
 }
 
 export const DEFAULT_AGENT_EDIT_ACCESS: AgentEditAccessValue = {
@@ -62,10 +62,10 @@ export const AGENT_EDIT_ACCESS_LABEL: Record<AgentEditAccess, string> = {
  * agent-editable: write the edit back to the scope cell it came from. Every write is
  * a new version stamped `ai_enriched` — nothing is overwritten in place.
  */
-export const SCOPE_ITEM_DEFAULT_SAVE_MODE: ContextSlotPersist = "auto";
+export const SCOPE_ITEM_DEFAULT_SAVE_MODE: ContextPolicyPersist = "auto";
 
 export interface AgentEditSaveMode {
-  id: ContextSlotPersist;
+  id: ContextPolicyPersist;
   label: string;
   hint: string;
 }
@@ -89,15 +89,15 @@ export const AGENT_EDIT_SAVE_MODES: AgentEditSaveMode[] = [
 ];
 
 /** One-line plain-English summary of where an editable slot's edits go. */
-export const AGENT_EDIT_SAVE_SUMMARY: Record<ContextSlotPersist, string> =
+export const AGENT_EDIT_SAVE_SUMMARY: Record<ContextPolicyPersist, string> =
   AGENT_EDIT_SAVE_MODES.reduce(
     (acc, mode) => ({ ...acc, [mode.id]: mode.hint }),
-    {} as Record<ContextSlotPersist, string>,
+    {} as Record<ContextPolicyPersist, string>,
   );
 
 /** Read a slot's access. Absent `mutable` means read-only — the server default. */
 export function decodeAgentEditAccess(
-  slot: Pick<ContextSlot, "mutable" | "persist"> | undefined | null,
+  slot: Pick<ContextPolicy, "mutable" | "persist"> | undefined | null,
 ): AgentEditAccessValue {
   if (!slot?.mutable) return DEFAULT_AGENT_EDIT_ACCESS;
   return { access: "editable", saveMode: slot.persist ?? "never" };
@@ -108,7 +108,7 @@ export function decodeAgentEditAccess(
  * than writing `mutable: false` — an absent flag is the server's own default and
  * keeps stored slots clean.
  */
-export function applyAgentEditAccess<T extends ContextSlot>(
+export function applyAgentEditAccess<T extends ContextPolicy>(
   slot: T,
   value: AgentEditAccessValue,
 ): T {

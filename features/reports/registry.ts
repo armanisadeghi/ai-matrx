@@ -23,7 +23,7 @@ export const REPORTS: ReportDefinition[] = [
     slug: "agent-drift",
     title: "Agent Drift",
     description:
-      "Every agent whose usages have drifted — breaking changes, silently-ignored context-slot settings, and stale version pins — across all your agents in one place.",
+      "Every agent whose usages have drifted — breaking changes, silently-ignored context-policy settings, and stale version pins — across all your agents in one place.",
     iconName: "GitCompareArrows",
     href: "/reports/agent-drift",
     adminHref: "/administration/agents/reports/agent-drift",

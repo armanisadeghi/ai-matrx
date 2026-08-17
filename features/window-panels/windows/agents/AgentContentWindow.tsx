@@ -46,7 +46,7 @@ import { Messages } from "@/features/agents/components/builder/message-builders/
 import { SystemMessage } from "@/features/agents/components/builder/message-builders/system-instructions/SystemMessage";
 import { AgentVariablesPanel } from "@/features/agents/components/variables-management/AgentVariablesPanel";
 import { AgentToolsManager } from "@/features/agents/components/tools-management/AgentToolsManager";
-import { AgentContextSlotsManager } from "@/features/agents/components/context-slots-management/AgentContextSlotsManager";
+import { AgentContextPoliciesManager } from "@/features/agents/components/context-policies-management/AgentContextPoliciesManager";
 import { AgentSettingsForm } from "@/features/agents/components/settings/AgentSettingsForm";
 import { AgentSettingsCore } from "@/features/agents/components/settings-management/AgentSettingsCore";
 import { AgentSharePanel } from "@/features/agents/components/sharing/AgentSharePanel";
@@ -562,7 +562,7 @@ export function TabContent({
       {activeTab === "context" && (
         <ScrollArea className="h-full">
           <div className="p-3">
-            <AgentContextSlotsManager agentId={agentId} />
+            <AgentContextPoliciesManager agentId={agentId} />
           </div>
         </ScrollArea>
       )}

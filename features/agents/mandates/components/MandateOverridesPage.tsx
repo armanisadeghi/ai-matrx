@@ -5,7 +5,7 @@
  *
  * Browse every live mandate ("which agent runs this step"), see the resolved
  * agent with provenance (system default vs org vs your override — user wins),
- * and create/edit/delete agent.slot_binding rows: swap the agent, or
+ * and create/edit/delete agent.mandate_binding rows: swap the agent, or
  * settings-only (model / thinking level).
  *
  * Generalizes research's /research/topics/[id]/agents pattern onto the
@@ -109,12 +109,12 @@ export function MandateOverridesPage() {
     const myOrgIds = new Set(organizations.map((o) => o.id));
     return data.mandates.map((mandate) => {
       const bindings = data.bindings.filter(
-        (b) => b.slot_id === mandate.id && b.is_enabled,
+        (b) => b.mandate_id === mandate.id && b.is_enabled,
       );
       const myBinding =
         data.bindings.find(
           (b) =>
-            b.slot_id === mandate.id &&
+            b.mandate_id === mandate.id &&
             b.principal_type === "user" &&
             b.subject_user_id === userId,
         ) ?? null;
@@ -154,7 +154,7 @@ export function MandateOverridesPage() {
 
       return {
         mandate,
-        domain: splitMandateKey(mandate.slot_key).feature,
+        domain: splitMandateKey(mandate.mandate_key).feature,
         defaultAgentId,
         defaultAgentName,
         myBinding,
@@ -308,7 +308,7 @@ function MandateCard({
 }) {
   const { mandate } = view;
   const disabled = !mandate.is_enabled;
-  const mandateBindings = data.bindings.filter((b) => b.slot_id === mandate.id);
+  const mandateBindings = data.bindings.filter((b) => b.mandate_id === mandate.id);
 
   return (
     <article
@@ -366,7 +366,7 @@ function MandateCard({
             </p>
           ) : null}
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground/80">
-            <code className="font-mono">{mandate.slot_key}</code>
+            <code className="font-mono">{mandate.mandate_key}</code>
             <span className="inline-flex min-w-0 items-center gap-1">
               <ArrowDownUp className="h-2.5 w-2.5 shrink-0" />
               runs{" "}

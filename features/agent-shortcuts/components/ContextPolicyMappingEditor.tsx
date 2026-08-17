@@ -18,16 +18,16 @@ import {
   SCOPE_LEVEL_META,
   type ScopeLevel,
 } from "../constants";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 
-export interface ContextSlotMappingEditorProps {
+export interface ContextPolicyMappingEditorProps {
   /**
    * Context slots declared on the agent. Used to populate the right-hand
    * dropdown. If empty, the editor disables its selects and shows a hint.
    */
-  contextSlots: ContextSlot[];
+  contextPolicies: ContextPolicy[];
   /**
-   * Current mapping: UI scope key → agent context-slot key.
+   * Current mapping: UI scope key → agent context-policy key.
    */
   contextMappings: Record<string, string> | null;
   onChange: (mappings: Record<string, string> | null) => void;
@@ -46,19 +46,19 @@ function helpForScope(scope: string): string | null {
 
 /**
  * Parity with ScopeMappingEditor but routes scope keys to agent CONTEXT SLOTS
- * instead of variables. Takes precedence over default context-slot values and
+ * instead of variables. Takes precedence over default context-policy values and
  * ad-hoc context at launch.
  */
-export function ContextSlotMappingEditor({
-  contextSlots,
+export function ContextPolicyMappingEditor({
+  contextPolicies,
   contextMappings,
   onChange,
   compact = false,
-}: ContextSlotMappingEditorProps) {
+}: ContextPolicyMappingEditorProps) {
   const [newScopeName, setNewScopeName] = useState("");
 
   const mappings = contextMappings ?? {};
-  const hasSlots = contextSlots.length > 0;
+  const hasSlots = contextPolicies.length > 0;
   const customScopes = Array.from(
     new Set(Object.keys(mappings).filter((k) => !STANDARD_SCOPES.includes(k))),
   );
@@ -124,7 +124,7 @@ export function ContextSlotMappingEditor({
           <SelectItem value="_none_">
             <span className="text-muted-foreground italic">None</span>
           </SelectItem>
-          {contextSlots.map((slot) => (
+          {contextPolicies.map((slot) => (
             <SelectItem key={slot.key} value={slot.key}>
               <div className="flex items-center gap-2">
                 <code className="font-mono text-xs">{slot.key}</code>

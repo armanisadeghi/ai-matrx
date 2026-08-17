@@ -21,7 +21,7 @@ import type {
   VariableDefinition,
   VariableComponentType,
 } from "@/features/agents/types/agent-definition.types";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import { formatVariableDisplayName } from "@/features/agents/utils/variable-utils";
 
 /**
@@ -38,10 +38,10 @@ import { formatVariableDisplayName } from "@/features/agents/utils/variable-util
  */
 export function AgentColumn({ agent }: { agent: AgentDefinition }) {
   const variables = agent.variableDefinitions ?? [];
-  const slots = agent.contextSlots ?? [];
+  const slots = agent.contextPolicies ?? [];
 
   const [detailVar, setDetailVar] = useState<VariableDefinition | null>(null);
-  const [detailSlot, setDetailSlot] = useState<ContextSlot | null>(null);
+  const [detailSlot, setDetailSlot] = useState<ContextPolicy | null>(null);
 
   return (
     <div className="h-full flex flex-col bg-muted/50 pt-[var(--shell-header-h)]">
@@ -98,7 +98,7 @@ export function AgentColumn({ agent }: { agent: AgentDefinition }) {
           ) : (
             <ul className="divide-y divide-border/60">
               {slots.map((s) => (
-                <ContextSlotRow
+                <ContextPolicyRow
                   key={s.key}
                   slot={s}
                   onOpen={() => setDetailSlot(s)}
@@ -116,7 +116,7 @@ export function AgentColumn({ agent }: { agent: AgentDefinition }) {
         />
       )}
       {detailSlot && (
-        <ContextSlotDetailDialog
+        <ContextPolicyDetailDialog
           slot={detailSlot}
           onClose={() => setDetailSlot(null)}
         />
@@ -322,11 +322,11 @@ function VariableDetailDialog({
 // Context slot row
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ContextSlotRow({
+function ContextPolicyRow({
   slot,
   onOpen,
 }: {
-  slot: ContextSlot;
+  slot: ContextPolicy;
   onOpen: () => void;
 }) {
   const TypeIcon = slot.type === "json" ? Database : FileText;
@@ -355,11 +355,11 @@ function ContextSlotRow({
   );
 }
 
-function ContextSlotDetailDialog({
+function ContextPolicyDetailDialog({
   slot,
   onClose,
 }: {
-  slot: ContextSlot;
+  slot: ContextPolicy;
   onClose: () => void;
 }) {
   return (

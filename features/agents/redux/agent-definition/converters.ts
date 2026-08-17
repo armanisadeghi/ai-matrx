@@ -186,8 +186,9 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
       ({} as AgentDefinition["settings"]),
     tools,
 
-    contextSlots:
-      (row.context_slots as unknown as AgentDefinition["contextSlots"]) ?? [],
+    contextPolicies:
+      (row.context_slots as unknown as AgentDefinition["contextPolicies"]) ?? [],
+    autoContextDisabled: row.auto_context_disabled === true,
 
     modelTiers:
       (row.model_tiers as unknown as AgentDefinition["modelTiers"]) ?? null,
@@ -272,7 +273,8 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
       agent.matrxActions as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["matrx_actions"],
 
     context_slots:
-      agent.contextSlots as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["context_slots"],
+      agent.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["context_slots"],
+    auto_context_disabled: agent.autoContextDisabled,
 
     model_tiers:
       agent.modelTiers as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["model_tiers"],
@@ -347,9 +349,12 @@ export function agentDefinitionToUpdate(
     update.matrx_actions =
       partial.matrxActions as unknown as Database["agent"]["Tables"]["definition"]["Update"]["matrx_actions"];
 
-  if (partial.contextSlots !== undefined)
+  if (partial.contextPolicies !== undefined)
     update.context_slots =
-      partial.contextSlots as unknown as Database["agent"]["Tables"]["definition"]["Update"]["context_slots"];
+      partial.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Update"]["context_slots"];
+
+  if (partial.autoContextDisabled !== undefined)
+    update.auto_context_disabled = partial.autoContextDisabled;
 
   if (partial.modelTiers !== undefined)
     update.model_tiers =
@@ -443,7 +448,8 @@ export function versionSnapshotRowToAgentDefinition(
     variableDefinitions: row.variable_definitions,
     settings: row.settings,
     tools: row.tools ?? [],
-    contextSlots: row.context_slots ?? [],
+    contextPolicies: row.context_slots ?? [],
+    autoContextDisabled: row.auto_context_disabled === true,
     modelTiers: row.model_tiers,
     outputSchema: row.output_schema,
     customTools: row.custom_tools ?? [],

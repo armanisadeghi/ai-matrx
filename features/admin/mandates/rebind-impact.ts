@@ -204,7 +204,7 @@ export function buildRebindFixBrief({
     ? callSites
         .map(
           (site) =>
-            `  - ${site.source_file}:${site.line} (passes user_input: ${site.passes_user_input ? "yes" : "no"})`,
+            `  - ${site.source_file}:${site.line}`,
         )
         .join("\n")
     : "  - No call sites were discovered in the registered source module.";
@@ -224,7 +224,7 @@ export function buildRebindFixBrief({
       : `- (nothing unsupplied)`,
     renames ? `\nLIKELY RENAMES (same meaning, different name):\n${renames}` : ``,
     codeTruth
-      ? `\nLIVE CODE TRUTH:\n- Runner: ${source ? `${source.class_name} (${source.source_file}:${source.line})` : "declaration unavailable"}\n- Code supplies: ${codeTruth.code_variables.join(", ") || "none"}.\n- Bound agent declares: ${codeTruth.bound_agent?.declared_variables.join(", ") || "none"}.\n- The code path passes user_input: ${codeTruth.passes_user_input ? "yes" : "no"}.\n- Call sites:\n${callSiteLines}`
+      ? `\nLIVE CODE TRUTH:\n- Runner: ${source ? `${source.class_name} (${source.source_file}:${source.line})` : "declaration unavailable"}\n- Code supplies: ${codeTruth.code_variables.join(", ") || "none"}.\n- Bound agent declares: ${codeTruth.bound_agent?.declared_variables.join(", ") || "none"}.\n- This Mandate accepts user text: ${codeTruth.passes_user_input ? "yes" : "no"}.\n- Call sites:\n${callSiteLines}`
       : ``,
     ``,
     `WHAT TO DO — pick per variable, do not guess:`,

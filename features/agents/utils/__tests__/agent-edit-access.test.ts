@@ -12,8 +12,8 @@ import {
   decodeAgentEditAccess,
   SCOPE_ITEM_DEFAULT_SAVE_MODE,
 } from "@/features/agents/utils/agent-edit-access";
-import { buildContextSlotFromItem } from "@/features/agents/utils/context-item-slot-mapping";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import { buildContextPolicyFromItem } from "@/features/agents/utils/context-item-slot-mapping";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import type { ContextItem } from "@/features/scope-system/redux/contextItemsSlice";
 
 const ITEM = {
@@ -25,7 +25,7 @@ const ITEM = {
   value_type: "text",
 } as unknown as ContextItem;
 
-const BASE_SLOT: ContextSlot = { key: "client_name", type: "text" };
+const BASE_SLOT: ContextPolicy = { key: "client_name", type: "text" };
 
 describe("decodeAgentEditAccess", () => {
   it("reads an absent mutable flag as read-only (the server default)", () => {
@@ -115,9 +115,9 @@ describe("agentEditAccessChanged", () => {
   });
 });
 
-describe("buildContextSlotFromItem", () => {
+describe("buildContextPolicyFromItem", () => {
   it("is read-only by default", () => {
-    const slot = buildContextSlotFromItem(ITEM, { key: "client_name" });
+    const slot = buildContextPolicyFromItem(ITEM, { key: "client_name" });
     expect("mutable" in slot).toBe(false);
     expect(slot.source).toEqual({
       kind: "ctx_item",
@@ -129,7 +129,7 @@ describe("buildContextSlotFromItem", () => {
   });
 
   it("carries agent-editable through to the stored slot", () => {
-    const slot = buildContextSlotFromItem(ITEM, {
+    const slot = buildContextPolicyFromItem(ITEM, {
       key: "client_name",
       access: "editable",
       saveMode: SCOPE_ITEM_DEFAULT_SAVE_MODE,

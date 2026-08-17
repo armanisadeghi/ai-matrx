@@ -40,7 +40,7 @@ import { startNewConversation } from "@/features/agents/redux/execution-system/t
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectUseStructuredSystemInstruction } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { RunSettingsEditor } from "./RunSettingsEditor";
-import { ContextSlotsTab } from "./ContextSlotsTab";
+import { ContextPoliciesTab } from "./ContextPoliciesTab";
 import { PayloadTab } from "./PayloadTab";
 import { SystemInstructionEditor } from "../builder/message-builders/system-instructions/SystemInstructionEditor";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -413,7 +413,7 @@ export default function CreatorRunTabContent({
         />
       );
     case "context":
-      return <ContextSlotsTab conversationId={conversationId} />;
+      return <ContextPoliciesTab conversationId={conversationId} />;
     case "payload":
       return <PayloadTab conversationId={conversationId} />;
     case "settings":

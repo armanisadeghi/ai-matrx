@@ -56,7 +56,7 @@ import { compareContracts, compareStoredContract } from "../contract-compare";
  * `rs_topic.agent_config`). When provided, picking a candidate still runs the
  * contract pre-flight (against `contractSource` when supplied, else the
  * mandate's stored contract) but the WRITE goes through these callbacks instead
- * of a user `agent.slot_binding`. */
+ * of a user `agent.mandate_binding`. */
 export interface MandateAgentPickerOverrideControl {
   /** The current override agent id, or null when the default runs. */
   agentId: string | null;
@@ -286,7 +286,7 @@ export function MandateAgentPicker({
           <div className="space-y-2.5">
             <div>
               <p className="text-[13px] font-semibold text-foreground">
-                {data.mandate.label ?? data.mandate.slot_key}
+                {data.mandate.label ?? data.mandate.mandate_key}
               </p>
               <p className="text-[11.5px] text-muted-foreground">
                 Pick which agent runs this step. Yours must accept the same inputs.

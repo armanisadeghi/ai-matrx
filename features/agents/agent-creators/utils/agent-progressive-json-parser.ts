@@ -182,7 +182,7 @@ export function parsePartialAgentJson(text: string): PartialAgentData {
 
   out.messages = readMessages(block);
   out.variable_definitions = readVariableDefinitions(block);
-  out.context_slots = readContextSlots(block);
+  out.context_slots = readContextPolicies(block);
 
   out.settings = readJsonObject(block, "settings");
   out.output_schema = readJsonObject(block, "output_schema");
@@ -229,7 +229,7 @@ function normalizeAgentJson(
   const variable_definitions = normalizeVariableDefinitions(
     raw.variable_definitions ?? raw.variableDefaults ?? raw.variables,
   );
-  const context_slots = normalizeContextSlots(raw.context_slots);
+  const context_slots = normalizeContextPolicies(raw.context_slots);
   const settings = isPlainObject(raw.settings) ? raw.settings : undefined;
   const output_schema = isPlainObject(raw.output_schema)
     ? raw.output_schema
@@ -334,7 +334,7 @@ function normalizeVariableDefinitions(
   return out.length > 0 ? out : undefined;
 }
 
-function normalizeContextSlots(
+function normalizeContextPolicies(
   raw: unknown,
 ): PartialAgentData["context_slots"] | undefined {
   if (!Array.isArray(raw)) return undefined;
@@ -486,14 +486,14 @@ function readVariableDefinitions(
   return out.length > 0 ? out : undefined;
 }
 
-function readContextSlots(
+function readContextPolicies(
   jsonText: string,
 ): PartialAgentData["context_slots"] | undefined {
   const array = sliceArray(jsonText, "context_slots");
   if (!array) return undefined;
   try {
     const parsed = JSON.parse("[" + array + "]");
-    return normalizeContextSlots(parsed);
+    return normalizeContextPolicies(parsed);
   } catch {
     return undefined;
   }

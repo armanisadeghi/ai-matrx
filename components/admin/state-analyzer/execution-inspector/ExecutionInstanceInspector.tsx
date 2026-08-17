@@ -434,10 +434,10 @@ function AgentTab({
           </div>
         </Section>
       )}
-      {agentData.contextSlots && agentData.contextSlots.length > 0 && (
+      {agentData.contextPolicies && agentData.contextPolicies.length > 0 && (
         <Section title="Context Slots" defaultOpen={false}>
           <div className="text-sm">
-            <JsonTreeViewer data={agentData.contextSlots} />
+            <JsonTreeViewer data={agentData.contextPolicies} />
           </div>
         </Section>
       )}

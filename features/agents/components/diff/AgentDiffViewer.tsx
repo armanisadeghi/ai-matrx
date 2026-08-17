@@ -23,7 +23,7 @@ import { ModelAdapter } from "./adapters/ModelAdapter";
 import { ToolsAdapter } from "./adapters/ToolsAdapter";
 import { SettingsAdapter } from "./adapters/SettingsAdapter";
 import { VariablesAdapter } from "./adapters/VariablesAdapter";
-import { ContextSlotsAdapter } from "./adapters/ContextSlotsAdapter";
+import { ContextPoliciesAdapter } from "./adapters/ContextPoliciesAdapter";
 import { CustomToolsAdapter } from "./adapters/CustomToolsAdapter";
 import { McpServersAdapter } from "./adapters/McpServersAdapter";
 import { ModelTiersAdapter } from "./adapters/ModelTiersAdapter";
@@ -52,7 +52,7 @@ export function buildAgentAdapterRegistry() {
   registry.register("tools", ToolsAdapter);
   registry.register("settings", SettingsAdapter);
   registry.register("variableDefinitions", VariablesAdapter);
-  registry.register("contextSlots", ContextSlotsAdapter);
+  registry.register("contextPolicies", ContextPoliciesAdapter);
   registry.register("customTools", CustomToolsAdapter);
   registry.register("mcpServers", McpServersAdapter);
 

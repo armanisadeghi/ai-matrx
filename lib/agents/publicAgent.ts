@@ -24,7 +24,7 @@ export interface PublicAgent {
   /** Declared launch variables — drives the guest run form. */
   variableDefinitions: unknown;
   /** Declared context slots the run needs filled. */
-  contextSlots: unknown;
+  contextPolicies: unknown;
   agentType: string;
   category: string | null;
   tags: string[];
@@ -54,7 +54,7 @@ export async function getAgentPublic(
     name: row.name,
     description: row.description ?? null,
     variableDefinitions: row.variable_definitions,
-    contextSlots: row.context_slots,
+    contextPolicies: row.context_slots,
     agentType: row.agent_type,
     category: row.category ?? null,
     tags: row.tags ?? [],

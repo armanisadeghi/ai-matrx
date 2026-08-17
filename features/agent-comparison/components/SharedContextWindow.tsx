@@ -7,8 +7,8 @@
  * applied to EVERY column at once. Writes fan out via
  * `broadcastContextEntry` / `broadcastRemoveContextEntry`.
  *
- * Why a custom editor (not embedding ContextSlotsTab):
- *   ContextSlotsTab is keyed to a single conversation and shows the
+ * Why a custom editor (not embedding ContextPoliciesTab):
+ *   ContextPoliciesTab is keyed to a single conversation and shows the
  *   AGENT's declared slots — those differ per column in the battle UI,
  *   so a single unified declared-slot UI doesn't make sense. The shared
  *   primitive here is the user-facing "set these keys for every run" — a

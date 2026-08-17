@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ContextSlotDetailSheet
+ * ContextPolicyDetailSheet
  *
  * Right-side sheet that shows the full detail of a single context slot value
  * attached to a request: key, type, label, description, inline policy, and
@@ -15,18 +15,18 @@ import { useMemo } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
-import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
 import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import type {
   ContextObjectType,
-  ContextSlot,
+  ContextPolicy,
 } from "@/features/agents/types/agent-api-types";
 import {
   CONTEXT_TYPE_ICON,
   FALLBACK_CONTEXT_ICON,
   CONTEXT_TYPE_CHIP_CLASS,
-} from "./contextSlotIcons";
-import { AgentEditAccessBadge } from "@/features/agents/components/context-slots-management/AgentEditAccessControl";
+} from "./contextPolicyIcons";
+import { AgentEditAccessBadge } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
 import {
   AGENT_EDIT_SAVE_SUMMARY,
   decodeAgentEditAccess,
@@ -40,7 +40,7 @@ import {
 } from "../context-items/bodies/WorkingDocumentBody";
 import { cn } from "@/lib/utils";
 
-interface ContextSlotDetailSheetProps {
+interface ContextPolicyDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   conversationId: string;
@@ -50,17 +50,17 @@ interface ContextSlotDetailSheetProps {
   snapshotValue?: unknown;
 }
 
-export function ContextSlotDetailSheet({
+export function ContextPolicyDetailSheet({
   open,
   onOpenChange,
   conversationId,
   agentId,
   contextKey,
   snapshotValue,
-}: ContextSlotDetailSheetProps) {
-  const slot = useAppSelector((state: RootState): ContextSlot | undefined => {
+}: ContextPolicyDetailSheetProps) {
+  const slot = useAppSelector((state: RootState): ContextPolicy | undefined => {
     if (!agentId) return undefined;
-    const slots = selectAgentContextSlots(state, agentId);
+    const slots = selectAgentContextPolicies(state, agentId);
     return slots?.find((s) => s.key === contextKey);
   });
 

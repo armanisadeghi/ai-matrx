@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * AgentContextSlotsManager
+ * AgentContextPoliciesManager
  *
  * Smart component — manages context slots for the active agent.
  * UI matches Variables row: compact chips (key only) + Dialog/Drawer editor.
  *
- * Persists the full `ContextSlot` shape per the server contract
+ * Persists the full `ContextPolicy` shape per the server contract
  * (see `api/context_objects_FE_GUIDE.md`):
  *   key, type, label, description, max_inline_chars, summary_agent_id,
  *   mutable, persist, source.
@@ -37,13 +37,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentContextSlots } from "@/features/agents/redux/agent-definition/slice";
+import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
+import { setAgentContextPolicies } from "@/features/agents/redux/agent-definition/slice";
 import type {
   ContextObjectType,
-  ContextSlot,
-  ContextSlotPersist,
-  ContextSlotSource,
+  ContextPolicy,
+  ContextPolicyPersist,
+  ContextPolicySource,
 } from "@/features/agents/types/agent-api-types";
 import {
   Dialog,
@@ -67,8 +67,8 @@ import {
   decodeInlinePolicy,
   encodeInlinePolicy,
   type InlineMode,
-} from "@/features/agents/components/context-slots-management/InlinePolicyControl";
-import { AgentEditAccessControl } from "@/features/agents/components/context-slots-management/AgentEditAccessControl";
+} from "@/features/agents/components/context-policies-management/InlinePolicyControl";
+import { AgentEditAccessControl } from "@/features/agents/components/context-policies-management/AgentEditAccessControl";
 import { SCOPE_ITEM_DEFAULT_SAVE_MODE } from "@/features/agents/utils/agent-edit-access";
 import { cn } from "@/lib/utils";
 
@@ -118,7 +118,7 @@ interface SlotFormState {
   summaryAgentId: string;
   // Mutation
   mutable: boolean;
-  persist: ContextSlotPersist;
+  persist: ContextPolicyPersist;
   // Source (only meaningful when persist="auto")
   sourceKind: string;
   sourceId: string;
@@ -156,19 +156,19 @@ const EMPTY_FORM: SlotFormState = {
 
 /**
  * Legacy stored slots (pre-`key` rename) carried an `id` field instead.
- * `ContextSlot` no longer declares it; read it defensively without widening
+ * `ContextPolicy` no longer declares it; read it defensively without widening
  * the type.
  */
-function legacySlotId(slot: ContextSlot): string | undefined {
+function legacySlotId(slot: ContextPolicy): string | undefined {
   return "id" in slot && typeof slot.id === "string" ? slot.id : undefined;
 }
 
-function getSlotKey(slot: ContextSlot): string {
+function getSlotKey(slot: ContextPolicy): string {
   if (slot.key) return slot.key;
   return legacySlotId(slot) ?? "";
 }
 
-function slotToForm(slot: ContextSlot): SlotFormState {
+function slotToForm(slot: ContextPolicy): SlotFormState {
   const legacyId = legacySlotId(slot);
 
   // Decode max_inline_chars into the three-mode UI (shared canonical helper).
@@ -204,14 +204,14 @@ function slotToForm(slot: ContextSlot): SlotFormState {
   };
 }
 
-function formToContextSlot(form: SlotFormState): {
-  slot: ContextSlot | null;
+function formToContextPolicy(form: SlotFormState): {
+  slot: ContextPolicy | null;
   error: string | null;
 } {
   const key = form.key.trim() ? sanitizeVariableName(form.key) : "";
   if (!key) return { slot: null, error: "Key is required." };
 
-  const slot: ContextSlot = { key, type: form.type };
+  const slot: ContextPolicy = { key, type: form.type };
 
   if (form.label.trim()) slot.label = form.label.trim();
   if (form.description.trim()) slot.description = form.description.trim();
@@ -261,7 +261,7 @@ function formToContextSlot(form: SlotFormState): {
           "Source 'kind' is required when the agent's edits save to the source.",
       };
     }
-    const source: ContextSlotSource = { kind: form.sourceKind.trim() };
+    const source: ContextPolicySource = { kind: form.sourceKind.trim() };
     if (form.sourceId.trim()) source.id = form.sourceId.trim();
     if (form.sourceField.trim()) source.field = form.sourceField.trim();
     if (form.sourceExtra.trim()) {
@@ -690,12 +690,12 @@ function Field({
 
 const SEARCH_THRESHOLD = 6;
 
-function ContextSlotStackTrigger({
+function ContextPolicyStackTrigger({
   slots,
   onEdit,
   onDelete,
 }: {
-  slots: ContextSlot[];
+  slots: ContextPolicy[];
   onEdit: (idx: number) => void;
   onDelete: (idx: number) => void;
 }) {
@@ -830,18 +830,18 @@ function ContextSlotStackTrigger({
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface AgentContextSlotsManagerProps {
+interface AgentContextPoliciesManagerProps {
   agentId: string;
 }
 
-export function AgentContextSlotsManager({
+export function AgentContextPoliciesManager({
   agentId,
-}: AgentContextSlotsManagerProps) {
+}: AgentContextPoliciesManagerProps) {
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const openBatchImport = useOpenScopeBatchImportWindow();
   const slotsRaw = useAppSelector((state) =>
-    selectAgentContextSlots(state, agentId),
+    selectAgentContextPolicies(state, agentId),
   );
   const slots = useMemo(() => slotsRaw ?? [], [slotsRaw]);
 
@@ -890,20 +890,20 @@ export function AgentContextSlotsManager({
 
   const handleSave = () => {
     if (!canSave) return;
-    const { slot: newSlot, error } = formToContextSlot(form);
+    const { slot: newSlot, error } = formToContextPolicy(form);
     if (!newSlot) {
       setFormError(error);
       return;
     }
-    const next: ContextSlot[] =
+    const next: ContextPolicy[] =
       editIndex === null
         ? [...slots, newSlot]
         : slots.map((s, i) => (i === editIndex ? newSlot : s));
 
     dispatch(
-      setAgentContextSlots({
+      setAgentContextPolicies({
         id: agentId,
-        contextSlots: next,
+        contextPolicies: next,
       }),
     );
     setEditorOpen(false);
@@ -911,9 +911,9 @@ export function AgentContextSlotsManager({
 
   const handleDelete = (idx: number) => {
     dispatch(
-      setAgentContextSlots({
+      setAgentContextPolicies({
         id: agentId,
-        contextSlots: slots.filter((_, i) => i !== idx),
+        contextPolicies: slots.filter((_, i) => i !== idx),
       }),
     );
   };
@@ -952,7 +952,7 @@ export function AgentContextSlotsManager({
           Context
         </Label>
 
-        <ContextSlotStackTrigger
+        <ContextPolicyStackTrigger
           slots={slots}
           onEdit={openEdit}
           onDelete={handleDelete}

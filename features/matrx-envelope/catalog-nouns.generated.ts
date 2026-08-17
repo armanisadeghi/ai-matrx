@@ -221,6 +221,10 @@ export const CATALOG_NOUNS: Record<string, CatalogNounEntry> = {
   "table": "education.learn_doc",
   "title_column": "title"
  },
+ "marketing_initiative": {
+  "table": "marketing.initiative",
+  "title_column": "name"
+ },
  "message": {
   "table": "chat.message",
   "title_column": null

@@ -4,11 +4,11 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 
-export interface DefaultContextSlotValuesEditorProps {
+export interface DefaultContextPolicyValuesEditorProps {
   /** Declared context slots on the agent. */
-  contextSlots: ContextSlot[];
+  contextPolicies: ContextPolicy[];
   /** Per-slot overrides persisted on the shortcut. Keyed by slot key. */
   values: Record<string, unknown> | null;
   onChange: (next: Record<string, unknown> | null) => void;
@@ -18,21 +18,21 @@ export interface DefaultContextSlotValuesEditorProps {
 
 /**
  * One row per declared context slot. The user can pre-seed a value that will
- * be set on the instance at launch (before any scope → context-slot mapping
+ * be set on the instance at launch (before any scope → context-policy mapping
  * or runtime context entries arrive). Blank = no override.
  *
  * Context slots don't carry default values on the agent itself — defaults
  * here come from the shortcut.
  */
-export function DefaultContextSlotValuesEditor({
-  contextSlots,
+export function DefaultContextPolicyValuesEditor({
+  contextPolicies,
   values,
   onChange,
   disabled,
   compact,
-}: DefaultContextSlotValuesEditorProps) {
+}: DefaultContextPolicyValuesEditorProps) {
   const current = values ?? {};
-  const hasSlots = contextSlots.length > 0;
+  const hasSlots = contextPolicies.length > 0;
 
   const setValue = (key: string, raw: string) => {
     const next = { ...current };
@@ -45,7 +45,7 @@ export function DefaultContextSlotValuesEditor({
   };
 
   const slotType = (key: string): string | undefined =>
-    contextSlots.find((s) => s.key === key)?.type;
+    contextPolicies.find((s) => s.key === key)?.type;
 
   if (!hasSlots) {
     return (
@@ -59,7 +59,7 @@ export function DefaultContextSlotValuesEditor({
     <div
       className={`border border-border rounded-md ${compact ? "text-xs" : "text-sm"}`}
     >
-      {contextSlots.map((slot) => {
+      {contextPolicies.map((slot) => {
         const raw = current[slot.key];
         const stringValue = raw === undefined ? "" : stringify(raw);
         const isLongText =

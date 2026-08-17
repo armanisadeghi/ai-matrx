@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * ContextSlotChip
+ * ContextPolicyChip
  *
  * One context slot value on a user message — tile layout matching
- * ResourceAttachmentTile. Click → ContextSlotDetailSheet.
+ * ResourceAttachmentTile. Click → ContextPolicyDetailSheet.
  */
 
 import { useMemo, useState } from "react";
@@ -12,31 +12,31 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import type {
   ContextObjectType,
-  ContextSlot,
+  ContextPolicy,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import { CONTEXT_TYPE_ICON, FALLBACK_CONTEXT_ICON } from "./contextSlotIcons";
-import { CONTEXT_TYPE_TILE_LABEL } from "./contextSlotTile.theme";
-import { contextSlotEntryPreview } from "./contextSlotPreview";
-import { ContextSlotDetailSheet } from "./ContextSlotDetailSheet";
-import { ContextSlotTile } from "./ContextSlotTile";
+import { CONTEXT_TYPE_ICON, FALLBACK_CONTEXT_ICON } from "./contextPolicyIcons";
+import { CONTEXT_TYPE_TILE_LABEL } from "./contextPolicyTile.theme";
+import { contextPolicyEntryPreview } from "./contextPolicyPreview";
+import { ContextPolicyDetailSheet } from "./ContextPolicyDetailSheet";
+import { ContextPolicyTile } from "./ContextPolicyTile";
 
-interface ContextSlotChipProps {
+interface ContextPolicyChipProps {
   conversationId: string;
   agentId: string | null;
   entry: InstanceContextEntry;
   /** Matching slot definition if the key is declared on the agent. */
-  slot?: ContextSlot;
+  slot?: ContextPolicy;
   className?: string;
 }
 
-export function ContextSlotChip({
+export function ContextPolicyChip({
   conversationId,
   agentId,
   entry,
   slot,
   className,
-}: ContextSlotChipProps) {
+}: ContextPolicyChipProps) {
   const [open, setOpen] = useState(false);
 
   const type: ContextObjectType = slot?.type ?? entry.type;
@@ -48,14 +48,14 @@ export function ContextSlotChip({
     selectInstanceContextEntry(conversationId, entry.key),
   );
   const preview = useMemo(
-    () => contextSlotEntryPreview(entry, type, liveEntry?.value),
+    () => contextPolicyEntryPreview(entry, type, liveEntry?.value),
     [entry, type, liveEntry?.value],
   );
   const tooltip = preview ? `${label} — ${preview}` : label;
 
   return (
     <>
-      <ContextSlotTile
+      <ContextPolicyTile
         typeLabel={typeLabel}
         title={label}
         icon={Icon}
@@ -64,7 +64,7 @@ export function ContextSlotChip({
         onClick={() => setOpen(true)}
         className={className}
       />
-      <ContextSlotDetailSheet
+      <ContextPolicyDetailSheet
         open={open}
         onOpenChange={setOpen}
         conversationId={conversationId}

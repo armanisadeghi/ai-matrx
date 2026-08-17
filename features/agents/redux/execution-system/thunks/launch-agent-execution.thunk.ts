@@ -339,7 +339,7 @@ export const launchAgentExecution = createAsyncThunk<
   // =========================================================================
   // Step 0.5: Ensure the agent's FULL execution payload is in Redux — but
   // only for the DIRECT-AGENT path. Shortcuts are self-sufficient: they carry
-  // their own variableDefinitions + contextSlots pinned to the frozen
+  // their own variableDefinitions + contextPolicies pinned to the frozen
   // version, and `createInstanceFromShortcut` reads them off the shortcut
   // record. Calling an agent fetch on the shortcut path would risk loading
   // the WRONG (current) version of the agent.
@@ -410,7 +410,7 @@ export const launchAgentExecution = createAsyncThunk<
               postPayload.variableDefinitions?.length ?? 0,
             variableNames:
               postPayload.variableDefinitions?.map((v) => v.name) ?? [],
-            contextSlotCount: postPayload.contextSlots?.length ?? 0,
+            contextPolicyCount: postPayload.contextPolicies?.length ?? 0,
             modelId: postPayload.modelId,
           });
         }
@@ -656,7 +656,7 @@ export const launchAgentExecution = createAsyncThunk<
             null,
             surfaceValueMappings ?? {},
             agent.variableDefinitions ?? [],
-            agent.contextSlots ?? [],
+            agent.contextPolicies ?? [],
           );
           if (result.errors.length > 0) {
             // Backstop only — required-missing is pre-checked in

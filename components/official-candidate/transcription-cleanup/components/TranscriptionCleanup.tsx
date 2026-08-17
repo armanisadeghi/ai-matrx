@@ -260,10 +260,10 @@ export default function TranscriptionCleanup({
                 </span>
                 <span className="text-[10px] text-muted-foreground/80 leading-tight break-all">
                   var: <code>{agent.transcriptVariableKey}</code>
-                  {agent.contextSlotKey && (
+                  {agent.contextPolicyKey && (
                     <>
                       {" "}
-                      · ctx: <code>{agent.contextSlotKey}</code>
+                      · ctx: <code>{agent.contextPolicyKey}</code>
                     </>
                   )}
                 </span>

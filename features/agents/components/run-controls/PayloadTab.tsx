@@ -27,21 +27,21 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import type {
   ContextObjectType,
-  ContextSlot,
+  ContextPolicy,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { UserInputPart } from "@/features/agents/types/request.types";
 import { makeSelectAssembledRequest } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
-import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
+import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
 import { EmptyStats, StatRow, StatSection } from "./panels/shared";
-import { TYPE_COLORS } from "./ContextSlotsTab";
+import { TYPE_COLORS } from "./ContextPoliciesTab";
 import { cn } from "@/lib/utils";
 
 // =============================================================================
 // Selectors
 // =============================================================================
 
-const EMPTY_SLOTS: ContextSlot[] = [];
+const EMPTY_SLOTS: ContextPolicy[] = [];
 const EMPTY_MAP: Record<string, InstanceContextEntry> = {};
 
 function selectAgentIdForConversation(
@@ -214,7 +214,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
 
   const declaredSlots =
     useAppSelector((state) =>
-      agentId ? selectAgentContextSlots(state, agentId) : undefined,
+      agentId ? selectAgentContextPolicies(state, agentId) : undefined,
     ) ?? EMPTY_SLOTS;
 
   const contextMap = useAppSelector((state) =>
@@ -222,7 +222,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
   );
 
   const slotsByKey = useMemo(() => {
-    const map = new Map<string, ContextSlot>();
+    const map = new Map<string, ContextPolicy>();
     for (const slot of declaredSlots) map.set(slot.key, slot);
     return map;
   }, [declaredSlots]);

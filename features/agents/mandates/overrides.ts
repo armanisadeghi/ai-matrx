@@ -3,7 +3,7 @@
 /**
  * Agent-mandate override service — the user/org half of the Mandates system:
  * browse every live mandate, see the resolved agent (system default vs override,
- * with provenance), and create/edit/delete `agent.slot_binding` rows (agent
+ * with provenance), and create/edit/delete `agent.mandate_binding` rows (agent
  * swap and/or settings-only `config_overrides`).
  *
  * Cross-repo system-of-record:
@@ -27,8 +27,8 @@ import type { Database, Json } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { invalidateMandateCache } from "./service";
 
-export type MandateDefinitionRow = Database["agent"]["Tables"]["slot_definition"]["Row"];
-export type MandateBindingRow = Database["agent"]["Tables"]["slot_binding"]["Row"];
+export type MandateDefinitionRow = Database["agent"]["Tables"]["mandate"]["Row"];
+export type MandateBindingRow = Database["agent"]["Tables"]["mandate_binding"]["Row"];
 
 /** The mandate's stored contract — `{required_variables, required_context_slots,
  * required_output_keys}`, seeded from the default agent's declarations.
@@ -77,7 +77,7 @@ export interface MandateAgentSummary {
 }
 
 export interface MandateOverridesData {
-  /** Live (non-placeholder) mandates, ordered by slot_key. */
+  /** Live (non-placeholder) mandates, ordered by mandate_key. */
   mandates: MandateDefinitionRow[];
   /** Every binding RLS lets this caller see (their own + their orgs'). */
   bindings: MandateBindingRow[];
@@ -94,13 +94,13 @@ export async function fetchMandateOverridesData(): Promise<MandateOverridesData>
   const [mandatesRes, bindingsRes] = await Promise.all([
     supabase
       .schema("agent")
-      .from("slot_definition")
+      .from("mandate")
       .select("*")
       .is("deleted_at", null)
-      .order("slot_key"),
+      .order("mandate_key"),
     supabase
       .schema("agent")
-      .from("slot_binding")
+      .from("mandate_binding")
       .select("*")
       .is("deleted_at", null)
       .order("created_at"),
@@ -175,9 +175,9 @@ export async function fetchMandatePickerData(
   const supabase = createClient();
   const { data: mandate, error } = await supabase
     .schema("agent")
-    .from("slot_definition")
+    .from("mandate")
     .select("*")
-    .eq("slot_key", mandateKey)
+    .eq("mandate_key", mandateKey)
     .is("deleted_at", null)
     .maybeSingle();
   if (error) throw error;
@@ -212,9 +212,9 @@ export async function fetchMandatePickerData(
 
   const { data: binding, error: bindingError } = await supabase
     .schema("agent")
-    .from("slot_binding")
+    .from("mandate_binding")
     .select("*")
-    .eq("slot_id", mandate.id)
+    .eq("mandate_id", mandate.id)
     .eq("principal_type", "user")
     .eq("subject_user_id", userId)
     .is("deleted_at", null)

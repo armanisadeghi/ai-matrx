@@ -38,7 +38,7 @@ function makeEmptyRecord(id: string): AgentShortcutRecord {
 
     agentName: null,
     variableDefinitions: [],
-    contextSlots: [],
+    contextPolicies: [],
 
     enabledFeatures: [],
     surfaceName: null,

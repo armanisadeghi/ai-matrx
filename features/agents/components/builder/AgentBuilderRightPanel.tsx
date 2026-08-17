@@ -68,7 +68,7 @@ export function AgentBuilderRightPanel({
     agentOptions,
   );
 
-  // Seed the builder's saved context-slot values into every new conversation
+  // Seed the builder's saved context-policy values into every new conversation
   // (initial + reset + autoclear split) so the engineer's test data travels
   // with the instance without having to re-enter it.
   useBuilderContextSeed(conversationId, agentId);

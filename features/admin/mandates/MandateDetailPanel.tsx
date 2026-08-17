@@ -1142,8 +1142,8 @@ function FactsPanel({
           </Fact>
           <Fact label="User text">
             {row.codeTruth.passes_user_input
-              ? "The call site passes user_input"
-              : "The call site does not pass user_input"}
+              ? "This Mandate accepts user text"
+              : "This Mandate forbids user text"}
           </Fact>
           <Fact label="Call sites">
             {row.codeTruth.call_sites?.length ? (
@@ -1153,8 +1153,7 @@ function FactsPanel({
                     key={`${site.source_file}:${site.line}`}
                     className="break-all font-mono text-[11px]"
                   >
-                    {site.source_file}:{site.line} · user text{" "}
-                    {site.passes_user_input ? "yes" : "no"}
+                    {site.source_file}:{site.line}
                   </div>
                 ))}
               </div>

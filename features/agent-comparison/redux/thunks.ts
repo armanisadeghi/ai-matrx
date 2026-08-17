@@ -137,7 +137,7 @@ export const setColumnAgent = createAsyncThunk<
 
     // Make sure the agent record + version history are loaded for the
     // dropdowns. fetchFullAgent populates the variableDefinitions /
-    // contextSlots that createManualInstance reads from state.
+    // contextPolicies that createManualInstance reads from state.
     await Promise.allSettled([
       dispatch(fetchFullAgent(agentId)).unwrap(),
       dispatch(fetchAgentVersionHistory({ agentId, limit: 100 })).unwrap(),

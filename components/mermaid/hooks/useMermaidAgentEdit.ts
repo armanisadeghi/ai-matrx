@@ -134,7 +134,7 @@ export function useMermaidAgentEdit() {
         await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
         const payload = selectAgentExecutionPayload(store.getState(), agentId);
         const defs = payload.variableDefinitions ?? [];
-        const slots = payload.contextSlots ?? [];
+        const slots = payload.contextPolicies ?? [];
         const slotKeys = new Set(slots.map((s) => s.key));
 
         // 2. Surface bindings (layered merge: global → org → user).

@@ -26,7 +26,7 @@ function extractCharCount(value: unknown): number | null {
   return null;
 }
 
-export function contextSlotValuePreview(
+export function contextPolicyValuePreview(
   value: unknown,
   type: ContextObjectType,
 ): string {
@@ -65,7 +65,7 @@ export function contextSlotValuePreview(
  * inlined — not zero document length). Prefer the live conversation value for
  * char count when the snapshot is a label placeholder or size hint.
  */
-export function contextSlotEntryPreview(
+export function contextPolicyEntryPreview(
   entry: { key: string; value: unknown; label?: string },
   type: ContextObjectType,
   liveValue?: unknown,
@@ -82,7 +82,7 @@ export function contextSlotEntryPreview(
   const snapChars = extractCharCount(entry.value);
   if (snapChars !== null) return formatCharCount(snapChars);
 
-  const textPreview = contextSlotValuePreview(resolved, type);
+  const textPreview = contextPolicyValuePreview(resolved, type);
   if (!textPreview) return "";
   if (label && textPreview === label) return "";
   return textPreview;

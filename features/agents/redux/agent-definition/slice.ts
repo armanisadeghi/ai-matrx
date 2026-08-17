@@ -53,7 +53,7 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
     variableDefinitions: null,
     settings: {} as AgentDefinition["settings"],
     tools: [],
-    contextSlots: [],
+    contextPolicies: [],
     modelTiers: null,
     outputSchema: null,
     customTools: [],
@@ -455,7 +455,7 @@ export const agentDefinitionSlice = createSlice({
         variableDefinitions: data.variableDefinitions ?? null,
         settings: data.settings ?? ({} as AgentDefinition["settings"]),
         tools: data.tools ?? [],
-        contextSlots: data.contextSlots ?? [],
+        contextPolicies: data.contextPolicies ?? [],
         modelTiers: data.modelTiers ?? null,
         outputSchema: data.outputSchema ?? null,
         customTools: data.customTools ?? [],
@@ -579,16 +579,16 @@ export const agentDefinitionSlice = createSlice({
       );
     },
 
-    setAgentContextSlots(
+    setAgentContextPolicies(
       state,
       action: PayloadAction<{
         id: string;
-        contextSlots: AgentDefinition["contextSlots"];
+        contextPolicies: AgentDefinition["contextPolicies"];
       }>,
     ) {
       const record = state.agents[action.payload.id];
       if (!record) return;
-      applyFieldEdit(record, "contextSlots", action.payload.contextSlots);
+      applyFieldEdit(record, "contextPolicies", action.payload.contextPolicies);
     },
 
     setAgentTools(
@@ -921,7 +921,7 @@ export const {
   setAgentMessages,
   setAgentSettings,
   setAgentVariableDefinitions,
-  setAgentContextSlots,
+  setAgentContextPolicies,
   setAgentTools,
   setAgentCustomTools,
   setAgentMcpServers,

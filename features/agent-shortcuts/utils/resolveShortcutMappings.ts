@@ -9,7 +9,7 @@
  * that way deleting the legacy columns later is a one-place change.
  *
  * DSL direction (canonical, per `features/surfaces/types.ts`):
- *   keys   = agent variable / context-slot names (the TARGET on the agent)
+ *   keys   = agent variable / context-policy names (the TARGET on the agent)
  *   target = the surface value name the data comes from
  *
  * The legacy columns run in the INVERSE direction (surface key → target

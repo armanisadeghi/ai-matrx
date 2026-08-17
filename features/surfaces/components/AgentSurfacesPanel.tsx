@@ -97,7 +97,7 @@ import {
   makeSelectSurfaceValuesStatus,
 } from "@/features/surfaces/redux/selectors";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import { EntityScopeTagger } from "@/features/scopes/components/entity-context/EntityScopeTagger";
 import { useEntityScopes } from "@/features/scopes/hooks/useEntityScopes";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
@@ -172,20 +172,20 @@ function buildMappingTargets(agent: AgentDefinition): MappingTarget[] {
       required: v.required ?? false,
     });
   }
-  for (const slot of agent.contextSlots ?? []) {
+  for (const slot of agent.contextPolicies ?? []) {
     if (seen.has(slot.key)) continue;
     seen.add(slot.key);
     targets.push({
       name: slot.key,
       label: slot.label,
       description: slot.description,
-      type: mapContextSlotType(slot),
+      type: mapContextPolicyType(slot),
     });
   }
   return targets;
 }
 
-function mapContextSlotType(slot: ContextSlot): SurfaceValue["valueType"] {
+function mapContextPolicyType(slot: ContextPolicy): SurfaceValue["valueType"] {
   switch (slot.type) {
     case "json":
       return "object";
@@ -992,7 +992,7 @@ function BindingEditorDialog({
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <Label className="text-xs">
-                Variable & context-slot mappings
+                Variable & context-policy mappings
               </Label>
               {loadingValues && (
                 <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />

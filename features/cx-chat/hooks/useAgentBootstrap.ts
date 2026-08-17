@@ -121,7 +121,7 @@ export function useAgentBootstrap() {
       return;
     }
 
-    // Fetch minimal execution data from the agents table (variableDefinitions + contextSlots).
+    // Fetch minimal execution data from the agents table (variableDefinitions + contextPolicies).
     // The thunk is idempotent — it skips the network call if the record is already ready.
     dispatch(fetchAgentExecutionMinimal(agentId)).then(() => {
       // Read the record from state after the thunk resolves

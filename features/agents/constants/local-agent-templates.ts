@@ -64,7 +64,7 @@ export const TEMPLATE_DATA: Omit<Partial<AgentDefinition>, "id"> = {
   // retired or removed.
   tools: [],
   customTools: [],
-  contextSlots: [],
+  contextPolicies: [],
   category: null,
   tags: [],
   isActive: true,

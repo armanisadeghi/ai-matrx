@@ -35,7 +35,7 @@ import type {
 import type { ResultDisplayMode } from "@/features/agents/utils/run-ui-utils";
 import type { ShortcutContext } from "@/features/agents/utils/shortcut-context-utils";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 
 function parseScopeMappings(raw: unknown): Record<string, string> | null {
   if (raw === null || raw === undefined) return null;
@@ -178,10 +178,10 @@ function parseVariableDefinitions(raw: unknown): VariableDefinition[] {
   );
 }
 
-function parseContextSlots(raw: unknown): ContextSlot[] {
+function parseContextPolicies(raw: unknown): ContextPolicy[] {
   if (!Array.isArray(raw)) return [];
   return raw.filter(
-    (item): item is ContextSlot =>
+    (item): item is ContextPolicy =>
       item !== null &&
       typeof item === "object" &&
       "key" in item &&
@@ -299,7 +299,7 @@ export const buildAgentShortcutMenu = createAsyncThunk<
         const parsedVariableDefinitions = parseVariableDefinitions(
           item.agent?.variable_definitions,
         );
-        const parsedContextSlots = parseContextSlots(item.agent?.context_slots);
+        const parsedContextPolicies = parseContextPolicies(item.agent?.context_slots);
 
         const shortcut: AgentShortcut = {
           id: item.id,
@@ -319,7 +319,7 @@ export const buildAgentShortcutMenu = createAsyncThunk<
 
           agentName: item.agent?.name ?? null,
           variableDefinitions: parsedVariableDefinitions,
-          contextSlots: parsedContextSlots,
+          contextPolicies: parsedContextPolicies,
 
           enabledFeatures: item.enabled_features as ShortcutContext[],
           surfaceName:
@@ -437,7 +437,7 @@ export const fetchShortcutsForContext = createAsyncThunk<
         variableDefinitions: parseVariableDefinitions(
           row.agent_variable_definitions,
         ),
-        contextSlots: parseContextSlots(row.agent_context_slots),
+        contextPolicies: parseContextPolicies(row.agent_context_slots),
 
         enabledFeatures: row.enabled_features as ShortcutContext[],
         surfaceName:
@@ -466,7 +466,7 @@ export const fetchShortcutsForContext = createAsyncThunk<
 
       shortcuts.push(shortcut);
       // Note: we deliberately do not touch state.agentDefinition here —
-      // shortcuts carry their own variableDefinitions + contextSlots
+      // shortcuts carry their own variableDefinitions + contextPolicies
       // pinned to agentVersionId. Loading the agent record could pull
       // the wrong (current) version.
     }
@@ -914,7 +914,7 @@ export interface ShortcutApiRow {
 
 export function shortcutRowToFrontend(row: ShortcutApiRow): AgentShortcut {
   // The REST endpoint returns the raw agx_shortcut row — no agent join,
-  // so variableDefinitions + contextSlots are left empty. This path is
+  // so variableDefinitions + contextPolicies are left empty. This path is
   // primarily used by the management UI (ShortcutForm fetches the agent
   // separately via fetchAgentExecutionMinimal). Never execute a shortcut
   // loaded ONLY via this path without first hydrating it from the menu RPC.
@@ -934,7 +934,7 @@ export function shortcutRowToFrontend(row: ShortcutApiRow): AgentShortcut {
     isVersion,
     agentName: null,
     variableDefinitions: [],
-    contextSlots: [],
+    contextPolicies: [],
     enabledFeatures: (row.enabled_features as ShortcutContext[]) ?? [],
     surfaceName: row.surface_name ?? null,
     scopeMappings: parseScopeMappings(row.scope_mappings),
@@ -1512,7 +1512,7 @@ function unifiedMenuItemToShortcut(
       (loose.agent as { variable_definitions?: unknown } | undefined)
         ?.variable_definitions,
   );
-  const contextSlots = parseContextSlots(
+  const contextPolicies = parseContextPolicies(
     loose.agent_context_slots ??
       (loose.agent as { context_slots?: unknown } | undefined)?.context_slots,
   );
@@ -1526,7 +1526,7 @@ function unifiedMenuItemToShortcut(
     ...base,
     agentName,
     variableDefinitions,
-    contextSlots,
+    contextPolicies,
   };
 }
 

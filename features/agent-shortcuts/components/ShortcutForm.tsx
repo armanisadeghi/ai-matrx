@@ -63,9 +63,9 @@ import { AgentListDropdown } from "@/features/agents/components/agent-listings/A
 import { AgentVersionPicker } from "./AgentVersionPicker";
 import { ScopeMappingEditor } from "./ScopeMappingEditor";
 import type { AgentVariableDefinition } from "./ScopeMappingEditor";
-import { ContextSlotMappingEditor } from "./ContextSlotMappingEditor";
+import { ContextPolicyMappingEditor } from "./ContextPolicyMappingEditor";
 import { DefaultVariableValuesEditor } from "./DefaultVariableValuesEditor";
-import { DefaultContextSlotValuesEditor } from "./DefaultContextSlotValuesEditor";
+import { DefaultContextPolicyValuesEditor } from "./DefaultContextPolicyValuesEditor";
 import { ShortcutScopePicker } from "./ShortcutScopePicker";
 import { ShortcutContextsPicker } from "./ShortcutContextsPicker";
 import { CategorySelect } from "./CategorySelect";
@@ -82,7 +82,7 @@ import {
 } from "@/features/agents/redux/agent-definition/thunks";
 import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import type {
   AgentScope,
   AgentShortcut,
@@ -308,7 +308,7 @@ function emptyFormData(): ShortcutFormData {
     isVersion: false,
     agentName: null,
     variableDefinitions: [],
-    contextSlots: [],
+    contextPolicies: [],
     surfaceName: null,
     valueMappings: null,
     enabledFeatures: [],
@@ -400,9 +400,9 @@ export function ShortcutForm({
     return (variableDefinitionsProp as VariableDefinition[]) ?? [];
   }, [agentRecord?.variableDefinitions, variableDefinitionsProp]);
 
-  const contextSlots: ContextSlot[] = useMemo(
-    () => agentRecord?.contextSlots ?? [],
-    [agentRecord?.contextSlots],
+  const contextPolicies: ContextPolicy[] = useMemo(
+    () => agentRecord?.contextPolicies ?? [],
+    [agentRecord?.contextPolicies],
   );
 
   useEffect(() => {
@@ -758,8 +758,8 @@ export function ShortcutForm({
         >
           Scope → Context Slot Mappings
         </LabelWithHelp>
-        <ContextSlotMappingEditor
-          contextSlots={contextSlots}
+        <ContextPolicyMappingEditor
+          contextPolicies={contextPolicies}
           contextMappings={formData.contextMappings}
           onChange={(v) => handleChange("contextMappings", v)}
           compact
@@ -1023,8 +1023,8 @@ export function ShortcutForm({
           >
             Default Context Slot Values
           </LabelWithHelp>
-          <DefaultContextSlotValuesEditor
-            contextSlots={contextSlots}
+          <DefaultContextPolicyValuesEditor
+            contextPolicies={contextPolicies}
             values={formData.contextOverrides}
             onChange={(v) => handleChange("contextOverrides", v)}
             disabled={saving}

@@ -109,7 +109,7 @@ interface ResolveOutput {
   agentName: string;
   surfaceName: string;
   variableDefNames: string[];
-  contextSlotKeys: string[];
+  contextPolicyKeys: string[];
   layers: MappingLayer[];
   merged: MergedValueMappings | null;
   mapping: SurfaceBoundScopeMappingResult;
@@ -240,7 +240,7 @@ export default function SurfaceMappingsDemoPage() {
         null,
         merged?.merged ?? {},
         payload.variableDefinitions ?? [],
-        payload.contextSlots ?? [],
+        payload.contextPolicies ?? [],
       );
 
       setOutput({
@@ -249,7 +249,7 @@ export default function SurfaceMappingsDemoPage() {
         variableDefNames: (payload.variableDefinitions ?? []).map(
           (v) => v.name,
         ),
-        contextSlotKeys: (payload.contextSlots ?? []).map((s) => s.key),
+        contextPolicyKeys: (payload.contextPolicies ?? []).map((s) => s.key),
         layers,
         merged,
         mapping,
@@ -509,8 +509,8 @@ export default function SurfaceMappingsDemoPage() {
               <span className="text-foreground">{output.surfaceName}</span> —
               agent declares {output.variableDefNames.length} variable(s) [
               {output.variableDefNames.join(", ") || "none"}] and{" "}
-              {output.contextSlotKeys.length} context slot(s) [
-              {output.contextSlotKeys.join(", ") || "none"}].
+              {output.contextPolicyKeys.length} context slot(s) [
+              {output.contextPolicyKeys.join(", ") || "none"}].
             </p>
 
             {/* Binding layers + merge */}

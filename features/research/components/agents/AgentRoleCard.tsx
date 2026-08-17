@@ -126,7 +126,7 @@ export function AgentRoleCard({
       systemPayload.isReady
         ? systemContractRows({
             variableDefinitions: systemPayload.variableDefinitions,
-            contextSlots: systemPayload.contextSlots,
+            contextPolicies: systemPayload.contextPolicies,
           })
         : { variables: [], slots: [] },
     [systemPayload],
@@ -348,7 +348,7 @@ export function AgentRoleCard({
                     systemPayload.isReady
                       ? {
                           variableDefinitions: systemPayload.variableDefinitions,
-                          contextSlots: systemPayload.contextSlots,
+                          contextPolicies: systemPayload.contextPolicies,
                         }
                       : null
                   }

@@ -92,7 +92,7 @@ export interface AgentEnvironmentBindings {
    */
   scopeMappings: Record<string, string> | null;
   /**
-   * Map from UI-scope keys to agent context-slot keys.
+   * Map from UI-scope keys to agent context-policy keys.
    * Parity with scopeMappings but for context slots. Takes precedence over
    * contextOverrides and over ad-hoc context entries.
    * Example: `{ file_path: "target_file", task_id: "current_task" }`
@@ -118,7 +118,7 @@ export interface AgentValueDefaults {
   defaultVariables: Record<string, unknown> | null;
   /**
    * Add and/or seed context slots on launch.
-   * Keyed by context-slot KEY. Can introduce brand-new slots not declared
+   * Keyed by context-policy KEY. Can introduce brand-new slots not declared
    * on the agent, or override defaults for declared slots.
    */
   contextOverrides: Record<string, unknown> | null;

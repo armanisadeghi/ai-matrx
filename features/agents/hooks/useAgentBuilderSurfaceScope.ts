@@ -33,7 +33,7 @@ import {
   selectAgentAccessLevel,
   selectAgentCategory,
   selectAgentChangeNote,
-  selectAgentContextSlots,
+  selectAgentContextPolicies,
   selectAgentCustomTools,
   selectAgentDefinition,
   selectAgentDescription,
@@ -126,7 +126,7 @@ export function useAgentBuilderSurfaceScope(
       >,
 
       // ── Inputs ─────────────────────────────────────────────────────────
-      agent_context_slots: selectAgentContextSlots(state, agentId) ?? undefined,
+      agent_context_slots: selectAgentContextPolicies(state, agentId) ?? undefined,
       agent_variable_definitions:
         selectAgentVariableDefinitions(state, agentId) ?? undefined,
 

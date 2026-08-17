@@ -74,6 +74,28 @@ describe("marketing site integration JSON", () => {
     );
   });
 
+  it("preserves URL-change intake and unknown provider configuration", () => {
+    const existing = {
+      marketing: {
+        url_change_webhook: {
+          enabled: true,
+          token_sha256: "a".repeat(64),
+          rotated_at: "2026-08-17T00:00:00Z",
+        },
+        providers: {
+          future_provider: { enabled: true, resource_ref: "future-1" },
+        },
+      },
+    };
+
+    const result = buildSiteIntegrations(
+      existing,
+      parseSiteIntegrations(existing),
+    );
+
+    expect(result).toMatchObject(existing);
+  });
+
   it("rejects token-shaped credential values and invalid property references", () => {
     const draft = parseSiteIntegrations({});
     draft.googleSearchConsole = {

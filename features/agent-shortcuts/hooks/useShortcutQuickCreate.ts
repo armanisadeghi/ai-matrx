@@ -279,7 +279,7 @@ export function useShortcutQuickCreate({
         isVersion: !useLatest && agentVersionId != null,
         agentName: agent?.name ?? null,
         variableDefinitions: agent?.variableDefinitions ?? [],
-        contextSlots: agent?.contextSlots ?? [],
+        contextPolicies: agent?.contextPolicies ?? [],
         // AgentExecutionConfig — defaults first, explicit overrides after
         ...DEFAULT_AGENT_EXECUTION_CONFIG,
         // Surfaces & scope routing (after defaults so mappings are not overwritten)
@@ -309,7 +309,7 @@ export function useShortcutQuickCreate({
     [
       agent?.name,
       agent?.variableDefinitions,
-      agent?.contextSlots,
+      agent?.contextPolicies,
       agentId,
       agentVersionId,
       allowChat,

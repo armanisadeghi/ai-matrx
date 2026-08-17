@@ -177,7 +177,7 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
 
     agentName: null,
     variableDefinitions: [],
-    contextSlots: [],
+    contextPolicies: [],
 
     enabledFeatures:
       ((loose.enabled_features ?? loose.enabled_contexts) as ShortcutContext[]) ??

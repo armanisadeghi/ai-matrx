@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ContextSlotChipStrip
+ * ContextPolicyChipStrip
  *
  * Renders context slot chips for a conversation's live context entries.
  * One entry → single chip. Multiple → collapsed "Context Items (N)" popover.
@@ -15,14 +15,14 @@ import { useMemo } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
-import { selectAgentContextSlots } from "@/features/agents/redux/agent-definition/selectors";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
-import { ContextSlotChip } from "./ContextSlotChip";
-import { ContextSlotItemsPopover } from "./ContextSlotItemsPopover";
+import { ContextPolicyChip } from "./ContextPolicyChip";
+import { ContextPolicyItemsPopover } from "./ContextPolicyItemsPopover";
 import { cn } from "@/lib/utils";
 
-interface ContextSlotChipStripProps {
+interface ContextPolicyChipStripProps {
   conversationId: string;
   agentId: string | null;
   className?: string;
@@ -38,13 +38,13 @@ interface ContextSlotChipStripProps {
   entries?: InstanceContextEntry[];
 }
 
-export function ContextSlotChipStrip({
+export function ContextPolicyChipStrip({
   conversationId,
   agentId,
   className,
   showLabel = false,
   entries: entriesProp,
-}: ContextSlotChipStripProps) {
+}: ContextPolicyChipStripProps) {
   const selectEntries = useMemo(
     () => selectInstanceContextEntries(conversationId),
     [conversationId],
@@ -55,11 +55,11 @@ export function ContextSlotChipStrip({
   // is passed at all (the live "next request" surfaces).
   const entries = entriesProp ?? liveEntries;
 
-  const slots = useAppSelector((state: RootState): ContextSlot[] | undefined =>
-    agentId ? selectAgentContextSlots(state, agentId) : undefined,
+  const slots = useAppSelector((state: RootState): ContextPolicy[] | undefined =>
+    agentId ? selectAgentContextPolicies(state, agentId) : undefined,
   );
   const slotByKey = useMemo(() => {
-    const map = new Map<string, ContextSlot>();
+    const map = new Map<string, ContextPolicy>();
     for (const s of slots ?? []) map.set(s.key, s);
     return map;
   }, [slots]);
@@ -90,7 +90,7 @@ export function ContextSlotChipStrip({
     return (
       <div className={cn("flex flex-wrap gap-1.5 items-center", className)}>
         {labelEl}
-        <ContextSlotChip
+        <ContextPolicyChip
           conversationId={conversationId}
           agentId={agentId}
           entry={entry}
@@ -103,7 +103,7 @@ export function ContextSlotChipStrip({
   return (
     <div className={cn("flex flex-wrap gap-1.5 items-center", className)}>
       {labelEl}
-      <ContextSlotItemsPopover
+      <ContextPolicyItemsPopover
         conversationId={conversationId}
         agentId={agentId}
         entries={visibleEntries}

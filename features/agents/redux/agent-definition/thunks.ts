@@ -7,7 +7,7 @@
  *   fetchSharedAgents            — agents shared with me (for "shared" tab)
  *   fetchSharedAgentsForChat     — minimal shared list for chat agent picker
  *   fetchAgentAccessLevel        — current user's permission level on an agent
- *   fetchAgentExecutionMinimal   — id + variableDefinitions + contextSlots (skips if ready)
+ *   fetchAgentExecutionMinimal   — id + variableDefinitions + contextPolicies (skips if ready)
  *   fetchAgentExecutionFull      — adds settings, tools, model (skips if ready)
  *   fetchFullAgent               — complete row, marks record clean
  *   fetchAgentVersionHistory     — paginated version list (returns data, no slice storage)
@@ -273,7 +273,7 @@ export const fetchAgentsListFull = createAsyncThunk<void, void, ThunkApi>(
 );
 
 /**
- * Fetches the minimal execution payload for an agent: id, variableDefinitions, contextSlots.
+ * Fetches the minimal execution payload for an agent: id, variableDefinitions, contextPolicies.
  *
  * Skips the network call if both fields are already loaded (isReady = true).
  * Call this before executing an agent from a context menu shortcut.
@@ -328,7 +328,7 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
       mergePartialAgent({
         id: row.id,
         variableDefinitions: row.variable_definitions,
-        contextSlots: row.context_slots ?? [],
+        contextPolicies: row.context_slots ?? [],
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "execution" }));
@@ -367,7 +367,7 @@ export const fetchAgentExecutionFull = createAsyncThunk<void, string, ThunkApi>(
       mergePartialAgent({
         id: row.id,
         variableDefinitions: row.variable_definitions,
-        contextSlots: row.context_slots ?? [],
+        contextPolicies: row.context_slots ?? [],
         settings: row.settings,
         tools: row.tools,
         customTools: row.custom_tools,
@@ -758,7 +758,7 @@ export const createAgent = createAsyncThunk<
     variableDefinitions: partial.variableDefinitions ?? null,
     settings: partial.settings ?? ({} as AgentDefinition["settings"]),
     tools: partial.tools ?? [],
-    contextSlots: partial.contextSlots ?? [],
+    contextPolicies: partial.contextPolicies ?? [],
     modelTiers: partial.modelTiers ?? null,
     outputSchema: partial.outputSchema ?? null,
     customTools: partial.customTools ?? [],

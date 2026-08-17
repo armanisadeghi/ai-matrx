@@ -25,7 +25,7 @@
  *      (if the agent declares `contextVariableKey`) wire user context as a
  *      regular variable too. userValues take priority in resolution.
  *   4. setContextEntries — only when the agent uses slot-based context
- *      (contextSlotKey) or as a fallback for free-form context. Skipped when
+ *      (contextPolicyKey) or as a fallback for free-form context. Skipped when
  *      the agent uses contextVariableKey instead.
  *   5. executeInstance — fire-and-forget. Redux is the source of truth for
  *      streaming progress; selectors below feed the UI live.
@@ -140,7 +140,7 @@ export function useAiPostProcess() {
         );
 
         if (hasContext && !agent.contextVariableKey) {
-          const key = agent.contextSlotKey ?? FALLBACK_CONTEXT_KEY;
+          const key = agent.contextPolicyKey ?? FALLBACK_CONTEXT_KEY;
           dispatch(
             setContextEntries({
               conversationId: cid,
@@ -148,7 +148,7 @@ export function useAiPostProcess() {
                 {
                   key,
                   value: contextValue,
-                  slotMatched: !!agent.contextSlotKey,
+                  slotMatched: !!agent.contextPolicyKey,
                 },
               ],
             }),

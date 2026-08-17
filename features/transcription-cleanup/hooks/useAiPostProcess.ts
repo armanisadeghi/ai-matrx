@@ -168,7 +168,7 @@ export function useAiPostProcess() {
         await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
         const payload = selectAgentExecutionPayload(store.getState(), agentId);
         const defs = payload.variableDefinitions ?? [];
-        const slots = payload.contextSlots ?? [];
+        const slots = payload.contextPolicies ?? [];
         const slotKeys = new Set(slots.map((s) => s.key));
 
         // 2. Surface bindings — same layered per-key merge as the launch

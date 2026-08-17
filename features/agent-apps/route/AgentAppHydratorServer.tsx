@@ -19,7 +19,7 @@ import { AgentHydrator } from "@/features/agents/route/AgentHydrator";
  * agent definition that powers it, and hands both to client hydrators.
  *
  * Why both: every sub-route under /agent-apps/[id] needs the agent's
- * variableDefinitions / contextSlots / settings to render the management
+ * variableDefinitions / contextPolicies / settings to render the management
  * UI (variables card, version picker, etc). Resolving on the server here
  * avoids a client-side fetch waterfall and means selectAgentById can
  * return real data on first paint.

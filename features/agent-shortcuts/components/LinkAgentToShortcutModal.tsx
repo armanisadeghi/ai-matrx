@@ -206,7 +206,7 @@ export function LinkAgentToShortcutModal({
         isVersion: !useLatest && agent.currentVersionId != null,
         agentName: agent.name,
         variableDefinitions: [],
-        contextSlots: [],
+        contextPolicies: [],
         surfaceName: null,
         valueMappings: null,
         enabledFeatures: parseShortcutContextsInput(enabledFeaturesInput),

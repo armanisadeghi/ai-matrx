@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-08-15
+**Last updated:** 2026-08-17
 
 ## Internal Authority Router
 
@@ -476,6 +476,14 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 - No legacy crawler data is migrated or read.
 - **Google OAuth refresh tokens live ONLY in the canonical secrets vault** (`features/secrets`; aidream is the sole encryption owner). `users.integration_connections` holds safe metadata plus the stable `credential_item_id`; `vault_secret_key` is only a loud legacy fallback until its removal — never ciphertext. One Google connection requests the combined read-only Search Console, Analytics, and YouTube scope set. YouTube channels are safe `youtube_channel` resource rows; access tokens remain server-side and ephemeral. A parallel encryption pathway for any credential is a defect (the bespoke AES-256-GCM control plane was annihilated 2026-07-20). Site JSON contains only connection/resource references, never tokens or client secrets.
 - **Automatic provider binds use provider-scoped CAS rebasing** (`updateBuiltInProviderIntegration`). Retry unrelated `web.site.version` bumps once; preserve every sibling provider; reject a concurrent change to the same provider. Manual whole-form saves remain strict CAS updates.
+- **URL changes have three equal sources:** Matrx CMS publishing, a site-scoped
+  external CMS webhook, and recurring crawler diffs. The Integrations workspace
+  generates the external token locally, persists only its SHA-256 hash through
+  the existing version-checked direct-Supabase site update, shows the site's
+  IndexNow ownership-file location, and reads recent IndexNow/Google receipts
+  directly from `web.page_evidence`. Every evidence row is a door to its
+  canonical page. Cross-repo contract:
+  `common-docs/systems/url-change-discovery/FEATURE.md`.
 - Exchange/disconnect are aidream endpoints; disconnect revokes at Google AND deletes the vault item. Connection lists, discovered resources, site bindings, and all crawler/analysis history are read directly from Supabase under RLS. The scraper's GSC sync resolves the credential through aidream's service-token internal endpoint — the scraper deployment needs `AIDREAM_URL` + `AIDREAM_SERVICE_TOKEN`, no shared encryption env.
 
 - **The Marketing surface fleet is the ONE agent-context system for this feature.** Tree: `matrx-user/marketing` (hub) · `marketing-brand` → `marketing-site` → its verticals (`site-pages`, `page`, `crawls`, `crawl`, `audit`, `analysis`, `findings`, `links`, `backlinks`, `coverage`, `sitemaps`, `discovery`, `integrations`, `site-settings`, `site-keywords`, `site-media`) · `marketing-ranks-hub` (cross-site, standalone — deliberately NOT inheriting brand/site; `marketing-batches` was retired with its route on 2026-08-11). Manifests in `features/surfaces/manifests/marketing*.manifest.ts`; snapshots/settings/access/cost routes deliberately fold into their parent surface (route→surface logic in `features/surfaces/utils/route-to-surface.ts` `resolveMarketingSurface`, unit-tested). Parent context flows as XML: `brand_context`/`site_context` built ONLY by `lib/surface-context.ts` and supplied through `lib/scopes/site-surface-base.tsx` (`useMarketingSiteSurfaceBase().getBaseValues()`) — every workspace's `SurfaceRuntimeProvider` spreads the base first, then its own manifest-declared keys, built strictly from already-loaded query data (getScope never fetches). Adding a value? Declare it in the manifest, emit it in the workspace's provider, re-sync the DB (`surface-authoring` skill) — never pass an undeclared key.
@@ -501,6 +509,15 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. The GA4 authorization/binding/reporting path is prepared but campaign-paused until the Workspace review is stable; no production GA4 collection runs in this phase. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-08-17 — Codex: **URL Change Discovery setup and evidence are now part of
+  Site Integrations.** Matrx CMS needs no setup; externally hosted clients get
+  a rotatable, site-scoped webhook and the exact IndexNow key-file location;
+  recurring crawls remain an independent source. The one-time raw token is
+  browser-generated and never stored, while recent provider receipts read
+  directly from `web.page_evidence` with canonical page doors. Integration
+  saves now preserve unknown marketing/provider keys so the intake hash cannot
+  be erased by editing a sibling Google binding.
 
 - 2026-08-16 — Claude: **Bulk Search Console standing is now a primitive, not a
   per-row fetch.** `data/service.ts listPageSearchPerformance(pageIds)` +

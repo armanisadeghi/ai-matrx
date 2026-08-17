@@ -136,7 +136,7 @@ export const CONTEXT_ITEM_TYPE_DEFS: ContextItemTypeDef[] = [
   {
     // The live, collaborative working document (re-sent every turn — editing
     // it reaches the agent automatically, no re-attach prompt). Reached via the
-    // context-slot strip, keyed `working_document`, NOT as a resource block.
+    // context-policy strip, keyed `working_document`, NOT as a resource block.
     // No Footer/TitleActions: the body renders the full DocumentsWorkspace,
     // which owns its own header, tabs, view controls, and status chrome.
     blockTypes: ["working_document"],

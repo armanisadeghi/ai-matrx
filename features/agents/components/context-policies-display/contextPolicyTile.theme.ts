@@ -1,12 +1,12 @@
 import type { ContextObjectType } from "@/features/agents/types/agent-api-types";
 
-export interface ContextSlotTileTheme {
+export interface ContextPolicyTileTheme {
   surface: string;
   icon: string;
 }
 
 /** Gradient surfaces aligned with ResourceAttachmentTile — one per context type. */
-export const CONTEXT_SLOT_TILE_THEMES: Record<string, ContextSlotTileTheme> = {
+export const CONTEXT_SLOT_TILE_THEMES: Record<string, ContextPolicyTileTheme> = {
   text: {
     surface:
       "bg-gradient-to-br from-blue-100 via-blue-50/95 to-white/80 dark:from-blue-950/50 dark:via-blue-950/25 dark:to-blue-950/10",
@@ -83,8 +83,8 @@ export const CONTEXT_TYPE_TILE_LABEL: Record<ContextObjectType, string> = {
   variable: "Variable",
 };
 
-export function resolveContextSlotTileTheme(
+export function resolveContextPolicyTileTheme(
   themeKey: string,
-): ContextSlotTileTheme {
+): ContextPolicyTileTheme {
   return CONTEXT_SLOT_TILE_THEMES[themeKey] ?? CONTEXT_SLOT_TILE_THEMES.default;
 }

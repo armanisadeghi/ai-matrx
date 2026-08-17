@@ -38,7 +38,7 @@ const SURFACE_NAME = "matrx-public/p";
 const agent = {
   id: AGENT_ID,
   name: "Surface mapping reporter",
-  contextSlots: [],
+  contextPolicies: [],
 };
 
 function makeStore() {

@@ -13,7 +13,7 @@
  *
  *   - Identity:        appId, agentId, agentVersionId, useLatest, surfaceKey
  *   - Conversation:    conversationId (managed)
- *   - Agent metadata:  agent (definition), variableDefinitions, contextSlots
+ *   - Agent metadata:  agent (definition), variableDefinitions, contextPolicies
  *   - Variables:       variables (resolved), setVariable(name, value), setVariables(values)
  *   - Context:         contextEntries, setContext(entries), clearContext()
  *   - Resources:       resources, addResource(...), removeResource(id), clearResources()
@@ -178,7 +178,7 @@ export interface UseAgentAppReturn {
   // ── Agent metadata (read-only, sourced from the live agent) ────────────
   agent: AgentDefinition | undefined;
   variableDefinitions: AgentDefinition["variableDefinitions"];
-  contextSlots: AgentDefinition["contextSlots"];
+  contextPolicies: AgentDefinition["contextPolicies"];
 
   // ── Variables ─────────────────────────────────────────────────────────
   variables: Record<string, unknown>;
@@ -264,7 +264,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
   const dispatch = useAppDispatch();
 
   // ── Agent payload readiness gate ──────────────────────────────────────
-  // The launcher's createInstance reads variableDefinitions + contextSlots
+  // The launcher's createInstance reads variableDefinitions + contextPolicies
   // from Redux at instance-create time and snapshots them onto the
   // conversation. If we let it fire before the agent has loaded, the
   // instance is permanently seeded with empty variables and the variable
@@ -643,7 +643,7 @@ export function useAgentApp(args: UseAgentAppArgs): UseAgentAppReturn {
       conversationId,
       agent,
       variableDefinitions: agent?.variableDefinitions ?? null,
-      contextSlots: agent?.contextSlots ?? [],
+      contextPolicies: agent?.contextPolicies ?? [],
       variables: variables as Record<string, unknown>,
       setVariable,
       setVariables,

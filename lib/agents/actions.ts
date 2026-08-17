@@ -44,7 +44,7 @@ function seedToInsertPayload(
       seed.tools === undefined
         ? undefined
         : sanitizeAgentToolIds(seed.tools, "createAgentFromSeed"),
-    context_slots: seed.contextSlots,
+    context_slots: seed.contextPolicies,
     model_tiers: seed.modelTiers,
     output_schema: seed.outputSchema,
     custom_tools: seed.customTools,

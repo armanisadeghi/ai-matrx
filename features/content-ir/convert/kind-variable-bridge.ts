@@ -1,12 +1,12 @@
 /**
  * Kind ↔ agent-spec bridge (SHAPE_SYSTEM.md ruling R5) — pure translators
  * between the Shape System's KindSchema field model and the production agent
- * input system (VariableDefinition) and context slots (ContextSlot).
+ * input system (VariableDefinition) and context slots (ContextPolicy).
  *
  * Three converters, all pure (no React / Redux / Supabase):
  *   1. kindFieldsToVariableDefinitions — kind fields (+ sidecar) → agent variables
  *   2. variableDefinitionsToKindFields — agent variables → kind fields + sidecar
- *   3. contextSlotsToKindFields        — agent context slots → kind fields
+ *   3. contextPoliciesToKindFields        — agent context slots → kind fields
  *
  * FIDELITY MODEL (W3-A agent-input bridge, 2026-07-15) — the conversion is
  * faithful along two channels:
@@ -59,7 +59,7 @@ import type {
   VariableCustomComponent,
   VariableDefinition,
 } from "@/features/agents/types/agent-definition.types";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import { sanitizeVariableName } from "@/features/agents/utils/variable-utils";
 import { readStructuredList } from "@/features/agents/utils/variable-customcomponent";
 
@@ -813,7 +813,7 @@ function convertVariable(v: VariableDefinition): VariableConversion {
 }
 
 // ---------------------------------------------------------------------------
-// 3) ContextSlots → kind fields
+// 3) ContextPolicies → kind fields
 // ---------------------------------------------------------------------------
 
 /**
@@ -822,7 +822,7 @@ function convertVariable(v: VariableDefinition): VariableConversion {
  *
  * MAPPING TABLE:
  *
- * | ContextSlot.type                                                    | FieldSchema              | loss entry                                    |
+ * | ContextPolicy.type                                                    | FieldSchema              | loss entry                                    |
  * |---------------------------------------------------------------------|--------------------------|-----------------------------------------------|
  * | text                                                                | string                   | —                                             |
  * | json                                                                | record {values:"string"} | always — arbitrary JSON narrowed to record-of-strings, the closest FieldSchema shape (`record` values are scalar-typed; there is no `any`) |
@@ -838,8 +838,8 @@ function convertVariable(v: VariableDefinition): VariableConversion {
  * - Field keys are the slot keys verbatim; duplicates overwrite (last wins)
  *   and record a loss.
  */
-export function contextSlotsToKindFields(
-  slots: ContextSlot[],
+export function contextPoliciesToKindFields(
+  slots: ContextPolicy[],
 ): KindFieldsConversion {
   const fields: KindSchema["fields"] = {};
   const losses: BridgeLoss[] = [];

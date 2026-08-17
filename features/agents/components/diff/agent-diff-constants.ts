@@ -24,7 +24,7 @@ export const AGENT_EXCLUDE_PATHS = new Set([
 /** Identity keys for array matching — prevents false diffs when items shift position */
 export const AGENT_IDENTITY_KEYS: Record<string, string> = {
   variableDefinitions: "name",
-  contextSlots: "key",
+  contextPolicies: "key",
   customTools: "name",
 };
 

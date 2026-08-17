@@ -359,7 +359,7 @@ export interface BindingFieldState {
   allValue: ValueMapping;
 }
 
-/** Keyed by agent variable / context-slot name. */
+/** Keyed by agent variable / context-policy name. */
 export type BindingStateMap = Record<string, BindingFieldState>;
 
 export type RowKind = "create" | "update";
@@ -405,7 +405,7 @@ export function buildBindingTargets(agent: AgentDefinition): BindingTarget[] {
       required: v.required ?? false,
     });
   }
-  for (const slot of agent.contextSlots ?? []) {
+  for (const slot of agent.contextPolicies ?? []) {
     if (seen.has(slot.key)) continue;
     seen.add(slot.key);
     out.push({
@@ -619,7 +619,7 @@ export function buildCreateFormData(
 
     agentName: ctx.agent.name,
     variableDefinitions: ctx.agent.variableDefinitions ?? [],
-    contextSlots: ctx.agent.contextSlots ?? [],
+    contextPolicies: ctx.agent.contextPolicies ?? [],
 
     enabledFeatures: ctx.template?.enabledFeatures ?? [],
     surfaceName: row.surfaceName,

@@ -563,8 +563,7 @@ function isMandateCodeTruthReport(value: unknown): value is MandateCodeTruthRepo
           (site) =>
             isJsonObject(site) &&
             typeof site.source_file === "string" &&
-            typeof site.line === "number" &&
-            typeof site.passes_user_input === "boolean",
+            typeof site.line === "number",
         )
       ) {
         return false;

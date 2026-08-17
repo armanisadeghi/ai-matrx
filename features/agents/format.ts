@@ -45,7 +45,7 @@ export function agentDefinitionSummary(
     "",
     `Settings: ${Object.keys(agent.settings ?? {}).length}`,
     `Variables: ${agent.variableDefinitions?.length ?? 0}`,
-    `Context slots: ${agent.contextSlots?.length ?? 0}`,
+    `Context slots: ${agent.contextPolicies?.length ?? 0}`,
     `Tools: ${(agent.tools?.length ?? 0) + (agent.customTools?.length ?? 0)}`,
     `MCP servers: ${agent.mcpServers?.length ?? 0}`,
     `Messages: ${agent.messages?.length ?? 0}`,

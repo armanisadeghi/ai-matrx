@@ -91,7 +91,7 @@ function readAgentSnapshot(
   agentType: AgentType;
   variableDefinitions: VariableDefinition[];
   baseSettings: Partial<LLMParams>;
-  contextSlots: Array<{ key: string }>;
+  contextPolicies: Array<{ key: string }>;
   isCreator: boolean;
 } {
   const agent = state.agentDefinition.agents?.[agentId];
@@ -119,7 +119,7 @@ function readAgentSnapshot(
       agent?.modelId,
       agent?.uiGates,
     ),
-    contextSlots: agent?.contextSlots ?? [],
+    contextPolicies: agent?.contextPolicies ?? [],
     isCreator: agent?.isOwner ?? false,
   };
 }
@@ -379,7 +379,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
   const {
     agentId,
     variableDefinitions: shortcutVariableDefinitions,
-    contextSlots: shortcutContextSlots,
+    contextPolicies: shortcutContextPolicies,
   } = shortcut;
 
   if (!agentId) {
@@ -499,7 +499,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
   ) {
     const overrideEntries = Object.entries(shortcut.contextOverrides).map(
       ([key, value]) => {
-        const slot = shortcutContextSlots.find((s) => s.key === key);
+        const slot = shortcutContextPolicies.find((s) => s.key === key);
         return {
           key,
           value,
@@ -526,7 +526,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
     );
   }
 
-  // Scope → variable / context-slot resolution.
+  // Scope → variable / context-policy resolution.
   //
   // Two paths:
   //
@@ -547,7 +547,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
       shortcut.scopeMappings,
       surfaceValueMappings ?? {},
       shortcutVariableDefinitions,
-      shortcutContextSlots,
+      shortcutContextPolicies,
       shortcut.contextMappings,
     );
     if (result.errors.length > 0) {

@@ -58,7 +58,7 @@ import { siteConfig } from "@/config/extras/site";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import {
   selectAgentById,
-  selectAgentContextSlots,
+  selectAgentContextPolicies,
   selectAgentVariableDefinitions,
 } from "@/features/agents/redux/agent-definition/selectors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -144,8 +144,8 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
   const agentVariables = useAppSelector((state) =>
     app?.agent_id ? selectAgentVariableDefinitions(state, app.agent_id) : null,
   );
-  const agentContextSlots = useAppSelector((state) =>
-    app?.agent_id ? selectAgentContextSlots(state, app.agent_id) : null,
+  const agentContextPolicies = useAppSelector((state) =>
+    app?.agent_id ? selectAgentContextPolicies(state, app.agent_id) : null,
   );
 
   const [copied, setCopied] = useState<string | null>(null);
@@ -195,7 +195,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
   const runHref = `/agent-apps/${app.id}/run`;
 
   const variableCount = agentVariables?.length ?? 0;
-  const contextSlotCount = agentContextSlots?.length ?? 0;
+  const contextPolicyCount = agentContextPolicies?.length ?? 0;
   const successPct =
     typeof app.success_rate === "number"
       ? `${Math.round(app.success_rate * 100)}%`
@@ -414,7 +414,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
               kind: "agent-app",
               location: `AI Matrx — Agent App — ${app.name}`,
               description: "The agent-app record shown on this overview page, plus its agent binding.",
-              data: { app, agent, variables: agentVariables, contextSlots: agentContextSlots },
+              data: { app, agent, variables: agentVariables, contextPolicies: agentContextPolicies },
               attributes: { id: app.id, status: app.status, slug: app.slug },
               context: { publicUrl },
             })}
@@ -594,20 +594,20 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
         </Card>
 
         {/* ── Context slots (from the agent definition) ───────────────── */}
-        {contextSlotCount > 0 && agentContextSlots && (
+        {contextPolicyCount > 0 && agentContextPolicies && (
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Layers className="w-4 h-4 text-cyan-500" />
                 Context slots
                 <span className="text-xs font-normal text-muted-foreground">
-                  ({contextSlotCount})
+                  ({contextPolicyCount})
                 </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-2">
-                {agentContextSlots.map((slot, i) => (
+                {agentContextPolicies.map((slot, i) => (
                   <div
                     key={slot.key ?? i}
                     className="group/x flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
@@ -644,7 +644,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                       }
                       json={() => slot}
                       agent={() => ({
-                        kind: "agent-app-context-slot",
+                        kind: "agent-app-context-policy",
                         location: `AI Matrx — Agent App — ${app.name} — Context slots`,
                         description: "A single context slot from the app's agent.",
                         data: slot,

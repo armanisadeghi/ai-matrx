@@ -7,14 +7,14 @@
  *
  * Resolution order per UI-scope key (first match wins):
  *   1. scopeMappings   — explicit UI key → agent variable/context target
- *   2. contextMappings — explicit UI key → agent context-slot key
+ *   2. contextMappings — explicit UI key → agent context-policy key
  *   3. Ad-hoc         — key falls through as a context entry; if the key
  *                       matches an agent context slot, slotMatched=true.
  */
 
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type {
-  ContextSlot,
+  ContextPolicy,
   ContextObjectType,
 } from "@/features/agents/types/agent-api-types";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
@@ -58,7 +58,7 @@ export function mapScopeToInstance(
   applicationScope: ApplicationScope,
   scopeMappings: Record<string, string> | null,
   variableDefinitions: VariableDefinition[] | null | undefined,
-  contextSlots:
+  contextPolicies:
     | Array<{
         key: string;
         type?: ContextObjectType;
@@ -69,7 +69,7 @@ export function mapScopeToInstance(
   contextMappings: Record<string, string> | null = null,
 ): ScopeMappingResult {
   const defs = variableDefinitions ?? [];
-  const slots = contextSlots ?? [];
+  const slots = contextPolicies ?? [];
   const variableNames = new Set(defs.map((v) => v.name));
   const slotMap = new Map(slots.map((s) => [s.key, s]));
 
@@ -102,7 +102,7 @@ export function mapScopeToInstance(
     }
   }
 
-  // ── Pass 2: contextMappings (UI key → agent context-slot key) ───────────
+  // ── Pass 2: contextMappings (UI key → agent context-policy key) ───────────
   if (contextMappings) {
     for (const [sourceKey, slotKey] of Object.entries(contextMappings)) {
       if (mappedScopeKeys.has(sourceKey)) {
@@ -181,7 +181,7 @@ export function mapScopeToInstanceWithSurface(
   scopeMappings: Record<string, string> | null,
   surfaceValueMappings: ValueMappingMap | null,
   variableDefinitions: VariableDefinition[] | null | undefined,
-  contextSlots:
+  contextPolicies:
     | Array<{
         key: string;
         type?: ContextObjectType;
@@ -196,7 +196,7 @@ export function mapScopeToInstanceWithSurface(
     applicationScope,
     scopeMappings,
     variableDefinitions,
-    contextSlots,
+    contextPolicies,
     contextMappings,
   );
 
@@ -205,7 +205,7 @@ export function mapScopeToInstanceWithSurface(
     applicationScope,
     surfaceValueMappings ?? {},
     variableDefinitions,
-    contextSlots,
+    contextPolicies,
     { autoNameMatch: false },
   );
 
@@ -236,7 +236,7 @@ export function mapScopeToInstanceWithSurface(
       ...Object.keys(contextMappings ?? {}),
       ...Object.keys(surfaceValueMappings ?? {}),
     ]);
-    const declaredSlots = new Set((contextSlots ?? []).map((slot) => slot.key));
+    const declaredSlots = new Set((contextPolicies ?? []).map((slot) => slot.key));
     const redundantKeys = new Set([
       "full_document_text",
       "content",

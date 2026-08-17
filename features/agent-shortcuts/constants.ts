@@ -170,7 +170,7 @@ export type ScopeLevel = (typeof SCOPE_LEVELS)[keyof typeof SCOPE_LEVELS];
 /**
  * Standard scope keys available to every shortcut. When a surface (code editor,
  * notes, etc.) launches a shortcut it populates whichever of these keys it can;
- * scope → variable / scope → context-slot mappings then route each populated
+ * scope → variable / scope → context-policy mappings then route each populated
  * value into the agent.
  */
 export const DEFAULT_AVAILABLE_SCOPES: ScopeLevel[] = [

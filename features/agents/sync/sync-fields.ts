@@ -84,7 +84,7 @@ export const AGENT_SYNC_FIELDS: readonly AgentSyncField[] = [
   },
   {
     column: "context_slots",
-    field: "contextSlots",
+    field: "contextPolicies",
     label: "Context slots",
     group: "behavior",
   },
