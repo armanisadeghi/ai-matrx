@@ -9,7 +9,7 @@
  *   code base is nothing more than the connection, but not the definition and
  *   the details and can never be those things."
  *
- * The code may hold the CONNECTION — which slot to run, how to build its
+ * The code may hold the CONNECTION — which mandate to run, how to build its
  * variables, how to render the result. It may never hold the agent's identity
  * or its rules. A prompt in code is worse than merely redundant: it drifts
  * silently from the agent that actually runs, and every copy found in the
@@ -31,17 +31,17 @@
  *   - an allowlisted entry (see ALLOWLIST_FILE).
  *
  * TRIAGE — not every hit is the violation. Judge honestly:
- *   • an AI agent's instructions .............. VIOLATION → convert to a slot
+ *   • an AI agent's instructions .............. VIOLATION → convert to a mandate
  *   • a starter template the USER then edits .. seed content → allowlist it
  *   • a brief copied to the clipboard for the
  *     user's own external coding agent ....... not our agent → allowlist it
  *
  * HOW TO FIX A REAL ONE: create the agent in the DB via aidream's agent-service
- * builder, declare a slot in aidream `services/agent_slots/client_slots.py`,
- * then resolve it here (`useAgentSlot` / `resolveAgentSlot` /
- * `useAgentLauncher().launchSlot` / `launchAgentExecution({slotKey})`) and
- * DELETE the constant. A "fallback prompt if the slot is missing" is the same
- * violation in disguise — an unseeded slot must throw.
+ * builder, declare a mandate in aidream `services/agent_slots/client_slots.py`,
+ * then resolve it here (`useMandate` / `resolveMandate` /
+ * `useAgentLauncher().launchMandate` / `launchAgentExecution({mandateKey})`) and
+ * DELETE the constant. A "fallback prompt if the mandate is missing" is the same
+ * violation in disguise — an unseeded mandate must throw.
  *
  * THE ALLOWLIST IS A RATCHET. Every entry needs a real reason. The count only
  * goes DOWN: adding an entry to silence a NEW prompt is the thing this script
@@ -298,13 +298,13 @@ function main(): void {
       );
     }
     console.log(
-      `\n  ${C.yellow}Fix:${C.reset} put the agent in the DB, declare a slot in aidream`,
+      `\n  ${C.yellow}Fix:${C.reset} put the agent in the DB, declare a mandate in aidream`,
     );
     console.log(
-      `  ${C.dim}services/agent_slots/client_slots.py, resolve it here (useAgentSlot /${C.reset}`,
+      `  ${C.dim}services/agent_slots/client_slots.py, resolve it here (useMandate /${C.reset}`,
     );
     console.log(
-      `  ${C.dim}launchSlot / launchAgentExecution({slotKey})), and DELETE the constant.${C.reset}`,
+      `  ${C.dim}launchMandate / launchAgentExecution({mandateKey})), and DELETE the constant.${C.reset}`,
     );
     console.log(
       `  ${C.dim}Genuinely not an agent definition (user-editable seed content, a brief for${C.reset}`,
