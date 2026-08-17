@@ -21,7 +21,6 @@ function fail(message: string): void {
     const full = `[sync] definePolicy: ${message}`;
     if (isProd) {
         // Silent no-op in prod — engine continues; logger.error happens in boot.
-        // eslint-disable-next-line no-console
         console.error(full);
         return;
     }
