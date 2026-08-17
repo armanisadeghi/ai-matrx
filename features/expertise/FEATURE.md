@@ -127,3 +127,17 @@
   Browser-verified against a desk built from v3 of a live pack: with only drafts added it reported
   "nothing this desk enforces has changed" plus the pending-draft count; after one real rule edit it
   reported "1 rule reworded" with the before/after text.
+- 2026-08-17 — **Refresh-fragility, half-closed and half NAMED (THE FLOATING LAW's durable half).**
+  `CompileDeskDialog` and `IngestSourceDialog` hold their run in an in-tab `await`; the work
+  itself is safe (aidream's `create_streaming_response` runs `detach_on_disconnect=True`, so a
+  compile finishes and ingest drafts still land on the pack when the tab goes away), but this
+  page cannot REJOIN it. **The blocker is real and server-side: the expertise pipelines claim no
+  durable run row** — nothing analogous to `seo.collection_run` (`SeoCommandRun` +
+  `POST /seo/public/runs/{id}/rejoin`) or `transcripts.studio_runs` exists for
+  `/expertise-desks/{compile,ingest,ingest-file}`, so there is no id to remember and nothing to
+  rejoin by. Closing that needs an expertise-domain run ledger in aidream (row claimed before the
+  first AI call, terminal status + result persisted, a rejoin route) — a focused cross-repo job,
+  not a client fix, and inventing a client-side substitute would be a second parallel durability
+  mechanism (forbidden). Until then both dialogs state the truth while running — the work
+  continues on the server, the result lands on the pack, do not start it again — so a reload costs
+  a lost view, never a duplicate paid run. Tracked in `docs/handoffs/live-run-streaming-sweep.md` §8.
