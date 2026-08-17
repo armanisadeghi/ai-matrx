@@ -100,6 +100,7 @@ const SHARED_ALLOWED_EXACT = new Set([
   "/robots.txt",
   "/manifest.webmanifest",
   "/favicon.ico",
+  "/blob-sw.js",
 ]);
 const SHARED_ALLOWED_PREFIXES = ["/auth", "/api", "/_next"];
 
