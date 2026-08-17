@@ -8,11 +8,10 @@
 "use client";
 
 import { useCallback } from "react";
-import { Phone } from "lucide-react";
 import type { PhoneEntry, PhoneKind } from "@/features/user-profile/types";
 import {
   ListAddButton,
-  ListEditorEmptyState,
+  ListFirstItemAction,
   ListEditorRow,
   SelectField,
   TextField,
@@ -68,49 +67,55 @@ export function PhoneListEditor({ value, onChange }: PhoneListEditorProps) {
   );
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-list-editor>
       {value.length === 0 ? (
-        <ListEditorEmptyState icon={Phone} label="No phone numbers yet." />
+        <ListFirstItemAction
+          label="Add your first phone number"
+          description="Make it easy for agents to reach you when you want them to."
+          onClick={add}
+        />
       ) : (
-        <div className="space-y-2">
-          {value.map((phone, index) => (
-            <ListEditorRow
-              key={phone.id}
-              index={index}
-              onRemove={() => remove(phone.id)}
-              primary={{
-                value: phone.is_primary === true,
-                onChange: (next) => setPrimary(phone.id, next),
-                title: "Primary phone",
-              }}
-            >
-              <SelectField
-                label="Type"
-                value={phone.label}
-                onChange={(label) => update(phone.id, { label })}
-                options={PHONE_KIND_OPTIONS}
-              />
-              <TextField
-                label="Number"
-                placeholder="+1 (555) 123-4567"
-                type="tel"
-                value={phone.number}
-                onChange={(number) => update(phone.id, { number })}
-                autoComplete="tel"
-              />
-              <TextField
-                label="Extension"
-                placeholder="optional"
-                value={phone.ext ?? ""}
-                onChange={(ext) =>
-                  update(phone.id, { ext: ext.length > 0 ? ext : null })
-                }
-              />
-            </ListEditorRow>
-          ))}
-        </div>
+        <>
+          <div className="space-y-2">
+            {value.map((phone, index) => (
+              <ListEditorRow
+                key={phone.id}
+                index={index}
+                onRemove={() => remove(phone.id)}
+                primary={{
+                  value: phone.is_primary === true,
+                  onChange: (next) => setPrimary(phone.id, next),
+                  title: "Primary phone",
+                }}
+              >
+                <SelectField
+                  label="Type"
+                  value={phone.label}
+                  onChange={(label) => update(phone.id, { label })}
+                  options={PHONE_KIND_OPTIONS}
+                />
+                <TextField
+                  label="Number"
+                  placeholder="+1 (555) 123-4567"
+                  type="tel"
+                  value={phone.number}
+                  onChange={(number) => update(phone.id, { number })}
+                  autoComplete="tel"
+                />
+                <TextField
+                  label="Extension"
+                  placeholder="optional"
+                  value={phone.ext ?? ""}
+                  onChange={(ext) =>
+                    update(phone.id, { ext: ext.length > 0 ? ext : null })
+                  }
+                />
+              </ListEditorRow>
+            ))}
+          </div>
+          <ListAddButton label="Add phone" onClick={add} />
+        </>
       )}
-      <ListAddButton label="Add phone" onClick={add} />
     </div>
   );
 }

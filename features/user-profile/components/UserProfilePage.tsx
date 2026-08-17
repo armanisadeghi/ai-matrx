@@ -27,14 +27,12 @@ import {
 import { setUserMetadata } from "@/lib/redux/slices/userProfileSlice";
 import {
   AlertTriangle,
-  AtSign,
   Building2,
   Check,
   Clock,
   Home,
   IdCard,
   Loader2,
-  Mail,
   Phone,
   ShieldAlert,
   Truck,
@@ -590,38 +588,35 @@ function ContactSection({
       footer={<SaveBar dirty={dirty} saving={saving} onSave={onSave} />}
     >
       <div className="space-y-4">
-        <div>
-          <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-foreground">
-            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+        <fieldset>
+          <legend className="mb-2 text-xs font-semibold text-foreground">
             Phone numbers
-          </h4>
+          </legend>
           <PhoneListEditor
             value={data.phones}
             onChange={(phones) => onField("phones", phones)}
           />
-        </div>
-        <div>
-          <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-foreground">
-            <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+        </fieldset>
+        <fieldset>
+          <legend className="mb-2 text-xs font-semibold text-foreground">
             Additional emails
-          </h4>
+          </legend>
           <EmailListEditor
             value={data.emails}
             onChange={(emails) => onField("emails", emails)}
           />
-        </div>
-        <div>
-          <h4 className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-foreground">
-            <AtSign className="h-3.5 w-3.5 text-muted-foreground" />
+        </fieldset>
+        <fieldset>
+          <legend className="mb-2 text-xs font-semibold text-foreground">
             Social handles
-          </h4>
+          </legend>
           <SocialHandleListEditor
             value={data.social_handles}
             onChange={(social_handles) =>
               onField("social_handles", social_handles)
             }
           />
-        </div>
+        </fieldset>
         <div>
           <TextField
             label="Website"

@@ -7,11 +7,10 @@
 "use client";
 
 import { useCallback } from "react";
-import { ShieldAlert } from "lucide-react";
 import type { EmergencyContact } from "@/features/user-profile/types";
 import {
   ListAddButton,
-  ListEditorEmptyState,
+  ListFirstItemAction,
   ListEditorRow,
   TextField,
 } from "./ListEditorRow";
@@ -51,72 +50,76 @@ export function EmergencyContactListEditor({
   }, [onChange, value]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-list-editor>
       {value.length === 0 ? (
-        <ListEditorEmptyState
-          icon={ShieldAlert}
-          label="No emergency contacts yet."
+        <ListFirstItemAction
+          label="Add your first emergency contact"
+          description="Keep one trusted person ready when a form or urgent situation calls for it."
+          onClick={add}
         />
       ) : (
-        <div className="space-y-2">
-          {value.map((entry, index) => (
-            <ListEditorRow
-              key={entry.id}
-              index={index}
-              onRemove={() => remove(entry.id)}
-            >
-              <TextField
-                label="Name"
-                placeholder="Full name"
-                value={entry.name}
-                onChange={(name) => update(entry.id, { name })}
-                autoComplete="name"
-              />
-              <TextField
-                label="Relationship"
-                placeholder="Spouse, parent, friend…"
-                value={entry.relationship ?? ""}
-                onChange={(relationship) =>
-                  update(entry.id, {
-                    relationship: relationship.length > 0 ? relationship : null,
-                  })
-                }
-              />
-              <TextField
-                label="Phone"
-                placeholder="+1 (555) 123-4567"
-                type="tel"
-                value={entry.phone ?? ""}
-                onChange={(phone) =>
-                  update(entry.id, { phone: phone.length > 0 ? phone : null })
-                }
-              />
-              <TextField
-                label="Email"
-                placeholder="contact@example.com"
-                type="email"
-                value={entry.email ?? ""}
-                onChange={(email) =>
-                  update(entry.id, { email: email.length > 0 ? email : null })
-                }
-              />
-              <div className="sm:col-span-2">
+        <>
+          <div className="space-y-2">
+            {value.map((entry, index) => (
+              <ListEditorRow
+                key={entry.id}
+                index={index}
+                onRemove={() => remove(entry.id)}
+              >
                 <TextField
-                  label="Notes"
-                  placeholder="When to call, preferred language, etc."
-                  value={entry.notes ?? ""}
-                  onChange={(notes) =>
+                  label="Name"
+                  placeholder="Full name"
+                  value={entry.name}
+                  onChange={(name) => update(entry.id, { name })}
+                  autoComplete="name"
+                />
+                <TextField
+                  label="Relationship"
+                  placeholder="Spouse, parent, friend…"
+                  value={entry.relationship ?? ""}
+                  onChange={(relationship) =>
                     update(entry.id, {
-                      notes: notes.length > 0 ? notes : null,
+                      relationship:
+                        relationship.length > 0 ? relationship : null,
                     })
                   }
                 />
-              </div>
-            </ListEditorRow>
-          ))}
-        </div>
+                <TextField
+                  label="Phone"
+                  placeholder="+1 (555) 123-4567"
+                  type="tel"
+                  value={entry.phone ?? ""}
+                  onChange={(phone) =>
+                    update(entry.id, { phone: phone.length > 0 ? phone : null })
+                  }
+                />
+                <TextField
+                  label="Email"
+                  placeholder="contact@example.com"
+                  type="email"
+                  value={entry.email ?? ""}
+                  onChange={(email) =>
+                    update(entry.id, { email: email.length > 0 ? email : null })
+                  }
+                />
+                <div className="sm:col-span-2">
+                  <TextField
+                    label="Notes"
+                    placeholder="When to call, preferred language, etc."
+                    value={entry.notes ?? ""}
+                    onChange={(notes) =>
+                      update(entry.id, {
+                        notes: notes.length > 0 ? notes : null,
+                      })
+                    }
+                  />
+                </div>
+              </ListEditorRow>
+            ))}
+          </div>
+          <ListAddButton label="Add emergency contact" onClick={add} />
+        </>
       )}
-      <ListAddButton label="Add emergency contact" onClick={add} />
     </div>
   );
 }

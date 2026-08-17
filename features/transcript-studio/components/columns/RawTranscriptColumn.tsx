@@ -306,7 +306,6 @@ export function RawTranscriptColumn({
       />
       {segments.length === 0 ? (
         <ColumnEmptyState
-          icon={Mic}
           title="No audio yet"
           description={
             isRecording

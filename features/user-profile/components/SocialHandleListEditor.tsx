@@ -8,11 +8,10 @@
 "use client";
 
 import { useCallback } from "react";
-import { AtSign } from "lucide-react";
 import type { SocialHandle } from "@/features/user-profile/types";
 import {
   ListAddButton,
-  ListEditorEmptyState,
+  ListFirstItemAction,
   ListEditorRow,
   TextField,
 } from "./ListEditorRow";
@@ -50,43 +49,49 @@ export function SocialHandleListEditor({
   }, [onChange, value]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-list-editor>
       {value.length === 0 ? (
-        <ListEditorEmptyState icon={AtSign} label="No social handles yet." />
+        <ListFirstItemAction
+          label="Add your first social handle"
+          description="Help agents reference the profile you actually use."
+          onClick={add}
+        />
       ) : (
-        <div className="space-y-2">
-          {value.map((entry, index) => (
-            <ListEditorRow
-              key={entry.id}
-              index={index}
-              onRemove={() => remove(entry.id)}
-            >
-              <TextField
-                label="Platform"
-                placeholder="LinkedIn"
-                value={entry.platform}
-                onChange={(platform) => update(entry.id, { platform })}
-              />
-              <TextField
-                label="Handle"
-                placeholder="@yourname"
-                value={entry.handle}
-                onChange={(handle) => update(entry.id, { handle })}
-              />
-              <TextField
-                label="URL"
-                placeholder="https://…"
-                type="url"
-                value={entry.url ?? ""}
-                onChange={(url) =>
-                  update(entry.id, { url: url.length > 0 ? url : null })
-                }
-              />
-            </ListEditorRow>
-          ))}
-        </div>
+        <>
+          <div className="space-y-2">
+            {value.map((entry, index) => (
+              <ListEditorRow
+                key={entry.id}
+                index={index}
+                onRemove={() => remove(entry.id)}
+              >
+                <TextField
+                  label="Platform"
+                  placeholder="LinkedIn"
+                  value={entry.platform}
+                  onChange={(platform) => update(entry.id, { platform })}
+                />
+                <TextField
+                  label="Handle"
+                  placeholder="@yourname"
+                  value={entry.handle}
+                  onChange={(handle) => update(entry.id, { handle })}
+                />
+                <TextField
+                  label="URL"
+                  placeholder="https://…"
+                  type="url"
+                  value={entry.url ?? ""}
+                  onChange={(url) =>
+                    update(entry.id, { url: url.length > 0 ? url : null })
+                  }
+                />
+              </ListEditorRow>
+            ))}
+          </div>
+          <ListAddButton label="Add social handle" onClick={add} />
+        </>
       )}
-      <ListAddButton label="Add social handle" onClick={add} />
     </div>
   );
 }

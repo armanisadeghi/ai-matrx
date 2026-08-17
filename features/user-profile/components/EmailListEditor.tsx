@@ -7,11 +7,10 @@
 "use client";
 
 import { useCallback } from "react";
-import { Mail } from "lucide-react";
 import type { EmailEntry, EmailKind } from "@/features/user-profile/types";
 import {
   ListAddButton,
-  ListEditorEmptyState,
+  ListFirstItemAction,
   ListEditorRow,
   SelectField,
   TextField,
@@ -67,44 +66,47 @@ export function EmailListEditor({ value, onChange }: EmailListEditorProps) {
   );
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-list-editor>
       {value.length === 0 ? (
-        <ListEditorEmptyState
-          icon={Mail}
-          label="No additional email addresses yet."
+        <ListFirstItemAction
+          label="Add your first additional email"
+          description="Give agents another address to use when your main email is not the right fit."
+          onClick={add}
         />
       ) : (
-        <div className="space-y-2">
-          {value.map((entry, index) => (
-            <ListEditorRow
-              key={entry.id}
-              index={index}
-              onRemove={() => remove(entry.id)}
-              primary={{
-                value: entry.is_primary === true,
-                onChange: (next) => setPrimary(entry.id, next),
-                title: "Primary email",
-              }}
-            >
-              <SelectField
-                label="Type"
-                value={entry.label}
-                onChange={(label) => update(entry.id, { label })}
-                options={EMAIL_KIND_OPTIONS}
-              />
-              <TextField
-                label="Address"
-                placeholder="you@example.com"
-                type="email"
-                value={entry.email}
-                onChange={(email) => update(entry.id, { email })}
-                autoComplete="email"
-              />
-            </ListEditorRow>
-          ))}
-        </div>
+        <>
+          <div className="space-y-2">
+            {value.map((entry, index) => (
+              <ListEditorRow
+                key={entry.id}
+                index={index}
+                onRemove={() => remove(entry.id)}
+                primary={{
+                  value: entry.is_primary === true,
+                  onChange: (next) => setPrimary(entry.id, next),
+                  title: "Primary email",
+                }}
+              >
+                <SelectField
+                  label="Type"
+                  value={entry.label}
+                  onChange={(label) => update(entry.id, { label })}
+                  options={EMAIL_KIND_OPTIONS}
+                />
+                <TextField
+                  label="Address"
+                  placeholder="you@example.com"
+                  type="email"
+                  value={entry.email}
+                  onChange={(email) => update(entry.id, { email })}
+                  autoComplete="email"
+                />
+              </ListEditorRow>
+            ))}
+          </div>
+          <ListAddButton label="Add email" onClick={add} />
+        </>
       )}
-      <ListAddButton label="Add email" onClick={add} />
     </div>
   );
 }

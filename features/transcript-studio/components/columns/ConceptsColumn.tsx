@@ -204,7 +204,6 @@ export function ConceptsColumn({ sessionId, className }: ConceptsColumnProps) {
       />
       {items.length === 0 ? (
         <ColumnEmptyState
-          icon={Lightbulb}
           title={
             isRunning
               ? "Extracting concepts…"

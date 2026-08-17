@@ -1,17 +1,18 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ColumnEmptyStateProps {
-  icon: LucideIcon;
   title: string;
   description?: string;
   className?: string;
 }
 
+/**
+ * Quiet column guidance. The persistent ColumnHeader already owns the column
+ * name and icon, so repeating either here would turn an empty state into echo.
+ */
 export function ColumnEmptyState({
-  icon: Icon,
   title,
   description,
   className,
@@ -23,7 +24,6 @@ export function ColumnEmptyState({
         className,
       )}
     >
-      <Icon className="h-6 w-6 text-muted-foreground/50" />
       <p className="text-xs font-medium text-foreground/80">{title}</p>
       {description && (
         <p className="max-w-[24ch] text-[10px] text-muted-foreground/80">

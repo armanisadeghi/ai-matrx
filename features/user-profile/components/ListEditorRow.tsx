@@ -7,7 +7,7 @@
 
 "use client";
 
-import { Trash2, Star, type LucideIcon } from "lucide-react";
+import { Plus, Star, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface ListEditorRowProps {
@@ -31,6 +31,7 @@ export function ListEditorRow({
 }: ListEditorRowProps) {
   return (
     <div
+      data-list-editor-row
       className={cn(
         "group relative flex flex-col gap-2 rounded-md border border-border/40 bg-card/30 p-3 sm:flex-row sm:items-start sm:gap-3",
       )}
@@ -80,33 +81,65 @@ export interface ListAddButtonProps {
   onClick: () => void;
 }
 
+function addAndFocusNewRow(button: HTMLButtonElement, onClick: () => void) {
+  const editor = button.closest<HTMLElement>("[data-list-editor]");
+  onClick();
+
+  requestAnimationFrame(() => {
+    const rows = editor?.querySelectorAll<HTMLElement>(
+      "[data-list-editor-row]",
+    );
+    const newRow = rows?.item((rows?.length ?? 1) - 1);
+    newRow
+      ?.querySelector<HTMLElement>(
+        "input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
+      )
+      ?.focus();
+  });
+}
+
 export function ListAddButton({ label, onClick }: ListAddButtonProps) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(event) => addAndFocusNewRow(event.currentTarget, onClick)}
       className="inline-flex h-8 items-center gap-1.5 rounded-md border border-dashed border-border/60 bg-background px-3 text-xs font-medium text-muted-foreground transition hover:border-primary/50 hover:bg-accent hover:text-foreground"
     >
-      <span aria-hidden>+</span>
+      <Plus className="h-3.5 w-3.5" aria-hidden />
       {label}
     </button>
   );
 }
 
-export interface ListEditorEmptyStateProps {
-  icon: LucideIcon;
+export interface ListFirstItemActionProps {
   label: string;
+  description: string;
+  onClick: () => void;
 }
 
-export function ListEditorEmptyState({
-  icon: Icon,
+/**
+ * The only empty state for an editable list: one welcoming creation action,
+ * never a repeated section icon or a dead "nothing here yet" announcement.
+ */
+export function ListFirstItemAction({
   label,
-}: ListEditorEmptyStateProps) {
+  description,
+  onClick,
+}: ListFirstItemActionProps) {
   return (
-    <div className="flex items-center gap-2 rounded-md border border-dashed border-border/40 bg-muted/20 px-3 py-4 text-xs text-muted-foreground">
-      <Icon className="h-4 w-4" />
-      <span>{label}</span>
-    </div>
+    <button
+      type="button"
+      onClick={(event) => addAndFocusNewRow(event.currentTarget, onClick)}
+      className="group flex w-full items-center justify-between gap-4 rounded-md border border-dashed border-primary/30 bg-primary/5 px-4 py-3 text-left transition-colors hover:border-primary/50 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+    >
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        <span className="text-xs text-muted-foreground">{description}</span>
+      </span>
+      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-transform group-hover:scale-105">
+        <Plus className="h-4 w-4" aria-hidden />
+      </span>
+    </button>
   );
 }
 

@@ -196,6 +196,12 @@ All five children render the same `UserProfilePage` with a different
   too.
 - **Email is NOT editable here.** Changing the auth email requires Supabase
   Auth's email change flow with reverification, which is out of scope.
+- **Editable lists never narrate their own absence.** Phones, additional
+  emails, social handles, and emergency contacts render one welcoming
+  “Add your first…” action when empty. Their section heading owns the name and
+  icon; the empty state must not repeat either. Activating that action creates
+  the first row and focuses its first field so keyboard users continue in
+  document order. The ordinary “Add…” control appears only after a row exists.
 
 ---
 
@@ -228,6 +234,9 @@ Newest first. Each entry: date, author/agent, one-line summary.
 - `2026-08-17` — agent: Treat both hooks' initial `idle` state as loading so
   `/settings/profile` server output stays stable through hydration; added the
   SSR regression test and corrected current route/schema pointers.
+- `2026-08-17` — Codex: Replaced the four icon-plus-“No … yet” list states
+  with one welcoming first-item action, removed repeated Contact subsection
+  icons, and focused each newly created row for continuous keyboard entry.
 - `2026-05-13` — agent: Initial implementation. Two API routes
   (`/api/user/profile`, `/api/user/form-profile`), two hooks, six form
   sections, five settings registry sub-tabs. Replaces the broken read-only

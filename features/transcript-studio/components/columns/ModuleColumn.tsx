@@ -176,13 +176,11 @@ export function ModuleColumn({ sessionId, className }: ModuleColumnProps) {
       />
       {!moduleDef ? (
         <ColumnEmptyState
-          icon={ListChecks}
           title={`Unknown module "${moduleId}"`}
           description="Switch to a registered module via the settings sidebar."
         />
       ) : segments.length === 0 ? (
         <ColumnEmptyState
-          icon={HeaderIcon}
           title={
             isRunning
               ? `Running ${moduleDef.label}…`

@@ -167,7 +167,6 @@ export function CleanedTranscriptColumn({
       />
       {segments.length === 0 ? (
         <ColumnEmptyState
-          icon={Stars}
           title={
             latestColumnRun?.status === "running"
               ? "Cleaning your audio…"
