@@ -128,10 +128,52 @@ owner: Strunk `24df673f-d252-4075-b134-44ccbfdc5910`, Hopkins
 `10daeb58-bde4-4c98-a2cc-e95164700a3b` (old rows kept — versioned artifacts, list is
 newest-first). Verified from the DB: no old-contract token in either new definition.
 
+## 🚨 THE 2026-08-17 DATA-LOSS INCIDENT — read before touching a live table rename
+
+**What happened:** the live rename `platform.expertise_pack` → `platform.rulebook` was applied
+while production still ran the pre-rename code. Arman was mid-interview dictating his SEO method.
+Five tool calls died on `42P01 relation does not exist` — one carrying **11 finished expert rules**
+(8,773 chars). From his side: he talked for an hour, the agent said it was saving, and the rules
+never existed.
+
+**Recovered** (2026-08-17): all 11 rules + 1 rationale update replayed from `chat.tool_trace.args`
+through `rulebook_writes` into `8d1d4f08-…` (now v25, 28 rules, 12 awaiting review). They carry
+`source_ref.recovered_from_failed_call`. Recovery was only possible because the trace happened to
+store `args` — **forensics, not a feature.**
+
+**The standing rules this earned:**
+1. **Renaming a live table is a DEPLOY-ORDERED operation.** The old name keeps working until the
+   new code is live (alias/view, or rename after deploy). Users are mid-session; the DB and the
+   deployed code are never renamed in the same breath.
+2. **An expert-content write that fails must never be silently lost** — the Expert gets a way back
+   to their words without a database session. (Being built; see In flight.)
+3. **The Expert's words are the asset.** Anything that makes them unreachable is a Sev-1 defect,
+   even when the rows technically exist.
+
+## In flight (dispatched 2026-08-17, parallel sessions — do not duplicate)
+
+Arman's post-incident directives, each with its own session. Coordinate by contract, not by
+editing another lane's files.
+
+| Lane | Scope |
+|---|---|
+| **The Record** | `platform.associations` edge Rulebook↔conversation (today there is NO link — a conversation is findable only by grepping `tool_trace.args`); resume-or-start-new on "Interview me"; a surface showing **everything the Expert has said** (every message, upload, transcript, and the audio if the ProTextarea mic persists it — that research is part of the lane). Exposes `getExpertCorpus(rulebookId)`. Owns `features/masterwork/record/` + `ScoutInterviewPanel`. |
+| **Cleanup + the audit Mandate** | Reuses the Scribe/War-Room transcript cleanup to make a durable CLEAN version of the Expert's words, then a new Mandate `masterwork.checkup_auditor` (Opus 5, DB-defined) whose only job is *"did we screw up?"* — every finding grounded in a verbatim quote, scored for certainty, an empty result is a legitimate outcome. Owns `aidream/services/masterwork_checkup/`. |
+| **Final Checkup UI** | The finish-line button → a split WindowPanel of add/modify/remove suggestions with the Expert's own quote as evidence, keyboard-fast approve/dismiss, and "Approve with AI" above a confidence bar. Owns `features/masterwork/checkup/`. |
+| **Never lose a payload** | A failed expert-content write becomes a one-click restore for the owner (assists chip replaying through the CAS path, idempotent) + a loud `system_error`; plus the live-rename ordering rule written into the DB doctrine. Owns the tool-failure path. |
+
+**The finding contract all lanes share:**
+`{ id, kind: add|modify|remove, target_rule_id?, proposed?, reason, evidence (verbatim quote),
+evidence_ref {conversation_id?, message_id?, file_id?, time_range?}, confidence 0-1, source }`
+
+A second Checkup producer (a final pass through the interview agent) is a **seam, deliberately not
+built** — Arman floated it and was explicitly unsure it earns its cost.
+
 ## Open work, in order
 
-1. **The honest test (the gate).** Arman fills `arman-seo-method` (`5d353449-…`) through the
-   Scout — the reject/feedback loop is now ready for exactly this session.
+1. **The honest test (the gate).** Arman fills his SEO method through the Scout —
+   `seo-keyword-optimization` `8d1d4f08-…` is the live one (28 rules; `arman-seo-method`
+   `5d353449-…` is the older empty draft). The reject/feedback loop is ready for exactly this.
 2. **Build-service consolidation** (vocabulary-campaign duplication finding ②):
    `services/masterworks/build.py` (~960 lines) hand-rolls what
    `matrx_ai/plans/compiler.py::compile_plan` does, except data-driven cast width + non-agent
