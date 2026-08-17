@@ -2,7 +2,7 @@
 
 /**
  * Mandates admin service — direct supabase reads/writes on
- * agent.slot_definition / agent.slot_binding.
+ * agent.mandate / agent.mandate_binding.
  *
  * Cross-repo system-of-record:
  * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md
@@ -31,10 +31,10 @@ import type { components } from "@/types/python-generated/api-types";
 const SYSTEM_ORGANIZATION_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
 
 export type MandateDefinitionRow =
-  Database["agent"]["Tables"]["slot_definition"]["Row"];
-export type MandateBindingRow = Database["agent"]["Tables"]["slot_binding"]["Row"];
+  Database["agent"]["Tables"]["mandate"]["Row"];
+export type MandateBindingRow = Database["agent"]["Tables"]["mandate_binding"]["Row"];
 export type MandateDefinitionUpdate =
-  Database["agent"]["Tables"]["slot_definition"]["Update"];
+  Database["agent"]["Tables"]["mandate"]["Update"];
 
 export interface MandateAgentInfo {
   id: string;
@@ -69,13 +69,13 @@ export async function fetchMandateConsoleData(): Promise<MandateConsoleData> {
   const [mandatesRes, bindingsRes] = await Promise.all([
     supabase
       .schema("agent")
-      .from("slot_definition")
+      .from("mandate")
       .select("*")
       .is("deleted_at", null)
-      .order("slot_key"),
+      .order("mandate_key"),
     supabase
       .schema("agent")
-      .from("slot_binding")
+      .from("mandate_binding")
       .select("*")
       .is("deleted_at", null)
       .order("created_at"),
@@ -137,7 +137,7 @@ export async function fetchMandateConsoleData(): Promise<MandateConsoleData> {
 
   const bindingsByMandateId: Record<string, MandateBindingRow[]> = {};
   for (const binding of bindings) {
-    (bindingsByMandateId[binding.slot_id] ??= []).push(binding);
+    (bindingsByMandateId[binding.mandate_id] ??= []).push(binding);
   }
 
   return { mandates, agentsById, versionsById, bindingsByMandateId };
@@ -158,7 +158,7 @@ export async function updateMandateDefinition(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("slot_definition")
+    .from("mandate")
     .update(patch)
     .eq("id", mandateId)
     .select("*")
@@ -168,7 +168,7 @@ export async function updateMandateDefinition(
   // consumer — the mandates console, useMandate resolvers, pickers — refreshes
   // no matter which surface performed the rebind (console buttons, the pin
   // editor, or the Linked Agent Sync window).
-  invalidateMandateCache(data.slot_key);
+  invalidateMandateCache(data.mandate_key);
   return data;
 }
 
@@ -355,7 +355,7 @@ export interface MandateAgentOption {
 // ── Test bench (exemplars + candidate runs) ──────────────────────────────────
 
 export type MandateExemplarRow =
-  Database["agent"]["Tables"]["slot_exemplar"]["Row"];
+  Database["agent"]["Tables"]["mandate_exemplar"]["Row"];
 
 export async function fetchMandateExemplars(
   mandateId: string,
@@ -363,9 +363,9 @@ export async function fetchMandateExemplars(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("slot_exemplar")
+    .from("mandate_exemplar")
     .select("*")
-    .eq("slot_id", mandateId)
+    .eq("mandate_id", mandateId)
     .is("deleted_at", null)
     .order("position")
     .order("created_at");
@@ -382,9 +382,9 @@ export async function createMandateExemplar(input: {
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("slot_exemplar")
+    .from("mandate_exemplar")
     .insert({
-      slot_id: input.mandateId,
+      mandate_id: input.mandateId,
       label: input.label,
       variables: input.variables,
       user_input: input.userInput ?? null,
@@ -438,10 +438,10 @@ export async function saveAdHocResultAsExemplar(input: {
   };
   const { data, error } = await supabase
     .schema("agent")
-    .from("slot_exemplar")
+    .from("mandate_exemplar")
     .insert({
       id: exemplarId,
-      slot_id: input.mandateId,
+      mandate_id: input.mandateId,
       label: input.label,
       variables: input.variables,
       user_input: input.userInput ?? null,
@@ -474,7 +474,7 @@ export async function deleteMandateExemplar(id: string): Promise<void> {
   const supabase = createClient();
   const { error } = await supabase
     .schema("agent")
-    .from("slot_exemplar")
+    .from("mandate_exemplar")
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", id);
   if (error) throw error;
@@ -584,7 +584,7 @@ function isMandateCodeTruthReport(value: unknown): value is MandateCodeTruthRepo
 
 /** Live code declarations from aidream's in-process NamedAgent registry.
  * This is compute/source inspection, so it correctly goes to aidream through
- * the typed client; `agent.slot_definition.contract` is only a drifted cache. */
+ * the typed client; `agent.mandate.contract` is only a drifted cache. */
 export async function fetchMandateCodeTruthReport(
   dispatch: AppDispatch,
 ): Promise<MandateCodeTruthReport> {
@@ -830,7 +830,7 @@ async function fetchExemplarForResultUpdate(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("slot_exemplar")
+    .from("mandate_exemplar")
     .select("*")
     .eq("id", exemplarId)
     .is("deleted_at", null)
@@ -852,7 +852,7 @@ export async function saveMandateTestVerdictNote(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("slot_exemplar")
+    .from("mandate_exemplar")
     .update({ metadata })
     .eq("id", exemplarId)
     .eq("updated_at", current.updated_at)
@@ -885,7 +885,7 @@ export async function promoteMandateTestResult(
   const supabase = createClient();
   const { data, error } = await supabase
     .schema("agent")
-    .from("slot_exemplar")
+    .from("mandate_exemplar")
     .update({
       metadata,
       reference_output: result.output,

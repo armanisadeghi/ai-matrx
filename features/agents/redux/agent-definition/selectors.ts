@@ -61,6 +61,18 @@ export const selectAgentAutoToolsDisabled = createSelector(
 );
 
 /**
+ * Whether automatic context injection is DISABLED for this agent
+ * (`agent.definition.auto_context_disabled`). The Builder's "Allow automated
+ * context injection" switch shows the inverse. When true, ONLY the agent's
+ * declared Context Policies deliver — no ambient Scope- or Surface-derived
+ * values reach the model. Defaults false (injection allowed).
+ */
+export const selectAgentAutoContextDisabled = createSelector(
+  [selectAgentById],
+  (record): boolean => record?.autoContextDisabled ?? false,
+);
+
+/**
  * Returns the fetch status for a given agent record.
  * undefined when the record does not exist in state.
  * null when the record exists but no fetch has completed.

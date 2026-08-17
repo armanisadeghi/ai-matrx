@@ -657,6 +657,68 @@ export const setAgentAutoToolsDisabled = createAsyncThunk<
 );
 
 /**
+ * Toggles the agent's `auto_context_disabled` kill switch — the inverse of the
+ * Builder's "Allow automated context injection" switch, and the exact mirror of
+ * `setAgentAutoToolsDisabled` above.
+ *
+ * Unlike the tools switch (which lives inside the `tool_config` JSONB and needs
+ * a read-merge-write), this is a first-class column on `agent.definition`, so a
+ * targeted update is the whole write. Optimistic via mergePartialAgent (does
+ * NOT mark dirty); reverted on failure.
+ *
+ * Semantics — three states the author can be in:
+ *   - no policies declared, switch off  → all context flows, delivered normally
+ *   - policies declared, switch off     → those govern their keys, extras flow
+ *   - switch ON                         → ONLY declared policies deliver
+ *
+ * A gate may only NARROW: a Mandate can close what this agent would accept, but
+ * can never reopen what the agent refused.
+ */
+export const setAgentAutoContextDisabled = createAsyncThunk<
+  void,
+  { agentId: string; disabled: boolean },
+  ThunkApi
+>(
+  "agentDefinition/setAutoContextDisabled",
+  async ({ agentId, disabled }, { dispatch, getState }) => {
+    const previous =
+      selectAgentById(getState(), agentId)?.autoContextDisabled ?? false;
+
+    // Optimistic — value updates immediately without being marked dirty.
+    dispatch(mergePartialAgent({ id: agentId, autoContextDisabled: disabled }));
+
+    // Synthetic comparison/variation agents live only in Redux — never persist.
+    if (isSyntheticAgentId(agentId)) return;
+
+    const { data, error } = await supabase
+      .schema("agent")
+      .from("definition")
+      .update({ auto_context_disabled: disabled })
+      .eq("id", agentId)
+      .select("version, updated_at")
+      .single();
+
+    if (error) {
+      dispatch(
+        mergePartialAgent({ id: agentId, autoContextDisabled: previous }),
+      );
+      dispatch(setAgentError({ id: agentId, error: error.message }));
+      throw pgErrorToError(error);
+    }
+
+    if (data) {
+      dispatch(
+        mergePartialAgent({
+          id: agentId,
+          version: data.version,
+          updatedAt: data.updated_at,
+        }),
+      );
+    }
+  },
+);
+
+/**
  * Saves all dirty fields for an agent in a single DB update.
  * Reads dirty field values from state — no arg needed beyond agentId.
  *
