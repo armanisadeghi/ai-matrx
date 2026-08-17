@@ -11,15 +11,15 @@ export const SHAPES_ROUTE_BASE = "/shapes";
 export const SHAPES_FEATURE_LABEL = "Shapes";
 
 /**
- * The shape-creator agent is a SLOT — `content_ir.kind_creator` — resolved at
- * trigger time via `features/agents/slots` (`resolveAgentSlot` /
- * `useAgentSlot`; system default → the user's own binding). Consumers stay
+ * The shape-creator agent is a MANDATE — `content_ir.kind_creator` — resolved at
+ * trigger time via `features/agents/mandates` (`resolveMandate` /
+ * `useMandate`; system default → the user's own binding). Consumers stay
  * LOUD on a resolution failure (toast / not-configured state) and never
- * silently fall back to another agent. The slot's system default is the
- * kind_creator builtin (master 4f4ffd49-…, K2 lane 2026-07-18); repin in the
- * admin slot console, never in code.
+ * silently fall back to another agent. The mandate's system default is the
+ * kind_creator builtin (master 4f4ffd49-…, K2 lane 2026-07-18); rebind in the
+ * admin mandate console, never in code.
  */
-export const KIND_CREATOR_SLOT_KEY = "content_ir.kind_creator";
+export const KIND_CREATOR_MANDATE_KEY = "content_ir.kind_creator";
 
 /**
  * Slugs shadowed by the STATIC route segments under `app/(core)/shapes/` —

@@ -11,7 +11,7 @@ import {
   type ShapeDefinitionRowLite,
 } from "../studio/studio-catalog";
 import {
-  KIND_CREATOR_SLOT_KEY,
+  KIND_CREATOR_MANDATE_KEY,
   shapeDetailHref,
   shapeSchemaHref,
   shapeTestHref,
@@ -138,10 +138,10 @@ describe("partitionShapes (ownership, not visibility)", () => {
 });
 
 describe("creator agent gating + route helpers", () => {
-  it("names the kind-creator slot the studio resolves at trigger time", () => {
+  it("names the kind-creator mandate the studio resolves at trigger time", () => {
     // The creator agent is no longer a code constant — it's the
-    // content_ir.kind_creator slot, resolved via features/agents/slots.
-    expect(KIND_CREATOR_SLOT_KEY).toBe("content_ir.kind_creator");
+    // content_ir.kind_creator mandate, resolved via features/agents/mandates.
+    expect(KIND_CREATOR_MANDATE_KEY).toBe("content_ir.kind_creator");
   });
 
   it("builds encoded detail/test/schema hrefs from one base", () => {

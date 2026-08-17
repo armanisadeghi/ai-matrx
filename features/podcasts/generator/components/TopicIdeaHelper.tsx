@@ -17,20 +17,20 @@ import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KindRequestDialog } from "@/features/content-ir/react/actions/KindRequestDialog";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
-import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
 import { podcastService } from "@/features/podcasts/service";
 
 /** Bank the whole generated batch on the show (D151). Never throws at the UI. */
 const bankTopicIdeas = (showId: string, value: unknown): Promise<void> =>
   podcastService.bankTopicIdeas(showId, value);
 
-/** FIRST CLIENT-SIDE SLOT SWAP (2026-08-08): which agent generates topic
- * ideas is DB-managed via the `podcast_client.topic_ideas` slot (declared in
- * aidream `agent_slots/client_slots.py`, repinned from
- * /administration/agents/slots). No hardcoded agent id, no silent fallback —
- * if the slot can't resolve, the affordance disables and says why. */
-const TOPIC_IDEAS_SLOT_KEY = "podcast_client.topic_ideas";
+/** FIRST CLIENT-SIDE MANDATE SWAP (2026-08-08): which agent generates topic
+ * ideas is DB-managed via the `podcast_client.topic_ideas` mandate (declared in
+ * aidream `agent_slots/client_slots.py`, rebound from
+ * /administration/agents/mandates). No hardcoded agent id, no silent fallback —
+ * if the mandate can't resolve, the affordance disables and says why. */
+const TOPIC_IDEAS_MANDATE_KEY = "podcast_client.topic_ideas";
 
 /** Fields we never echo into the topic box — plumbing, not the idea. */
 const IDEA_META_FIELDS = new Set(["__kind", "id", "index", "selected"]);
@@ -91,21 +91,21 @@ export function TopicIdeaHelper({
   showId?: string | null;
 }) {
   const [open, setOpen] = useState(false);
-  const { slot, loading, error } = useAgentSlot(TOPIC_IDEAS_SLOT_KEY);
+  const { mandate, loading, error } = useMandate(TOPIC_IDEAS_MANDATE_KEY);
 
   return (
     <>
       <div className="mt-1.5 flex items-center justify-end gap-1">
-        {/* First consumer of the reusable slot picker: swap which agent
+        {/* First consumer of the reusable mandate picker: swap which agent
             generates ideas (your agent vs the system default). */}
-        <SlotAgentPicker slotKey={TOPIC_IDEAS_SLOT_KEY} />
+        <MandateAgentPicker mandateKey={TOPIC_IDEAS_MANDATE_KEY} />
         <Button
           type="button"
           variant="ghost"
           size="sm"
           className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
           onClick={() => setOpen(true)}
-          disabled={loading || !slot}
+          disabled={loading || !mandate}
           title={error ?? undefined}
         >
           <Lightbulb className="h-3.5 w-3.5" />
@@ -116,7 +116,7 @@ export function TopicIdeaHelper({
       <KindRequestDialog
         open={open}
         onOpenChange={setOpen}
-        agentId={slot?.agentId ?? ""}
+        agentId={mandate?.agentId ?? ""}
         title="Get topic ideas"
         description="Describe a concept or area of interest. We'll suggest a few episode ideas — pick the one you like."
         fields={[

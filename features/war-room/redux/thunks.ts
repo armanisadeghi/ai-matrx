@@ -38,11 +38,11 @@ import { favoritesService } from "@/features/scopes/service/favoritesService";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
+import { resolveMandate } from "@/features/agents/mandates/service";
 import {
   WAR_ROOM_AUDIO_SOURCE,
-  WAR_ROOM_ROOM_AGENT_SLOT,
-  WAR_ROOM_THREAD_AGENT_SLOT,
+  WAR_ROOM_ROOM_AGENT_MANDATE,
+  WAR_ROOM_THREAD_AGENT_MANDATE,
 } from "../constants";
 import { reportWarRoomError } from "../utils/reportWarRoomError";
 import {
@@ -1143,12 +1143,12 @@ export const provisionRoomDefaults =
     if (inFlightThreadOps.has(key)) return;
     inFlightThreadOps.add(key);
     try {
-      // The room persona comes from the slot. A resolution failure is LOUD and
+      // The room persona comes from the mandate. A resolution failure is LOUD and
       // skips provisioning — the room then shows its explicit "Start chat"
       // empty state, which is far better than a chat born under a guessed
       // agent that every later bind would faithfully reproduce.
-      const slot = await resolveAgentSlot(WAR_ROOM_ROOM_AGENT_SLOT);
-      await dispatch(startRoomConversation(roomId, slot.agentId));
+      const mandate = await resolveMandate(WAR_ROOM_ROOM_AGENT_MANDATE);
+      await dispatch(startRoomConversation(roomId, mandate.agentId));
     } catch (err) {
       reportWarRoomError("provisionRoomDefaults", err, { toast: false });
     } finally {
@@ -1512,11 +1512,11 @@ export const provisionThreadDefaults =
       );
       const sessionId = await dispatch(addAudioSessionToThread(threadId));
       if (sessionId) {
-        // Slot-resolved persona; a failure throws into the catch below, which
+        // Mandate-resolved persona; a failure throws into the catch below, which
         // reports loudly and leaves the tab on its explicit-create empty state.
-        const slot = await resolveAgentSlot(WAR_ROOM_THREAD_AGENT_SLOT);
+        const mandate = await resolveMandate(WAR_ROOM_THREAD_AGENT_MANDATE);
         await dispatch(
-          startThreadConversation(threadId, sessionId, slot.agentId),
+          startThreadConversation(threadId, sessionId, mandate.agentId),
         );
       }
     } catch (err) {

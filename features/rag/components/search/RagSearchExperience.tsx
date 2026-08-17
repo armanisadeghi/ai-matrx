@@ -101,8 +101,8 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import { createRagSearchScope } from "@/features/surfaces/manifests/rag-search.manifest";
 import {
@@ -139,7 +139,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 /** Surface registered in `features/surfaces/manifests/rag-search.manifest.ts`. */
 const RAG_SEARCH_SURFACE = "matrx-user/rag-search";
 const RAG_SEARCH_SOURCE_FEATURE: SourceFeature = "rag-search";
-// The chat agent is the `chat.default_new_chat` SLOT (resolved in
+// The chat agent is the `chat.default_new_chat` MANDATE (resolved in
 // AgentChatTab — the user's own binding wins); the RAG tools below are armed
 // onto its run regardless of which agent resolves.
 
@@ -2295,7 +2295,7 @@ function Stat({ label, value }: { label: string; value: number | string }) {
  *      whether the base agent ships those tools.
  */
 function AgentChatTab({ scope }: { scope: Scope }) {
-  const { slot, loading, error } = useAgentSlot(DEFAULT_NEW_CHAT_SLOT_KEY);
+  const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading) {
     return (
       <div
@@ -2307,7 +2307,7 @@ function AgentChatTab({ scope }: { scope: Scope }) {
       </div>
     );
   }
-  if (error || !slot) {
+  if (error || !mandate) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
         <p className="text-sm font-medium text-foreground">
@@ -2315,13 +2315,13 @@ function AgentChatTab({ scope }: { scope: Scope }) {
         </p>
         <p className="max-w-sm text-xs text-muted-foreground">
           The default chat agent could not be resolved
-          {error ? ` — ${error}` : ""}. Check your override on the Agent Slots
+          {error ? ` — ${error}` : ""}. Check your override on the Mandates
           page, or try again shortly.
         </p>
       </div>
     );
   }
-  return <AgentChatTabBody scope={scope} agentId={slot.agentId} />;
+  return <AgentChatTabBody scope={scope} agentId={mandate.agentId} />;
 }
 
 function AgentChatTabBody({ scope, agentId }: { scope: Scope; agentId: string }) {

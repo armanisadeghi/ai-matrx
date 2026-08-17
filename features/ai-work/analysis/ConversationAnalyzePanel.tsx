@@ -6,7 +6,7 @@
  *
  * THE INVENTORY LAW — this panel builds no execution and no renderer of its
  * own. Every run goes through the ONE canonical path
- * (`launchAgentExecution`, slot-resolved) and streams in the floating
+ * (`launchAgentExecution`, mandate-resolved) and streams in the floating
  * `LiveRunWindow` (THE FLOATING LAW: never a spinner, never an inline block
  * that shifts the page; registered kinds render through their canonical
  * components inside the window for free).
@@ -61,7 +61,7 @@ export function ConversationAnalyzePanel({
     try {
       const result = await dispatch(
         launchAgentExecution({
-          slotKey: kind.slotKey,
+          mandateKey: kind.mandateKey,
           sourceFeature: "chat",
           surfaceKey: `conversation-analysis:${conversationId}:${kind.key}`,
           apiEndpointMode: "agent",
@@ -85,7 +85,7 @@ export function ConversationAnalyzePanel({
           ? error.message
           : "The analysis could not start.";
       console.error(
-        `[conversation-analysis] "${kind.slotKey}" launch failed for ${conversationId}`,
+        `[conversation-analysis] "${kind.mandateKey}" launch failed for ${conversationId}`,
         error,
       );
       setRuns((current) => ({

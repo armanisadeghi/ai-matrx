@@ -4,7 +4,7 @@ import type {
   BacklinkSnapshotRow,
 } from "@/features/marketing/data/backlinks-types";
 import {
-  BACKLINK_ASSISTANT_SLOT,
+  BACKLINK_ASSISTANT_MANDATE,
   buildBacklinksAssistCandidates,
   type BacklinksAssistSweepState,
 } from "./backlinks-assists-producer";
@@ -195,7 +195,7 @@ describe("buildBacklinksAssistCandidates", () => {
     expect(found.body).toContain("https://source.example/article");
     expect(found.action).toMatchObject({
       kind: "launch_agent",
-      slotKey: BACKLINK_ASSISTANT_SLOT,
+      mandateKey: BACKLINK_ASSISTANT_MANDATE,
     });
   });
 

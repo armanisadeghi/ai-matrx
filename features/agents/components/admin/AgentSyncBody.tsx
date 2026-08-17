@@ -87,15 +87,15 @@ interface AgentSyncBodyProps {
   agentId: string;
   onClose: () => void;
   /**
-   * Optional slot context — set when this comparison was opened FROM an agent
-   * slot (the admin slots console). When present, the linked-pair view names
-   * the slot it is judging ("This is what slot X runs") and, with
-   * `onRepinToSystem`, offers "Repin slot to system side" inside the diff.
+   * Optional mandate context — set when this comparison was opened FROM an agent
+   * mandate (the admin mandates console). When present, the linked-pair view names
+   * the mandate it is judging ("This is what mandate X runs") and, with
+   * `onRebindToSystem`, offers "Rebind mandate to system side" inside the diff.
    * Every other caller passes nothing and is unchanged.
    */
-  slotKey?: string;
-  slotLabel?: string;
-  onRepinToSystem?: (systemAgentId: string) => Promise<void>;
+  mandateKey?: string;
+  mandateLabel?: string;
+  onRebindToSystem?: (systemAgentId: string) => Promise<void>;
 }
 
 function formatTimestamp(iso: string | null | undefined): string {
@@ -202,9 +202,9 @@ function resolvePair(
 export function AgentSyncBody({
   agentId,
   onClose,
-  slotKey,
-  slotLabel,
-  onRepinToSystem,
+  mandateKey,
+  mandateLabel,
+  onRebindToSystem,
 }: AgentSyncBodyProps) {
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -243,7 +243,7 @@ export function AgentSyncBody({
   } | null>(null);
   const [comparisonRetry, setComparisonRetry] = useState(0);
   const [confirmPushOpen, setConfirmPushOpen] = useState(false);
-  const [repinBusy, setRepinBusy] = useState(false);
+  const [rebindBusy, setRebindBusy] = useState(false);
 
   const counterpart =
     counterpartState?.agentId === agentId ? counterpartState.result : null;
@@ -696,54 +696,54 @@ export function AgentSyncBody({
       comparison.profileFields.length > 0),
   );
 
-  const slotDisplayName = slotLabel ?? slotKey ?? null;
-  const runRepinToSystem = async () => {
-    if (!onRepinToSystem || !systemSide) return;
-    setRepinBusy(true);
+  const mandateDisplayName = mandateLabel ?? mandateKey ?? null;
+  const runRebindToSystem = async () => {
+    if (!onRebindToSystem || !systemSide) return;
+    setRebindBusy(true);
     try {
-      await onRepinToSystem(systemSide.id);
+      await onRebindToSystem(systemSide.id);
       toast.success(
-        `Slot ${slotDisplayName ?? slotKey ?? "(unknown)"} repinned to the system agent "${systemSide.name}" (tracks latest).`,
+        `Mandate ${mandateDisplayName ?? mandateKey ?? "(unknown)"} rebound to the system agent "${systemSide.name}" (tracks latest).`,
       );
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Repinning the slot failed.",
+        err instanceof Error ? err.message : "Rebinding the mandate failed.",
       );
     } finally {
-      setRepinBusy(false);
+      setRebindBusy(false);
     }
   };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 border-b border-border bg-card/40 px-4 pt-3">
-        {slotDisplayName && (
+        {mandateDisplayName && (
           <div className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs">
               <Badge variant="outline" className="text-[10px]">
-                Agent slot
+                Agent mandate
               </Badge>
               <span>
-                This is what slot{" "}
-                <span className="font-mono font-medium">{slotDisplayName}</span>{" "}
+                This is what mandate{" "}
+                <span className="font-mono font-medium">{mandateDisplayName}</span>{" "}
                 runs.
               </span>
             </div>
-            {onRepinToSystem && (
+            {onRebindToSystem && (
               <Button
                 size="sm"
                 variant="outline"
                 className="h-6 shrink-0 gap-1 px-1.5 text-[11px]"
-                disabled={repinBusy || busy !== null}
-                title={`Repin slot ${slotDisplayName} to the system agent "${systemSide.name}" (tracks latest)`}
-                onClick={() => void runRepinToSystem()}
+                disabled={rebindBusy || busy !== null}
+                title={`Rebind mandate ${mandateDisplayName} to the system agent "${systemSide.name}" (tracks latest)`}
+                onClick={() => void runRebindToSystem()}
               >
-                {repinBusy ? (
+                {rebindBusy ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
                   <ShieldCheck className="h-3 w-3" />
                 )}
-                Repin slot to system side
+                Rebind mandate to system side
               </Button>
             )}
           </div>
@@ -1113,7 +1113,7 @@ export function AgentSyncBody({
             </AlertDialogTitle>
             <AlertDialogDescription>
               This replaces the system agent&apos;s runtime configuration and
-              profile with the personal copy. It can affect every user and slot
+              profile with the personal copy. It can affect every user and mandate
               that follows this system agent.
               {comparison && !comparison.comparedConfigurationMatches
                 ? ` The current comparison contains ${comparison.changedFields.length} changed ${comparison.changedFields.length === 1 ? "section" : "sections"}.`

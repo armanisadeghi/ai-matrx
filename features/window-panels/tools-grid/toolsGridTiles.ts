@@ -94,8 +94,8 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectActiveAgentId } from "@/lib/redux/slices/agent-settings/selectors";
 import { selectOwnedAgents } from "@/features/agents/redux/agent-definition/selectors";
 import type { OverlayId } from "@/features/window-panels/registry/overlay-ids";
-import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { resolveMandate } from "@/features/agents/mandates/service";
 
 /**
  * Grid-tab buckets. "admin" is gated on `isAdmin`; the rest show for every
@@ -158,7 +158,7 @@ function seedInitialAgentId(
 }
 
 /** Default agent for the Chat window panel — mirrors `/chat/new`: the
- * `chat.default_new_chat` slot, resolved at click time so the user's own
+ * `chat.default_new_chat` mandate, resolved at click time so the user's own
  * binding wins. Loud on failure; degrades to the window's agent picker. */
 async function seedDefaultChatWindowAgent(): Promise<{
   initialAgentId: string | null;
@@ -166,10 +166,10 @@ async function seedDefaultChatWindowAgent(): Promise<{
 }> {
   let initialAgentId: string | null = null;
   try {
-    initialAgentId = (await resolveAgentSlot(DEFAULT_NEW_CHAT_SLOT_KEY)).agentId;
+    initialAgentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
   } catch (error) {
     console.error(
-      `[ToolsGrid] slot "${DEFAULT_NEW_CHAT_SLOT_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
+      `[ToolsGrid] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
       error,
     );
   }
@@ -204,7 +204,7 @@ export interface ToolsGridTile {
    */
   instanceStrategy?: "singleton-default" | "fresh-per-click";
   /** Optional data seed for the openOverlay payload. May be async (e.g. an
-   *  agent-slot resolution) — activation awaits it before dispatching. */
+   *  agent-mandate resolution) — activation awaits it before dispatching. */
   seedData?: (
     ctx: TileContext,
   ) =>

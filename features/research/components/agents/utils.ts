@@ -1,6 +1,6 @@
 /**
- * Contract comparison moved to the canonical agent-slots primitive —
- * `@/features/agents/slots/contract-compare` (`compareContracts`,
+ * Contract comparison moved to the canonical mandates primitive —
+ * `@/features/agents/mandates/contract-compare` (`compareContracts`,
  * `systemContractRows`, `ComparisonResult`, `ContractRow`). Import from
  * there; this file keeps only research-local display helpers.
  */

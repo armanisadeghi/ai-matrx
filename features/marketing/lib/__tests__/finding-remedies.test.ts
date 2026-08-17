@@ -12,7 +12,7 @@ import {
   humanizeItemKey,
   registeredRemedyKeys,
   resolveFindingRemedy,
-  SEO_PAGE_ANALYZER_SLOT,
+  SEO_PAGE_ANALYZER_MANDATE,
   type FindingRemedyContext,
 } from "@/features/marketing/lib/finding-remedies";
 
@@ -86,7 +86,7 @@ describe("resolveFindingRemedy — a completely unknown item_key", () => {
     if (resolved.remedy.action.kind !== "launch_agent") {
       throw new Error("expected launch_agent");
     }
-    expect(resolved.remedy.action.slotKey).toBe(SEO_PAGE_ANALYZER_SLOT);
+    expect(resolved.remedy.action.mandateKey).toBe(SEO_PAGE_ANALYZER_MANDATE);
     // The brief carries the finding the user is looking at — key, page, and
     // the analyzer's own words.
     const draft = resolved.remedy.action.draftText ?? "";

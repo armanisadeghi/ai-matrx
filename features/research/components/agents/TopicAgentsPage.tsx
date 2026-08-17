@@ -5,8 +5,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
-import { OverriddenCountBadge } from "@/features/agents/slots/components/OverriddenCountBadge";
-import { SlotResolutionRibbon } from "@/features/agents/slots/components/SlotResolutionRibbon";
+import { OverriddenCountBadge } from "@/features/agents/mandates/components/OverriddenCountBadge";
+import { MandateResolutionRibbon } from "@/features/agents/mandates/components/MandateResolutionRibbon";
 import { useTopicContext } from "../../context/ResearchContext";
 import { updateTopic } from "../../service";
 import { AGENT_CONFIG_KEYS, type AgentConfigKey } from "../../admin/types";
@@ -35,7 +35,7 @@ function readOverride(
 export default function TopicAgentsPage() {
   const { topic, refresh } = useTopicContext();
   const dispatch = useAppDispatch();
-  // DB-truth system pins from the agent-slot registry (replaces the drifted
+  // DB-truth system pins from the agent-mandate registry (replaces the drifted
   // hardcoded UUID constants).
   const {
     roles,
@@ -149,7 +149,7 @@ export default function TopicAgentsPage() {
 
         {/* The canonical, truthful precedence chain — run-scope here is the
             per-topic override (rs_topic.agent_config). */}
-        <SlotResolutionRibbon
+        <MandateResolutionRibbon
           className="mt-4"
           labels={{ run: "Topic override" }}
         />

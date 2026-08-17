@@ -3,10 +3,10 @@
 /**
  * BindingSuggestionsTab — the "AI map" tab of SurfaceAgentBindPanel.
  *
- * One button runs the `surfaces_client.binding_mapper` slot agent (a
- * DB-defined structured agent — code holds only the slot key) with the
+ * One button runs the `surfaces_client.binding_mapper` mandate agent (a
+ * DB-defined structured agent — code holds only the mandate key) with the
  * surface's declared values + write targets and the target agent's
- * variable/context-slot contract. The proposal renders as review rows the
+ * variable/context-mandate contract. The proposal renders as review rows the
  * user can accept into the manual mapping editor — nothing is ever applied
  * blindly, and the manual tab remains a full fallback.
  */
@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 import { CheckCheck, Loader2, Route, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { useSlotRunner } from "@/features/agents/slots/useSlotRunner";
+import { useMandateRunner } from "@/features/agents/mandates/useMandateRunner";
 import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import {
   buildMapperVariables,
@@ -34,7 +34,7 @@ import type {
 } from "@/features/surfaces/types";
 import { cn } from "@/lib/utils";
 
-export const BINDING_MAPPER_SLOT_KEY = "surfaces_client.binding_mapper";
+export const BINDING_MAPPER_MANDATE_KEY = "surfaces_client.binding_mapper";
 
 const CONFIDENCE_DOT: Record<string, string> = {
   high: "bg-emerald-500",
@@ -69,8 +69,8 @@ export function BindingSuggestionsTab({
   onAccept,
 }: BindingSuggestionsTabProps) {
   const surfaceLabel = getSurfaceDisplayLabel(surfaceName);
-  const { runSlot, running, unavailable, slotError } =
-    useSlotRunner(BINDING_MAPPER_SLOT_KEY);
+  const { runMandate, running, unavailable, mandateError } =
+    useMandateRunner(BINDING_MAPPER_MANDATE_KEY);
   const [streamedChars, setStreamedChars] = useState(0);
   const [proposal, setProposal] = useState<MapperProposal | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
@@ -90,7 +90,7 @@ export function BindingSuggestionsTab({
     setProposal(null);
     setStreamedChars(0);
     try {
-      const raw = await runSlot({
+      const raw = await runMandate({
         variables: buildMapperVariables({
           surfaceName,
           surfaceLabel,
@@ -137,7 +137,7 @@ export function BindingSuggestionsTab({
     return (
       <p className="rounded-md border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">
         The AI mapping helper is not available right now
-        {slotError ? ` (${slotError})` : ""}. Map values manually below.
+        {mandateError ? ` (${mandateError})` : ""}. Map values manually below.
       </p>
     );
   }

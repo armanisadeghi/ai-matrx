@@ -13,11 +13,11 @@ import { AGENT_CONFIG_KEYS, AGENT_CONFIG_META } from "../../admin/types";
 import type { AgentConfigKey } from "../../admin/types";
 
 /**
- * The system agents that drive the research pipeline, one AGENT SLOT per
+ * The system agents that drive the research pipeline, one AGENT MANDATE per
  * role. The system default (master agent + pinned version) is DB-truth on
- * `agent.slot_definition` — repin from /administration/agents/slots — and is
+ * `agent.slot_definition` — rebind from /administration/agents/mandates — and is
  * fetched at render time via `useResearchAgentRoles`, so this file can never
- * drift from what the server actually runs (the pre-slot hardcoded UUID maps
+ * drift from what the server actually runs (the pre-mandate hardcoded UUID maps
  * here drifted on all 7 roles).
  *
  * NOTE: `page_summary_agent_id` maps to `research.structured_page_summary` —
@@ -27,7 +27,7 @@ import type { AgentConfigKey } from "../../admin/types";
  * `suggest` is intentionally NOT keyed under AGENT_CONFIG_KEYS — it's
  * pre-topic (no `rs_topic.agent_config` entry) and surfaced read-only.
  */
-export const ROLE_SLOT_KEYS: Record<AgentConfigKey, string> = {
+export const ROLE_MANDATE_KEYS: Record<AgentConfigKey, string> = {
   page_summary_agent_id: "research.structured_page_summary",
   keyword_synthesis_agent_id: "research.keyword_synthesis",
   research_report_agent_id: "research.report",
@@ -37,21 +37,21 @@ export const ROLE_SLOT_KEYS: Record<AgentConfigKey, string> = {
   document_assembly_agent_id: "research.document_assembly",
 };
 
-export const SUGGEST_SLOT_KEY = "research.suggest_setup";
+export const SUGGEST_MANDATE_KEY = "research.suggest_setup";
 
 export interface AgentRoleDefinition {
   /** JSONB key in `rs_topic.agent_config`. `null` for system-only roles. */
   configKey: AgentConfigKey | null;
-  /** The agent slot backing this role (`agent.slot_definition.slot_key`). */
-  slotKey: string;
+  /** The mandate backing this role (`agent.slot_definition.slot_key`). */
+  mandateKey: string;
   label: string;
   description: string;
   usedBy: string;
-  /** Master agx_agent row of the system default (DB-truth from the slot). */
+  /** Master agx_agent row of the system default (DB-truth from the mandate). */
   systemAgentId: string;
   /**
    * The PINNED agx_version the server runs — what "Copy & Update" must fork.
-   * `null` for FLOATING slots (the server runs the latest master version, so
+   * `null` for FLOATING mandates (the server runs the latest master version, so
    * forking the master row IS forking what runs).
    */
   systemVersionId: string | null;
@@ -60,10 +60,10 @@ export interface AgentRoleDefinition {
   systemOnly: boolean;
 }
 
-/** Static role metadata; ids come from the slot registry at render time. */
+/** Static role metadata; ids come from the mandate registry at render time. */
 export interface AgentRoleTemplate {
   configKey: AgentConfigKey | null;
-  slotKey: string;
+  mandateKey: string;
   label: string;
   description: string;
   usedBy: string;
@@ -85,7 +85,7 @@ const ICONS: Record<AgentConfigKey, LucideIcon> = {
 export const AGENT_ROLE_TEMPLATES: AgentRoleTemplate[] = [
   ...AGENT_CONFIG_KEYS.map((key) => ({
     configKey: key,
-    slotKey: ROLE_SLOT_KEYS[key],
+    mandateKey: ROLE_MANDATE_KEYS[key],
     label: AGENT_CONFIG_META[key].label,
     description: AGENT_CONFIG_META[key].description,
     usedBy: AGENT_CONFIG_META[key].usedBy,
@@ -94,7 +94,7 @@ export const AGENT_ROLE_TEMPLATES: AgentRoleTemplate[] = [
   })),
   {
     configKey: null,
-    slotKey: SUGGEST_SLOT_KEY,
+    mandateKey: SUGGEST_MANDATE_KEY,
     label: "Research Setup Suggest Agent",
     description:
       "Suggests a topic title, description, keywords, and initial insights from a free-form subject input.",

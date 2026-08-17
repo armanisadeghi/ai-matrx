@@ -10,7 +10,7 @@ import { agaAppsAdapter } from "@/features/code/library-sources/adapters/aga-app
 // Side-effect: register `aga-app:` previewer with the render-preview registry.
 import "@/features/agent-apps/code-preview/registerAgentAppRenderPreview";
 import type { AgentApp } from "@/features/agent-apps/types";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 
 interface AgentAppEditPageClientProps {
   app: AgentApp;
@@ -21,9 +21,9 @@ export function AgentAppEditPageClient({ app }: AgentAppEditPageClientProps) {
   const openSourceEntry = useOpenSourceEntry();
   const openRenderPreview = useOpenRenderPreview();
   const bootstrappedRef = useRef(false);
-  // The editor's coding agent is a SLOT — swappable per user at /agents/slots
-  // and repinnable in the admin console without a deploy.
-  const { slot: promptAppDev } = useAgentSlot(PROMPT_APP_DEV_SLOT);
+  // The editor's coding agent is a MANDATE — swappable per user at /agents/mandates
+  // and rebindnable in the admin console without a deploy.
+  const { mandate: promptAppDev } = useMandate(PROMPT_APP_DEV_MANDATE);
   const basePath = `/agent-apps/${app.id}`;
 
   // First-mount bootstrap: open the source file + paired preview tab so a
@@ -68,4 +68,4 @@ export function AgentAppEditPageClient({ app }: AgentAppEditPageClientProps) {
 /** Coding agent specialised for prompt-app / agent-app development. The
  *  chat panel boots with this agent on the agent-app editor unless the
  *  user already has `?agentId=` pinned in the URL. */
-const PROMPT_APP_DEV_SLOT = "agent_apps.prompt_app_dev";
+const PROMPT_APP_DEV_MANDATE = "agent_apps.prompt_app_dev";

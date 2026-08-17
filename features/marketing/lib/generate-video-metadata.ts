@@ -21,19 +21,19 @@ import {
 /**
  * 🚨 CONFIRMED LIVE VIOLATION — a raw agent UUID passed as `agentId:` to a real
  * run below. Tracked as row **F1** of
- * /Users/armanisadeghi/code/common-docs/systems/agent-slots/ROLLOUT.md.
+ * /Users/armanisadeghi/code/common-docs/systems/mandates/ROLLOUT.md.
  *
  * The old description of this constant as a "permanent latest-version pointer"
  * described `declare_floating_agent`, a construct that was DELETED on
  * 2026-08-10 along with the rest of the pin-upgrade machinery. Nothing makes
- * this id float: it is frozen, it is not a slot, it is not declared in
+ * this id float: it is frozen, it is not a mandate, it is not declared in
  * aidream's `client_slots.py`, and it is in no allowlist. Repointing the
  * "Marketing Video Metadata Writer" in the DB does not change what runs here.
  *
  * **Fix (do not do it comment-only — it needs the aidream half):** declare
  * `marketing.video_metadata` in aidream `services/agent_slots/client_slots.py`
- * seeded on this id, resolve it here (`useAgentSlot` /
- * `launchAgentExecution({slotKey})`), then delete this constant.
+ * seeded on this id, resolve it here (`useMandate` /
+ * `launchAgentExecution({mandateKey})`), then delete this constant.
  *
  * What the agent is expected to do: take runtime variables `video_context` +
  * `site_context` and answer with the finished metadata wrapped in

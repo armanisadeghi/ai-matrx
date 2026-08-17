@@ -17,22 +17,22 @@ import { Link2 } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { AgentComingSoonContent } from "@/features/agents/components/coming-soon/AgentComingSoonContent";
 import { AgentSyncBody } from "@/features/agents/components/admin/AgentSyncBody";
-import { updateSlotDefinition } from "@/features/admin/agent-slots/service";
+import { updateMandateDefinition } from "@/features/admin/mandates/service";
 
 interface AgentConvertSystemWindowProps {
   isOpen: boolean;
   onClose: () => void;
   agentId?: string | null;
   /**
-   * Optional agent-slot context (set by the admin slots console). All three
-   * are plain serializable values carried through overlay data — the repin
-   * callback is constructed HERE, never passed through Redux. When `slotId`
-   * is present the sync body offers "Repin slot to system side" in place,
-   * writing through the console's canonical `updateSlotDefinition` path.
+   * Optional agent-mandate context (set by the admin mandates console). All three
+   * are plain serializable values carried through overlay data — the rebind
+   * callback is constructed HERE, never passed through Redux. When `mandateId`
+   * is present the sync body offers "Rebind mandate to system side" in place,
+   * writing through the console's canonical `updateMandateDefinition` path.
    */
-  slotId?: string | null;
-  slotKey?: string | null;
-  slotLabel?: string | null;
+  mandateId?: string | null;
+  mandateKey?: string | null;
+  mandateLabel?: string | null;
 }
 
 const WINDOW_ID = "agent-convert-system-window";
@@ -42,15 +42,15 @@ export default function AgentConvertSystemWindow({
   isOpen,
   onClose,
   agentId,
-  slotId,
-  slotKey,
-  slotLabel,
+  mandateId,
+  mandateKey,
+  mandateLabel,
 }: AgentConvertSystemWindowProps) {
   if (!isOpen) return null;
 
-  const repinSlotToSystem = slotId
+  const rebindMandateToSystem = mandateId
     ? async (systemAgentId: string): Promise<void> => {
-        await updateSlotDefinition(slotId, {
+        await updateMandateDefinition(mandateId, {
           default_agent_id: systemAgentId,
           default_agent_version_id: null,
           use_latest: true,
@@ -96,9 +96,9 @@ export default function AgentConvertSystemWindow({
         key={agentId}
         agentId={agentId}
         onClose={onClose}
-        slotKey={slotKey ?? undefined}
-        slotLabel={slotLabel ?? slotKey ?? undefined}
-        onRepinToSystem={repinSlotToSystem}
+        mandateKey={mandateKey ?? undefined}
+        mandateLabel={mandateLabel ?? mandateKey ?? undefined}
+        onRebindToSystem={rebindMandateToSystem}
       />
     </WindowPanel>
   );

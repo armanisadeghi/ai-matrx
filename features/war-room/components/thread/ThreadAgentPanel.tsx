@@ -74,8 +74,8 @@ import {
 import { removeContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { selectInstanceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import { prefetchThreadFileSignals } from "@/features/war-room/service/prefetchThreadFileSignals";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
-import { WAR_ROOM_THREAD_AGENT_SLOT } from "@/features/war-room/constants";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { WAR_ROOM_THREAD_AGENT_MANDATE } from "@/features/war-room/constants";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
 import { traceWarRoomRenderPath } from "@/features/war-room/utils/renderPathTrace";
 import { setClientTools } from "@/features/agents/redux/execution-system/instance-client-tools/instance-client-tools.slice";
@@ -122,25 +122,25 @@ export default function ThreadAgentPanel({
   const attachments = useAppSelector(selectAttachmentsForThread(threadId));
   const activeAgentId = useAppSelector(selectActiveAssistantAgentId(sessionId));
 
-  // The tier's default persona — from the `war_room.thread` slot, never a
+  // The tier's default persona — from the `war_room.thread` mandate, never a
   // hardcoded id. "Settled" means resolved OR loudly failed: an EXISTING chat
   // must keep binding either way (studio falls back to its own user-default
-  // resolution), so a broken slot degrades the DEFAULT, not the user's chats.
-  const { slot: threadSlot, error: threadSlotError } = useAgentSlot(
-    WAR_ROOM_THREAD_AGENT_SLOT,
+  // resolution), so a broken mandate degrades the DEFAULT, not the user's chats.
+  const { mandate: threadMandate, error: threadMandateError } = useMandate(
+    WAR_ROOM_THREAD_AGENT_MANDATE,
   );
-  const threadAgentId = threadSlot?.agentId ?? null;
-  const threadSlotSettled = threadAgentId !== null || threadSlotError !== null;
+  const threadAgentId = threadMandate?.agentId ?? null;
+  const threadMandateSettled = threadAgentId !== null || threadMandateError !== null;
   useEffect(() => {
-    if (threadSlotError) {
+    if (threadMandateError) {
       reportWarRoomError(
-        "thread-agent/slot",
+        "thread-agent/mandate",
         new Error(
-          `War Room thread agent slot "${WAR_ROOM_THREAD_AGENT_SLOT}" could not resolve: ${threadSlotError}`,
+          `War Room thread mandate "${WAR_ROOM_THREAD_AGENT_MANDATE}" could not resolve: ${threadMandateError}`,
         ),
       );
     }
-  }, [threadSlotError]);
+  }, [threadMandateError]);
 
   // Ensure the task's subtasks are hydrated so `tile_task.subtasks` is complete.
   useEffect(() => {
@@ -235,11 +235,11 @@ export default function ThreadAgentPanel({
   // an existing one. The old auto-mint fabricated a new conversation on every
   // refresh (a fresh id has no cx_conversation row until its first turn, so
   // the pointer was lost and re-minted each load).
-  // Held until the slot settles so the tile's persona can't lose a race to
+  // Held until the mandate settles so the tile's persona can't lose a race to
   // studio's own seeded fallback (the AUDIO_ASSISTANT borrow this persona
   // replaced) on a legacy session whose stored chat has no roster entry.
   const { conversationId } = useStudioAssistant(
-    threadSlotSettled ? sessionId : null,
+    threadMandateSettled ? sessionId : null,
     {
       buildExtraEntries,
       defaultAgentId: threadAgentId ?? undefined,
@@ -325,7 +325,7 @@ export default function ThreadAgentPanel({
     // display name from the live chat title.
     if (!conversationIsReal) return;
     // The chat's ACTUAL agent (studio's roster) is the truth being recorded;
-    // the slot only names the agent a brand-new chat was minted with. With
+    // the mandate only names the agent a brand-new chat was minted with. With
     // neither we skip the stamp rather than write a guessed agent into a
     // durable edge — the effect re-runs the moment one arrives.
     const agentId = activeAgentId ?? threadAgentId;

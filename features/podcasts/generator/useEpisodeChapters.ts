@@ -3,8 +3,8 @@
 // features/podcasts/generator/useEpisodeChapters.ts
 //
 // Generate + persist auto chapter markers for a finished episode. The
-// podcast.chapter_marker agent (DB-managed slot, floating — repin from
-// /administration/agents/slots) segments the episode script into 3–12 ordered
+// podcast.chapter_marker agent (DB-managed mandate, floating — rebind from
+// /administration/agents/mandates) segments the episode script into 3–12 ordered
 // chapters and emits them as the `media_chapters` content-IR kind; the parsed
 // list is saved under pc_episodes.metadata.chapters via
 // podcastService.saveEpisodeChapters.
@@ -31,7 +31,7 @@ import { podcastService } from "@/features/podcasts/service";
 import { parseChapters } from "@/features/podcasts/types";
 import type { PcEpisode, PcEpisodeChapter } from "@/features/podcasts/types";
 
-const CHAPTER_MARKER_SLOT_KEY = "podcast.chapter_marker";
+const CHAPTER_MARKER_MANDATE_KEY = "podcast.chapter_marker";
 
 /** `duration_hint` for the agent: HH:MM:SS / MM:SS from the stored runtime. */
 function formatDurationHint(seconds: number | null): string {
@@ -95,7 +95,7 @@ export function useEpisodeChapters(
     });
     try {
       const list = await run<PcEpisodeChapter[]>({
-        slotKey: CHAPTER_MARKER_SLOT_KEY,
+        mandateKey: CHAPTER_MARKER_MANDATE_KEY,
         surfaceKey: "podcast-episode-chapters",
         sourceFeature: "podcasts",
         variables: {

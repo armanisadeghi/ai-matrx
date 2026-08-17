@@ -42,8 +42,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { stashChatDraftTransfer } from "@/features/agents/components/chat/chat-draft-transfer";
-import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { resolveMandate } from "@/features/agents/mandates/service";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -97,10 +97,10 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
 
   const handleAiDocument = useCallback(
     (prompt: string) => {
-      // `/chat/new` mounts the `chat.default_new_chat` SLOT's agent — resolve
-      // the same slot here so the stashed draft targets exactly what the
+      // `/chat/new` mounts the `chat.default_new_chat` MANDATE's agent — resolve
+      // the same mandate here so the stashed draft targets exactly what the
       // landing will mount (shared 5-min cache; the user's binding wins).
-      void resolveAgentSlot(DEFAULT_NEW_CHAT_SLOT_KEY)
+      void resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY)
         .then((resolved) => {
           stashChatDraftTransfer({
             text: prompt,
@@ -110,7 +110,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
         })
         .catch((error: unknown) => {
           console.error(
-            `[NewMenu] slot "${DEFAULT_NEW_CHAT_SLOT_KEY}" failed to resolve:`,
+            `[NewMenu] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve:`,
             error,
           );
           toast.error("Chat is unavailable right now", {

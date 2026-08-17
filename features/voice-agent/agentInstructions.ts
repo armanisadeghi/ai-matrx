@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import type { RootState } from "@/lib/redux/store";
 
 /** The agent row's system message, or "" when it has none. */
@@ -31,28 +31,28 @@ export function readInstructionsFromAgent(messages: unknown): string {
   return typeof text === "string" ? text : "";
 }
 
-export interface SlotAgentInstructions {
+export interface MandateAgentInstructions {
   /** The resolved agent id, or null while resolving / on failure. */
   agentId: string | null;
   /** The agent's system message, or null while loading / on failure. */
   instructions: string | null;
   loading: boolean;
-  /** Set when the slot or the agent row could not be read. */
+  /** Set when the mandate or the agent row could not be read. */
   error: string | null;
 }
 
 /**
- * Resolve a slot and read its agent's instructions from the DB — the canonical
+ * Resolve a mandate and read its agent's instructions from the DB — the canonical
  * way a voice surface learns what its agent says. Never returns a fallback: an
- * unresolved slot or an instruction-less agent surfaces as `error`.
+ * unresolved mandate or an instruction-less agent surfaces as `error`.
  */
-export function useSlotAgentInstructions(
-  slotKey: string,
-): SlotAgentInstructions {
+export function useMandateAgentInstructions(
+  mandateKey: string,
+): MandateAgentInstructions {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const { slot, loading: slotLoading, error: slotError } = useAgentSlot(slotKey);
-  const agentId = slot?.agentId ?? null;
+  const { mandate, loading: mandateLoading, error: mandateError } = useMandate(mandateKey);
+  const agentId = mandate?.agentId ?? null;
 
   const [state, setState] = useState<{
     agentId: string | null;
@@ -88,7 +88,7 @@ export function useSlotAgentInstructions(
       if (!instructions) {
         const why = agent ? "has no system message" : "could not be loaded";
         console.error(
-          `[voice-agent] slot "${slotKey}" resolved to agent ${agentId}, which ${why}.`,
+          `[voice-agent] mandate "${mandateKey}" resolved to agent ${agentId}, which ${why}.`,
         );
         setState({
           agentId,
@@ -102,12 +102,12 @@ export function useSlotAgentInstructions(
     return () => {
       cancelled = true;
     };
-  }, [agentId, dispatch, store, slotKey]);
+  }, [agentId, dispatch, store, mandateKey]);
 
   return {
     agentId,
     instructions: state.agentId === agentId ? state.instructions : null,
-    loading: slotLoading || (!!agentId && state.agentId !== agentId),
-    error: slotError ?? (state.agentId === agentId ? state.error : null),
+    loading: mandateLoading || (!!agentId && state.agentId !== agentId),
+    error: mandateError ?? (state.agentId === agentId ? state.error : null),
   };
 }

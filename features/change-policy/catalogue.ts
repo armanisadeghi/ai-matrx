@@ -298,7 +298,7 @@ export const CHANGE_TYPE_CATALOGUE: readonly ChangeTypeDef[] = [
         rowNum: 16,
         tier: 3,
         label: "Replace an Agent with a different existing Agent",
-        description: "Point a slot at another Agent already in the catalog.",
+        description: "Point a mandate at another Agent already in the catalog.",
         defaultMode: "review",
         subject: "agent",
     },
@@ -307,7 +307,7 @@ export const CHANGE_TYPE_CATALOGUE: readonly ChangeTypeDef[] = [
         rowNum: 17,
         tier: 3,
         label: "Replace a Workflow with a different existing Workflow",
-        description: "Point a slot at another Workflow already in the catalog.",
+        description: "Point a mandate at another Workflow already in the catalog.",
         defaultMode: "review",
         subject: "workflow",
     },
@@ -386,9 +386,9 @@ export const CHANGE_TYPE_CATALOGUE: readonly ChangeTypeDef[] = [
         // Doc says "(plus the existing context-starved code reviewer)". That
         // reviewer EXISTS since D-18 (2026-08-15) but is not wired into any
         // apply path yet — so this row ships as plain Review. Which VERSION of
-        // it runs is DB-owned (the agent's pin, repinnable at
-        // /administration/agents/slots); naming a version id here would rot on
-        // the next repin. See FEATURE.md § Row 25.
+        // it runs is DB-owned (the agent's pin, rebindnable at
+        // /administration/agents/mandates); naming a version id here would rot on
+        // the next rebind. See FEATURE.md § Row 25.
         note: "Will additionally route through the context-starved code reviewer once that guard is wired into the apply path.",
         subject: "tool",
     },

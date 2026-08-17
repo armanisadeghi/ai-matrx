@@ -11,8 +11,8 @@
  * - capped: at most ONE chip per sweep (the pileup aggregates), expires set.
  * - cheapest-first: pure reads over the already-hydrated Redux notes list
  *   and scope assignments; zero fetches, zero tokens to notice.
- * - the action is real: launches the `notes.organizer` agent slot
- *   (swappable from /agents/slots, no deploy) with the note list ready.
+ * - the action is real: launches the `notes.organizer` mandate
+ *   (swappable from /agents/mandates, no deploy) with the note list ready.
  *
  * System-of-record: /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md
  */
@@ -27,10 +27,10 @@ const SOURCE_KEY = "notes.unorganized";
 /** `/notes` resolves to this surface (features/surfaces/utils/route-to-surface.ts). */
 export const NOTES_ASSIST_SURFACE = "matrx-user/notes";
 
-/** Agent-slot the launch action resolves at click time (agent.slot_definition,
+/** Agent-mandate the launch action resolves at click time (agent.slot_definition,
  * seeded by migrations/agent_slots_assist_producers_seed.sql — swappable from
- * the admin slots console, no deploy). */
-export const NOTES_ORGANIZER_SLOT = "notes.organizer";
+ * the admin mandates console, no deploy). */
+export const NOTES_ORGANIZER_MANDATE = "notes.organizer";
 
 // Conservative threshold — a couple of loose notes is normal; a pileup is
 // the signal ("loud, never nagging").
@@ -84,7 +84,7 @@ export async function produceNotesAssists(args: {
       body: `${count} of your notes have no folder, tags, project, or context — so they won't show up when you browse by any of those. One click opens the Notes Organizer with the full list ready; it suggests a grouping and applies it only after you agree.`,
       action: {
         kind: "launch_agent",
-        slotKey: NOTES_ORGANIZER_SLOT,
+        mandateKey: NOTES_ORGANIZER_MANDATE,
         agentName: "Notes Organizer",
         draftText,
       },

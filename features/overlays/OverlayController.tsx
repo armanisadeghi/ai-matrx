@@ -2091,10 +2091,10 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "agentConvertSystemWindow" }))
             }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
-            slotId={typeof data?.slotId === "string" ? data.slotId : null}
-            slotKey={typeof data?.slotKey === "string" ? data.slotKey : null}
-            slotLabel={
-              typeof data?.slotLabel === "string" ? data.slotLabel : null
+            mandateId={typeof data?.mandateId === "string" ? data.mandateId : null}
+            mandateKey={typeof data?.mandateKey === "string" ? data.mandateKey : null}
+            mandateLabel={
+              typeof data?.mandateLabel === "string" ? data.mandateLabel : null
             }
           />
         );

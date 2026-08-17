@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * AgentRoleCard — one research pipeline role, backed by an agent slot.
- * Thin consumer of the canonical agent-slots primitives
- * (`features/agents/slots/`): ContractItem rows, the shared Copy & Update
- * hook (useCopySlotAgent), and SlotAgentPicker in controlled-override mode —
+ * AgentRoleCard — one research pipeline role, backed by an mandate.
+ * Thin consumer of the canonical mandates primitives
+ * (`features/agents/mandates/`): ContractItem rows, the shared Copy & Update
+ * hook (useCopyMandateAgent), and MandateAgentPicker in controlled-override mode —
  * the write path stays research's own `rs_topic.agent_config` (via
  * onApply/onRemove from TopicAgentsPage). The old raw UUID paste box +
  * Validate button was replaced by the canonical picker (its contract
@@ -33,10 +33,10 @@ import {
   selectAgentExecutionPayload,
 } from "@/features/agents/redux/agent-definition/selectors";
 import type { RootState } from "@/lib/redux/store";
-import { systemContractRows } from "@/features/agents/slots/contract-compare";
-import { useCopySlotAgent } from "@/features/agents/slots/useCopySlotAgent";
-import { ContractItem } from "@/features/agents/slots/components/ContractItem";
-import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
+import { systemContractRows } from "@/features/agents/mandates/contract-compare";
+import { useCopyMandateAgent } from "@/features/agents/mandates/useCopyMandateAgent";
+import { ContractItem } from "@/features/agents/mandates/components/ContractItem";
+import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
 import type { AgentRoleDefinition } from "./constants";
 import { shortUuid } from "./utils";
 
@@ -98,7 +98,7 @@ export function AgentRoleCard({
 }: AgentRoleCardProps) {
   const dispatch = useAppDispatch();
   const Icon = role.icon;
-  const { copying, copyAndOpen } = useCopySlotAgent();
+  const { copying, copyAndOpen } = useCopyMandateAgent();
 
   const systemPayload = useAppSelector((s: RootState) =>
     selectAgentExecutionPayload(s, role.systemAgentId),
@@ -128,7 +128,7 @@ export function AgentRoleCard({
             variableDefinitions: systemPayload.variableDefinitions,
             contextSlots: systemPayload.contextSlots,
           })
-        : { variables: [], slots: [] },
+        : { variables: [], mandates: [] },
     [systemPayload],
   );
 
@@ -225,7 +225,7 @@ export function AgentRoleCard({
           {!systemPayload.isReady ? (
             <ContractSkeleton />
           ) : systemRows.variables.length === 0 &&
-            systemRows.slots.length === 0 ? (
+            systemRows.mandates.length === 0 ? (
             <p className="text-[12.5px] text-muted-foreground italic">
               This agent declares no variables or context slots — any agent
               with valid execution metadata will pass.
@@ -243,23 +243,23 @@ export function AgentRoleCard({
                         row={row}
                         state="pending"
                         showCheck={false}
-                        iconSlot={<Hash className="h-3 w-3" />}
+                        iconMandate={<Hash className="h-3 w-3" />}
                       />
                     ))}
                   </ul>
                 </SectionList>
               ) : null}
 
-              {systemRows.slots.length > 0 ? (
-                <SectionList label={`Context slots (${systemRows.slots.length})`}>
+              {systemRows.mandates.length > 0 ? (
+                <SectionList label={`Context mandates (${systemRows.mandates.length})`}>
                   <ul className="divide-y divide-border/30">
-                    {systemRows.slots.map((row) => (
+                    {systemRows.mandates.map((row) => (
                       <ContractItem
                         key={row.name}
                         row={row}
                         state="pending"
                         showCheck={false}
-                        iconSlot={<KeyRound className="h-3 w-3" />}
+                        iconMandate={<KeyRound className="h-3 w-3" />}
                       />
                     ))}
                   </ul>
@@ -338,11 +338,11 @@ export function AgentRoleCard({
                     ? "Replace with another agent"
                     : "Choose one of your agents"}
                 </span>
-                <SlotAgentPicker
-                  slotKey={role.slotKey}
+                <MandateAgentPicker
+                  mandateKey={role.mandateKey}
                   // The card renders requirements from the LIVE system agent —
                   // so the pre-flight must check against that same live
-                  // declaration, not the slot's stored (possibly stale/empty)
+                  // declaration, not the mandate's stored (possibly stale/empty)
                   // contract. Null while loading → stored-contract fallback.
                   contractSource={
                     systemPayload.isReady

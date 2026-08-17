@@ -227,8 +227,8 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   // its own entry ABOVE this one when it gets a manifest.
   { prefix: "/p", surface: "matrx-public/p" },
   {
-    prefix: "/administration/agents/slots",
-    surface: "matrx-admin/agent-slots",
+    prefix: "/administration/agents/mandates",
+    surface: "matrx-admin/mandates",
   },
   // users family: specific children BEFORE the /administration/users hub.
   {

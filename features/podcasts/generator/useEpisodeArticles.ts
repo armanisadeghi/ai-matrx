@@ -3,7 +3,7 @@
 // features/podcasts/generator/useEpisodeArticles.ts
 //
 // Generate + persist per-episode companion content (blog post / show notes).
-// Each kind maps to a DB-managed agent slot; the assembled markdown is held in
+// Each kind maps to a DB-managed mandate; the assembled markdown is held in
 // `drafts` (preview before reload) and saved to pc_articles via
 // `articleService`. Regenerating replaces the row (unique (episode_id, kind)).
 //
@@ -36,10 +36,10 @@ import type {
   PcEpisodeWithShow,
 } from "@/features/podcasts/types";
 
-// DB-managed agent slots (declared in aidream client_slots.py; repin from
-// /administration/agents/slots — never a hardcoded agent id here).
-const BLOG_WRITER_SLOT_KEY = "podcast_client.blog_writer";
-const SHOW_NOTES_SLOT_KEY = "podcast_client.show_notes";
+// DB-managed mandates (declared in aidream client_slots.py; rebind from
+// /administration/agents/mandates — never a hardcoded agent id here).
+const BLOG_WRITER_MANDATE_KEY = "podcast_client.blog_writer";
+const SHOW_NOTES_MANDATE_KEY = "podcast_client.show_notes";
 
 /** Build the episode_metadata JSON the agents consume from the episode + show.
  *  Shared with useEpisodeTitleOptions so every post-episode agent reads the
@@ -161,13 +161,13 @@ export function useEpisodeArticles(
               };
         // These agents answer with a structured JSON envelope, so the run goes
         // through the structured-JSON primitive and hands back the parsed
-        // object; the renderable markdown is assembled from it. The slot is
+        // object; the renderable markdown is assembled from it. The mandate is
         // resolved INSIDE the canonical launcher (config_overrides preserved) —
         // never an agent id resolved out here.
         const value = await (kind === "blog" ? blogRun : notesRun).run<unknown>(
           {
-            slotKey:
-              kind === "blog" ? BLOG_WRITER_SLOT_KEY : SHOW_NOTES_SLOT_KEY,
+            mandateKey:
+              kind === "blog" ? BLOG_WRITER_MANDATE_KEY : SHOW_NOTES_MANDATE_KEY,
             surfaceKey: `podcast-episode-article:${kind}`,
             sourceFeature: "podcasts",
             variables,

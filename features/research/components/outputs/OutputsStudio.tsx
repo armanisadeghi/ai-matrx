@@ -36,13 +36,13 @@ import type { PodcastType } from "@/features/podcasts/generator/types";
 import { LiveProgressRail } from "@/features/podcasts/generator/components/LiveProgressRail";
 import { ProductionTeaser } from "@/features/podcasts/generator/components/ProductionTeaser";
 import { MediaOptionsGrid } from "@/features/podcasts/generator/components/MediaOptionsGrid";
-import { useSlotRunner } from "@/features/agents/slots/useSlotRunner";
-import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
+import { useMandateRunner } from "@/features/agents/mandates/useMandateRunner";
+import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
 import MarkdownStream from "@/components/MarkdownStream";
 import { SessionMediaElement } from "@/features/audio/session/SessionMediaElement";
 import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { LiveRunWindowController } from "@/features/overlays/openers/liveRunWindow";
 import {
@@ -61,13 +61,13 @@ import {
 import { getBundleBySlug, getResourceManifest } from "../../service/resources";
 import { resolveBundle } from "../../resources/resolve";
 
-/** Research content-engine generators run through AGENT SLOTS — the slot is the
+/** Research content-engine generators run through AGENT MANDATES — the mandate is the
  *  identity, never a hardcoded agent id. The system default is managed in the
- *  admin console; each user may bind their own agent via the SlotAgentPicker in
- *  each card header. SoR: common-docs/systems/agent-slots/FEATURE.md. */
-const BLOG_SLOT = "research_client.output_blog";
-const SLIDES_SLOT = "research_client.output_slides";
-const SEO_SLOT = "research_client.output_seo";
+ *  admin console; each user may bind their own agent via the MandateAgentPicker in
+ *  each card header. SoR: common-docs/systems/mandates/FEATURE.md. */
+const BLOG_MANDATE = "research_client.output_blog";
+const SLIDES_MANDATE = "research_client.output_slides";
+const SEO_MANDATE = "research_client.output_seo";
 
 /** First H1 in a markdown doc, for an asset title. */
 function extractMarkdownTitle(md: string): string | null {
@@ -834,7 +834,7 @@ function BlogOutputCard({
   existing: OutputAsset[];
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
-  const { runSlot, running, unavailable, slotError } = useSlotRunner(BLOG_SLOT);
+  const { runMandate, running, unavailable, mandateError } = useMandateRunner(BLOG_MANDATE);
   const [streamText, setStreamText] = useState("");
   const [viewing, setViewing] = useState<OutputAsset | null>(null);
 
@@ -846,7 +846,7 @@ function BlogOutputCard({
       (toneProfile.trim() ? `Voice & Lens: ${toneProfile.trim()}\n\n` : "") +
       `Research report:\n\n${reportMarkdown}`;
     try {
-      const md = await runSlot({
+      const md = await runMandate({
         userInput: input,
         organizationId,
         contextAnchor: {
@@ -891,10 +891,10 @@ function BlogOutputCard({
       title="Blog post"
       blurb="An SEO-optimized, cited article from this research — copy or export to WordPress."
       count={existing.length}
-      slotKey={BLOG_SLOT}
+      mandateKey={BLOG_MANDATE}
     >
       <>
-        {slotError && <SlotUnavailableNote message={slotError} />}
+        {mandateError && <MandateUnavailableNote message={mandateError} />}
         {!running && !viewing && (
           <Button
             size="sm"
@@ -989,17 +989,17 @@ function OutputCardShell({
   title,
   blurb,
   count,
-  slotKey,
+  mandateKey,
   children,
 }: {
   icon: React.ReactNode;
   title: string;
   blurb: string;
   count: number;
-  /** The agent slot that writes this output — renders the "which agent runs
+  /** The mandate that writes this output — renders the "which agent runs
    *  this" picker in the header, so swapping in your own agent is one click
    *  from where the output is generated. */
-  slotKey: string;
+  mandateKey: string;
   children: React.ReactNode;
 }) {
   return (
@@ -1022,7 +1022,7 @@ function OutputCardShell({
             {count} generated
           </span>
         )}
-        <SlotAgentPicker slotKey={slotKey} className="shrink-0" />
+        <MandateAgentPicker mandateKey={mandateKey} className="shrink-0" />
       </div>
       <div className="p-3.5 space-y-3">{children}</div>
     </div>
@@ -1031,7 +1031,7 @@ function OutputCardShell({
 
 /** The generator's agent could not resolve — the affordance is disabled and
  *  says why (loud recovery: never fall back to a hardcoded agent). */
-function SlotUnavailableNote({ message }: { message: string }) {
+function MandateUnavailableNote({ message }: { message: string }) {
   return (
     <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/[0.04] px-3 py-2.5">
       <AlertCircle className="h-3.5 w-3.5 text-destructive shrink-0 mt-0.5" />
@@ -1056,7 +1056,7 @@ function GeneratingNote({ label }: { label: string }) {
 
 // ── Slides output ────────────────────────────────────────────────────────────
 //
-// The deck IS the `presentation_deck` content-IR kind: the slot's agent emits a
+// The deck IS the `presentation_deck` content-IR kind: the mandate's agent emits a
 // canonical `{__kind:"presentation_deck", slides:[{__kind:"presentation_slide"}]}`
 // envelope, so the run streams into the FLOATING LiveRunWindow and the pipeline
 // routes it to the real Slideshow token by token — no spinner, no page shift,
@@ -1083,11 +1083,11 @@ function SlidesOutputCard({
   existing: OutputAsset[];
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
-  // Slot resolution stays the identity layer (the header's SlotAgentPicker
+  // Mandate resolution stays the identity layer (the header's MandateAgentPicker
   // still swaps the agent); the RUN goes through the live posture so the deck
   // streams instead of hiding behind a spinner.
-  const { error: slotError } = useAgentSlot(SLIDES_SLOT);
-  const unavailable = slotError !== null;
+  const { error: mandateError } = useMandate(SLIDES_MANDATE);
+  const unavailable = mandateError !== null;
   const {
     run,
     isRunning: running,
@@ -1103,7 +1103,7 @@ function SlidesOutputCard({
     setError(null);
     try {
       const deck = await run<PresentationDeck>({
-        slotKey: SLIDES_SLOT,
+        mandateKey: SLIDES_MANDATE,
         surfaceKey: `research-outputs-slides:${topicId}`,
         sourceFeature: "research",
         userInput: buildGeneratorInput(reportMarkdown, toneProfile),
@@ -1168,9 +1168,9 @@ function SlidesOutputCard({
       title="Slide deck"
       blurb="A presentation built from this research — rendered as a live slideshow."
       count={existing.length}
-      slotKey={SLIDES_SLOT}
+      mandateKey={SLIDES_MANDATE}
     >
-      {slotError && <SlotUnavailableNote message={slotError} />}
+      {mandateError && <MandateUnavailableNote message={mandateError} />}
       {!running && !viewing && (
         <Button
           size="sm"
@@ -1268,7 +1268,7 @@ function SlidesOutputCard({
 
 // ── SEO output ───────────────────────────────────────────────────────────────
 //
-// The package IS the `seo_package` content-IR kind: the slot's agent emits a
+// The package IS the `seo_package` content-IR kind: the mandate's agent emits a
 // canonical `{__kind:"seo_package", faq:[{__kind:"faq_item"}]}` envelope, so the
 // run streams into the FLOATING LiveRunWindow and the pipeline routes it to the
 // real SeoPackageBlock token by token — the title lands with its 60-character
@@ -1306,8 +1306,8 @@ function SeoOutputCard({
   onPersisted: (asset: OutputAsset) => Promise<void>;
 }) {
   // Resolution is read here only to DISABLE the affordance and say why; the
-  // run itself resolves the slot inside the canonical launcher.
-  const { error: slotError } = useAgentSlot(SEO_SLOT);
+  // run itself resolves the mandate inside the canonical launcher.
+  const { error: mandateError } = useMandate(SEO_MANDATE);
   const seoRun = useLiveAgentRun();
   const [viewing, setViewing] = useState<OutputAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1318,7 +1318,7 @@ function SeoOutputCard({
     setError(null);
     try {
       const seo = await seoRun.run<Record<string, unknown>>({
-        slotKey: SEO_SLOT,
+        mandateKey: SEO_MANDATE,
         surfaceKey: "research-outputs-seo",
         sourceFeature: "research",
         organizationId,
@@ -1366,15 +1366,15 @@ function SeoOutputCard({
       title="SEO package"
       blurb="Title, meta, slug, keywords, schema.org + OG — on-page SEO for the published piece."
       count={existing.length}
-      slotKey={SEO_SLOT}
+      mandateKey={SEO_MANDATE}
     >
-      {slotError && <SlotUnavailableNote message={slotError} />}
+      {mandateError && <MandateUnavailableNote message={mandateError} />}
       {!seoRun.isRunning && !viewing && (
         <Button
           size="sm"
           className="gap-1.5 h-8"
           onClick={handleGenerate}
-          disabled={!hasReport || slotError !== null}
+          disabled={!hasReport || mandateError !== null}
         >
           <SearchIcon className="h-3.5 w-3.5" />
           Generate SEO package

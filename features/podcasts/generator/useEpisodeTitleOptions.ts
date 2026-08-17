@@ -3,8 +3,8 @@
 // features/podcasts/generator/useEpisodeTitleOptions.ts
 //
 // Suggest + apply optimized titles for a FINISHED episode. The
-// podcast.title_optimizer agent (DB-managed slot — repin from
-// /administration/agents/slots) reads the episode's real script plus the same
+// podcast.title_optimizer agent (DB-managed mandate — rebind from
+// /administration/agents/mandates) reads the episode's real script plus the same
 // episode_metadata JSON the blog/show-notes agents consume, and emits the
 // canonical `episode_title_options` render block. Deliberately post-episode
 // only (Arman's ruling): the agent always sees the FINAL script, so a chosen
@@ -38,7 +38,7 @@ import { podcastService } from "@/features/podcasts/service";
 import { episodeMetadata } from "@/features/podcasts/generator/useEpisodeArticles";
 import type { PcEpisodeWithShow } from "@/features/podcasts/types";
 
-const TITLE_OPTIMIZER_SLOT_KEY = "podcast.title_optimizer";
+const TITLE_OPTIMIZER_MANDATE_KEY = "podcast.title_optimizer";
 
 export interface EpisodeTitleOption {
   title: string;
@@ -130,7 +130,7 @@ export function useEpisodeTitleOptions(
     windowRef.current = handle;
     try {
       const result = await run<unknown>({
-        slotKey: TITLE_OPTIMIZER_SLOT_KEY,
+        mandateKey: TITLE_OPTIMIZER_MANDATE_KEY,
         surfaceKey: "podcast-run:title-options",
         sourceFeature: "podcasts",
         surfaceName: "matrx-user/podcast-run",

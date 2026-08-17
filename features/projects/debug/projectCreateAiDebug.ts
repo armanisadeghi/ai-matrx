@@ -8,14 +8,14 @@
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 /**
- * The project-creation agent is a SLOT — `projects.create_assistant` —
- * resolved by ProjectCreatePanel via `useAgentSlot` (system default → the
+ * The project-creation agent is a MANDATE — `projects.create_assistant` —
+ * resolved by ProjectCreatePanel via `useMandate` (system default → the
  * user's own binding).
  */
-export const PROJECT_CREATE_SLOT_KEY = "projects.create_assistant";
+export const PROJECT_CREATE_MANDATE_KEY = "projects.create_assistant";
 
 /**
- * SEED MIRROR of the slot's system default — kept only so
+ * SEED MIRROR of the mandate's system default — kept only so
  * `isProjectCreateFlow` can still recognise legacy launches by agent id;
  * flow detection primarily keys on `sourceFeature`. Never mount this id.
  */

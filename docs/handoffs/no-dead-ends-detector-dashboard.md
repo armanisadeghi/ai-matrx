@@ -41,7 +41,7 @@ Full doctrine, the inventory pass, and the smell list:
   | a list page | `<EntityListPage config={…} />` — `lib/entity-list/` |
   | a table | `MatrxDataTable` — `components/official/matrx-data-table/` |
   | open beside the work | `features/overlays/openers/` + `features/window-panels/` |
-- **Reference implementation:** `features/admin/agent-slots/AgentSlotsConsole.tsx`.
+- **Reference implementation:** `features/admin/mandates/AgentSlotsConsole.tsx`.
 
 ## Remaining work
 

@@ -1,9 +1,9 @@
 /**
  * binding-suggestions — pure core for the quick-bind "AI map" flow.
  *
- * The `surfaces_client.binding_mapper` slot agent receives the surface's
+ * The `surfaces_client.binding_mapper` mandate agent receives the surface's
  * declared values + write targets and the target agent's input contract
- * (variables AND context slots — the context-slot doctrine is written into
+ * (variables AND context slots — the context-mandate doctrine is written into
  * the agent's DB definition), and returns a structured proposal. This module
  * owns both directions of that wire:
  *
@@ -13,7 +13,7 @@
  *                             ValueMappingMap the bind save already speaks
  *
  * Everything here is pure and synchronous so it is trivially testable; the
- * slot run itself stays in the panel (useSlotRunner).
+ * mandate run itself stays in the panel (useMandateRunner).
  */
 
 import { extractFirstJson } from "@/utils/json/extract-json";
@@ -38,7 +38,7 @@ export interface MapperAgentInfo {
   contextSlots: AgentDefinition["contextSlots"];
 }
 
-/** Build the mapper slot's variable payload from live client state. */
+/** Build the mapper mandate's variable payload from live client state. */
 export function buildMapperVariables(args: {
   surfaceName: string;
   surfaceLabel: string;
@@ -101,7 +101,7 @@ export function buildMapperVariables(args: {
 export type SuggestionConfidence = "high" | "medium" | "low";
 
 export interface BindingSuggestion {
-  /** Agent variable name or context-slot key. */
+  /** Agent variable name or context-mandate key. */
   target: string;
   mapping: ValueMapping;
   confidence: SuggestionConfidence;

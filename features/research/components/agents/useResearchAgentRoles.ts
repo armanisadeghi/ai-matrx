@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchSlotPins } from "@/features/agents/slots/service";
+import { fetchMandatePins } from "@/features/agents/mandates/service";
 import {
   AGENT_ROLE_TEMPLATES,
   type AgentRoleDefinition,
 } from "./constants";
 
 /**
- * Resolve the research agent roles against the agent-slot registry (DB-truth
- * pins from `agent.slot_definition`). Roles whose slot is missing or has no
- * master id are dropped LOUDLY (console.error inside fetchSlotPins) rather
- * than rendered with a stale hardcoded id — a missing slot is a platform
+ * Resolve the research agent roles against the agent-mandate registry (DB-truth
+ * pins from `agent.slot_definition`). Roles whose mandate is missing or has no
+ * master id are dropped LOUDLY (console.error inside fetchMandatePins) rather
+ * than rendered with a stale hardcoded id — a missing mandate is a platform
  * defect, not something to paper over client-side.
  */
 export function useResearchAgentRoles(): {
@@ -27,13 +27,13 @@ export function useResearchAgentRoles(): {
     let cancelled = false;
     (async () => {
       try {
-        const pins = await fetchSlotPins(
-          AGENT_ROLE_TEMPLATES.map((t) => t.slotKey),
+        const pins = await fetchMandatePins(
+          AGENT_ROLE_TEMPLATES.map((t) => t.mandateKey),
         );
         if (cancelled) return;
         setRoles(
           AGENT_ROLE_TEMPLATES.flatMap((t) => {
-            const pin = pins[t.slotKey];
+            const pin = pins[t.mandateKey];
             if (!pin) return [];
             return [
               {

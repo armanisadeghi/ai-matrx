@@ -96,17 +96,17 @@ interface ImperativeMethods {
   ) => Promise<LaunchResult>;
 
   /**
-   * Launch by AGENT SLOT — the preferred form whenever the surface knows WHICH
+   * Launch by AGENT MANDATE — the preferred form whenever the surface knows WHICH
    * STEP it is running rather than which agent should run it. The thunk
-   * resolves the slot (system default → the caller's own binding) and applies
+   * resolves the mandate (system default → the caller's own binding) and applies
    * BOTH halves of the binding, agent AND `config_overrides`; resolving
    * yourself and calling `launchAgent` silently drops the settings half.
    *
-   * A hardcoded agent UUID in a component is the thing the slot system exists
+   * A hardcoded agent UUID in a component is the thing the mandate system exists
    * to prevent — reach for this instead.
    */
-  launchSlot: (
-    slotKey: string,
+  launchMandate: (
+    mandateKey: string,
     options?: ManagedAgentOptions,
   ) => Promise<LaunchResult>;
 
@@ -229,17 +229,17 @@ export function useAgentLauncher(
     [dispatch],
   );
 
-  const launchSlot = useCallback(
+  const launchMandate = useCallback(
     async (
-      slotKey: string,
+      mandateKey: string,
       opts?: ManagedAgentOptions,
     ): Promise<LaunchResult> => {
-      // `slotKey` is mutually exclusive with agentId/shortcutId in the thunk,
+      // `mandateKey` is mutually exclusive with agentId/shortcutId in the thunk,
       // so it is passed alone and the thunk owns the resolution.
       const payload: ManagedAgentOptions = {
-        slotKey,
+        mandateKey,
         conversationId: opts?.conversationId,
-        surfaceKey: opts?.surfaceKey ?? `slot:${slotKey}`,
+        surfaceKey: opts?.surfaceKey ?? `mandate:${mandateKey}`,
         sourceFeature: opts?.sourceFeature ?? "agent-runner",
         config: opts?.config,
         runtime: opts?.runtime,
@@ -460,14 +460,14 @@ export function useAgentLauncher(
       inputConversationId: conversationId,
       displayConversationId: displayConversationId ?? conversationId,
       launchAgent,
-      launchSlot,
+      launchMandate,
       launchShortcut,
       launchChat,
       close,
     };
   }
 
-  return { launchAgent, launchSlot, launchShortcut, launchChat, close };
+  return { launchAgent, launchMandate, launchShortcut, launchChat, close };
 }
 
 // =============================================================================

@@ -10,7 +10,7 @@
  * are owned by the shared `useDurableAgentConversation` primitive (keyed per
  * user — the master has no DB owner row to hang the id on). This hook owns:
  *   • the default MASTER persona, resolved from the `war_room.master` AGENT
- *     SLOT — which knows it can see/act on all of the user's data via the
+ *     MANDATE — which knows it can see/act on all of the user's data via the
  *     `data` tool. Only a NEW master conversation is minted with it: the
  *     roster is keyed by agent id, so a chat started under the previous
  *     default resumes under that agent untouched (constants.ts § the
@@ -26,8 +26,8 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
-import { WAR_ROOM_MASTER_AGENT_SLOT } from "@/features/war-room/constants";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { WAR_ROOM_MASTER_AGENT_MANDATE } from "@/features/war-room/constants";
 import { selectSessionsList } from "@/features/war-room/redux/selectors";
 import { useDurableAgentConversation } from "@/features/war-room/hooks/useDurableAgentConversation";
 import { reportWarRoomError } from "@/features/war-room/utils/reportWarRoomError";
@@ -56,28 +56,28 @@ export function useMasterAgent(): UseMasterAgentReturn {
   // mount (the panel mounts deep in the authed shell).
   const userId = useAppSelector(selectUserId);
 
-  // The tier's default persona comes from the slot, never a hardcoded id.
+  // The tier's default persona comes from the mandate, never a hardcoded id.
   // Until it resolves the durable hook stays idle (it will not mint under a
   // guessed agent); a failure is LOUD and leaves the panel on its loading
   // state rather than silently starting the wrong agent.
-  const { slot: masterSlot, error: masterSlotError } = useAgentSlot(
-    WAR_ROOM_MASTER_AGENT_SLOT,
+  const { mandate: masterMandate, error: masterMandateError } = useMandate(
+    WAR_ROOM_MASTER_AGENT_MANDATE,
   );
   useEffect(() => {
-    if (masterSlotError) {
+    if (masterMandateError) {
       reportWarRoomError(
-        "master-agent/slot",
+        "master-agent/mandate",
         new Error(
-          `War Room master agent slot "${WAR_ROOM_MASTER_AGENT_SLOT}" could not resolve: ${masterSlotError}`,
+          `War Room master mandate "${WAR_ROOM_MASTER_AGENT_MANDATE}" could not resolve: ${masterMandateError}`,
         ),
       );
     }
-  }, [masterSlotError]);
+  }, [masterMandateError]);
 
   const { conversationId, agentId, ready, switchAgent } =
     useDurableAgentConversation({
       storageKey: userId ? `war-room:master-conversation:${userId}` : null,
-      defaultAgentId: masterSlot?.agentId ?? null,
+      defaultAgentId: masterMandate?.agentId ?? null,
       toolNames: WAR_ROOM_MASTER_TOOL_NAMES,
     });
 

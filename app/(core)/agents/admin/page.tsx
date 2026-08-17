@@ -48,11 +48,11 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/agents/slots",
-      label: "Step Agents (slot overrides)",
+      url: "/agents/mandates",
+      label: "Step Agents (mandate overrides)",
       description:
-        "User/org-facing agent-slot override surface — browse system steps, see the resolved agent with provenance, swap in your own agent or override settings. Admin pin console: /administration/agents/slots.",
-      filePath: "app/(core)/agents/slots/page.tsx",
+        "User/org-facing agent-mandate override surface — browse system steps, see the resolved agent with provenance, swap in your own agent or override settings. Admin pin console: /administration/agents/mandates.",
+      filePath: "app/(core)/agents/mandates/page.tsx",
       status: "Live",
     },
     {

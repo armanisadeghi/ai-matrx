@@ -4,26 +4,26 @@
 // business users land on; the experience itself is the proof of what AI Matrx
 // can do.
 //
-// Server Component shell — resolves the `voice.intro` agent slot before first
+// Server Component shell — resolves the `voice.intro` mandate before first
 // paint, then hands off to the client for the realtime voice experience.
 //
-// 🚨 The agent is a normal `agent.definition` row and the SLOT decides which
+// 🚨 The agent is a normal `agent.definition` row and the MANDATE decides which
 // row. Nothing about this agent — its identity, its instructions, its voice —
 // lives in this repo; editing it is a builder-level operation. There is no
-// hardcoded agent id and no fallback prompt: an unresolvable slot renders the
+// hardcoded agent id and no fallback prompt: an unresolvable mandate renders the
 // notice below rather than silently running some other agent.
 
 import { AlertTriangle } from "lucide-react";
 import { VoiceAgentSurface } from "@/features/voice-agent/components/VoiceAgentSurface";
-import { resolveAgentSlotServer } from "@/features/agents/slots/service.server";
+import { resolveMandateServer } from "@/features/agents/mandates/service.server";
 
 export default async function VoiceIntroPage() {
   let agentId: string;
   try {
-    agentId = (await resolveAgentSlotServer("voice.intro")).agentId;
+    agentId = (await resolveMandateServer("voice.intro")).agentId;
   } catch (error) {
     console.error(
-      "[chat/voice] the voice.intro agent slot did not resolve:",
+      "[chat/voice] the voice.intro mandate did not resolve:",
       error,
     );
     return (
@@ -35,7 +35,7 @@ export default async function VoiceIntroPage() {
               The voice agent is unavailable
             </p>
             <p className="text-sm text-muted-foreground">
-              Its agent slot could not be resolved, so we did not start a
+              Its mandate could not be resolved, so we did not start a
               session. Please try again shortly.
             </p>
           </div>

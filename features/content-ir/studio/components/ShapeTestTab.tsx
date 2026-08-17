@@ -29,7 +29,7 @@ import type { Json } from "@/types/database.types";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
-import { KIND_CREATOR_SLOT_KEY } from "@/features/content-ir/studio/constants";
+import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
 import { composeKindSampleFillIntent } from "@/features/content-ir/studio/kind-agent-intents";
 import KindInputForm from "@/features/content-ir/input/KindInputForm";
 import KindInstanceRender, {
@@ -126,7 +126,7 @@ export default function ShapeTestTab({
   async function fillWithAi(): Promise<void> {
     try {
       const seed = await aiFill.run<Record<string, unknown>>({
-        slotKey: KIND_CREATOR_SLOT_KEY,
+        mandateKey: KIND_CREATOR_MANDATE_KEY,
         surfaceKey: `shapes-test-fill:${kind}`,
         sourceFeature: "ai-results",
         surfaceName: "matrx-user/shapes",

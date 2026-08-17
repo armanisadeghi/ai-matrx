@@ -58,10 +58,10 @@ import { launchAgentExecution } from "./launch-agent-execution.thunk";
 import { executeInstance } from "./execute-instance.thunk";
 
 export interface HeadlessAgentJsonOptions {
-  /** Exact agent to run. Mutually exclusive with slotKey. */
+  /** Exact agent to run. Mutually exclusive with mandateKey. */
   agentId?: string;
-  /** Swappable slot to resolve inside the canonical launcher, preserving config_overrides. */
-  slotKey?: string;
+  /** Swappable mandate to resolve inside the canonical launcher, preserving config_overrides. */
+  mandateKey?: string;
   /** Stable surface key for telemetry + the focus registry. */
   surfaceKey: string;
   /** UI feature that triggered the run. */
@@ -275,7 +275,7 @@ export async function runHeadlessAgentJson(
     {
       onResult: opts.onResult,
       surfaceKey: opts.surfaceKey,
-      agentRef: opts.agentId ?? opts.slotKey ?? "unknown",
+      agentRef: opts.agentId ?? opts.mandateKey ?? "unknown",
     },
     result,
   );
@@ -404,15 +404,15 @@ async function launchAndWait(
   };
 
   try {
-    let executionIdentity: { agentId: string } | { slotKey: string };
-    if (opts.slotKey !== undefined) {
+    let executionIdentity: { agentId: string } | { mandateKey: string };
+    if (opts.mandateKey !== undefined) {
       if (opts.agentId !== undefined) {
-        throw new Error("runHeadlessAgentJson accepts agentId or slotKey, never both");
+        throw new Error("runHeadlessAgentJson accepts agentId or mandateKey, never both");
       }
-      executionIdentity = { slotKey: opts.slotKey };
+      executionIdentity = { mandateKey: opts.mandateKey };
     } else {
       if (opts.agentId === undefined) {
-        throw new Error("runHeadlessAgentJson requires agentId or slotKey");
+        throw new Error("runHeadlessAgentJson requires agentId or mandateKey");
       }
       executionIdentity = { agentId: opts.agentId };
     }
@@ -498,7 +498,7 @@ async function launchAndWait(
       pollMs,
       settleMs,
       surfaceKey: opts.surfaceKey,
-      agentRef: opts.agentId ?? opts.slotKey ?? "unknown",
+      agentRef: opts.agentId ?? opts.mandateKey ?? "unknown",
       msgs,
       ...(opts.signal ? { signal: opts.signal } : {}),
     });
@@ -518,7 +518,7 @@ async function launchAndWait(
       conversationId: conversationId ?? undefined,
       raw: {
         surfaceKey: opts.surfaceKey,
-        agent: opts.agentId ?? opts.slotKey ?? "unknown",
+        agent: opts.agentId ?? opts.mandateKey ?? "unknown",
         detail,
         answerTextLength: fullResponse.length,
       },

@@ -35,8 +35,8 @@ import { agentForPromptKey } from "@/features/code-editor/agent-code-editor/agen
 // A hardcoded agent-UUID → shortcut-UUID lookup: a SECOND frozen pin layered on
 // top of the frozen agent ids in `agent-code-editor/agents.ts`. Both halves are
 // the known gap tracked as row F6 of
-// /Users/armanisadeghi/code/common-docs/systems/agent-slots/ROLLOUT.md — the
-// canonical form is a declared agent slot resolved at run time, after which
+// /Users/armanisadeghi/code/common-docs/systems/mandates/ROLLOUT.md — the
+// canonical form is a declared mandate resolved at run time, after which
 // this map and its keys both disappear.
 //
 // The labels below name the DB rows these ids pointed at when the map was

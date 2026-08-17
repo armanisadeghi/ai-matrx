@@ -55,10 +55,10 @@ const SOURCE_PREFIX = "seo.gsc_insight";
  */
 export const GSC_ASSIST_SURFACE = "matrx-user/marketing";
 
-/** The agent-slot the launch actions resolve at click time (swappable from
- * the admin slots console, no deploy). Declared server-side in aidream
+/** The agent-mandate the launch actions resolve at click time (swappable from
+ * the admin mandates console, no deploy). Declared server-side in aidream
  * `services/seo/keyword_agents.py` and synced to `agent.slot_definition`. */
-const PAGE_ANALYZER_SLOT = "seo.page_analyzer";
+const PAGE_ANALYZER_MANDATE = "seo.page_analyzer";
 
 // Conservative thresholds — an assist that fires on noise trains the user
 // to dismiss the whole dock ("loud, never nagging").
@@ -137,7 +137,7 @@ function moneyDecayCandidate(
     body: `${hit.key} went from ${hit.cmp_clicks} to ${hit.clicks} money-class clicks over the last 28 days of data vs the prior 28. One click opens the SEO page analyzer with the finding ready.`,
     action: {
       kind: "launch_agent",
-      slotKey: PAGE_ANALYZER_SLOT,
+      mandateKey: PAGE_ANALYZER_MANDATE,
       agentName: "SEO Page Analyzer",
       draftText: composePageFindingIntent({
         siteLabel,
@@ -182,7 +182,7 @@ function ctrGapCandidate(
     body: `${hit.key} ranks around position ${formatPosition(hit.avg_position)} but converts ${formatCtr(hit.ctr)} of impressions vs the ${formatCtr(hit.expected_ctr)} this site normally gets there — usually a title/snippet problem. One click opens the SEO page analyzer with the finding ready.`,
     action: {
       kind: "launch_agent",
-      slotKey: PAGE_ANALYZER_SLOT,
+      mandateKey: PAGE_ANALYZER_MANDATE,
       agentName: "SEO Page Analyzer",
       draftText: composePageFindingIntent({
         siteLabel,

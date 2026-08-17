@@ -86,7 +86,7 @@ became REQUIRED server-side — `clear_notes` in `features/secrets/*`, `store` i
 `features/voice-agent/services/realtimeToolService.ts`, `country_code`/
 `search_type` in the scraper pages, `max_chars`/`top_n`/`debug` in
 `features/transcripts/service/autoLabelTranscript.ts`, `passes_user_input` and
-`blocking` in `features/admin/agent-slots/*`, and more).
+`blocking` in `features/admin/mandates/*`, and more).
 
 So the spec says the backend already demands values these callsites never send:
 each error is a live 422 waiting to happen, hidden only because the TS mirror is

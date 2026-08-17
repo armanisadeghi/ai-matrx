@@ -763,11 +763,11 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
-        title: "Agent Slots",
+        title: "Mandates",
         description:
-          "DB-managed system-agent pins (agent.slot_definition / slot_binding): repin, enable/disable, org/user overrides, and the exemplar test bench for candidate agents.",
+          "DB-managed system-agent pins (agent.slot_definition / slot_binding): rebind, enable/disable, org/user overrides, and the exemplar test bench for candidate agents.",
         iconName: "Plug",
-        link: "/administration/agents/slots",
+        link: "/administration/agents/mandates",
         isNew: true,
       },
       {

@@ -11,7 +11,7 @@
 export const ORCHESTRATOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
 
 /**
- * The slot for the "Orchestra Role Describer". "Sync agent listings" runs it
+ * The mandate for the "Orchestra Role Describer". "Sync agent listings" runs it
  * once per click over the WHOLE set: it reads every member's current config
  * (name, description, system prompt, inputs, output) AND its current set role
  * (`current_role_title` / `current_gap`), then returns a strict JSON array of
@@ -20,12 +20,12 @@ export const ORCHESTRATOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
  * accurate. The result is written to each member EDGE (not the agent) and is
  * the source of truth for the `<available_agents>` listing.
  *
- * Run headlessly via `launchAgentExecution({ slotKey })`. A raw UUID lived here
- * until 2026-08-16; the slot is declared in aidream
+ * Run headlessly via `launchAgentExecution({ mandateKey })`. A raw UUID lived here
+ * until 2026-08-16; the mandate is declared in aidream
  * `services/agent_slots/client_slots.py` and is the only sanctioned way to name
  * this agent from code.
  */
-export const ORCHESTRA_ROLE_DESCRIBER_SLOT_KEY = "orchestras.role_describer";
+export const ORCHESTRA_ROLE_DESCRIBER_MANDATE_KEY = "orchestras.role_describer";
 
 /** The variable the Orchestra Role Describer reads (the members dump JSON). */
 export const ROLE_DESCRIBER_INPUT_VAR = "agent_config";

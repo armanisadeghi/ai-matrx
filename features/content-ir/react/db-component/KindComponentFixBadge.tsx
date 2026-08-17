@@ -29,8 +29,8 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
-import { KIND_CREATOR_SLOT_KEY } from "../../studio/constants";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
+import { KIND_CREATOR_MANDATE_KEY } from "../../studio/constants";
+import { resolveMandate } from "@/features/agents/mandates/service";
 import { composeKindComponentFixIntent } from "../../studio/kind-agent-intents";
 import { readEnvelope } from "../../redux/render-block-envelope";
 import { resolveComponent } from "../../registry/component-registry";
@@ -80,9 +80,9 @@ export const KindComponentFixBadge: React.FC<KindComponentFixBadgeProps> = ({
   if (!canEdit) return null;
 
   const launch = () => {
-    // Resolve the `content_ir.kind_creator` slot at click time — same loud
+    // Resolve the `content_ir.kind_creator` mandate at click time — same loud
     // posture as KindAgentButton; never a silent no-op.
-    void resolveAgentSlot(KIND_CREATOR_SLOT_KEY)
+    void resolveMandate(KIND_CREATOR_MANDATE_KEY)
       .then((resolved) => {
         openRun({
           initialAgentId: resolved.agentId,
@@ -94,7 +94,7 @@ export const KindComponentFixBadge: React.FC<KindComponentFixBadgeProps> = ({
       })
       .catch((error: unknown) => {
         console.error(
-          `[KindComponentFixBadge] slot "${KIND_CREATOR_SLOT_KEY}" failed to resolve:`,
+          `[KindComponentFixBadge] mandate "${KIND_CREATOR_MANDATE_KEY}" failed to resolve:`,
           error,
         );
         toast.error("The Shape creator agent is unavailable", {

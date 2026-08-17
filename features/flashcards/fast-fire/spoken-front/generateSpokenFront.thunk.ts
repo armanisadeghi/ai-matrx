@@ -23,7 +23,7 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import { pickSpokenFrontVariables } from "./variations";
 
 /** Permanent id of the "Generate custom speech" agent (Google Gemini TTS). */
-export const SPOKEN_FRONT_TTS_SLOT = "flashcards.spoken_front_tts";
+export const SPOKEN_FRONT_TTS_MANDATE = "flashcards.spoken_front_tts";
 
 /**
  * Read-only: how many of a set's cards already have a CACHED spoken front (a
@@ -113,14 +113,14 @@ export function generateSpokenFront(
     getState: () => RootState,
   ): Promise<string | null> => {
     const vars = pickSpokenFrontVariables(card.id, card.front, index, total);
-    // The TTS agent is a slot — resolution is loud, never a hardcoded id. The
+    // The TTS agent is a mandate — resolution is loud, never a hardcoded id. The
     // launch thunk resolves it and applies the binding's config_overrides too
     // (a settings-only binding swaps the model without swapping the agent).
     let conversationId: string | null = null;
     try {
       const launch = await dispatch(
         launchAgentExecution({
-          slotKey: SPOKEN_FRONT_TTS_SLOT,
+          mandateKey: SPOKEN_FRONT_TTS_MANDATE,
           surfaceKey: `fastfire-tts-${card.id}`,
           // Persisted like the other Fast Fire runs; a distinct system
           // source_feature keeps it out of the user's normal chats.

@@ -8,19 +8,19 @@
  * The database no longer controls which agent edits code here: an admin
  * repointing the code editor changes nothing until someone edits this file.
  *
- * **The canonical answer is an AGENT SLOT.** Code names a `slot_key`; the DB
+ * **The canonical answer is an AGENT MANDATE.** Code names a `slot_key`; the DB
  * decides which agent runs it. Declare `code_editor.generic`,
  * `code_editor.prompt_app_ui`, and `code_editor.dynamic_context` in aidream
  * `services/agent_slots/client_slots.py` (seeded on the ids below), then
- * resolve them here via `useAgentSlot` / `launchAgentExecution({slotKey})` /
- * `useAgentLauncher().launchSlot`, and DELETE these constants. Recipe:
- * `features/agents/slots/FEATURE.md`; law + worklist:
- * /Users/armanisadeghi/code/common-docs/systems/agent-slots/FEATURE.md and
+ * resolve them here via `useMandate` / `launchAgentExecution({mandateKey})` /
+ * `useAgentLauncher().launchMandate`, and DELETE these constants. Recipe:
+ * `features/agents/mandates/FEATURE.md`; law + worklist:
+ * /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md and
  * ROLLOUT.md (row F6).
  *
  * **A NEW read of these constants is a defect.** Nothing here is an exception:
  * exactly one exists platform-wide (aidream's conversation labeler) and it is
- * not this. Do not add a fourth agent to this file — declare a slot instead.
+ * not this. Do not add a fourth agent to this file — declare a mandate instead.
  *
  * `codeVariableKey` mirrors the agent's own `variable_definitions` entry that
  * receives the editor's current code on the first turn. The AGENT owns that

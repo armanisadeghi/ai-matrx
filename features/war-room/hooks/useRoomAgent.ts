@@ -25,7 +25,7 @@
  * `buildRoomAgentContext(sessionId)` on bind + whenever the room's thread set
  * changes.
  *
- * The tier's default persona resolves from the `war_room.room` AGENT SLOT and
+ * The tier's default persona resolves from the `war_room.room` AGENT MANDATE and
  * is used ONLY when an agent must be RECORDED (stamping a new edge) or when an
  * edge records none. A persisted agent id always wins — see constants.ts §
  * the persisted-id doctrine.
@@ -39,8 +39,8 @@ import { setClientTools } from "@/features/agents/redux/execution-system/instanc
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { WAR_ROOM_MASTER_TOOL_NAMES } from "@/features/agents/war-room-master-tools/tools/names";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
-import { WAR_ROOM_ROOM_AGENT_SLOT } from "@/features/war-room/constants";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { WAR_ROOM_ROOM_AGENT_MANDATE } from "@/features/war-room/constants";
 import {
   selectActiveConversationIdForRoom,
   selectAssignmentsForContainer,
@@ -88,14 +88,14 @@ const inFlightBinds = new Set<string>();
 /**
  * Legacy localStorage roster key of the retired useDurableAgentConversation.
  *
- * PERSISTED VALUES ONLY — deliberately slot-free. These keys were written
+ * PERSISTED VALUES ONLY — deliberately mandate-free. These keys were written
  * under whatever agent id was the default at the time, so resolving today's
- * slot here could MISS an existing chat and strand it. We read the stored
+ * mandate here could MISS an existing chat and strand it. We read the stored
  * active-agent pointer, and fall back to whatever single chat the roster
- * holds — which is exactly what a pre-slot roster contains. The roster KEY is
+ * holds — which is exactly what a pre-mandate roster contains. The roster KEY is
  * the agent the chat was born under, so it is returned too and stamped onto
  * the durable edge verbatim: migrating a legacy chat must never relabel it
- * with today's slot agent.
+ * with today's mandate agent.
  */
 function readLegacyRoomConversation(
   roomId: string,
@@ -126,24 +126,24 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
   const store = useAppStore();
   const [boundId, setBoundId] = useState<string | null>(null);
 
-  // The tier's default persona — resolved from the slot, never hardcoded. It is
+  // The tier's default persona — resolved from the mandate, never hardcoded. It is
   // needed ONLY where a NEW edge is stamped or an edge carries no agent id; an
-  // edge that already records its agent binds without ever consulting the slot
+  // edge that already records its agent binds without ever consulting the mandate
   // (constants.ts § the persisted-id doctrine).
-  const { slot: roomSlot, error: roomSlotError } = useAgentSlot(
-    WAR_ROOM_ROOM_AGENT_SLOT,
+  const { mandate: roomMandate, error: roomMandateError } = useMandate(
+    WAR_ROOM_ROOM_AGENT_MANDATE,
   );
-  const roomAgentId = roomSlot?.agentId ?? null;
+  const roomAgentId = roomMandate?.agentId ?? null;
   useEffect(() => {
-    if (roomSlotError) {
+    if (roomMandateError) {
       reportWarRoomError(
-        "room-agent/slot",
+        "room-agent/mandate",
         new Error(
-          `War Room room agent slot "${WAR_ROOM_ROOM_AGENT_SLOT}" could not resolve: ${roomSlotError}`,
+          `War Room room mandate "${WAR_ROOM_ROOM_AGENT_MANDATE}" could not resolve: ${roomMandateError}`,
         ),
       );
     }
-  }, [roomSlotError]);
+  }, [roomMandateError]);
 
   const loaded = useAppSelector(
     selectContainerAssignmentsLoaded("room", sessionId),
@@ -175,10 +175,10 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
   // first turn commits. Edging it before then is what stranded phantom chats in
   // room chat lists forever. This fires within milliseconds of the first turn
   // being server-confirmed; a chat that's never used correctly leaves nothing.
-  // Stamping the edge needs the slot: the edge's `metadata.agentId` is the
+  // Stamping the edge needs the mandate: the edge's `metadata.agentId` is the
   // durable record of which agent this chat runs, and every later bind reads it
   // back. We wait for resolution rather than stamp a guess — the edge write
-  // simply follows once the slot lands.
+  // simply follows once the mandate lands.
   const pendingIsReal = useConversationMaterialized(pendingId);
   useEffect(() => {
     if (!sessionId || !pendingId || !pendingIsReal || !roomAgentId) return;
@@ -203,7 +203,7 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
   const legacy =
     loaded && !activeEdgeId ? readLegacyRoomConversation(sessionId) : null;
   const legacyId = legacy?.conversationId ?? null;
-  // The agent the legacy chat was BORN under wins; the slot only fills in for
+  // The agent the legacy chat was BORN under wins; the mandate only fills in for
   // the oldest form of the key, which stored a bare conversation id and no
   // agent at all.
   const legacyAgentId = legacy?.agentId ?? roomAgentId;
@@ -258,7 +258,7 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
               a.entity_type === "conversation" && a.entity_id === targetId,
           );
           // The edge's stored agent ALWAYS wins — that is the agent this chat
-          // has been running as, whatever the slot resolves to today. The slot
+          // has been running as, whatever the mandate resolves to today. The mandate
           // only covers an edge written before agents were stamped; with
           // neither we refuse to bind rather than guess an agent (loud).
           const agentId =
@@ -268,7 +268,7 @@ export function useRoomAgent(sessionId: string): UseRoomAgentReturn {
             reportWarRoomError(
               "room-agent/bind",
               new Error(
-                `room chat ${targetId} has no recorded agent and the "${WAR_ROOM_ROOM_AGENT_SLOT}" slot did not resolve — not binding`,
+                `room chat ${targetId} has no recorded agent and the "${WAR_ROOM_ROOM_AGENT_MANDATE}" mandate did not resolve — not binding`,
               ),
               { toast: false },
             );

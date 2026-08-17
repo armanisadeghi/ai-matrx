@@ -64,14 +64,14 @@ export const AUTOSCROLL_BOTTOM_THRESHOLD_PX = 80;
 // ── Default AGENT SHORTCUT ids for the per-column agents ──
 //
 // These are SHORTCUT ids (`agent.shortcut`), not agent ids and not agent
-// slots. Agent Shortcuts are their own first-class system
+// mandates. Agent Shortcuts are their own first-class system
 // (`features/agent-shortcuts/FEATURE.md`): a stored invocation of a specific
 // agent version whose variables auto-map from the surrounding UI. That is the
 // right primitive here — the studio's columns are user-selectable invocations,
 // picked per session in the settings sidebar and persisted as
 // `studio_session_settings.cleaning_shortcut_id` / `concept_shortcut_id`, and
 // per module as `ModuleDefinition.defaultShortcutId`. The constants below are
-// only the DEFAULT the picker starts on. Do not "migrate" them to slot keys.
+// only the DEFAULT the picker starts on. Do not "migrate" them to mandate keys.
 //
 // 🚨 THE CONTRACT BELONGS TO THE AGENT, NOT TO THIS FILE. The shortcut's
 // bound agent version owns its variable surface and its output shape; this
@@ -122,11 +122,11 @@ export const MODULE_INTERVAL_DEFAULT_MS = 120_000;
 // `resolveDefaultAssistantAgentId` (redux/assistantRoster.ts) falls back to it
 // below the surface-config `assistant` role, and ensureAssistantConversation
 // uses it as the last-resort agent for legacy sessions. So the DB does not
-// fully own which agent assists here. The canonical form is a declared slot
+// fully own which agent assists here. The canonical form is a declared mandate
 // resolved at run time; the surface manifest's `defaultAgentId`
 // (features/surfaces/manifests/transcript-scribe.manifest.ts) may keep it as a
 // documented SEED MIRROR, but a runtime read is a defect and no new one may be
-// added. Law: /Users/armanisadeghi/code/common-docs/systems/agent-slots/FEATURE.md.
+// added. Law: /Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md.
 export const AUDIO_ASSISTANT_AGENT_ID =
   "86564a0c-fe79-40a7-bf97-6349fb352a9d";
 

@@ -63,10 +63,10 @@ export interface AssistEvidence {
 export type AssistAction =
   | {
       kind: "launch_agent";
-      /** Direct agent id — or leave unset and provide `slotKey`. */
+      /** Direct agent id — or leave unset and provide `mandateKey`. */
       agentId?: string;
-      /** Agent-slot key resolved at click time (swappable, no deploy). */
-      slotKey?: string;
+      /** Agent-mandate key resolved at click time (swappable, no deploy). */
+      mandateKey?: string;
       /** Title-bar name shown while the agent definition loads. */
       agentName?: string;
       /** Composed intent pre-filled into the composer (pre-fill only). */
@@ -468,7 +468,7 @@ function narrowAction(value: Json): AssistAction | null {
     return {
       kind,
       agentId: typeof obj.agentId === "string" ? obj.agentId : undefined,
-      slotKey: typeof obj.slotKey === "string" ? obj.slotKey : undefined,
+      mandateKey: typeof obj.mandateKey === "string" ? obj.mandateKey : undefined,
       agentName: typeof obj.agentName === "string" ? obj.agentName : undefined,
       draftText: typeof obj.draftText === "string" ? obj.draftText : undefined,
     };

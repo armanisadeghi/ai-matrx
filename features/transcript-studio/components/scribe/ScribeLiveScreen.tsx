@@ -21,8 +21,8 @@ import { useVoiceAgentInstance } from "@/features/voice-agent/hooks/useVoiceAgen
 import { useRealtimeAgentConfig } from "@/features/voice-agent/hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession } from "@/features/voice-agent/hooks/useXaiVoiceSession";
 import { usePersistVoiceTranscript } from "@/features/voice-agent/hooks/usePersistVoiceTranscript";
-import { SCRIBE_LIVE_SLOT_KEY } from "@/features/voice-agent/constants";
-import { useSlotAgentInstructions } from "@/features/voice-agent/agentInstructions";
+import { SCRIBE_LIVE_MANDATE_KEY } from "@/features/voice-agent/constants";
+import { useMandateAgentInstructions } from "@/features/voice-agent/agentInstructions";
 // Side-effect import: registers the working-document mutator client tools into
 // the shared realtime client-tool registry so `execution:"client"` calls for
 // them resolve to a runner. Phase 2 of the realtime tool bridge.
@@ -93,14 +93,14 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
   const assistant = useStudioAssistant(sessionId);
   const docContent = assistant.workingDocument?.content ?? "";
 
-  // The agent — and its instructions — come from the slot. `agentId` drives
+  // The agent — and its instructions — come from the mandate. `agentId` drives
   // the realtime tool resolve below; `baseInstructions` is the agent record's
   // own system message, which nothing in this repo may substitute for.
   const {
     agentId: liveAgentId,
     instructions: baseInstructions,
     error: agentError,
-  } = useSlotAgentInstructions(SCRIBE_LIVE_SLOT_KEY);
+  } = useMandateAgentInstructions(SCRIBE_LIVE_MANDATE_KEY);
 
   // Playground preset → `updateConfig` is permitted, so we can refresh the
   // injected working document between sessions. Ephemeral (persist=false):
@@ -134,7 +134,7 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     persist: false,
   });
 
-  // Resolve the realtime tool set for the scribe-live surface from the slot's
+  // Resolve the realtime tool set for the scribe-live surface from the mandate's
   // agent — the backend classifies its inline working-doc mutators as `client`
   // (declared to xAI, run locally via the shared registry) and the
   // auto-injected data/data_action as `server`. This OVERWRITES the seeded
@@ -177,7 +177,7 @@ export function ScribeLiveScreen({ sessionId }: ScribeLiveScreenProps) {
     const doc = docContent.trim();
     return createTranscriptScribeLiveScope({
       session_id: sessionId,
-      // The agent the slot ACTUALLY resolved to — a user or org binding can
+      // The agent the mandate ACTUALLY resolved to — a user or org binding can
       // swap it, so reporting a fixed id here would be a lie. Empty while it
       // is still resolving.
       live_agent_id: liveAgentId ?? "",

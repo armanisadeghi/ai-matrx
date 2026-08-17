@@ -58,7 +58,7 @@ export const DEFAULT_INTRO_TOOLS: RealtimeToolSet = [
 
 /**
  * 🚨 THE INTRO AGENT PERSONA IS NOT IN THIS REPO — it is the system message
- * of the agent row the `voice.intro` slot resolves to. Until 2026-08-16 an
+ * of the agent row the `voice.intro` mandate resolves to. Until 2026-08-16 an
  * exact copy lived here as `INTRO_INSTRUCTIONS` and was used as a silent
  * fallback; it is deleted (Arman: the codebase is the connection, never the
  * definition).
@@ -99,23 +99,23 @@ export const PERSISTENCE_PROVIDER = "xai-realtime";
 export const PERSISTENCE_REGION = "us-east-1";
 
 /**
- * The slot that decides WHICH agent runs the locked `/chat/voice` intro
+ * The mandate that decides WHICH agent runs the locked `/chat/voice` intro
  * experience. Declared in aidream `services/agent_slots/client_slots.py`;
- * resolved via `resolveAgentSlotServer` in the route. Duplicating the resolved
+ * resolved via `resolveMandateServer` in the route. Duplicating the resolved
  * agent in the Agent Builder (then binding it here) is the supported way to
  * create a custom voice agent.
  *
  * 🚨 A raw agent UUID lived here until 2026-08-16. Never reintroduce one — the
- * slot is the only sanctioned way to name an agent from this repo.
+ * mandate is the only sanctioned way to name an agent from this repo.
  */
-export const VOICE_INTRO_SLOT_KEY = "voice.intro";
+export const VOICE_INTRO_MANDATE_KEY = "voice.intro";
 
 /**
- * The slot for the Scribe Live Assistant — the studio's Live tab. Its agent
+ * The mandate for the Scribe Live Assistant — the studio's Live tab. Its agent
  * carries the inline working-document mutator client tools
  * (`scribe_working_doc_append` / `_append_heading`) plus the auto-injected
  * `data`/`data_action` server tools; `useRealtimeAgentConfig` +
  * `useXaiVoiceSession` receive the RESOLVED id so the backend classifies those
  * tools for the voice session.
  */
-export const SCRIBE_LIVE_SLOT_KEY = "transcript_studio.scribe_live";
+export const SCRIBE_LIVE_MANDATE_KEY = "transcript_studio.scribe_live";

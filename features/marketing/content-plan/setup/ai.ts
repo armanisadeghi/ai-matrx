@@ -34,7 +34,7 @@ import type { CommittedArchetype } from "./service";
  * current_plan_summary, target_page_count, guidance. Structured output:
  * {archetype_key, rationale, family_counts[], concept_names[]}.
  */
-export const SHAPE_PLANNER_SLOT = "content_plan.shape_planner";
+export const SHAPE_PLANNER_MANDATE = "content_plan.shape_planner";
 
 /**
  * Platform agent "Content Plan Family Namer" — permanent latest-version
@@ -43,7 +43,7 @@ export const SHAPE_PLANNER_SLOT = "content_plan.shape_planner";
  * target_count, existing_names, guidance. Structured output:
  * {names: [{label, reason}], notes}.
  */
-export const FAMILY_NAMER_SLOT = "content_plan.family_namer";
+export const FAMILY_NAMER_MANDATE = "content_plan.family_namer";
 
 /**
  * Platform agent "Content Plan Entity Curator" — permanent latest-version
@@ -51,7 +51,7 @@ export const FAMILY_NAMER_SLOT = "content_plan.family_namer";
  * research_report, site_domain, existing_entities, guidance. Structured
  * output: {entities: [{label, entity_type, description, reason}], notes}.
  */
-export const ENTITY_CURATOR_SLOT = "content_plan.entity_curator";
+export const ENTITY_CURATOR_MANDATE = "content_plan.entity_curator";
 
 /**
  * Platform agent "Content Plan Reviewer" — permanent latest-version pointer
@@ -60,7 +60,7 @@ export const ENTITY_CURATOR_SLOT = "content_plan.entity_curator";
  * {summary, findings: [{severity, title, detail, suggested_route,
  * suggested_label}]}.
  */
-export const PLAN_REVIEWER_SLOT = "content_plan.plan_reviewer";
+export const PLAN_REVIEWER_MANDATE = "content_plan.plan_reviewer";
 
 const EXTRACTION_TIMEOUT_MS = 180_000;
 const POLL_INTERVAL_MS = 300;
@@ -88,7 +88,7 @@ export interface FamilyNamesResult {
  * authority there. A per-page keyword agent cannot do that — which is
  * exactly why this one takes the whole tree.
  */
-export const KEYWORD_STRATEGIST_SLOT = "content_plan.keyword_strategist";
+export const KEYWORD_STRATEGIST_MANDATE = "content_plan.keyword_strategist";
 
 export const PAGE_ROLES = ["money", "supporting", "navigational"] as const;
 export type PageRole = (typeof PAGE_ROLES)[number];
@@ -118,7 +118,7 @@ export interface KeywordStrategyResult {
  * current_plan, entity_roster, research_report, guidance. Chooses ONLY from
  * the roster by label; gaps come back as `missing_entities`, never invented.
  */
-export const ENTITY_ATTACHER_SLOT = "content_plan.entity_attacher";
+export const ENTITY_ATTACHER_MANDATE = "content_plan.entity_attacher";
 
 export interface EntityAttachment {
   route: string;
@@ -572,21 +572,21 @@ export function useSetupAgents(siteId: string | null) {
   const inFlight = useRef(false);
 
   async function run<T>(
-    slotKey: string,
+    mandateKey: string,
     label: string,
     variables: Record<string, string>,
     coerce: (value: unknown) => T,
     timeoutMs?: number,
   ): Promise<T> {
     setLiveLabel(label);
-    // Which agent runs this step is a SLOT, never a hardcoded id: the system
+    // Which agent runs this step is a MANDATE, never a hardcoded id: the system
     // default is managed in the admin console and any user may bind their own
-    // agent at /agents/slots. Resolution is loud — an unresolvable slot throws
+    // agent at /agents/mandates. Resolution is loud — an unresolvable mandate throws
     // here rather than silently running the wrong agent. The round-trip itself
     // is the canonical headless primitive (useHeadlessAgentJson, D126).
     return runHeadless<T>({
-      slotKey,
-      surfaceKey: `content-plan-setup:${siteId ?? "none"}:${slotKey}`,
+      mandateKey,
+      surfaceKey: `content-plan-setup:${siteId ?? "none"}:${mandateKey}`,
       sourceFeature: "marketing",
       variables,
       timeoutMs: timeoutMs ?? EXTRACTION_TIMEOUT_MS,
@@ -608,7 +608,7 @@ export function useSetupAgents(siteId: string | null) {
     setShapeBusy(true);
     try {
       return await run(
-        SHAPE_PLANNER_SLOT,
+        SHAPE_PLANNER_MANDATE,
         "Recommending shape & counts",
         variables,
         coerceShapePlan,
@@ -628,7 +628,7 @@ export function useSetupAgents(siteId: string | null) {
     setNamingFamilyKey(familyKey);
     try {
       return await run(
-        FAMILY_NAMER_SLOT,
+        FAMILY_NAMER_MANDATE,
         "Naming pages",
         variables,
         coerceFamilyNames,
@@ -647,7 +647,7 @@ export function useSetupAgents(siteId: string | null) {
     setEntitiesBusy(true);
     try {
       return await run(
-        ENTITY_CURATOR_SLOT,
+        ENTITY_CURATOR_MANDATE,
         "Curating entities",
         variables,
         coerceEntityCuration,

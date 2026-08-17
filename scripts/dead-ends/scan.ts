@@ -28,7 +28,7 @@ import type { DeadEndFinding, DeadEndRuleId, DeadEndSeverity } from "./types";
 
 /** Property names that mean "the human-readable identity of a record". */
 const NAME_PROPERTY_RE =
-  /^(name|title|label|displayName|fullName|agentName|noteTitle|fileName|filename|slotKey|slug)$/;
+  /^(name|title|label|displayName|fullName|agentName|noteTitle|fileName|filename|mandateKey|slotKey|slug)$/;
 
 /** Property names that mean "a raw identifier the user cannot read". */
 const ID_PROPERTY_RE = /^(id|.+_id|.+Id|uuid|.+Uuid|.+UUID)$/;
@@ -260,7 +260,7 @@ const ENTITY_SOURCE_IMPORT_RE =
 
 /** Plural nouns that make "N <noun>" a reference to reachable records. */
 const COUNTABLE_NOUNS =
-  /\b(agents?|notes?|files?|tasks?|projects?|conversations?|chats?|documents?|workflows?|skills?|apps?|overrides?|versions?|members?|users?|records?|items?|shortcuts?|transcripts?|datasets?|workbooks?|lists?|keywords?|pages?|scopes?|organizations?|orgs?|slots?|sessions?|messages?|comments?|attachments?|resources?)\b/i;
+  /\b(agents?|notes?|files?|tasks?|projects?|conversations?|chats?|documents?|workflows?|skills?|apps?|overrides?|versions?|members?|users?|records?|items?|shortcuts?|transcripts?|datasets?|workbooks?|lists?|keywords?|pages?|scopes?|organizations?|orgs?|mandates?|slots?|sessions?|messages?|comments?|attachments?|resources?)\b/i;
 
 // ─── File filtering ─────────────────────────────────────────────────────────
 
@@ -493,7 +493,7 @@ function classifyExpression(
     // The record's OWN surface printing its OWN id (a detail page, an editor,
     // a confirm modal) is not a dead end — the user is already there.
     //
-    // `id` / `uuid` ONLY. A FOREIGN key on the subject — `slot.summary_agent_id`,
+    // `id` / `uuid` ONLY. A FOREIGN key on the subject — `mandate.summary_agent_id`,
     // `instance.agentId` — points at a DIFFERENT record, and that is the
     // doctrine's own headline case: knowing the twin exists and not linking it
     // is worse than saying nothing. Never suppress those.
@@ -739,7 +739,7 @@ function isSelfSubject(node: ts.Node, expr: ts.Expression, sf: ts.SourceFile): b
  *
  * Own:     `note.id`, `x.uuid`, a bare `{agentId}` (no object to be foreign to),
  *          `file.fileId` (property names the same entity as its object).
- * Foreign: `slot.summary_agent_id`, `instance.agentId` — the object is one
+ * Foreign: `mandate.summary_agent_id`, `instance.agentId` — the object is one
  *          record and the property names a DIFFERENT one. Never suppress those:
  *          "I know your agent's twin exists" while not linking it is the
  *          doctrine's headline complaint.
@@ -1334,7 +1334,7 @@ function unwrap(expr: ts.Expression): ts.Node {
 /**
  * True when this expression sits in the FALSE arm of a conditional whose test
  * is THE VERY FIELD being rendered — the honest "we have no id, so there is no
- * door" fallback. The reference implementation (`AgentSlotsConsole`) writes
+ * door" fallback. The reference implementation (`MandatesConsole`) writes
  * exactly this shape, and flagging it would teach agents to delete a correct
  * guard.
  *
@@ -1411,7 +1411,7 @@ export function featureOf(relPath: string): string {
 
 /**
  * Best-effort URL for an `app/` file so the dashboard can open the offending
- * surface, not just the source. Route groups `(x)` and slot dirs `@x` drop out;
+ * surface, not just the source. Route groups `(x)` and mandate dirs `@x` drop out;
  * dynamic segments keep their bracket form so a human can see the shape.
  */
 export function routeOf(relPath: string): string | null {

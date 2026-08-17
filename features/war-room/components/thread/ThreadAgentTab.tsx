@@ -23,9 +23,9 @@ import { AssociationEntitySelect } from "@/features/scopes/components/associatio
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { ConversationPickerWindow } from "@/features/agents/components/conversation-history/ConversationPickerWindow";
 import { selectAssistantConversationId } from "@/features/transcript-studio/redux/selectors";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
-import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
-import { WAR_ROOM_THREAD_AGENT_SLOT } from "@/features/war-room/constants";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { WAR_ROOM_THREAD_AGENT_MANDATE } from "@/features/war-room/constants";
 import {
   selectActiveAudioSessionId,
   selectActiveConversationId,
@@ -179,13 +179,13 @@ export function ThreadAgentTab({
     selectAssistantConversationId(sessionId),
   );
 
-  // The persona a NEW thread chat starts with — the `war_room.thread` slot.
+  // The persona a NEW thread chat starts with — the `war_room.thread` mandate.
   // Unresolved ⇒ the explicit Start-chat affordances are DISABLED and say why;
   // there is no hardcoded fallback id to quietly start the wrong agent.
-  const { slot: threadSlot, error: threadSlotError } = useAgentSlot(
-    WAR_ROOM_THREAD_AGENT_SLOT,
+  const { mandate: threadMandate, error: threadMandateError } = useMandate(
+    WAR_ROOM_THREAD_AGENT_MANDATE,
   );
-  const threadAgentId = threadSlot?.agentId ?? null;
+  const threadAgentId = threadMandate?.agentId ?? null;
 
   // Hydrate-only — NEVER creates a session or conversation (that happens
   // exactly once, at thread provisioning). A legacy thread missing either
@@ -258,7 +258,7 @@ export function ThreadAgentTab({
           <button
             type="button"
             disabled={!threadAgentId}
-            title={threadSlotError ?? undefined}
+            title={threadMandateError ?? undefined}
             onClick={() => {
               if (!threadAgentId) return;
               void dispatch(addAudioSessionToThread(threadId)).then((sid) => {
@@ -301,7 +301,7 @@ export function ThreadAgentTab({
             <button
               type="button"
               disabled={!threadAgentId}
-              title={threadSlotError ?? undefined}
+              title={threadMandateError ?? undefined}
               onClick={() => {
                 if (!threadAgentId) return;
                 void dispatch(
@@ -313,7 +313,7 @@ export function ThreadAgentTab({
               <Plus className="size-3.5" />
               Start chat
             </button>
-            <SlotAgentPicker slotKey={WAR_ROOM_THREAD_AGENT_SLOT} />
+            <MandateAgentPicker mandateKey={WAR_ROOM_THREAD_AGENT_MANDATE} />
           </div>
         </div>
       </div>

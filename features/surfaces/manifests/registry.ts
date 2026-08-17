@@ -179,7 +179,7 @@ import { adminAgentAppsManifest } from "./admin-agent-apps.manifest";
 import { adminBundlesManifest } from "./admin-bundles.manifest";
 import { adminMcpServersManifest } from "./admin-mcp-servers.manifest";
 import { adminLookupsManifest } from "./admin-lookups.manifest";
-import { agentSlotsManifest } from "./agent-slots.manifest";
+import { mandatesManifest } from "./mandates.manifest";
 import { knowledgeManifest } from "./knowledge.manifest";
 import { shapesManifest } from "./shapes.manifest";
 import { crmManifest } from "./crm.manifest";
@@ -366,7 +366,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminBundlesManifest,
   adminMcpServersManifest,
   adminLookupsManifest,
-  agentSlotsManifest,
+  mandatesManifest,
   knowledgeManifest,
   shapesManifest,
   crmManifest,

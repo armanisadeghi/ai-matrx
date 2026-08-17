@@ -14,12 +14,12 @@
  * The read-only Kind Registry board is one click away to confirm what landed.
  *
  * The target is the admin builder agent, not the cautious user creator — see
- * the `content_ir.kind_architect` agent slot.
+ * the `content_ir.kind_architect` mandate.
  */
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import { Hammer, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -35,12 +35,12 @@ import {
  * Distinct from the user creator (`shapeCreatorAgentId`): no interview, no
  * confirmation gate, activates the kind, and builds to the alive-component bar.
  */
-const KIND_ARCHITECT_SLOT = "content_ir.kind_architect";
+const KIND_ARCHITECT_MANDATE = "content_ir.kind_architect";
 
 export default function KindBuilderClient() {
-  // Which agent builds a kind is a SLOT, not a hardcoded id — swappable from
-  // the admin console or an override at /agents/slots, no deploy.
-  const { slot: architect, error: architectError } = useAgentSlot(KIND_ARCHITECT_SLOT);
+  // Which agent builds a kind is a MANDATE, not a hardcoded id — swappable from
+  // the admin console or an override at /agents/mandates, no deploy.
+  const { mandate: architect, error: architectError } = useMandate(KIND_ARCHITECT_MANDATE);
   const router = useRouter();
   const openRun = useOpenAgentRunWindow();
   const [structure, setStructure] = useState("");

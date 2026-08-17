@@ -1,15 +1,15 @@
 import { createClient } from "@/utils/supabase/server";
 import { AiWorkHeader } from "@/features/ai-work/components/AiWorkHeader";
 import { AiWorkComposer } from "@/features/ai-work/compose/components/AiWorkComposer";
-import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveAgentSlotServer } from "@/features/agents/slots/service.server";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { resolveMandateServer } from "@/features/agents/mandates/service.server";
 
 export function generateMetadata() {
   return { title: "Start work" };
 }
 
 /**
- * SSR slot resolution, exactly as `/chat/new` does it: the agent that owns new
+ * SSR mandate resolution, exactly as `/chat/new` does it: the agent that owns new
  * work for THIS user (system default → their own binding). Resolving here means
  * the composer mounts with a real expert system and no client flash. A failure
  * SCREAMS server-side and returns null — the composer then asks the user to
@@ -17,11 +17,11 @@ export function generateMetadata() {
  */
 async function resolveDefaultAgentId(): Promise<string | null> {
   try {
-    const resolved = await resolveAgentSlotServer(DEFAULT_NEW_CHAT_SLOT_KEY);
+    const resolved = await resolveMandateServer(DEFAULT_NEW_CHAT_MANDATE_KEY);
     return resolved.agentId;
   } catch (error) {
     console.error(
-      `[work/new] slot "${DEFAULT_NEW_CHAT_SLOT_KEY}" failed to resolve at SSR:`,
+      `[work/new] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve at SSR:`,
       error,
     );
     return null;

@@ -11,7 +11,7 @@
 //      (parseContactSelection) — no spinner, no waiting on a model to read four
 //      lines of text, and the user sees exactly what will be saved.
 //   2. The user reviews and edits. Nothing is written until they press Save.
-//   3. Save runs the `crm.save_contact` slot agent, which calls the governed
+//   3. Save runs the `crm.save_contact` mandate agent, which calls the governed
 //      `resolve_contact` operation. That is the ONLY path: the raw database
 //      tool is blocked from the `crm` schema server-side, and a direct insert
 //      from here would skip the resolver's dedup and manufacture exactly the
@@ -35,10 +35,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
-import { CRM_SAVE_CONTACT_AGENT_SLOT } from "../constants";
+import { CRM_SAVE_CONTACT_AGENT_MANDATE } from "../constants";
 import {
   parseContactSelection,
   type ParsedContactSelection,
@@ -54,7 +54,7 @@ export interface SaveContactFromSelectionDialogProps {
   origin?: string;
 }
 
-/** The agent's declared output schema (slot `required_output_keys`). */
+/** The agent's declared output schema (mandate `required_output_keys`). */
 interface SavedContactResult {
   party_id: string;
   display_name: string;
@@ -86,7 +86,7 @@ export function SaveContactFromSelectionDialog({
   origin,
 }: SaveContactFromSelectionDialogProps) {
   const router = useRouter();
-  const slot = useAgentSlot(CRM_SAVE_CONTACT_AGENT_SLOT);
+  const mandate = useMandate(CRM_SAVE_CONTACT_AGENT_MANDATE);
   const live = useLiveAgentRun();
   const openLiveRun = useOpenLiveRunWindow();
   const [draft, setDraft] = useState<ParsedContactSelection>(() =>
@@ -116,7 +116,7 @@ export function SaveContactFromSelectionDialog({
     }));
 
   const canSave =
-    Boolean(draft.name.trim()) && !saving && !slot.loading && !slot.error;
+    Boolean(draft.name.trim()) && !saving && !mandate.loading && !mandate.error;
 
   const onSave = async () => {
     if (!canSave) return;
@@ -129,7 +129,7 @@ export function SaveContactFromSelectionDialog({
     });
     try {
       const result = await live.run<SavedContactResult>({
-        slotKey: CRM_SAVE_CONTACT_AGENT_SLOT,
+        mandateKey: CRM_SAVE_CONTACT_AGENT_MANDATE,
         surfaceKey: "crm-save-contact",
         sourceFeature: "crm",
         initiation: "user",
@@ -198,10 +198,10 @@ export function SaveContactFromSelectionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* The slot is the only save path — say so plainly when it can't run. */}
-        {slot.error && (
+        {/* The mandate is the only save path — say so plainly when it can't run. */}
+        {mandate.error && (
           <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            Saving contacts is unavailable right now: {slot.error}
+            Saving contacts is unavailable right now: {mandate.error}
           </p>
         )}
 

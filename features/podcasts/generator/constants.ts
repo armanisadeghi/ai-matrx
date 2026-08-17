@@ -159,9 +159,9 @@ export const SOURCE_OPTIONS: SourceOption[] = [
 // Run them via the platform's one-shot agent runner (`useRunAgent`):
 //   POST /ai/agents/{id} with the declared variables → streamed text.
 
-// Source-resolver agents are DB-managed slots ("podcast_client.web_content_extractor",
+// Source-resolver agents are DB-managed mandates ("podcast_client.web_content_extractor",
 // "podcast_client.youtube_research") resolved in useSourceResolvers — no
-// hardcoded agent ids here. Repin from /administration/agents/slots.
+// hardcoded agent ids here. Rebind from /administration/agents/mandates.
 
 export const HOST_COUNT_DEFAULT = 2;
 
@@ -332,8 +332,8 @@ export const FORMAT_OPTIONS: FormatOption[] = [
 //
 // Two distinct stages. Pre-script runs between the source and the script and
 // is WIRED (2026-08-08): each option maps to a `post_prep_option` value and a
-// dedicated backend agent (slots `podcast.post_prep_*` — repin from
-// /administration/agents/slots). Post-script (script → audio) is still
+// dedicated backend agent (mandates `podcast.post_prep_*` — rebind from
+// /administration/agents/mandates). Post-script (script → audio) is still
 // display-only.
 
 export interface ProcessingOption {

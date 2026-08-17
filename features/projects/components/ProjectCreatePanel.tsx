@@ -25,10 +25,10 @@ import React, { useCallback, useEffect } from "react";
 import {
   logProjectCreateAiStage,
   PROJECT_CREATE_AGENT_ID,
-  PROJECT_CREATE_SLOT_KEY,
+  PROJECT_CREATE_MANDATE_KEY,
   PROJECT_CREATE_SOURCE_FEATURE,
 } from "@/features/projects/debug/projectCreateAiDebug";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import { FileJson } from "lucide-react";
 import { useDispatchThunk } from "@/lib/redux/hooks";
 import { invalidateAndRefetchFullContext } from "@/features/agent-context/redux/hierarchyThunks";
@@ -70,21 +70,21 @@ export function ProjectCreatePanel({
 }: ProjectCreatePanelProps) {
   const dispatchThunk = useDispatchThunk();
 
-  // The AI tab's agent is the `projects.create_assistant` slot — the user's
+  // The AI tab's agent is the `projects.create_assistant` mandate — the user's
   // own binding wins. While resolving (first mount only; 5-min cache) or on a
   // resolution failure the AI mode stays off and the manual form carries the
-  // panel; failures are already screamed by useAgentSlot, never silently
+  // panel; failures are already screamed by useMandate, never silently
   // patched with a hardcoded id.
-  const { slot: createSlot, error: createSlotError } = useAgentSlot(
-    PROJECT_CREATE_SLOT_KEY,
+  const { mandate: createSlot, error: createSlotError } = useMandate(
+    PROJECT_CREATE_MANDATE_KEY,
   );
   const aiAgentId = createSlot?.agentId ?? null;
 
   useEffect(() => {
     logProjectCreateAiStage("panel mounted", {
-      slotKey: PROJECT_CREATE_SLOT_KEY,
+      mandateKey: PROJECT_CREATE_MANDATE_KEY,
       resolvedAgentId: aiAgentId,
-      slotError: createSlotError,
+      mandateError: createSlotError,
       sourceFeature: PROJECT_CREATE_SOURCE_FEATURE,
       enableAi,
       defaultMode,

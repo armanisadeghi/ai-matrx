@@ -23,8 +23,8 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
 import { AssistChip } from "@/features/assists/components/AssistChip";
 import { makeEphemeralAssist, type Assist } from "@/features/assists/types";
-import { KIND_CREATOR_SLOT_KEY } from "@/features/content-ir/studio/constants";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import type { EmitRendererProps } from "./types";
 
 /** Cap for the inlined payload JSON — enough context, never a mega-prompt. */
@@ -44,8 +44,8 @@ function surpriseUiAssist(
   creatorId: string | null,
 ): Assist | null {
   if (!value || typeof value !== "object") return null;
-  // The `content_ir.kind_creator` slot resolves in the component (the user's
-  // own binding wins); unresolved → no chip (useAgentSlot already screamed).
+  // The `content_ir.kind_creator` mandate resolves in the component (the user's
+  // own binding wins); unresolved → no chip (useMandate already screamed).
   if (!creatorId) return null;
   let json: string;
   try {
@@ -108,8 +108,8 @@ export const GenericEmitRenderer: React.FC<EmitRendererProps> = ({
   nodeId,
 }) => {
   const value = unwrapValue(payload);
-  const { slot: creatorSlot } = useAgentSlot(KIND_CREATOR_SLOT_KEY);
-  const creatorId = creatorSlot?.agentId ?? null;
+  const { mandate: creatorMandate } = useMandate(KIND_CREATOR_MANDATE_KEY);
+  const creatorId = creatorMandate?.agentId ?? null;
   const assist = useMemo(
     () =>
       mode === "confirmation"

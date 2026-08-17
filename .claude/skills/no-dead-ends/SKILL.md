@@ -59,7 +59,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 ```
 
 Safe inside clickable rows — every control stops propagation. Worked reference:
-`features/admin/agent-slots/AgentSlotsConsole.tsx` (Agent column, Pin column,
+`features/admin/mandates/AgentSlotsConsole.tsx` (Agent column, Pin column,
 Health column, and the drawer's identity card).
 
 **Missing a door?** Fix the *registry*, not the call site:

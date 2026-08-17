@@ -136,7 +136,7 @@ export async function updateTemplateAgentConfig(
 // NOTE: the builtin AGENT LIST deliberately has no fetcher here. Listing agents
 // for selection goes through the canonical agent-definition slice
 // (fetchAgentsListFull + selectBuiltinAgents) — THE CANONICAL-SELECTION LAW
-// (common-docs/systems/agent-slots/FEATURE.md § The two selection laws).
+// (common-docs/systems/mandates/FEATURE.md § The two selection laws).
 // The by-id lookups below are name resolution, not listing.
 
 export async function resolveBuiltinNames(

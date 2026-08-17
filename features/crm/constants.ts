@@ -15,4 +15,4 @@
  *
  * Declared server-side in aidream `services/agent_slots/client_slots.py`.
  */
-export const CRM_SAVE_CONTACT_AGENT_SLOT = "crm.save_contact";
+export const CRM_SAVE_CONTACT_AGENT_MANDATE = "crm.save_contact";

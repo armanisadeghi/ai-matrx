@@ -18,7 +18,7 @@
  * "every problem you can detect ships with its one-click fix." Every remedy
  * here is either
  *   - `ai`     — a real one-click action: open the SEO Page Analyzer agent
- *                (slot `seo.page_analyzer`, the same slot the GSC insights
+ *                (mandate `seo.page_analyzer`, the same mandate the GSC insights
  *                producer uses) with a prepared brief, or
  *   - `manual` — an explicit, copy-able instruction naming exactly WHAT to
  *                change and WHERE, for things only the site owner can do on
@@ -32,10 +32,10 @@
 
 import type { AssistAction } from "@/features/assists/types";
 
-/** The agent slot the AI remedies resolve at click time (repinnable from the
- * admin slots console, no deploy). Declared server-side in aidream
- * `services/seo/keyword_agents.py::PAGE_ANALYZER_SLOT`. */
-export const SEO_PAGE_ANALYZER_SLOT = "seo.page_analyzer";
+/** The mandate the AI remedies resolve at click time (rebindnable from the
+ * admin mandates console, no deploy). Declared server-side in aidream
+ * `services/seo/keyword_agents.py::PAGE_ANALYZER_MANDATE`. */
+export const SEO_PAGE_ANALYZER_MANDATE = "seo.page_analyzer";
 const SEO_AGENT_NAME = "SEO Page Analyzer";
 
 /** Everything a remedy may use. Only `itemKey` is required — every other
@@ -152,7 +152,7 @@ function aiRemedy(
     summary,
     action: {
       kind: "launch_agent",
-      slotKey: SEO_PAGE_ANALYZER_SLOT,
+      mandateKey: SEO_PAGE_ANALYZER_MANDATE,
       agentName: SEO_AGENT_NAME,
       draftText: brief(ctx, ask),
     },

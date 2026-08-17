@@ -18,8 +18,8 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { ChatHistorySidebar } from "@/features/agents/components/chat/ChatHistorySidebar";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
-import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
@@ -65,13 +65,13 @@ function loadedSurfaceKey(conversationId: string): string {
  * Rendered as bare content — surrounding chrome (the side panel header / the
  * Utilities Hub tab) is supplied by the consumer.
  *
- * The starting agent is the `chat.default_new_chat` SLOT (same as `/chat/new`):
+ * The starting agent is the `chat.default_new_chat` MANDATE (same as `/chat/new`):
  * the wrapper resolves it (system default → the user's own binding) before the
  * body mounts. Loud on failure — a skeleton while resolving, an error panel if
- * the slot can't resolve; never a hardcoded fallback agent.
+ * the mandate can't resolve; never a hardcoded fallback agent.
  */
 export function QuickChatSheet({ className }: QuickChatSheetProps) {
-  const { slot, loading, error } = useAgentSlot(DEFAULT_NEW_CHAT_SLOT_KEY);
+  const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
   if (loading) {
     return (
       <div className={cn("flex h-full flex-col overflow-hidden", className)}>
@@ -79,7 +79,7 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
       </div>
     );
   }
-  if (error || !slot) {
+  if (error || !mandate) {
     return (
       <div
         className={cn(
@@ -92,13 +92,13 @@ export function QuickChatSheet({ className }: QuickChatSheetProps) {
         </p>
         <p className="max-w-sm text-xs text-muted-foreground">
           The default chat agent could not be resolved
-          {error ? ` — ${error}` : ""}. Check your override on the Agent Slots
+          {error ? ` — ${error}` : ""}. Check your override on the Mandates
           page, or try again shortly.
         </p>
       </div>
     );
   }
-  return <QuickChatSheetBody className={className} initialAgentId={slot.agentId} />;
+  return <QuickChatSheetBody className={className} initialAgentId={mandate.agentId} />;
 }
 
 function QuickChatSheetBody({

@@ -4,15 +4,15 @@ import { ChatNewClient } from "@/features/agents/components/chat/ChatNewClient";
 import { ChatNewHeader } from "@/features/agents/components/chat/ChatNewHeader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import {
-  DEFAULT_NEW_CHAT_SLOT_KEY,
+  DEFAULT_NEW_CHAT_MANDATE_KEY,
   PRIMARY_QUICK_ACTIONS,
   SECONDARY_QUICK_ACTIONS,
 } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveAgentSlotServer } from "@/features/agents/slots/service.server";
+import { resolveMandateServer } from "@/features/agents/mandates/service.server";
 import { ArrowUp, ArrowUpRight, Mic, Plus } from "lucide-react";
 
 /**
- * SSR slot resolution: which agent owns `/chat/new` for THIS user (system
+ * SSR mandate resolution: which agent owns `/chat/new` for THIS user (system
  * default → their own `chat.default_new_chat` binding). Resolving here means
  * the header and input bar mount the right agent with no client flash. On a
  * resolution failure we SCREAM server-side and return null — the client then
@@ -21,11 +21,11 @@ import { ArrowUp, ArrowUpRight, Mic, Plus } from "lucide-react";
  */
 async function resolveDefaultChatAgentId(): Promise<string | null> {
   try {
-    const resolved = await resolveAgentSlotServer(DEFAULT_NEW_CHAT_SLOT_KEY);
+    const resolved = await resolveMandateServer(DEFAULT_NEW_CHAT_MANDATE_KEY);
     return resolved.agentId;
   } catch (error) {
     console.error(
-      `[chat/new] slot "${DEFAULT_NEW_CHAT_SLOT_KEY}" failed to resolve at SSR — deferring to client resolution:`,
+      `[chat/new] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve at SSR — deferring to client resolution:`,
       error,
     );
     return null;

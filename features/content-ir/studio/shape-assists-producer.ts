@@ -17,8 +17,8 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { filterUndecidedKeys } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { EmitAssistInput } from "@/features/assists/types";
-import { KIND_CREATOR_SLOT_KEY } from "./constants";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
+import { KIND_CREATOR_MANDATE_KEY } from "./constants";
+import { resolveMandate } from "@/features/agents/mandates/service";
 import { composeKindAgentIntent } from "./kind-agent-intents";
 import type { ShapeListEntry } from "./studio-catalog";
 
@@ -31,14 +31,14 @@ export async function produceMissingComponentAssists(
   userId: string,
   dispatch: AppDispatch,
 ): Promise<void> {
-  // The `content_ir.kind_creator` slot decides which agent the chip launches
+  // The `content_ir.kind_creator` mandate decides which agent the chip launches
   // (the user's own binding wins). Unresolvable → no chips this sweep, loudly.
   let creatorId: string;
   try {
-    creatorId = (await resolveAgentSlot(KIND_CREATOR_SLOT_KEY)).agentId;
+    creatorId = (await resolveMandate(KIND_CREATOR_MANDATE_KEY)).agentId;
   } catch (error) {
     console.error(
-      `[shape-assists] slot "${KIND_CREATOR_SLOT_KEY}" failed to resolve — skipping missing-component assists:`,
+      `[shape-assists] mandate "${KIND_CREATOR_MANDATE_KEY}" failed to resolve — skipping missing-component assists:`,
       error,
     );
     return;

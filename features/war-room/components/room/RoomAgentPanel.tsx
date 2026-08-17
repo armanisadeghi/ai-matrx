@@ -27,9 +27,9 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
 import { AssociationEntitySelect } from "@/features/scopes/components/associations/AssociationEntitySelect";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
-import { SlotAgentPicker } from "@/features/agents/slots/components/SlotAgentPicker";
-import { WAR_ROOM_ROOM_AGENT_SLOT } from "@/features/war-room/constants";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { WAR_ROOM_ROOM_AGENT_MANDATE } from "@/features/war-room/constants";
 import { useRoomAgent } from "@/features/war-room/hooks/useRoomAgent";
 import { useRoomConversationSelectAdapter } from "@/features/war-room/hooks/useThreadEntitySelect";
 import { startRoomConversation } from "@/features/war-room/redux/thunks";
@@ -40,10 +40,10 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
   const adapter = useRoomConversationSelectAdapter(sessionId);
   // The persona a NEW room chat starts with. Unresolved ⇒ Start chat is
   // disabled and says why — never a hardcoded fallback id.
-  const { slot: roomSlot, error: roomSlotError } = useAgentSlot(
-    WAR_ROOM_ROOM_AGENT_SLOT,
+  const { mandate: roomMandate, error: roomMandateError } = useMandate(
+    WAR_ROOM_ROOM_AGENT_MANDATE,
   );
-  const roomAgentId = roomSlot?.agentId ?? null;
+  const roomAgentId = roomMandate?.agentId ?? null;
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -99,7 +99,7 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
               <button
                 type="button"
                 disabled={!roomAgentId}
-                title={roomSlotError ?? undefined}
+                title={roomMandateError ?? undefined}
                 onClick={() => {
                   if (!roomAgentId) return;
                   void dispatch(startRoomConversation(sessionId, roomAgentId));
@@ -109,7 +109,7 @@ export default function RoomAgentPanel({ sessionId }: { sessionId: string }) {
                 <Plus className="size-3.5" />
                 Start chat
               </button>
-              <SlotAgentPicker slotKey={WAR_ROOM_ROOM_AGENT_SLOT} />
+              <MandateAgentPicker mandateKey={WAR_ROOM_ROOM_AGENT_MANDATE} />
             </div>
           </div>
         ) : (

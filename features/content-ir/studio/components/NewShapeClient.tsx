@@ -9,7 +9,7 @@
  * the run streams in-place — no navigation away from the studio. When the shape
  * lands, the /shapes list's Refresh picks it up.
  *
- * The creator agent is the `content_ir.kind_creator` SLOT (the user's own
+ * The creator agent is the `content_ir.kind_creator` MANDATE (the user's own
  * binding wins). Resolution failure is LOUD: no fallback agent, ever.
  */
 
@@ -18,8 +18,8 @@ import { CircleAlert, PencilRuler } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
-import { KIND_CREATOR_SLOT_KEY } from "@/features/content-ir/studio/constants";
-import { useAgentSlot } from "@/features/agents/slots/useAgentSlot";
+import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
 
@@ -33,10 +33,10 @@ function composeDraft(intent: string, sample: string): string {
 
 export default function NewShapeClient() {
   const openRun = useOpenAgentRunWindow();
-  const { slot, loading: slotLoading, error: slotError } = useAgentSlot(
-    KIND_CREATOR_SLOT_KEY,
+  const { mandate, loading: mandateLoading, error: mandateError } = useMandate(
+    KIND_CREATOR_MANDATE_KEY,
   );
-  const agentId = slot?.agentId ?? null;
+  const agentId = mandate?.agentId ?? null;
   const [intent, setIntent] = useState("");
   const [sample, setSample] = useState("");
 
@@ -110,7 +110,7 @@ export default function NewShapeClient() {
     },
   });
 
-  if (slotLoading) return null;
+  if (mandateLoading) return null;
 
   if (!agentId) {
     return (
@@ -120,9 +120,9 @@ export default function NewShapeClient() {
           The Shape creator agent is unavailable.
         </p>
         <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-          The <code className="font-mono">{KIND_CREATOR_SLOT_KEY}</code> agent
-          slot could not resolve{slotError ? ` — ${slotError}` : ""}. Check
-          your override on the Agent Slots page, or the slot's pin in the
+          The <code className="font-mono">{KIND_CREATOR_MANDATE_KEY}</code> agent
+          mandate could not resolve{mandateError ? ` — ${mandateError}` : ""}. Check
+          your override on the Mandates page, or the mandate's pin in the
           admin console.
         </p>
       </div>

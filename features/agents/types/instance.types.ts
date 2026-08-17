@@ -517,10 +517,10 @@ export interface InstanceContextEntry {
   /** Whether this key matched an agent-defined context slot */
   slotMatched: boolean;
 
-  /** If slot-matched, the slot's type. Otherwise inferred. */
+  /** If mandate-matched, the mandate's type. Otherwise inferred. */
   type: ContextObjectType;
 
-  /** Display label (from slot or auto-generated) */
+  /** Display label (from mandate or auto-generated) */
   label: string;
 }
 
@@ -1039,9 +1039,9 @@ export interface ManagedAgentOptions {
   surfaceKey: string;
   agentId?: string;
   /**
-   * Agent-slot key (`<domain>.<step>`, e.g. `plan_client.shape_planner`) —
-   * the slot-first alternative to `agentId`. The launch thunk resolves it via
-   * `resolveAgentSlot` (system default → the caller's own user binding) and
+   * Agent-mandate key (`<domain>.<step>`, e.g. `plan_client.shape_planner`) —
+   * the mandate-first alternative to `agentId`. The launch thunk resolves it via
+   * `resolveMandate` (system default → the caller's own user binding) and
    * applies BOTH halves of the binding: the resolved agent id AND the
    * binding's `config_overrides`, which are merged over `config.llmOverrides`
    * (the binding wins per key — a user who set "run this step on a cheaper
@@ -1049,7 +1049,7 @@ export interface ManagedAgentOptions {
    * every turn's request carries them as `config_overrides`.
    * Mutually exclusive with `agentId` and `shortcutId`.
    */
-  slotKey?: string;
+  mandateKey?: string;
   shortcutId?: string;
   manual?: { label?: string; baseSettings?: Partial<LLMParams> };
 

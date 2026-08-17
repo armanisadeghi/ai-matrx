@@ -58,7 +58,7 @@ suggestion is worse than no suggestion.
 
 | What | Where | Proof |
 |---|---|---|
-| Repin pre-flight + fix brief | `features/admin/agent-slots/repin-impact.ts`, `useGuardedRepin.tsx` | 9 unit tests; browser-verified on `podcast.deep_research`; live in `release-admin: v0.4.628` |
+| Repin pre-flight + fix brief | `features/admin/mandates/repin-impact.ts`, `useGuardedRepin.tsx` | 9 unit tests; browser-verified on `podcast.deep_research`; live in `release-admin: v0.4.628` |
 | Code-truth API | aidream `services/agent_slots/code_truth.py`, `GET /agent-slots/code-truth` | Live in prod (401 vs 404 on a bogus path); OpenAPI types already in `types/python-generated/api-types.ts` |
 | Mapping vocabulary | `packages/matrx-ai/matrx_ai/agents/named.py` | `code_value` / `direct_value` / `unmapped`; `prompt_user` rejected server-side; full `VariableVerdictKind` enum |
 | `validate()` guard hole closed | same file | now takes `source_override`, reports `validation_target="resolved"` vs `"seed"` |

@@ -6,7 +6,7 @@
  * The workspace has already paid to load the profile, trend, top dimensions,
  * and first page of backlink rows. This producer only interprets that state;
  * noticing costs zero tokens and performs no extra backlink-provider reads.
- * Accepted agent actions open the swappable backlink-assistant slot with a
+ * Accepted agent actions open the swappable backlink-assistant mandate with a
  * complete, reviewable brief. The bounded review-backlog action navigates
  * back to this workspace with an explicit route intent that starts the same
  * `analyzeNext` flow as the visible "Review next" button.
@@ -37,9 +37,9 @@ import { providerExtras } from "@/features/marketing/components/backlinks/lib/en
 const SOURCE_PREFIX = "seo.backlink_assist";
 export const BACKLINKS_ASSIST_SURFACE = "matrx-user/marketing-backlinks";
 
-/** Floating client-run slot, seeded by
+/** Floating client-run mandate, seeded by
  * `migrations/agent_slots_backlink_assistant_seed.sql`. */
-export const BACKLINK_ASSISTANT_SLOT = "seo.backlink_assistant";
+export const BACKLINK_ASSISTANT_MANDATE = "seo.backlink_assistant";
 
 const EXPIRES_MS = 14 * 24 * 60 * 60 * 1000;
 const RISK_REVIEW_MIN = 3;
@@ -98,7 +98,7 @@ function plural(count: number, singular: string, pluralForm = `${singular}s`) {
 function agentAction(draftText: string) {
   return {
     kind: "launch_agent" as const,
-    slotKey: BACKLINK_ASSISTANT_SLOT,
+    mandateKey: BACKLINK_ASSISTANT_MANDATE,
     agentName: "Backlink Assistant",
     draftText,
   };

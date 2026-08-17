@@ -1,5 +1,5 @@
 /**
- * THE DOOR LAW — the tokens the /agents/slots and agent-shortcuts surfaces
+ * THE DOOR LAW — the tokens the /agents/mandates and agent-shortcuts surfaces
  * name must actually resolve to doors through EntityRef:
  *
  *   agent          → registry route (/agents/{id}) + peek + new tab
@@ -60,7 +60,7 @@ function renderRef(el: React.ReactElement) {
   act(() => root.render(el));
 }
 
-describe("EntityRef doors for slots/shortcuts surfaces", () => {
+describe("EntityRef doors for mandates/shortcuts surfaces", () => {
   it("agent: open link from the registry route, new-tab link, and peek", () => {
     renderRef(<EntityRef token="agent" id="a1" name="Flashcard Generator" />);
     const open = container.querySelector('a[title="Open Flashcard Generator"]');

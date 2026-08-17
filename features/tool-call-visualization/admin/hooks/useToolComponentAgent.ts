@@ -18,7 +18,7 @@
  *   - `destroyInstanceIfAllowed` on unmount AND on every new execute.
  *
  * 🚨 WHICH agent generates the component is decided by the
- * `tool_viz.component_generator` SLOT, resolved inside `launchSlot` — not by
+ * `tool_viz.component_generator` MANDATE, resolved inside `launchMandate` — not by
  * the caller and not by this file. Callers pass data, never an agent id. A raw
  * UUID lived in both consumers until 2026-08-16, beside a stale duplicate of
  * the agent's own system prompt; both are gone.
@@ -37,7 +37,7 @@ import {
   type StreamPhase,
 } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useRetainLatestRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
-import { TOOL_UI_COMPONENT_GENERATOR_SLOT_KEY } from "../tool-ui-generator-prompt";
+import { TOOL_UI_COMPONENT_GENERATOR_MANDATE_KEY } from "../tool-ui-generator-prompt";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -72,7 +72,7 @@ function settleExecuteResolve(
 
 export function useToolComponentAgent(): UseToolComponentAgentReturn {
   const dispatch = useAppDispatch();
-  const { launchSlot } = useAgentLauncher();
+  const { launchMandate } = useAgentLauncher();
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -166,7 +166,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
           };
         });
 
-        await launchSlot(TOOL_UI_COMPONENT_GENERATOR_SLOT_KEY, {
+        await launchMandate(TOOL_UI_COMPONENT_GENERATOR_MANDATE_KEY, {
           surfaceKey: "tool-component-generator",
           sourceFeature: "tool-call-visualization",
           // Direct mode — no overlay; this hook owns the streaming UI via
@@ -197,7 +197,7 @@ export function useToolComponentAgent(): UseToolComponentAgentReturn {
         return null;
       }
     },
-    [conversationId, dispatch, launchSlot],
+    [conversationId, dispatch, launchMandate],
   );
 
   return {

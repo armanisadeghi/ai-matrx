@@ -9,7 +9,7 @@
  * is the worst version of this failure: a definition in code that reads as
  * authoritative and silently is not.
  *
- * The prompt lives on the agent the `tool_viz.component_generator` slot
+ * The prompt lives on the agent the `tool_viz.component_generator` mandate
  * resolves to. Editing it (the runtime contract below, the allowed imports, the
  * output shape) is a builder-level operation against that agent — never a code
  * change here.
@@ -22,9 +22,9 @@
  */
 
 /**
- * The slot that decides which agent generates tool-result renderers.
+ * The mandate that decides which agent generates tool-result renderers.
  * Declared in aidream `services/agent_slots/client_slots.py`; resolved inside
- * `useToolComponentAgent` via `launchSlot`. Never put an agent UUID here.
+ * `useToolComponentAgent` via `launchMandate`. Never put an agent UUID here.
  */
-export const TOOL_UI_COMPONENT_GENERATOR_SLOT_KEY =
+export const TOOL_UI_COMPONENT_GENERATOR_MANDATE_KEY =
   "tool_viz.component_generator";

@@ -4,8 +4,8 @@
 import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { DEFAULT_NEW_CHAT_SLOT_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
-import { resolveAgentSlot } from "@/features/agents/slots/service";
+import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
+import { resolveMandate } from "@/features/agents/mandates/service";
 
 export interface OpenChatWindowOptions {
   initialAgentId?: string | null;
@@ -49,10 +49,10 @@ export function useQuickActions() {
 
   /**
    * Opens the floating Chat window panel (`agentRunWindow`) with the same
-   * default agent as `/chat/new` — the `chat.default_new_chat` SLOT, resolved
+   * default agent as `/chat/new` — the `chat.default_new_chat` MANDATE, resolved
    * at open time so the user's own binding wins. Callers that need a specific
    * agent pass `initialAgentId` explicitly (e.g. agent options menu, item
-   * cards). Slot-resolution failure is loud and degrades to the window's own
+   * cards). Mandate-resolution failure is loud and degrades to the window's own
    * "pick an agent" state — never a hardcoded fallback agent.
    */
   const openChatWindow = useCallback(
@@ -61,10 +61,10 @@ export function useQuickActions() {
         let agentId = opts.initialAgentId ?? null;
         if (!agentId) {
           try {
-            agentId = (await resolveAgentSlot(DEFAULT_NEW_CHAT_SLOT_KEY)).agentId;
+            agentId = (await resolveMandate(DEFAULT_NEW_CHAT_MANDATE_KEY)).agentId;
           } catch (error) {
             console.error(
-              `[useQuickActions] slot "${DEFAULT_NEW_CHAT_SLOT_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
+              `[useQuickActions] mandate "${DEFAULT_NEW_CHAT_MANDATE_KEY}" failed to resolve — opening the Chat window with the agent picker:`,
               error,
             );
           }

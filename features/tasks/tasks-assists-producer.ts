@@ -13,8 +13,8 @@
  *   (session-boot full context + per-user snooze state); zero fetches,
  *   zero tokens to notice. Snoozed tasks never count — a snooze is the
  *   user saying "not now", and the chip must respect it.
- * - the action is real: launches the `tasks.triage_assistant` agent slot
- *   (swappable from /agents/slots, no deploy) with the triage brief ready.
+ * - the action is real: launches the `tasks.triage_assistant` mandate
+ *   (swappable from /agents/mandates, no deploy) with the triage brief ready.
  *
  * System-of-record: /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md
  */
@@ -31,10 +31,10 @@ const SOURCE_KEY = "tasks.overdue_pileup";
 /** `/tasks` resolves to this surface (features/surfaces/utils/route-to-surface.ts). */
 export const TASKS_ASSIST_SURFACE = "matrx-user/tasks";
 
-/** Agent-slot the launch action resolves at click time (agent.slot_definition,
+/** Agent-mandate the launch action resolves at click time (agent.slot_definition,
  * seeded by migrations/agent_slots_assist_producers_seed.sql — swappable from
- * the admin slots console, no deploy). */
-export const TASK_TRIAGE_SLOT = "tasks.triage_assistant";
+ * the admin mandates console, no deploy). */
+export const TASK_TRIAGE_MANDATE = "tasks.triage_assistant";
 
 // Conservative threshold — one or two overdue tasks is a normal Tuesday;
 // a pileup is the signal ("loud, never nagging").
@@ -92,7 +92,7 @@ export async function produceTaskAssists(args: {
       body: `${count} open tasks are past their due date (snoozed ones aren't counted). One click opens the Task Triage Assistant with the full list ready; it proposes what to do first, what to reschedule, and what to close — and applies only what you agree to.`,
       action: {
         kind: "launch_agent",
-        slotKey: TASK_TRIAGE_SLOT,
+        mandateKey: TASK_TRIAGE_MANDATE,
         agentName: "Task Triage Assistant",
         draftText,
       },
