@@ -1,3 +1,15 @@
+> # 🚨 NAMING IS SETTLED — THIS FILE STILL TEACHES THE OLD WORDS
+>
+> **Lexicon (the only authority):** [`common-docs/systems/vocabulary/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/vocabulary/FEATURE.md)
+> · **Work order:** [`matrx-frontend/docs/handoffs/masterwork-distillation.md`](/Users/armanisadeghi/code/matrx-frontend/docs/handoffs/masterwork-distillation.md)
+>
+> **This IS core Masterwork** (Arman, 2026-08-16) — not a sibling system. Read the body for
+> mechanics, never for vocabulary. pack→**Rulebook** · desk→**a Masterwork** · compile→**Build**
+> · backtest→**Audition** · Expertise Interviewer→**Scout** · lane/mode→**Approach** ·
+> "expert distillation system"→**Masterwork**. The sweep is planned work (Law 4: it reaches
+> docs, code, routes, DB tables, entity tokens, Mandate keys). **Write the new words in
+> anything new.**
+
 # Expertise — packs, rules, desks (the SME system's UI home)
 
 > **The one-line law (cross-repo, canonical: common-docs `systems/expertise-packs/FEATURE.md`):**
@@ -32,7 +44,7 @@
 - **Server half:** aidream `services/expertise_desks` (compile) + `services/expertise_ingest`
   (text + file/PDF/audio lanes + the `expertise_pack` tool, one shared rule builder
   `build_draft_rules` and one shared CAS write path `pack_writes.py`).
-- **Next (work order: docs/handoffs/expertise-system-productization.md):** the Arman-SEO honest test
+- **Next (work order: docs/handoffs/masterwork-distillation.md):** the Arman-SEO honest test
   (pack `arman-seo-method` scaffolded, draft, owned by Arman — the interview lane now unblocks it).
 
 ## Data
