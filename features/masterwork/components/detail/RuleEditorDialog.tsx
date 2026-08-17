@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { nextRuleId } from "../../ruleIds";
 import type {
   RulebookRule,
   RulebookSections,
@@ -36,17 +37,6 @@ import type {
 export interface RuleEditorResult {
   rule: RulebookRule;
   isNew: boolean;
-}
-
-function kebab(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/[\s_]+/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 48);
 }
 
 export interface RuleEditorDialogProps {
@@ -101,13 +91,7 @@ function RuleEditorForm({
       toast.error("A rule needs at least a short name and the rule itself.");
       return;
     }
-    let id = initial?.id;
-    if (!id) {
-      const base = kebab(name) || "rule";
-      id = base;
-      let n = 2;
-      while (existingIds.has(id)) id = `${base}-${n++}`;
-    }
+    const id = initial?.id ?? nextRuleId(name, existingIds);
     setSaving(true);
     try {
       await onSave({

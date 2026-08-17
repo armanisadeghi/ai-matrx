@@ -108,12 +108,21 @@ export async function saveRules(opts: {
   expectedVersion: number;
   rules: RulebookRule[];
   sections?: RulebookSections;
+  /**
+   * Whole-column replacement for `metadata` — read-modify-write it at the
+   * CALLSITE and hand the finished object here, so a rule change and the
+   * metadata that explains it land in ONE compare-and-swap. The Final Checkup
+   * uses it for `metadata.checkup` (what the Expert already said no to);
+   * omitting it leaves metadata untouched.
+   */
+  metadata?: Record<string, unknown>;
 }): Promise<Rulebook> {
   const patch: Record<string, unknown> = {
     rules: opts.rules,
     version: opts.expectedVersion + 1,
   };
   if (opts.sections) patch.sections = opts.sections;
+  if (opts.metadata) patch.metadata = opts.metadata;
   const { data, error } = await rulebookTable()
     .update(patch as never)
     .eq("id", opts.rulebookId)

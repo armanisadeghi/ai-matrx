@@ -151,6 +151,7 @@ export const ASSOCIATION_TARGET_TYPES = [
   "web_screenshot", //       a page capture — per-image attachments on the page workspace
   "party", //                a CRM person/company (crm.party) — the record page attaches tasks/files/notes onto it; roles come from party→category edges
   "crm_outreach_list", //    a CRM outreach list (a worked send/dial queue) — parties and resources attach into it
+  "rulebook", //             a Masterwork Rulebook — its Scout interviews attach here (conversation→rulebook, role 'interview')
 ] as const satisfies readonly EntityTypeToken[];
 
 export type AssociationTargetType = (typeof ASSOCIATION_TARGET_TYPES)[number];

@@ -59,12 +59,13 @@ export const MASTERWORK_RUN_WIRE: DurableRunWire = {
  * are one dialog with one running state and one answer — so they share one
  * pointer, and a reload rejoins whichever lane was going.
  */
-export type MasterworkRunSurface = "build" | "ingest" | "audition";
+export type MasterworkRunSurface = "build" | "ingest" | "audition" | "checkup";
 
 const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   build: "masterwork_build_complete",
   ingest: "masterwork_ingest_complete",
   audition: "masterwork_audition_verdict",
+  checkup: "masterwork_checkup_complete",
 };
 
 /**
@@ -98,6 +99,16 @@ export interface UseMasterworkRunOptions<TResult> {
   path: keyof paths;
   /** Narrow/validate the terminal document. Return null to reject it loudly. */
   parseResult?: (raw: unknown) => TResult | null;
+  /**
+   * Every domain event as it lands — for a pipeline that answers in PIECES.
+   * The Final Checkup streams one finding at a time so the Expert can start
+   * deciding while the rest are still being found.
+   */
+  onDomainEvent?: (
+    name: string,
+    data: Record<string, unknown>,
+    ctx: { rejoin: boolean },
+  ) => void;
 }
 
 export type MasterworkRunHandle<TResult> = DurableRunHandle<TResult>;
@@ -107,6 +118,7 @@ export function useMasterworkRun<TResult>({
   rulebookId,
   path,
   parseResult,
+  onDomainEvent,
 }: UseMasterworkRunOptions<TResult>): MasterworkRunHandle<TResult> {
   return useDurableRun<TResult>({
     wire: MASTERWORK_RUN_WIRE,
@@ -116,5 +128,6 @@ export function useMasterworkRun<TResult>({
     stageLabels: {},
     stageFallback: STAGE_FALLBACK,
     ...(parseResult ? { parseResult } : {}),
+    ...(onDomainEvent ? { onDomainEvent } : {}),
   });
 }

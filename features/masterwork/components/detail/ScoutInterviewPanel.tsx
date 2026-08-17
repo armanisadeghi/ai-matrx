@@ -14,8 +14,9 @@
 // AskTutorButton.tsx + EducationTutorClient.tsx), minus grounding injection —
 // the Scout grounds itself through its tool (rulebook_id variable).
 
-import { useEffect, useRef } from "react";
-import { MessageCircleQuestion, MessagesSquare } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { ExternalLink, MessageCircleQuestion, MessagesSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -31,7 +32,15 @@ import { setUserInputText } from "@/features/agents/redux/execution-system/insta
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { useMandate } from "@/features/agents/mandates/useMandate";
+import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { supabase } from "@/utils/supabase/client";
+import {
+  ensureInterviewTitle,
+  linkInterviewConversation,
+  listRulebookInterviews,
+  type RulebookInterview,
+} from "@/features/masterwork/record/service";
+import { InterviewChooser } from "@/features/masterwork/record/InterviewChooser";
 
 const SOURCE_FEATURE = "masterwork" as const;
 /**
@@ -62,6 +71,8 @@ export function InterviewButton({
 
 export interface ScoutInterviewPanelProps {
   rulebookId: string;
+  /** The Rulebook's name — used to give each interview an honest title. */
+  rulebookName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Called when the Rulebook row changed on the server (new drafts landed). */
@@ -99,14 +110,25 @@ const ELICITATION_CHIPS = [
   },
 ] as const;
 
+/**
+ * A FRESH interview. Mints a conversation through the canonical launcher and —
+ * before anything else can go wrong — records the canonical
+ * `conversation --(interview)--> rulebook` association so the Expert can always
+ * find their way back to what they said. Also replaces the auto-generated
+ * "Auto: expertise_interviewer" title with one a human recognises.
+ */
 function InterviewConversation({
   rulebookId,
+  rulebookName,
   agentId,
   seedText,
+  freshSessionKey,
 }: {
   rulebookId: string;
+  rulebookName: string;
   agentId: string;
   seedText?: string;
+  freshSessionKey: number;
 }) {
   const surfaceKey = `masterwork-interview:${rulebookId}`;
   const dispatch = useAppDispatch();
@@ -116,9 +138,113 @@ function InterviewConversation({
     sourceFeature: SOURCE_FEATURE,
     runtime: { variables: { rulebook_id: rulebookId } },
     config: { responseDensity: "compact" },
+    // "Start a new interview" must NEVER revive the previous conversation the
+    // surface was focused on — that is how a fresh start silently continues an
+    // old one.
+    preferFresh: true,
+    freshSessionKey,
     // The panel can be closed/reopened while a reply streams — keep it alive.
     retainOnUnmount: true,
   });
+
+  // THE ASSOCIATION. Written as soon as both ids exist, so a conversation can
+  // never be orphaned from its Rulebook — not even one the Expert abandons.
+  // The row in chat.conversation is written by the server at turn end, so the
+  // title fix runs behind a short retry rather than racing it.
+  const linkedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!conversationId || linkedRef.current === conversationId) return;
+    linkedRef.current = conversationId;
+    void (async () => {
+      const ok = await linkInterviewConversation({ rulebookId, conversationId });
+      if (!ok) {
+        // Retry once the server has persisted the conversation row.
+        setTimeout(() => {
+          void linkInterviewConversation({ rulebookId, conversationId });
+        }, 8000);
+      }
+      setTimeout(() => {
+        void ensureInterviewTitle({ conversationId, rulebookName });
+      }, 10000);
+    })();
+  }, [conversationId, rulebookId, rulebookName]);
+
+  if (!conversationId) return <ChatRoomSkeleton />;
+  return (
+    <InterviewColumn
+      conversationId={conversationId}
+      surfaceKey={surfaceKey}
+      seedText={seedText}
+    />
+  );
+}
+
+/**
+ * CONTINUE an interview the Expert already had. Never mints a conversation —
+ * it rehydrates the existing one through the canonical resume sequence
+ * (`useConversationResume`), which also re-surfaces an unanswered tool prompt
+ * and reconnects a turn the server may still be running.
+ */
+function ResumedInterviewConversation({
+  rulebookId,
+  agentId,
+  conversationId,
+  onBack,
+}: {
+  rulebookId: string;
+  agentId: string;
+  conversationId: string;
+  onBack: () => void;
+}) {
+  const surfaceKey = `masterwork-interview:${rulebookId}`;
+  const { isResuming, error } = useConversationResume({
+    conversationId,
+    agentId,
+    surfaceKey,
+    messageLimit: 50,
+  });
+
+  if (error) {
+    return (
+      <div className="space-y-3 px-4 py-6 text-sm">
+        <p className="text-muted-foreground">
+          We couldn&apos;t reopen that conversation here — nothing is lost, it
+          opens in full on its own page.
+        </p>
+        <div className="flex gap-2">
+          <Button asChild size="sm">
+            <Link href={`/chat/${conversationId}`} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="mr-1 h-3.5 w-3.5" />
+              Open the conversation
+            </Link>
+          </Button>
+          <Button size="sm" variant="outline" onClick={onBack}>
+            Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  if (isResuming) return <ChatRoomSkeleton />;
+  return <InterviewColumn conversationId={conversationId} surfaceKey={surfaceKey} />;
+}
+
+/**
+ * The conversation column itself — identical for a fresh and a resumed
+ * interview, so the two can never drift apart. Owns the composer seeding and
+ * the elicitation chips.
+ */
+function InterviewColumn({
+  conversationId,
+  surfaceKey,
+  seedText,
+}: {
+  conversationId: string;
+  surfaceKey: string;
+  seedText?: string;
+}) {
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
 
   // "What did it get wrong?" entry: stage the run context in the composer so
   // the Expert only finishes the sentence. Keyed by the seed text so opening
@@ -127,8 +253,7 @@ function InterviewConversation({
   const seededForRef = useRef<string | null>(null);
   const lastSeedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!conversationId || !seedText || seededForRef.current === seedText)
-      return;
+    if (!seedText || seededForRef.current === seedText) return;
     const existing = selectUserInputText(conversationId)(store.getState());
     if (!existing.trim() || existing === lastSeedRef.current) {
       dispatch(setUserInputText({ conversationId, text: seedText }));
@@ -143,14 +268,12 @@ function InterviewConversation({
   // the Expert typed themselves.
   const lastChipRef = useRef<string | null>(null);
   const stageChip = (text: string) => {
-    if (!conversationId) return;
     const existing = selectUserInputText(conversationId)(store.getState());
     if (existing.trim() && existing !== lastChipRef.current) return;
     dispatch(setUserInputText({ conversationId, text }));
     lastChipRef.current = text;
   };
 
-  if (!conversationId) return <ChatRoomSkeleton />;
   return (
     <AgentConversationColumn
       conversationId={conversationId}
@@ -182,16 +305,48 @@ function InterviewConversation({
   );
 }
 
-/** Resolve the Scout through its Mandate before any conversation exists. */
+/**
+ * Resolve the Scout through its Mandate, then decide WHICH interview the
+ * Expert is in: a prior one they continue, or a new one. Never silently mints
+ * a new conversation when prior ones exist — that was the defect.
+ */
 function MandateGatedConversation({
   rulebookId,
+  rulebookName,
   seedText,
 }: {
   rulebookId: string;
+  rulebookName: string;
   seedText?: string;
 }) {
   const { mandate, loading, error } = useMandate(SCOUT_MANDATE_KEY);
-  if (loading) return <ChatRoomSkeleton />;
+  const [interviews, setInterviews] = useState<RulebookInterview[] | null>(null);
+  const [choice, setChoice] = useState<
+    { mode: "choose" } | { mode: "new"; key: number } | { mode: "resume"; conversationId: string }
+  >({ mode: "choose" });
+  const [freshKey, setFreshKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const rows = await listRulebookInterviews(rulebookId);
+      if (cancelled) return;
+      setInterviews(rows);
+      // No history → straight into a new interview, exactly as before.
+      if (rows.length === 0) setChoice({ mode: "new", key: 0 });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [rulebookId]);
+
+  const startNew = useCallback(() => {
+    const key = freshKey + 1;
+    setFreshKey(key);
+    setChoice({ mode: "new", key });
+  }, [freshKey]);
+
+  if (loading || interviews === null) return <ChatRoomSkeleton />;
   if (error || !mandate?.agentId) {
     return (
       <div className="px-4 py-6 text-sm text-muted-foreground">
@@ -201,17 +356,44 @@ function MandateGatedConversation({
       </div>
     );
   }
+
+  if (choice.mode === "choose") {
+    return (
+      <InterviewChooser
+        interviews={interviews}
+        onContinue={(conversationId) =>
+          setChoice({ mode: "resume", conversationId })
+        }
+        onStartNew={startNew}
+      />
+    );
+  }
+
+  if (choice.mode === "resume") {
+    return (
+      <ResumedInterviewConversation
+        rulebookId={rulebookId}
+        agentId={mandate.agentId}
+        conversationId={choice.conversationId}
+        onBack={() => setChoice({ mode: "choose" })}
+      />
+    );
+  }
+
   return (
     <InterviewConversation
       rulebookId={rulebookId}
+      rulebookName={rulebookName}
       agentId={mandate.agentId}
       seedText={seedText}
+      freshSessionKey={choice.key}
     />
   );
 }
 
 export function ScoutInterviewPanel({
   rulebookId,
+  rulebookName,
   open,
   onOpenChange,
   onRulebookChanged,
@@ -269,7 +451,11 @@ export function ScoutInterviewPanel({
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-hidden">
           {open ? (
-            <MandateGatedConversation rulebookId={rulebookId} seedText={seedText} />
+            <MandateGatedConversation
+              rulebookId={rulebookId}
+              rulebookName={rulebookName}
+              seedText={seedText}
+            />
           ) : null}
         </div>
       </SheetContent>

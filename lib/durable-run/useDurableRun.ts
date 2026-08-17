@@ -243,6 +243,21 @@ export interface UseDurableRunOptions<TResult> {
   ) => string | null;
   /** Narrow/validate the result document. Return null to reject it loudly. */
   parseResult?: (raw: unknown) => TResult | null;
+  /**
+   * PROGRESSIVE RESULTS — every domain data event, before stage/terminal
+   * handling. Some runs answer in PIECES (the Masterwork checkup emits one
+   * finding at a time over minutes); making the surface wait for the terminal
+   * document would put a spinner over work the user could already be doing.
+   * The terminal document is still the truth — a surface that consumes this
+   * merges by id and lets the final result win. Never use it to hand-render
+   * model text (`features/content-ir/FEATURE.md` § No bespoke stream
+   * renderers); pass `live` for that.
+   */
+  onDomainEvent?: (
+    name: string,
+    data: Record<string, unknown>,
+    ctx: { rejoin: boolean },
+  ) => void;
   /** Extra body fields every launch and rejoin needs (e.g. `scopeOverrides`). */
   scopeOverrides?: Record<string, string>;
   /**
@@ -358,6 +373,7 @@ export function useDurableRun<TResult>(
         stageLabels,
         stageFallback,
         parseResult,
+        onDomainEvent,
       } = optionsRef.current;
 
       if (event.event === "error") {
@@ -384,6 +400,10 @@ export function useDurableRun<TResult>(
       const raw = data[wire.discriminator];
       const name = typeof raw === "string" ? raw : null;
       if (!name) return;
+
+      // Progressive results first: a surface that renders pieces as they land
+      // must see them whether they arrived live or in a rejoin replay.
+      onDomainEvent?.(name, data, ctx);
 
       // The durable row now exists — remember the receipt before anything else.
       if (name === wire.runStartedEvent && typeof data.run_id === "string") {

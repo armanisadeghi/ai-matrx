@@ -480,6 +480,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  masterworkCheckupWindow: {
+    label: "Final Checkup",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   instanceUIStateWindow: {
     label: "Instance U I State Window",
     instanceMode: "singleton",

@@ -7,12 +7,9 @@ import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-defin
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
+import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { useCreatorOwnershipSync } from "@/features/agents/hooks/useCreatorOwnershipSync";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
-import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
-import { reconnectServerOperation } from "@/features/agents/runtime-reconnect/reconnect-server-operation.thunk";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
@@ -145,9 +142,6 @@ export function ChatRoomClient({
   );
 
   const [isInitializing, setIsInitializing] = useState(true);
-  const [isColdLoadingConversation, setIsColdLoadingConversation] = useState(
-    Boolean(conversationIdProp),
-  );
   useEffect(() => {
     let cancelled = false;
     const init = async () => {
@@ -221,112 +215,16 @@ export function ChatRoomClient({
 
 
   // ── Existing-conversation load (only on /chat/[conversationId]) ──────────
-  // One in-flight load at a time, cancelled on prop change.
-  const loadAbortRef = useRef<AbortController | null>(null);
-  const loadedKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!conversationIdProp || isInitializing || !authReady) return undefined;
-    if (loadedKeyRef.current === conversationIdProp) return undefined;
-
-    // Cancel any in-flight load before starting a new one.
-    loadAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    loadAbortRef.current = ctrl;
-    loadedKeyRef.current = conversationIdProp;
-    setIsColdLoadingConversation(true);
-
-    (async () => {
-      try {
-        const state = store.getState();
-        const exists =
-          !!state.conversations?.byConversationId?.[conversationIdProp];
-        // If the conversation is already live in memory with messages, this
-        // is a URL promotion from /chat/new or /chat/a/[agentId] right after
-        // the user submitted — the stream is in-flight in Redux. Calling
-        // loadConversation here would re-fetch from the DB and clobber the
-        // active stream (the "stream is missed" bug). Skip the load entirely;
-        // the in-memory state is the source of truth. We only hydrate from
-        // the server for genuinely cold conversations (deep-link, refresh,
-        // sidebar click on a conversation not in memory).
-        const alreadyLiveCount =
-          state.messages?.byConversationId?.[conversationIdProp]?.orderedIds
-            ?.length ?? 0;
-        if (exists && alreadyLiveCount > 0) {
-          setIsColdLoadingConversation(false);
-          // Make sure focus points at this conversation, then bail — unless
-          // this load was already superseded by a navigation (don't revert the
-          // surface back to the conversation the user just left).
-          if (ctrl.signal.aborted) return;
-          dispatch(
-            setFocus({ surfaceKey, conversationId: conversationIdProp }),
-          );
-          return;
-        }
-        if (ctrl.signal.aborted) return;
-        if (!exists) {
-          await dispatch(
-            createManualInstance({
-              agentId,
-              conversationId: conversationIdProp,
-              apiEndpointMode: "agent",
-              responseDensity: "compact",
-            }),
-          ).unwrap();
-        }
-        if (ctrl.signal.aborted) return;
-        await dispatch(
-          loadConversation({
-            conversationId: conversationIdProp,
-            surfaceKey,
-            messageLimit: CHAT_INITIAL_MESSAGE_LIMIT,
-            signal: ctrl.signal,
-          }),
-        ).unwrap();
-        if (ctrl.signal.aborted) return;
-        setIsColdLoadingConversation(false);
-        // Cold-resume: if the server left this conversation paused waiting on a
-        // client-delegated tool the user never answered (closed the tab
-        // mid-prompt), re-surface the prompt(s) now so they can answer and
-        // resume the agent. Routed through the SAME path as a live
-        // tool_delegated event. Fire-and-forget — must not block the load.
-        // (Only the genuinely-cold branch reaches here; the in-memory-live
-        // branch above returns early, where prompts arrive over the stream.)
-        void dispatch(surfaceColdPendingCalls(conversationIdProp));
-        // Cold-reconnect: if the hydrated rows say the latest turn never
-        // reached a terminal status, the server may still be working on it
-        // (streams run detach_on_disconnect — a refresh never stops them).
-        // Ask the canonical /runtime surface, show the server-truth "still
-        // working" banner, follow its event stream to terminal, and refetch
-        // the finished message automatically. One owner-scoped status GET per
-        // cold open (no reliable client-side pre-gate exists — a just-started
-        // turn may have no committed observability rows yet). Fire-and-forget.
-        void dispatch(
-          reconnectServerOperation({
-            conversationId: conversationIdProp,
-            source: "cold-load",
-          }),
-        );
-      } catch (err) {
-        if (!ctrl.signal.aborted) setIsColdLoadingConversation(false);
-        if (loadedKeyRef.current === conversationIdProp) {
-          loadedKeyRef.current = null;
-        }
-        console.error("[ChatRoomClient] loadConversation failed", err);
-      }
-    })();
-
-    return () => {
-      ctrl.abort();
-    };
-  }, [
+  // THE canonical resume sequence lives in `useConversationResume` — the same
+  // hook every other surface uses to continue a conversation (Masterwork's
+  // Scout interview, …). Do not re-inline it here.
+  const { isResuming: isColdLoadingConversation } = useConversationResume({
+    conversationId: conversationIdProp ?? null,
     agentId,
-    conversationIdProp,
-    dispatch,
-    isInitializing,
-    authReady,
-    store,
     surfaceKey,
-  ]);
+    enabled: !isInitializing && authReady,
+    messageLimit: CHAT_INITIAL_MESSAGE_LIMIT,
+  });
 
   // ── Pending navigation → router.replace ─────────────────────────────────
   // Fork / retry / delete actions set pendingNavigation with the target
