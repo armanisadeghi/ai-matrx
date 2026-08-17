@@ -278,7 +278,7 @@
     {
       "target": "agent.slot_exemplar.reference_output",
       "reason": "Holds our own expiring URLs, but the only render path recovers the file_id first and renders <InlineMediaRef>, which mints fresh.",
-      "consumer": "features/admin/agent-slots/SlotTestBench.tsx:114",
+      "consumer": "features/admin/mandates/MandateTestBench.tsx:114",
       "open": true
     },
     {

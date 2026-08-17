@@ -317,7 +317,7 @@
       "snippet": "if (error) throw new Error(error.message);"
     },
     {
-      "file": "features/admin/agent-slots/service.ts",
+      "file": "features/admin/mandates/service.ts",
       "line": 486,
       "kind": "claims-deleted",
       "snippet": "if (!found) throw new Error(`Bench result ${resultId} was not found.`);"
@@ -647,31 +647,31 @@
       "snippet": "throw new Error(`Conversation not found: ${serverMessage}`);"
     },
     {
-      "file": "features/agents/slots/components/SlotOverrideEditor.tsx",
+      "file": "features/agents/mandates/components/MandateOverrideEditor.tsx",
       "line": 167,
       "kind": "claims-deleted",
       "snippet": "message: \"Agent not found, or you don't have access to it.\","
     },
     {
-      "file": "features/agents/slots/overrides.ts",
+      "file": "features/agents/mandates/overrides.ts",
       "line": 171,
       "kind": "claims-deleted",
       "snippet": "throw new Error(`agent slot \"${slotKey}\" not found — declare it server-side first`);"
     },
     {
-      "file": "features/agents/slots/service.server.ts",
+      "file": "features/agents/mandates/service.server.ts",
       "line": 43,
       "kind": "claims-deleted",
       "snippet": "`agent slot \"${slotKey}\" not found — it must be declared server-side and seeded (see agent-slots FEATURE.md)`,"
     },
     {
-      "file": "features/agents/slots/service.ts",
+      "file": "features/agents/mandates/service.ts",
       "line": 81,
       "kind": "claims-deleted",
       "snippet": "`agent slot \"${slotKey}\" not found — it must be declared server-side and seeded (see agent-slots FEATURE.md)`,"
     },
     {
-      "file": "features/agents/slots/service.ts",
+      "file": "features/agents/mandates/service.ts",
       "line": 204,
       "kind": "claims-deleted",
       "snippet": "`[agent-slots] slot \"${key}\" not found — it must be declared server-side and seeded (see agent-slots FEATURE.md)`,"

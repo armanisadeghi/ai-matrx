@@ -376,12 +376,12 @@ const matrxLintPlugin = {
                 type: 'problem',
                 docs: {
                     description:
-                        'Disallow raw multi-row agent.definition queries outside the canonical agent listing services. A raw list query blends mine/shared/org/public/system into one meaningless alphabetical dump and ignores the scope model — the recurring disease Arman banned on 2026-08-08 (THE CANONICAL-SELECTION LAW, common-docs/systems/agent-slots/FEATURE.md). By-id fetches (.eq/.in on "id", .single(), .maybeSingle()) and writes are allowed.',
+                        'Disallow raw multi-row agent.definition queries outside the canonical agent listing services. A raw list query blends mine/shared/org/public/system into one meaningless alphabetical dump and ignores the scope model — the recurring disease Arman banned on 2026-08-08 (THE CANONICAL-SELECTION LAW, common-docs/systems/mandates/FEATURE.md). By-id fetches (.eq/.in on "id", .single(), .maybeSingle()) and writes are allowed.',
                 },
                 schema: [],
                 messages: {
                     banned:
-                        'Raw agent.definition LIST query. Any UI listing agents for selection must use the canonical agent listing system: the Redux agent-definition slice (fetchAgentsListFull / fetchAgentsList + purpose-fit selectors — selectBuiltinAgents for admin/system surfaces, selectActiveAgents for user pickers) or the scoped agx_list_scoped RPC family (features/agents/browse/service.ts). By-id lookups are fine — filter with .eq("id", …) / .in("id", […]) or end with .single()/.maybeSingle(). See common-docs/systems/agent-slots/FEATURE.md § The two selection laws.',
+                        'Raw agent.definition LIST query. Any UI listing agents for selection must use the canonical agent listing system: the Redux agent-definition slice (fetchAgentsListFull / fetchAgentsList + purpose-fit selectors — selectBuiltinAgents for admin/system surfaces, selectActiveAgents for user pickers) or the scoped agx_list_scoped RPC family (features/agents/browse/service.ts). By-id lookups are fine — filter with .eq("id", …) / .in("id", […]) or end with .single()/.maybeSingle(). See common-docs/systems/mandates/FEATURE.md § The two selection laws.',
                 },
             },
             create(context) {
