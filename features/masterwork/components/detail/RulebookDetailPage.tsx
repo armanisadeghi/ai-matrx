@@ -97,11 +97,27 @@ function formatPages(pages: number[]): string {
  * quote could not be machine-verified says so here, because that is the one
  * thing the Expert must check by eye.
  */
+/** Seconds → "12:34" (or "1:02:34" past an hour) for recording time anchors. */
+function formatClock(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = String(s % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}
+
 function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
   const pages = sourceRef.source_pages?.length
     ? formatPages(sourceRef.source_pages)
     : sourceRef.pages
       ? `page ${sourceRef.pages}`
+      : null;
+  // The recording lane's anchor — where in the audio the expert said it.
+  const time =
+    sourceRef.time_range && Number.isFinite(sourceRef.time_range.start)
+      ? sourceRef.time_range.end != null
+        ? `at ${formatClock(sourceRef.time_range.start)}–${formatClock(sourceRef.time_range.end)}`
+        : `at ${formatClock(sourceRef.time_range.start)}`
       : null;
   const label = sourceRef.note ?? (sourceRef.interview ? "your interview" : "ingested");
 
@@ -131,6 +147,7 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
           <span>{label}</span>
         )}
         {pages ? <span>· {pages}</span> : null}
+        {time ? <span>· {time}</span> : null}
         {sourceRef.exemplar ? <span>· worked out from an example</span> : null}
         {sourceRef.approach ? (
           // The registry stamp — which Distillation Approach produced this rule.
@@ -150,6 +167,12 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
         <p className="text-amber-600 dark:text-amber-500">
           The wording above could not be matched word-for-word to the source —
           check it against the original before you approve this rule.
+        </p>
+      ) : null}
+      {sourceRef.confidence === "low" ? (
+        <p className="text-amber-600 dark:text-amber-500">
+          You only touched on this in passing — double-check it says what you
+          actually meant before approving.
         </p>
       ) : null}
     </div>
@@ -369,6 +392,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [interviewOpen, setInterviewOpen] = useState(
     searchParams.get("interview") === "1",
   );
+  // Composer seed for the Scout panel — set when a recording distillation
+  // reports gaps and the Expert chooses "Interview me about the gaps".
+  const [interviewSeed, setInterviewSeed] = useState<string | undefined>();
   const userId = useAppSelector(selectUserId);
 
   const reloadRulebook = useCallback(async () => {
@@ -928,6 +954,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             })
             .catch(() => undefined);
         }}
+        onFollowupSeed={(seed) => {
+          setInterviewSeed(seed);
+          setInterviewOpen(true);
+        }}
       />
       {canEdit ? (
         <ScoutInterviewPanel
@@ -935,6 +965,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           open={interviewOpen}
           onOpenChange={setInterviewOpen}
           onRulebookChanged={() => void reloadRulebook()}
+          seedText={interviewSeed}
         />
       ) : null}
     </div>

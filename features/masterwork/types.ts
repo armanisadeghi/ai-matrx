@@ -34,6 +34,17 @@ export interface RuleSourceRef {
   /** Chunk index in the ingestion run that produced this rule. */
   chunk?: number;
   /**
+   * Time anchor for a rule distilled from a RECORDING (the monologue lane):
+   * the seconds range of the transcript portion the rule came from. `end`
+   * is null when the transcription carried no end offset.
+   */
+  time_range?: { start: number; end?: number | null };
+  /**
+   * The monologue distiller's read on how plainly the expert stated the
+   * rule — "low" means an inference from an aside the Expert should confirm.
+   */
+  confidence?: "high" | "medium" | "low";
+  /**
    * The Distillation Approach that produced this rule — a `platform.approach`
    * key (interview / source / exemplar / file / …), stamped by every lane
    * through the one shared rule builder. Additive; older rules lack it.

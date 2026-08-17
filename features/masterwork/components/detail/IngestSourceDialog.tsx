@@ -77,6 +77,11 @@ interface IngestSummary {
   added: number;
   duplicatesSkipped: number;
   quotesUnverified: number;
+  /**
+   * Recording (monologue) lane only: a ready composer seed listing what the
+   * expert touched but never explained — offered as "interview me about it".
+   */
+  followupSeed: string | null;
 }
 
 function parseIngestSummary(raw: unknown): IngestSummary | null {
@@ -89,6 +94,10 @@ function parseIngestSummary(raw: unknown): IngestSummary | null {
     added: Number(data.added ?? 0),
     duplicatesSkipped: Number(data.duplicates_skipped ?? 0),
     quotesUnverified: Number(data.quotes_unverified ?? 0),
+    followupSeed:
+      typeof data.followup_seed === "string" && data.followup_seed.trim()
+        ? data.followup_seed
+        : null,
   };
 }
 
@@ -135,11 +144,18 @@ export function IngestSourceDialog({
   onOpenChange,
   rulebook,
   onIngested,
+  onFollowupSeed,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rulebook: Rulebook;
   onIngested?: () => void;
+  /**
+   * The recording lane found things the expert didn't fully explain and the
+   * user chose to be interviewed about them — the parent opens the Scout
+   * interview panel with this composer seed.
+   */
+  onFollowupSeed?: (seed: string) => void;
 }) {
   const { upload } = useFileUpload();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -282,15 +298,37 @@ export function IngestSourceDialog({
         {summary ? (
           <div className="space-y-3">
             <p className="text-sm text-foreground">{summary}</p>
-            <Button
-              size="sm"
-              onClick={() => {
-                reset();
-                onOpenChange(false);
-              }}
-            >
-              Review the drafts
-            </Button>
+            {run.result?.followupSeed ? (
+              <p className="text-sm text-muted-foreground">
+                The recording also touched on a few things without fully
+                explaining them — want the interviewer to ask you about those?
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                onClick={() => {
+                  reset();
+                  onOpenChange(false);
+                }}
+              >
+                Review the drafts
+              </Button>
+              {run.result?.followupSeed && onFollowupSeed ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const seed = run.result?.followupSeed;
+                    reset();
+                    onOpenChange(false);
+                    if (seed) onFollowupSeed(seed);
+                  }}
+                >
+                  Interview me about the gaps
+                </Button>
+              ) : null}
+            </div>
           </div>
         ) : running || progress.length > 0 ? (
           <div className="space-y-2">

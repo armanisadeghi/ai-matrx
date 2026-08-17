@@ -27,8 +27,19 @@
   for you" from the knowledge answer, row's `intake_query` routes); every lane stamps
   `source_ref.approach` through `build_draft_rules` / the `rulebook` tool; RuleProvenance shows
   it. Add-an-Approach-with-an-existing-lane = a row, zero code — contract in both FEATURE.mds.
-  ⚠️ NOTE for the concurrent monologue-distiller session: give your new lane a
-  `platform.approach` row + pass its key as `approach` so its rules stamp correctly.
+- **The monologue (recording) lane is real (2026-08-17)** — "just talk for an hour, upload
+  the audio" no longer delegates to the text lane. Audio/video → timed transcript chunks →
+  mandate `masterwork.monologue_distiller` (new DB agent purpose-built for rambling spoken
+  monologue; per-rule `confidence`, emits `gaps`) → drafts anchored with
+  `source_ref.time_range` (start/end seconds) + `approach: "monologue"` (registered
+  `platform.approach` row, enabled=false — the entry point stays the file card);
+  RuleProvenance renders "at 12:34–15:02" and flags low-confidence rules. Gaps dedupe into
+  `masterwork_ingest_complete.followup_seed`; the ingest dialog offers "Interview me about
+  the gaps" → the Scout panel opens seeded. Transcript cap 320 chunks (long sessions grind
+  under bounded concurrency with per-portion progress, never refuse; matrx-batch is the
+  noted route if that cap is ever hit for real). Verified in-process against the live DB;
+  document ingest still runs the source distiller. Details: aidream
+  `services/distillation/FEATURE.md`.
 - **The full loop is LIVE on `/masterwork`:** guided intake → Scout interview
   (`masterwork_scout` `4a0b2f8e-…`, `rulebook` tool) or source/exemplar/file ingest → Expert
   review → Build → run in place → "What did it get wrong?" → Audition → gaps become drafts.
