@@ -117,6 +117,16 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
           >
             {label}
           </Link>
+        ) : sourceRef.conversation_id ? (
+          // THE DOOR LAW: the interview is a real conversation with an id —
+          // "your interview" must open it, never sit as dead prose.
+          <Link
+            href={`/chat/${sourceRef.conversation_id}`}
+            target="_blank"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            {label}
+          </Link>
         ) : (
           <span>{label}</span>
         )}
