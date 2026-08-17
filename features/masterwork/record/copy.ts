@@ -49,12 +49,13 @@ export function contributionAgentPayload(
   rulebookName: string,
 ): AgentPayloadInput {
   return {
-    kind: "expert_contribution",
-    label: `${rulebookName} — something the Expert said`,
+    kind: "expert-contribution",
     location: RECORD_LOCATION,
+    description: `One thing the Expert said while building the Rulebook "${rulebookName}".`,
     summary: contributionHuman(c),
     data: c,
-  } as AgentPayloadInput;
+    attributes: { rulebook: rulebookName, contribution_kind: c.kind },
+  };
 }
 
 export function corpusAgentPayload(
@@ -62,10 +63,17 @@ export function corpusAgentPayload(
   rulebookName: string,
 ): AgentPayloadInput {
   return {
-    kind: "expert_corpus",
-    label: `${rulebookName} — everything the Expert has said`,
+    kind: "expert-corpus",
     location: RECORD_LOCATION,
+    description: `Everything the Expert has contributed to the Rulebook "${rulebookName}" — every interview turn, uploaded source, and recording, oldest first.`,
     summary: corpusHuman(corpus, rulebookName),
     data: corpus,
-  } as AgentPayloadInput;
+    attributes: {
+      rulebook: rulebookName,
+      rulebook_id: corpus.rulebookId,
+      contributions: corpus.contributions.length,
+      interviews: corpus.interviews.length,
+      total_chars: corpus.totalChars,
+    },
+  };
 }
