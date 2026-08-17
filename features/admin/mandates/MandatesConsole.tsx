@@ -42,7 +42,7 @@ import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRu
 import {
   MANDATES_SURFACE_NAME,
   AGENT_MANDATES_WRITE_TARGETS,
-  createSlotsScope,
+  createMandatesScope,
   type MandateContract,
   type MandateDetail,
   type MandateExemplar,
@@ -339,29 +339,29 @@ export function MandatesConsole() {
           user_input: liveBench.user_input,
         }
       : undefined;
-    return createSlotsScope({
-      slot_count: rows.length,
+    return createMandatesScope({
+      mandate_count: rows.length,
       mandates_summary: summaries,
       health_summary: health,
-      unhealthy_slots: summaries.filter((s) => s.health !== "ok"),
+      unhealthy_mandates: summaries.filter((s) => s.health !== "ok"),
       system_agent_count: agentOptions.length,
-      selected_slot_id: selectedRow?.id,
-      selected_slot:
+      selected_mandate_id: selectedRow?.id,
+      selected_mandate:
         selectedRow && data ? toMandateDetail(selectedRow, data) : undefined,
-      selected_slot_health: selectedRow?.health,
-      selected_slot_overrides: overrides,
-      selected_slot_contract: contract,
-      selected_slot_exemplars: exemplars,
-      slot_exemplar_draft: exemplarDraft,
+      selected_mandate_health: selectedRow?.health,
+      selected_mandate_overrides: overrides,
+      selected_mandate_contract: contract,
+      selected_mandate_exemplars: exemplars,
+      mandate_exemplar_draft: exemplarDraft,
       selection: window.getSelection()?.toString() || undefined,
     });
   };
 
   // ── Surface write handlers — the console's layer ──────────────────────────
   //
-  // `select_slot` is implemented HERE because this component owns `selectedId`
+  // `select_mandate` is implemented HERE because this component owns `selectedId`
   // AND mounts the provider (the `getWriteHandlers` half of the seam).
-  // `slot_exemplar_draft` gets a base REFUSAL here and its live implementation
+  // `mandate_exemplar_draft` gets a base REFUSAL here and its live implementation
   // in `MandateTestBench` via `useSurfaceWriteHandlers`, which `resolveHandlers`
   // merges OVER this layer whenever a mandate workbench is open. These entries
   // only ever run when no bench is mounted, and their whole job is to say so
@@ -382,7 +382,7 @@ export function MandatesConsole() {
     [AGENT_MANDATES_WRITE_TARGETS.selectMandate]: (value: unknown) => {
       if (typeof value !== "string" || value.trim() === "") {
         throw new Error(
-          "select_slot takes a non-empty string — a mandate's `id` (UUID) or its `slot_key`, both of which are in `mandates_summary`.",
+          "select_mandate takes a non-empty string — a mandate's `id` (UUID) or its `slot_key`, both of which are in `mandates_summary`.",
         );
       }
       const key = value.trim();
@@ -418,7 +418,7 @@ export function MandatesConsole() {
     },
     [AGENT_MANDATES_WRITE_TARGETS.exemplarDraft]: () => {
       throw new Error(
-        "No mandate workbench is open, so there is no test-case composer to stage into. Open a mandate first with `select_slot` — and do it in an EARLIER turn: handlers are resolved before any of them are applied, so a draft sent alongside the very first select_slot still lands here.",
+        "No mandate workbench is open, so there is no test-case composer to stage into. Open a mandate first with `select_mandate` — and do it in an EARLIER turn: handlers are resolved before any of them are applied, so a draft sent alongside the very first select_mandate still lands here.",
       );
     },
   });

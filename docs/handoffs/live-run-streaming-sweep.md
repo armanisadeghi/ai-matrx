@@ -54,7 +54,7 @@ Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L*
   hook-local run list.
 - Reference for a class-B/E migration done whole:
   `features/podcasts/generator/useEpisodeTitleOptions.ts` (2026-08-11) — open
-  the window BEFORE the launch, run the slot through `useLiveAgentRun`, and
+  the window BEFORE the launch, run the mandate through `useLiveAgentRun`, and
   let the kind component carry the action so the window is the primary
   surface rather than a preview of one.
 - Reference implementation for class D done right (generalized past crawls in
@@ -117,7 +117,7 @@ carry no agent-run import at all. That is the signature to search on next time.
 | Surface | Was | Now |
 |---|---|---|
 | `features/pdf/scanner/{processing.ts,useScanSaveFlow.ts,components/ProcessingView.tsx}` — `/tools/scanner` | Step 3 "AI cleanup" = 2s DB poll for per-page cleaned_text COUNTS + a progress bar. The multi-LLM step, the expensive one, showed a percentage while the model's rewrite of the user's own scan stayed invisible. | The poll pulls each page's cleaned TEXT once it lands (`fetchCleanedPageText`, only pages that newly turned cleaned — one small select per page, never the whole doc per tick) and the step renders it in an auto-following pane. Counter + ledger stay, **under** the output. |
-| `features/transcription-cleanup/components/CleanupPad.tsx` — `/transcripts/cleanup` | "record → auto-clean → refine with ANY number of agents" fires up to 4 runs at once, but custom slots are tab pills (one visible) and an embedded host can hide Clean entirely. Every hidden pass streamed into a pane nobody could see, behind a 12px tab spinner. | A pass whose pane is not visible floats in `LiveRunWindow` — one per slot, stable `instanceId` so a re-run rebinds instead of stacking. Switching to a pass's own tab closes its window (the pane is the better home when it is on screen). |
+| `features/transcription-cleanup/components/CleanupPad.tsx` — `/transcripts/cleanup` | "record → auto-clean → refine with ANY number of agents" fires up to 4 runs at once, but custom mandates are tab pills (one visible) and an embedded host can hide Clean entirely. Every hidden pass streamed into a pane nobody could see, behind a 12px tab spinner. | A pass whose pane is not visible floats in `LiveRunWindow` — one per mandate, stable `instanceId` so a re-run rebinds instead of stacking. Switching to a pass's own tab closes its window (the pane is the better home when it is on screen). |
 | `features/transcript-studio/redux/{runCleaningPass,runConceptPass,runModulePass,cleanRecording}.thunk.ts` — `/transcripts/studio`, `/transcripts/scribe` | All four passes launched `displayMode: "background"` and discarded the run; the column header spun a `RefreshCw` and segments appeared only when the whole pass finished. | Each thunk binds its conversation at `onConversationCreated` (`redux/liveRunWatch.ts`) and floats `liveRunWindow` for user-initiated causes; interval passes bind without stealing the screen and stay one click away via `<WatchRunButton>`. Batch re-clean narrates "Cleaning recording 2 of 7" into ONE window. Live-verified on a real session. |
 | `features/education/{study/components/SessionDetailView.tsx,study/reviewRun.ts,tutor/lanes/reviewSession.ts}` — `/education/flashcards/sessions/[id]` | The holistic coach review was launched fire-and-forget on drill completion with its identity discarded; the detail page polled `getSession` every 3s for up to 2 minutes waiting for `session_review`. | The lane stamps a DURABLE handle (`metadata.ai.reviewRun` — conversationId + terminal status) the instant the conversation exists, and floats `LiveRunWindow` when the caller owns no window. The page reattaches to a live handle (`reconnectServerOperation`, cold-load), floats it, and reads the row once on terminal. Poll deleted; a pending review with no live run offers "Write my review" instead of an endless spinner. |
 | `features/transcript-studio/{service/studioService.ts,redux/{liveRunWatch,reattachStudioRun,thunks}.ts}` + `features/transcription-cleanup/{hooks/useCleanupSession.ts,components/CleanupPad.tsx}` — `/transcripts/studio`, `/transcripts/scribe`, `/transcripts/cleanup` | **Class D, both transcript surfaces.** Run identity lived only in browser memory: nothing ever loaded `studio_runs`, the studio bound its conversation in Redux alone, and the cleanup pad wrote its run row at COMPLETION — so a reload mid-pass lost the column status, the watch door, and (in the pad) the output itself. | One shared primitive, `redux/reattachStudioRun.ts` (the `useSiteCommandRun` shape): the row is opened at LAUNCH and stamped with its conversation the moment one exists (`bindAgentRunConversation`), `listAgentRuns` + `fetchAgentRunsThunk` hydrate on load, and every row still running is rejoined via `reconnectServerOperation` (cold-load) into a floating `LiveRunWindow` that narrates real stages and hands back the finished text. The pad re-applies it to the container the run recorded in `metadata.target`; every row settles from SERVER truth, never a guess. A finished run's door opens its conversation instead of an empty live window. Live-verified end to end on `/transcripts/cleanup` (reload mid-run → rejoin → output restored → row `complete`) and `/transcripts/studio` (doors present on a cold load). |
@@ -259,7 +259,7 @@ Both cards ship. **SEO package**: new `seo_package` kind + `SeoPackageBlock`.
 **Slide deck**: the EXISTING `presentation_deck` kind — no new kind; the agent
 was rewritten to emit the envelope (schema-bounded: `theme.preset`,
 string-valued `extra`, no `stat` layouts) and the card stopped hand-rendering
-`<Slideshow>`. Each runs `useLiveAgentRun({ slotKey })` into
+`<Slideshow>`. Each runs `useLiveAgentRun({ mandateKey })` into
 `LiveRunWindowController` and replays its persisted asset through
 `KindInstanceRender`. See `features/research/FEATURE.md`.
 
@@ -281,7 +281,7 @@ All three generators run through `useLiveAgentRun` into the floating
 - **Articles (blog / show notes)** — **DONE 2026-08-11.** `useEpisodeArticles` runs on
   `useLiveAgentRun` (ONE hook instance per kind — blog and show notes can run at the
   same time, and a single hook holds a single conversation), floats one window per
-  episode+kind, and resolves the slot inside the canonical launcher. Live-verified on a
+  episode+kind, and resolves the mandate inside the canonical launcher. Live-verified on a
   real episode: window opens on click, phase moves, the article saves, the output
   survives completion.
   🚨 **The "plain markdown, no kind" verdict recorded here was WRONG at the wire.**
@@ -433,13 +433,13 @@ Each of the six was read in code. Verdicts:
 |---|---|
 | Podcast articles (blog / show notes) — `useEpisodeArticles.ts` | **Text — no kind.** The agent returns markdown, already held in `drafts`. Fix is the §6 class-B migration plus `MarkdownStream`, nothing more. |
 | Flashcard quiz items — `makeQuizItems.ts` | **Not applicable — removed from the sweep.** It is the optional FALLBACK distractor source for sets too small to have sibling cards; the result feeds `buildQuizQuestions` and is never rendered. Genuinely headless plumbing. |
-| Research slide deck — `OutputsStudio.tsx` | **DONE 2026-08-11.** The kind already existed, so this was a MIGRATION: agent v3 emits the `presentation_deck` / `presentation_slide` envelope (schema-bounded — `theme.preset`, string-valued `extra`, no `stat` layouts, because `extra` is `record<string>`), the slot declares `output_kind` and is `use_latest` so no repin was needed, and the card runs live into the floating window. Verified on a real run: 12 slides, `Minimal` preset, no page shift. |
+| Research slide deck — `OutputsStudio.tsx` | **DONE 2026-08-11.** The kind already existed, so this was a MIGRATION: agent v3 emits the `presentation_deck` / `presentation_slide` envelope (schema-bounded — `theme.preset`, string-valued `extra`, no `stat` layouts, because `extra` is `record<string>`), the mandate declares `output_kind` and is `use_latest` so no rebind was needed, and the card runs live into the floating window. Verified on a real run: 12 slides, `Minimal` preset, no page shift. |
 | Research SEO package — `OutputsStudio.tsx:1215` | **DONE 2026-08-11.** Kind `seo_package` (+ child `faq_item`) authored, activated through `content_ir.set_kind_activation`, and consumed. The character-limit UX moved onto the kind component and gained a VERDICT (too long / too short / inside the window) instead of a bare count. |
 | Podcast chapters — `useEpisodeChapters.ts:49` | **DONE 2026-08-11** — `media_chapters` kind, `timeline` rejected as a near-duplicate. See §5. |
 | Podcast title options — `useEpisodeTitleOptions.ts:70` | **DONE 2026-08-11.** Kind `episode_title_options` shipped end to end (schema + component + dual gate, agent v4, live posture, real-run verification). It went further than the precedent: the apply is a surface WRITE, not an agent launch, and the target is a component constant rather than payload data — see `features/content-ir/FEATURE.md`. |
 
 One focused session remains as a chip (podcast chapters); **title options, the
 SEO package, and the slide deck all shipped 2026-08-11**. Each carries the full end-to-end contract: schema, agent
-instruction rewrite via `agent_author`, every usage repinned, kind + component +
+instruction rewrite via `agent_author`, every usage rebound, kind + component +
 dual-gate example, live posture, real end-to-end test. **Do not start one of
 these inline in a sweep session** — that is how a half-authored kind ships.

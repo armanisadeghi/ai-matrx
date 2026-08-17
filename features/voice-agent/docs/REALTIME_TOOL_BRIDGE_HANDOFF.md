@@ -111,7 +111,7 @@ additions / clarifications you need to implement them.
 **Resolve uses the same code path the turn-based agent path uses.** Do
 not fork. The function the turn-based agent runner calls to build its
 `tools` array is `tool_resolve_for_request` (or similar — find it by
-greping for where `client_tools` / `addedToolIds` are turned into
+grebindg for where `client_tools` / `addedToolIds` are turned into
 runtime specs). Wrap that function. The only difference vs. the
 turn-based caller is the output shape — instead of returning Python
 ToolSpec objects, return the JSON-Schema-shaped objects xAI expects:

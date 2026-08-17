@@ -222,7 +222,7 @@ algorithm layer: `insights-assists-producer.ts` sweeps three findings per site
 — **money-page decay** (`gsc_perf_class_movers` page/money/loss), **CTR gap**
 (`gsc_perf_ctr_gap`, page dimension), **unclassified backlog**
 (`gsc_perf_class_summary`) — and emits capped, deduped assists with REAL
-actions: the page findings launch the **`seo.page_analyzer` agent slot**
+actions: the page findings launch the **`seo.page_analyzer` mandate**
 pre-filled with the code-compressed finding (window, class, clicks/Δ, actual
 vs expected CTR — pre-fill only, the user sends); the classification finding
 navigates to the classification workbench (`?view=classification`, filtered
@@ -325,7 +325,7 @@ class into it (`Classify →` / `Review →`,
     shown before anything applies; apply routes through
     `gsc_set_keyword_class` server-side (one mapping, one home).
   - **Classify with AI** — the EXISTING universal classifier
-    (`seo.keyword_classifier` slot via aidream
+    (`seo.keyword_classifier` mandate via aidream
     `POST /seo/keywords/classify`, **20-id chunks with a 95s header budget**: the
     route is synchronous and a 40-keyword batch measured 87.8s live, while
     Cloudflare cuts a request at ~100s — see `lib/api/FEATURE.md` § Long
@@ -346,7 +346,7 @@ class into it (`Classify →` / `Review →`,
     classification — comparison-style clues ("vs", "before and after")
     don't fit the four classes and await a sub-class vocabulary ruling.
 - The AI interview/wizard is a SEPARATE program (aidream
-  `docs/handoffs/content-ir-agent-slots.md`); this surface is the manual
+  `docs/handoffs/content-ir-slots.md`); this surface is the manual
   truth layer beside it. Never fork a second write path for classes —
   extend `gsc_set_keyword_class`.
 
@@ -551,14 +551,14 @@ its dismiss-layer race — the input "flashed and disappeared").
   demotion) behind a visible, clearable alias-filter banner. Verified against
   IOPBM and the generic Data Destruction alias.
 - 2026-08-11 — **"Classify with AI" never worked.** The `seo.keyword_classifier`
-  slot refused its pinned agent on every call (agent declared no structured
-  `output_schema`, slot contract requires the `results` key), aidream answered
+  mandate refused its pinned agent on every call (agent declared no structured
+  `output_schema`, mandate contract requires the `results` key), aidream answered
   502, and Cloudflare replaced that response with a CORS-less error page — so the
   browser could only say _"AI classification failed — Failed to fetch"_. Fixed at
   three layers: the agent got a real output schema (verified live), aidream now
   sends app failures as 500 (`api/FEATURE.md`), and this client sends one
   server batch per request with a 90s header budget. Same repair applied to the
-  Topic Assigner and Site Strategy Interviewer slots, which were dead the same way.
+  Topic Assigner and Site Strategy Interviewer mandates, which were dead the same way.
 - 2026-08-11 — Portfolio truth + actions: `web.v_site_kpis` now reads the
   canonical `seo.search_performance_daily` spine through
   `seo.gsc_perf_site_portfolio`, eliminating the false stale July 26 cards
@@ -575,7 +575,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   that filters the keyword table behind (`onInspectAlias` → table search).
 - 2026-08-08 — Assists wired (§ Assists): insight findings (money decay /
   CTR gap / unclassified backlog) emit deduped one-click assists — page
-  findings launch the `seo.page_analyzer` slot pre-filled with the finding,
+  findings launch the `seo.page_analyzer` mandate pre-filled with the finding,
   classification navigates to the workbench/intake. Inline `GscAssistStrip`
   under the health banner. Live-verified on datadestruction (CTR gap →
   agent window pre-filled), vasaro (thresholds correctly withhold classify
@@ -597,7 +597,7 @@ its dismiss-layer race — the input "flashed and disappeared").
   (`seo.keyword_class_rule` + 11 clue templates, preview-prune-apply,
   opt-in auto-apply with unconfirmed flagging), CSV + Univer-workbook
   round-trip import with server diff (`gsc_class_import`), Classify-with-AI
-  batch over the universal classifier slot, floating window panel
+  batch over the universal classifier mandate, floating window panel
   (`keywordClassificationWindow`) + props-based workspace. Live-verified on
   datadestruction.com incl. a real 2-keyword AI run moving the scoreboard.
 - 2026-08-08 — **Classification UI shipped** (§ Classification UI):
@@ -640,8 +640,8 @@ its dismiss-layer race — the input "flashed and disappeared").
   (seo_gsc_class_rpcs.sql) + Quality/Shifts/Juice insight views
   (ClassInsights.tsx); Insights default is now Traffic quality. Classifier
   coverage is the known bottleneck (~1.2k of 136k keywords classified) —
-  the agent-slot system for AI classification is written up in
-  aidream/docs/handoffs/content-ir-agent-slots.md.
+  the agent-mandate system for AI classification is written up in
+  aidream/docs/handoffs/content-ir-slots.md.
 - 2026-08-07 — Insights tab: ctr_gap / cannibalization / trend algorithm
   RPCs (seo_gsc_insight_rpcs.sql, applied + ledgered) + InsightsTab with
   four views, watch columns, drills, copy. Throughput: nightly backfill

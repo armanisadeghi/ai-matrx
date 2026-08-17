@@ -1,9 +1,9 @@
 # Site Intake Wizard — the first-run GSC interview
 
-**Status:** Live (2026-08-08). **Route:** `/marketing/brands/[brandId]/sites/[siteId]/settings?view=intake` (the old `/intake` URL redirects here). **Server:** `aidream/services/seo/site_intake.py` (`POST /seo/sites/{site_id}/intake/run` + `/intake/apply`). **Design of record:** aidream `docs/handoffs/content-ir-agent-slots.md` item 7 + `common-docs/systems/agent-slots/FEATURE.md`.
+**Status:** Live (2026-08-08). **Route:** `/marketing/brands/[brandId]/sites/[siteId]/settings?view=intake` (the old `/intake` URL redirects here). **Server:** `aidream/services/seo/site_intake.py` (`POST /seo/sites/{site_id}/intake/run` + `/intake/apply`). **Design of record:** aidream `docs/handoffs/content-ir-slots.md` item 7 + `common-docs/systems/mandates/FEATURE.md`.
 
 The platform vision in miniature: the SEO expert's doctrine lives in the
-intake agent (`seo.site_intake` agent slot, content-ir kinds
+intake agent (`seo.site_intake` mandate, content-ir kinds
 `gsc_site_intake_bundle` → `gsc_site_intake_proposal`, both dual-gated); the
 AI reads four trajectory periods of the site's real GSC history; the human
 answers ONLY what data cannot answer. Every confirmed ruling persists as

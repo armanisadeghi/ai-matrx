@@ -58,7 +58,7 @@ grounding in resources.**
 
 > "if some already exist, don't recreate things that we already have — let's focus on either
 > integrating them properly so they're easily and clearly seen here, or let's build the ones
-> that we need and make sure we do it correctly through the canonical agent slot system."
+> that we need and make sure we do it correctly through the canonical mandate system."
 
 Earlier (2026-07, still binding): *"all we wanna do is we wanna create an agent at each of
 those steps"* · *"our agents have inputs that they take, so variables… or they can output a
@@ -72,17 +72,17 @@ research linking: start with the final report (the "Document"), user picks the t
 
 - **Feature truth:** [`features/marketing/content-plan/FEATURE.md`](../../features/marketing/content-plan/FEATURE.md)
   (client) · `aidream/services/content_plan/FEATURE.md` (server). Read both before touching this.
-- **The AI runner:** `features/marketing/content-plan/setup/ai.ts` — slot constants, output
+- **The AI runner:** `features/marketing/content-plan/setup/ai.ts` — mandate constants, output
   coercion, variable builders, `useSetupAgents`; runs through `useLiveAgentRun` so every step
   streams into `<LiveRunDisplay>`.
-- **Agent slots (canonical, verified live 2026-08-13):** `agent.slot_definition` holds all seven
-  `content_plan.*` slots, every one `is_enabled` with a `default_agent_id` bound. Resolution is
-  `resolveAgentSlot` (`features/agents/slots/service.ts`) — platform default overlaid with the
-  user's `agent.slot_binding`; an unseeded/disabled/version-pinned slot THROWS with the reason and
+- **Agent mandates (canonical, verified live 2026-08-13):** `agent.slot_definition` holds all seven
+  `content_plan.*` mandates, every one `is_enabled` with a `default_agent_id` bound. Resolution is
+  `resolveMandate` (`features/agents/mandates/service.ts`) — platform default overlaid with the
+  user's `agent.slot_binding`; an unseeded/disabled/version-pinned mandate THROWS with the reason and
   never falls back. Server declarations: aidream `agent_slots/client_slots.py`. **Never a raw UUID
-  in a component.** Rebind UI: `/agents/slots` (user), `/administration/agents/slots` (admin).
+  in a component.** Rebind UI: `/agents/mandates` (user), `/administration/agents/mandates` (admin).
   **Known platform gap:** `launchAgentExecution` consumers — content-plan named explicitly in
-  `features/agents/slots/FEATURE.md` — apply a binding's *agent* but not its `config_overrides`,
+  `features/agents/mandates/FEATURE.md` — apply a binding's *agent* but not its `config_overrides`,
   so a model/thinking-only override is silently inert here.
 - **Where each agent RUNS is split, and the split is easy to get wrong.** Server-run since
   2026-08-11 (aidream `services/content_plan/setup_agents.py`, routes
@@ -158,7 +158,7 @@ research linking: start with the final report (the "Document"), user picks the t
    and feed ONE shared `reference_material` block into every `content_plan.*` run. URL → text
    needs a fetch path: prefer an existing aidream scrape/extract endpoint over anything new.
 4. **Names + information, not names alone.** `family_namer` returns bare `names`; Arman wants
-   "some information about them as well." Extend the slot's output contract to `{name, note}`
+   "some information about them as well." Extend the mandate's output contract to `{name, note}`
    (agx agent + `coerceFamilyNames` + `required_output_keys` in `client_slots.py`), stage the
    note as the child node's `brief` seed so it persists on commit. Keep coercion
    backward-tolerant (plain strings still accepted).
@@ -196,7 +196,7 @@ research linking: start with the final report (the "Document"), user picks the t
 
 ## Done
 
-- **Seven step agents, live and slot-bound** — shape planner, family namer (also count-only
+- **Seven step agents, live and mandate-bound** — shape planner, family namer (also count-only
   topics), entity curator, entity attacher, keyword strategist, plan reviewer, brief writer, plus
   "Build with AI" which chains shape → names → topics in one go. Verified 2026-08-13: **no Setup
   step is missing its AI**, and **nothing an agent produces reaches the plan without an explicit
@@ -231,7 +231,7 @@ research linking: start with the final report (the "Document"), user picks the t
   stay RED, pinned by `lib/diagnostics/errorTierRules.test.ts`.
 - **Two agents with no runtime consumer, surfaced for a human ruling** — Keyword Binder
   `8ffb091c-dccf-4550-a14f-95807fd96b95`, Brief Writer `f9789816-91b9-4e64-a38d-aa4d2a8127be`.
-  Both were superseded by the slot-bound step agents above and are referenced by nothing.
+  Both were superseded by the mandate-bound step agents above and are referenced by nothing.
   **Do not delete them on your own authority**: per the unfinished-work alarm
   (`common-docs/policies/unfinished-work-alarm.md`), a purpose-built artifact with no consumers
   is unfinished work until Arman names it dead in writing. Leaving them dormant costs nothing.

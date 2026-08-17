@@ -207,7 +207,7 @@ export interface VariableDefinition {
   };
 }
 
-/** Context slot on an agent (stored in agents.context_slots) */
+/** Context mandate on an agent (stored in agents.context_slots) */
 export interface ContextSlot {
   key: string;
   type: 'text' | 'file_url' | 'json' | 'image_url';

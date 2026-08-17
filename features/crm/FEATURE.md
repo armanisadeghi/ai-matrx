@@ -297,12 +297,12 @@ handlers/contact.ts`), not per-surface wiring: a CRM that only captures from
   any model runs — the user reviews a filled form, not a spinner. The parser is
   hints only; the agent corrects it against the raw selection.
 - **The save is governed and has no client fallback.** `SaveContactFromSelection
-Dialog` runs the `crm.save_contact` agent slot → `data_action(operation=
+Dialog` runs the `crm.save_contact` mandate → `data_action(operation=
 "resolve_contact")` → the party resolver (canonicalize + dedupe on
   email/phone/domain/platform ids + merge lineage). **Never a raw insert:** the
   raw `database` tool is blocked from the `crm` schema server-side, and a direct
   `.insert()` would manufacture exactly the duplicates `/crm/duplicates` exists
-  to clean up. An unresolvable slot disables the save and says why — no
+  to clean up. An unresolvable mandate disables the save and says why — no
   hardcoded agent id, ever.
 - The run **floats** in the live-run window (never a spinner) and the result is a
   **door**: "Open contact" → `/crm/[id]`, and it says plainly when it matched an
@@ -313,7 +313,7 @@ Dialog` runs the `crm.save_contact` agent slot → `data_action(operation=
   query/get/count/update. The only genuinely uncovered piece is linking a party
   to another entity — that belongs to the associations system, not a bespoke CRM
   tool, and forking one here would be the defect.
-- **Server halves:** agent `CRM Contact Saver` (`d9607d65`), slot declared in
+- **Server halves:** agent `CRM Contact Saver` (`d9607d65`), mandate declared in
   aidream `services/agent_slots/client_slots.py`. **Live status: blocked on an
   aidream deploy — see D192 in `FOUND_DEFECTS.md`.**
 

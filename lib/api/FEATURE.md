@@ -173,7 +173,7 @@ pins the real 2026-07-25 GSC payload end-to-end.
 
 `callApi` defaults to **15s to headers / 30s total**. A route that waits on a
 provider call inside the request (the SEO keyword classifier, keyword research,
-agent-slot bench runs) blows both — the caller MUST pass `connectTimeoutMs`
+agent-mandate bench runs) blows both — the caller MUST pass `connectTimeoutMs`
 (and `totalTimeoutMs: null`). Exemplar: `SEO_COMPUTE_CONNECT_TIMEOUT_MS` in
 [`features/marketing/search-console/data-classification.ts`](../../features/marketing/search-console/data-classification.ts).
 
@@ -188,7 +188,7 @@ arrived.** Cloudflare replaces an origin 502/504 (and its own 524) with a
 branded error page carrying **no CORS headers**, so the browser rejects a
 response the server really sent and `fetch` throws `TypeError`. Verified
 2026-08-11: `POST /seo/keywords/classify` answered 502 with
-`{"error":"keyword_classify_failed", …}` naming a broken agent-slot pin; the FE
+`{"error":"keyword_classify_failed", …}` naming a broken agent-mandate pin; the FE
 could only show "AI classification failed — Failed to fetch". Before blaming
 the network, **read the server log for that route** — and fix the status at the
 source (aidream `errors.py` `wire_status()` now downgrades app-raised 502/504

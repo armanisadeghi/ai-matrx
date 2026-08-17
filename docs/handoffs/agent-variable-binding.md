@@ -12,30 +12,30 @@ vision: [/Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FE
 nine-scenario matrix, the mapping vocabulary, the blocking rules, and Arman's rulings. Read it
 first. This handoff is only the work order.
 
-**This is the second half of Agent Slots, not a separate feature.** The other half —
-*which* agent runs a step — is `common-docs/systems/agent-slots/FEATURE.md`, which carries
+**This is the second half of Mandates, not a separate feature.** The other half —
+*which* agent runs a step — is `common-docs/systems/mandates/FEATURE.md`, which carries
 **THE UNIVERSAL LAW** (every repo, every package and sub-package, every surface; both the agent id
 AND its definition) and **the exception policy** (Arman's written approval only; exactly one
 exception exists — the conversation labeler). The cross-repo worklist of everything still
-non-conforming is `common-docs/systems/agent-slots/ROLLOUT.md`; the sibling work order is
-`aidream/docs/handoffs/content-ir-agent-slots.md`. These two handoffs share the admin console, the
+non-conforming is `common-docs/systems/mandates/ROLLOUT.md`; the sibling work order is
+`aidream/docs/handoffs/content-ir-slots.md`. These two handoffs share the admin console, the
 code-truth API, and the `contract` column — coordinate before changing any of the three.
 
-## THE DEFINITION OF DONE — one slot, unprompted
+## THE DEFINITION OF DONE — one mandate, unprompted
 
 🚨 **STATUS CORRECTION (2026-08-16) — read this before acting on the paragraph below.**
 `podcast.deep_research` is **no longer silently broken, and you must NOT revert the fix.** On
 2026-08-16 the delivery half was repaired platform-wide: `declare_slot(spill_variables=…)` now
-exists, and this slot declares one, so the topic is appended to the run's user text instead of
+exists, and this mandate declares one, so the topic is appended to the run's user text instead of
 being silently DROPPED. Every topic-to-podcast run had been reaching the researcher blank
 (commits `94a03f053`, `11de4b47e`; full account in
-`aidream/docs/handoffs/content-ir-agent-slots.md` § THE DELIVERY GUARANTEE).
+`aidream/docs/handoffs/content-ir-slots.md` § THE DELIVERY GUARANTEE).
 
 **The acceptance test below still stands and is still unmet.** A spill is a *delivery guarantee,
 not a contract waiver*: the variable stays in `required_variables`, so the console's drift verdict
-still names this slot on purpose. What must still be proven is the ORIGINAL goal — that the console
+still names this mandate on purpose. What must still be proven is the ORIGINAL goal — that the console
 surfaces the mismatch **unprompted**, in plain language, with real options Arman can pick from.
-Do not "fix" the slot by removing the variable or silencing the verdict; that destroys the test.
+Do not "fix" the mandate by removing the variable or silencing the verdict; that destroys the test.
 
 The original framing, kept for intent:
 
@@ -46,11 +46,11 @@ The original framing, kept for intent:
 > about the deep research and tells me what to do and you and I fix it together, but only because
 > the system guided us from A to Z."
 
-This workstream is done when the admin console surfaces that slot **without being asked**, states
+This workstream is done when the admin console surfaces that mandate **without being asked**, states
 the mismatch in plain language, offers the real options, and Arman picks one. If his pick needs
 code, he pastes the generated brief into a session and we execute it. Not before.
 
-**Why it matters more than the bug:** this console CREATED that bug. It suggested the repin
+**Why it matters more than the bug:** this console CREATED that bug. It suggested the rebind
 (correctly — THE SYSTEM-AGENT LAW), Arman accepted, and nothing checked variables. An unchecked
 suggestion is worse than no suggestion.
 
@@ -58,11 +58,11 @@ suggestion is worse than no suggestion.
 
 | What | Where | Proof |
 |---|---|---|
-| Repin pre-flight + fix brief | `features/admin/mandates/repin-impact.ts`, `useGuardedRepin.tsx` | 9 unit tests; browser-verified on `podcast.deep_research`; live in `release-admin: v0.4.628` |
+| Rebind pre-flight + fix brief | `features/admin/mandates/rebind-impact.ts`, `useGuardedRebind.tsx` | 9 unit tests; browser-verified on `podcast.deep_research`; live in `release-admin: v0.4.628` |
 | Code-truth API | aidream `services/agent_slots/code_truth.py`, `GET /agent-slots/code-truth` | Live in prod (401 vs 404 on a bogus path); OpenAPI types already in `types/python-generated/api-types.ts` |
 | Mapping vocabulary | `packages/matrx-ai/matrx_ai/agents/named.py` | `code_value` / `direct_value` / `unmapped`; `prompt_user` rejected server-side; full `VariableVerdictKind` enum |
 | `validate()` guard hole closed | same file | now takes `source_override`, reports `validation_target="resolved"` vs `"seed"` |
-| Bench + console cleanup | `SlotTestBench.tsx`, `slot-health.ts`, `AgentSlotsConsole.tsx` | live; see the agent-slots FEATURE.md changelog |
+| Bench + console cleanup | `MandateTestBench.tsx`, `mandate-health.ts`, `MandatesConsole.tsx` | live; see the mandates FEATURE.md changelog |
 
 ## The work, in dependency order
 
@@ -72,11 +72,11 @@ suggestion is worse than no suggestion.
 `discover_code_truth_modules()`, which walks `CODE_TRUTH_PACKAGE_ROOTS` (every production agent
 package), imports every module whose AST defines or dynamically builds a `NamedAgent` subclass, and
 unions that with `DECLARING_MODULES` for import-time declaration factories. Failed imports are
-retained in `SlotCodeTruthReport.import_failures` and statically-recoverable slot keys resolve as
+retained in `MandateCodeTruthReport.import_failures` and statically-recoverable mandate keys resolve as
 `code_exists_but_import_failed` rather than being misreported as DB-only. A guard
 (`tests/test_code_truth.py`) fails if a new production package holds a `NamedAgent` outside the
 known roots. **This no longer blocks the backfill — and the backfill itself is now closed** (see
-the Live state table in `common-docs/systems/agent-slots/FEATURE.md`).
+the Live state table in `common-docs/systems/mandates/FEATURE.md`).
 
 *Original description, kept for context:*
 
@@ -92,21 +92,21 @@ uncovered `NamedAgent` exists. Keep "not imported" distinct from "genuinely DB-o
 
 ### 2. The code-truth surface — THE ACCEPTANCE TEST *(matrx-frontend, chip fired)*
 
-Nothing consumes the endpoint yet. Build it into `/administration/agents/slots`:
+Nothing consumes the endpoint yet. Build it into `/administration/agents/mandates`:
 
-- Drift visible **without opening a slot**, folded into the worst-first model in `slot-health.ts`
+- Drift visible **without opening a mandate**, folded into the worst-first model in `mandate-health.ts`
   (extend it — do not start a parallel health system).
 - Per-variable verdicts as labeled facts in the drawer, preserving facts-first order.
 - Every breaking verdict ships its one-click remedy (THE DOOR LAW) plus the copy-paste brief —
-  reuse `buildRepinFixBrief`, extend it rather than forking.
-- Feed real code truth into `computeRepinImpact`'s `codeSuppliedVariables` seam (built for this),
+  reuse `buildRebindFixBrief`, extend it rather than forking.
+- Feed real code truth into `computeRebindImpact`'s `codeSuppliedVariables` seam (built for this),
   sharpening the guard from "what the current agent declares" to "what the code actually passes".
 
 Loud, never blocking. No JSON fields. Verify in a real browser, then `./ship.sh --target admin`.
 
 ### 3. Backfill the contracts and output promises *(blocked on #1)*
 
-Measured live 2026-08-15: **51 of 143** slots carry an empty `contract` while their bound agent
+Measured live 2026-08-15: **51 of 143** mandates carry an empty `contract` while their bound agent
 declares variables; **57 of 143** report output "text" while the agent has an `output_schema`;
 **7 of 22** code-backed contracts are narrower than what the code passes.
 

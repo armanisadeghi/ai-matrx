@@ -10,7 +10,7 @@ repos: [matrx-frontend, aidream]
 
 > "Everything the client/server do is streaming… users will not use something
 > that doesn't give them instant results in the UI… we have so many of these
-> agent slots that are agents used within our system that they don't stream —
+> mandates that are agents used within our system that they don't stream —
 > and they should stream, they should parse the stream in real time, and it
 > should display in real time… It could be into a popover, or whatever field
 > it's gonna go in. But it cannot just be a spinning icon. You cannot have a
@@ -26,7 +26,7 @@ The server already streams everything: normal agent endpoints emit live token
 chunks + a terminal `STRUCTURED_OUTPUT` event; nothing suppresses chunks for a
 client-launched run. The gap is 100% client consumption posture:
 
-- `useRunAgent` / `useSlotRunner` produce **no requestId at all** — they drain
+- `useRunAgent` / `useMandateRunner` produce **no requestId at all** — they drain
   the stream into a local string and resolve at the end. Canonical live
   rendering is structurally impossible from them. They are for genuinely
   headless text-in/text-out only; a UI-visible run must not use them.
@@ -82,7 +82,7 @@ client-launched run. The gap is 100% client consumption posture:
    `useFloatingRunWindow().start(label)` BEFORE dispatching and pass
    `live.bind`. The hook owns the kept-alive instance.
 4. `useRunAgent` sites that are user-visible: migrate to `useLiveAgentRun`
-   (slot sites keep `slotKey`); leave `useRunAgent` only for invisible plumbing.
+   (mandate sites keep `mandateKey`); leave `useRunAgent` only for invisible plumbing.
 5. `callApi({stream:true})` pipeline sites: adopt via `adoptForeignStream`
    (ONE AbortController shared with the fetch; `removeRequest` the previous
    adopted row before a new run).
@@ -108,7 +108,7 @@ vision + primitives + recipe.
 
 One item that sweep does not own, because it is server-side:
 
-- **Server JSON-only slot paths** (aidream) — slot test bench endpoints return
+- **Server JSON-only mandate paths** (aidream) — mandate test bench endpoints return
   one blob after N paid runs; cms-fill is poll-based. Candidates for
   streaming/progress upgrades.
 

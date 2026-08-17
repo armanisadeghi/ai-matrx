@@ -75,21 +75,21 @@ export function ProjectCreatePanel({
   // resolution failure the AI mode stays off and the manual form carries the
   // panel; failures are already screamed by useMandate, never silently
   // patched with a hardcoded id.
-  const { mandate: createSlot, error: createSlotError } = useMandate(
+  const { mandate: createMandate, error: createMandateError } = useMandate(
     PROJECT_CREATE_MANDATE_KEY,
   );
-  const aiAgentId = createSlot?.agentId ?? null;
+  const aiAgentId = createMandate?.agentId ?? null;
 
   useEffect(() => {
     logProjectCreateAiStage("panel mounted", {
       mandateKey: PROJECT_CREATE_MANDATE_KEY,
       resolvedAgentId: aiAgentId,
-      mandateError: createSlotError,
+      mandateError: createMandateError,
       sourceFeature: PROJECT_CREATE_SOURCE_FEATURE,
       enableAi,
       defaultMode,
     });
-  }, [aiAgentId, createSlotError, defaultMode, enableAi]);
+  }, [aiAgentId, createMandateError, defaultMode, enableAi]);
 
   const handleAiRunComplete = useCallback(() => {
     // Refresh the global hierarchy so every nav-tree-derived project consumer

@@ -83,7 +83,7 @@ Full detail in `PODCAST_PIPELINE.md` §3. Summary:
 **Agents (master / pinned version):**
 
 - Script (legacy, 2-host, best quality): `podcast_script_educational` `4541ba46`, `_news` `23ca9704`, `_persian` `3456f665`.
-- Script (generic, host-count-aware) — **repinned 2026-08-08** to the hardened versions: solo `3f0b22c2`, multihost (2–4) `29bebcba`, roundtable (5–10) `b23156bf`. The DB slot (`agent.slot_definition`, `podcast.*_script`) is the pin authority — repin there, never in code.
+- Script (generic, host-count-aware) — **rebound 2026-08-08** to the hardened versions: solo `3f0b22c2`, multihost (2–4) `29bebcba`, roundtable (5–10) `b23156bf`. The DB mandate (`agent.slot_definition`, `podcast.*_script`) is the pin authority — rebind there, never in code.
 - Audio: Gemini english `055c6d30` / persian `21238b08`; **ElevenLabs dialogue `podcast_audio_dialogue` master `88f05360`, version `293425be`** (model `eleven_v3` = `7b1bc855…`).
 - Companion: blog `58204bd9`, show-notes `b1910198`, chapters/title/audience built but unwired.
 
@@ -115,7 +115,7 @@ Ordered by importance. These are the honest gaps.
    `<speaker_settings>` + a roster-first / post-write count-check protocol; the
    roundtable user message's "Output only the dialogue block" line — which
    contradicted and suppressed the declaration — removed) and their
-   `podcast.*_script` slots repinned (roundtable v4 `e7cad8a6`, multihost v6
+   `podcast.*_script` mandates rebound (roundtable v4 `e7cad8a6`, multihost v6
    `29bebcba`, solo v4 `3f0b22c2`). Live prod runs against
    `/api/podcast/generate` (truncated audio, media off): 10 → 10 distinct
    speakers, 14 → 14, 20 → 20, each with a `<speaker_settings>` declaration
@@ -135,7 +135,7 @@ Ordered by importance. These are the honest gaps.
    **DECIDED 2026-08-09 (Arman):** cap `host_count` at 10 rather than build
    multi-request render + stitch. The interim voice-SHARING workaround was
    deleted with the cap — two speakers never share a voice again. 11–20 is now
-   a 422 at the API boundary, and the roundtable agent + slot advertise 5–10.
+   a 422 at the API boundary, and the roundtable agent + mandate advertise 5–10.
 
 3. **`<speaker_settings>` is now REQUIRED and emitted (2026-08-08).** All three
    generic script agents demand the declaration (name + gender, never voice —
@@ -163,14 +163,14 @@ Ordered by importance. These are the honest gaps.
    file extractor is `file_url`-only). The script writer handles raw notes well
    (proven), but there is no longer an intermediate cleaning agent for messy text.
 
-7. ~~Script-agent SELECTION is not a registry~~ **SUPERSEDED by Agent Slots
-   (2026-08-08).** Every pipeline agent resolves through a `podcast.*` slot in
-   `agent.slot_definition` (admin console `/administration/agents/slots`;
+7. ~~Script-agent SELECTION is not a registry~~ **SUPERSEDED by Mandates
+   (2026-08-08).** Every pipeline agent resolves through a `podcast.*` mandate in
+   `agent.slot_definition` (admin console `/administration/agents/mandates`;
    declarations in `aidream/services/agent_slots/podcast_slots.py`). Swapping
-   or upgrading an agent is a DB repin. The band ROUTER (which slot runs for a
+   or upgrading an agent is a DB rebind. The band ROUTER (which mandate runs for a
    given host count/format/language) is still code in `_create_script` —
-   fine until a custom per-format agent actually exists; slot in a new band
-   by adding a slot + a router branch.
+   fine until a custom per-format agent actually exists; mandate in a new band
+   by adding a mandate + a router branch.
 
 8. **4 post-prep agents still draft** (`podcast_post_prep_{translation,
 summarization,fact_checking,expansion}`) → the create form's "Pre/Post-script

@@ -30,7 +30,7 @@
 > Arman is one of your most important tasks** — not a footnote and not someone else's job.
 > Bring him the specific choices above, get a ruling, record it in the lexicon, and only then
 > sweep it everywhere in one campaign (**Law 4 — a rename goes ALL the way:** docs, code,
-> routes, components, services, DB tables, entity tokens, slot keys). Never split the
+> routes, components, services, DB tables, entity tokens, mandate keys). Never split the
 > difference. Never invent a third word. Never adopt the drifted term because it is already
 > in the code.
 
@@ -178,7 +178,7 @@ classes + acceptance criteria alongside rules — spec: common-docs
 /expertise-desks/ingest-file` (aidream `services/expertise_ingest/file_ingest.py`) + the
 "Upload a file" option in `IngestSourceDialog`. NOT a parallel pipeline, exactly as the design
 said: a document runs through content_processing (processed_documents + pages) and a
-`docproc.page_extraction_jobs` row pointing the SAME distiller slots
+`docproc.page_extraction_jobs` row pointing the SAME distiller mandates
 (`expertise.source_distiller` / `expertise.exemplar_distiller`, re-resolved and re-stamped on
 every run) at the pages, so every rule lands with real `source_ref.source_pages`; audio/video
 transcribes first (`transcribe_managed_file`) and takes the text lane unchanged. Rule

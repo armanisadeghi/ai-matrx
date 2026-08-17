@@ -9,12 +9,12 @@
 The NodePanel's "Draft brief" button calls
 `POST /content-plan/nodes/{id}/draft-brief` (aidream
 `services/content_plan/brief_writer.py`). The server builds the neighbour +
-keyword + research context, runs the `content_plan.brief_writer` slot, and
+keyword + research context, runs the `content_plan.brief_writer` mandate, and
 writes the COMPLETE result to `plan.node.metadata.ai_brief_draft` before it
 streams anything.
 
 🚨 **The panel READS that draft (`readBriefDraft`) — it never holds the only
-copy.** This replaced a browser-side slot run that staged into `useState`:
+copy.** This replaced a browser-side mandate run that staged into `useState`:
 `angle`, `must_not_cover`, `concerns` and `suggested_word_count` had no column
 and were discarded even when the user pressed Save, and a refresh or a node
 switch destroyed the whole paid run. Drafting PROPOSES; "Use this brief"
@@ -75,12 +75,12 @@ plan CRUD through it.
   `useSetupAgents` → `useLiveAgentRun` → `useHeadlessAgentJson`, so each one
   streams into `<LiveRunDisplay>`. The other four moved server-side (the two
   bullets below).
-  🚨 **Agents are addressed by SLOT KEY, never a UUID.** `content_plan.*` slots
-  resolve through `resolveAgentSlot` (`features/agents/slots/service.ts`) —
+  🚨 **Agents are addressed by MANDATE KEY, never a UUID.** `content_plan.*` mandates
+  resolve through `resolveMandate` (`features/agents/mandates/service.ts`) —
   `agent.slot_definition` for the platform default, `agent.slot_binding` for
-  the user's own override. An unseeded, disabled, or version-pinned slot
+  the user's own override. An unseeded, disabled, or version-pinned mandate
   THROWS with the reason; it never falls back to a hardcoded agent. Adding a
-  step means declaring a slot in aidream's `agent_slots/client_slots.py` and
+  step means declaring a mandate in aidream's `agent_slots/client_slots.py` and
   consuming its key here. **Known gap:** `launchAgentExecution` consumers
   (this feature included) apply a binding's _agent_ but not its
   `config_overrides`, so a model/thinking-only override is inert here.
@@ -88,7 +88,7 @@ plan CRUD through it.
 - 🚨 **The three WHOLE-PLAN Setup passes RUN ON THE SERVER** (since
   2026-08-11) — keyword strategy, entity attachment and the plan review are
   `POST /content-plan/sites/{id}/{keyword-strategy|entity-attachments|review}`,
-  driven by `hooks/useSetupPasses.ts`. **Do not add a client-side slot run for
+  driven by `hooks/useSetupPasses.ts`. **Do not add a client-side mandate run for
   any of them, and do not build prompt variables here:** aidream assembles the
   plan lines, the keyword library, the entity roster and the research report
   itself, records the run on `chat.agent_run`, and persists the complete
@@ -801,7 +801,7 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   persisted row repaired). **Two header rules learned the hard way, both
   verified in the browser:** an `EntityModeHeader` injects itself through
   `RouteHeader` → `PageHeader`, so wrapping it in a second `PageHeader`
-  renders the header EMPTY; and its `entityStatus` slot lives inside the
+  renders the header EMPTY; and its `entityStatus` mandate lives inside the
   dropdown's trigger `<button>`, so a button-shaped chip (the
   `ActiveContextLensChip`) belongs in `right`, not there.
 
@@ -1274,7 +1274,7 @@ z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
   (`topics_by_archetype`) and land on the family HUB node's brief at commit
   via `applyFamilyTopics` + `composeTopicBrief` — an idempotent
   `Planned topics (from research):` marker block, never new pages behind the
-  archetype's back (the expander is a fixture-pinned twin and was NOT
+  archetype's back (the expander is a fixture-bound twin and was NOT
   touched). Fourth platform agent **Content Plan Reviewer**
   (`2a7f0dc8-5525-437a-8f2e-35f12a45cb27`) audits the live plan against the
   research report; `PlanReviewSection` renders findings beside the structural

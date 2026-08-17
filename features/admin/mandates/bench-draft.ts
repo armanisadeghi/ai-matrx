@@ -8,7 +8,7 @@
  * the scope at Run time, but the exemplar composer (label + variables JSON +
  * user message) and the mandate's stored exemplars live in `MandateTestBench`, a
  * grandchild that only mounts once a mandate is open in the workbench. The
- * `slot_exemplar_draft` WRITE target needs a read twin — an agent has to be
+ * `mandate_exemplar_draft` WRITE target needs a read twin — an agent has to be
  * able to see what is already staged, and what exemplars the mandate already has,
  * before it proposes another one.
  *
@@ -33,7 +33,7 @@ export interface MandateExemplarSnapshot {
   user_input: string | null;
 }
 
-/** What the bench publishes for `slot_exemplar_draft` + its siblings. */
+/** What the bench publishes for `mandate_exemplar_draft` + its siblings. */
 export interface MandateBenchSnapshot {
   /** The mandate the bench is mounted for — the console cross-checks selection. */
   mandateId: string;

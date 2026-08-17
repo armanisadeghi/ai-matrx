@@ -373,7 +373,7 @@ export async function fetchMandateExemplars(
   return data ?? [];
 }
 
-export async function createSlotExemplar(input: {
+export async function createMandateExemplar(input: {
   mandateId: string;
   label: string;
   variables: JsonObject;

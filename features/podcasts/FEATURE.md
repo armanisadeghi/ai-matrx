@@ -89,9 +89,9 @@ files, with a live-streaming studio, resumable runs, and public share pages.
 - `docs/DYNAMIC_HOSTS_AND_THEMES.md` — N-host / formats / themes. **Wired
   2026-06-10** (1–10 hosts, all formats, per-host names/voices; the ceiling
   came down from 20 on 2026-08-09 — see the change log). Since
-  2026-08-08 every pipeline agent routes through a `podcast.*` agent slot
-  (DB-managed; admin console `/administration/agents/slots`) — adding or
-  swapping an agent is a repin, not a code change.
+  2026-08-08 every pipeline agent routes through a `podcast.*` mandate
+  (DB-managed; admin console `/administration/agents/mandates`) — adding or
+  swapping an agent is a rebind, not a code change.
 - `docs/BLOG_PER_EPISODE.md` — rich SEO blog article per episode (≠ transcript).
   **Live 2026-06-11:** generate from the run page (`EpisodeContentStudio`),
   publish, public route `/podcast/[slug]/blog`. Show notes share the path
@@ -115,7 +115,7 @@ is easy to fill in.
   `_MAX_SPEAKER_COUNT` 20 → 10 (the API request model now imports it instead of
   a hardcoded `le=20`), the interim voice-SHARING workaround was deleted (two
   speakers never share a voice again, unconditionally), the roundtable agent +
-  slot advertise 5–10, and `MAX_HOST_COUNT` here stops promising a return to 20.
+  mandate advertise 5–10, and `MAX_HOST_COUNT` here stops promising a return to 20.
 
 - 2026-08-11 — **Blog post + show notes stream in the floating window (THE FLOATING
   LAW), and the payload turned out NOT to be markdown.** `useEpisodeArticles` ran
@@ -125,8 +125,8 @@ is easy to fill in.
   and show notes can be generated at the same time and a single live-run hook holds a
   single conversation (sharing one would let the second run steal the first's window and
   destroy its instance mid-stream) — and floats one `LiveRunWindow` per episode+kind.
-  The slot now resolves INSIDE the canonical launcher (`slotKey`, config_overrides
-  preserved) instead of `resolveAgentSlot` + a bare agentId, and the run comes back as a
+  The mandate now resolves INSIDE the canonical launcher (`mandateKey`, config_overrides
+  preserved) instead of `resolveMandate` + a bare agentId, and the run comes back as a
   parsed object from the structured-JSON primitive, so `articleMarkdown.ts` gained
   `assembleArticleFromValue` (the text-taking `assembleArticle` stays for the fuzzy
   path). Live-verified on a real episode: window on click, phase moves, article saved,
@@ -157,7 +157,7 @@ is easy to fill in.
   (THE CANONICAL COMPONENT LAW). Rows become seek buttons wherever a surface
   passes `onSeek`. (3) **The agent emits the envelope** — `podcast.chapter_marker`
   (`2f600a25-…`, now v6 `e664397d-…`) is bound to the kind's portable block
-  export and its prompt teaches the shape; the slot declares
+  export and its prompt teaches the shape; the mandate declares
   `output_kind="media_chapters"` + `required_output_keys`, and every version
   pin moved off the stale v2 seed (aidream `client_slots.py`, the generated
   runner, the placeholder seeder, the agent doc). (4) **The hook is
@@ -189,10 +189,10 @@ is easy to fill in.
   via `agent_author`) emits the canonical `episode_title_options` envelope
   instead of a bare `{options:[…]}`; `slug` was dropped, because no consumer
   ever read it and a title edit deliberately never touches the episode slug or
-  public URL. The slot is FLOATING (`use_latest`, no version pin) and the FE
+  public URL. The mandate is FLOATING (`use_latest`, no version pin) and the FE
   resolves the MASTER agent id, so its one consumer picked v4 up with no
-  repin — there is no second usage anywhere in either repo. (2) The hook runs
-  through `useLiveAgentRun` on the slot (`slotKey`, so `config_overrides`
+  rebind — there is no second usage anywhere in either repo. (2) The hook runs
+  through `useLiveAgentRun` on the mandate (`mandateKey`, so `config_overrides`
   survive inside the canonical launcher) and opens the floating
   `LiveRunWindow` **before** the launch, so the window is what the user
   watches while the stream connects rather than something that appears after
@@ -307,14 +307,14 @@ is easy to fill in.
   `EpisodeChaptersPanel` itself because that panel owns the episode row and
   the chapter list. No raw supabase in the write path. Nothing that SPENDS
   money is writable: generating, resuming, re-running from source,
-  regenerating an image or video slot, and adding an asset all stay behind
+  regenerating an image or video mandate, and adding an asset all stay behind
   the human press, matching `podcast-studio` (an agent fills the composer;
-  the human hits Generate). The audio, the composed video, every media slot,
+  the human hits Generate). The audio, the composed video, every media mandate,
   the script, and the whole progress + diagnostics half stay read-only
   because they are the record of what the pipeline ACTUALLY did — writing a
   stage status or a run error would forge that record. Publishing and the
   slug stay human. `episode_title` is NOT a second title path: the page had
-  already run the `podcast.title_optimizer` slot and let the user click "Use"
+  already run the `podcast.title_optimizer` mandate and let the user click "Use"
   on a ranked option, and the target lands through that same
   `updateEpisode` call — the difference is only who chooses.
   `episode_chapters` replaces the whole ordered list, so a matching
@@ -369,7 +369,7 @@ is easy to fill in.
   agent run — see `features/surfaces/FEATURE.md` for the verification detail.
 - 2026-08-08 (later) — **Title options panel, audience re-pitch, 10-host cap.**
   (1) Run page gained `EpisodeTitlePanel` (`useEpisodeTitleOptions`,
-  `podcast.title_optimizer` slot — post-episode only so the agent always sees
+  `podcast.title_optimizer` mandate — post-episode only so the agent always sees
   the FINAL script; applying updates `pc_episodes.title`, slug/URL untouched;
   toast reminds to regenerate blog/show notes). (2) GeneratorForm gained a
   "Target audience" input (`target_audience` on the generate request → server
@@ -382,12 +382,12 @@ is easy to fill in.
   the interim voice-sharing workaround was deleted. (4) Server now
   persists only the canonical script (dialogue + speaker_settings; 36 rows
   backfilled) and suggests rotated default cast names to script agents when a
-  request names nobody. (5) Duplicate server slots `podcast.blog_writer` /
+  request names nobody. (5) Duplicate server mandates `podcast.blog_writer` /
   `podcast.show_notes_generator` retired — `podcast_client.*` pair canonical.
 - 2026-08-08 — **Large-cast (7–20 host) hardening: script stage verified live
   at 10/14/20.** Server (aidream): the solo/multihost/roundtable script agents
   now REQUIRE the `<speaker_settings>` declaration (name + gender; server owns
-  voices) and follow a roster-first + count-check protocol; slots repinned
+  voices) and follow a roster-first + count-check protocol; mandates rebound
   (roundtable v4, multihost v6, solo v4); e2e matrix gained
   `roundtable_10/14/20`. Live prod runs hit the exact GATE 2 count at all
   three sizes with matching declarations. The same-day typed-LLMParams
@@ -401,8 +401,8 @@ is easy to fill in.
 - 2026-08-08 — **Chapter markers + pre-script processing went live (Coming
   Soon retired on both).** Run page: the Chapter markers ComingSoonCard is now
   `EpisodeChaptersPanel` → `useEpisodeChapters` — resolves the FLOATING
-  `podcast.chapter_marker` slot client-side (`resolveAgentSlot`; the old
-  version-pinned placeholder row was converted, since client slots must
+  `podcast.chapter_marker` mandate client-side (`resolveMandate`; the old
+  version-pinned placeholder row was converted, since client mandates must
   float), runs it one-shot (`useRunAgent`), parses `{chapters:[…]}` via the
   canonical `extractFirstObject`, and persists under
   `pc_episodes.metadata.chapters` via `podcastService.saveEpisodeChapters`
@@ -411,7 +411,7 @@ is easy to fill in.
   interactive — one optional transform sent as `post_prep_option`
   (`translation` targets the episode's language / `summarization` /
   `expansion` / `fact_checking`), each backed by its own
-  `podcast.post_prep_*` agent slot and applied server-side in
+  `podcast.post_prep_*` mandate and applied server-side in
   `_apply_post_prep` (soft stage: failure keeps the original content).
   Post-script processing remains display-only Coming Soon.
 - 2026-08-08 — **Live listening works for both podcast audio bands.** The
@@ -427,17 +427,17 @@ is easy to fill in.
   progress events cannot leave Play/Pause or timing labels stale. Authenticated
   studio runs verified live playback and canonical handoff for 2-host Gemini and
   3-host ElevenLabs.
-- 2026-08-08 — **Podcast agents are DB-managed slots; casts, styles, and
+- 2026-08-08 — **Podcast agents are DB-managed mandates; casts, styles, and
   languages stopped being one-size-fits-all.** Server (aidream, same-day):
   every pipeline agent (research, extraction, all script bands, both audio
-  bands, metadata, image/video slots, feature-image pair) resolves through a
-  `podcast.*` agent slot — repin from `/administration/agents/slots`, never a
+  bands, metadata, image/video mandates, feature-image pair) resolves through a
+  `podcast.*` mandate — rebind from `/administration/agents/mandates`, never a
   code constant; default cast names + voices now ROTATE per episode
   (gender-aware seeded draw on both the Gemini and ElevenLabs bands;
   cast-preview draws a fresh cast per form load — kills the eternal
   Alex/Sarah + orus/kore pair); feature image default style is `auto` (agent
   picks per episode). Frontend: `useEpisodeArticles` + `useSourceResolvers`
-  resolve their agents via `resolveAgentSlot` (`podcast_client.blog_writer` /
+  resolve their agents via `resolveMandate` (`podcast_client.blog_writer` /
   `show_notes` / `web_content_extractor` / `youtube_research`) — the four
   hardcoded agent-id constants are deleted; `featureImageStyles.ts` default
   flipped to `auto` (lockstep with the server); **all 24 languages enabled**
@@ -490,7 +490,7 @@ is easy to fill in.
   org/project/task through `callApi` instead of dropping request context.
 
 - 2026-07-23 — **Blog page enriched + balanced (`PodcastBlogPage`).** The public blog was a hero cover + wall of text + a bottom "Play" link. Now: the audio player (`PodcastAudioPlayer`) is embedded at the article's MIDPOINT (`splitMarkdownForEmbed` in `blogLayout.ts` splits the markdown at the block boundary nearest the middle — fence-safe, never mid-paragraph; short articles render the player after the body), and the episode's official video (a montage of the run's generated stills + clips) anchors the lower third, with a slim "Open the full episode" footer replacing the old link card. Only episode-public media is used — the extra generated images live on the `internal`-visibility studio run and are not anon-readable (a genuinely distinct second still would need the run made public or a gallery denormalized onto the article; not done). Also fixed a latent SSR hydration mismatch in `PodcastAudioPlayer`: waveform bar heights now serialize via `toFixed(2)` so `Math.sin`'s cross-runtime float drift can't desync server vs client (affected every SSR'd player). Pure split covered by `__tests__/blogLayout.test.ts`.
-- 2026-07-23 — **Feature image never hidden; "Image unavailable" root-caused.** `MediaOptionsGrid` capped the editable grid at `VISIBLE_IMAGES = 5`, so once the run produced 6 images (5 metadata + the feature image) the 6th was hidden behind a "See all 6 images" link — the feature image looked missing. Raised to 6 (videos 2→4); the collapse now only triggers when the user ADDS images beyond the default set. The "Style 5 = Image unavailable" case was a backend concurrency leak (a metadata image slot captured a window of the feature-prompt text agent's stream) — fixed in aidream (`suppress_stream`+`independent_request` on the feature agents, plus a non-URL-output guard); see D85 + aidream `services/podcast/FEATURE.md`. One corrupt studio-run row healed in place.
+- 2026-07-23 — **Feature image never hidden; "Image unavailable" root-caused.** `MediaOptionsGrid` capped the editable grid at `VISIBLE_IMAGES = 5`, so once the run produced 6 images (5 metadata + the feature image) the 6th was hidden behind a "See all 6 images" link — the feature image looked missing. Raised to 6 (videos 2→4); the collapse now only triggers when the user ADDS images beyond the default set. The "Style 5 = Image unavailable" case was a backend concurrency leak (a metadata image mandate captured a window of the feature-prompt text agent's stream) — fixed in aidream (`suppress_stream`+`independent_request` on the feature agents, plus a non-URL-output guard); see D85 + aidream `services/podcast/FEATURE.md`. One corrupt studio-run row healed in place.
 - 2026-07-22 — **Feature image style picker (the transcript-derived sixth image).**
   aidream now renders an extra image per run from the FULL transcript via a
   two-step agent chain (prompt generator → Matrx Image Ultra / gpt-image-2). The
@@ -502,8 +502,8 @@ is easy to fill in.
   `FeatureImageStyle` StrEnum** — an unknown token degrades to the default
   server-side (loudly) rather than failing a run, so drift downgrades silently;
   keep them in sync deliberately. No render plumbing was needed: the image
-  arrives as a normal asset at slot `eff_images`, and `reduce.ts#applyAsset`
-  appends + re-sorts any unknown slot index, so it lands in the existing images
+  arrives as a normal asset at mandate `eff_images`, and `reduce.ts#applyAsset`
+  appends + re-sorts any unknown mandate index, so it lands in the existing images
   grid. The episode cover is unchanged — aidream appends the URL to the END of
   `image_urls` and the cover is `image_urls[0]`.
 - 2026-07-22 — **False "connection went quiet" stall during research + real
@@ -528,7 +528,7 @@ is easy to fill in.
 - 2026-07-22 — Podcast generation and resume migrated from the legacy
   `useBackendApi` stream path to canonical `callApi`, restoring automatic active
   organization/project/task injection while preserving NDJSON event handling.
-- 2026-07-22 — **Show/episode page conformance + legibility + data cleanup.** Header: `/podcast/[slug]` moved from `<PageHeader>` (centre slot — the back chevron floated mid-header) to `RouteHeader left={…}`, so back + episode/show title sit at the left edge; `CreateView` was double-portalling (`<PageHeader><RouteHeader/></PageHeader>` — `RouteHeader` already renders its own) and now renders it once. Legibility: the video-mode scrim's `via-transparent` left the vertical middle — exactly where the title/description sit — unscrimmed, so copy landed on raw cover art; replaced with a ramped multi-stop gradient plus a text shadow, and the show hero's scrim grew `h-24 → h-48` (mobile text blocks exceed 96px) with the same shadow. Player: `PodcastAudioPlayer` now adopts a duration the `<audio>` element already knows (`durationchange` + mount sync) — `onLoadedMetadata` alone missed the cached/pre-loaded case and every episode showed `--:--` despite a known duration. Index: dropped the `<h1>Podcasts</h1>` that duplicated the shell header title, and the hero now clears the glass header via `pt-[calc(var(--shell-header-h)+1.25rem)]`. Data: 15 episodes soft-deleted (2 untitled, 4 with dead audio, 9 duplicate test runs) + the empty AP Bio show → 33 episodes / 3 shows, zero dead media refs. Generator bug behind the untitled episodes is aidream-side (D82); missing `duration_seconds` is D83.
+- 2026-07-22 — **Show/episode page conformance + legibility + data cleanup.** Header: `/podcast/[slug]` moved from `<PageHeader>` (centre mandate — the back chevron floated mid-header) to `RouteHeader left={…}`, so back + episode/show title sit at the left edge; `CreateView` was double-portalling (`<PageHeader><RouteHeader/></PageHeader>` — `RouteHeader` already renders its own) and now renders it once. Legibility: the video-mode scrim's `via-transparent` left the vertical middle — exactly where the title/description sit — unscrimmed, so copy landed on raw cover art; replaced with a ramped multi-stop gradient plus a text shadow, and the show hero's scrim grew `h-24 → h-48` (mobile text blocks exceed 96px) with the same shadow. Player: `PodcastAudioPlayer` now adopts a duration the `<audio>` element already knows (`durationchange` + mount sync) — `onLoadedMetadata` alone missed the cached/pre-loaded case and every episode showed `--:--` despite a known duration. Index: dropped the `<h1>Podcasts</h1>` that duplicated the shell header title, and the hero now clears the glass header via `pt-[calc(var(--shell-header-h)+1.25rem)]`. Data: 15 episodes soft-deleted (2 untitled, 4 with dead audio, 9 duplicate test runs) + the empty AP Bio show → 33 episodes / 3 shows, zero dead media refs. Generator bug behind the untitled episodes is aidream-side (D82); missing `duration_seconds` is D83.
 - 2026-07-22 — THE VIEW LAW: `podcastService.fetchAllShows()` now `.eq("created_by", userId)` explicitly instead of bare RLS.
 - 2026-07-20 — **`/podcast` index theme + interaction + broken-art cleanup.** Hero and cards moved off hardcoded dark (`bg-zinc-900`/white text) onto semantic tokens — the index now reads correctly in light AND dark (the shell header title was dark-on-dark before). Card click target fixed: the whole-card overlay link now sits above the artwork (`z-[15]`, artwork z-10, Manage/Draft z-20), so cursor + click are uniform across the full card. Consumer-surface fallback doctrine: grid + show-page episode thumbs pass `errorFallback="icon"` with the mic/music placeholder — a dead URL degrades to the same quiet tile as "no artwork", never the red debug panel (the `InlineMediaRef` "info" default stays for internal surfaces). Data heal: the `podcast-assets` storage bucket was deleted (all URLs 400) — Phoenix Echo's cover re-pointed to its surviving CDN episode image, AP Bio's + 4 episodes' dead image refs nulled; 4 published episodes still have unrecoverable dead audio (D77, decision pending).
 - 2026-07-20 — **`/podcast` index identity fix.** The public index now routes creators to the Studio ("Create a podcast" → `/podcast/studio/create`, "Open Studio" → `/podcast/studio`) and separates "Your podcasts" (owned, incl. unpublished drafts, per-card Manage link to `/podcast/studio/show/[id]`) from "On the platform" (published catalog minus yours), via new `PodcastIndexClient.tsx` + extended `PodcastGrid`. Ownership: added `created_by` to `PcShow` (DB-stamped by `_stamp_actor`; omitted from create/update payloads), and `useMyPodcasts.myShows` now includes shows the user created even with zero episodes (fixes the invisible-new-show gap noted in `StudioDashboard`). Dead cover URLs on two published shows filed as D77.
@@ -569,7 +569,7 @@ is easy to fill in.
   otherwise generation chooses its own defaults. Voices with no catalog sample
   show a disabled "preview unavailable" button (never a broken player).
 - 2026-06-16 — **Merged "official" episode video wired end-to-end.** The backend already stitches every clip + still into one crossfaded MP4 (square stills get blurred-fill sides) and sets it as the episode's primary `video_url`, but the frontend ignored it. Now: modeled the `podcast_official_video` stream event + `official_video_url` on `podcast_complete` (`generator/types.ts`), added `officialVideoUrl` to `PodcastRunState` + the reducer (`generator/reduce.ts`) + durable-record rehydration (`studio/runs/mapping.ts`) + an episode-level fallback from `pc_episodes.video_url` (`studio/runs/useStudioRun.ts`), and surfaced it as a prominent "Episode video" hero in `studio/components/StudioRunView.tsx` (with a loud "couldn't assemble" note when a finished multi-asset run has none). `ResultActions` display-mode default now follows the backend (video when present). Backend (aidream) hardened in the same change: compose skip/failure is logged loudly and surfaced via a new `official_video_error` field on the complete event. NOTE: the compose step needs ffmpeg (`imageio-ffmpeg`) + the cloud file manager present in the deployed env — if the merged video is still missing in prod, verify those.
-- 2026-06-16 — **Studio media units now use the canonical media renderers.** Done image/video slots in `generator/components/AssetCard.tsx` render through `UnifiedImageBlockRenderer` / the new `UnifiedVideoBlockRenderer` (built in `features/files/blocks/video/`), restoring expand → fullscreen, the single "…" menu (download / copy-link / share / open-in-new-tab), right-click context menu, and mobile long-press — replacing the bare `InlineMediaRef` + custom Enlarge button + podcast-only `AssetActionsMenu` overlay. Podcast actions (Use as cover, Regenerate, per-model Regenerate) ride in via the renderers' new `extraActions` slot so there is ONE menu per asset. Blocks are built from `podcastMediaRef(url)` via the new generic `blockFromMediaRef` adapter (`features/files/blocks/adapters/from-media-ref.ts`). `AssetActionsMenu` is kept only for non-done slots (model picker / edit-description); the grid-level `InlineMediaRef` lightbox in `MediaOptionsGrid.tsx` was removed (the canonical Expand is now the only fullscreen path).
+- 2026-06-16 — **Studio media units now use the canonical media renderers.** Done image/video mandates in `generator/components/AssetCard.tsx` render through `UnifiedImageBlockRenderer` / the new `UnifiedVideoBlockRenderer` (built in `features/files/blocks/video/`), restoring expand → fullscreen, the single "…" menu (download / copy-link / share / open-in-new-tab), right-click context menu, and mobile long-press — replacing the bare `InlineMediaRef` + custom Enlarge button + podcast-only `AssetActionsMenu` overlay. Podcast actions (Use as cover, Regenerate, per-model Regenerate) ride in via the renderers' new `extraActions` mandate so there is ONE menu per asset. Blocks are built from `podcastMediaRef(url)` via the new generic `blockFromMediaRef` adapter (`features/files/blocks/adapters/from-media-ref.ts`). `AssetActionsMenu` is kept only for non-done mandates (model picker / edit-description); the grid-level `InlineMediaRef` lightbox in `MediaOptionsGrid.tsx` was removed (the canonical Expand is now the only fullscreen path).
 - 2026-06-16 — **Mobile title/layout squish fix.** `PodcastEpisodePage` (all three display modes) and `PodcastShowPage` now scale titles responsively (`text-lg`/`text-xl` base → `sm:text-2xl`/`sm:text-3xl`), wrap (`break-words`, `min-w-0` on flex children), and use responsive padding (`px-4 sm:px-6`) with `max-w-*` content centering — titles no longer cramp on ~360px screens.
 - 2026-06-12 — **ElevenLabs dialogue agent live → 1–20 hosts proven end-to-end.**
   Created `podcast_audio_dialogue` (master `88f05360`, version `293425be`,
@@ -615,7 +615,7 @@ is easy to fill in.
   with no audio AND resume replayed the empty result forever (now:
   `_audio_stage_result` converts empty-success to FAILED pre-commit; run-level
   success requires audio; FE offers Resume on completed-without-audio).
-  Image/video slots retry ONCE on the alternate pinned model before failing
+  Image/video mandates retry ONCE on the alternate pinned model before failing
   (`_run_asset_with_fallback`), with an informational `note` chip on fallback
   successes (`AssetCard`). Client: generic `features/audio/streamingPcmPlayer.ts`
   - `LiveAudioPlayer` consume `audio_stream_chunk`/`audio_stream_end`; early
@@ -647,7 +647,7 @@ is easy to fill in.
   Together image gen defaults `disable_safety_checker=True`. Client
   (`generator/reduce.ts`, `studio/runs/mapping.ts`): a run with audio/an episode
   is `done` (not `error`) even on `success=false`; `reconcile` no longer drops
-  failed slots (they persist as retryable "Couldn't render" cards via
+  failed mandates (they persist as retryable "Couldn't render" cards via
   `AssetCard`); durable records the old backend marked `failed` heal to `done`
   on read. Backend needs deploy to stop _new_ aborts; client heals existing ones.
 - 2026-06-08 — **Generator sources fully wired + Persian live.** Every source tile

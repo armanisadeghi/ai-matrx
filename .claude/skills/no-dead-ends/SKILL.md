@@ -59,7 +59,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 ```
 
 Safe inside clickable rows — every control stops propagation. Worked reference:
-`features/admin/mandates/AgentSlotsConsole.tsx` (Agent column, Pin column,
+`features/admin/mandates/MandatesConsole.tsx` (Agent column, Pin column,
 Health column, and the drawer's identity card).
 
 **Missing a door?** Fix the *registry*, not the call site:
@@ -85,14 +85,14 @@ check** — it statically imports 19 peek components. Import `hasPeek` from
    Cold surface with no slice? `fetchLinkedCounterpart` (thunks.ts) round-trips.
 
 2. **Ship the fix beside the complaint.** "NOT a system agent" must come with
-   the repin button and the twin's link, not a scolding badge.
+   the rebind button and the twin's link, not a scolding badge.
 
 3. **State the verdict, not the timestamp.** "Last synced Apr 29" is not an
    answer. Say identical / what differs / link to the diff.
 
 4. **Never render an id you can't open**, and **never report green for data you
    couldn't read** — an unresolvable reference is its own loud state
-   (`unresolved pin` in the slots console), never `ok`.
+   (`unresolved pin` in the mandates console), never `ok`.
 
 5. **A count is a door.** `3 overrides` reaches those overrides.
 

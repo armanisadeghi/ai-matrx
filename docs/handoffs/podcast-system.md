@@ -51,16 +51,16 @@ voice/cast diversity + voice-selection UX → `docs/handoffs/podcast-voice-diver
    `truncate_audio_for_testing`. Run one full-length 10-host episode before advertising
    large-cast reliability (cost: real TTS on a full script).
 3. **`SCRIPT_AGENT_REGISTRY` not built.** Named only in `PODCAST_PIPELINE.md` §4 (custom agents
-   slot in by `(format, language, host_min, host_max)`); today a custom format/language means
+   mandate in by `(format, language, host_min, host_max)`); today a custom format/language means
    editing `_create_script` / `_is_legacy_script_request`. Build when the custom-agent count grows.
 4. **Wire the live-podcast pair** — `podcast.relevance_gate` + `podcast.live_rewrite` need the
-   future live-podcast orchestrator (Arman deprioritized until that's a real project). Slots are
-   declared and admin-repinnable; only the orchestrator is missing.
+   future live-podcast orchestrator (Arman deprioritized until that's a real project). Mandates are
+   declared and admin-rebindnable; only the orchestrator is missing.
 5. **Legacy 2-host script agents (educational/news/persian) don't take speaker names** — they
    bake their own cast, so default no-speaker 2-host runs on the legacy path always sound like
    the same pair. Mitigated: the FE always sends a fresh previewed cast (which routes OFF the
    legacy path); the gap is API callers hitting the legacy band. Fix = add a `speaker_names`
-   variable to those three agents' prompts (repin via /administration/agents/slots) or retire
+   variable to those three agents' prompts (rebind via /administration/agents/mandates) or retire
    the legacy band once the multihost generic matches its quality.
 
 ## Done
@@ -68,9 +68,9 @@ voice/cast diversity + voice-selection UX → `docs/handoffs/podcast-voice-diver
 - 2026-08-08 — Canonical script persistence (`_canonical_script` at GATE 2; 36 rows backfilled);
   audience adaptation stage (`target_audience` → `podcast.audience_adapter`); suggested rotated
   default casts for name-less requests; 10-voice audio cap (server fail-fast + FE cap);
-  duplicate `podcast.blog_writer`/`podcast.show_notes_generator` slots retired
+  duplicate `podcast.blog_writer`/`podcast.show_notes_generator` mandates retired
   (`podcast_client.*` canonical); title optimizer wired (`EpisodeTitlePanel` on the run page,
-  post-episode only, slot floated to master).
+  post-episode only, mandate floated to master).
 - 2026-08-08 — Chapters wired (`EpisodeChaptersPanel` → `podcast.chapter_marker` →
   `pc_episodes.metadata.chapters`); post-prep live (4 agents via `_apply_post_prep`); all 24
   Gemini TTS locales enabled.

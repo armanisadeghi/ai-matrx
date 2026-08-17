@@ -16,13 +16,13 @@
  * own actions.
  *
  * Emitter: `MandatesConsole` mounts `<SurfaceRuntimeProvider>` and builds
- * the scope at Run time via `createSlotsScope`.
+ * the scope at Run time via `createMandatesScope`.
  *
  * ── THE JUDGMENT BAR ON THIS SURFACE (read before adding a target) ──────
  * Almost everything this console shows is OBSERVED OPERATIONAL EVIDENCE, and
- * evidence is never agent-writable. `slot_count`, `mandates_summary`,
- * `health_summary`, `unhealthy_slots`, `system_agent_count` and
- * `selected_slot_health` are MEASURED from the live `agent.slot_definition` /
+ * evidence is never agent-writable. `mandate_count`, `mandates_summary`,
+ * `health_summary`, `unhealthy_mandates`, `system_agent_count` and
+ * `selected_mandate_health` are MEASURED from the live `agent.slot_definition` /
  * `agent.slot_binding` rows and the canonical agent slice — health in
  * particular is computed, not authored, so an agent writing it would be
  * fabricating the state of the system. That is the same line
@@ -43,7 +43,7 @@
  *    crawl, `pdf-extractor` Run) is that spending real resources stays behind
  *    a human press.
  *  - **Per-principal overrides** (`MandateOverrideEditor` — the tempting
- *    `selected_slot_overrides` candidate). On inspection it holds three
+ *    `selected_mandate_overrides` candidate). On inspection it holds three
  *    fields and none of them earns a target: the agent swap is identity by
  *    UUID again; `model` is an id from a catalog this surface does not
  *    expose, so it could only be guessed; and `thinking_level` alone is a
@@ -79,14 +79,14 @@ const groups: SurfaceValueGroup[] = [
       "The full mandate list as loaded into the console table, plus the health roll-up across all mandates.",
   },
   {
-    key: "selected_slot",
+    key: "selected_mandate",
     label: "Selected mandate",
     sortOrder: 200,
     description:
       "The mandate the admin has open in the side-panel workbench — pin state, health, and overrides.",
   },
   {
-    key: "slot_test_bench",
+    key: "mandate_test_bench",
     label: "Mandate test bench",
     sortOrder: 300,
     description:
@@ -96,7 +96,7 @@ const groups: SurfaceValueGroup[] = [
 
 const surfaceSpecific: SurfaceValue[] = [
   {
-    name: "slot_count",
+    name: "mandate_count",
     label: "Mandate count",
     description:
       "Number of live (non-deleted) mandates loaded into the console. 0 while loading or when no mandates have been seeded yet.",
@@ -130,7 +130,7 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "mandates_console",
   },
   {
-    name: "unhealthy_slots",
+    name: "unhealthy_mandates",
     label: "Unhealthy mandates",
     description:
       'Summary entries (same shape as mandates_summary) for every mandate whose health is not "ok" — code truth drift/import failure or an unhealthy pin. Empty array when everything is healthy.',
@@ -152,7 +152,7 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "mandates_console",
   },
   {
-    name: "selected_slot_id",
+    name: "selected_mandate_id",
     label: "Selected mandate id",
     description:
       "UUID of the mandate open in the side-panel workbench. Empty when no row is selected.",
@@ -160,10 +160,10 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 36,
     sortOrder: 300,
-    group: "selected_slot",
+    group: "selected_mandate",
   },
   {
-    name: "selected_slot",
+    name: "selected_mandate",
     label: "Selected mandate",
     description:
       "Full detail of the open mandate: slot_key, label, description, default agent (name + type), pin state (use_latest, pinned version, latest version, drift), health, input/output kinds, enabled flag, overrides count. Absent when no row is selected.",
@@ -171,10 +171,10 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 600,
     sortOrder: 310,
-    group: "selected_slot",
+    group: "selected_mandate",
   },
   {
-    name: "selected_slot_health",
+    name: "selected_mandate_health",
     label: "Selected mandate health",
     description:
       '"ok", "version drift", "agent archived", or "not a system agent" for the open mandate. Absent when no row is selected.',
@@ -182,10 +182,10 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 20,
     sortOrder: 320,
-    group: "selected_slot",
+    group: "selected_mandate",
   },
   {
-    name: "selected_slot_overrides",
+    name: "selected_mandate_overrides",
     label: "Selected mandate overrides",
     description:
       "Per-principal slot_binding overrides for the open mandate: principal type, override agent name (null = settings-only), config overrides, enabled flag. Empty array when the mandate has none; absent when no row is selected. Bindable rather than auto-context.",
@@ -194,10 +194,10 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 500,
     autoContext: false,
     sortOrder: 330,
-    group: "selected_slot",
+    group: "selected_mandate",
   },
   {
-    name: "selected_slot_contract",
+    name: "selected_mandate_contract",
     label: "Selected mandate contract",
     description:
       "The open mandate's stored contract: { required_variables, required_context_slots } — the input names ANY agent pinned to this mandate must declare, seeded from the default agent. This is the vocabulary an exemplar's `variables` object has to fill: write one key per entry in required_variables. Both arrays empty means the mandate declares no required inputs and any agent qualifies. Absent when no row is selected.",
@@ -205,10 +205,10 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 200,
     sortOrder: 340,
-    group: "selected_slot",
+    group: "selected_mandate",
   },
   {
-    name: "selected_slot_exemplars",
+    name: "selected_mandate_exemplars",
     label: "Stored exemplars",
     description:
       "The open mandate's saved test inputs, one entry per exemplar: { id, label, variables, user_input }. These are the real inputs every candidate agent is run against in the bench. Read this before proposing a new exemplar — it is how you match the house style of the existing ones and avoid re-adding a case the mandate already covers. Empty array when the mandate has none; absent when no mandate workbench is open. Bindable rather than auto-context.",
@@ -217,10 +217,10 @@ const surfaceSpecific: SurfaceValue[] = [
     typicalCharCount: 1200,
     autoContext: false,
     sortOrder: 400,
-    group: "slot_test_bench",
+    group: "mandate_test_bench",
   },
   {
-    name: "slot_exemplar_draft",
+    name: "mandate_exemplar_draft",
     label: "Exemplar draft",
     description:
       'The exemplar the admin is composing in the bench\'s "+ Exemplar" form, and the read twin of the write target of the same name: { open, label, variables, user_input }. `open` is whether the composer is expanded — its inputs are only on screen when true. `variables` is the textarea VERBATIM (a JSON string, "{}" when untouched), NOT an object. Absent when no mandate workbench is open.',
@@ -228,7 +228,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 400,
     sortOrder: 410,
-    group: "slot_test_bench",
+    group: "mandate_test_bench",
   },
 ];
 
@@ -238,8 +238,8 @@ const surfaceSpecific: SurfaceValue[] = [
  * implementation) can never drift from the manifest by re-typing a string.
  */
 export const AGENT_MANDATES_WRITE_TARGETS = {
-  selectMandate: "select_slot",
-  exemplarDraft: "slot_exemplar_draft",
+  selectMandate: "select_mandate",
+  exemplarDraft: "mandate_exemplar_draft",
 } as const;
 
 /**
@@ -267,7 +267,7 @@ export const AGENT_MANDATES_WRITE_TARGETS = {
  * separate targets for three mutually-dependent fields could half-land a
  * test case. Validate-then-apply inside one handler cannot.
  *
- * `select_slot` is `mode: "ui"` — navigation, the `content-plan` `select_node`
+ * `select_mandate` is `mode: "ui"` — navigation, the `content-plan` `select_node`
  * precedent — but `applyPolicy: "ask"` rather than `"auto"`, which is a
  * deliberate departure. On this page the workbench REMOUNTS per mandate
  * (`key={row.id}` on `MandateEditor`, `MandateTestBench` and `MandateOverridePanel`),
@@ -277,11 +277,11 @@ export const AGENT_MANDATES_WRITE_TARGETS = {
  * reversible view move `"auto"` is for. The handler additionally refuses
  * outright while an exemplar draft is staged and unsaved.
  *
- * ORDERING, and it matters: `slot_exemplar_draft` is only wired while a mandate
+ * ORDERING, and it matters: `mandate_exemplar_draft` is only wired while a mandate
  * workbench is open, because that is when the composer exists. The two
  * targets therefore cannot be staged in the same breath from a cold page —
  * the seam resolves handlers up front, so an exemplar sent alongside the very
- * first `select_slot` resolves against the console's base layer and is
+ * first `select_mandate` resolves against the console's base layer and is
  * refused with a message saying exactly that. Select first, then compose.
  */
 const writeTargets: SurfaceWriteTarget[] = [
@@ -291,12 +291,12 @@ const writeTargets: SurfaceWriteTarget[] = [
     description:
       "Opens a mandate in the side-panel workbench — the same as the admin clicking its row. Nothing is saved and no mandate is changed; this only moves the view, and it is what puts the pin editor, the test bench and the overrides panel on screen. " +
       "Value: a STRING, either the mandate's `id` (UUID) or its `slot_key` — both are in `mandates_summary`, so take one from there rather than inventing it. An id or key that no loaded mandate matches is an error, not a no-op. " +
-      "Opening a different mandate REMOUNTS the workbench and discards anything the admin has typed into the rebind editor, the override editor or the exemplar composer, which is why this asks. It is refused outright while an unsaved exemplar draft is staged (`slot_exemplar_draft.label`/`variables`/`user_input`) — save or clear that first.",
+      "Opening a different mandate REMOUNTS the workbench and discards anything the admin has typed into the rebind editor, the override editor or the exemplar composer, which is why this asks. It is refused outright while an unsaved exemplar draft is staged (`mandate_exemplar_draft.label`/`variables`/`user_input`) — save or clear that first.",
     valueType: "string",
-    updatesValue: "selected_slot_id",
+    updatesValue: "selected_mandate_id",
     mode: "ui",
     applyPolicy: "ask",
-    group: "selected_slot",
+    group: "selected_mandate",
     sortOrder: 350,
   },
   {
@@ -304,16 +304,16 @@ const writeTargets: SurfaceWriteTarget[] = [
     label: "Exemplar draft",
     description:
       'Stages a test-bench exemplar into the "+ Exemplar" composer on the OPEN mandate, expanding the form so the admin sees it. NOTHING is saved and nothing runs — the admin still presses "Save exemplar", and separately "Run all" to spend budget comparing agents against it. ' +
-      "Value: an object with AT LEAST ONE of `{ label, variables, user_input }`. Each key REPLACES that one field; omit a key to leave what the admin typed alone (read `slot_exemplar_draft` first if you mean to extend rather than replace). " +
+      "Value: an object with AT LEAST ONE of `{ label, variables, user_input }`. Each key REPLACES that one field; omit a key to leave what the admin typed alone (read `mandate_exemplar_draft` first if you mean to extend rather than replace). " +
       "`label` — what this test case is called, a short non-empty string that says what it exercises (e.g. \"Long transcript, no speaker names\"). " +
-      "`variables` — an OBJECT (send real JSON, not a string; it is serialized into the textarea for you). Its keys are the mandate's declared inputs: fill every entry of `selected_slot_contract.required_variables`, and send `{}` only for a mandate whose contract declares none. Keys outside the contract are allowed but are not supplied by the mandate at run time. " +
+      "`variables` — an OBJECT (send real JSON, not a string; it is serialized into the textarea for you). Its keys are the mandate's declared inputs: fill every entry of `selected_mandate_contract.required_variables`, and send `{}` only for a mandate whose contract declares none. Keys outside the contract are allowed but are not supplied by the mandate at run time. " +
       "`user_input` — the end-user message this exemplar replays, or an empty string for mandates driven purely by variables. " +
-      "Refused unless a mandate workbench is open (read `selected_slot_id`; use `select_slot` first, in an earlier turn).",
+      "Refused unless a mandate workbench is open (read `selected_mandate_id`; use `select_mandate` first, in an earlier turn).",
     valueType: "object",
-    updatesValue: "slot_exemplar_draft",
+    updatesValue: "mandate_exemplar_draft",
     mode: "draft",
     applyPolicy: "ask",
-    group: "slot_test_bench",
+    group: "mandate_test_bench",
     sortOrder: 420,
   },
 ];
@@ -334,8 +334,8 @@ Two laws govern this page: (1) THE SYSTEM-AGENT LAW — a mandate default may on
 
 What you may safely do: read the mandate list, health roll-up, and the selected mandate's pin state and overrides, then help the admin reason about drift, law violations, or draft mandate labels/descriptions. You never rebind, enable, disable, or run a test yourself — those are the admin's own actions.
 
-You can also WRITE here, through apply_surface_write, but only into two places. \`select_slot\` opens a mandate in the side-panel workbench (its id or slot_key, from mandates_summary) — exactly as clicking the row would. \`slot_exemplar_draft\` stages a test-bench EXEMPLAR into that open mandate's "+ Exemplar" composer: a stored real input the bench replays against the current binding and every candidate agent, which is the evidence a rebind is safe. Read \`selected_slot_contract\` first — its required_variables are the keys the exemplar's \`variables\` object must fill — and \`selected_slot_exemplars\` to match the existing cases rather than duplicate one. Both targets only STAGE or MOVE: the admin still presses "Save exemplar", and separately "Run all", which is the button that actually spends model budget.
-Order matters: the exemplar composer only exists once a mandate workbench is open, so select the mandate in one turn and compose in the next — an exemplar sent alongside the very first select_slot is refused.
+You can also WRITE here, through apply_surface_write, but only into two places. \`select_mandate\` opens a mandate in the side-panel workbench (its id or slot_key, from mandates_summary) — exactly as clicking the row would. \`mandate_exemplar_draft\` stages a test-bench EXEMPLAR into that open mandate's "+ Exemplar" composer: a stored real input the bench replays against the current binding and every candidate agent, which is the evidence a rebind is safe. Read \`selected_mandate_contract\` first — its required_variables are the keys the exemplar's \`variables\` object must fill — and \`selected_mandate_exemplars\` to match the existing cases rather than duplicate one. Both targets only STAGE or MOVE: the admin still presses "Save exemplar", and separately "Run all", which is the button that actually spends model budget.
+Order matters: the exemplar composer only exists once a mandate workbench is open, so select the mandate in one turn and compose in the next — an exemplar sent alongside the very first select_mandate is refused.
 Nothing else here is writable, and the reasons are worth knowing: health and the roll-ups are MEASURED, not authored, so writing them would fabricate the state of the system; rebinding and per-principal overrides are agent identity by UUID over live production capacity, with no agent catalog on this surface to pick from; enable/disable and Run spend real capacity and budget. The way you move those numbers is by helping the admin decide, then letting them press the button.
 </surface_intro>`,
   groups,
@@ -430,21 +430,21 @@ export interface MandateOverrideSummary {
  * declared `alwaysAvailable: true`; optional keys mirror `alwaysAvailable:
  * false`.
  */
-export function createSlotsScope(values: {
+export function createMandatesScope(values: {
   // alwaysAvailable: true → required
-  slot_count: number;
+  mandate_count: number;
   mandates_summary: MandateSummary[];
   health_summary: MandatesHealthSummary;
-  unhealthy_slots: MandateSummary[];
+  unhealthy_mandates: MandateSummary[];
   system_agent_count: number;
   // alwaysAvailable: false → optional
-  selected_slot_id?: string;
-  selected_slot?: MandateDetail;
-  selected_slot_health?: string;
-  selected_slot_overrides?: MandateOverrideSummary[];
-  selected_slot_contract?: MandateContract;
-  selected_slot_exemplars?: MandateExemplar[];
-  slot_exemplar_draft?: MandateExemplarDraft;
+  selected_mandate_id?: string;
+  selected_mandate?: MandateDetail;
+  selected_mandate_health?: string;
+  selected_mandate_overrides?: MandateOverrideSummary[];
+  selected_mandate_contract?: MandateContract;
+  selected_mandate_exemplars?: MandateExemplar[];
+  mandate_exemplar_draft?: MandateExemplarDraft;
   selection?: string;
   context?: Record<string, unknown>;
 }): SurfaceScopePayload {

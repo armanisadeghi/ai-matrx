@@ -376,10 +376,10 @@ find yourself writing code to add an output, something above is wrong.
   object, held to the registered schema exactly — `theme.preset` (one of the ten
   curated templates) instead of hand-picked hex colors, string-valued `extra`
   only (`eyebrow` / `imagePrompt`), and no `stat`/`metrics` layouts, because those
-  need `extra.stats` **arrays** the kind's `record<string>` cannot carry. The slot
-  is `use_latest`, so every consumer picked up v3 with no repin; it declares
+  need `extra.stats` **arrays** the kind's `record<string>` cannot carry. The mandate
+  is `use_latest`, so every consumer picked up v3 with no rebind; it declares
   `output_kind="presentation_deck"` in aidream `client_slots.py` and on the live
-  row. The card runs `useLiveAgentRun({slotKey})` into the floating
+  row. The card runs `useLiveAgentRun({mandateKey})` into the floating
   `LiveRunWindow` — verified live on a real topic: the presentation renderer's
   own loading state appeared as the envelope opened, then a 12-slide deck in the
   "Minimal" preset, page never shifting. The persisted `meta.presentation` keeps
@@ -393,13 +393,13 @@ find yourself writing code to add an output, something above is wrong.
   surfacing as the literal string "unknown error" instead of the RPC's real
   message.
 - 2026-08-11 — **Outputs Studio: the SEO package streams live instead of sitting
-  behind a spinner.** The card ran `useSlotRunner` (the one-shot `callApi` path,
+  behind a spinner.** The card ran `useMandateRunner` (the one-shot `callApi` path,
   which yields no `requestId`), awaited the whole run showing only
   `GeneratingNote`, hand-parsed the result with `parseJsonLoose`, and rendered it
   with a bespoke `SeoView` card — a violation of THE FLOATING LAW and of the
   CANONICAL COMPONENT LAW at once. Now: the payload is the registered
   `seo_package` content-IR kind (`features/content-ir/kinds/seo-package.ts`), the
-  run goes through `useLiveAgentRun({ slotKey })`, and the output streams into the
+  run goes through `useLiveAgentRun({ mandateKey })`, and the output streams into the
   floating `LiveRunWindow` where the pipeline routes it to `SeoPackageBlock` token
   by token — the title appears with its 60-character budget already measured while
   the FAQ is still being written. The page never shifts; the card shows only a
@@ -408,22 +408,22 @@ find yourself writing code to add an output, something above is wrong.
   shim because the stored keys ARE the canonical snake_case ones.
   `SeoView` / `SeoField` / `SlugCopyButton` and the local `SeoPackage` interface
   are deleted. Agent instructions rewritten via `agent_author` (v3, `__kind` first,
-  `title` second); the slot declares `output_kind="seo_package"` in aidream's
+  `title` second); the mandate declares `output_kind="seo_package"` in aidream's
   `client_slots.py`. The `research_topic` anchor and the org survive the move:
   `HeadlessAgentJsonOptions` carries `contextAnchor` / `organizationId` into the
   launcher (D165, filed and closed the same day), so the server still reloads the
   topic's saved scope.
 
 - 2026-08-10 — Per-topic agents page (W3) became a thin consumer of the canonical
-  agent-slots primitives (`features/agents/slots/`): `compareContracts` /
+  mandates primitives (`features/agents/mandates/`): `compareContracts` /
   `systemContractRows` / `ComparisonResult` moved to
-  `features/agents/slots/contract-compare.ts` (research's `agents/utils.ts` keeps
-  only `shortUuid`); `ContractItem` rows, the `SlotResolutionRibbon` (truthful
+  `features/agents/mandates/contract-compare.ts` (research's `agents/utils.ts` keeps
+  only `shortUuid`); `ContractItem` rows, the `MandateResolutionRibbon` (truthful
   chain: Topic override → Your override → Org override → System default),
-  `OverriddenCountBadge`, and the shared `useCopySlotAgent` Copy & Update hook
+  `OverriddenCountBadge`, and the shared `useCopyMandateAgent` Copy & Update hook
   (failure decomposition preserved) are consumed from there. The raw UUID-paste
   box + Validate button in `AgentRoleCard` was replaced by the canonical
-  `SlotAgentPicker` in controlled-override mode — the write path is unchanged
+  `MandateAgentPicker` in controlled-override mode — the write path is unchanged
   (`rs_topic.agent_config` keyed `<kind>_agent_id` via TopicAgentsPage
   onApply/onRemove; the picker's contract pre-flight is the gate, since that
   path has no server-side bind check).
@@ -674,7 +674,7 @@ find yourself writing code to add an output, something above is wrong.
 - `2026-06-28` — **DB canonicalization (platform standard).** All 13 `rs_*` relations brought onto the canonical model: `rs_topic`/`rs_template` as entities (tokens `research_topic`/`research_template`), the other 10 tables as components of `research_topic`. Non-canonical project-cascade RLS replaced by `iam.apply_rls`; legacy `set_updated_at` triggers dropped; all 12 tables verify zero FAIL / zero WARN; owner-impersonation confirmed no data hidden. Existing topics set to `visibility='internal'`; system templates `public`.
 - `2026-06-24` — **Matrx entryway prefill.** `/research/topics/new?mode=ai&topic=...` now seeds the AI subject textarea as well as the draft topic name, allowing the new `/demos/matrx-entry` route to hand users into the existing research project-selection and AI topic-shaping flow without creating a parallel pipeline.
 - `2026-06-23` — **Surface agent wiring (`matrx-user/research`).** New `agent-context/buildResearchContextData.ts` (pure `createResearchScope` mapper — baselines `content`/`selection`/`context` + customs `topic_*`/`autonomy_level`/`keyword_list`/`source_count`/`included_source_count`/`analysis_count`/`current_synthesis_text`/`synthesis_documents`) + `RESEARCH_CONTEXT_MENU_PROPS` + `createResearchExtraSections(handlers)`. `UnifiedAgentContextMenu` mounted on the AI-mode Subject query (editable, `ProTextarea` gains `surfaceName` + `getApplicationScope`), the `DocumentViewer` document, and each `SynthesisList` synthesis body (read-only). `getApplicationScope` is a plain fn reading the live DOM selection. No manifest/DB change (every value pre-declared).
-- `2026-06-21` — **Research header back nav.** `/research/topics/new` and `/research/topics` shell headers now left-align the back control with a visible label ("Back to Topics" / "Research") instead of a lone centered chevron in the glass header center slot.
+- `2026-06-21` — **Research header back nav.** `/research/topics/new` and `/research/topics` shell headers now left-align the back control with a visible label ("Back to Topics" / "Research") instead of a lone centered chevron in the glass header center mandate.
 - `2026-06-21` — **Topic init wizard — keyword chips.** Manual/template keywords (`TextArrayInput` default) and AI streaming/review keyword pills now use solid `bg-primary text-primary-foreground` instead of the broken `bg-gradient-radial` chip style (light text on no background in light mode). AI review keyword rows use solid `bg-muted` rows instead of translucent violet tints.
 - `2026-06-21` — **Topic init wizard — light/dark contrast.** `/research/topics/new` init form (`ResearchInitForm`, `TemplatePicker`, `AutonomySelector`) now uses explicit `text-foreground` on headings, labels, cards, project rows, keyword editor, and ProInput/ProTextarea fields; accent badges use `dark:` variants; keyword review panel uses solid `bg-card` instead of translucent `bg-card/40`.
 - `2026-06-19` — **Media gallery — YouTube split.** `/media` embeds watch/embed/shorts URLs inline (`youtube-nocookie.com` iframe). Channel/profile links (`/user`, `/channel`, `/@handle`, legacy custom URLs) bucket into a separate **YouTube Channels** list section (compact rows with Open on YouTube). Helpers: `isYouTubeChannelUrl`, `youTubeChannelLabel`, `isYouTubeChannelMedia` in `lib/media/youtube.ts` + `mediaCategorization.ts`.

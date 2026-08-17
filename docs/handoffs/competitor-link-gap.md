@@ -49,7 +49,7 @@ seed rule. This file is only the work order.
 
 | `seo.landscape_brief` + the staged-confidence gate | **LIVE**, 8 real briefs | `aidream/services/seo/landscape_brief.py`, SoR §8e |
 | Domain registry wiring (T6) | **LIVE**, 166 rows read per org | `aidream/services/seo/domain_registry.py` |
-| Classifier agent v3 (15 roles + `peer_scale` + the brief) | **LIVE**, slot repinned | `c1a55f02-9e10-4c2f-9a3b-6f0d1e7b4a21` |
+| Classifier agent v3 (15 roles + `peer_scale` + the brief) | **LIVE**, mandate rebound | `c1a55f02-9e10-4c2f-9a3b-6f0d1e7b4a21` |
 | `discover_and_classify_competitors` + `POST /seo/sites/{id}/competitors/discover` | **LIVE** | `services/seo/competitor_autopsy.py` |
 | The Review tab (brief card + ruling queue + ruling record) | **LIVE** | `features/marketing/competitors/` |
 
@@ -140,7 +140,7 @@ as the proposal surface, and keep `seo.competitor.market_overlap` as the truthfu
 Also add `entity_role='franchise_sibling'` — same brand, separate P&L, real competition,
 never folded into "us". ⚠️ It is agreed in SoR §8a but is **NOT in the live CHECK
 constraint** (`competitor_entity_role_valid`, 15 values). Adding it means the DDL *and* a new
-classifier agent version *and* repointing the slot — see "the lockstep" below.
+classifier agent version *and* repointing the mandate — see "the lockstep" below.
 
 ### T8 — Ground truth with Arman ⬅ **BUILT AND SEEDED; WAITING ON HIM, NOT ON CODE**
 Nothing to build. **Do not rebuild any of it.** The whole path is live and there are real
@@ -191,7 +191,7 @@ A vocabulary change is done only when all four land together:
 2. a NEW `agent.definition_version` with the widened `output_schema`,
 3. `agent.definition` itself (a run resolving the live definition rather than the pin would
    otherwise still see the old enum), and
-4. the slot's `default_agent_version_id` repointed — slots pin with `use_latest: false`, so
+4. the mandate's `default_agent_version_id` repointed — mandates pin with `use_latest: false`, so
    bumping the agent alone changes nothing — plus `contract.required_output_keys`.
 
 Do NOT hand-insert a `definition_version` when creating a NEW agent: the definition's own

@@ -68,7 +68,7 @@ import {
   readMandateBenchOwner,
 } from "./bench-draft";
 import {
-  createSlotExemplar,
+  createMandateExemplar,
   deleteMandateExemplar,
   fetchAgentVersions,
   fetchMandateExemplars,
@@ -720,7 +720,7 @@ export function MandateTestBench({
       return;
     }
     try {
-      await createSlotExemplar({
+      await createMandateExemplar({
         mandateId: mandate.id,
         label: newLabel.trim() || "Manual test case",
         variables,
@@ -740,11 +740,11 @@ export function MandateTestBench({
   // ── Surface seam: publish the composer upward, accept writes into it ──────
   //
   // This component owns the exemplar composer, so the LIVE handler for
-  // `slot_exemplar_draft` is registered here rather than on the console's
+  // `mandate_exemplar_draft` is registered here rather than on the console's
   // provider — `resolveHandlers` merges it over the console's base refusal
   // layer for exactly as long as a mandate workbench is open. The console reads
-  // the snapshot below inside `getScope()` to emit `slot_exemplar_draft` and
-  // `selected_slot_exemplars`, the read twins of that target.
+  // the snapshot below inside `getScope()` to emit `mandate_exemplar_draft` and
+  // `selected_mandate_exemplars`, the read twins of that target.
   // Lazy state, not a ref: the id is stable for this bench's whole life and is
   // read inside a handler, and a ref cannot be initialized during render.
   const [benchId] = useState(nextMandateBenchId);
@@ -780,17 +780,17 @@ export function MandateTestBench({
     // each message names the legal shape rather than just saying "invalid".
     [AGENT_MANDATES_WRITE_TARGETS.exemplarDraft]: (value: unknown) => {
       // Am I still the composer on screen? Handlers are resolved before the
-      // first confirm dialog, so a write staged alongside a `select_slot` that
+      // first confirm dialog, so a write staged alongside a `select_mandate` that
       // applied first would otherwise land in THIS bench's setters after the
       // workbench had already remounted for another mandate.
       if (readMandateBenchOwner() !== benchId) {
         throw new Error(
-          "The workbench moved to a different mandate after this write was staged, so this exemplar composer is no longer on screen. Re-read `selected_slot_id` and send the exemplar again for the mandate that is actually open.",
+          "The workbench moved to a different mandate after this write was staged, so this exemplar composer is no longer on screen. Re-read `selected_mandate_id` and send the exemplar again for the mandate that is actually open.",
         );
       }
       if (typeof value !== "object" || value === null || Array.isArray(value)) {
         throw new Error(
-          "slot_exemplar_draft takes an object with at least one of { label, variables, user_input }.",
+          "mandate_exemplar_draft takes an object with at least one of { label, variables, user_input }.",
         );
       }
       const input = value as Record<string, unknown>;
@@ -798,12 +798,12 @@ export function MandateTestBench({
       const unknownKeys = Object.keys(input).filter((k) => !known.includes(k));
       if (unknownKeys.length > 0) {
         throw new Error(
-          `slot_exemplar_draft does not accept ${unknownKeys.join(", ")}. Accepted keys: ${known.join(", ")}.`,
+          `mandate_exemplar_draft does not accept ${unknownKeys.join(", ")}. Accepted keys: ${known.join(", ")}.`,
         );
       }
       if (Object.keys(input).length === 0) {
         throw new Error(
-          `slot_exemplar_draft needs at least one of ${known.join(", ")} — an empty object changes nothing.`,
+          `mandate_exemplar_draft needs at least one of ${known.join(", ")} — an empty object changes nothing.`,
         );
       }
 
