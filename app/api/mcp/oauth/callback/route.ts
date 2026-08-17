@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
 import { classifyMcpBackendFailure } from "@/features/agents/services/mcp-oauth/backend-failure";
+import { isValidOAuthState } from "@/features/agents/services/mcp-oauth/state";
 
 interface OAuthSession {
   serverId: string;
@@ -56,10 +57,11 @@ export async function GET(req: NextRequest) {
     return buildErrorRedirect(req, "/", "Invalid OAuth session data");
   }
 
-  // Validate state to prevent CSRF
-  if (session.state && returnedState && session.state !== returnedState) {
+  // Validate state to prevent CSRF. Missing state is a failure, not an
+  // invitation to skip the check.
+  if (!isValidOAuthState(session.state, returnedState)) {
     console.error(
-      `[MCP OAuth Callback] State mismatch: expected ${session.state}, got ${returnedState}`,
+      `[MCP OAuth Callback] State validation failed for ${session.serverSlug}`,
     );
     return buildErrorRedirect(
       req,

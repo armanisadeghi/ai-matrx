@@ -50,6 +50,8 @@ review dossier, or approval monitor.
 - OAuth tokens stay server-side; the client never sees raw credentials.
 - **DCR credentials are attempt-scoped.** Never cache a returned client ID without its
   matching secret; a downstream failure must not poison the next authorization attempt.
+- **OAuth callback state is fail-closed.** The external provider must return the exact,
+  non-empty state saved for the authorization attempt; a missing state is never accepted.
 - **Classify the Next.js → aidream boundary before naming a service.** Cloudflare challenge
   HTML means FastAPI and the vault never ran; preserve `cf-ray` / `x-request-id` and report
   the edge failure instead of calling every 403 a vault denial.
@@ -89,6 +91,9 @@ implementation (it also adds the origin check and listener cleanup the settings 
 
 ## Change log
 
+- `2026-08-17` — made shared external-MCP OAuth state validation fail closed before the
+  Microsoft Graph / Work IQ rollout; missing, empty, malformed, and mismatched state values
+  are rejected before token exchange.
 - `2026-08-17` — linked the cross-repo provider access and approval operating system.
 - `2026-08-15` — linked the cross-repo Microsoft platform integration program before its first
   production OAuth/MCP implementation.
