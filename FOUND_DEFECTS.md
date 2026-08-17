@@ -36,7 +36,14 @@ former — the reading that matches "absence is never loss" — the fix is to sp
 only for display. Whoever decides should also say what a legitimate `0`, `false` and `""` mean,
 since `0` and `false` already count as supplied and `""` does not.
 
-### D206 — 🚨 SECURITY: `/api/deepgram/authenticate` is a LIVE, UNAUTHENTICATED token-minting endpoint, and can return the raw API key (2026-08-16)
+### D206 — ✅ RESOLVED 2026-08-16 — SECURITY: `/api/deepgram/authenticate` was a LIVE, UNAUTHENTICATED token-minting endpoint that could return the raw API key
+
+**Fixed: both routes deleted** (`authenticate`, `speak`, plus `brain`) along with the `@deepgram/sdk`
+dependency, under Arman's written authorization to kill the Deepgram path (2026-08-16).
+**Still worth doing operationally: rotate `DEEPGRAM_API_KEY` if it was ever set on a deployed host** —
+the endpoint was public for ~22 months.
+
+Original report:
 
 **Fix regardless of how D204 is ruled — this is not a code-cleanliness item.**
 
@@ -102,7 +109,15 @@ The fix is one sitting: regenerate both from the live backend, then fix the
 callsites the new required fields expose — each is a real missing request field,
 not a typing nuisance.
 
-### D204 — `lib/deepgram/` holds four hardcoded agent personas in a module with ZERO consumers (2026-08-16)
+### D204 — ✅ RESOLVED 2026-08-16 — `lib/deepgram/` held four hardcoded agent personas in a module with ZERO consumers
+
+**Arman named it dead in writing (2026-08-16): "old legacy things that are dead… kill them and
+eliminate them completely."** Deleted: the whole `lib/deepgram/` directory, all three
+`app/api/deepgram/*` routes, the `@deepgram/sdk` dependency, and the four `UNRESOLVED:` allowlist
+entries (allowlist 5 → 1; `check:hardcoded-prompts` clean). The vendor memo was preserved at
+`docs/vendor-research/deepgram-vs-cartesia-2024.md`. See also D206.
+
+Original report:
 
 **Needs Arman's ruling — an agent may not recommend deleting purpose-built work
 (unfinished-work alarm), and there is no live call site to convert.**

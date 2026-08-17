@@ -23,7 +23,7 @@ export interface PublicAgent {
   description: string | null;
   /** Declared launch variables — drives the guest run form. */
   variableDefinitions: unknown;
-  /** Declared context slots the run needs filled. */
+  /** Declared context policies the run needs filled. */
   contextPolicies: unknown;
   agentType: string;
   category: string | null;
