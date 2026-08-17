@@ -1,58 +1,50 @@
 # P8 — Real loading states
 
-- Run date: 2026-08-14
-- Standing-authority follow-up: 2026-08-15
-- Run kind: scheduled structural-novelty run plus a fresh full-repository pass
+- Run date: 2026-08-17
+- Run kind: scheduled structural-novelty pass plus open-sighting reconciliation
 - Authority: mixed Tier M / Tier R under the dedicated `real-loading-states` skill
-- Scan-start commit: `3a650ee9a6de6c29c4c8a382c678469c2b61f80e`
-- Worktree: isolated Codex worktree `b336`; clean and equal to `origin/main` before mutation
+- Scan-start commit: `edc63f092`
+- Worktree: canonical automation worktree `/Users/armanisadeghi/code/matrx-frontend`; baseline diagnostics captured before mutation
 
 ## Scope scanned
 
-- Ran the exact P8 detector over all `.tsx`/`.jsx` UI source under `app`, `components`, `features`, `lib`, `hooks`, `providers`, and `utils`.
-- Pre-edit detector baseline: 183 matching lines in 159 files.
-- Re-verified the open P8 sighting and every one of the 83 historical files carried from the 2026-08-12 report rather than trusting the old classification.
-- Performed a full pass even though the prior monthly pass was only four days old, so this report replaces the 2026-08-10 structural baseline.
-- Structural novelty since 2026-08-10: route leaves changed from 1,040 to 1,007; top-level feature directories remained 121; the signature-bearing file set only shrank. There were no newly added P8 signature files.
-- Reviewed rendered context for all required exclusion classes: ARIA-only text; comments/docs; copied diagnostic data; contextual operation labels; component-library spinners, skeletons, shimmer, and pulse indicators; and error/empty-state copy.
+- Ran the exact literal detector and the required generic visual-loader scan over `.tsx`/`.jsx` UI source under `app`, `components`, `features`, `lib`, `hooks`, `providers`, and `utils`.
+- Structural novelty since the prior baseline: 42 route leaves added / 8 removed, 8 feature directories added / 2 removed, 9 newly added literal-signature files, and 134 newly added generic visual-signature files.
+- Pre-edit literal baseline: 175 matching lines in 152 files. Post-fix baseline: 145 files.
+- Re-verified the open `SafeBlockRenderer` sighting and all 68 retained backlog paths. One prior compact path and `SafeBlockRenderer` no longer remain findings; two new string-only control cases enter the missing-machinery backlog.
+- Reviewed exclusions rather than counting raw signatures: contextual button/status spinners, established surface-shaped skeletons, ARIA labels, active-element navigation overlays, comments, and diagnostic copy remain compliant.
 
 ## Approval routing and findings
 
-- Verified findings: **83 files**.
-- Standing-authority fixes: **15 files** — both the original 3-file batch and the 12-file compact batch are independently certified and delivered.
+- Verified findings in current scope: **19 files**.
+- Standing-authority fixes: **17 files / 19 callsites**, split into independently certified 15-file and 2-file batches.
 - Genuine human decisions required: **0**.
-- Backlog retained: **68 files** — 32 compact/control or identity cases still lack a verified direct primitive mapping, and 36 page/panel/list/tree/editor/preview cases need a surface-shaped skeleton or chunk-boundary decision.
-- Excluded as compliant or false positive: the other 76 post-fix signature files. These render an existing component-library loader/skeleton or contextual indicator, are ARIA-only, are comments/docs/diagnostics, or contain the term only in non-loading error/empty/copy data.
-- Resolved before this run: `features/agents/components/agent-listings/AgentSneakPeekModal.tsx` no longer contains the P8 signature.
+- Backlog retained: **68 files** — 33 compact/control or identity cases still lack a verified owning-control mapping, and 35 page/panel/list/tree/editor/preview cases need a proven surface-shaped skeleton or chunk-boundary decision.
+- Excluded as compliant or false positive: `ChaseboxPage.tsx`'s detector match is comment-only; `PipelineStageNode.tsx` is an active-node transition overlay with exact context; the remaining reviewed visual signatures are contextual or established component-library states.
 
-### Auto-approved and fixed
+### Standing-authority fixes
 
-Every automatic gate held: each literal was the sole indicator inside a React Suspense fallback; the existing wrapper, dimensions, theme classes, boundary, data/control flow, and chunk entry stayed unchanged; the canonical lightweight static import fit directly; messages are deterministic; the worktree had no overlapping edit; and the batch was three files.
+Every repair uses the existing canonical `SuspenseLoader` with a deterministic user-facing noun. Existing wrappers, dimensions, loading conditions, theme/responsive behavior, and chunk entry are unchanged; the two `next/dynamic` fallbacks keep their original single boundaries.
 
-- `app/(admin)/administration/ai/ai-models/provider-sync/page.tsx` → `Loading model provider sync…`
-- `features/agents/agent-creators/interactive-builder/ComprehensiveBuilder.tsx` → `Loading agent builder section…`
-- `features/agents/agent-creators/tabbed-builder/MainPromptBuilder.tsx` → `Loading prompt builder section…`
+- `SystemErrorsPanel.tsx` → `Loading system errors…`
+- `AgentIODetails.tsx` → `Loading agent inputs…` / `Loading agent output…`
+- `GitHubConnectionCard.tsx` → `Loading GitHub account…`
+- `LandscapeBriefCard.tsx` → `Loading competitor landscape…`
+- `PlanContextPanel.tsx` → `Loading target keyword…`
+- `ResearchUsedBy.tsx` → `Loading research usage…`
+- `SafeBlockRenderer.tsx` → `Loading content…`
+- Bing callback page → `Loading Bing connection…`
+- workflow-runtime demo → `Loading workflow views…` / `Loading workflow runtime…`
+- Hindsight page → `Loading hindsight workspace…`
+- `OrchestraBuilder.tsx` → `Loading orchestra builder…`
+- `PipelineGraph.tsx` → `Loading research plan…`
+- `MandateOverridesPage.tsx` → `Loading mandate overrides…`
+- `OrchestraRunPanel.tsx` → `Loading orchestra run…`
+- `AddToOrchestraDialog.tsx` → `Loading orchestras…`
+- `MandateAgentPicker.tsx` → `Loading mandate details…`
+- `OrchestraBuilderCanvas.tsx` → `Loading orchestra canvas…`
 
-Each wrapper now renders `SuspenseLoader centered={false}` with one polite live status. No shared primitive changed.
-
-### Standing-authority compact-loader follow-up
-
-Arman granted standing authority on 2026-08-15 for verified generic loaders with one clearly superior, professional, behavior-preserving repair. These 12 compact states have direct React-node slots and deterministic user-relevant nouns, so they were implemented immediately with `SuspenseLoader centered={false}` while preserving each owning wrapper, dimensions, data/control flow, interaction, theme, viewport behavior, and chunk entry. Exact candidate `e67fb5fd9b3820fc76962879ce1f43ab5b75b97a` is independently certified and delivered; no human decision is pending.
-
-- `components/admin/server-logs/CoolifyLogViewer.tsx` → `Loading server logs…`
-- `features/agent-apps/components/inputs/AgentAppCategoryPicker.tsx` → `Loading app categories…`
-- `features/agent-apps/components/inputs/AgentVersionCompact.tsx` → `Loading agent versions…`
-- `features/code/terminal/SandboxLogsView.tsx` → `Loading sandbox logs…`
-- `features/code/views/explorer/FileTreeNode.tsx` → `Loading folder contents…`
-- `features/code/views/library/SourceFolderNode.tsx` → `Loading source folder…`
-- `features/code/views/sandboxes/SandboxDiagnosticsPanel.tsx` → `Loading environment variables…`
-- `features/files/webhooks/components/WebhooksManager.tsx` → `Loading webhook deliveries…`
-- `features/marketing/components/sites/SitePeekWindow.tsx` → `Loading top pages…`
-- `features/marketing/seo/keyword-research/components/KeywordResearchWorkbench.tsx` → `Loading keyword library…`
-- `features/settings/pages/SandboxStorageSettingsPage.tsx` → `Loading sandbox storage…`
-- `features/tool-registry/executor-surfaces/components/ExecutorSurfaceDetailPanel.tsx` → `Loading tool bindings…`
-
-### Backlog retained — compact/control/identity mapping not yet proven (32 files)
+### Backlog retained — compact/control/identity mapping not yet proven (33 files)
 
 These are certain bare-loading states, but the exact safe primitive mapping is not yet proven: many sit in string-only props, select placeholders, button pending text, or identity/title slots where inserting an inline loader could alter geometry or require extending a shared control. A focused mapping pass must name the owning primitive and settled geometry before any approval request.
 
@@ -63,7 +55,6 @@ These are certain bare-loading states, but the exact safe primitive mapping is n
 - `app/(dev)/demos/api-tests/tool-testing/ToolTestingClient.tsx`
 - `app/(dev)/demos/context-menu/launch-inspector/page.dev.tsx`
 - `app/(dev)/demos/json-block-detector/page.dev.tsx`
-- `app/(dev)/demos/scopes/context-lab/dense/page.dev.tsx`
 - `app/(dev)/demos/tests/slack/components/SlackManager.tsx`
 - `app/(public)/free/data-truncator/page.tsx`
 - `components/admin/EmailComposeSheet.tsx`
@@ -88,8 +79,10 @@ These are certain bare-loading states, but the exact safe primitive mapping is n
 - `features/scopes/components/quick-assign/ScopeContextTargetPicker.tsx`
 - `features/secrets/components/VaultItemDetail.tsx`
 - `features/surfaces/components/ManifestDriftDialog.tsx`
+- `features/crm/components/outreach-start/CrmFoldControl.tsx`
+- `features/sms/components/SmsAssistantSettingsSection.tsx`
 
-### Backlog retained — surface-shaped skeleton/design required (36 files)
+### Backlog retained — surface-shaped skeleton/design required (35 files)
 
 These replace page, panel, list, tree, editor, preview, or identity content. The skill forbids inventing a skeleton during a patrol. Several also sit in `next/dynamic` loading callbacks, so any repair must first use the `code-splitting` skill and prove that chunk entry remains unchanged.
 
@@ -101,7 +94,6 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 - `app/(dev)/demos/tests/tailwind-test/color-converter/components/ColorInput.tsx`
 - `components/mardown-display/blocks/json/JsonBlock.tsx`
 - `components/mardown-display/chat-markdown/EnhancedChatMarkdown.tsx`
-- `components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer.tsx`
 - `components/matrx/resizable/NestedResizableWithHeaderFooter.tsx`
 - `components/message-display/MessageContentDisplay.tsx`
 - `components/official-candidate/json-inspector/JsonInspector.tsx`
@@ -132,6 +124,13 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 
 ## Verification and certification
 
+### 2026-08-17 structural-novelty batches
+
+- First exact candidate `d82ac5e38275c1b1a4b216e314d0169c749f264a`: **CERTIFIED** by `/root/p8_exact_certifier`; 17 callsites across 15 files. Type-check, patrol contracts, Prettier, diff check, and batch-delta lint passed. All four scoped lint errors reproduce on base `458decd82` and are unchanged debt. Representative Bing callback smoke returned HTTP 200, rendered the final DOM, and emitted no console warning/error; transient fallback markup was verified statically.
+- Follow-up exact candidate `78cac960bd795942b590b9240449856235818a5e`: **CERTIFIED** by `/root/p8_exact_certifier`; 2 callsites across 2 files. Type-check, patrol contracts, Prettier, diff check, and scoped lint all passed. The picker lazy-open flow and geometry are unchanged; the canvas retains one `next/dynamic({ ssr: false })` boundary and its full-size wrapper.
+- The first candidate is delivered on `origin/main` and recorded in permanent run `ba129be4-5d09-40b0-a8bb-4a0eb77fdc26`. The follow-up is integrated on `origin/main`; its permanent run `ff48b527-3733-47e8-9f33-1dc4e326cfe2` is awaiting the serialized release projection before its final `delivered` event.
+- Managed preview used the exact automation checkout and enforced lease. The core route compiled at 187.4 GB under the 192 GB cap. No cap termination occurred during proof.
+
 ### Delivered 3-file batch
 
 - Immutable pre-edit baseline: clean status; `pnpm type-check` PASS; `pnpm check:doctrine` PASS; exact detector 183 lines / 159 files.
@@ -158,11 +157,11 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 
 ## Structural baseline for the next run
 
-- Route-tree baseline: 1,007 tracked `page.tsx` / `page.dev.tsx` leaves; sorted path-list SHA-256 `4bb37671087282c6b408b8a496278ae6cf01952cb7522f1f9281ef443d51bfb7`.
-- P8 signature baseline: 156 files; sorted path-list SHA-256 `ab8a4ee320f9a1b866bb60d8264ad6b8546bc8c5a4a47410bcbc00f1ba3812a8`.
-- Feature-directory baseline: 121 top-level directories; sorted basename SHA-256 `b7fe66d584074bd0df19cd37f41cb65f8b4ae6415e7864ca558fe6592a0cb52a`.
+- Route-tree baseline: 1,041 tracked `page.tsx` / `page.dev.tsx` leaves; sorted path-list SHA-256 `4bd3aa12fd3419b593d0547eacbab9796c96560aaaa20fa0604121ec350eebc3`.
+- P8 literal-signature baseline: 145 files; sorted path-list SHA-256 `277c61b6934be67f953da27277654c759571942b678ea7445cd2b9a106172f02`.
+- Feature-directory baseline: 127 top-level directories; sorted basename SHA-256 `f052952a00d278ac20fa8f06cdb4790dfb3168658992f3c9f0cbdd7a0e9de28a`.
 - Open verified P8 inventory: 68 files retained with the missing mapping/design evidence above; no human approval is pending.
-- Next non-monthly run: compare structural route/signature/feature sets, verify the open P8 ledger item, auto-fix only the exact Suspense class, and keep the three approval routes separate.
+- Next non-monthly run: compare structural route/signature/feature sets, re-verify the open inventory, and prioritize extending the owning select/read-only-field primitives for the two string-only cases.
 - Next monthly run: repeat the full repository pass regardless of structural deltas.
 
 ## Cadence health and candidates
@@ -170,4 +169,5 @@ These replace page, panel, list, tree, editor, preview, or identity content. The
 - The preceding month contains only the 2026-08-10 findings pass and the 2026-08-12 approved repair batch; it is not an all-clean month, so no longer cadence is proposed.
 - No repeated batch-caused P8 rejection exists, so mutation is not paused.
 - No new unregistered recurring class was found; no Candidate-bench nomination was added.
+- Recursive learning: central bare spinners inside React-node slots are safely auto-fixable when the wrapper and size are preserved; the smallest detector improvement is to distinguish those from string-only props so future runs do not spend the same manual triage effort.
 - The certifier observed a separate P3 mobile defect on provider-sync (compressed/overlapping header at 375×812). It was not caused or touched by P8 and is logged as an open P3 sighting.
