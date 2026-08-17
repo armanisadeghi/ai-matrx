@@ -42,6 +42,29 @@
       ],
       "previousEventHash": "c01a5f1b1aacc2815803a18a9fe75ce5add6300558902073800bf5657c2f77fa",
       "eventHash": "4b6062f145a5e93692be091cf8b2b26b8d99e954a716880fc85ebadb52b90fb1"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-17T19:18:22.615Z",
+      "actor": "p8-exact-certifier",
+      "summary": "CERTIFIED: the exact 12-file contextual-loader candidate introduced no batch-caused defect.",
+      "evidence": [
+        "Exact candidate is an ancestor of current origin/main and all 14 repairs remain present.",
+        "Browser proof was unnecessary for this leaf-markup-only batch; exact rendered-markup and layout contracts were verified statically."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "e67fb5fd9b3820fc76962879ce1f43ab5b75b97a",
+        "certifierTaskId": "/root/p8_exact_certifier",
+        "checks": [
+          "Reviewed every changed product file: conditions, control flow, wrappers, responsive/theme classes, and chunk entry are unchanged.",
+          "Focused P8 grep found zero bare loading literals in the candidate files; remaining indicators are contextual or pre-existing inventory.",
+          "git diff --check, pnpm type-check, typed manifest validation, and permanent-record validation passed."
+        ]
+      },
+      "previousEventHash": "4b6062f145a5e93692be091cf8b2b26b8d99e954a716880fc85ebadb52b90fb1",
+      "eventHash": "83e11e7493c17ac88cdb71119a163752f41cf3f9df21ef6901a3da3fb163fdec"
     }
   ]
 }
