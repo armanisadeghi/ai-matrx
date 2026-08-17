@@ -19,9 +19,13 @@ export type FindingFromWalkRequest =
   components["schemas"]["FindingFromWalkRequest"];
 export type FindingFromWalkOut = components["schemas"]["FindingFromWalkOut"];
 
-/** Unit kinds the walk can descend into today (wf_node_outcome is declared
- * server-side but returns 422 until S1 per-step capture lands). */
-export type WalkUnitKind = "assistant_message" | "agent_request";
+/**
+ * Unit kinds the walk can descend into. `wf_node_outcome` joined on
+ * 2026-08-17, when C-30's per-step input capture let the server serve a
+ * workflow step's real arguments instead of a 422 — so this is now exactly the
+ * server's own `UnitKind`, derived rather than restated.
+ */
+export type WalkUnitKind = NonNullable<DescendRef["unit_kind"]>;
 
 export type WalkLever = NonNullable<FindingFromWalkRequest["lever"]>;
 

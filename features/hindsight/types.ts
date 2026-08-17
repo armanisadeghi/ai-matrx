@@ -17,6 +17,7 @@ export type FindingProposal = components["schemas"]["FindingProposalOut"];
 export type FindingDecision = components["schemas"]["FindingDecisionOut"];
 export type FindingRevert = components["schemas"]["FindingRevertOut"];
 export type Replay = components["schemas"]["ReplayOut"];
+export type RegressionCase = components["schemas"]["RegressionCaseOut"];
 export type ToolSubject = components["schemas"]["ToolSubjectOut"];
 export type HindsightCosts = components["schemas"]["HindsightCostsOut"];
 export type EnrollRequest = components["schemas"]["EnrollRequest"];
@@ -100,6 +101,38 @@ export function replayFailureReason(replay: Replay): string {
   if (typeof message !== "string") return "failed before it produced a result";
   const cleaned = cleanFailureText(message);
   return cleaned || "failed before it produced a result";
+}
+
+/**
+ * One evidence element rendered as a line.
+ *
+ * `hindsight.finding.evidence` carries TWO shapes on purpose: the reviewer
+ * agent writes sentences, and a human drill-down walk (D-40) writes typed hop
+ * objects — `{hop, unit_kind, unit_id, answer, note?}` plus a fault element
+ * and a `{snapshot_ids}` element. Rendering an object with template
+ * interpolation would print `[object Object]` at the exact moment a human is
+ * reading the evidence for their own walk, so each shape gets a sentence.
+ */
+export function evidenceLine(item: NonNullable<Finding["evidence"]>[number]): string {
+  if (typeof item === "string") return item;
+  if (typeof item.hop === "number") {
+    const verdict =
+      item.answer === "input_wrong"
+        ? "its inputs were wrong"
+        : "its inputs were fine";
+    const note = typeof item.note === "string" && item.note ? ` — ${item.note}` : "";
+    return `Step ${item.hop + 1}: ${String(item.unit_kind)} ${String(item.unit_id)} — ${verdict}${note}`;
+  }
+  if (item.fault_unit_id) {
+    return `Fault localized to ${String(item.fault_unit_kind)} ${String(item.fault_unit_id)}`;
+  }
+  if (Array.isArray(item.snapshot_ids)) {
+    return `Recorded calls pinned as evidence: ${item.snapshot_ids.join(", ")}`;
+  }
+  if (item.wf_run_id) {
+    return `Workflow run ${String(item.wf_run_id)}, step ${String(item.node_id)}`;
+  }
+  return JSON.stringify(item);
 }
 
 const UUID_RE =

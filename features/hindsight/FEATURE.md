@@ -64,7 +64,7 @@ platform admin, not in a backend-repo dashboard. Do not re-create a second copy.
 | Detail | `components/EnrollmentDetailPanel.tsx` — subject, spend, cadence, findings, reviews |
 | **Internal Affairs (C-19)** | `components/ChangeHistoryPanel.tsx` (every applied change to a governed agent/tool/workflow — version from→to, provenance tier, the finding that caused it, a door on both) + `components/FindingEffectivenessPanel.tsx` (per lever per unit: proposed/applied/rejected/**reverted**, accept + revert rates, time-to-decision, cost movement). Both mounted at the bottom of `HindsightPage`; API `getChangeHistory` / `getFindingEffectiveness`; server views in aidream migration `0375`. Read-only — Internal Affairs never writes. |
 | Enroll | `components/EnrollDialog.tsx` — five enrollable kinds (agent · **orchestra** · workflow · tool · environment), real pickers, and the **lens** (which runs the reviewer reads + how much of each it sees) |
-| Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, Apply / Reject / **Guide** / **Revert** (applied state) |
+| Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, Apply / Reject / **Guide** / **Revert** (applied state), and `components/RegressionCasesFromFinding.tsx` (C-17: turn a cited recorded call into a permanent test; admin-only) |
 | Revert | `components/RevertButton.tsx` — the ONE revert affordance (button + confirm naming "returns to v{n}" + version-diff door + receipt toast), shared by `FindingCard` and `VersionLadder`. Renders only on `status='applied'` findings; the ladder shows it only on the CURRENT `from review` row (reverting a non-current version is meaningless, so the door is hidden, not disabled). Server contract: `POST /hindsight/findings/{id}/revert` re-promotes the pre-apply version as a NEW version row — see aidream's hindsight `FEATURE.md` |
 | Discuss (admin) | `components/DiscussPanel.tsx` — the reviewer's thread + the reply box; product uses `workspace/ReviewerChat.tsx` |
 | Thread message | `components/ThreadMessageRow.tsx` — ONE renderer for reviewer-thread messages (`flat` admin / `chat` product variants) |
@@ -202,6 +202,35 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- **2026-08-17** — **Workflow steps became a subject, and a finding became a
+  regression case.** Two doors that were dead ends.
+  - **`workflow_node` is enrollable** (`ENROLLABLE_KINDS`): C-30's per-step
+    input capture made one step of a workflow a reviewable subject. The dialog
+    asks for TWO selections for this kind and only this kind — the workflow,
+    then the step — because a node id is unique only inside its definition and
+    the server refuses a half-identified subject. The step list is read off the
+    definition's own `nodes` jsonb, so the picker can never offer a step the
+    enrollment would then be refused for.
+  - **"Make this a regression case" from a finding**
+    (`components/RegressionCasesFromFinding.tsx`, mounted in `FindingCard`).
+    The snapshot ids come from the server's `finding.snapshot_ids` — collected
+    by the one C-13 rule that also decides which snapshots the retention pin
+    protects. **Never re-derive them by scraping evidence text:** a case built
+    on an unpinned snapshot is a "permanent" test that stops being reproducible
+    at the next prune. Existing cases render with their last result (`error` is
+    NOT `fail`) so the panel answers "did the check pass?", and the button is
+    never offered twice for one snapshot. Admin-only, because the endpoint is
+    (every re-check spends real money).
+  - **`evidenceLine()` (`types.ts`)** — `finding.evidence` carries TWO shapes:
+    reviewer sentences AND typed walk hops. The server contract said
+    `list[str]`, which 500'd every read of a review containing a walk finding;
+    it is now a union, and this helper renders a hop as a sentence instead of
+    `[object Object]`.
+  - **The walk descends into workflow steps** (`features/review-walk/`): the
+    hop gate now trusts the server's own `UnitKind` instead of re-listing the
+    kinds locally, which is exactly how a walk silently stops one hop short the
+    day a new one lands.
+
 - **2026-08-16** — **Lenses + orchestra subjects.** The enroll form gained the
   two lens knobs (`window_mode` + `window_n`, `lens_visibility`) and an
   `orchestra` kind; both lens defaults are the pre-lens behaviour, so an
@@ -214,9 +243,9 @@ findings list refreshed itself, and the original finding was deprioritized to
     submit when `max_examples_per_review` would clip it — the server logs the
     same clip, so neither side can report "we read the last 60 runs" when 25
     were read.
-  - **`workflow_node` keeps a label and icon but is NOT offered** (`ENROLLABLE_KINDS`
-    in `components/tokens.ts`): the server refuses it until per-step capture
-    exists, so a picker entry would be a dead end that fails on submit.
+  - **`workflow_node` kept a label and icon but was NOT offered** (`ENROLLABLE_KINDS`
+    in `components/tokens.ts`) while the server refused it. **Superseded
+    2026-08-17 — it is now enrollable; see that entry below.**
   - **Door Law:** an orchestra subject opens `/agents/orchestras/{id}`, not the
     plain agent page — the members are the reason the kind exists. The picker
     lists agents carrying the `orchestra` marker edge (there is no orchestra

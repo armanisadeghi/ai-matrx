@@ -14,7 +14,7 @@
  *
  * Multi-instance floating WindowPanel (modeled on GscDrilldownWindow): one
  * walk per walked unit, breadcrumbs to climb back up, honest stop states for
- * 404 (nothing captured) / 422 (workflow-step capture pending) — descent
+ * 404 (nothing captured) / 403 (someone else's conversation or run) — descent
  * stopping is an ANSWER, never a dead-end error toast.
  */
 
@@ -62,6 +62,7 @@ export interface ReviewWalkWindowProps {
 const UNIT_LABELS: Record<string, string> = {
   assistant_message: "assistant message",
   agent_request: "agent request",
+  wf_node_outcome: "workflow step",
 };
 
 const LEVERS: { value: WalkLever; label: string }[] = [
@@ -158,7 +159,11 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
     if (!current || current.status !== "loaded" || !current.out) return;
     const snapshotId = current.out.producer?.snapshot_id ?? null;
     const ref = input.producer.descend_ref;
-    if (ref && (ref.unit_kind === "assistant_message" || ref.unit_kind === "agent_request")) {
+    // Any kind the SERVER declares descendable is descendable here — the ref's
+    // type is the server's own `UnitKind`. Re-listing the kinds locally is how
+    // a walk silently stops one hop short the day a new one lands (it did:
+    // workflow steps were unreachable for a day after the server served them).
+    if (ref?.unit_kind) {
       // Record the answer at this layer, then descend into the producer.
       setHops((prev) => [
         ...prev,
@@ -480,18 +485,25 @@ function StopStatePanel({
   onGoUp: () => void;
 }) {
   const heading =
-    status === 422
-      ? "Descent stops here for now"
+    status === 403
+      ? "This record belongs to someone else"
       : status === 404
         ? "Nothing was captured for this step"
-        : "Couldn't load this layer";
+        : status === 422
+          ? "Descent stops here"
+          : "Couldn't load this layer";
+  // The server's own sentence always wins: it knows WHICH of the several
+  // honest reasons applies (ephemeral run, pre-capture row, a step no executor
+  // ran, an unowned run). These fallbacks only cover a response with no detail.
   const explanation =
     detail ??
-    (status === 422
-      ? "Workflow-step input capture hasn't shipped yet, so this layer can't be opened."
+    (status === 403
+      ? "You can walk your own conversations and workflow runs; an admin can walk any."
       : status === 404
         ? "This unit is ephemeral or predates capture — there is no recorded layer to show."
-        : "The request failed.");
+        : status === 422
+          ? "This layer cannot be opened."
+          : "The request failed.");
   return (
     <div className="m-3 rounded-md border border-amber-500/30 bg-amber-500/5 p-4">
       <div className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-200">

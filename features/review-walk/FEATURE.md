@@ -26,8 +26,9 @@ Expected non-2xx outcomes are ANSWERS, rendered honestly in place (never an
 error toast):
 
 - **404** — unit is ephemeral / predates capture: "nothing was captured".
-- **422** — `wf_node_outcome` until S1 per-step input capture lands:
-  "workflow-step capture pending".
+- **403** — the conversation (chat units) or workflow run (`wf_node_outcome`)
+  belongs to someone else; a system-triggered run has no owner and is
+  admin-only, and the server's sentence says which.
 - `capturable: false` — inputs still render, with a banner explaining the
   exact wire payload (system prompt) can't be shown.
 
@@ -108,8 +109,11 @@ the base `DialogContent` auto-bottom-sheet.
 
 ## Known limits
 
-- `wf_node_outcome` descent 422s until S1 ships per-step capture — the stop
-  state names this.
+- `wf_node_outcome` descent is LIVE (2026-08-17, C-30 + C-27): a workflow step
+  shows the exact arguments it was called with, a fan-in aggregate is one row
+  per delivered item, and "inputs were wrong" hops down into the upstream step
+  that produced the value. A step walk files its finding on the STEP (a
+  `workflow_node` enrollment, lever `architecture`), not on an agent.
 - The improvement-workspace door passes `?enrollment=&finding=` but
   `ImprovementWorkspace` does not yet read them (it lands on the agent's
   enrollment); deep-linking the exact finding is a follow-up on that surface.

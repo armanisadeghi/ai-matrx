@@ -34,15 +34,18 @@ export const KIND_LABEL: Record<SubjectKind, string> = {
 };
 
 /**
- * Kinds a human may actually enroll. `workflow_node` is in the vocabulary (so
- * an existing row still renders with a label and an icon) but the server
- * refuses to create one until per-step capture exists — offering it in the
- * picker would be a dead end that fails on submit.
+ * Kinds a human may actually enroll. `workflow_node` joined the list on
+ * 2026-08-17, when per-step input capture (C-30) made one step of a workflow a
+ * reviewable subject; before that the server refused it and offering it here
+ * would have been a dead end that failed on submit. A step needs BOTH halves
+ * of its identity (the workflow AND the node), which is why the dialog asks
+ * for two selections for this kind and only this kind.
  */
 export const ENROLLABLE_KINDS: SubjectKind[] = [
   "agent",
   "orchestra",
   "workflow",
+  "workflow_node",
   "tool",
   "environment",
 ];

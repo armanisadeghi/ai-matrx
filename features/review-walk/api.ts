@@ -26,8 +26,8 @@ import type {
  * (`inferred`).
  *
  * Expected non-2xx outcomes the UI must render honestly (never a dead-end
- * error toast): 404 with a human explanation for ephemeral/uncapturable
- * units, 422 for `wf_node_outcome` until S1 per-step capture lands.
+ * error toast): 404 with a human explanation for ephemeral/uncapturable units,
+ * 403 for a conversation or workflow run the caller does not own.
  */
 export async function descend(
   unitKind: WalkUnitKind,

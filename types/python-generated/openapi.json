@@ -57627,11 +57627,30 @@
       },
       "AgentStartStrictInput": {
         "properties": {
+          "mandate_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mandate Key",
+            "description": "Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id. Exactly one of the two must be set.",
+            "ui:widget": "mandate_agent_picker"
+          },
           "agent_id": {
-            "type": "string",
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Agent Id",
-            "description": "UUID of the agent (or agent version, when is_version=true).",
+            "description": "UUID of a specific agent (or agent version, when is_version=true). Pins this step to one agent forever — prefer mandate_key.",
             "ui:widget": "agent_picker"
           },
           "is_version": {
@@ -57938,9 +57957,6 @@
         },
         "additionalProperties": false,
         "type": "object",
-        "required": [
-          "agent_id"
-        ],
         "title": "AgentStartStrictInput",
         "description": "Workflow-side request body for the ``ai.agent.start`` action.\n\nField names are kept identical to ``aidream.api.routers.agents.AgentStartRequest``\nso the action's input form is a 1:1 mirror of the API contract. Types\nthat live in the host application (``IdeState``, ``CacheBypass``) are\naccepted as ``dict`` and validated by the host-injected request class\non the boundary."
       },
@@ -85047,7 +85063,10 @@
         "properties": {
           "kind": {
             "type": "string",
-            "const": "cx_request",
+            "enum": [
+              "cx_request",
+              "wf_node"
+            ],
             "title": "Kind",
             "default": "cx_request"
           },
@@ -85106,6 +85125,17 @@
             ],
             "title": "Snapshot Id"
           },
+          "spec_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spec Type"
+          },
           "confidence": {
             "type": "string",
             "enum": [
@@ -85120,7 +85150,7 @@
           "confidence"
         ],
         "title": "DescendProducer",
-        "description": "The provider call that produced the unit (the layer above the inputs)."
+        "description": "What produced the unit — the layer above the inputs.\n\n``cx_request`` is a provider call (model/provider/snapshot populated).\n``wf_node`` is a workflow step: the producer is the RUN executing that\nnode's spec, so ``id`` is the run id, ``iteration`` is the attempt, and\n``spec_type`` names the executor. Model/provider/snapshot stay null there\nrather than being filled with something plausible."
       },
       "DescendRef": {
         "properties": {
@@ -96449,10 +96479,27 @@
           },
           "evidence": {
             "items": {
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/JsonValue"
+                  },
+                  "type": "object"
+                }
+              ]
             },
             "type": "array",
             "title": "Evidence"
+          },
+          "snapshot_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Snapshot Ids"
           },
           "proposal": {
             "$ref": "#/components/schemas/FindingProposalOut"
@@ -122150,7 +122197,10 @@
               "agent",
               "pending_injection",
               "context_slot",
-              "user"
+              "user",
+              "workflow_node",
+              "wf_node_outcome",
+              "workflow_run"
             ],
             "title": "Kind"
           },

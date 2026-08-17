@@ -19,8 +19,9 @@ import { cn } from "@/lib/utils";
 import { applyFinding, rejectFinding } from "../api";
 import { conversationHref } from "../subject-doors";
 import { useDoorAudience } from "./door-audience";
-import { splitEvidenceIds, type Finding } from "../types";
+import { evidenceLine, splitEvidenceIds, type Finding } from "../types";
 import { DiscussPanel } from "./DiscussPanel";
+import { RegressionCasesFromFinding } from "./RegressionCasesFromFinding";
 import { RevertButton } from "./RevertButton";
 import { LEVER_COLOR, LEVER_LABEL, VERDICT_COLOR } from "./tokens";
 
@@ -204,7 +205,7 @@ export function FindingCard({
               <ul className="mt-1 list-inside list-disc space-y-1 text-xs text-muted-foreground">
                 {(finding.evidence ?? []).map((item, i) => (
                   <li key={i}>
-                    {splitEvidenceIds(item).map((part, j) =>
+                    {splitEvidenceIds(evidenceLine(item)).map((part, j) =>
                       part.id ? (
                         <Link
                           key={j}
@@ -236,6 +237,7 @@ export function FindingCard({
               </pre>
             </div>
           )}
+          <RegressionCasesFromFinding finding={finding} />
           {!finding.machine_applicable && (
             <p className="text-xs text-muted-foreground">
               {LEVER_LABEL[finding.lever]} findings are reports for a human —

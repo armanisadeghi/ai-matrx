@@ -35,6 +35,10 @@ const PRODUCER_LABELS: Record<string, string> = {
   pending_injection: "injected context",
   context_slot: "context policy",
   user: "the user",
+  // Workflow-step producers (C-27's wf_node_outcome layer, live 2026-08-17).
+  workflow_node: "authored on the step",
+  wf_node_outcome: "an earlier step",
+  workflow_run: "the workflow run",
 };
 
 export function ConfidenceBadge({

@@ -229,11 +229,20 @@ Fixed by mapping `/crm/chasebox` and `/crm/inbox` above `/crm` (first match wins
 surface by opening the panel and reading the surface name it prints — never by the manifest
 alone.
 
-The first genuine assist belongs with the
-inbound-classification server half — *a reply arrived with no classifier verdict* is a real,
-one-click-fixable gap and exactly the shape `platform.assists` exists for. The Chasebox's
-five queues are deliberately NOT assists: they are the action surface itself, and emitting
-chips that duplicate them would be a second suggestion system beside the first.
+**The producer is LIVE since 2026-08-17** — `aidream/services/outreach_assists/` (its `FEATURE.md`
+is the contract) writes three chips to this surface: a draft approved and still unsent, drafts
+nobody has read past a day, and recipients the send gate refuses for a reason a human can FIX.
+The Chasebox's five queues remain deliberately NOT assists — they are the action surface itself
+— and the producer honours that: **a chip must say what these queues cannot.** The clearest case
+is `pending_drafts`, which describes an approved draft and an unapproved one with the identical
+sentence *"waiting for a human to approve it"*; a count also never says how long.
+
+🚨 **`?queue=` is the address of a queue, and `ChaseboxPage` DERIVES the open queue from it** —
+there is no `useState` mirror, so there is no effect to keep in sync, and `openQueue` rewrites
+the URL on every switch (`router.replace`, no scroll). This exists because an assist chip may
+not point at a door the page cannot open: before it, `/crm/chasebox?queue=pending_drafts` would
+have landed on `fresh_replies` and looked like the chip lied. An unknown value falls back to
+`fresh_replies`. Adding a query param the page must honour? Derive, don't mirror.
 
 ---
 

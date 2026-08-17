@@ -21429,10 +21429,15 @@ export interface components {
          */
         AgentStartStrictInput: {
             /**
-             * Agent Id
-             * @description UUID of the agent (or agent version, when is_version=true).
+             * Mandate Key
+             * @description Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id. Exactly one of the two must be set.
              */
-            agent_id: string;
+            mandate_key?: string | null;
+            /**
+             * Agent Id
+             * @description UUID of a specific agent (or agent version, when is_version=true). Pins this step to one agent forever — prefer mandate_key.
+             */
+            agent_id?: string | null;
             /**
              * Is Version
              * @description If true, `agent_id` is treated as a pinned version_id instead of a current-agent id.
@@ -32006,15 +32011,21 @@ export interface components {
         };
         /**
          * DescendProducer
-         * @description The provider call that produced the unit (the layer above the inputs).
+         * @description What produced the unit — the layer above the inputs.
+         *
+         *     ``cx_request`` is a provider call (model/provider/snapshot populated).
+         *     ``wf_node`` is a workflow step: the producer is the RUN executing that
+         *     node's spec, so ``id`` is the run id, ``iteration`` is the attempt, and
+         *     ``spec_type`` names the executor. Model/provider/snapshot stay null there
+         *     rather than being filled with something plausible.
          */
         DescendProducer: {
             /**
              * Kind
              * @default cx_request
-             * @constant
+             * @enum {string}
              */
-            kind?: "cx_request";
+            kind?: "cx_request" | "wf_node";
             /** Id */
             id?: string | null;
             /** Iteration */
@@ -32025,6 +32036,8 @@ export interface components {
             provider?: string | null;
             /** Snapshot Id */
             snapshot_id?: string | null;
+            /** Spec Type */
+            spec_type?: string | null;
             /**
              * Confidence
              * @enum {string}
@@ -36280,7 +36293,11 @@ export interface components {
             /** Reasoning */
             reasoning?: string | null;
             /** Evidence */
-            evidence?: string[];
+            evidence?: (string | {
+                [key: string]: components["schemas"]["JsonValue"];
+            })[];
+            /** Snapshot Ids */
+            snapshot_ids?: string[];
             proposal?: components["schemas"]["FindingProposalOut"];
             /**
              * Machine Applicable
@@ -46471,7 +46488,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cx_request" | "message" | "request_snapshot" | "tool_call" | "agent" | "pending_injection" | "context_slot" | "user";
+            kind: "cx_request" | "message" | "request_snapshot" | "tool_call" | "agent" | "pending_injection" | "context_slot" | "user" | "workflow_node" | "wf_node_outcome" | "workflow_run";
             /** Id */
             id?: string | null;
             descend_ref?: components["schemas"]["DescendRef"] | null;

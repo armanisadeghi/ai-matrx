@@ -66,11 +66,13 @@ export function ChaseboxPage() {
     byKind: {},
     narrow: {},
   });
-  const [queue, setQueue] = useState<ChaseboxQueue>(
+  // Derived, never mirrored: the URL IS the open queue. A `useState` copy would
+  // need an effect to follow a later `?queue=` (an assist chip clicked while
+  // already on this page), and that copy is what drifts.
+  const queue: ChaseboxQueue =
     requestedQueue && isChaseboxQueue(requestedQueue)
       ? requestedQueue
-      : "fresh_replies",
-  );
+      : "fresh_replies";
   const [rows, setRows] = useState<ChaseboxRow[] | null>(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -89,7 +91,6 @@ export function ChaseboxPage() {
 
   const openQueue = useCallback(
     (next: ChaseboxQueue) => {
-      setQueue(next);
       setPage(1);
       const params = new URLSearchParams(searchParams.toString());
       params.set("queue", next);
@@ -99,17 +100,6 @@ export function ChaseboxPage() {
     },
     [pathname, router, searchParams],
   );
-
-  // A later navigation to the same route with a different `?queue=` (an assist
-  // chip clicked while already on the Chasebox) re-mounts nothing, so the URL
-  // is the only thing that changes — follow it.
-  useEffect(() => {
-    if (requestedQueue && isChaseboxQueue(requestedQueue)) {
-      setQueue((current) =>
-        current === requestedQueue ? current : requestedQueue,
-      );
-    }
-  }, [requestedQueue]);
 
   // Counts for BOTH scopes, so the scope tabs carry true totals rather than a
   // number that only describes the tab you are already on.

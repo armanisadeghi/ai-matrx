@@ -25,6 +25,7 @@ import type {
   FindingEffectiveness,
   FindingRevert,
   HindsightCosts,
+  RegressionCase,
   Replay,
   ReplayRunResult,
   ReviewDetail,
@@ -247,5 +248,53 @@ export async function getFindingEffectiveness(params: {
       ...(params.unitId ? { unit_id: params.unitId } : {}),
     },
   });
+  return data;
+}
+
+// ── Regression cases (C-17) ────────────────────────────────────────────────
+// A regression case is a PINNED SNAPSHOT plus a machine-checkable expectation.
+// Creating one from a finding is the door out of "this went wrong once" into
+// "this can never go wrong again unnoticed" — the finding's `snapshot_ids` are
+// collected server-side by the same C-13 rule that decides which snapshots the
+// retention pin protects, so a case built from one stays reproducible.
+// Admin-only, like wire replay: every later re-check spends real money.
+
+export async function listRegressionCases(params: {
+  snapshotId?: string;
+  originFindingId?: string;
+  status?: string;
+} = {}): Promise<RegressionCase[]> {
+  const { data } = await apiGet("/hindsight/regression-cases", {
+    query: {
+      ...(params.snapshotId ? { snapshot_id: params.snapshotId } : {}),
+      ...(params.originFindingId ? { origin_finding_id: params.originFindingId } : {}),
+      ...(params.status ? { status: params.status } : {}),
+    },
+  });
+  return data;
+}
+
+/**
+ * Turn one recorded call into a permanent test. The expectation is omitted on
+ * purpose: the server's default (`not_worse_than_original`) is the only claim
+ * that is true by construction for a snapshot a human just pointed at — it
+ * compares a re-issue against the call's OWN recording. A stricter claim is an
+ * edit on the case, never a guess made at creation time.
+ */
+export async function createRegressionCaseFromFinding(
+  snapshotId: string,
+  finding: { id: string; title: string },
+): Promise<RegressionCase> {
+  const { data } = await apiPost(
+    buildPath("/hindsight/snapshots/{snapshot_id}/regression-case", {
+      snapshot_id: snapshotId,
+    }),
+    {
+      title: finding.title.slice(0, 300),
+      origin: "finding",
+      origin_finding_id: finding.id,
+      notes: `Created from Hindsight finding ${finding.id}.`,
+    },
+  );
   return data;
 }

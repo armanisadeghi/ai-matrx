@@ -124,6 +124,10 @@ export function EnrollDialog({
   const [kind, setKind] = useState<SubjectKind>(initialToolName ? "tool" : "agent");
   const [search, setSearch] = useState("");
   const [subjectId, setSubjectId] = useState("");
+  // `workflow_node` only — the second half of a step's identity. A node id is
+  // unique only inside its definition, so the server refuses one without the
+  // other and the dialog asks for both.
+  const [nodeId, setNodeId] = useState("");
   const [toolName, setToolName] = useState(initialToolName ?? "");
   const [envType, setEnvType] = useState("");
   const [envApp, setEnvApp] = useState("");
@@ -146,6 +150,7 @@ export function EnrollDialog({
       return;
     }
     setSubjectId("");
+    setNodeId("");
     setToolName("");
     setSearch("");
   }, [kind]);
@@ -159,6 +164,7 @@ export function EnrollDialog({
     setKind(initialToolName ? "tool" : "agent");
     setSearch("");
     setSubjectId("");
+    setNodeId("");
     setToolName(initialToolName ?? "");
     setEnvType("");
     setEnvApp("");
@@ -244,7 +250,42 @@ export function EnrollDialog({
       if (error) throw new Error(error.message);
       return (data ?? []) as PickerRow[];
     },
-    enabled: open && kind === "workflow",
+    enabled: open && (kind === "workflow" || kind === "workflow_node"),
+  });
+
+  /**
+   * The chosen workflow's steps, read straight off the definition row — the
+   * same `nodes` jsonb the server validates the node id against, so the picker
+   * can never offer a step the enrollment would then be refused for.
+   */
+  const workflowNodes = useQuery<Array<{ id: string; label: string; specType: string }>>({
+    queryKey: ["hindsight", "picker", "workflow_node", subjectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .schema("workflow")
+        .from("definition")
+        .select("nodes")
+        .eq("id", subjectId)
+        .is("deleted_at", null)
+        .single();
+      if (error) throw new Error(error.message);
+      const nodes = Array.isArray(data?.nodes) ? data.nodes : [];
+      return nodes
+        .filter((n): n is Record<string, unknown> => Boolean(n) && typeof n === "object")
+        .map((n) => {
+          const nodeData = (n.data ?? {}) as Record<string, unknown>;
+          return {
+            id: String(n.id ?? ""),
+            label: typeof nodeData.label === "string" ? nodeData.label : String(n.id ?? ""),
+            specType:
+              typeof nodeData.spec_type === "string"
+                ? nodeData.spec_type
+                : String(n.type ?? ""),
+          };
+        })
+        .filter((n) => n.id.length > 0);
+    },
+    enabled: open && kind === "workflow_node" && subjectId.length > 0,
   });
 
   const tools = useQuery({
@@ -267,9 +308,15 @@ export function EnrollDialog({
         lens_visibility: lensVisibility,
         ...(goal ? { goal } : {}),
       };
-      if (kind === "agent" || kind === "workflow" || kind === "orchestra") {
+      if (
+        kind === "agent" ||
+        kind === "workflow" ||
+        kind === "orchestra" ||
+        kind === "workflow_node"
+      ) {
         body.subject_id = subjectId;
       }
+      if (kind === "workflow_node") body.subject_ref = nodeId;
       if (kind === "tool") body.subject_ref = toolName;
       if (kind === "environment") {
         body.subject_selector = {
@@ -292,9 +339,11 @@ export function EnrollDialog({
     if (kind === "agent" || kind === "workflow" || kind === "orchestra") {
       return subjectId.length > 0;
     }
+    // Both halves, or the server refuses: a step is (workflow, node).
+    if (kind === "workflow_node") return subjectId.length > 0 && nodeId.length > 0;
     if (kind === "tool") return toolName.length > 0;
     return Boolean(envType || envApp || envFeature);
-  }, [kind, subjectId, toolName, envType, envApp, envFeature]);
+  }, [kind, subjectId, nodeId, toolName, envType, envApp, envFeature]);
 
   const canSubmit = subjectChosen && !enrollMutation.isPending;
 
@@ -336,9 +385,19 @@ export function EnrollDialog({
             </Select>
           </div>
 
-          {(kind === "agent" || kind === "workflow" || kind === "orchestra") && (
+          {(kind === "agent" ||
+            kind === "workflow" ||
+            kind === "orchestra" ||
+            kind === "workflow_node") && (
             <div className="space-y-1.5">
-              <Label>{KIND_LABEL[kind]}</Label>
+              <Label>{kind === "workflow_node" ? "Workflow" : KIND_LABEL[kind]}</Label>
+              {kind === "workflow_node" && (
+                <p className="text-xs text-muted-foreground">
+                  Pick the workflow first, then the one step you want reviewed.
+                  The reviewer reads every occurrence of that step across runs —
+                  one run can fire the same step many times.
+                </p>
+              )}
               {kind === "orchestra" && (
                 <p className="text-xs text-muted-foreground">
                   Pick the orchestrator. The reviewer reads its runs and sees the
@@ -378,6 +437,41 @@ export function EnrollDialog({
                   >
                     <span className="truncate">{row.name}</span>
                     {subjectId === row.id && <Check className="h-4 w-4 shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {kind === "workflow_node" && subjectId.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Which step?</Label>
+              <div className="max-h-44 overflow-y-auto rounded-md border border-border">
+                {workflowNodes.isLoading && <Skeleton className="m-2 h-6" />}
+                {workflowNodes.isError && (
+                  <p className="p-3 text-sm text-red-600 dark:text-red-400">
+                    Could not load steps: {(workflowNodes.error as Error).message}
+                  </p>
+                )}
+                {workflowNodes.data?.length === 0 && (
+                  <p className="p-3 text-sm text-muted-foreground">
+                    This workflow has no steps yet.
+                  </p>
+                )}
+                {(workflowNodes.data ?? []).map((node) => (
+                  <button
+                    key={node.id}
+                    type="button"
+                    onClick={() => setNodeId(node.id)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-muted",
+                      nodeId === node.id && "bg-muted font-medium",
+                    )}
+                  >
+                    <span className="truncate">{node.label}</span>
+                    <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                      {node.specType}
+                    </span>
                   </button>
                 ))}
               </div>
