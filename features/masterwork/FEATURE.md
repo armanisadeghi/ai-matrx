@@ -248,7 +248,7 @@ general Recordings folder.
 
 - **The stamp is generic, not Masterwork's.** `RecordingOrigin`
   (`features/audio/recordingOrigin.ts`) — `{surface, conversationId?, entityToken?, entityId?,
-  label?, href?}` — persisted at `transcripts.transcripts.metadata.origin` (an existing jsonb
+label?, href?}` — persisted at `transcripts.transcripts.metadata.origin` (an existing jsonb
   column; **no schema change was needed**). A surface declares it ONCE by wrapping its subtree in
   `RecordingOriginProvider`; `useVoiceCapture` reads it from context, so **nothing was threaded
   through the shared mic chain** and every ProTextarea that declares no origin writes exactly the
@@ -256,7 +256,7 @@ general Recordings folder.
   `{surface:"masterwork.interview", entityToken:"rulebook", entityId, conversationId, label}`.
 - **In the Record.** `getExpertCorpus` gained a THIRD source — additively; it is still the ONE
   corpus assembly: `ExpertContribution.dictations[]`, each `{transcriptId, fileId, title, when,
-  durationSec, charOffset}`, rendered as a player via `InlineMediaRef` (`as="audio"` and an
+durationSec, charOffset}`, rendered as a player via `InlineMediaRef` (`as="audio"` and an
   explicit container height — a bare file id has no mime to infer and `size="fill"` is `h-full`)
   with an `EntityRef` door to the recording. **The match is evidence, not inference:** a dictation
   attaches to a message only when the transcript's first 120 characters appear VERBATIM in it, and
@@ -294,9 +294,9 @@ through very quickly and sort of approving or disapproving."_
   (`masterwork_checkup_finding`), so the Expert starts deciding while the rest are
   still coming; the terminal `masterwork_checkup_complete` document is the truth
   and is merged by id. A refresh rejoins — `useCheckupRun` is a thin face over
-  `useMasterworkRun`, never a second durability mechanism. *(Progressive results
+  `useMasterworkRun`, never a second durability mechanism. _(Progressive results
   are why `useDurableRun` gained `onDomainEvent`: a run that answers in PIECES
-  must not put a spinner over work the user could already be doing.)*
+  must not put a spinner over work the user could already be doing.)_
 - **NOT a word diff.** Both halves render a rule the way a rule is read, so the
   Expert compares MEANING: left = the Rulebook today (the existing rule for
   modify/remove; the section it would join for add), right = the proposal, the
@@ -459,6 +459,15 @@ deliberately never produced.
    never types, unless they want to.
 
 ## Change log
+
+- 2026-08-17 — **The Rulebook detail page is now a complete declared surface.**
+  `matrx-user/masterwork-rulebook` has a verified code manifest, exact dynamic-route
+  recognition, a live `SurfaceRuntimeProvider`, canonical v3 context menus on the page and
+  rule editor, value anchors, a human-reviewed composite `rule_draft` write target, an
+  automatic search target, and `masterwork_refresh_rulebook`, which refetches the page's
+  client-owned Rulebook + Masterwork state through their canonical loaders. Two empty agent
+  roles (`rulebook_advisor`, `rule_editor`) declare the useful positions without hardcoding an
+  agent; live binding remains a separate decision.
 
 - 2026-08-17 — **The Understudy shipped** (running-from-minute-one, § Status top bullet):
   `understudy/refresh.ts` + `understudy/UnderstudyCard.tsx`, pokes wired into `saveRules` +

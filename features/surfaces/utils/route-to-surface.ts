@@ -479,7 +479,11 @@ export function surfaceFromPathname(
   // children are distinct pages and must not inherit this editor's scope;
   // hubs such as `/masterwork/all`, `/new`, and `/encore` are excluded by the
   // exact one-segment shape.
-  if (/^\/masterwork\/[^/]+\/?$/.test(stripped)) {
+  const masterworkDetail = stripped.match(/^\/masterwork\/([^/]+)\/?$/);
+  if (
+    masterworkDetail &&
+    !["all", "new", "encore", "admin"].includes(masterworkDetail[1])
+  ) {
     return "matrx-user/masterwork-rulebook";
   }
 
