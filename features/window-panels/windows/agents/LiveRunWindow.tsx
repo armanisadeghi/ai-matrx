@@ -66,7 +66,7 @@ const LIVE_RUN_WIDTH = CHAT_READING_WIDTH + LIVE_RUN_CHROME_X;
  * viewport leaves the page visible underneath (the whole point of a floating
  * run) while giving structured output room to render without scrolling.
  */
-const LIVE_RUN_HEIGHT = "80vh";
+const LIVE_RUN_HEIGHT = "80dvh";
 
 export interface LiveRunWindowProps {
   windowInstanceId: string;
@@ -85,9 +85,9 @@ export interface LiveRunWindowProps {
   /**
    * Per-kind size override. Only pass these once you have WATCHED that kind
    * render and seen the default box be wrong — a kind whose output is three
-   * lines shouldn't open at 80vh, and a kind that renders a wide table may
+   * lines shouldn't open at 80dvh, and a kind that renders a wide table may
    * need more than the chat column. Untested guesses belong nowhere.
-   * Accepts pixels or viewport strings ("70vh").
+   * Accepts pixels or dynamic-viewport strings ("70dvh").
    */
   width?: number | string;
   height?: number | string;

@@ -116,7 +116,7 @@ export default function CreateProjectWindow({
       minWidth={640}
       minHeight={620}
       width={760}
-      height="88vh"
+      height="88dvh"
       position="center"
       onClose={onClose}
       bodyClassName="flex-1 min-h-0 overflow-hidden"

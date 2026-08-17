@@ -37,7 +37,7 @@ import {
  * rows without scrolling.
  */
 const COMMAND_WINDOW_WIDTH = 520;
-const COMMAND_WINDOW_HEIGHT = "60vh";
+const COMMAND_WINDOW_HEIGHT = "60dvh";
 
 export interface SiteCommandRunWindowProps {
   windowInstanceId: string;

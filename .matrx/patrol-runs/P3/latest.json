@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P3",
+  "runId": "2026-08-17T131440Z",
+  "state": "certifying",
+  "updatedAt": "2026-08-17T13:22:01.154Z",
+  "summary": "Candidate checks are complete and the batch is ready for independent exact-SHA adversarial review.",
+  "source": "2026-08-17T131440Z.json",
+  "eventHash": "3c17b0c099a70917908b40017e2d81c7c4b269b30273197b93b4195f2ff8d8bf"
+}

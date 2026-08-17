@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P3",
+  "runId": "2026-08-17T131440Z",
+  "baseSha": "244042ddc314ba7995e3d8e8a3ed79aae9e5baca",
+  "createdAt": "2026-08-17T13:14:40.884Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-17T13:14:40.884Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "P3 structural-novelty, sightings, and periodic full-pass scan started from current origin/main.",
+      "evidence": [
+        "Manifest contracts passed and exact executor worktree isolation was restored.",
+        "Prior candidate 03e81104d is already an ancestor of base 244042ddc314ba7995e3d8e8a3ed79aae9e5baca; no prior P3 permanent record exists to resume."
+      ],
+      "previousEventHash": null,
+      "eventHash": "97d98322bd3915aad84b5b74512e8de6207738f00bbea1d6dd43301956f98cb4"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-17T13:22:00.585Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Applied a bounded 14-file P3 batch: 10 legacy viewport-unit code tokens, four structurally new touch-floor surfaces, and two hover-hidden touch actions.",
+      "evidence": [
+        "All edits consume established P3 recipes: dvh, .matrx-touch-targets, and hover-capability media queries."
+      ],
+      "previousEventHash": "97d98322bd3915aad84b5b74512e8de6207738f00bbea1d6dd43301956f98cb4",
+      "eventHash": "076df598ade26d7c249b0e06d6ddb7c14ae1cb487e14c6cf2849ba0eb29700b7"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-17T13:22:01.154Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Candidate checks are complete and the batch is ready for independent exact-SHA adversarial review.",
+      "evidence": [
+        "type-check PASS→PASS; page-header 7→7; UI-primitives 24→24; doctrine PASS→PASS; tsconfig unchanged; 164 window-panel tests passed; changed-file legacy viewport detector 10→0.",
+        "Scoped ESLint reports one pre-existing react-hooks error at PackDriftDialog.tsx:96; the batch changes only line 127 in that file.",
+        "Exact-worktree preview start failed twice because the shared checkout owns the lease; no foreign preview was reused."
+      ],
+      "previousEventHash": "076df598ade26d7c249b0e06d6ddb7c14ae1cb487e14c6cf2849ba0eb29700b7",
+      "eventHash": "3c17b0c099a70917908b40017e2d81c7c4b269b30273197b93b4195f2ff8d8bf"
+    }
+  ]
+}

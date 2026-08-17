@@ -42,7 +42,7 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
     <>
       <RoomHeader onAdvanceStage={advanceStage} />
       <div
-        className="h-full overflow-hidden"
+        className="matrx-touch-targets h-full overflow-hidden"
         style={{ paddingTop: "var(--shell-header-h)" }}
       >
         {isMobile ? (

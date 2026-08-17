@@ -79,7 +79,7 @@ export function GrowthLoopRing({ variant = "story" }: { variant?: GrowthLoopRing
             {/* ── The ring ──────────────────────────────────────────────── */}
             <div
                 className={`relative mx-auto aspect-square w-full ${
-                    isGlance ? "max-w-[min(380px,42vh)]" : "max-w-[340px]"
+                    isGlance ? "max-w-[min(380px,42dvh)]" : "max-w-[340px]"
                 }`}
             >
                 <svg

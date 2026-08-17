@@ -922,9 +922,9 @@ export function NodePanel({
           active={briefWriter.busy}
           // Measured, not guessed: a finished `page_brief` (angle + ~9 points
           // + must-not-cover + concerns) fills ~90% of the viewport. At the
-          // 80vh default it scrolls for no reason; taller than this and the
+          // 80dvh default it scrolls for no reason; taller than this and the
           // window stops being a floating panel over the page.
-          height="90vh"
+          height="90dvh"
         />
 
         <div className="min-h-0 flex-1 overflow-y-auto">

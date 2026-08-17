@@ -190,7 +190,7 @@ function QuestionCard({
             raised by {raisedBy}
           </span>
         )}
-        <span className="ml-auto inline-flex opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+        <span className="ml-auto inline-flex opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
           {question.state === "deferred" ? (
             <Button
               variant="ghost"
@@ -369,7 +369,7 @@ function HoleCard({ hole }: { hole: InterviewHoleRow }) {
             className={cn(
               "ml-auto h-5 px-1.5 text-[11px]",
               !needsArbitration &&
-                "opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100",
+                "opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-visible:opacity-100 [@media(hover:hover)]:group-hover:opacity-100",
             )}
             disabled={busy}
             onClick={() => setConfirmRisk(true)}

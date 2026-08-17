@@ -159,7 +159,7 @@ function KeywordResearchWindowInner({
             runResearch={runResearch}
             initialKeyword={initialKeyword}
             autoRun={autoRun}
-            feedMaxHeightClassName="max-h-[45vh]"
+            feedMaxHeightClassName="max-h-[45dvh]"
             onKeywordChange={handleKeywordChange}
           />
         </div>

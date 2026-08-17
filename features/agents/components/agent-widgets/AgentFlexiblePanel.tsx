@@ -7,7 +7,7 @@ import { AgentRunner } from "../smart/AgentRunner";
 
 /** Match `AgentFullModal` (`max-w-3xl` × `h-[85dvh]`). */
 const AGENT_FLEXIBLE_PANEL_WIDTH = 768;
-const AGENT_FLEXIBLE_PANEL_HEIGHT = "85vh";
+const AGENT_FLEXIBLE_PANEL_HEIGHT = "85dvh";
 
 interface AgentFlexiblePanelProps {
   /** Overlay instance id — unique per open panel; also the window-manager id. */

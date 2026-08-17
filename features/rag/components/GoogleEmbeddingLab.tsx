@@ -76,7 +76,7 @@ export function GoogleEmbeddingLab() {
   return (
     <>
       <RagHubHeader />
-      <main className="h-full overflow-auto bg-background">
+      <main className="matrx-touch-targets h-full overflow-auto bg-background">
         <div className="mx-auto max-w-5xl space-y-6 px-4 py-7 sm:px-6">
           <header>
             <h1 className="flex items-center gap-2 text-xl font-semibold">

@@ -241,7 +241,7 @@ function WorkflowRuntimeDemo() {
   );
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 p-4">
+    <div className="matrx-touch-targets mx-auto max-w-5xl space-y-4 p-4">
       <h1 className="text-lg font-semibold">Workflow Runtime — live run board</h1>
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">

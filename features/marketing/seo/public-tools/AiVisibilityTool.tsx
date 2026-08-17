@@ -132,7 +132,7 @@ export function AiVisibilityTool() {
       label: "AI visibility analysis",
       pending: true,
       progress: liveProgress.current,
-      height: "70vh",
+      height: "70dvh",
     });
     const abortController = new AbortController();
     streamAbortRef.current = abortController;
@@ -359,7 +359,7 @@ export function AiVisibilityTool() {
                   requestId: liveRequestId.current,
                   pending: !liveRequestId.current,
                   progress: liveProgress.current,
-                  height: "70vh",
+                  height: "70dvh",
                 });
                 return;
               }

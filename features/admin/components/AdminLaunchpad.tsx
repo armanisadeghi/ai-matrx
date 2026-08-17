@@ -176,7 +176,7 @@ export default function AdminLaunchpad() {
   }
 
   return (
-    <div className="h-full w-full overflow-y-auto bg-slate-100 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+    <div className="matrx-touch-targets h-full w-full overflow-y-auto bg-slate-100 text-slate-950 dark:bg-slate-950 dark:text-slate-100">
       <span className="shell-hide-sidebar" aria-hidden="true" />
       <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-3 py-3 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
