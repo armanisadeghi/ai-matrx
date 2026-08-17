@@ -51,6 +51,23 @@
   a plain constant the moment the route ships and `pnpm sync-types` runs. The FE also expects an
   optional `alternatives: proposed[]` on a finding (Arman: "where we have options they click to
   select the one that they want") — additive, ignored when absent.
+- **The Final Checkup SERVER lane is LIVE (2026-08-17)** — aidream
+  `services/masterwork_checkup/` (its `FEATURE.md` is the contract). `POST /api/masterworks/checkup`
+  (durable operation `checkup`) and `POST /api/masterworks/clean-corpus` (operation `clean_corpus`)
+  both exist, so `CHECKUP_PATH`'s documented cast in `useCheckupRun.ts` becomes a plain constant
+  after `pnpm sync-types`. Event names match what the UI already listens for
+  (`masterwork_checkup_progress` / `_finding` / `_complete`, plus `masterwork_corpus_progress` /
+  `masterwork_corpus_cleaned`), the finding shape matches, `alternatives: proposed[]` is on the wire
+  (empty until a producer offers choices), and the terminal event adds `evidence_rejected` /
+  `already_dismissed` / `notes` / `corpus_cleaned`. **Your dismissal memory is read:** the service
+  suppresses any finding whose `kind:target_rule_id:proposed_name` fingerprint is in
+  `metadata.checkup.dismissed` — keep `dismissalFingerprint` byte-identical, it is a cross-repo
+  contract now. Producer #1 is Mandate `masterwork.checkup_auditor` (Opus 5); cleanup is Mandate
+  `masterwork.corpus_cleaner` and stays MANUAL (Arman's ruling) — the checkup consumes a saved clean
+  from `rulebook.metadata.expert_corpus` but never triggers one. Proved live twice on Arman's SEO
+  Rulebook `8d1d4f08-…`: identical 2 findings both runs, 0 evidence rejections, both real (a rule
+  encoding a timeline Arman explicitly retracted, and a missing "match everything the page holding
+  your target spot does well" rule).
 - **Approaches are a REGISTRY, not an `if` (2026-08-17):** `platform.approach` (canonical
   system-variant catalog via `create_entity_table`; seeded interview/source/exemplar/file with
   mandate_key + intake_query) drives the NewRulebookDialog picker (registry cards, "Suggested
@@ -179,6 +196,13 @@ store `args` — **forensics, not a feature.**
    to their words without a database session. (Being built; see In flight.)
 3. **The Expert's words are the asset.** Anything that makes them unreachable is a Sev-1 defect,
    even when the rows technically exist.
+
+- **No raw UUID reaches the Expert (2026-08-17).** The first-turn variables strip printed
+  `Rulebook id: 56d96d67-…` mid-interview — a machine-wired value the Expert never typed. Fixed
+  generically in the ONE shared component (`FirstTurnVariables`, consumed only by
+  `AgentUserMessage`, so every surface is covered): a bare UUID whose key names a known entity
+  renders as an `EntityRef` (icon + open + peek); one that resolves to nothing is dropped, because
+  an id the user can neither read nor open is noise. No per-surface patching needed.
 
 ## In flight (dispatched 2026-08-17, parallel sessions — do not duplicate)
 
