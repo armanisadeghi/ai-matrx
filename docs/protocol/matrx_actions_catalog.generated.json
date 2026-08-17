@@ -7798,8 +7798,8 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
-   "label": "Agent Slot",
-   "noun": "agent_slot",
+   "label": "Mandate",
+   "noun": "mandate",
    "reference": "no",
    "schemas": {
     "create": {
@@ -7840,7 +7840,7 @@
        "default": null,
        "title": "Output Kind"
       },
-      "slot_key": {
+      "mandate_key": {
        "title": "Slot Key"
       },
       "use_latest": {
@@ -7849,7 +7849,7 @@
       }
      },
      "required": [
-      "slot_key",
+      "mandate_key",
       "label"
      ],
      "title": "CreateAgentSlotItem",
@@ -7912,7 +7912,7 @@
        "default": null,
        "title": "Output Kind"
       },
-      "slot_key": {
+      "mandate_key": {
        "default": null,
        "title": "Slot Key"
       },
@@ -7928,7 +7928,7 @@
      "type": "object"
     }
    },
-   "table": "agent.slot_definition",
+   "table": "agent.mandate",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -7938,8 +7938,8 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
-   "label": "Agent Slot Binding",
-   "noun": "agent_slot_binding",
+   "label": "Mandate Binding",
+   "noun": "mandate_binding",
    "reference": "no",
    "schemas": {
     "create": {
@@ -7968,7 +7968,7 @@
       "principal_type": {
        "title": "Principal Type"
       },
-      "slot_id": {
+      "mandate_id": {
        "title": "Slot Id"
       },
       "subject_user_id": {
@@ -7981,7 +7981,7 @@
       }
      },
      "required": [
-      "slot_id",
+      "mandate_id",
       "principal_type"
      ],
      "title": "CreateAgentSlotBindingItem",
@@ -8032,7 +8032,7 @@
        "default": null,
        "title": "Principal Type"
       },
-      "slot_id": {
+      "mandate_id": {
        "default": null,
        "title": "Slot Id"
       },
@@ -8052,7 +8052,7 @@
      "type": "object"
     }
    },
-   "table": "agent.slot_binding",
+   "table": "agent.mandate_binding",
    "title_column": null,
    "update": "planned",
    "view": "no"
@@ -8062,8 +8062,8 @@
    "delete": "planned",
    "family": "Other",
    "identity_fields": [],
-   "label": "Agent Slot Exemplar",
-   "noun": "agent_slot_exemplar",
+   "label": "Mandate Exemplar",
+   "noun": "mandate_exemplar",
    "reference": "no",
    "schemas": {
     "create": {
@@ -8100,7 +8100,7 @@
        "default": null,
        "title": "Reference Output"
       },
-      "slot_id": {
+      "mandate_id": {
        "title": "Slot Id"
       },
       "source": {
@@ -8117,7 +8117,7 @@
       }
      },
      "required": [
-      "slot_id",
+      "mandate_id",
       "label"
      ],
      "title": "CreateAgentSlotExemplarItem",
@@ -8176,7 +8176,7 @@
        "default": null,
        "title": "Reference Output"
       },
-      "slot_id": {
+      "mandate_id": {
        "default": null,
        "title": "Slot Id"
       },
@@ -8200,7 +8200,7 @@
      "type": "object"
     }
    },
-   "table": "agent.slot_exemplar",
+   "table": "agent.mandate_exemplar",
    "title_column": null,
    "update": "planned",
    "view": "no"
