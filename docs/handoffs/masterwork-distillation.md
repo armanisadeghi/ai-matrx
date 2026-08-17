@@ -63,6 +63,19 @@
   (`open_feedback` on every `rulebook` read); enrollment `goal`s point the reviewer at them —
   no new outcome pipeline built, on purpose. Details: aidream
   `aidream/services/masterworks/FEATURE.md` § Hindsight enrollment.
+- **Encore SHIPPED (2026-08-17) — the Operator door exists.** Draft→released lifecycle on the
+  Masterwork (`workflow.definition.metadata.released_at`; Release/Un-release on the Studio's
+  Masterworks page, guarded CAS on `version`, direct supabase-js — RLS `std_update` covers it,
+  no server hop). `/encore` lists released Masterworks by declared scope (mine/orgs/public,
+  VIEW-LAW predicates; "shared" shelf deferred until the generic shared-with-me filter exists —
+  lib/list-scope Brief 3A) with jargon-free cards; `/encore/[id]` is the run experience reusing
+  `TryMasterworkBox` verbatim + the Operator's OWN run history. Doors both ways (By <expert> →
+  Rulebook when readable; owner → Studio; Studio → View in Encore). Strunk `24df673f` is
+  RELEASED and live on /encore (browser-verified, desktop+mobile+dark). Found+fixed live:
+  `TERMINAL_STATUSES` missed `errored` (box spun forever on an errored run); live definition
+  descriptions carried retired vocabulary + raw UUIDs (rows cleaned, build.py no longer embeds
+  the id). NOTE: an Encore run start 422s / errors until production aidream picks up the
+  mandate-aware runtime commits already on main — the FE surfaces both honestly.
 - Fixed along the way: word-boundary name truncation (was defect 3), duplicate Audition judge
   soft-deleted (mandate pins `c55b52c9-…`), test residue removed (was defect 4), two
   unmirrored shareable-registry rows (`interview_session`, `workflow_runtime_surface`) added
@@ -90,15 +103,13 @@ newest-first). Verified from the DB: no old-contract token in either new definit
 
 1. **The honest test (the gate).** Arman fills `arman-seo-method` (`5d353449-…`) through the
    Scout — the reject/feedback loop is now ready for exactly this session.
-2. **Encore surface** — the Operator door to a released Masterwork. Designed nowhere. Lexicon
-   names it; nothing built.
-3. **Build-service consolidation** (vocabulary-campaign duplication finding ②):
+2. **Build-service consolidation** (vocabulary-campaign duplication finding ②):
    `services/masterworks/build.py` (~960 lines) hand-rolls what
    `matrx_ai/plans/compiler.py::compile_plan` does, except data-driven cast width + non-agent
    utility nodes. Bring a plan before touching; never delete first.
-4. **Four Scouts, no shared primitive** (duplication finding ③): masterwork_scout, SEO Site
+3. **Four Scouts, no shared primitive** (duplication finding ③): masterwork_scout, SEO Site
    Strategy Interviewer, GSC Site Intake Interviewer, Vision Interview openers.
-5. **Distillation → Engram interface** (`common-docs/systems/engram/VISION.md` §5): emit
+4. **Distillation → Engram interface** (`common-docs/systems/engram/VISION.md` §5): emit
    candidate specialists/contracts/acceptance criteria, not just rules.
 
 ## Working notes that save hours

@@ -19,7 +19,8 @@
 - **Live:** `/masterwork` (Masterwork Studio — entity-list shell), `/masterwork/[id]`
   (rule editor + "Build a Masterwork" dialog + "From a source" ingest dialog +
   "Interview me" side sheet), `/masterwork/[id]/masterworks` (built Masterworks +
-  version-drift flags), `/masterwork/admin` (feature map).
+  version-drift flags), `/masterwork/admin` (feature map), `/encore` + `/encore/[id]`
+  (the Operator surface — see the Encore bullet below).
 - **The guided start (2026-08-15):** "New Rulebook" is the four-question intake from the
   Distillation vision (goal · who runs it · where the knowledge lives · stakes → stored on
   `metadata.intake`), then routes by source: knowledge in-head/unsure → `/masterwork/[id]?interview=1`
@@ -38,6 +39,22 @@
   `RuleProvenance` renders those anchors as DOORS — the page numbers, a link to the source file,
   and a link to the extraction that read it — and flags a quote that failed verbatim
   verification.
+- **Encore (2026-08-17) — the Operator door.** `/encore` (released Masterworks the viewer can
+  reach, shelved mine / my-orgs / public) and `/encore/[id]` (the run experience). A Masterwork
+  is **draft** until the Expert presses **Release** on the Studio's Masterworks page
+  (`metadata.released_at` stamp on workflow.definition, guarded CAS on `version` via
+  `setMasterworkReleased`); **only released Masterworks appear on Encore**, and the Encore run
+  page refuses a draft (doors the Rulebook owner to the Studio instead). Operator copy is
+  jargon-free (THE MISMATCH RULE): "Run", "What it does", "By <expert>" — never "workflow" /
+  "compile" / version numbers. Doors both ways: card/name → `/encore/{id}`; "By <expert>" →
+  `/masterwork/{rulebookId}` (rendered only when the viewer can read the Rulebook); Rulebook
+  owner gets a quiet "Open in Studio"; Studio gets "View in Encore" once released; every run
+  row opens in the workflows app. Run machinery is the canonical `TryMasterworkBox` (typed run
+  start + adoptForeignStream + followWorkflowRunStream + refresh rejoin) — never a second
+  renderer. Files: `encore/service.ts` (VIEW-LAW scoped reads + per-Operator run history),
+  `encore/EncoreHomePage.tsx`, `encore/EncoreRunPage.tsx`; nav child "Encore" under
+  Masterwork Studio. Deliberately deferred: a "shared with me" shelf (no generic
+  shared-with-me list filter exists yet — lib/list-scope Brief 3A; add the shelf when it lands).
 - **Server half:** aidream Masterwork services (Build + ingest Approaches + the `rulebook`
   tool, one shared rule builder and one shared CAS write path).
 - **Next (work order: docs/handoffs/masterwork-distillation.md):** the Arman-SEO honest test
@@ -65,7 +82,8 @@
 - **Versioning:** every save through `saveRules` bumps `version` with an optimistic lock on the
   loaded version (concurrent edit → readable conflict error, no silent overwrite).
 - **Masterworks:** `workflow.definition` rows whose `metadata` carries `built_from_rulebook` +
-  `rulebook_version` + `masterwork_kind` (the Build stamp). Drift = `rulebook_version <
+  `rulebook_version` + `masterwork_kind` (the Build stamp) + `released_at` (the Expert's
+  release stamp; absent = draft, Studio-only — an Operator can never run a draft). Drift = `rulebook_version <
   rulebook.version` → the Masterworks page flags "rebuild" AND opens the rule-level diff (below)
   — a drift badge without it states a timestamp, not a verdict.
 - **Version history — NO Rulebook-specific table.** `platform.rulebook` was enrolled in the
@@ -145,6 +163,12 @@
 
 ## Change log
 
+- 2026-08-17 — **Encore shipped** (the Operator door): `/encore` + `/encore/[id]`, the
+  draft→released lifecycle (`metadata.released_at`, Release/Un-release in the Studio with a
+  guarded version CAS), Studio↔Encore doors both ways, per-Operator run history, nav entry.
+  Also fixed: `TERMINAL_STATUSES` missed `errored`/`abandoned`, so a run that errored mid-run
+  left TryMasterworkBox "Working…" forever; live Masterwork descriptions cleaned of retired
+  vocabulary ("Compiled from Expertise Pack") and raw UUIDs (build.py no longer embeds the id).
 - 2026-08-17 — **The review loop closes both ways** (Arman's feedback): Reject-with-feedback and
   Request-changes on every rule (`RuleFeedbackDialog`), rejected/change-requested badges + the
   feedback shown on the rule row, the Scout receives `open_feedback` from the `rulebook` tool
