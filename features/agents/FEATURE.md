@@ -314,6 +314,18 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-17` — **A FAILED headless run now reports WHY it failed.** `jsonExtractionComplete`
+  is set from the stream's FINAL chunk (`process-stream`, `isComplete: isFinal`), which arrives
+  on failed runs too, and `waitForExtraction` checked it BEFORE the request status — so a run
+  that died at the provider settled through `settle("extraction-complete")` and returned the
+  generic "The agent finished but produced no structured JSON", discarding the specific reason
+  already sitting on the row. The status check now runs first: a terminal `error` returns
+  `error.user_message` (plus any partial extraction) and no longer files a `reportNoResult`
+  capture, so the Error Inspector stops mislabelling provider rejections as missing-JSON
+  problems. Found via FastFire, where every card of a session reported a shape problem while the
+  real cause was a Google 400 on the grader's thinking level. Regression:
+  `thunks/__tests__/headless-agent-json-error-precedence.test.ts` (fails under the old ordering).
+
 - `2026-08-15` — **Runtime waiting banners are now evidence-backed and
   recoverable.** A `WAITING_INPUT` spine row no longer automatically means
   "waiting for your answer": reconnect checks the durable delegated ledger
