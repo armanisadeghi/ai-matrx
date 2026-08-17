@@ -275,9 +275,12 @@ function WorkflowRuntimeDemo() {
                 </option>
               ))}
             </select>
+            {/* Disabled while the definition/surface fetch is in flight — a
+                click in that window would misread "still loading" as "failed
+                to load" (Bugbot, PR #157). */}
             <button
               type="button"
-              disabled={!selected || starting}
+              disabled={!selected || starting || !surfaceLoaded}
               onClick={() => void begin(false)}
               className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground disabled:opacity-50"
             >
@@ -285,7 +288,7 @@ function WorkflowRuntimeDemo() {
             </button>
             <button
               type="button"
-              disabled={!selected || starting}
+              disabled={!selected || starting || !surfaceLoaded}
               onClick={() => void begin(true)}
               className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground disabled:opacity-50"
             >
