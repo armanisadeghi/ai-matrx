@@ -51,6 +51,7 @@ import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { parseMandateContract } from "@/features/agents/mandates/overrides";
 import { MandateTestBench } from "./MandateTestBench";
 import { MandateInputsCell, MandateOutputCell } from "./mandate-contract-cells";
+import { MandateContextGate } from "./MandateContextGate";
 import { useGuardedRebind } from "./useGuardedRebind";
 import {
   buildRebindFixBrief,
@@ -1008,11 +1009,13 @@ function FactsPanel({
   variableVerdicts,
   verdictsLoading,
   verdictsError,
+  onSaved,
 }: {
   row: MandateRow;
   variableVerdicts: MandateVariableVerdict[];
   verdictsLoading: boolean;
   verdictsError: string | null;
+  onSaved: () => void;
 }) {
   const isSystem = row.agentType === "builtin";
   const drifted = row.drift != null;
@@ -1090,6 +1093,12 @@ function FactsPanel({
       </Fact>
       <Fact label="Output">
         <MandateOutputCell row={row} maxChips={8} />
+      </Fact>
+      {/* Context is the THIRD input channel, alongside declared input and user
+          text — so it belongs in the facts panel beside Inputs and Output, not
+          buried in a settings tab. A gate may only narrow. */}
+      <Fact label="Context">
+        <MandateContextGate row={row} onSaved={onSaved} />
       </Fact>
       {row.codeTruth && (
         <>
@@ -1478,6 +1487,7 @@ export function MandateDetailView({
         variableVerdicts={variableVerdicts}
         verdictsLoading={verdictsLoading}
         verdictsError={liveVerdictState?.error ?? null}
+        onSaved={onSaved}
       />
 
       <StatusBanner

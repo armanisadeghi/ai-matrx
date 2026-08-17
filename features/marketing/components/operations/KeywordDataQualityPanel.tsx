@@ -76,8 +76,9 @@ function ClassifyCard() {
     label: "Keyword classifier",
     finalKind: "seo.classify_completed",
     stages: CLASSIFY_STAGES,
-    onComplete: (data) =>
-      toast.success(`Classified ${data.updated} of ${data.eligible} eligible keywords`),
+    onComplete: (data) => {
+      toast.success(`Classified ${data.updated} of ${data.eligible} eligible keywords`);
+    },
   });
   const submitting = command.isActive;
   const result = command.run.result ?? null;
@@ -106,10 +107,10 @@ function ClassifyCard() {
       <div className="grid gap-3 p-3">
         <p className="text-xs text-muted-foreground">
           Runs the Keyword Classifier over the oldest unclassified keywords (universal
-          plane, not site-scoped), filling all 13 intrinsic columns + envelope. The
-          route is synchronous and a 40-keyword batch takes ~90s, so one run is capped
-          at {CLASSIFY_RUN_LIMIT} keywords — anything larger is severed by the CDN at
-          ~100s before it can answer. Run it repeatedly to work through a backlog.
+          plane, not site-scoped), filling all 13 intrinsic columns + envelope. A
+          40-keyword batch is about 90 seconds of model work, so one run is capped at{" "}
+          {CLASSIFY_RUN_LIMIT} keywords — run it repeatedly to work through a backlog.
+          The run streams into its own window and survives a reload.
         </p>
         <div className="flex items-end gap-3">
           <div className="grid gap-1.5">
@@ -181,8 +182,9 @@ function AssignTopicsCard() {
     label: "Topic assigner",
     finalKind: "seo.assign_topics_completed",
     stages: ASSIGN_STAGES,
-    onComplete: (data) =>
-      toast.success(`Assigned ${data.keywords_assigned} of ${data.eligible} eligible keywords`),
+    onComplete: (data) => {
+      toast.success(`Assigned ${data.keywords_assigned} of ${data.eligible} eligible keywords`);
+    },
   });
   const submitting = command.isActive;
   const result = command.run.result ?? null;
@@ -250,12 +252,18 @@ function AssignTopicsCard() {
             size="sm"
             className="h-8 gap-1.5"
             disabled={submitting || !territory.trim()}
-            onClick={() => void run()}
+            onClick={run}
           >
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Run topic assigner
           </Button>
+          {command.run.stage && submitting ? (
+            <p className="pb-1.5 text-[11px] text-muted-foreground">{command.run.stage}</p>
+          ) : null}
         </div>
+        {command.run.error ? (
+          <p className="text-[11px] text-destructive">{command.run.error}</p>
+        ) : null}
         {result ? (
           <div className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 text-xs">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">

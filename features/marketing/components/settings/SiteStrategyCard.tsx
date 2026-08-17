@@ -55,12 +55,13 @@ export function SiteStrategyCard({
     label: "Site strategy interview",
     finalKind: "seo.strategy_completed",
     stages: STRATEGY_STAGES,
-    onComplete: (data) =>
+    onComplete: (data) => {
       toast.success(
         `Strategy interview saved ${data.valuations_written} topic value${
           data.valuations_written === 1 ? "" : "s"
         }`,
-      ),
+      );
+    },
   });
   const submitting = command.isActive;
   const result = command.run.result ?? null;

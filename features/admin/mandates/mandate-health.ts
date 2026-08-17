@@ -81,6 +81,16 @@ export interface MandateRow {
    * can also carry free user text on top of these. */
   requiredVariables: string[];
   requiredContextPolicyKeys: string[];
+  /** The MANDATE's own Context Policy gate (`agent.mandate.auto_context_disabled`). */
+  contextGateClosed: boolean;
+  /** The HOLDER's own kill switch (`agent.definition.auto_context_disabled`). */
+  holderContextClosed: boolean;
+  /**
+   * What actually happens at run time. A gate may only NARROW, so this is
+   * `holder OR mandate` — a Mandate can close what the Holder would have
+   * accepted, but can never reopen what the Holder refused.
+   */
+  contextClosedEffective: boolean;
   /** The mandate's output promise beyond a registered kind — the structured
    * keys any bound agent must produce. */
   requiredOutputKeys: string[];
@@ -178,6 +188,14 @@ export function buildRow(
   const contract = parseMandateContract(mandate.contract);
   const mandateKeyParts = splitMandateKey(mandate.mandate_key);
 
+  // Context gating. The mandate's own gate is a column on the mandate; the
+  // holder's is a column on its definition. Never report one as the other —
+  // the console has to be able to say WHICH of the two closed the door.
+  const contextGateClosed = mandate.auto_context_disabled === true;
+  const holderContextClosed = agentId
+    ? (data.agentsById[agentId]?.autoContextDisabled ?? false)
+    : false;
+
   return {
     mandate,
     id: mandate.id,
@@ -198,6 +216,9 @@ export function buildRow(
     outputKind: mandate.output_kind ?? "text",
     requiredVariables: contract.requiredVariables,
     requiredContextPolicyKeys: contract.requiredContextPolicyKeys,
+    contextGateClosed,
+    holderContextClosed,
+    contextClosedEffective: holderContextClosed || contextGateClosed,
     requiredOutputKeys: contract.requiredOutputKeys,
     inputSummary:
       contract.requiredVariables.length > 0
