@@ -130,11 +130,17 @@ function ClassifyCard() {
               className="w-28"
             />
           </div>
-          <Button size="sm" className="h-8 gap-1.5" disabled={submitting} onClick={() => void run()}>
+          <Button size="sm" className="h-8 gap-1.5" disabled={submitting} onClick={run}>
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Run classifier
           </Button>
+          {command.run.stage && submitting ? (
+            <p className="pb-1.5 text-[11px] text-muted-foreground">{command.run.stage}</p>
+          ) : null}
         </div>
+        {command.run.error ? (
+          <p className="text-[11px] text-destructive">{command.run.error}</p>
+        ) : null}
         {result ? (
           <div className="grid grid-cols-2 gap-2 rounded-md border border-border bg-muted/30 p-3 text-xs sm:grid-cols-4">
             <div>
@@ -169,32 +175,33 @@ function AssignTopicsCard() {
   const dispatch = useAppDispatch();
   const [territory, setTerritory] = useState("");
   const [limit, setLimit] = useState(50);
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<AssignTopicsResult | null>(null);
 
-  const run = async () => {
+  const command = useSeoCommandStream<AssignTopicsResult>({
+    key: "assign-topics",
+    label: "Topic assigner",
+    finalKind: "seo.assign_topics_completed",
+    stages: ASSIGN_STAGES,
+    onComplete: (data) =>
+      toast.success(`Assigned ${data.keywords_assigned} of ${data.eligible} eligible keywords`),
+  });
+  const submitting = command.isActive;
+  const result = command.run.result ?? null;
+
+  const run = () => {
     const territoryValue = territory.trim();
     if (!territoryValue) return;
-    setSubmitting(true);
-    try {
-      const response = await dispatch(
+    void command.start(({ consumeStream, signal }) =>
+      dispatch(
         callApi({
           path: ASSIGN_TOPICS_PATH,
           method: "POST",
           body: { territory: territoryValue, language: "en", limit },
-          connectTimeoutMs: SEO_COMPUTE_CONNECT_TIMEOUT_MS,
-          totalTimeoutMs: null,
+          stream: true,
+          consumeStream,
+          signal,
         }),
-      );
-      if (response.error) throw new Error(response.error.message);
-      const data = response.data as unknown as AssignTopicsResult;
-      setResult(data);
-      toast.success(`Assigned ${data.keywords_assigned} of ${data.eligible} eligible keywords`);
-    } catch (error) {
-      toast.error("Topic assignment failed", { description: extractErrorMessage(error) });
-    } finally {
-      setSubmitting(false);
-    }
+      ),
+    );
   };
 
   return (

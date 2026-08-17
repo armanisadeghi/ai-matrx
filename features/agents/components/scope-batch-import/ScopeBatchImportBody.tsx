@@ -461,7 +461,7 @@ export function ScopeBatchImportBody({
                 </TableHead>
                 <TableHead className="w-[190px]">
                   <div className="flex items-center justify-between gap-2">
-                    <span title="Whether the agent may change this value while it works, or only read it. An editable slot's edits are saved back to the scope value as a new version.">
+                    <span title="Whether the agent may change this value while it works, or only read it. An editable context policy's edits are saved back to the scope value as a new version.">
                       Agent access
                     </span>
                     {accessEligibleItems.length > 0 && (

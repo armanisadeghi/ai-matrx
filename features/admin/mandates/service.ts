@@ -45,6 +45,10 @@ export interface MandateAgentInfo {
   /** 'builtin' = system agent. Anything else pinned as a mandate DEFAULT is a
    * defect — surface it loudly in the console. */
   agentType: string | null;
+  /** The HOLDER's own Context Policy kill switch. Carried so the console can
+   * state the combined effect honestly — a Mandate gate only NARROWS, so the
+   * effective value is `agent OR mandate`, never the mandate alone. */
+  autoContextDisabled: boolean;
 }
 
 export interface MandateVersionInfo {
@@ -131,6 +135,7 @@ export async function fetchMandateConsoleData(): Promise<MandateConsoleData> {
         version: row.version,
         isArchived: Boolean(row.is_archived),
         agentType: row.agent_type,
+        autoContextDisabled: row.auto_context_disabled === true,
       };
     }
   }

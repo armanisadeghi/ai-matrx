@@ -250,8 +250,12 @@ export function useSeoCommandRun<TResult>(
 
       const settleResult = (raw: unknown): void => {
         const parsed = parseResult ? parseResult(raw) : (raw as TResult | null);
-        clearPointer(key);
+        // Keep the pointer on success (see `RunPointer.settled`): the answer
+        // must survive a refresh, not just the run that produced it.
+        const pointer = readPointer(key);
+        if (pointer) writePointer(key, { ...pointer, settled: true });
         if (parsed === null || parsed === undefined) {
+          clearPointer(key);
           setState((prev) => ({
             ...prev,
             status: "error",
@@ -327,8 +331,11 @@ export function useSeoCommandRun<TResult>(
 
   const launch = useCallback(
     async (body: Record<string, unknown>, target?: string): Promise<void> => {
-      const { path, scopeOverrides } = optionsRef.current;
+      const { path, scopeOverrides, key } = optionsRef.current;
       pendingTargetRef.current = target ?? null;
+      // A new launch retires the previous receipt; the new one lands with the
+      // new run's id.
+      clearPointer(key);
       setState({
         status: "running",
         stage: "Connecting",
@@ -389,9 +396,12 @@ export function useSeoCommandRun<TResult>(
     const { key } = optionsRef.current;
     const pointer = readPointer(key);
     if (!pointer) return;
+    // A settled pointer is a finished ANSWER being restored, not a run being
+    // rejoined: the form stays usable while its result comes back, and the
+    // user never sees a spinner for work that is already done.
     setState({
-      status: "rejoining",
-      stage: "Picking up where you left off",
+      status: pointer.settled ? "idle" : "rejoining",
+      stage: pointer.settled ? null : "Picking up where you left off",
       result: null,
       error: null,
       runId: pointer.runId,
