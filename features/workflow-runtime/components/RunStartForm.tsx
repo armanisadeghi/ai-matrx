@@ -7,12 +7,15 @@
  * Required gating happens here (plain-language, no jargon); the engine
  * validates again server-side.
  *
- * The "file" field type is an honest v1: a text input for a file id or URL
- * (the universal file picker integration is tracked in the handoff).
+ * The "file" field type is the canonical cloud-files picker (openFilePicker —
+ * host is mounted globally in app/Providers.tsx) with a plain text input
+ * beside it, so a pasted link or file id still works.
  */
 
 import { useState } from "react";
-import { Play } from "lucide-react";
+import { FolderOpen, Play } from "lucide-react";
+
+import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 
 import {
   deriveRunForm,
@@ -85,16 +88,38 @@ function FieldControl({
           ))}
         </select>
       );
-    // "file" (honest v1) and "text" share the text control.
+    case "file":
+      return (
+        <div className="mt-0.5 flex items-center gap-1.5">
+          <input
+            type="text"
+            value={typeof value === "string" ? value : ""}
+            placeholder={field.placeholder || "File link or id"}
+            onChange={(e) => onChange(e.target.value)}
+            className="block w-full rounded-md border border-border bg-background p-2 text-base"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              void openFilePicker({ multi: false, title: field.label }).then(
+                (ids) => {
+                  if (ids && ids.length > 0) onChange(ids[0]);
+                },
+              );
+            }}
+            className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2.5 py-2 text-sm text-foreground"
+          >
+            <FolderOpen className="h-3.5 w-3.5" />
+            Browse
+          </button>
+        </div>
+      );
     default:
       return (
         <input
           type="text"
           value={typeof value === "string" ? value : ""}
-          placeholder={
-            field.placeholder ||
-            (field.type === "file" ? "File link or id" : "")
-          }
+          placeholder={field.placeholder}
           onChange={(e) => onChange(e.target.value)}
           className={base}
         />

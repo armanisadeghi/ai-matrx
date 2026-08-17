@@ -54,9 +54,9 @@ creation, mobile order scales, child status mapping.
    verbs, `nodeActionReadiness` (parked-run gated), real action readouts (unlock-on-ready
    button + auto-run toggle, shared in-flight guard), schema-driven interrupt form
    (checkpoint-keyed; `schema_hint` → typed fields, text fallback), the generated run-start
-   form (`io.user_input` fields → `node_inputs`), step-mode path in the demo. **Small tail:**
-   "file" form fields are a text input — wire the universal file handler picker; executeNode
-   per-node `inputs` collection UI.
+   form (`io.user_input` fields → `node_inputs`), step-mode path in the demo. "file" form
+   fields use the canonical cloud-files picker (`openFilePicker`) with a paste-a-link input
+   beside it (2026-08-17). **Small tail:** executeNode per-node `inputs` collection UI.
 4. **Phase 5 — parity proof (Study Pack SHIPPED 2026-08-16 · Podcast SHIPPED 2026-08-17):**
    both proofs are LIVE data, zero new code. Study Pack: `workflow.runtime_surface` row
    `c797a1c1-4396-411c-973e-cacc12555e60` on "Study Pack v1", pinned by
