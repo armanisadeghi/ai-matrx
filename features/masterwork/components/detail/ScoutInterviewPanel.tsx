@@ -35,8 +35,7 @@ import { useMandate } from "@/features/agents/mandates/useMandate";
 import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { supabase } from "@/utils/supabase/client";
 import {
-  ensureInterviewTitle,
-  linkInterviewConversation,
+  associateInterviewWhenPersisted,
   listRulebookInterviews,
   type RulebookInterview,
 } from "@/features/masterwork/record/service";
@@ -147,26 +146,19 @@ function InterviewConversation({
     retainOnUnmount: true,
   });
 
-  // THE ASSOCIATION. Written as soon as both ids exist, so a conversation can
-  // never be orphaned from its Rulebook — not even one the Expert abandons.
-  // The row in chat.conversation is written by the server at turn end, so the
-  // title fix runs behind a short retry rather than racing it.
+  // THE ASSOCIATION — the whole point of this change. Handed to a module-level
+  // job so it survives the Expert closing this panel mid-turn (see
+  // `associateInterviewWhenPersisted`); it cannot be written at mint time
+  // because `assoc_add` needs the conversation row to exist.
   const linkedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!conversationId || linkedRef.current === conversationId) return;
     linkedRef.current = conversationId;
-    void (async () => {
-      const ok = await linkInterviewConversation({ rulebookId, conversationId });
-      if (!ok) {
-        // Retry once the server has persisted the conversation row.
-        setTimeout(() => {
-          void linkInterviewConversation({ rulebookId, conversationId });
-        }, 8000);
-      }
-      setTimeout(() => {
-        void ensureInterviewTitle({ conversationId, rulebookName });
-      }, 10000);
-    })();
+    associateInterviewWhenPersisted({
+      rulebookId,
+      conversationId,
+      rulebookName,
+    });
   }, [conversationId, rulebookId, rulebookName]);
 
   if (!conversationId) return <ChatRoomSkeleton />;

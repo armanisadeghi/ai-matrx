@@ -88,6 +88,13 @@ export interface ExpertCorpus {
   contributions: ExpertContribution[];
   /** Total characters the Expert contributed across every contribution. */
   totalChars: number;
+  /**
+   * Interviews this Rulebook HAS that the current viewer cannot read (the
+   * conversations belong to someone else and were never shared). The surface
+   * must say so — an empty Record that is really an access boundary is a lie,
+   * and the honest answer is "there is more here, it just isn't yours".
+   */
+  hiddenInterviewCount: number;
 }
 
 // =============================================================================
@@ -163,6 +170,55 @@ export async function linkInterviewConversation(args: {
     return false;
   }
   return true;
+}
+
+/**
+ * Start the association as a MODULE-LEVEL job that outlives the panel.
+ *
+ * The edge cannot be written at mint time — `assoc_add` requires real access to
+ * both endpoints and the server writes `chat.conversation` atomically at stream
+ * end, so an early write fails 42501 (verified live 2026-08-17). We therefore
+ * wait for the row. That wait must NOT be tied to the interview sheet's React
+ * lifetime: the Expert closing the panel mid-turn is exactly the case where
+ * losing the link hurts most. Deduped per conversation; bounded by the
+ * persistence poll's own timeout.
+ */
+const pendingAssociations = new Set<string>();
+
+export function associateInterviewWhenPersisted(args: {
+  rulebookId: string;
+  conversationId: string;
+  rulebookName: string;
+}): void {
+  if (pendingAssociations.has(args.conversationId)) return;
+  pendingAssociations.add(args.conversationId);
+  void (async () => {
+    try {
+      const { waitForConversationPersisted } = await import(
+        "@/features/agents/redux/execution-system/conversations/conversation-persistence"
+      );
+      const persisted = await waitForConversationPersisted(args.conversationId);
+      if (!persisted) {
+        console.error(
+          "[masterwork/record] interview conversation never persisted — it " +
+            "cannot be associated with its Rulebook, so the Expert would have " +
+            "no way back to it.",
+          args,
+        );
+        return;
+      }
+      await linkInterviewConversation({
+        rulebookId: args.rulebookId,
+        conversationId: args.conversationId,
+      });
+      await ensureInterviewTitle({
+        conversationId: args.conversationId,
+        rulebookName: args.rulebookName,
+      });
+    } finally {
+      pendingAssociations.delete(args.conversationId);
+    }
+  })();
 }
 
 /**
@@ -264,8 +320,46 @@ export async function listRulebookInterviews(
   rulebookId: string,
   rules: RulebookRule[] = [],
 ): Promise<RulebookInterview[]> {
-  const ids = await interviewConversationIds(rulebookId);
-  if (ids.length === 0) return [];
+  return (await listRulebookInterviewsWithAccess(rulebookId, rules)).interviews;
+}
+
+/**
+ * The interviews the viewer can actually READ, plus how many exist that they
+ * cannot. The second number is what stops an access boundary from looking like
+ * an empty Record.
+ */
+export async function listRulebookInterviewsWithAccess(
+  rulebookId: string,
+  rules: RulebookRule[] = [],
+): Promise<{ interviews: RulebookInterview[]; hiddenCount: number }> {
+  const edgeIds = await interviewConversationIds(rulebookId);
+
+  // LOUD RECOVERY. Rule provenance is the older, weaker breadcrumb; the edge is
+  // the relationship. A conversation named by a rule but missing its edge means
+  // the association write never landed — heal it now (so it is never lost
+  // again) and scream, because a recovery firing means a real bug got past the
+  // proactive path.
+  const fromProvenance = new Set(
+    rules
+      .map((r) => r.source_ref?.conversation_id)
+      .filter((v): v is string => typeof v === "string" && v.length > 0),
+  );
+  const missing = [...fromProvenance].filter((id) => !edgeIds.includes(id));
+  if (missing.length > 0) {
+    console.error(
+      "[masterwork/record] RECOVERY: interview conversations were not associated " +
+        "with their Rulebook — healing the missing edges now.",
+      { rulebookId, missing },
+    );
+    await Promise.all(
+      missing.map((conversationId) =>
+        linkInterviewConversation({ rulebookId, conversationId }),
+      ),
+    );
+  }
+
+  const ids = [...new Set([...edgeIds, ...missing])];
+  if (ids.length === 0) return { interviews: [], hiddenCount: 0 };
 
   const [{ data: convRows }, messages] = await Promise.all([
     supabase
@@ -283,7 +377,7 @@ export async function listRulebookInterviews(
     if (cid) rulesByConversation.set(cid, (rulesByConversation.get(cid) ?? 0) + 1);
   }
 
-  return (convRows ?? [])
+  const interviews = (convRows ?? [])
     .map((row) => {
       const mine = messages.filter((m) => m.conversation_id === row.id);
       const texts = mine.map((m) => messageContentToText(m.content));
@@ -300,6 +394,12 @@ export async function listRulebookInterviews(
       } satisfies RulebookInterview;
     })
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  // Edges we can read but conversations we cannot = someone else's interviews.
+  return {
+    interviews,
+    hiddenCount: Math.max(0, ids.length - interviews.length),
+  };
 }
 
 /**
@@ -321,7 +421,10 @@ export async function getExpertCorpus(
   rulebookId: string,
   rules: RulebookRule[] = [],
 ): Promise<ExpertCorpus> {
-  const interviews = await listRulebookInterviews(rulebookId, rules);
+  const { interviews, hiddenCount } = await listRulebookInterviewsWithAccess(
+    rulebookId,
+    rules,
+  );
   const ids = interviews.map((i) => i.conversationId);
   const messages = await readExpertMessages(ids);
 
@@ -371,5 +474,6 @@ export async function getExpertCorpus(
     interviews,
     contributions,
     totalChars: contributions.reduce((sum, c) => sum + c.text.length, 0),
+    hiddenInterviewCount: hiddenCount,
   };
 }

@@ -233,7 +233,7 @@ export function ExpertRecordPage({ rulebookId }: ExpertRecordPageProps) {
               {words.toLocaleString()} words
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
             <CopyButtons
               size="sm"
               label="Everything you've said"
@@ -284,6 +284,18 @@ export function ExpertRecordPage({ rulebookId }: ExpertRecordPageProps) {
             ))}
           </ul>
         </div>
+      ) : null}
+
+      {/* Never let an access boundary read as an empty Record. */}
+      {corpus.hiddenInterviewCount > 0 ? (
+        <p className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+          {corpus.hiddenInterviewCount} more interview
+          {corpus.hiddenInterviewCount === 1 ? "" : "s"} belong
+          {corpus.hiddenInterviewCount === 1 ? "s" : ""} to this Rulebook but
+          {corpus.hiddenInterviewCount === 1 ? " was" : " were"} recorded by
+          someone else and {corpus.hiddenInterviewCount === 1 ? "is" : "are"} not
+          shared with you.
+        </p>
       ) : null}
 
       {corpus.contributions.length === 0 ? (

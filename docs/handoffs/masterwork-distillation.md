@@ -21,6 +21,20 @@
 
 ## STATUS — live and verified (compressed)
 
+- **THE RECORD SHIPPED + interviews are properly associated (2026-08-17, Arman's "that's
+  critical").** A Rulebook and its Scout conversations now share a canonical
+  `platform.associations` edge (`conversation --interview--> rulebook`, registered pair;
+  historical links backfilled from rule provenance + `chat.tool_trace`, including Arman's own
+  37,455-character SEO interview, whose stale "Auto: expertise_interviewer" title was fixed).
+  "Interview me" on a Rulebook with prior interviews now offers each of them (when, turns, words,
+  rules produced, first line) with **Continue** / **Start a new interview** instead of silently
+  minting a new conversation; Continue truly resumes. `/masterwork/[id]/record` ("Your words")
+  shows every message, upload, and recording for one Rulebook with doors + copy-everything.
+  `getExpertCorpus(rulebookId, rules)` is the ONE corpus contract the Final Checkup auditor should
+  consume — do not re-derive it. Also extracted `features/agents/hooks/useConversationResume.ts`,
+  the canonical resume sequence previously inline in `ChatRoomClient`. Open: dictated-audio
+  attribution (audio IS persisted; the transcript row just carries no link back) — see
+  `features/masterwork/FEATURE.md` § The Record.
 - **The Final Checkup UI is BUILT (2026-08-17)** — `features/masterwork/checkup/`, the
   `masterworkCheckupWindow` split-pane WindowPanel opened from the Rulebook header: findings streamed
   one at a time off the durable `checkup` run (`useMasterworkRun` surface `checkup`, final event
