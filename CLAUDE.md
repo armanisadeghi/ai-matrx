@@ -326,6 +326,16 @@ Track bugs/gaps you can't fully fix in [FOUND_DEFECTS.md](./FOUND_DEFECTS.md) (t
 
 **A failing lint gate on your branch is almost certainly NOT yours.** The tree carries a repo-wide ESLint backlog (~2,400 errors, overwhelmingly React Compiler correctness lint). `pnpm check:lint-debt` inventories it **classified** — bug / correctness / doctrine / style — so it can be worked worst-first; scoreboard `/administration/reporting/lint-debt`, contract [`scripts/lint-debt/FEATURE.md`](./scripts/lint-debt/FEATURE.md), campaign [`docs/handoffs/eslint-debt-campaign.md`](./docs/handoffs/eslint-debt-campaign.md). Loud, **never blocking** — deliberately NOT in `run-release-gates.sh`. **Never clear a finding with `eslint-disable`**: that converts a visible backlog into an invisible one. A rule genuinely wrong for this codebase gets changed ONCE in `eslint.config.mjs`, with a comment saying why.
 
+## 🚨 NEVER ASK whether something should stream, persist, or resume — the answer is ALWAYS YES
+
+**Arman, 2026-08-17:** *"I absolutely never again want to hear an agent ask me if something should
+auto resume… The answer is yes, always. We are not building a ninth grade project here."* Streaming,
+persistence, durability, auto-resume after a crash/deploy/restart, reconnect, and never losing what
+a user typed or dictated are **the floor, not features** — a surface lacking them is unfinished, and
+"for now" ships a defect the next agent reads as finished. Asking spends the owner's attention on a
+settled question; the machinery that makes the "yes" real is YOUR job. Full law:
+`/Users/armanisadeghi/code/common-docs/policies/table-stakes-are-never-a-question.md`.
+
 ## 🚨 An env var is a VALUE, never a TOGGLE — a flag in env fails silently and invisibly
 
 > **This rule exists because it was broken.** `NEXT_PUBLIC_FILES_BROWSER_CUTOVER` was added as a
