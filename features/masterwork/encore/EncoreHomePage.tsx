@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { BookOpen, Play, Sparkles } from "lucide-react";
+import { BookOpen, Play, Theater } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import {
@@ -98,7 +98,7 @@ export function EncoreHomePage() {
   if (shelves.length === 0) {
     return (
       <div className="mx-auto flex h-full max-w-lg flex-col items-center justify-center gap-3 px-6 text-center">
-        <Sparkles className="h-6 w-6 text-muted-foreground" />
+        <Theater className="h-6 w-6 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
           Nothing to run yet. When an expert releases a Masterwork, it appears
           here — ready to run with their judgment built in.
