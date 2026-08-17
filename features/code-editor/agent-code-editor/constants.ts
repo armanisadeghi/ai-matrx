@@ -60,7 +60,7 @@ export const ALL_CONTEXT_KEYS = [
   ...Object.values(AGENT_CONTEXT_KEYS),
 ] as const;
 
-/** Readable labels, keyed by slot key. */
+/** Readable labels, keyed by mandate key. */
 export const CONTEXT_LABELS: Record<string, string> = {
   [VSC_CONTEXT_KEYS.ACTIVE_FILE_PATH]: "Active file path",
   [VSC_CONTEXT_KEYS.ACTIVE_FILE_CONTENT]: "Active file content",

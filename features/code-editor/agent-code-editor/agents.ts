@@ -8,7 +8,7 @@
  * The database no longer controls which agent edits code here: an admin
  * repointing the code editor changes nothing until someone edits this file.
  *
- * **The canonical answer is an AGENT MANDATE.** Code names a `slot_key`; the DB
+ * **The canonical answer is an AGENT MANDATE.** Code names a `mandate_key`; the DB
  * decides which agent runs it. Declare `code_editor.generic`,
  * `code_editor.prompt_app_ui`, and `code_editor.dynamic_context` in aidream
  * `services/mandates/client_mandates.py` (seeded on the ids below), then

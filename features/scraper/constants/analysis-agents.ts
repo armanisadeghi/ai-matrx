@@ -5,7 +5,7 @@
 export const SCRAPER_ANALYSIS_AGENTS = {
   factChecker: {
     agentId: "07e85962-71c8-4a2d-acb0-80d1771a4594",
-    /** Legacy broker UUID — still the agent variable slot key. */
+    /** Legacy broker UUID — still the agent variable key. */
     contentVariableId: "59dd12d8-8bec-40ae-af24-09d2cf28a806",
   },
   keywordAnalysis: {

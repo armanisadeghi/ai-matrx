@@ -26,7 +26,7 @@ const PICKER_TABS: {
 interface AgentListTabsProps {
   consumer: UseAgentConsumerReturn;
   tabCounts: AgentListTabCounts;
-  /** Limit the ownership tabs for constrained pickers (for example system-only slot pins). */
+  /** Limit the ownership tabs for constrained pickers (for example system-only Mandate pins). */
   visibleTabs?: readonly AgentTab[];
   /**
    * Label for the builtin-agent tab. Users see "Public" (that is what a

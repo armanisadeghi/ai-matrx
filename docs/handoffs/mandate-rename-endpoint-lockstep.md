@@ -20,9 +20,10 @@ curl -s https://server.app.matrxserver.com/openapi.json \
 
 Empty → still blocked; do nothing. Non-empty → do the work below **in the same session** and push.
 
-**Checked 2026-08-17 (final verification sweep): still EMPTY — production has not deployed.** It
-answers `/agent-slots/code-truth` with 401 and `/mandates/code-truth` with 404, on git_sha
-`b4721489`. Do not flip yet.
+**Re-checked 2026-08-17, later the same day (final verification sweep, second pass): STILL EMPTY.**
+`GET https://server.app.matrxserver.com/openapi.json` lists seven `/agent-slots/*` paths and zero
+`/mandates/*` paths. Production has not deployed. **Do not flip yet — and do not file this repo's
+`/agent-slots/*` callers as leftover rename residue; they are a deliberate, gated hold.**
 
 🚨 **Two things that make this look deployed when it is not — do not be fooled by either:**
 

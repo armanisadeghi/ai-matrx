@@ -9,7 +9,7 @@
 // features/surfaces/runtime/useLiveSurfaceScope.ts), so `getScope` has to be
 // synchronous and cheap. The views that already loaded this data publish it
 // here as they load it, and the emitter reads it back with no network at all —
-// the same pattern the agent-slot bench and the tool-registry surfaces use.
+// the same pattern the Mandate bench and the tool-registry surfaces use.
 //
 // Each publisher CLEARS its slice on unmount, so an unmounted tab never leaves
 // stale data being emitted as if it were live. The manifest declares every

@@ -46,7 +46,7 @@ export function activateToolsGridTile(
   const instanceId =
     strategy === "fresh-per-click" ? `${entry.slug}-${Date.now()}` : undefined;
 
-  // seedData may be async (e.g. an agent-slot resolution) — dispatch once it
+  // seedData may be async (e.g. a Mandate resolution) — dispatch once it
   // settles. Activation still reports success synchronously: the tile matched
   // and the open is in flight.
   void Promise.resolve(tile.seedData?.(ctx))
