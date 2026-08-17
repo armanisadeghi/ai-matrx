@@ -426,9 +426,18 @@ guest-or-above gate. **Every consumer uses that one path, signed in or not** —
 ownership, not the gate, is what keeps a run private.
 
 **Live-verified** on `/seo/page-audit`: run an audit, reload, and the finished
-score came back from the durable row. *Not* verified with a live run: the page
-analyzer (its card needs a page with an accepted snapshot) — it consumes the
-identical primitive.
+score came back from the durable row. The guest path was re-measured against
+production after the route deployed — a fingerprint-only caller creates a run
+and then rejoins it by id, **200 where it was 401** (2026-08-17).
+
+Two things are NOT verified and should not be claimed: the page analyzer with a
+live run (its card needs a page with an accepted snapshot — it consumes the
+identical primitive), and the signed-out flow **through the UI**. The latter is
+a local-dev limitation, not a product gap: a guest client resolves the backend
+to `http://localhost:8000` (the production target is an admin-only override), so
+a signed-out audit cannot reach a real server from the dev harness. The guest
+half is proven at the API layer with a real fingerprint identity, and the
+reload→restore cycle is proven in the same component signed in.
 
 **The two expertise dialogs are done** (`CompileDeskDialog.tsx`,
 `IngestSourceDialog.tsx`). They were blocked because the expertise pipelines
