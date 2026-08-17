@@ -287,6 +287,8 @@ export default function SurfaceAgentsPanelImpl({
                 : false
             }
             onRunAgent={(agentId) => handleRun(activeName, agentId)}
+            addLabel="Bind an agent to this page"
+            emptyMessage="No agents bound yet. Bind one to run it here."
           />
         </div>
       )}
