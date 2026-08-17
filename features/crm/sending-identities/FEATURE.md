@@ -117,3 +117,5 @@ Traps: the readiness endpoint on a server that predates it falls into
 bare `/outreach/inbound` prefix. Dialog fixes resolve their promise on CLOSE
 (accepted or not) so the re-check fires either way and reads the truth from the
 DB.
+
+- 2026-08-16 — ConnectMailboxDialog dead end fixed: "Connect a different Google account" is now ALWAYS offered (inline GIS popup via LazyGoogleAPIProvider + gmail.send scopes, exchange, list reload) — previously the door existed only in the empty state, so a user with existing connections could never add a third account.
