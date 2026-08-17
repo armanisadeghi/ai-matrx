@@ -277,25 +277,42 @@ export function useFlashcardStudy(
   // Re-read the card rows (details/layers/sub-cards) WITHOUT restarting the
   // session — used after an in-session enrich/deepen so the new material shows
   // immediately. Deliberately NOT the load effect: that would reset progress
-  // and open a second study_session for the same sitting. Learn mode's
-  // working-queue semantics are preserved: already-mastered cards stay OUT of
-  // the refreshed queue, and the progress denominator only GROWS (by
-  // genuinely new cards, e.g. deepen's sub-cards) — never resets.
+  // and open a second study_session for the same sitting.
+  //
+  // THE SESSION QUEUE IS STATE, NOT A VIEW OF THE SET. Learn mode requeues
+  // missed cards and drops mastered ones, so the queue's ORDER and MEMBERSHIP
+  // are the session; rebuilding from set order would resurrect mastered cards
+  // and teleport the learner off the card they just enriched. So: refresh each
+  // queued card's row IN PLACE (new layers/sub-card details show immediately),
+  // drop only cards deleted server-side, append genuinely new cards (deepen's
+  // sub-cards) at the end, keep the learner anchored on the SAME card, and
+  // only GROW the progress denominator — never reset it.
   const refreshCards = async (): Promise<void> => {
     if (!setId) return;
     const res = await fcService.getSetWithCards(setId);
     if (!res.data) return;
     const freshAll = res.data.cards;
+    const freshById = new Map(freshAll.map((c) => [c.id, c]));
     const knownIds = new Set(cards.map((c) => c.id));
     for (const id of masteredIds) knownIds.add(id);
-    const addedCount = freshAll.filter((c) => !knownIds.has(c.id)).length;
-    const nextQueue = reshuffleWeighted
-      ? freshAll.filter((c) => !masteredIds.has(c.id))
-      : freshAll;
+    const added = freshAll.filter((c) => !knownIds.has(c.id));
+    const currentId = cards[currentIndex]?.id ?? null;
+    const nextQueue = [
+      ...cards.flatMap((c) => {
+        const fresh = freshById.get(c.id);
+        return fresh ? [fresh] : [];
+      }),
+      ...added,
+    ];
     setSet(res.data.set);
     setCards(nextQueue);
-    if (addedCount > 0) setOriginalCount((n) => n + addedCount);
-    setCurrentIndex((i) => clampIndex(i, nextQueue.length));
+    if (added.length > 0) setOriginalCount((n) => n + added.length);
+    const anchored = currentId
+      ? nextQueue.findIndex((c) => c.id === currentId)
+      : -1;
+    setCurrentIndex((i) =>
+      anchored >= 0 ? anchored : clampIndex(i, nextQueue.length),
+    );
   };
 
   const flip = (): void => {
