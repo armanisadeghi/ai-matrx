@@ -20,10 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
-import { useSeoCommandStream } from "@/features/marketing/data/useSeoCommandStream";
+import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 
 const CLASSIFY_PATH = "/seo/keywords/classify";
 /**
@@ -68,34 +65,20 @@ interface AssignTopicsResult {
 }
 
 function ClassifyCard() {
-  const dispatch = useAppDispatch();
   const [limit, setLimit] = useState(CLASSIFY_RUN_LIMIT);
 
-  const command = useSeoCommandStream<ClassifyResult>({
+  const command = useSeoCommandRun<ClassifyResult>({
     key: "classify",
-    label: "Keyword classifier",
+    path: CLASSIFY_PATH,
     finalKind: "seo.classify_completed",
-    stages: CLASSIFY_STAGES,
-    onComplete: (data) => {
-      toast.success(`Classified ${data.updated} of ${data.eligible} eligible keywords`);
-    },
+    stageLabels: CLASSIFY_STAGES,
+    live: { label: "Keyword classifier" },
   });
-  const submitting = command.isActive;
-  const result = command.run.result ?? null;
+  const submitting = command.running;
+  const result = command.result;
 
   const run = () => {
-    void command.start(({ consumeStream, signal }) =>
-      dispatch(
-        callApi({
-          path: CLASSIFY_PATH,
-          method: "POST",
-          body: { language: "en", limit },
-          stream: true,
-          consumeStream,
-          signal,
-        }),
-      ),
-    );
+    void command.launch({ language: "en", limit });
   };
 
   return (
@@ -135,12 +118,12 @@ function ClassifyCard() {
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Run classifier
           </Button>
-          {command.run.stage && submitting ? (
-            <p className="pb-1.5 text-[11px] text-muted-foreground">{command.run.stage}</p>
+          {command.stage && submitting ? (
+            <p className="pb-1.5 text-[11px] text-muted-foreground">{command.stage}</p>
           ) : null}
         </div>
-        {command.run.error ? (
-          <p className="text-[11px] text-destructive">{command.run.error}</p>
+        {command.error ? (
+          <p className="text-[11px] text-destructive">{command.error}</p>
         ) : null}
         {result ? (
           <div className="grid grid-cols-2 gap-2 rounded-md border border-border bg-muted/30 p-3 text-xs sm:grid-cols-4">
@@ -173,36 +156,25 @@ function ClassifyCard() {
 }
 
 function AssignTopicsCard() {
-  const dispatch = useAppDispatch();
   const [territory, setTerritory] = useState("");
   const [limit, setLimit] = useState(50);
 
-  const command = useSeoCommandStream<AssignTopicsResult>({
+  const command = useSeoCommandRun<AssignTopicsResult>({
     key: "assign-topics",
-    label: "Topic assigner",
+    path: ASSIGN_TOPICS_PATH,
     finalKind: "seo.assign_topics_completed",
-    stages: ASSIGN_STAGES,
-    onComplete: (data) => {
-      toast.success(`Assigned ${data.keywords_assigned} of ${data.eligible} eligible keywords`);
-    },
+    stageLabels: ASSIGN_STAGES,
+    live: { label: "Topic assigner" },
   });
-  const submitting = command.isActive;
-  const result = command.run.result ?? null;
+  const submitting = command.running;
+  const result = command.result;
 
   const run = () => {
     const territoryValue = territory.trim();
     if (!territoryValue) return;
-    void command.start(({ consumeStream, signal }) =>
-      dispatch(
-        callApi({
-          path: ASSIGN_TOPICS_PATH,
-          method: "POST",
-          body: { territory: territoryValue, language: "en", limit },
-          stream: true,
-          consumeStream,
-          signal,
-        }),
-      ),
+    void command.launch(
+      { territory: territoryValue, language: "en", limit },
+      territoryValue,
     );
   };
 
@@ -257,12 +229,12 @@ function AssignTopicsCard() {
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Run topic assigner
           </Button>
-          {command.run.stage && submitting ? (
-            <p className="pb-1.5 text-[11px] text-muted-foreground">{command.run.stage}</p>
+          {command.stage && submitting ? (
+            <p className="pb-1.5 text-[11px] text-muted-foreground">{command.stage}</p>
           ) : null}
         </div>
-        {command.run.error ? (
-          <p className="text-[11px] text-destructive">{command.run.error}</p>
+        {command.error ? (
+          <p className="text-[11px] text-destructive">{command.error}</p>
         ) : null}
         {result ? (
           <div className="grid gap-2 rounded-md border border-border bg-muted/30 p-3 text-xs">

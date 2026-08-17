@@ -9,7 +9,7 @@
  *
  * THE FLOATING LAW: this is a multi-minute paid interview, so it is a DURABLE
  * STREAMED COMMAND — the interviewer's reasoning streams into the floating
- * `LiveRunWindow` through `useSeoCommandStream`, and a reload rejoins the run.
+ * `LiveRunWindow` through `useSeoCommandRun({live})`, and a reload rejoins it.
  * The spinner it replaced was the whole defect.
  */
 
@@ -19,10 +19,7 @@ import { Compass, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/lib/toast";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
-import { useSeoCommandStream } from "@/features/marketing/data/useSeoCommandStream";
+import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 
 const STRATEGY_INTERVIEW_PATH = "/seo/sites/strategy-interview";
 
@@ -47,41 +44,23 @@ export function SiteStrategyCard({
   siteId: string;
   organizationId: string;
 }) {
-  const dispatch = useAppDispatch();
   const [businessContext, setBusinessContext] = useState("");
 
-  const command = useSeoCommandStream<StrategyInterviewResult>({
+  const command = useSeoCommandRun<StrategyInterviewResult>({
     key: `strategy.${siteId}`,
-    label: "Site strategy interview",
+    path: STRATEGY_INTERVIEW_PATH,
     finalKind: "seo.strategy_completed",
-    stages: STRATEGY_STAGES,
-    onComplete: (data) => {
-      toast.success(
-        `Strategy interview saved ${data.valuations_written} topic value${
-          data.valuations_written === 1 ? "" : "s"
-        }`,
-      );
-    },
+    stageLabels: STRATEGY_STAGES,
+    scopeOverrides: { organization_id: organizationId },
+    live: { label: "Site strategy interview" },
   });
-  const submitting = command.isActive;
-  const result = command.run.result ?? null;
+  const submitting = command.running;
+  const result = command.result;
 
   const submit = () => {
     const context = businessContext.trim();
     if (!context) return;
-    void command.start(({ consumeStream, signal }) =>
-      dispatch(
-        callApi({
-          path: STRATEGY_INTERVIEW_PATH,
-          method: "POST",
-          body: { site_id: siteId, business_context: context },
-          scopeOverrides: { organization_id: organizationId },
-          stream: true,
-          consumeStream,
-          signal,
-        }),
-      ),
-    );
+    void command.launch({ site_id: siteId, business_context: context }, siteId);
   };
 
   return (
@@ -123,13 +102,13 @@ export function SiteStrategyCard({
             Run strategy interview
           </Button>
         </div>
-        {command.run.stage && submitting ? (
+        {command.stage && submitting ? (
           <p className="text-right text-[11px] text-muted-foreground">
-            {command.run.stage}
+            {command.stage}
           </p>
         ) : null}
-        {command.run.error ? (
-          <p className="text-[11px] text-destructive">{command.run.error}</p>
+        {command.error ? (
+          <p className="text-[11px] text-destructive">{command.error}</p>
         ) : null}
         {result ? (
           <div className="grid gap-2 rounded-md border border-border bg-muted/30 p-3">

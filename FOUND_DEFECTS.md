@@ -17,6 +17,38 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D209 — an ADOPTED stream's output VANISHES from the window the moment the run ends (2026-08-17)
+
+Measured live on `/marketing/admin/keyword-data-quality` against a local aidream (real paid runs,
+`localhost:8000`), sampling the window's rendered text every 900ms:
+
+```
+"", "", "Classifying keywords...", "Processing…",
+"Keyword intent classification 2 — Classifying rhinoplasty financing options 92 com…" (307 chars)
+"…" (595 chars)          ← the kind component, rendering token by token. Correct.
+"", "", "", "", ""       ← the stream ends and the window goes BLANK.
+```
+
+So the pipeline works right up to the finish line: the server streams (58 compact chunk lines
+captured off the wire in the browser), `adoptForeignStream` adopts, the `keyword_classification_batch`
+kind component renders LIVE — and then the settled render shows nothing.
+
+**Where it is, not who caused it.** Nothing reaps the row (no `removeRequest` fires) and nothing
+clears the blocks. `EnhancedChatMarkdown` switches renderers at `isSettled = !isStreamActive`: the
+live path renders `unifiedSlots` (which is what shows the kind block), and the settled path builds
+`blocks` from `serverProcessedBlocks` — which a **system run never sends**. An adopted pipeline
+stream therefore has a live renderer and no settled one.
+
+**Why nobody hit it before:** every existing adopted-stream surface (keyword research, reputation,
+YouTube) re-renders its PERSISTED result after the run, so the blank window reads as "the run is
+over" rather than as lost output. The three SEO command surfaces do the same, so no result is lost
+— but the window still blanks, and per THE FLOATING LAW the finished output is what the user came
+for.
+
+**Why it was not fixed here:** the fix is in the canonical renderer that every chat message also
+goes through. It needs its own session with the render pipeline in front of it — not a patch bolted
+on from a marketing surface. Repro above is exact and cheap.
+
 ### D208 — the Context Policy rename's last tail: `slotMatched` / `slot_matched` (2026-08-17)
 
 Found by the final Mandate/Context-Policy verification sweep. Every *readable* "slot" is gone and

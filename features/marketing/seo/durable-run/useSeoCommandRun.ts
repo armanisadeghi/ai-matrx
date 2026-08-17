@@ -191,6 +191,19 @@ export interface UseSeoCommandRunOptions<TResult> {
   parseResult?: (raw: unknown) => TResult | null;
   /** Extra body fields every launch and rejoin needs (e.g. `scopeOverrides`). */
   scopeOverrides?: Record<string, string>;
+  /**
+   * Adopt the stream and float it. Pass this when the command runs an agent
+   * whose OUTPUT is the point — the run then renders token by token in
+   * `LiveRunWindow` through the canonical pipeline instead of showing a stage
+   * line over an invisible model. Omit it for a command with nothing to show
+   * (a fetch, a validator): a stage line is the right answer there.
+   */
+  live?: {
+    /** What the user is watching, e.g. "Keyword classifier". */
+    label: string;
+    /** Stable window id; defaults to `seo-command:<key>`. */
+    instanceId?: string;
+  };
 }
 
 export interface SeoCommandRunHandle<TResult>
@@ -228,6 +241,54 @@ export function useSeoCommandRun<TResult>(
 
   /** The target of the launch in flight, read when the run id arrives. */
   const pendingTargetRef = useRef<string | null>(null);
+
+  // ── Live adoption plumbing (only used when `live` is set) ────────────────
+  // Retention discipline (features/agents/docs/LIVE_RUN_RETENTION.md): the
+  // fetch is aborted BEFORE the adopted row is reaped — an orphaned stream
+  // draining into a missing row is the disappearing-run class.
+  const adoptedRequestIdRef = useRef<string | null>(null);
+  const streamAbortRef = useRef<AbortController | null>(null);
+  const releaseAdoptedRun = useCallback(() => {
+    streamAbortRef.current?.abort();
+    streamAbortRef.current = null;
+    if (adoptedRequestIdRef.current) {
+      dispatch(removeRequest(adoptedRequestIdRef.current));
+      adoptedRequestIdRef.current = null;
+    }
+  }, [dispatch]);
+  useEffect(() => () => releaseAdoptedRun(), [releaseAdoptedRun]);
+
+  /**
+   * The stream plumbing for one launch/rejoin: `consumeStream` + `signal` when
+   * the caller asked for live output, plain `onStreamEvent` otherwise.
+   */
+  const streamOptions = useCallback(
+    (
+      ctx: { rejoin: boolean },
+      onEvent: (event: TypedStreamEvent) => void,
+    ):
+      | { onStreamEvent: (event: TypedStreamEvent) => void }
+      | { consumeStream: ForeignStreamConsumer; signal: AbortSignal } => {
+      if (!optionsRef.current.live) return { onStreamEvent: onEvent };
+      releaseAdoptedRun();
+      const controller = new AbortController();
+      streamAbortRef.current = controller;
+      const consumeStream = dispatch(
+        adoptForeignStream({
+          abortController: controller,
+          onAdopted: ({ requestId }) => {
+            adoptedRequestIdRef.current = requestId;
+            setState((prev) => ({ ...prev, requestId }));
+          },
+          // Domain events still drive stage/result; CONTENT is never read
+          // here — it renders from the adopted row.
+          onEvent,
+        }),
+      );
+      return { consumeStream, signal: controller.signal };
+    },
+    [dispatch, releaseAdoptedRun],
+  );
 
   const handleEvent = useCallback(
     (event: TypedStreamEvent, ctx: { rejoin: boolean }): void => {
@@ -381,7 +442,9 @@ export function useSeoCommandRun<TResult>(
             body: body as never,
             ...(scopeOverrides ? { scopeOverrides } : {}),
             stream: true,
-            onStreamEvent: (event) => handleEvent(event, { rejoin: false }),
+            ...streamOptions({ rejoin: false }, (event) =>
+              handleEvent(event, { rejoin: false }),
+            ),
           }),
         );
         if (response.error) throw new Error(response.error.message);
@@ -414,7 +477,7 @@ export function useSeoCommandRun<TResult>(
           : prev,
       );
     },
-    [dispatch, handleEvent],
+    [dispatch, handleEvent, streamOptions],
   );
 
   // ── The durable half: rejoin whatever was still running when we arrived ──
@@ -440,7 +503,9 @@ export function useSeoCommandRun<TResult>(
     void rejoinSeoCommandRun({
       dispatch,
       runId: pointer.runId,
-      onEvent: (event) => handleEvent(event, { rejoin: true }),
+      streamOptions: streamOptions({ rejoin: true }, (event) =>
+        handleEvent(event, { rejoin: true }),
+      ),
       onUnreachable: (message) => {
         clearPointer(key);
         setState({
@@ -463,7 +528,7 @@ export function useSeoCommandRun<TResult>(
         });
       },
     });
-  }, [dispatch, handleEvent]);
+  }, [dispatch, handleEvent, streamOptions]);
 
   const reset = useCallback(() => {
     setState({
@@ -486,9 +551,20 @@ export function useSeoCommandRun<TResult>(
     }));
   }, []);
 
+  // THE FLOATING LAW: a live command streams into the floating window — never
+  // a block above the surface's own content, and never a spinner. No-op when
+  // the caller did not ask for live output (`active` stays false).
+  const running = state.status === "running" || state.status === "rejoining";
+  useFloatingLiveRun({
+    active: Boolean(options.live) && running,
+    instanceId: options.live?.instanceId ?? `seo-command:${options.key}`,
+    requestId: state.requestId,
+    label: state.stage ?? options.live?.label ?? "AI is working",
+  });
+
   return {
     ...state,
-    running: state.status === "running" || state.status === "rejoining",
+    running,
     launch,
     reset,
     fail,
@@ -511,12 +587,15 @@ function seoErrorMessage(raw: unknown): string | null {
 async function rejoinSeoCommandRun({
   dispatch,
   runId,
-  onEvent,
+  streamOptions,
   onUnreachable,
 }: {
   dispatch: AppDispatch;
   runId: string;
-  onEvent: (event: TypedStreamEvent) => void;
+  /** Either the plain event callback or the adopted-stream consumer. */
+  streamOptions:
+    | { onStreamEvent: (event: TypedStreamEvent) => void }
+    | { consumeStream: ForeignStreamConsumer; signal: AbortSignal };
   onUnreachable: (message: string) => void;
 }): Promise<void> {
   try {
@@ -526,7 +605,7 @@ async function rejoinSeoCommandRun({
         method: "POST",
         pathParams: { run_id: runId },
         stream: true,
-        onStreamEvent: onEvent,
+        ...streamOptions,
       }),
     );
     if (response.error) {
