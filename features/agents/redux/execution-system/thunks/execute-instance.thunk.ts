@@ -112,7 +112,9 @@ import { clearMemoryToggleRequest } from "../instance-ui-state/instance-ui-state
 import { setMemoryEnabledOptimistic } from "../observational-memory/observational-memory.slice";
 
 /**
- * Build the three REQUIRED conversation-start fields for a first-turn request.
+ * Build the three REQUIRED lifecycle fields for a first-turn request.
+ * `organization_id` is the fourth required start field and is resolved from
+ * the execution state by `requireExecutionOrganizationId` below.
  *
  * The client ALWAYS sends its own `conversation_id` — it is our correlation
  * handle, and with several requests in flight a server-minted id that only
@@ -249,12 +251,12 @@ export function assembleRequest(
   // value as authoritative and screams on drift. So once a conversation record
   // carries an org (hydrated from `chat.conversation.organization_id` by
   // load-conversation / fork), THAT is what every later turn re-sends — the
-  // sidebar's active org is only the source for a brand-new conversation.
+  // explicitly selected sidebar org is only the source for a brand-new
+  // conversation. The personal org is never an execution fallback.
   //
   // This makes the client independently correct: a continuation carries the
-  // right org even if appContextSlice hasn't bootstrapped yet (both
-  // organization_id and personal_organization_id are null during that window,
-  // so the ambient read would have silently omitted the field entirely).
+  // right org even if appContextSlice has not bootstrapped yet, while a new
+  // conversation fails closed until the explicit selection exists.
   const organization_id = requireExecutionOrganizationId(
     state,
     conversationId,
@@ -297,7 +299,10 @@ export function assembleRequest(
   const memoryScope = selectMemoryScope(state);
 
   // Assemble snake_case body
-  const request: AssembledAgentStartRequest = { stream: true };
+  const request: AssembledAgentStartRequest = {
+    stream: true,
+    organization_id,
+  };
 
   if (user_input !== undefined) request.user_input = user_input;
   if (Object.keys(variables).length > 0) request.variables = variables;
@@ -306,7 +311,6 @@ export function assembleRequest(
   }
   if (config_overrides) request.config_overrides = config_overrides;
   if (context) request.context = context;
-  request.organization_id = organization_id;
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
   if (scope_ids.length > 0) request.scope_ids = scope_ids;
@@ -535,6 +539,17 @@ export const executeInstance = createAsyncThunk<
       });
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);
+      }
+      // Freeze the first request's explicit organization onto the local
+      // conversation before the server confirmation flips cacheOnly=false.
+      // Every continuation then re-sends this value even if the picker moves.
+      if (instance.organizationId !== payload.organization_id) {
+        dispatch(
+          patchConversation({
+            conversationId,
+            organizationId: payload.organization_id,
+          }),
+        );
       }
       if (debug) payload.debug = true;
 

@@ -67,6 +67,7 @@ function makeState(
     organizationId?: string | null;
     personalOrganizationId?: string | null;
     conversationOrganizationId?: string | null;
+    cacheOnly?: boolean;
     resourcePolicies?: Record<string, { promote?: Array<{ representation: string; max_chars?: number }>; exclude?: string[] }>;
   } = {},
 ): RootState {
@@ -106,6 +107,7 @@ function makeState(
           isEphemeral: false,
           initialAgentVersionId: null,
           organizationId: partial.conversationOrganizationId ?? null,
+          cacheOnly: partial.cacheOnly ?? true,
         },
       },
       allConversationIds: [CONVERSATION_ID],
@@ -200,26 +202,38 @@ function makeState(
   } as unknown as RootState;
 }
 
+function makeStoredAssemblyState(
+  partial: Parameters<typeof makeState>[0] = {},
+): RootState {
+  const state = makeState(partial) as RootState & {
+    instanceModelOverrides: { byConversationId: Record<string, unknown> };
+  };
+  state.instanceModelOverrides = { byConversationId: {} };
+  state.userPreferences = userPreferencesReducer(undefined, { type: "@@INIT" });
+  return state;
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
 describe("assembleManualRequest — live read contract", () => {
   test("both request assemblers carry the explicitly selected organization", async () => {
-    const state = makeState();
+    const state = makeStoredAssemblyState();
+    const manualRequest = await assembleManualRequest(state, CONVERSATION_ID);
+    const storedRequest = assembleRequest(state, CONVERSATION_ID);
 
-    expect(
-      (await assembleManualRequest(state, CONVERSATION_ID))!.organization_id,
-    ).toBe(SELECTED_ORGANIZATION_ID);
-    expect(assembleRequest(state, CONVERSATION_ID)!.organization_id).toBe(
+    expect(manualRequest?.organization_id).toBe(SELECTED_ORGANIZATION_ID);
+    expect(storedRequest?.organization_id).toBe(
       SELECTED_ORGANIZATION_ID,
     );
   });
 
   test("missing selection is rejected even when a personal organization exists", async () => {
-    const state = makeState({
+    const state = makeStoredAssemblyState({
       organizationId: null,
       personalOrganizationId: "org-personal",
+      cacheOnly: true,
     });
 
     await expect(
@@ -230,18 +244,33 @@ describe("assembleManualRequest — live read contract", () => {
     );
   });
 
-  test("a saved conversation organization wins over a changed active selection", async () => {
-    const state = makeState({
-      organizationId: "org-sidebar-now",
-      conversationOrganizationId: "org-conversation",
+  test("a new entity-bound run may use its explicitly supplied organization", async () => {
+    const state = makeStoredAssemblyState({
+      organizationId: null,
+      personalOrganizationId: "org-personal",
+      conversationOrganizationId: "org-owned-entity",
+      cacheOnly: true,
     });
 
     expect(
-      (await assembleManualRequest(state, CONVERSATION_ID))!.organization_id,
-    ).toBe("org-conversation");
-    expect(assembleRequest(state, CONVERSATION_ID)!.organization_id).toBe(
-      "org-conversation",
+      (await assembleManualRequest(state, CONVERSATION_ID))?.organization_id,
+    ).toBe("org-owned-entity");
+    expect(assembleRequest(state, CONVERSATION_ID)?.organization_id).toBe(
+      "org-owned-entity",
     );
+  });
+
+  test("a saved conversation organization wins over a changed active selection", async () => {
+    const state = makeStoredAssemblyState({
+      organizationId: "org-sidebar-now",
+      conversationOrganizationId: "org-conversation",
+      cacheOnly: false,
+    });
+    const manualRequest = await assembleManualRequest(state, CONVERSATION_ID);
+    const storedRequest = assembleRequest(state, CONVERSATION_ID);
+
+    expect(manualRequest?.organization_id).toBe("org-conversation");
+    expect(storedRequest?.organization_id).toBe("org-conversation");
   });
 
   test("ai_model_id reflects the current agent.modelId", async () => {
@@ -312,11 +341,9 @@ describe("assembleManualRequest — live read contract", () => {
 
   test("stored-agent payload uses raw variable names for family policy", () => {
     const policy = { exclude: ["raw"] };
-    const state = makeState({ resourcePolicies: { pdf_file: policy } }) as RootState & {
-      instanceModelOverrides: { byConversationId: Record<string, unknown> };
-    };
-    state.instanceModelOverrides = { byConversationId: {} };
-    state.userPreferences = userPreferencesReducer(undefined, { type: "@@INIT" });
+    const state = makeStoredAssemblyState({
+      resourcePolicies: { pdf_file: policy },
+    });
     const payload = assembleRequest(state, CONVERSATION_ID);
     expect(payload?.variable_resource_context).toEqual({ pdf_file: policy });
   });

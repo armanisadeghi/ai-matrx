@@ -13,13 +13,31 @@ export function requireExecutionOrganizationId(
   state: RootState,
   conversationId: string,
 ): string {
-  const organizationId =
-    state.conversations.byConversationId[conversationId]?.organizationId ??
-    selectOrganizationId(state);
+  const instance = state.conversations.byConversationId[conversationId];
+  if (!instance) {
+    throw new Error(`Conversation ${conversationId} not found.`);
+  }
+
+  // cacheOnly is true until the server confirms the conversation. An explicit
+  // org supplied by an entity-bound/headless launcher is authoritative; an
+  // ordinary chat shell has none and must use the live explicit picker.
+  if (instance.cacheOnly !== false) {
+    const startOrganizationId =
+      instance.organizationId ?? selectOrganizationId(state);
+    if (startOrganizationId) return startOrganizationId;
+
+    throw new Error(
+      "Select an organization before sending this message. The request was not sent.",
+    );
+  }
+
+  // Once persisted, the conversation row owns its organization forever. A
+  // changed sidebar selection must not move the conversation between tenants.
+  const organizationId = instance.organizationId;
 
   if (!organizationId) {
     throw new Error(
-      "Select an organization before sending this message. The request was not sent.",
+      "This conversation has no organization. Reload it before sending another message.",
     );
   }
 

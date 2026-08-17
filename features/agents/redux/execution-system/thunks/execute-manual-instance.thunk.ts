@@ -89,7 +89,10 @@ import { selectMessageCount } from "../messages/messages.selectors";
 // Shared with the ephemeral agent-run path — see utils/wire-transcript.ts.
 import { recordsToMessages } from "../utils/wire-transcript";
 import { generateRequestId } from "../utils/ids";
-import { setInstanceStatus } from "../conversations/conversations.slice";
+import {
+  patchConversation,
+  setInstanceStatus,
+} from "../conversations/conversations.slice";
 import {
   selectRuntimeVariableResourcePolicies,
   selectVariablesForRequest,
@@ -230,7 +233,7 @@ export async function assembleManualRequest(
      */
     initiation?: RequestInitiation;
   },
-): Promise<Partial<ChatRequestPayload> | null> {
+): Promise<ManualExecutionRequest | null> {
   const instance = state.conversations.byConversationId[conversationId];
   if (!instance) return null;
 
@@ -390,6 +393,10 @@ export async function assembleManualRequest(
 
   const { sourceApp, sourceFeature } = instance;
   const isEphemeral = instance.isEphemeral === true;
+  const organization_id = requireExecutionOrganizationId(
+    state,
+    conversationId,
+  );
 
   // Every manual send is its own server-side conversation — multi-turn history
   // is carried entirely client-side in messages[], so the local Redux
@@ -398,7 +405,7 @@ export async function assembleManualRequest(
   // REQUIRED on every start request, and it is what lets several in-flight
   // sends be told apart. Stream events carry it back and are remapped to the
   // local Redux conversationId via processStream's forceLocalConversationId.
-  const request: Partial<ChatRequestPayload> = {
+  const request: ManualExecutionRequest = {
     ai_model_id,
     messages: messages as ChatRequestPayload["messages"],
     stream: true,
@@ -408,6 +415,7 @@ export async function assembleManualRequest(
     max_retries_per_iteration: advancedSettings?.maxRetriesPerIteration ?? 2,
     conversation_id: uuidv4(),
     is_new: true,
+    organization_id,
     ...(fullSettings as Partial<ChatRequestPayload>),
   };
 
@@ -468,13 +476,8 @@ export async function assembleManualRequest(
   // Org: the conversation's own value wins on any turn after the first — it is
   // decided at creation and never moves (same rule as assembleRequest /
   // resume-instance). Ambient is the source only for a brand-new conversation.
-  const organization_id = requireExecutionOrganizationId(
-    state,
-    conversationId,
-  );
   const project_id = selectProjectId(state) ?? undefined;
   const task_id = selectTaskId(state) ?? undefined;
-  request.organization_id = organization_id;
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
 
@@ -554,6 +557,10 @@ interface ExecuteManualInstanceResult {
   requestId: string;
   conversationId: string | null;
 }
+
+type ManualExecutionRequest = Partial<ChatRequestPayload> & {
+  organization_id: string;
+};
 
 export const executeManualInstance = createAsyncThunk<
   ExecuteManualInstanceResult,
@@ -659,6 +666,17 @@ export const executeManualInstance = createAsyncThunk<
         throw new Error(
           `Failed to assemble manual request for ${conversationId}. ` +
             `Check that the agent has a modelId set.`,
+        );
+      }
+      // Freeze the first request's explicit organization on the local Builder
+      // conversation so later independent manual runs cannot follow a changed
+      // sidebar selection into another tenant.
+      if (instance.organizationId !== payload.organization_id) {
+        dispatch(
+          patchConversation({
+            conversationId,
+            organizationId: payload.organization_id,
+          }),
         );
       }
       if (debug) payload.debug = true;

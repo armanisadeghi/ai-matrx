@@ -238,9 +238,9 @@ export const resumeInstance = createAsyncThunk<
       // server did not lift onto AppContext → personal-org default + Titanium
       // scope tools "not found".
       // Resume is by definition a continuation, so the conversation's OWN org
-      // (hydrated from chat.conversation.organization_id) is the truth; ambient
-      // is only a fallback for a record that never hydrated. See the identical
-      // rule in assembleRequest — org never moves once a conversation exists.
+      // (hydrated from chat.conversation.organization_id) is the truth. If an
+      // old record never hydrated, only the explicitly selected org may repair
+      // the carrier; personal-org fallback is forbidden. See assembleRequest.
       const organization_id = requireExecutionOrganizationId(
         state,
         conversationId,

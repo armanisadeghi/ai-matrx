@@ -80,7 +80,7 @@ export const smartExecute = createAsyncThunk<
           ? error.message
           : "Select an organization before sending this message.";
       console.error(`[smart-execute] ${message}`, { conversationId });
-      toast.error("Select an organization", { description: message });
+      toast.error("Organization required", { description: message });
       return;
     }
 

@@ -858,6 +858,11 @@ export type AssembledAgentStartRequest = Partial<
   components["schemas"]["AgentStartRequest"]
 > & {
   /**
+   * Hard client boundary: every new AI conversation names the explicitly
+   * selected organization. The server independently requires the same field.
+   */
+  organization_id: string;
+  /**
    * Additive aidream field for instance-targeted desktop tool delegation.
    * Omitted for Auto/default routing.
    */

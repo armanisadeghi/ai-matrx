@@ -43,7 +43,7 @@ jest.mock("@/features/agents/mandates/service", () => ({
   })),
 }));
 
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
 import { launchAgentExecution } from "../launch-agent-execution.thunk";
 import { assembleRequest } from "../execute-instance.thunk";
 import { resolveMandate } from "@/features/agents/mandates/service";
@@ -88,6 +88,19 @@ const agentRecord = {
   _error: null,
 };
 
+const selectedAppContext: ReturnType<typeof appContextReducer> = {
+  ...appContextReducer(undefined, { type: "@@INIT" }),
+  organization_id: "org-selected-for-test",
+  organization_name: "Selected Test Org",
+};
+
+function selectedAppContextReducer(
+  state = selectedAppContext,
+  action: UnknownAction,
+) {
+  return appContextReducer(state, action);
+}
+
 function makeStore() {
   return configureStore({
     reducer: {
@@ -108,7 +121,7 @@ function makeStore() {
       adminPreferences: adminPreferencesReducer,
       userPreferences: userPreferencesReducer,
       editorState: editorStateReducer,
-      appContext: appContextReducer,
+      appContext: selectedAppContextReducer,
       overlay: overlayReducer,
     },
   });
