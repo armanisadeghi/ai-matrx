@@ -141,7 +141,7 @@ export const bringUpChecklist = registerChecklist<BringUpContext>({
         },
         {
           label: "Where the push subscription delivers",
-          value: "https://server.app.matrxserver.com/api/outreach/inbound/gmail/<delivery-secret>",
+          value: "https://server.app.matrxserver.com/outreach/inbound/gmail/<delivery-secret>",
           hint: "Replace <delivery-secret> with the same secret you set as the server's delivery secret below.",
         },
         {
@@ -227,11 +227,13 @@ export const bringUpChecklist = registerChecklist<BringUpContext>({
         readinessOrUnknown(ctx, (readiness) => {
           const missing: string[] = [];
           if (!readiness.hunter_key_present) {
-            missing.push("Hunter (finds addresses — Starter plan, about $34/month, hunter.io)");
+            missing.push(
+              "Hunter (finds addresses — API access is included on Free; Starter is $49 monthly or $408 yearly, hunter.io)",
+            );
           }
           if (!readiness.millionverifier_key_present) {
             missing.push(
-              "MillionVerifier (confirms an address works — about $15 of credit, millionverifier.com)",
+              "MillionVerifier (confirms an address works — a business signup includes free trial credits; the one-time trial pack is $4.90, millionverifier.com)",
             );
           }
           if (missing.length > 0) {

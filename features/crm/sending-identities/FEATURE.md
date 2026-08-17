@@ -1,6 +1,6 @@
 # Sending mailboxes — the frontend of THE RIGHT TO SEND
 
-> **Status:** live · **Updated:** 2026-08-14 · Routes `/crm/sending-identities`,
+> **Status:** live · **Updated:** 2026-08-17 · Routes `/crm/sending-identities`,
 > `/crm/sending-identities/[identityId]`
 
 The surface where a user connects the mailbox their outreach is sent from, proves
@@ -111,5 +111,9 @@ must not block the done verdict).
 Traps: the readiness endpoint on a server that predates it falls into
 `/{identity_id}` and answers 400 — the checks map ANY readiness failure to
 `unknown`, never `fail`, so a stale deployment reads as "couldn't check", not
-"you broke something". Dialog fixes resolve their promise on CLOSE (accepted or
-not) so the re-check fires either way and reads the truth from the DB.
+"you broke something". The Pub/Sub push URL is
+`https://server.app.matrxserver.com/outreach/inbound/gmail/<delivery-secret>` —
+**there is no `/api` segment** because aidream mounts this public router at the
+bare `/outreach/inbound` prefix. Dialog fixes resolve their promise on CLOSE
+(accepted or not) so the re-check fires either way and reads the truth from the
+DB.
