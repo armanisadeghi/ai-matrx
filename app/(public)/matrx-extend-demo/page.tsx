@@ -13,6 +13,13 @@ export const metadata: Metadata = {
     url: "/matrx-extend-demo",
     type: "article",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Matrx Extend Demo Page",
+    description:
+      "A stable sample article with links, a table, and structured data for demonstrating Matrx Extend.",
+    images: ["/matrx/logo-option-4.jpeg"],
+  },
 };
 
 const workflowStages = [

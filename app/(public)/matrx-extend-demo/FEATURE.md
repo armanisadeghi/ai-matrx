@@ -9,9 +9,11 @@
 - The page remains public and usable without an AI Matrx account.
 - The three workflow stages remain **Capture**, **Understand**, and **Use** so reviewer instructions and page-aware chat have a deterministic answer.
 - The page keeps ordinary semantic HTML plus JSON-LD; it must never detect the extension or return special content to a reviewer.
+- Open Graph and Twitter metadata describe this demo page specifically and must not inherit generic site copy or placeholder account handles.
 - Links to the extension privacy policy and support remain direct and functional.
 - Submission instructions and screenshots that depend on this page live canonically in `matrx-extend/docs/CWS_LISTING_DRAFT.md`.
 
 ## Change log
 
 - 2026-08-17 — Added the stable public demonstration page for clean-profile Chrome Web Store testing and reviewer reproduction.
+- 2026-08-17 — Made the demo page's Twitter metadata explicit so the SEO audit does not inherit generic site defaults.
