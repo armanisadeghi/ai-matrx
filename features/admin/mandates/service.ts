@@ -121,7 +121,7 @@ export async function fetchMandateConsoleData(): Promise<MandateConsoleData> {
     const { data, error } = await supabase
       .schema("agent")
       .from("definition")
-      .select("id, name, version, is_archived, agent_type")
+      .select("id, name, version, is_archived, agent_type, auto_context_disabled")
       .in("id", [...agentIds]);
     if (error) throw error;
     for (const row of data ?? []) {
@@ -153,6 +153,9 @@ export async function updateMandateDefinition(
     | "is_enabled"
     | "label"
     | "description"
+    // The Mandate-level Context Policy gate. Gates only NARROW — see
+    // agent.mandate.auto_context_disabled.
+    | "auto_context_disabled"
   >,
 ): Promise<MandateDefinitionRow> {
   const supabase = createClient();

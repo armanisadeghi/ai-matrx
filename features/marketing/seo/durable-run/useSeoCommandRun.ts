@@ -84,6 +84,13 @@ interface RunPointer {
   runId: string;
   startedAt: number;
   target: string | null;
+  /**
+   * The run reached a good terminal state here. The pointer is KEPT so a
+   * reload re-reads the finished result off the durable row — losing an answer
+   * to a refresh is the same defect as losing the run that produced it. Only a
+   * fresh launch, a failure, or age retires a pointer.
+   */
+  settled?: boolean;
 }
 
 function pointerKey(key: string): string {
@@ -107,6 +114,7 @@ function readPointer(key: string): RunPointer | null {
       runId: parsed.runId,
       startedAt,
       target: typeof parsed.target === "string" ? parsed.target : null,
+      settled: parsed.settled === true,
     };
   } catch {
     // A corrupt pointer must never break the tool it belongs to.

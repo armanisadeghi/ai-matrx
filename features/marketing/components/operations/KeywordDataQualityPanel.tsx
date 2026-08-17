@@ -1,11 +1,16 @@
 "use client";
 
 /**
- * Admin data-quality controls (DEF-25) — the previously orphaned admin-only
- * routes POST /seo/keywords/classify and POST /seo/keywords/assign-topics
- * finally get a UI. Both routes are capped server-side (explicit id lists
- * ≤200, batches ≤40) and require ctx.is_admin; this panel is the simplest
- * real surface that lets an admin trigger a run and see what happened.
+ * Admin data-quality controls (DEF-25) — the admin-only routes
+ * POST /seo/keywords/classify and POST /seo/keywords/assign-topics. Both are
+ * capped server-side (explicit id lists ≤200) and require ctx.is_admin.
+ *
+ * THE FLOATING LAW: both are DURABLE STREAMED COMMANDS. A 40-keyword
+ * classification is ~88s of paid model work, and it used to sit behind a bare
+ * spinner; it now streams its real milestones — the eligible set, the batch
+ * plan, which phrases are in flight, what each batch wrote — plus the
+ * classifier's own output, into the floating `LiveRunWindow`. A reload rejoins
+ * the run instead of losing it.
  */
 
 import { useState } from "react";
@@ -18,20 +23,33 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
-import { extractErrorMessage } from "@/utils/errors";
-// Both routes wait on provider calls inside the request — the shared header
-// budget lives with the classifier service, never re-invented per surface.
-import { SEO_COMPUTE_CONNECT_TIMEOUT_MS } from "@/features/marketing/search-console/data-classification";
+import { useSeoCommandStream } from "@/features/marketing/data/useSeoCommandStream";
 
 const CLASSIFY_PATH = "/seo/keywords/classify";
 /**
- * The server accepts 200, but it classifies them 40 at a time INSIDE one
- * synchronous request — 40 measured 87.8s live on 2026-08-11, so 200 would run
- * ~7 minutes and Cloudflare would sever it at ~100s with a CORS-less error page
- * the browser can only report as "Failed to fetch". Offer what can finish.
+ * The server accepts 200. Streaming removed the CDN's ~100s severance (the run
+ * is durable and rejoinable now), but a batch is still ~88s of paid work and an
+ * operator wants a pass that finishes while they watch it, so one run stays
+ * capped here at 40. Run it repeatedly to work through a backlog.
  */
 const CLASSIFY_RUN_LIMIT = 40;
 const ASSIGN_TOPICS_PATH = "/seo/keywords/assign-topics";
+
+/** The server's own milestones, in the operator's words. Never invented. */
+const CLASSIFY_STAGES: Record<string, string> = {
+  "seo.classify_started": "Selecting the unclassified backlog…",
+  "seo.classify_batch_started": "Classifying a batch of keywords…",
+  "seo.classify_batch_completed": "Batch saved…",
+  "seo.classify_completed": "Classification complete",
+};
+
+const ASSIGN_STAGES: Record<string, string> = {
+  "seo.assign_topics_started": "Selecting unassigned keywords…",
+  "seo.assign_topics_tree_loaded": "Reading the shared topic tree…",
+  "seo.assign_topics_agent_completed": "Pinning keywords to topics…",
+  "seo.assign_topics_applied": "Saving assignments…",
+  "seo.assign_topics_completed": "Topic assignment complete",
+};
 
 interface ClassifyResult {
   eligible: number;
@@ -52,30 +70,31 @@ interface AssignTopicsResult {
 function ClassifyCard() {
   const dispatch = useAppDispatch();
   const [limit, setLimit] = useState(CLASSIFY_RUN_LIMIT);
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<ClassifyResult | null>(null);
 
-  const run = async () => {
-    setSubmitting(true);
-    try {
-      const response = await dispatch(
+  const command = useSeoCommandStream<ClassifyResult>({
+    key: "classify",
+    label: "Keyword classifier",
+    finalKind: "seo.classify_completed",
+    stages: CLASSIFY_STAGES,
+    onComplete: (data) =>
+      toast.success(`Classified ${data.updated} of ${data.eligible} eligible keywords`),
+  });
+  const submitting = command.isActive;
+  const result = command.run.result ?? null;
+
+  const run = () => {
+    void command.start(({ consumeStream, signal }) =>
+      dispatch(
         callApi({
           path: CLASSIFY_PATH,
           method: "POST",
           body: { language: "en", limit },
-          connectTimeoutMs: SEO_COMPUTE_CONNECT_TIMEOUT_MS,
-          totalTimeoutMs: null,
+          stream: true,
+          consumeStream,
+          signal,
         }),
-      );
-      if (response.error) throw new Error(response.error.message);
-      const data = response.data as unknown as ClassifyResult;
-      setResult(data);
-      toast.success(`Classified ${data.updated} of ${data.eligible} eligible keywords`);
-    } catch (error) {
-      toast.error("Classification failed", { description: extractErrorMessage(error) });
-    } finally {
-      setSubmitting(false);
-    }
+      ),
+    );
   };
 
   return (
