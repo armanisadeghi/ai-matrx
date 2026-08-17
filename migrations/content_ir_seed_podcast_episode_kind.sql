@@ -1,0 +1,28 @@
+-- Registers the `podcast_episode` workflow-I/O kind: the deliverable of
+-- `podcast.episode.generate` (script, audio, artwork, cast, official video).
+-- Without it the node's output renders as a raw JSON blob in the runtime UI.
+-- Schema is PodcastEpisodeOutput.model_json_schema() (aidream
+-- aidream/graph_actions/podcast/generate.py) — never hand-written.
+insert into content_ir.kind_definition
+  (kind, label, authoring_owner, data, emitted_json_schema, is_active, visibility, organization_id, metadata)
+select 'podcast_episode', 'Podcast Episode', 'python', null,
+       $mtx${"$defs": {"PodcastSpeaker": {"description": "One resolved cast member — mirrors ``SpeakerSpec.model_dump()``\n(matrx_ai.agent_runners.podcast_generator.SpeakerSpec), which is exactly\nwhat ``PodcastCompleteEvent.speakers`` carries.", "properties": {"name": {"description": "Resolved speaker display name.", "title": "Name", "type": "string"}, "voice": {"default": "", "description": "Resolved provider voice id used for this speaker.", "title": "Voice", "type": "string"}, "gender": {"default": "", "description": "Resolved gender label used for cast and voice matching.", "title": "Gender", "type": "string"}}, "required": ["name"], "title": "PodcastSpeaker", "type": "object"}}, "additionalProperties": false, "description": "Success payload (Node Result System) — mirrors the terminal\n``PodcastCompleteEvent`` minus the reserved envelope fields\n(``success``/``error`` — a failed generation is a node Failure with\ncode ``generation_failed``) and the stream ``type`` discriminator.", "properties": {"show_id": {"description": "Podcast show containing the generated episode.", "title": "Show Id", "type": "string"}, "episode_id": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "description": "Persisted pc_episodes id, or null if persistence did not complete.", "title": "Episode Id"}, "episode_slug": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null, "description": "Public episode slug, or null if persistence did not complete.", "title": "Episode Slug"}, "script": {"default": "", "description": "Final speaker-labeled episode script.", "title": "Script", "type": "string"}, "audio_url": {"default": "", "description": "Durable public URL of the generated episode audio.", "title": "Audio Url", "type": "string"}, "title": {"default": "", "description": "Generated episode title.", "title": "Title", "type": "string"}, "description": {"default": "", "description": "Generated episode description.", "title": "Description", "type": "string"}, "image_urls": {"description": "Durable public URLs of supporting generated images.", "items": {"type": "string"}, "title": "Image Urls", "type": "array"}, "video_urls": {"description": "Durable public URLs of supporting generated video clips.", "items": {"type": "string"}, "title": "Video Urls", "type": "array"}, "official_video_url": {"default": "", "description": "Durable public URL of the composed official episode video.", "title": "Official Video Url", "type": "string"}, "official_video_error": {"default": "", "description": "Composition error when the official video could not be produced.", "title": "Official Video Error", "type": "string"}, "host_count": {"default": 2, "description": "Number of speakers in the resolved cast.", "title": "Host Count", "type": "integer"}, "speakers": {"description": "Resolved cast in speaking-priority order.", "items": {"$ref": "#/$defs/PodcastSpeaker"}, "title": "Speakers", "type": "array"}}, "required": ["show_id"], "title": "PodcastEpisodeOutput", "type": "object"}$mtx$::jsonb,
+       false, 'public', '39c38960-d30c-4840-b0c1-c9960de95582',
+       '{"family":"workflow_io","generic":false,"category":"pure","description":"A generated podcast episode — script, audio, artwork, cast and the composed official video."}'::jsonb
+where not exists (
+  select 1 from content_ir.kind_definition
+  where organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'
+    and kind = 'podcast_episode' and deleted_at is null);
+
+insert into content_ir.kind_example
+  (kind_definition_id, kind_version, data, label, source, is_canonical, validation_status, validated_at, organization_id)
+select kd.id, kd.version,
+       $mtx${"show_id": "3f0c2a51-1b7d-4a2e-9c33-0d8f5b6e7a10", "episode_id": "9448a7bc-1754-4b15-90f9-041a3e98e8bd", "episode_slug": "how-tiny-habits-compound", "script": "Alex: Welcome back to the show.\nSarah: Today we're talking about compounding.", "audio_url": "https://cdn.matrxserver.com/4cf62e4e-2679-484f-b652-034e697418df/1f2e3d4c-5b6a-4798-8899-aabbccddeeff?v=1a2b3c4d", "title": "How Tiny Habits Compound", "description": "Alex and Sarah unpack why small, boring consistency beats bursts of effort.", "image_urls": ["https://cdn.matrxserver.com/4cf62e4e-2679-484f-b652-034e697418df/db22f2a2-9548-4eb7-946b-19b267bdee09?v=84f485d6"], "video_urls": ["https://cdn.matrxserver.com/4cf62e4e-2679-484f-b652-034e697418df/28805c30-3848-40eb-8f51-b7d34ea4ea15?v=d7a1a053"], "official_video_url": "https://cdn.matrxserver.com/4cf62e4e-2679-484f-b652-034e697418df/004a1057-a4f9-434a-beca-827cc9f82714?v=9e8d7c6b", "official_video_error": "", "host_count": 2, "speakers": [{"name": "Alex", "voice": "am_michael", "gender": "male"}, {"name": "Sarah", "voice": "af_heart", "gender": "female"}]}$mtx$::jsonb,
+       'Canonical example', 'authored', true, 'passed', now(),
+       '39c38960-d30c-4840-b0c1-c9960de95582'
+from content_ir.kind_definition kd
+where kd.organization_id = '39c38960-d30c-4840-b0c1-c9960de95582'
+  and kd.kind = 'podcast_episode' and kd.deleted_at is null
+  and not exists (
+    select 1 from content_ir.kind_example e
+    where e.kind_definition_id = kd.id and e.is_canonical and e.deleted_at is null);
