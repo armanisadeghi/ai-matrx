@@ -30,6 +30,11 @@ import { Input } from "@/components/ui/input";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import {
+  fetchAssistLaunch,
+  MASTERWORK_RULEBOOK_SURFACE,
+} from "../../assists";
 import {
   getRulebook,
   listMasterworksForRulebook,
@@ -45,6 +50,7 @@ import {
   type RuleSeverity,
   type RuleSourceRef,
 } from "../../types";
+import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { BuildMasterworkDialog } from "./BuildMasterworkDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RulebookSourcesPanel } from "./RulebookSourcesPanel";
@@ -423,9 +429,34 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
   const dumpFocus = searchParams.get("dump") === "1";
+  // The body_of_work Approach ("Everything you've published") lands here with
+  // ?body_of_work=1 — the corpus dialog IS the next step.
+  const [corpusOpen, setCorpusOpen] = useState(
+    searchParams.get("body_of_work") === "1",
+  );
   // Composer seed for the Scout panel — set when a recording distillation
-  // reports gaps and the Expert chooses "Interview me about the gaps".
+  // reports gaps and the Expert chooses "Interview me about the gaps", or by
+  // an improvement-brain assist chip (?assist=<dedupe_key>) whose launch
+  // contract stages a seeded interview or opens the ingest dialog. Seeding
+  // only pre-fills; the Expert always presses send.
   const [interviewSeed, setInterviewSeed] = useState<string | undefined>();
+  const assistKey = searchParams.get("assist");
+  useEffect(() => {
+    if (!assistKey) return;
+    let cancelled = false;
+    void fetchAssistLaunch(assistKey).then((launch) => {
+      if (cancelled || !launch) return;
+      if (launch.open === "ingest") {
+        setIngestOpen(true);
+        return;
+      }
+      if (launch.seed) setInterviewSeed(launch.seed);
+      setInterviewOpen(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [assistKey]);
   const userId = useAppSelector(selectUserId);
   const openCheckup = useOpenMasterworkCheckupWindow();
 
@@ -791,6 +822,16 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         <div className="mt-3">
           <RulebookKpiStrip kpis={kpis} live={understudy !== null} />
         </div>
+        {/* The improvement brain's chips — what to try on the Expert next
+            (aidream/services/masterwork_assists/). Renders nothing when the
+            producer has nothing to say; a chip only ever expands on click,
+            and its verb button navigates back here with ?assist=… which
+            opens the right lane seeded (never auto-sent). */}
+        <AssistStrip
+          surfaceName={MASTERWORK_RULEBOOK_SURFACE}
+          filter={(a) => a.entityId === rulebookId}
+          className="mt-2"
+        />
         {draftCount > 0 && canEdit ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <Button
@@ -876,6 +917,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             >
               <FileUp className="mr-1 h-4 w-4" />
               From a source
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8"
+              onClick={() => setCorpusOpen(true)}
+            >
+              <BookOpen className="mr-1 h-4 w-4" />
+              Your published work
             </Button>
           </>
         ) : null}
@@ -1046,6 +1096,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           setInterviewSeed(seed);
           setInterviewOpen(true);
         }}
+      />
+      <BodyOfWorkDialog
+        open={corpusOpen}
+        onOpenChange={setCorpusOpen}
+        rulebook={rulebook}
+        onIngested={() => void reloadRulebook()}
       />
       {canEdit ? (
         <ScoutInterviewPanel
