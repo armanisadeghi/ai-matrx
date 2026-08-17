@@ -76,14 +76,35 @@ type RpcReply =
   | { ok: false; error: string; error_type: string };
 
 /**
+ * Calls are serialized: supabase-js keeps one channel per topic, and the
+ * engine's bridge topic is fixed, so two concurrent subscribes to the same
+ * topic from one client would race ("tried to subscribe multiple times").
+ * These are short request/reply hops; a simple queue is correct and enough.
+ */
+let rpcQueue: Promise<unknown> = Promise.resolve();
+
+/**
  * One rpc round-trip to the user's Matrx Local engine over Supabase
  * Broadcast. Resolves the engine's reply payload, or throws with the real
  * failure (engine error text, or an explicit unreachable timeout).
  */
-export async function callMatrxLocal<T>(
+export function callMatrxLocal<T>(
   action: string,
   payload: Record<string, unknown> = {},
   timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<T> {
+  const next = rpcQueue.then(
+    () => callMatrxLocalNow<T>(action, payload, timeoutMs),
+    () => callMatrxLocalNow<T>(action, payload, timeoutMs),
+  );
+  rpcQueue = next.catch(() => undefined);
+  return next;
+}
+
+async function callMatrxLocalNow<T>(
+  action: string,
+  payload: Record<string, unknown>,
+  timeoutMs: number,
 ): Promise<T> {
   const supabase = createClient();
   const {
