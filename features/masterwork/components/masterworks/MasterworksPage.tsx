@@ -442,6 +442,7 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
       {isOwner ? (
         <ScoutInterviewPanel
           rulebookId={rulebookId}
+          rulebookName={rulebook.name}
           open={feedbackSeed !== null}
           onOpenChange={(open) => {
             if (!open) setFeedbackSeed(null);

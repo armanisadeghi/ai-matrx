@@ -708,6 +708,20 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 Activate
               </Button>
             ) : null}
+            {/* THE FINAL CHECKUP (features/masterwork/checkup/) — the finish
+                line. Press it when you feel done and we read everything you
+                ever told us back against every rule you have. Owned entirely
+                by the checkup window; this is its only entry point. */}
+            {canEdit && approvedCount > 0 ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => openCheckup({ rulebookId: rulebook.id })}
+              >
+                <Stethoscope className="mr-1 h-4 w-4" />
+                Final checkup
+              </Button>
+            ) : null}
             {approvedCount > 0 ? (
               <Button size="sm" onClick={() => setBuildOpen(true)}>
                 <Hammer className="mr-1 h-4 w-4" />
@@ -962,6 +976,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       {canEdit ? (
         <ScoutInterviewPanel
           rulebookId={rulebook.id}
+          rulebookName={rulebook.name}
           open={interviewOpen}
           onOpenChange={setInterviewOpen}
           onRulebookChanged={() => void reloadRulebook()}
