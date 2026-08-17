@@ -310,9 +310,29 @@ critique lane · 5. AI-transcript import (provider gallery + guides + zero-uploa
 Plus the cross-cutting **Masterwork M&M** — a standing 15-minute weekly worst-run review
 ritual (delivery vehicle for 9/12 and the failure lever, not a lane).
 
-An overlap map (which existing platform systems each idea taps — meetings, SMS, message
-actions, thumbs feedback, PDF annotation, education machinery) is being produced and belongs
-beside this list when it lands.
+### The overlap map (2026-08-17) — what each idea taps, verified against code
+
+- ONE landing point for every lane: `rulebook_writes.py` — never a second write path.
+- **Near-free** (existing machinery, content/config variants): #11 Hardest-Case Debrief +
+  #15 Vacation Trigger (new ELICITATION_CHIPS sets + seedText on the existing panel);
+  Oracle-tap in-app half — "Add to Rulebook" is one MenuItem in
+  `messageActionRegistry.ts` beside create-task/create-note, and the thumbs follow-up
+  popover rides `lib/output-feedback` (which ALREADY stores originalContent/
+  correctedContent/prose on every thumbs click — no new table).
+- **Harness reuse:** #9 Bad Example probe = Audition run in reverse-emphasis (same judge →
+  gaps → draft rules); #12 Exception Hunter = one new producer in the `masterwork_checkup`
+  harness (parallel-run, stream findings, approve/dismiss all reusable); #6 Meeting
+  Scavenger reads the transcripts/War Room `studio_sessions` the platform already produces —
+  the missing piece is only the judgment-moment detector.
+- **#7 Shadow-the-inbox's diff primitive already exists**: `useOutputFeedback.captureCorrection`
+  (AI draft vs corrected content, live on every thumbs button). Missing: the Understudy
+  inbound path (outreach_inbound is CRM-shaped; needs a lightweight generic mode).
+- **Transports confirmed live** for Oracle tap: inbound Gmail pipeline (needs a non-CRM
+  correlation mode), SMS assistant programs (`sms_assistant.py` + `features/sms`), and the
+  message-actions registry. Twilio voice relay exists if a voice Oracle is ever wanted.
+- **Genuinely new, small:** the Triad item type (a proper content-ir kind through the quiz
+  machinery, never a bespoke game engine); the Prediction Ledger's pending→resolved state
+  table (scoring still via the ONE Judge mandate — never a second grader).
 
 ## Working notes that save hours
 
