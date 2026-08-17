@@ -56,25 +56,35 @@
   deleted; mandate seeded live), the auditor agent row/tool copy renamed, matrx-extend
   generated types refreshed, the tool sees `retired` and coerces section shapes, Audition
   judges APPROVED rules only, and stale `processing` run rows are repaired in the ledger.
+- **Hindsight enrollment LIVE for all five mandate agents (2026-08-17):** Scout re-armed
+  (`604cfd49`), source/exemplar distillers + audition judge created (`19d16422`/`c550588c`/
+  `195e6747`, all n=10), rulebook auditor was already active (`37b7dedb`, n=5). The Expert's
+  reject/change-request verdicts already reach the reviewer through the Scout's own transcripts
+  (`open_feedback` on every `rulebook` read); enrollment `goal`s point the reviewer at them —
+  no new outcome pipeline built, on purpose. Details: aidream
+  `aidream/services/masterworks/FEATURE.md` § Hindsight enrollment.
 - Fixed along the way: word-boundary name truncation (was defect 3), duplicate Audition judge
   soft-deleted (mandate pins `c55b52c9-…`), test residue removed (was defect 4), two
   unmirrored shareable-registry rows (`interview_session`, `workflow_runtime_surface`) added
   to the FE TS mirror.
 
-## 🔴 DECISIONS ARMAN OWES
+## Decisions — RULED and EXECUTED 2026-08-17
 
-**① Does a RELEASED Masterwork pin its agents, or track its Mandates?** Build freezes resolved
-agent UUIDs into the workflow definition (`masterworks/build.py`; `ai.agent.start` takes only
-`agent_id`). *Recommended:* keep it pinned (reproducibility IS the accountability claim) and
-extend the existing drift surface to also detect template/Mandate drift with a one-click
-rebuild. Ruling the other way needs a `mandate_key` input on `ai.agent.start` (matrx-ai/graph
-change affecting every workflow).
+**① RULED (Arman): a released Masterwork TRACKS its Mandates** — "all agents need to be mandate
+aware." `ai.agent.start` now takes `mandate_key` (resolved on EVERY run; refuses when
+unresolvable — no seed fallback); when `agent_id` sits beside it, the mandate wins and the id is
+the build-time snapshot for drift display. Build (`masterwork_build v5`) stamps every shared
+auditor node with `mandate_key: masterwork.rulebook_auditor` + snapshot; Editor/Maker/Chief stay
+true pins (per-Masterwork authored artifacts no Mandate names). A Binding change reaches every
+released Masterwork on its next run, no rebuild.
 
-**② Auditor contract vocabulary (deliberate rename holdout).** The generic auditor's runtime
-variables `pack_source`/`principles` and output field `principle_id` are DB-owned contracts
-frozen into the two live built Masterworks — renaming them requires updating the auditor
-agent + mandate contract + `build.py` + REBUILDING the live Masterworks in one pass. Cheap
-once ① is settled (a rebuild pass does both). Everything else is renamed.
+**② CLOSED: auditor contract renamed end-to-end** — `pack_source`→`rulebook_source`,
+`principles`→`rules`, `principle_id`→`rule_id` across the live auditor agent row (prompt,
+variables, output schema — via `update_agent`, auto-versioned), the mandate contract,
+`build.py` schemas + citation gates, and BOTH live Masterworks rebuilt in-process as their
+owner: Strunk `24df673f-d252-4075-b134-44ccbfdc5910`, Hopkins
+`10daeb58-bde4-4c98-a2cc-e95164700a3b` (old rows kept — versioned artifacts, list is
+newest-first). Verified from the DB: no old-contract token in either new definition.
 
 ## Open work, in order
 
@@ -95,7 +105,8 @@ once ① is settled (a rebuild pass does both). Everything else is renamed.
 
 - Live ids: Rulebooks `hopkins-scientific-advertising` `f6267bca-…`, `strunk-elements-of-style`
   `e492a07f-…` (has 1 rejected rule waiting as a live demo), `arman-seo-method` `5d353449-…`
-  (draft). Masterworks: Strunk `bf711bce-…`, Hopkins `b0865c3b-…`. Scout `4a0b2f8e-…`.
+  (draft). Masterworks (current, mandate-aware): Strunk `24df673f-…`, Hopkins `10daeb58-…`
+  (superseded builds `bf711bce-…` / `b0865c3b-…` kept as versioned artifacts). Scout `4a0b2f8e-…`.
 - A real run costs ~$0.19, ~4 min, detaches server-side; safe to walk away.
 - Verify: `pnpm preview:start` (port 3001, shared), `/masterwork/e492a07f-…`. `pnpm type-check`
   is the only type gate; the live DB is truth.
