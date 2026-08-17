@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-08-15T03:39:31.741Z",
-  "commit": "607edb4bd79863c866b170882964d37b614779f5",
+  "generatedAt": "2026-08-17T08:15:28.870Z",
+  "commit": "313abddba14eccbfcc4b020059ba1a16bb992ea0",
   "totals": {
-    "findings": 96,
+    "findings": 97,
     "high": 66,
-    "medium": 30,
+    "medium": 31,
     "low": 0,
-    "filesWithFindings": 60,
-    "filesScanned": 6609,
+    "filesWithFindings": 61,
+    "filesScanned": 6767,
     "allowlisted": 2
   },
   "byRule": {
-    "bare-id-text": 49,
+    "bare-id-text": 51,
     "unlinked-entity-name": 34,
-    "unlinked-count": 4,
+    "unlinked-count": 3,
     "no-doors-in-file": 9
   },
   "worstFiles": [
@@ -410,12 +410,12 @@
       "high": 0
     },
     {
-      "key": "features/flashcards",
+      "key": "features/expertise",
       "count": 1,
       "high": 0
     },
     {
-      "key": "features/research",
+      "key": "features/flashcards",
       "count": 1,
       "high": 0
     }
@@ -1107,7 +1107,7 @@
     },
     {
       "file": "features/surfaces/components/bind/SurfaceAgentBindPanel.tsx",
-      "line": 384,
+      "line": 403,
       "column": 16,
       "rule": "unlinked-entity-name",
       "severity": "high",
@@ -1442,20 +1442,20 @@
       "route": null
     },
     {
-      "file": "features/ai-work/components/AiWorkConversationsInbox.tsx",
-      "line": 177,
+      "file": "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
+      "line": 255,
       "column": 16,
-      "rule": "unlinked-count",
+      "rule": "bare-id-text",
       "severity": "medium",
-      "entity": "conversation",
-      "entityHasRoute": true,
-      "expression": "conversation.messageCount message",
+      "entity": "?primary",
+      "entityHasRoute": false,
+      "expression": "primary.provider_session_id",
       "feature": "features/ai-work",
       "route": null
     },
     {
       "file": "features/cms/components/admin/ApprovalsQueuePanel.tsx",
-      "line": 89,
+      "line": 92,
       "column": 42,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -1467,7 +1467,7 @@
     },
     {
       "file": "features/code/views/library/LibraryTreeNode.tsx",
-      "line": 117,
+      "line": 151,
       "column": 39,
       "rule": "unlinked-entity-name",
       "severity": "medium",
@@ -1475,6 +1475,18 @@
       "entityHasRoute": false,
       "expression": "folder.name",
       "feature": "features/code",
+      "route": null
+    },
+    {
+      "file": "features/expertise/components/desks/BacktestDialog.tsx",
+      "line": 210,
+      "column": 26,
+      "rule": "bare-id-text",
+      "severity": "medium",
+      "entity": "?f",
+      "entityHasRoute": false,
+      "expression": "f.rule_id",
+      "feature": "features/expertise",
       "route": null
     },
     {
