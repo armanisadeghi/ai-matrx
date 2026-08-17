@@ -11,8 +11,8 @@
 > citable), never in prose inside an agent prompt. Masterworks are BUILT from
 > Rulebooks; auditors consume the rules verbatim; every audit verdict cites a rule
 > id. This feature is the UI where a non-technical Expert sees, edits, and grows
-> their Rulebook — Arman's ruling: *nothing is real until a normal user can see it
-> and do it in the UI.*
+> their Rulebook — Arman's ruling: _nothing is real until a normal user can see it
+> and do it in the UI._
 
 ## Status
 
@@ -31,7 +31,7 @@
   (`4a0b2f8e-18d0-4ade-8b88-7f5610f1d0c8`, Sonnet 5, variable `rulebook_id`), which holds the
   server-side `rulebook` tool and lands draft rules on the Rulebook AS the Expert talks; the
   panel watches the Rulebook row's `version` while open and refreshes the page behind the sheet.
-- **The file Approach (2026-08-16):** "From a source" offers *Paste the text* or *Upload a file*.
+- **The file Approach (2026-08-16):** "From a source" offers _Paste the text_ or _Upload a file_.
   An upload goes through the canonical file handler (`useFileUpload` — never a hand-rolled
   upload) and then `POST /masterworks/ingest-file`: a document is read page by page
   (content_processing + a page-extraction job running the distiller Mandates), so each rule
@@ -76,7 +76,7 @@
   [`types.ts`](./types.ts) (`RulebookRule`, `RulebookSections`, `RulebookSource`). Never
   re-declare beside a consumer.
 - **Rules (`rules` JSONB array):** `{id, name, section, statement, rationale?, quote?, detection?,
-  severity, retired?, draft?, source_ref?}`. `id` is the citable handle — audits cite it; never rewrite
+severity, retired?, draft?, source_ref?}`. `id` is the citable handle — audits cite it; never rewrite
   an existing rule's id. `retired` keeps history; `draft` marks agent-suggested rules awaiting the
   Expert's line-by-line approval (human-first invariant — ingestion NEVER auto-activates).
 - **Versioning:** every save through `saveRules` bumps `version` with an optimistic lock on the
@@ -84,7 +84,7 @@
 - **Masterworks:** `workflow.definition` rows whose `metadata` carries `built_from_rulebook` +
   `rulebook_version` + `masterwork_kind` (the Build stamp) + `released_at` (the Expert's
   release stamp; absent = draft, Studio-only — an Operator can never run a draft). Drift = `rulebook_version <
-  rulebook.version` → the Masterworks page flags "rebuild" AND opens the rule-level diff (below)
+rulebook.version` → the Masterworks page flags "rebuild" AND opens the rule-level diff (below)
   — a drift badge without it states a timestamp, not a verdict.
 - **Version history — NO Rulebook-specific table.** `platform.rulebook` was enrolled in the
   platform-wide version capture on 2026-08-16 (`platform._version_capture` → `history.row_versions`,
@@ -187,6 +187,10 @@ pipeline) is what still takes code. Never hardcode an Approach list again.
 
 ## Change log
 
+- 2026-08-17 — The one-by-one rule review is now a wide, calm wizard instead of a narrow wall
+  of text: the rule name and statement lead in a dedicated reading column, rationale and
+  violation guidance have clearly separated labeled panels, the intrusive severity chip is
+  gone, and the progress count has its own space away from the close control.
 - 2026-08-17 — Added permanent compatibility redirects for every shipped Expertise URL:
   `/expertise` → `/masterwork`, `/expertise/[id]` → `/masterwork/[id]`,
   `/expertise/[id]/desks` → `/masterwork/[id]/masterworks`, and `/expertise/admin` →

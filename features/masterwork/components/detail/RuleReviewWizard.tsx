@@ -8,7 +8,7 @@
 // decision auto-advances. The queue is the rules waiting on the EXPERT
 // (drafts); rejected rules are with the interviewer and never appear here.
 
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
@@ -17,11 +17,11 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -48,31 +48,40 @@ export function RuleReviewWizard({
 }) {
   // The queue is snapshotted per open so decided rules keep their slot (the
   // progress count stays honest) while the live rulebook updates underneath.
-  const [queueIds, setQueueIds] = useState<string[]>([]);
+  const [queueIds, setQueueIds] = useState<string[]>(() =>
+    open
+      ? rulebook.rules
+          .filter((rule) => ruleState(rule) === "draft")
+          .map((rule) => rule.id)
+      : [],
+  );
   const [index, setIndex] = useState(0);
   const [rejecting, setRejecting] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
   const [decided, setDecided] = useState(0);
+  const [previousOpen, setPreviousOpen] = useState(open);
 
-  useEffect(() => {
-    if (!open) return;
-    const ids = rulebook.rules
-      .filter((r) => ruleState(r) === "draft")
-      .map((r) => r.id);
-    setQueueIds(ids);
-    setIndex(0);
-    setDecided(0);
-    setRejecting(false);
-    setFeedback("");
-    // Deliberately only on open — the queue must not reshuffle mid-review.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  // Reset synchronously when a new review sitting begins. This is a deliberate
+  // render-time state adjustment: the queue must be ready in the same render
+  // as the dialog opens, not one effect and an empty-state flash later.
+  if (open !== previousOpen) {
+    setPreviousOpen(open);
+    if (open) {
+      const ids = rulebook.rules
+        .filter((rule) => ruleState(rule) === "draft")
+        .map((rule) => rule.id);
+      setQueueIds(ids);
+      setIndex(0);
+      setDecided(0);
+      setRejecting(false);
+      setFeedback("");
+    }
+  }
 
-  const byId = useMemo(
-    () => new Map(rulebook.rules.map((r) => [r.id, r])),
-    [rulebook.rules],
-  );
+  // The queue is snapshotted per open so decided rules keep their slot (the
+  // progress count stays honest) while the live rulebook updates underneath.
+  const byId = new Map(rulebook.rules.map((rule) => [rule.id, rule]));
   const currentId = queueIds[index];
   const rule = currentId ? byId.get(currentId) : undefined;
   const finished = index >= queueIds.length;
@@ -119,19 +128,21 @@ export function RuleReviewWizard({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85dvh] flex-col gap-3 sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between gap-2 text-base">
-            <span>Review your rules</span>
-            {!finished ? (
-              <span className="text-xs font-normal tabular-nums text-muted-foreground">
-                {Math.min(index + 1, queueIds.length)} of {queueIds.length}
-              </span>
-            ) : null}
-          </DialogTitle>
+      <DialogContent className="flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
+        <DialogHeader className="relative space-y-1 border-b border-border px-6 py-5 pr-28 text-left">
+          <DialogTitle className="text-lg">Review your rules</DialogTitle>
+          <DialogDescription>
+            One clear decision at a time. Read the rule, then approve it or send
+            it back with feedback.
+          </DialogDescription>
+          {!finished ? (
+            <span className="absolute right-12 top-5 text-sm font-medium tabular-nums text-muted-foreground">
+              {Math.min(index + 1, queueIds.length)} of {queueIds.length}
+            </span>
+          ) : null}
         </DialogHeader>
         <div
-          className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+          className="h-1 w-full shrink-0 overflow-hidden bg-muted"
           role="progressbar"
           aria-valuenow={progressPct}
           aria-valuemin={0}
@@ -144,7 +155,7 @@ export function RuleReviewWizard({
         </div>
 
         {finished || !rule ? (
-          <div className="flex flex-col items-center gap-2 py-8 text-center">
+          <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
             <PartyPopper className="h-8 w-8 text-primary" />
             <p className="text-sm font-medium text-foreground">
               {decided > 0
@@ -154,49 +165,79 @@ export function RuleReviewWizard({
             <p className="text-xs text-muted-foreground">
               Rejected rules come back rewritten after your next interview turn.
             </p>
-            <Button size="sm" className="mt-2" onClick={() => onOpenChange(false)}>
+            <Button
+              size="sm"
+              className="mt-2"
+              onClick={() => onOpenChange(false)}
+            >
               Done
             </Button>
           </div>
         ) : (
           <>
-            <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-md border border-border bg-card p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-semibold text-foreground">
-                  {rule.name}
-                </span>
-                <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                  {SEVERITY_LABELS[rule.severity]}
-                </Badge>
-              </div>
-              <p className="text-sm text-foreground">{rule.statement}</p>
-              {rule.rationale ? (
-                <div>
-                  <div className="text-xs font-medium text-muted-foreground">
-                    Why it matters
-                  </div>
-                  <p className="text-sm text-foreground">{rule.rationale}</p>
-                </div>
-              ) : null}
-              {rule.detection ? (
-                <div>
-                  <div className="text-xs font-medium text-muted-foreground">
-                    How to spot a violation
-                  </div>
-                  <p className="text-sm text-foreground">{rule.detection}</p>
-                </div>
-              ) : null}
-              {rule.quote ? (
-                <blockquote className="border-l-2 border-border pl-2 text-sm italic text-foreground">
-                  “{rule.quote}”
-                </blockquote>
-              ) : null}
-              {rejecting ? (
-                <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-2">
-                  <p className="text-xs text-muted-foreground">
-                    Why is it wrong? Your reason goes to the interviewer, who
-                    rewrites the rule for your review.
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+              <div className="grid gap-6 md:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] md:gap-8">
+                <section className="min-w-0 space-y-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">
+                    Rule to approve · {SEVERITY_LABELS[rule.severity]}
                   </p>
+                  <h3 className="text-xl font-semibold leading-snug text-foreground sm:text-2xl">
+                    {rule.name}
+                  </h3>
+                  <div className="border-l-2 border-primary/50 pl-4">
+                    <p className="text-base leading-7 text-foreground">
+                      {rule.statement}
+                    </p>
+                  </div>
+                  {rule.quote ? (
+                    <div className="pt-2">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                        In the source&apos;s own words
+                      </p>
+                      <blockquote className="border-l-2 border-border pl-4 text-sm italic leading-6 text-muted-foreground">
+                        “{rule.quote}”
+                      </blockquote>
+                    </div>
+                  ) : null}
+                </section>
+
+                {rule.rationale || rule.detection ? (
+                  <div className="min-w-0 space-y-3">
+                    {rule.rationale ? (
+                      <section className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                        <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+                          Why it matters
+                        </h4>
+                        <p className="mt-2 text-sm leading-6 text-foreground">
+                          {rule.rationale}
+                        </p>
+                      </section>
+                    ) : null}
+                    {rule.detection ? (
+                      <section className="rounded-lg border border-border bg-muted/40 p-4">
+                        <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-foreground">
+                          How to spot a violation
+                        </h4>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          {rule.detection}
+                        </p>
+                      </section>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+
+              {rejecting ? (
+                <div className="mt-6 space-y-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      What needs to change?
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                      Your reason goes to the interviewer, who rewrites the rule
+                      for your review.
+                    </p>
+                  </div>
                   <ProTextarea
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
@@ -227,14 +268,13 @@ export function RuleReviewWizard({
               ) : null}
             </div>
             {!rejecting ? (
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/20 px-6 py-4">
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={() => void approve()} disabled={busy}>
+                  <Button onClick={() => void approve()} disabled={busy}>
                     <CheckCircle2 className="mr-1 h-4 w-4" />
                     Approve
                   </Button>
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => setRejecting(true)}
                     disabled={busy}
@@ -243,7 +283,6 @@ export function RuleReviewWizard({
                     Reject
                   </Button>
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => rule && onEdit(rule)}
                     disabled={busy}
@@ -252,7 +291,7 @@ export function RuleReviewWizard({
                     Edit
                   </Button>
                 </div>
-                <Button size="sm" variant="ghost" onClick={advance} disabled={busy}>
+                <Button variant="ghost" onClick={advance} disabled={busy}>
                   Skip
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
