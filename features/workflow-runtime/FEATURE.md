@@ -81,6 +81,13 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-17 — Phase 5 podcast proof: "Podcast Episode v1" shipped as LIVE data — a
+  `workflow.definition` (f6d0e4b2… — io.user_input brief form → the registered
+  `podcast.episode.generate` host action wrapping the SAME pipeline as the product's
+  Generate Episode button → output.to_frontend) + its authored surface
+  (`workflow.runtime_surface` d2b9c7a4… — brief / making-with-synthetic-rail / persisted
+  deliverable pages), pinned by `surface/__tests__/podcast-surface.test.ts`, which also
+  pins the generated run-start form (5 fields incl. the quick-test toggle). Zero new code.
 - 2026-08-16 — Phase 5 first proof: the Study Pack authored surface shipped as LIVE data
   (`workflow.runtime_surface` c797a1c1… on "Study Pack v1" — 3 auto-advancing pages, rails
   with synthetic sub-steps, four streaming writer readouts, persisted deliverable page),
