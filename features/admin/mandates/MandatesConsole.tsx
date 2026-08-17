@@ -248,7 +248,7 @@ export function MandatesConsole() {
   const rows = useMemo(() => {
     if (!data) return [];
     return data.mandates
-      .map((mandate) => buildRow(mandate, data, codeTruthByMandateKey[mandate.slot_key]))
+      .map((mandate) => buildRow(mandate, data, codeTruthByMandateKey[mandate.mandate_key]))
       .sort(
         (left, right) =>
           HEALTH_PRIORITY[left.health] - HEALTH_PRIORITY[right.health] ||
@@ -317,7 +317,7 @@ export function MandatesConsole() {
       const parsed = parseMandateContract(selectedRow.mandate.contract);
       contract = {
         required_variables: parsed.requiredVariables,
-        required_context_slots: parsed.requiredContextSlots,
+        required_context_slots: parsed.requiredContextPolicyKeys,
         required_output_keys: parsed.requiredOutputKeys,
       };
     }

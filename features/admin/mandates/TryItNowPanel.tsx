@@ -239,7 +239,7 @@ export function TryItNowPanel({
     setRunning(true);
     setCompleted(null);
     try {
-      const result = await runMandateAdHocTest(dispatch, mandate.slot_key, {
+      const result = await runMandateAdHocTest(dispatch, mandate.mandate_key, {
         variables,
         userInput: message,
         // Name the column the way the bench names every other one — the

@@ -180,7 +180,7 @@ export function useGuardedRebind({
             <div className="flex flex-wrap items-center gap-2">
               <CopyButton
                 content={buildRebindFixBrief({
-                  mandateKey: mandate.slot_key,
+                  mandateKey: mandate.mandate_key,
                   candidateName: pending.request.agentName,
                   impact: pending.impact,
                   codeTruth: codeTruth ?? undefined,

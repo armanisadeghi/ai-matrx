@@ -131,7 +131,7 @@ export function MandateOverrideEditor({
     [mandate.contract],
   );
   const contractSize =
-    contract.requiredVariables.length + contract.requiredContextSlots.length;
+    contract.requiredVariables.length + contract.requiredContextPolicyKeys.length;
 
   const runContractCheck = useCallback(
     async (candidateId: string) => {
@@ -141,7 +141,7 @@ export function MandateOverrideEditor({
           agentId: candidateId,
           result: compareStoredContract(contract, {
             variableNames: [],
-            contextSlotKeys: [],
+            contextPolicyKeys: [],
           }),
         });
         return;
@@ -170,7 +170,7 @@ export function MandateOverrideEditor({
       }
       const result = compareStoredContract(contract, {
         variableNames: (payload.variableDefinitions ?? []).map((v) => v.name),
-        contextSlotKeys: (payload.contextSlots ?? []).map((s) => s.key),
+        contextPolicyKeys: (payload.contextPolicies ?? []).map((s) => s.key),
       });
       setContractCheck({ status: "done", agentId: candidateId, result });
     },
@@ -516,8 +516,8 @@ function ContractResult({
   contractSize: number;
 }) {
   const missing =
-    contract.missingVariables.length + contract.missingSlots.length;
-  const extras = contract.extraVariables.length + contract.extraSlots.length;
+    contract.missingVariables.length + contract.missingPolicies.length;
+  const extras = contract.extraVariables.length + contract.extraPolicies.length;
   const passing = contract.passing;
   if (contractSize === 0) {
     return (
@@ -576,8 +576,8 @@ function ContractResult({
       <ul className="mt-1.5 divide-y divide-border/30">
         {requiredRows(contract.matchedVariables, "matched", "variable")}
         {requiredRows(contract.missingVariables, "missing", "variable")}
-        {requiredRows(contract.matchedSlots, "matched", "slot")}
-        {requiredRows(contract.missingSlots, "missing", "slot")}
+        {requiredRows(contract.matchedPolicies, "matched", "slot")}
+        {requiredRows(contract.missingPolicies, "missing", "slot")}
       </ul>
       {extras > 0 ? (
         <div className="mt-1.5 border-t border-border/30 pt-1.5">
@@ -586,7 +586,7 @@ function ContractResult({
           </p>
           <ul className="divide-y divide-border/30">
             {requiredRows(contract.extraVariables, "extra", "variable")}
-            {requiredRows(contract.extraSlots, "extra", "slot")}
+            {requiredRows(contract.extraPolicies, "extra", "slot")}
           </ul>
           <p className="text-[11px] leading-relaxed text-muted-foreground/80">
             These won&apos;t be supplied by this step. Make sure they have

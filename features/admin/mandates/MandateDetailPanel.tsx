@@ -1265,7 +1265,7 @@ function MandateEditor({
       agentName: builtinAgentsById.get(agentId) ?? "the selected agent",
       versionId: useLatest ? null : versionId,
       useLatest,
-      successMessage: `${mandate.slot_key} rebound.`,
+      successMessage: `${mandate.mandate_key} rebound.`,
     });
   };
 
@@ -1535,7 +1535,7 @@ export function MandateDetailView({
       </div>
 
       {/* "Bindings", not "overrides" — in this system, "overrides" means the
-          config_overrides list sent to the API on a run. A slot_binding row is
+          config_overrides list sent to the API on a run. A mandate_binding row is
           a per-user/per-org replacement (different agent and/or settings). */}
       <Section
         title={

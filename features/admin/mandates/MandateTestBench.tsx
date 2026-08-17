@@ -109,7 +109,7 @@ function benchOverridesId(draftId: string): string {
 
 const SELECTION_LABEL: Record<CandidateSelection, string> = {
   current: "Current setup (what users get now)",
-  mandate_pinned: "Pinned version",
+  slot_pinned: "Pinned version",
   latest: "Latest version",
   agent: "Different system agent",
   version: "Specific saved version",
@@ -135,7 +135,7 @@ function candidateLabel(draft: CandidateDraft): string {
   switch (draft.selection) {
     case "current":
       return "Current setup";
-    case "mandate_pinned":
+    case "slot_pinned":
       return "Pinned version";
     case "latest":
       return "Latest version";
@@ -428,7 +428,7 @@ function CandidateEditor({
                   key={selection}
                   value={selection}
                   disabled={
-                    selection === "mandate_pinned" &&
+                    selection === "slot_pinned" &&
                     !mandate.default_agent_version_id
                   }
                 >
@@ -629,7 +629,7 @@ export function MandateTestBench({
       toast.error(`${label}: choose a saved version.`);
       return null;
     }
-    if (draft.selection === "mandate_pinned" && !mandate.default_agent_version_id) {
+    if (draft.selection === "slot_pinned" && !mandate.default_agent_version_id) {
       toast.error(`${label}: this mandate is not pinned to a version.`);
       return null;
     }
@@ -664,7 +664,7 @@ export function MandateTestBench({
     }
     setRunning(true);
     try {
-      const response = await runMandateTests(dispatch, mandate.slot_key, {
+      const response = await runMandateTests(dispatch, mandate.mandate_key, {
         baseline: {
           candidate_id: "baseline",
           label: baselineLabel,

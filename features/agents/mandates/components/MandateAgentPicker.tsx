@@ -42,7 +42,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { AgentListInlinePicker } from "@/features/agents/components/agent-listings/AgentListInlinePicker";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import type { ContextSlot } from "@/features/agents/types/agent-api-types";
+import type { ContextPolicy } from "@/features/agents/types/agent-api-types";
 import {
   fetchMandatePickerData,
   parseMandateContract,
@@ -65,11 +65,11 @@ export interface MandateAgentPickerOverrideControl {
 }
 
 /** A live full-declaration comparison source (a system agent's declared
- * variables + context slots) for the pre-flight, in place of the mandate's
+ * variables + context policies) for the pre-flight, in place of the mandate's
  * STORED contract. Same shape `selectAgentExecutionPayload` returns. */
 export interface MandateContractSource {
   variableDefinitions: VariableDefinition[] | null;
-  contextSlots: ContextSlot[];
+  contextPolicies: ContextPolicy[];
 }
 
 export function MandateAgentPicker({
@@ -177,17 +177,17 @@ export function MandateAgentPicker({
       const check = contractSource
         ? compareContracts(contractSource, {
             variableDefinitions: payload.variableDefinitions,
-            contextSlots: payload.contextSlots ?? [],
+            contextPolicies: payload.contextPolicies ?? [],
           })
         : compareStoredContract(parseMandateContract(data.mandate.contract), {
             variableNames: (payload.variableDefinitions ?? []).map((v) => v.name),
-            contextSlotKeys: (payload.contextSlots ?? []).map((s) => s.key),
+            contextPolicyKeys: (payload.contextPolicies ?? []).map((s) => s.key),
           });
       if (!check.passing) {
         setPreflight(
           `That agent can't run this step — missing: ${[
             ...check.missingVariables,
-            ...check.missingSlots,
+            ...check.missingPolicies,
           ]
             .map((r) => r.name)
             .join(", ")}`,

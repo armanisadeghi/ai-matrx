@@ -80,7 +80,7 @@ export interface MandateRow {
   /** The mandate's REAL inputs — the contract's required variables. Every run
    * can also carry free user text on top of these. */
   requiredVariables: string[];
-  requiredContextSlots: string[];
+  requiredContextPolicyKeys: string[];
   /** The mandate's output promise beyond a registered kind — the structured
    * keys any bound agent must produce. */
   requiredOutputKeys: string[];
@@ -176,12 +176,12 @@ export function buildRow(
   // columns (which are null for most mandates and were reporting "—"/"text"
   // while the contract declared five required variables).
   const contract = parseMandateContract(mandate.contract);
-  const mandateKeyParts = splitMandateKey(mandate.slot_key);
+  const mandateKeyParts = splitMandateKey(mandate.mandate_key);
 
   return {
     mandate,
     id: mandate.id,
-    mandateKey: mandate.slot_key,
+    mandateKey: mandate.mandate_key,
     feature: mandateKeyParts.feature,
     mandateName: mandateKeyParts.mandate,
     label: mandate.label,
@@ -197,7 +197,7 @@ export function buildRow(
     inputKind: mandate.input_kind ?? "—",
     outputKind: mandate.output_kind ?? "text",
     requiredVariables: contract.requiredVariables,
-    requiredContextSlots: contract.requiredContextSlots,
+    requiredContextPolicyKeys: contract.requiredContextPolicyKeys,
     requiredOutputKeys: contract.requiredOutputKeys,
     inputSummary:
       contract.requiredVariables.length > 0

@@ -95,14 +95,14 @@ export function RebindToTwinButton({
         variant="outline"
         className="h-6 gap-1 px-1.5 text-[11px]"
         disabled={busy}
-        title={`Rebind ${mandate.slot_key} to the system agent "${twin.name}" (tracks latest)`}
+        title={`Rebind ${mandate.mandate_key} to the system agent "${twin.name}" (tracks latest)`}
         onClick={(e) => {
           e.stopPropagation();
           void requestRebind({
             agentId: twin.id,
             agentName: twin.name,
             useLatest: true,
-            successMessage: `${mandate.slot_key} rebound to ${twin.name} (latest).`,
+            successMessage: `${mandate.mandate_key} rebound to ${twin.name} (latest).`,
           });
         }}
       >
@@ -141,8 +141,8 @@ export function LinkedSyncButton({
         openConvertSystem({
           agentId,
           mandateId: mandate?.id,
-          mandateKey: mandate?.slot_key,
-          mandateLabel: mandate?.label ?? mandate?.slot_key,
+          mandateKey: mandate?.mandate_key,
+          mandateLabel: mandate?.label ?? mandate?.mandate_key,
         });
       }}
     >
@@ -178,7 +178,7 @@ export function CreateSystemTwinButton({
       variant="outline"
       className="h-6 gap-1 px-1.5 text-[11px]"
       disabled={busy}
-      title={`Duplicate ${agentName ?? "the pinned agent"} as a system agent and rebind ${mandate.slot_key} to the new twin (tracks latest)`}
+      title={`Duplicate ${agentName ?? "the pinned agent"} as a system agent and rebind ${mandate.mandate_key} to the new twin (tracks latest)`}
       onClick={async (e) => {
         e.stopPropagation();
         setBusy(true);
@@ -193,7 +193,7 @@ export function CreateSystemTwinButton({
             use_latest: true,
           });
           toast.success(
-            `Created a system twin and rebound ${mandate.slot_key} to it (latest).`,
+            `Created a system twin and rebound ${mandate.mandate_key} to it (latest).`,
             {
               action: toastDoor("agent", twinId, {
                 href: agentHref(twinId, "builtin"),

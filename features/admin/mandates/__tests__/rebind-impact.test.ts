@@ -181,6 +181,6 @@ describe("buildRebindFixBrief", () => {
     expect(brief).toContain("DeepResearchAgent");
     expect(brief).toContain("/srv/aidream/podcast_generator.py:188");
     expect(brief).toContain("Bound agent declares: none");
-    expect(brief).toContain("passes user_input: no");
+    expect(brief).toContain("This Mandate accepts user text: no");
   });
 });

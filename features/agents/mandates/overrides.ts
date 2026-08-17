@@ -13,7 +13,7 @@
  * to rows the caller can see). WRITES go through the ONE bind path — aidream
  * PUT/DELETE /agent-slots/{slot_key}/binding — because binding is genuine
  * compute: the server contract-checks the candidate agent (required
- * variables/context slots + output_schema vs the mandate's required output
+ * variables/context policies + output_schema vs the mandate's required output
  * keys) at WRITE time and rejects with a 422 whose detail is shown to the
  * user VERBATIM. `compareStoredContract` (../contract-compare.ts) is the
  * instant client-side pre-flight (research's proven compareContracts
@@ -37,14 +37,14 @@ export type MandateBindingRow = Database["agent"]["Tables"]["mandate_binding"]["
  * bind time). */
 export interface MandateContract {
   requiredVariables: string[];
-  requiredContextSlots: string[];
+  requiredContextPolicyKeys: string[];
   requiredOutputKeys: string[];
 }
 
 export function parseMandateContract(contract: Json): MandateContract {
   const out: MandateContract = {
     requiredVariables: [],
-    requiredContextSlots: [],
+    requiredContextPolicyKeys: [],
     requiredOutputKeys: [],
   };
   if (!isJsonObject(contract)) return out;
@@ -54,7 +54,7 @@ export function parseMandateContract(contract: Json): MandateContract {
   }
   const slots = contract.required_context_slots;
   if (Array.isArray(slots)) {
-    out.requiredContextSlots = slots.filter((v): v is string => typeof v === "string");
+    out.requiredContextPolicyKeys = slots.filter((v): v is string => typeof v === "string");
   }
   const outputKeys = contract.required_output_keys;
   if (Array.isArray(outputKeys)) {
