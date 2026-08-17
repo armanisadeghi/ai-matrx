@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26",
-  "state": "fixing",
-  "updatedAt": "2026-08-17T19:29:55.525Z",
-  "summary": "Replaced eight verified generic loading states across seven files with contextual canonical loaders.",
+  "state": "certified",
+  "updatedAt": "2026-08-17T19:42:15.772Z",
+  "summary": "CERTIFIED: exact candidate d82ac5e38 passes all batch-delta and representative rendering checks.",
   "source": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26.json",
-  "eventHash": "67e93d05b61fba7f67f9b8ac2974a0f3f9e5da701743999344172db66076a82d"
+  "eventHash": "af135086ee27e7d3f1d9dc220035af4c2eb8239eea3526d767006efa7c4c7020"
 }
