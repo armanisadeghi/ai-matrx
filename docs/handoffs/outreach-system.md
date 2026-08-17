@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-15
+updated: 2026-08-16
 repos: [matrx-frontend, aidream]
 ---
 
@@ -19,32 +19,42 @@ This document is the work order. Arman named backlink outreach and media outreac
 things to build (2026-08-14), and building them honestly forced out a set of canonical primitives
 the platform was missing and did not know it was missing.
 
-> ## Status 2026-08-15 — phases 1–3 are live; phase 4 is implemented and awaiting production proof
+> ## Status 2026-08-16 — G1–G9 ARE ALL BUILT AND LIVE-PROVEN. What remains is HUMAN, not engineering.
 >
-> **Shipped and live:** domain→party (G1, both halves — the frontend fold button + mode control
-> landed 2026-08-15) · **the outreach doors (G9)** — "Start outreach" from a reputation case and
-> a backlink prospect into the existing `/crm/outreach-lists` workspace, with every reputation
-> verdict wired to the action it implies · crawl-backed contact discovery (G2) · **the sending identity** (G5 — DNS proof, SPF/DKIM/
-> DMARC, warm-up ramp, health, circuit breaker, kill switch) · **the compliance layer**
-> (`crm.check_send_eligibility()` as THE one send authority, unsubscribe proven on production,
-> 35-country jurisdiction policy) · tiers + entitlements · the guided-checklist primitive · and
-> every research pass (deliverability/warmup, media-data acquisition, the attorney brief).
+> **Every gap G1 through G9 is closed in code**, each proven against the live database rather than
+> asserted: domain→party (G1) · crawl-backed contact discovery (G2) · templates + personalization
+> (G3) · **the cadence runner (G4)** with stop-on-reply in three independent layers · the sending
+> identity (G5) · **inbound replies/bounces/classification (G6)** · the compliance floor (G7,
+> `crm.check_send_eligibility()` as THE one send authority — now also owning the blocklist and
+> `party.do_not_contact`) · **outcome attribution (G8), closed end to end** — WP4's pass credits the
+> win in `platform.outcome_event` and WP1's sync completes the campaign member behind it 15 minutes
+> later · **the surfaces (G9)** incl. the unified inbox, the Chasebox draft-triage surface, and every
+> reputation verdict wired to the action it implies. Around that spine the wider program shipped five
+> prospecting methods, the enrichment waterfall, journalist intelligence, coverage monitoring,
+> AI-visibility panels, campaign analytics, and an agent on every declared role.
 >
-> **Phase 4 code now exists:** strict record-bound templates plus one human-reviewed Lane B send
-> recorded in `crm.interaction`. It is not complete until the gated aidream integration deploys
-> and a real received message proves the path. Sequences, provider reply ingestion, attribution,
-> and broad "Start outreach" doors remain open.
+> **Nothing in this system is waiting on an engineer. It is waiting on five human actions**, and all
+> of them are guided by the `outreach.production_bring_up` checklist on **`/crm/sending-identities`**
+> (it machine-checks what it can and hands over exact copy-paste values for the rest):
 >
-> **The current production blocker is concrete:** the real `info@aimatrx.com` identity
-> (`3489a446-1356-4dae-824f-90c65267732f`) correctly refuses sending because the
-> `_matrx-verify.aimatrx.com` TXT proof is not published; authentication and warmup cannot begin.
-> It is also a shared-role sender (`info@`), which `crm.check_send_eligibility()` permanently
-> refuses for Lane B even after setup. The first real send therefore needs a connected **named
-> human mailbox**, its generated TXT proof, passing SPF/DKIM/DMARC, and the earned 28-day warmup.
-> Arman must connect that named mailbox and publish its generated TXT record
-> (an agent may not touch a production DNS zone), and take `ATTORNEY_BRIEF.md` to counsel — every
-> jurisdiction row is `ratified_by='agent-research'`, and each row counsel ratifies is a market
-> that opens.
+> 1. **Connect a NAMED human mailbox and publish its generated `_matrx-verify` TXT record.** This is
+>    the one that starts the 28-day warmup clock, so every day of delay moves the first real send.
+>    `info@aimatrx.com` can never be it — a shared-role sender is permanently refused for Lane B, by
+>    design. An agent may not touch a production DNS zone.
+> 2. **Create the Pub/Sub topic + subscription** and set `GMAIL_INBOUND_PUBSUB_TOPIC` +
+>    `OUTREACH_INBOUND_PUSH_TOKEN` on every server.
+> 3. **Accept the sending rules** for the AI Matrx org (`AcceptSendingRulesDialog` on that page) —
+>    until then every send returns `aup_not_accepted`.
+> 4. **Buy the two vendor accounts** — Hunter Starter $34/mo (approved 2026-08-14, never bought) plus
+>    ~$15 of MillionVerifier credit. Without MillionVerifier a newly found contact can never be sent
+>    to at all: the send authority refuses it as `address_unverified`. Register: `common-docs/projects/outreach-system/VENDOR-ACCOUNTS.md`.
+> 5. **`gmail.readonly`** — RULED 2026-08-15: it lands after the current Google verification round
+>    closes, as its own campaign (queued in `common-docs/projects/google-oauth-verification/PLAN.md`).
+>    Until it does, the cadence **refuses to run un-listened** rather than sending blind. That is the
+>    designed failure, not a defect.
+>
+> Separately, and not blocking the send path: take `ATTORNEY_BRIEF.md` to counsel — every jurisdiction
+> row is `ratified_by='agent-research'`, and each row counsel ratifies is a market that opens.
 
 > **Read `docs/handoffs/crm-system.md` first.** Outreach is not a new domain — it is the CRM's
 > reason to exist, pointed at two specific opportunity sources. Every target is a `crm.party`.
@@ -875,39 +885,36 @@ Phases 1–4 are independently valuable and shippable. **Nothing before Phase 5 
 human did not approve** — the correct risk posture for a system whose failure mode is "we helped
 a customer spam strangers from their real mailbox."
 
-## What is actually open, 2026-08-15
+## What is actually open, 2026-08-16
 
-1. **Phase 4 — the message + the first real send.** *(chip fired)* The template primitive
-   (unresolved variable = refuse to send) plus the human-approved single-send path through
-   `check_send_eligibility()`. **The next move, fully unblocked** — everything it needs is live.
-   Design the approval requirement as a §5.5b ladder input, never a hardcoded constant.
-2. **Compliance engineering gaps.** *(chip fired)* MX verification, DKIM-signed unsubscribe
-   headers, reply-based opt-out, purchased-list detection — named in
-   `common-docs/systems/outreach-compliance/ENGINEERING_GAPS.md` § "Still open". FLOOR items:
-   no tier and no trust level buys past them.
-3. ~~Phase 5 — sequences + inbound~~ ✅ **BUILT 2026-08-15 (WP1), together.** Remaining is a
-   HUMAN gate, not engineering: **`gmail.readonly` — RULED 2026-08-15, added after the current
-   Google verification round closes as its own campaign** (queued in
-   `common-docs/projects/google-oauth-verification/PLAN.md`); the Pub/Sub topic + subscription;
-   the two env vars; and the AUP acceptance. **All of these are now ONE guided flow:** the
-   `outreach.production_bring_up` checklist on `/crm/sending-identities` (2026-08-15) machine-checks
-   what it can (server env config, vault-key presence, acceptance row, gmail.readonly state) and
-   hands over exact copy-paste values for the rest; `AcceptSendingRulesDialog` there is the first
-   and only AUP-accept UI. Until the scope lands the cadence refuses to run un-listened.
-4. ~~Phase 6 — attribution (G8)~~ ✅ **BUILT 2026-08-16 and CLOSED END-TO-END.** WP4's pass
-   credits the win (`platform.outcome_event`; attribution PROPOSES, a human CONFIRMS, and the ONE
-   human path is `platform.decide_outcome_event`); WP1's `outreach_outcomes` sync then COMPLETES
-   the campaign member behind every confirmed win 15 minutes later, so the roster shows what the
-   campaign actually achieved and the chip opens the evidence. The loop the whole feature exists
-   for now runs end to end with **no flag and nothing to activate** — the first production send is
-   matched on the next nightly pass.
-5. ~~Phase 7 — surfaces (G9)~~ ✅ **BUILT 2026-08-15 (WP1).** The reputation verdict now carries
-   the action it implies; the same door exists on backlink prospects; the Phase-1 fold trigger,
-   provenance on the party record, the unified inbox and the Chasebox all landed. **One piece
-   remains:** the competitor link-gap prospect list still has no "Start outreach" button (the
-   `link_gap` fold producer and the provenance renderer already handle it).
-6. **Scaled media ingestion** — the research and first crawl landed; volume ingestion did not.
-7. **Lane A, entire** (below). Committed vision, deliberately sequenced after Lane B.
+**Engineering on the G1–G9 spine is DONE.** Everything below is either a human action, a
+deliberately deferred item, or a spun-off session with its own brief. Nothing here blocks anything
+else here.
+
+1. **The five human gates** — see the status block above. All guided by
+   `/crm/sending-identities`. Gate 1 (named mailbox + TXT) is the critical path: it starts the
+   28-day warmup clock.
+2. **Scaled open-registry media ingestion** — the one remaining WP3 build, deliberately spun off
+   rather than half-built (chip `task_b58614bd`): source/licence ledger → Wikidata slices → the
+   DOAJ/Crossref/OpenAlex/ORCID spine → a candidate-review queue. Allowlisted, candidate-only,
+   resumable. Nothing blocks it.
+3. **The link-gap "Start outreach" door** — the last prospecting surface without one, deliberately
+   unbuilt because `seo.link_gap_domain` is 0 rows until Arman confirms competitors per site. A
+   door onto an empty room is worse than no door. The fold producer and provenance renderer already
+   handle it; build it the day competitors are confirmed. SERP, broken-link, imported and captured
+   prospects all have their doors today.
+4. **Compliance engineering gaps** that remain FLOOR items — `common-docs/systems/outreach-compliance/ENGINEERING_GAPS.md`
+   § "Still open" (G2 anti-harvesting notice, prohibited-content classification). No tier and no
+   trust level buys past them.
+5. **A first real `platform.assists` producer** for the two outreach surface strips — the strips are
+   registered and mounted, the producers are declared but unwritten.
+6. **Reply-triage end-to-end** proves itself only when a real inbound reply exists (gate 1 + 2 + 5).
+   The surface, the classifier, the agent and the queue are all built and unit-proven.
+7. **Deferred by decision, not forgotten** — the full list lives in
+   `common-docs/projects/outreach-system/FOLLOW_UPS.md` (M365/SMTP providers, broken-link re-check
+   cadence, exports + the Looker connector, provisional score weights awaiting human rulings,
+   print/broadcast + social + podcast monitoring, BYO-key passthrough).
+8. **Lane A, entire** (below). Committed vision, deliberately sequenced after Lane B.
 
 ## Lane A (opt-in marketing) — a separate, later track. DO NOT LOSE IT.
 
