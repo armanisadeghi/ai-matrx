@@ -31,7 +31,7 @@ defect as a spinner**.
 | **A** | Spinner-only, stream handle already available (`requestId` / `conversationId` / ignored `onEvent`) | **31 surfaces** (Transcript Studio's 4 fixed 2026-08-11) |
 | **B** | Spinner-only, no stream handle yet — needs `adoptForeignStream` or a `useRunAgent`→`useLiveAgentRun` migration first | **5** |
 | **C** | Page-shifting live-run block (live output above the page's own content) | **0 — all 3 fixed 2026-08-11** |
-| **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A; 10 done — §1, §8) — **2 left, both expertise, blocked on a server-side run ledger (§8)** |
+| **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **0 — all 12 done** (§1, §8; the last two, both expertise, closed 2026-08-17 once `platform.expertise_run` gave them something to rejoin by) |
 | **E** | Needs a content-IR kind before it can stream well — **title options, the SEO package, and the slide deck all shipped 2026-08-11**; only podcast chapters remain | **1** |
 
 Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L** ≈ a day+.
@@ -392,16 +392,24 @@ run. Guard tests: `request-viewer-retention.test.ts`, `run-sets.test.ts`.
   correct; only the finished frame is lost, and every adopted-stream surface has
   it. Chipped, with an exact repro in FOUND_DEFECTS.md.
 
-### 8. Refresh-fragility — four SEO surfaces DONE 2026-08-17; expertise blocked server-side
+### 8. Refresh-fragility — CLOSED 2026-08-17 (four SEO surfaces + both expertise dialogs)
 
-**The four SEO surfaces are done.** `features/marketing/seo/durable-run/useSeoCommandRun.ts`
-is the client half of a durability that already existed server-side and was
-simply never consumed: every SEO command claims a `seo.collection_run` row
-BEFORE its first paid/AI call, announces the id as `seo.command_run`, and runs
-under `detach_on_disconnect=True` — so the work never stopped, only delivery
-did. The hook remembers that id, rejoins on load, and settles from server
-truth. It also KEEPS a finished run's receipt, because losing the answer to a
-refresh is the same defect as losing the run.
+**One primitive now serves both domains: `lib/durable-run/useDurableRun.ts`.**
+`useSeoCommandRun` and `features/expertise/durable-run/useExpertiseRun.ts` are
+thin faces over it that carry only their domain's wire vocabulary. A third
+domain adds a `DurableRunWire`, never a third hook — a second copy of this
+machinery would be the second durability mechanism the whole design exists to
+prevent. Its server twin is the same story: the replay channel moved out of
+`services/seo/command_runs.py` into `aidream/services/durable_runs.py`, and both
+domains subscribe to it.
+
+**The four SEO surfaces are done.** They consumed a durability that already
+existed server-side and was simply never used: every SEO command claims a
+`seo.collection_run` row BEFORE its first paid/AI call, announces the id as
+`seo.command_run`, and runs under `detach_on_disconnect=True` — so the work
+never stopped, only delivery did. The hook remembers that id, rejoins on load,
+and settles from server truth. It also KEEPS a finished run's receipt, because
+losing the answer to a refresh is the same defect as losing the run.
 
 - `usePageAnalyzer.ts` → `PageWorkspace.tsx` / `cards/PageAnalyzerCard.tsx`
   (the card says a rejoined analysis kept running while the page was away).
@@ -422,17 +430,32 @@ score came back from the durable row. *Not* verified with a live run: the page
 analyzer (its card needs a page with an accepted snapshot) — it consumes the
 identical primitive.
 
-**Still open — the two expertise dialogs** (`CompileDeskDialog.tsx`,
-`IngestSourceDialog.tsx`). Their work is safe (the streams detach), but
-**`/expertise-desks/{compile,ingest,ingest-file}` claim no durable run row** —
-there is no `seo.collection_run` / `transcripts.studio_runs` equivalent, so
-there is nothing to remember or rejoin by, and a client-side substitute would
-be a second parallel durability mechanism. Closing it needs an expertise-domain
-run ledger in aidream (claim before the first AI call, persist terminal
-status/result, add a rejoin route) and then the same client hook. Chipped
-2026-08-17. Interim: both dialogs state that the work continues on the server
-and where the result lands, so a reload costs a lost view, never a duplicate
-paid run. See `features/expertise/FEATURE.md`.
+**The two expertise dialogs are done** (`CompileDeskDialog.tsx`,
+`IngestSourceDialog.tsx`). They were blocked because the expertise pipelines
+claimed NO durable run row — nothing to remember or rejoin by. That ledger now
+exists: **`platform.expertise_run`**, a COMPONENT of its pack (access IS the
+pack's access, so no `created_by` in any policy), claimed before the first AI
+call, heartbeating, persisting terminal status/error/result;
+`aidream/services/expertise_runs.py` owns it and
+`POST /expertise-desks/runs/{run_id}/rejoin` serves it. The run id is the first
+stream event (`expertise_run`); a rejoin either replays the live channel or
+emits one `expertise_run_snapshot`. The interim "don't start it again" copy is
+gone from both dialogs — they can genuinely rejoin now, and a dialog whose run
+is still going **reopens itself** after a reload rather than rejoining behind a
+closed dialog. See `features/expertise/FEATURE.md`.
+
+A pipeline wraps its emitter rather than threading a run object through every
+send site — `compile.py` alone emits progress from a dozen helpers, and a
+mechanical rewrite of all of them would have been the risky half of this change.
+
+**Live-verified** against a real local aidream + the live DB, not mocks: started
+an ingest on `/expertise/[id]`, hard-reloaded mid-run, watched the dialog reopen
+itself and report "Picking this back up — it kept reading while you were away",
+then settle on the true outcome ("15 suggested rules added as drafts") matching
+the durable row. Also verified: a finished run's answer restored after a reload,
+a disconnect-then-rejoin over raw HTTP (live replay AND durable snapshot), a
+crashed run persisted as `failed` with its error, 401 without auth, 404 for an
+unreadable run.
 
 ### 9. Guard
 

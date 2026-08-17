@@ -49,6 +49,14 @@
 
 ## Data
 
+- **Runs — `platform.expertise_run` (2026-08-17).** Every long pipeline (compile · ingest ·
+  ingest-file · backtest) claims a row here BEFORE its first AI call, heartbeats every 60s, and
+  persists its terminal status + error + result. It is a **COMPONENT of its pack** — access IS
+  the pack's access, so `created_by` is an audit stamp and appears in no policy (THE COMPONENT
+  OWNERSHIP LAW), and `is_versioned` is false so a heartbeat never writes a history row. The
+  browser stores only the run id and rejoins by it; **never** re-derive a run's state client-side.
+  Server: aidream `services/expertise_runs.py` (+ the shared replay channel `services/durable_runs.py`,
+  which `seo.collection_run` uses too) · `POST /expertise-desks/runs/{run_id}/rejoin`.
 - **Table:** `platform.expertise_pack` (Matrx Main). JSONB columns get their app shapes in ONE place:
   [`types.ts`](./types.ts) (`PackPrinciple`, `PackSections`, `PackSource`). Never re-declare beside a consumer.
 - **Rules (`principles` JSONB array):** `{id, name, section, statement, rationale?, quote?, detection?,
@@ -80,6 +88,10 @@
   no per-feature RPC yet at this population; upgrade to `exp_list_scoped` RPCs when packs are many),
   `columns.tsx`, `listConfig.tsx`, `useExpertiseRowActions.tsx`, `components/ExpertiseBrowsePage.tsx`,
   `components/NewPackDialog.tsx`.
+- `durable-run/useExpertiseRun.ts` — the ONE way a dialog here runs something long. A face over
+  `lib/durable-run/useDurableRun.ts` (shared with SEO): remembers the run id, rejoins on load,
+  settles from server truth, keeps a finished answer across a refresh. Both ingest lanes share one
+  run (one dialog, one answer, one pointer). Never fork it — add a `DurableRunWire` instead.
 - `components/detail/PackDetailPage.tsx` + `RuleEditorDialog.tsx` — the expert surface. Plain language
   only: "rules", "how to spot a violation", "how bad is breaking it". Zero jargon is a requirement,
   not a style choice (THE MISMATCH RULE).
@@ -140,17 +152,17 @@
   Browser-verified against a desk built from v3 of a live pack: with only drafts added it reported
   "nothing this desk enforces has changed" plus the pending-draft count; after one real rule edit it
   reported "1 rule reworded" with the before/after text.
-- 2026-08-17 — **Refresh-fragility, half-closed and half NAMED (THE FLOATING LAW's durable half).**
-  `CompileDeskDialog` and `IngestSourceDialog` hold their run in an in-tab `await`; the work
-  itself is safe (aidream's `create_streaming_response` runs `detach_on_disconnect=True`, so a
-  compile finishes and ingest drafts still land on the pack when the tab goes away), but this
-  page cannot REJOIN it. **The blocker is real and server-side: the expertise pipelines claim no
-  durable run row** — nothing analogous to `seo.collection_run` (`SeoCommandRun` +
-  `POST /seo/public/runs/{id}/rejoin`) or `transcripts.studio_runs` exists for
-  `/expertise-desks/{compile,ingest,ingest-file}`, so there is no id to remember and nothing to
-  rejoin by. Closing that needs an expertise-domain run ledger in aidream (row claimed before the
-  first AI call, terminal status + result persisted, a rejoin route) — a focused cross-repo job,
-  not a client fix, and inventing a client-side substitute would be a second parallel durability
-  mechanism (forbidden). Until then both dialogs state the truth while running — the work
-  continues on the server, the result lands on the pack, do not start it again — so a reload costs
-  a lost view, never a duplicate paid run. Tracked in `docs/handoffs/live-run-streaming-sweep.md` §8.
+- 2026-08-17 — **Refresh-fragility CLOSED (THE FLOATING LAW's durable half).** Both dialogs now
+  survive a reload. The blocker was server-side and real — the expertise pipelines claimed no
+  durable run row, so there was no id to remember and nothing to rejoin by, and a client-side
+  substitute would have been a second parallel durability mechanism (forbidden). aidream now owns
+  `platform.expertise_run` (`services/expertise_runs.py`): a row claimed before the first AI call,
+  a 60s heartbeat, terminal status/error/result persisted, the id announced as the first stream
+  event, and `POST /expertise-desks/runs/{run_id}/rejoin` replaying the live channel or emitting
+  one durable snapshot. The client half is `durable-run/useExpertiseRun.ts`, a face over the shared
+  `lib/durable-run/useDurableRun.ts` that `useSeoCommandRun` also sits on — never a third copy.
+  A dialog whose run is still going REOPENS ITSELF after a reload (rejoining behind a closed
+  dialog is the same defect as losing the run), and a finished run's answer is restored from the
+  row. The interim "don't start it again" copy is deleted. Live-verified against a real server and
+  the live DB: reload mid-ingest → the dialog reopens, says it kept reading while you were away,
+  and settles on the true outcome; a crashed compile persisted as `failed` with its error.
