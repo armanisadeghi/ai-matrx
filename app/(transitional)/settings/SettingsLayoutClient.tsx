@@ -156,8 +156,8 @@ const settingsNavItems: SettingsNavItem[] = [
     IconComp: UserCheck,
   },
   {
-    title: "Secrets",
-    href: "/settings/secrets",
+    title: "Vault",
+    href: "/vault",
     icon: <KeyRound className="h-3.5 w-3.5" />,
     IconComp: KeyRound,
   },

@@ -9,10 +9,9 @@ import { VaultPage } from "@/features/secrets/components/VaultPage";
  * /vault — Vault, the canonical home for everything the platform signs in
  * with: website logins, API keys, tokens, service accounts.
  *
- * The route the sidebar points at. `/settings/secrets` remains as the
- * settings-shaped entry to the same workspace; both render the ONE
- * `VaultWorkspace` (features/secrets/FEATURE.md) — there is no second
- * implementation.
+ * The route every navigation entry points at. `/settings/secrets` is a
+ * compatibility redirect for old bookmarks, so there is only ONE rendered
+ * Vault surface and no settings-shaped implementation to drift.
  */
 export default async function VaultRoute() {
   const { isAuthenticated } = await getServerAuth();

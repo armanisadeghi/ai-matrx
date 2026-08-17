@@ -22,7 +22,7 @@ Redux, storage, URLs, or logs.
 
 `components/VaultWorkspace.tsx` is the ONLY vault UI. It receives a `VaultPrincipal` (`{type:'user'}` or `{type:'organization', organizationId}`); which actions render is decided by each item's `capabilities` (`can_use` / `can_edit` / `can_reveal` / `can_manage`) — never by principal-specific component forks. Surfaces:
 
-- Personal: [`app/(transitional)/settings/secrets/page.tsx`](<../../app/(transitional)/settings/secrets/page.tsx>)
+- Personal: [`app/(core)/vault/page.tsx`](<../../app/(core)/vault/page.tsx>). The legacy `/settings/secrets` URL redirects here; it does not render a second settings-shaped Vault.
 - Organization: `OrgManage.tsx` (`features/organizations/components/`) renders `<VaultWorkspace principal={{type:'organization',…}} canManage={…}>` in its Vault section.
 
 The pre-unification duplicate stacks (`service.ts`, `hooks.ts`, `organization-service.ts`, `organization-hooks.ts`, `OrganizationVaultSection.tsx`) are **deleted** — do not recreate a per-principal fork.
@@ -146,8 +146,9 @@ Personal and organization credentials render through the same
 - `/vault` uses the familiar password-manager master/detail shape: a left
   navigation pane for scope and type, a compact middle credential list, and a
   persistent right detail pane. Mobile opens the same detail component in a
-  responsive Credenza. Embedded settings/window/org hosts keep the compact
-  presentation of the same workspace because they do not own a full viewport.
+  responsive Credenza. Embedded window/org hosts keep the compact presentation
+  of the same workspace because they do not own a full viewport. The former
+  settings host redirects to `/vault` instead of embedding the compact card grid.
 - A list row carries labeled identity only (credential name, credential type,
   and login URLs when applicable). Encrypted fields are shown in the detail
   pane, avoiding a card-grid wall of reveal controls.

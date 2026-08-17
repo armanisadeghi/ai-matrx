@@ -64,6 +64,16 @@ describe("shared vault UI contract", () => {
     expect(workspaceSource).toContain("VAULT_LABELS.credentialType");
   });
 
+  test("keeps the legacy settings URL on the canonical full Vault", () => {
+    const settingsEntrySource = readFileSync(
+      join(process.cwd(), "app/(transitional)/settings/secrets/page.tsx"),
+      "utf8",
+    );
+
+    expect(settingsEntrySource).toContain('redirect("/vault")');
+    expect(settingsEntrySource).not.toContain("VaultWorkspace");
+  });
+
   test("starts creation with the basic purposes, including protected files", () => {
     const createSource = readFileSync(
       join(process.cwd(), "features/secrets/components/VaultCreateDialog.tsx"),
