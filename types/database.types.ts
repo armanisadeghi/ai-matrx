@@ -396,6 +396,7 @@ export type Database = {
       definition: {
         Row: {
           agent_type: string
+          auto_context_disabled: boolean
           card_visibility: Database["platform"]["Enums"]["visibility"]
           category: string | null
           context_slots: Json
@@ -440,6 +441,7 @@ export type Database = {
         }
         Insert: {
           agent_type?: string
+          auto_context_disabled?: boolean
           card_visibility?: Database["platform"]["Enums"]["visibility"]
           category?: string | null
           context_slots?: Json
@@ -484,6 +486,7 @@ export type Database = {
         }
         Update: {
           agent_type?: string
+          auto_context_disabled?: boolean
           card_visibility?: Database["platform"]["Enums"]["visibility"]
           category?: string | null
           context_slots?: Json
@@ -547,6 +550,7 @@ export type Database = {
         Row: {
           agent_id: string
           agent_type: string | null
+          auto_context_disabled: boolean
           category: string | null
           change_note: string | null
           changed_at: string
@@ -584,6 +588,7 @@ export type Database = {
         Insert: {
           agent_id: string
           agent_type?: string | null
+          auto_context_disabled?: boolean
           category?: string | null
           change_note?: string | null
           changed_at?: string
@@ -621,6 +626,7 @@ export type Database = {
         Update: {
           agent_id?: string
           agent_type?: string | null
+          auto_context_disabled?: boolean
           category?: string | null
           change_note?: string | null
           changed_at?: string
@@ -770,6 +776,283 @@ export type Database = {
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mandate: {
+        Row: {
+          contract: Json
+          created_at: string
+          created_by: string | null
+          default_agent_id: string | null
+          default_agent_version_id: string | null
+          deleted_at: string | null
+          description: string | null
+          id: string
+          input_kind: string | null
+          is_enabled: boolean
+          label: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          output_kind: string | null
+          updated_at: string
+          updated_by: string | null
+          use_latest: boolean
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          contract?: Json
+          created_at?: string
+          created_by?: string | null
+          default_agent_id?: string | null
+          default_agent_version_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          input_kind?: string | null
+          is_enabled?: boolean
+          label: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          output_kind?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          use_latest?: boolean
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          contract?: Json
+          created_at?: string
+          created_by?: string | null
+          default_agent_id?: string | null
+          default_agent_version_id?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          id?: string
+          input_kind?: string | null
+          is_enabled?: boolean
+          label?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          output_kind?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          use_latest?: boolean
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mandate_default_agent_id_fkey"
+            columns: ["default_agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_default_agent_id_fkey"
+            columns: ["default_agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_default_agent_version_id_fkey"
+            columns: ["default_agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "definition_version"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mandate_binding: {
+        Row: {
+          agent_id: string | null
+          agent_version_id: string | null
+          config_overrides: Json | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_enabled: boolean
+          mandate_id: string
+          metadata: Json
+          organization_id: string
+          principal_type: string
+          subject_user_id: string | null
+          updated_at: string
+          updated_by: string | null
+          use_latest: boolean
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_version_id?: string | null
+          config_overrides?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          mandate_id: string
+          metadata?: Json
+          organization_id: string
+          principal_type: string
+          subject_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          use_latest?: boolean
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          agent_id?: string | null
+          agent_version_id?: string | null
+          config_overrides?: Json | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_enabled?: boolean
+          mandate_id?: string
+          metadata?: Json
+          organization_id?: string
+          principal_type?: string
+          subject_user_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          use_latest?: boolean
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mandate_binding_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_binding_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_binding_agent_version_id_fkey"
+            columns: ["agent_version_id"]
+            isOneToOne: false
+            referencedRelation: "definition_version"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_binding_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "mandate"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mandate_exemplar: {
+        Row: {
+          captured_agent_id: string | null
+          captured_model_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_active: boolean
+          label: string
+          mandate_id: string
+          metadata: Json
+          organization_id: string
+          position: number
+          reference_artifact: Json | null
+          reference_output: string | null
+          source: string
+          updated_at: string
+          updated_by: string | null
+          user_input: string | null
+          variables: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          captured_agent_id?: string | null
+          captured_model_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          mandate_id: string
+          metadata?: Json
+          organization_id: string
+          position?: number
+          reference_artifact?: Json | null
+          reference_output?: string | null
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          captured_agent_id?: string | null
+          captured_model_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          mandate_id?: string
+          metadata?: Json
+          organization_id?: string
+          position?: number
+          reference_artifact?: Json | null
+          reference_output?: string | null
+          source?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_input?: string | null
+          variables?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mandate_exemplar_captured_agent_id_fkey"
+            columns: ["captured_agent_id"]
+            isOneToOne: false
+            referencedRelation: "card"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_exemplar_captured_agent_id_fkey"
+            columns: ["captured_agent_id"]
+            isOneToOne: false
+            referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mandate_exemplar_mandate_id_fkey"
+            columns: ["mandate_id"]
+            isOneToOne: false
+            referencedRelation: "mandate"
             referencedColumns: ["id"]
           },
         ]
@@ -1034,285 +1317,9 @@ export type Database = {
           },
         ]
       }
-      slot_binding: {
-        Row: {
-          agent_id: string | null
-          agent_version_id: string | null
-          config_overrides: Json | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_enabled: boolean
-          metadata: Json
-          organization_id: string
-          principal_type: string
-          slot_id: string
-          subject_user_id: string | null
-          updated_at: string
-          updated_by: string | null
-          use_latest: boolean
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          agent_id?: string | null
-          agent_version_id?: string | null
-          config_overrides?: Json | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_enabled?: boolean
-          metadata?: Json
-          organization_id: string
-          principal_type: string
-          slot_id: string
-          subject_user_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          use_latest?: boolean
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          agent_id?: string | null
-          agent_version_id?: string | null
-          config_overrides?: Json | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_enabled?: boolean
-          metadata?: Json
-          organization_id?: string
-          principal_type?: string
-          slot_id?: string
-          subject_user_id?: string | null
-          updated_at?: string
-          updated_by?: string | null
-          use_latest?: boolean
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "slot_binding_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "card"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "slot_binding_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "slot_binding_agent_version_id_fkey"
-            columns: ["agent_version_id"]
-            isOneToOne: false
-            referencedRelation: "definition_version"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "slot_binding_slot_id_fkey"
-            columns: ["slot_id"]
-            isOneToOne: false
-            referencedRelation: "slot_definition"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      slot_definition: {
-        Row: {
-          contract: Json
-          created_at: string
-          created_by: string | null
-          default_agent_id: string | null
-          default_agent_version_id: string | null
-          deleted_at: string | null
-          description: string | null
-          id: string
-          input_kind: string | null
-          is_enabled: boolean
-          label: string
-          metadata: Json
-          organization_id: string
-          output_kind: string | null
-          slot_key: string
-          updated_at: string
-          updated_by: string | null
-          use_latest: boolean
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          contract?: Json
-          created_at?: string
-          created_by?: string | null
-          default_agent_id?: string | null
-          default_agent_version_id?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          input_kind?: string | null
-          is_enabled?: boolean
-          label: string
-          metadata?: Json
-          organization_id: string
-          output_kind?: string | null
-          slot_key: string
-          updated_at?: string
-          updated_by?: string | null
-          use_latest?: boolean
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          contract?: Json
-          created_at?: string
-          created_by?: string | null
-          default_agent_id?: string | null
-          default_agent_version_id?: string | null
-          deleted_at?: string | null
-          description?: string | null
-          id?: string
-          input_kind?: string | null
-          is_enabled?: boolean
-          label?: string
-          metadata?: Json
-          organization_id?: string
-          output_kind?: string | null
-          slot_key?: string
-          updated_at?: string
-          updated_by?: string | null
-          use_latest?: boolean
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "slot_definition_default_agent_id_fkey"
-            columns: ["default_agent_id"]
-            isOneToOne: false
-            referencedRelation: "card"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "slot_definition_default_agent_id_fkey"
-            columns: ["default_agent_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "slot_definition_default_agent_version_id_fkey"
-            columns: ["default_agent_version_id"]
-            isOneToOne: false
-            referencedRelation: "definition_version"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      slot_exemplar: {
-        Row: {
-          captured_agent_id: string | null
-          captured_model_id: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          id: string
-          is_active: boolean
-          label: string
-          metadata: Json
-          organization_id: string
-          position: number
-          reference_artifact: Json | null
-          reference_output: string | null
-          slot_id: string
-          source: string
-          updated_at: string
-          updated_by: string | null
-          user_input: string | null
-          variables: Json
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          captured_agent_id?: string | null
-          captured_model_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_active?: boolean
-          label: string
-          metadata?: Json
-          organization_id: string
-          position?: number
-          reference_artifact?: Json | null
-          reference_output?: string | null
-          slot_id: string
-          source?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_input?: string | null
-          variables?: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          captured_agent_id?: string | null
-          captured_model_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          id?: string
-          is_active?: boolean
-          label?: string
-          metadata?: Json
-          organization_id?: string
-          position?: number
-          reference_artifact?: Json | null
-          reference_output?: string | null
-          slot_id?: string
-          source?: string
-          updated_at?: string
-          updated_by?: string | null
-          user_input?: string | null
-          variables?: Json
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "slot_exemplar_captured_agent_id_fkey"
-            columns: ["captured_agent_id"]
-            isOneToOne: false
-            referencedRelation: "card"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "slot_exemplar_captured_agent_id_fkey"
-            columns: ["captured_agent_id"]
-            isOneToOne: false
-            referencedRelation: "definition"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "slot_exemplar_slot_id_fkey"
-            columns: ["slot_id"]
-            isOneToOne: false
-            referencedRelation: "slot_definition"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       template: {
         Row: {
+          auto_context_disabled: boolean
           category: string | null
           context_slots: Json
           created_at: string
@@ -1344,6 +1351,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          auto_context_disabled?: boolean
           category?: string | null
           context_slots?: Json
           created_at?: string
@@ -1375,6 +1383,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          auto_context_disabled?: boolean
           category?: string | null
           context_slots?: Json
           created_at?: string
@@ -9797,12 +9806,12 @@ export type Database = {
           p_definition_agent_id: string
           p_expires_at: string
           p_interaction_id: string
+          p_mandate_config_overrides?: Json
+          p_mandate_id: string
+          p_mandate_key: string
+          p_mandate_provenance: string
           p_reference_sha256: string
           p_session_id: string
-          p_slot_config_overrides?: Json
-          p_slot_id: string
-          p_slot_key: string
-          p_slot_provenance: string
           p_transport?: string
         }
         Returns: {
@@ -33244,7 +33253,6 @@ export type Database = {
       }
       judge_verdict: {
         Row: {
-          agent_slot: string | null
           agreed: boolean | null
           agreement_at: string | null
           authority_kind: string | null
@@ -33261,6 +33269,7 @@ export type Database = {
           invocation: Json
           judge_key: string
           judge_version: number
+          mandate: string | null
           metadata: Json
           mode: string
           model: string | null
@@ -33282,7 +33291,6 @@ export type Database = {
           version: number
         }
         Insert: {
-          agent_slot?: string | null
           agreed?: boolean | null
           agreement_at?: string | null
           authority_kind?: string | null
@@ -33299,6 +33307,7 @@ export type Database = {
           invocation?: Json
           judge_key: string
           judge_version?: number
+          mandate?: string | null
           metadata?: Json
           mode: string
           model?: string | null
@@ -33320,7 +33329,6 @@ export type Database = {
           version?: number
         }
         Update: {
-          agent_slot?: string | null
           agreed?: boolean | null
           agreement_at?: string | null
           authority_kind?: string | null
@@ -33337,6 +33345,7 @@ export type Database = {
           invocation?: Json
           judge_key?: string
           judge_version?: number
+          mandate?: string | null
           metadata?: Json
           mode?: string
           model?: string | null
@@ -38078,6 +38087,7 @@ export type Database = {
       agx_get_execution_full: {
         Args: { p_agent_id: string }
         Returns: {
+          auto_context_disabled: boolean
           context_slots: Json
           custom_tools: Json
           id: string
@@ -38091,6 +38101,7 @@ export type Database = {
       agx_get_execution_minimal: {
         Args: { p_agent_id: string }
         Returns: {
+          auto_context_disabled: boolean
           context_slots: Json
           id: string
           variable_definitions: Json
@@ -38316,6 +38327,7 @@ export type Database = {
         Args: { p_agent_id: string; p_version_number: number }
         Returns: {
           agent_type: string
+          auto_context_disabled: boolean
           category: string
           change_note: string
           changed_at: string
