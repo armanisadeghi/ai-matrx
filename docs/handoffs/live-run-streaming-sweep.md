@@ -31,7 +31,7 @@ defect as a spinner**.
 | **A** | Spinner-only, stream handle already available (`requestId` / `conversationId` / ignored `onEvent`) | **31 surfaces** (Transcript Studio's 4 fixed 2026-08-11) |
 | **B** | Spinner-only, no stream handle yet — needs `adoptForeignStream` or a `useRunAgent`→`useLiveAgentRun` migration first | **5** |
 | **C** | Page-shifting live-run block (live output above the page's own content) | **0 — all 3 fixed 2026-08-11** |
-| **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A; 6 done — §1) |
+| **D** | Dies on refresh — run held by an in-tab `await`, navigating away aborts it | **12** (11 overlap A; 10 done — §1, §8) — **2 left, both expertise, blocked on a server-side run ledger (§8)** |
 | **E** | Needs a content-IR kind before it can stream well — **title options, the SEO package, and the slide deck all shipped 2026-08-11**; only podcast chapters remain | **1** |
 
 Fix costs below: **S** ≈ 15 min (the two-line recipe), **M** ≈ 1–3 h, **L** ≈ a day+.
@@ -152,17 +152,17 @@ carry no agent-run import at all. That is the signature to search on next time.
   The real upgrade is an aidream change: emit the docproc clean pipeline as a
   stream (it already has the shape — `rag.stage.progress` / `page_clean`), then
   the scanner adopts it and the poll dies. Cross-repo, own session.
-- **A Transcript Studio pass that finishes while the page is away cannot be
-  APPLIED by the reattaching tab.** The reattach itself shipped (below), but a
-  studio pass's replace-window (`replaceFromTime` / `passIndex`, computed from
-  live state at launch) is never recorded on the run row, so the recovered text
-  can only be READ (the run window, its conversation) — not turned into a
-  cleaned/concept/module segment. The fix is one write, not a redesign: stamp
-  the window onto `studio_runs.metadata` at launch and let
-  `reattachStudioRun`'s `applyRecoveredOutput` replay it, exactly as the
-  cleanup pad already does with `metadata.target`. Until then the row settles
-  `failed` with a sentence saying so, which is honest but costs the user a
-  re-run.
+- ~~A Transcript Studio pass that finishes while the page is away cannot be
+  APPLIED~~ — **DONE 2026-08-17.** Every pass (cleaning, concept, module, and
+  Scribe's recording-aligned clean) now stamps its replace-window onto
+  `studio_runs.metadata.apply` at LAUNCH — the shape the cleanup pad already
+  used with `metadata.target` — and `redux/studioApplyWindow.ts` replays it
+  through the SAME persistence calls the live path makes (`applyCleanupRun` /
+  `insertConceptItems` / `insertModuleSegments` + their slice actions). No new
+  column (`studio_runs.metadata` is jsonb), no second recovery mechanism. A row
+  with no stamped window — a pre-2026-08-17 run, or a module no longer
+  registered — still settles `failed` with a sentence rather than inventing a
+  segment placed at a guessed time.
 
 ## Remaining work — ranked by pain × reach
 
@@ -382,17 +382,47 @@ run. Guard tests: `request-viewer-retention.test.ts`, `run-sets.test.ts`.
   emit phase/info milestones the way content_plan `_progress` does), then adopt with
   `adoptForeignStream`. Do NOT paper over it with invented client-side stages.
 
-### 8. Refresh-fragility only (stage narration is present) — D, M each
+### 8. Refresh-fragility — four SEO surfaces DONE 2026-08-17; expertise blocked server-side
 
-These narrate real stages, which the law permits, but the run is an in-tab
-`await` — navigate away and it is gone with nothing persisted.
+**The four SEO surfaces are done.** `features/marketing/seo/durable-run/useSeoCommandRun.ts`
+is the client half of a durability that already existed server-side and was
+simply never consumed: every SEO command claims a `seo.collection_run` row
+BEFORE its first paid/AI call, announces the id as `seo.command_run`, and runs
+under `detach_on_disconnect=True` — so the work never stopped, only delivery
+did. The hook remembers that id, rejoins on load, and settles from server
+truth. It also KEEPS a finished run's receipt, because losing the answer to a
+refresh is the same defect as losing the run.
 
-- `features/marketing/components/pages/usePageAnalyzer.ts:92` → `PageWorkspace.tsx`, `cards/PageAnalyzerCard.tsx` (`…/sites/[siteId]/pages`)
-- `features/expertise/components/detail/CompileDeskDialog.tsx:86`, `IngestSourceDialog.tsx:79`
-- `features/marketing/seo/public-tools/PageAuditTool.tsx:70` (`/seo/page-audit`, **anonymous traffic**), plus `RobotsTesterTool.tsx`, `StructuredDataValidatorTool.tsx`
+- `usePageAnalyzer.ts` → `PageWorkspace.tsx` / `cards/PageAnalyzerCard.tsx`
+  (the card says a rejoined analysis kept running while the page was away).
+- `PageAuditTool.tsx`, `RobotsTesterTool.tsx`, `StructuredDataValidatorTool.tsx`.
 
-Lowest priority: runs are short and the stage line means the user is not staring
-at nothing.
+🚨 **The anonymous half needed an aidream route and got one.** Measured against
+production: a guest CAN create a run (`/seo/public/*` is guest-or-above, and a
+guest is an ordinary fingerprint-minted `auth.users` row) but `POST
+/seo/collections/{run_id}/rejoin` answered it **401 `token_required`** — its
+router is mounted behind `require_authenticated`. Added `POST
+/seo/public/runs/{run_id}/rejoin` (aidream `api/routers/seo_public_tools.py`):
+the same `rejoin_stream`, the same `collection_run_readable` ownership check,
+guest-or-above gate. **Every consumer uses that one path, signed in or not** —
+ownership, not the gate, is what keeps a run private.
+
+**Live-verified** on `/seo/page-audit`: run an audit, reload, and the finished
+score came back from the durable row. *Not* verified with a live run: the page
+analyzer (its card needs a page with an accepted snapshot) — it consumes the
+identical primitive.
+
+**Still open — the two expertise dialogs** (`CompileDeskDialog.tsx`,
+`IngestSourceDialog.tsx`). Their work is safe (the streams detach), but
+**`/expertise-desks/{compile,ingest,ingest-file}` claim no durable run row** —
+there is no `seo.collection_run` / `transcripts.studio_runs` equivalent, so
+there is nothing to remember or rejoin by, and a client-side substitute would
+be a second parallel durability mechanism. Closing it needs an expertise-domain
+run ledger in aidream (claim before the first AI call, persist terminal
+status/result, add a rejoin route) and then the same client hook. Chipped
+2026-08-17. Interim: both dialogs state that the work continues on the server
+and where the result lands, so a reload costs a lost view, never a duplicate
+paid run. See `features/expertise/FEATURE.md`.
 
 ### 9. Guard
 
