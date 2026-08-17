@@ -280,7 +280,10 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
     <div
       className={cn(
         "relative w-full cursor-pointer group",
-        isPanel ? "h-full min-h-0 flex-1" : "h-56",
+        // Inline height scales with the viewport — a fixed 224px card wastes a
+        // laptop screen and crams long faces; larger screens get a taller card
+        // (and therefore larger readable faces) everywhere this renders.
+        isPanel ? "h-full min-h-0 flex-1" : "h-56 lg:h-72 2xl:h-80",
         !isPanel && "animate-in fade-in duration-300",
       )}
       style={{ perspective: "1000px" }}

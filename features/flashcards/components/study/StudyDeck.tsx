@@ -15,7 +15,14 @@
 
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -27,6 +34,7 @@ import {
   HelpCircle,
   Loader2,
   GraduationCap,
+  Expand,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,6 +64,12 @@ import { RefusalNotice } from "@/features/education/trust/components/RefusalNoti
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { FlashcardConfidenceRow } from "./FlashcardConfidenceRow";
 import { MatchingCardPlayer } from "./MatchingCardPlayer";
+import { CardAudioHelp } from "./CardAudioHelp";
+import {
+  DeckMasteryBar,
+  MasteryTierPill,
+} from "@/features/education/study/components/MasteryDisplay";
+
 import {
   asConfidence,
   confidenceToResult,
@@ -84,6 +98,15 @@ import {
 } from "@/features/education/tutor/lanes/learnerContext";
 import { AskTutorButton } from "@/features/education/tutor/components/AskTutorButton";
 import { MemoryAidButton } from "@/features/education/memory/components/MemoryAidButton";
+
+// One-at-a-time on user action — the enhance dialog (its agents, preview flow,
+// entitlement chrome) loads only when the learner actually asks to improve a
+// card (in-gate lazy, per the code-splitting rules).
+const EnhanceSetDialog = lazy(() =>
+  import("../set-detail/EnhanceSetDialog").then((m) => ({
+    default: m.EnhanceSetDialog,
+  })),
+);
 
 const FC_CARD_ITEM_TYPE = "fc_card";
 /** Below this many graded cards, an end-of-session AI review is more noise
@@ -151,6 +174,15 @@ export interface StudyDeckProps {
    * with zero per-surface code. Omit to skip the review lane entirely.
    */
   sessionId?: string | null;
+  /**
+   * The set the cards belong to. Enables the per-card "Improve this card"
+   * affordance (enrich / deepen via EnhanceSetDialog) — omit on cross-set
+   * drivers (due review, weak-area drill), where a single owning set doesn't
+   * exist and the affordance hides.
+   */
+  setId?: string | null;
+  /** Refetch after an enrich/deepen persisted, so new layers show this session. */
+  onCardsChanged?: () => void;
   /** Set false to hide the "Ask AI" affordance even when a help agent is configured. */
   enableTutor?: boolean;
   /**
@@ -204,6 +236,8 @@ export function StudyDeck(props: StudyDeckProps) {
     voiceTestForCard,
     masteryByCard = {},
     sessionId = null,
+    setId = null,
+    onCardsChanged,
     enableTutor = true,
     enableMemoryAids = true,
     enableConfidence = true,
@@ -252,6 +286,9 @@ export function StudyDeck(props: StudyDeckProps) {
   const currentKind = asCardKind(current?.card_kind);
   const [askOpen, setAskOpen] = useState(false);
   const [question, setQuestion] = useState("");
+  // "Improve this card" — the set-level enhance dialog scoped to the card in
+  // view. Only offered when the driver knows the owning set (setId).
+  const [enhanceOpen, setEnhanceOpen] = useState(false);
   // THE FLOATING LAW: the tutor's answer and the end-of-session review both
   // STREAM in the floating LiveRunWindow — the card the learner is studying
   // never moves, and neither run is ever a bare spinner. (microCoach stays
@@ -666,9 +703,17 @@ export function StudyDeck(props: StudyDeckProps) {
     <Shell>
       <div className="mb-4">
         <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-          <span className="inline-flex items-center gap-1">
-            <BookOpen className="h-3.5 w-3.5" />
-            Card {currentIndex + 1} / {cards.length}
+          <span className="inline-flex items-center gap-2">
+            <span className="inline-flex items-center gap-1">
+              <BookOpen className="h-3.5 w-3.5" />
+              Card {currentIndex + 1} / {cards.length}
+            </span>
+            {/* VISION §16 — the current card's real mastery standing (the
+                canonical 5-tier scale behind the 1–5 grades), not just a
+                binary checkmark. */}
+            {current && masteryByCard[current.id] !== undefined && (
+              <MasteryTierPill mastery={masteryByCard[current.id]} />
+            )}
           </span>
           <span className="inline-flex items-center gap-3">
             <span>
@@ -688,9 +733,18 @@ export function StudyDeck(props: StudyDeckProps) {
             style={{ width: `${positionPct}%` }}
           />
         </div>
+        {/* Deck mastery on the canonical tier scale — the same segmented bar
+            and colors as set detail, so what the grades DO is visible while
+            studying, not only afterward. Self-hides when no mastery loaded. */}
+        {Object.keys(masteryByCard).length > 0 && (
+          <DeckMasteryBar
+            masteries={cards.map((c) => masteryByCard[c.id])}
+            className="mt-2"
+          />
+        )}
       </div>
 
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-2xl lg:max-w-3xl xl:max-w-4xl">
         {currentKind === CARD_KIND.matching ? (
           // Matching variant — a tap-to-match mini-game that self-grades on
           // completion through the deck's canonical grade path (no flip, no
@@ -797,6 +851,28 @@ export function StudyDeck(props: StudyDeckProps) {
             </div>
           )}
 
+          {/* VISION §2/§4 — audio help is ALWAYS on the table: hear the card
+              (cached spoken front, generated on demand when missing) or talk
+              it through with the realtime voice tutor. Matching cards skip it
+              (no single question/answer to narrate). */}
+          {current && currentKind !== CARD_KIND.matching && (
+            <CardAudioHelp
+              key={`audio-${current.id}`}
+              cardId={current.id}
+              front={current.front}
+              back={current.back ?? ""}
+              topic={current.topic}
+              revealed={isFlipped}
+              spokenFrontFileId={
+                voiceTestForCard?.(current)?.spokenFrontFileId ??
+                current.details?.find(
+                  (d) => d.kind === "spoken_front" && d.audio_file_id,
+                )?.audio_file_id ??
+                null
+              }
+            />
+          )}
+
           {enableTutor && (
             <div className="flex flex-col gap-2">
               <AskAiPanel
@@ -832,12 +908,29 @@ export function StudyDeck(props: StudyDeckProps) {
               fires until tapped; skipped for matching cards (no single answer). */}
           {enableMemoryAids && current && currentKind !== CARD_KIND.matching && (
             <MemoryAidButton
+              key={`memory-${current.id}`}
               cardId={current.id}
               front={current.front}
               back={current.back ?? ""}
               topic={current.topic}
               existingDetails={current.details}
             />
+          )}
+
+          {/* VISION §1 — the per-item "make this deeper" moment: enrich /
+              deepen THIS card without leaving the session. Only when the
+              driver knows the owning set (cross-set drivers omit setId). */}
+          {setId && current && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="w-full gap-1.5 text-xs"
+              onClick={() => setEnhanceOpen(true)}
+            >
+              <Expand className="h-3.5 w-3.5" />
+              Improve this card
+            </Button>
           )}
         </div>
 
@@ -862,6 +955,22 @@ export function StudyDeck(props: StudyDeckProps) {
           ))}
         </div>
       </div>
+
+      {/* The canonical enhance flow (enrich layers / deepen into sub-cards),
+          scoped to the card in view — the SAME dialog set detail mounts, so
+          previews, entitlement metering, and pending-enhancement durability
+          are one implementation. Mounted only after the first open. */}
+      {setId && current && enhanceOpen && (
+        <Suspense fallback={null}>
+          <EnhanceSetDialog
+            open={enhanceOpen}
+            onOpenChange={setEnhanceOpen}
+            setId={setId}
+            cards={[current]}
+            onChanged={() => onCardsChanged?.()}
+          />
+        </Suspense>
+      )}
     </Shell>
   );
 }
@@ -1005,11 +1114,14 @@ function Stat({
   );
 }
 
-/** Shared focused-session frame: single scroll area below the shell header. */
+/** Shared focused-session frame: single scroll area below the shell header.
+ *  Widths scale with the viewport — a laptop has the room, so the card gets
+ *  it (the old `max-w-3xl` left the deck floating small in the middle of a
+ *  wide screen). */
 function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="h-full overflow-y-auto overscroll-contain bg-background">
-      <div className="mx-auto max-w-3xl px-2 pb-safe pt-14 sm:px-6">
+      <div className="mx-auto max-w-3xl px-2 pb-safe pt-14 sm:px-6 lg:max-w-4xl xl:max-w-5xl">
         {children}
       </div>
     </div>

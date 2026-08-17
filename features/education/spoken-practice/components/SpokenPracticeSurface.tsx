@@ -46,8 +46,11 @@ const SURFACE_NAME = "matrx-user/education-practice-oral";
 
 export function SpokenPracticeSurface({
   initialMode,
+  initialDeckId,
 }: {
   initialMode?: string | null;
+  /** Deep-linked deck to pre-select in setup (deck-grounded modes only). */
+  initialDeckId?: string | null;
 }) {
   const practice = useSpokenPractice();
   const [selectedMode, setSelectedMode] = useState<SpokenPracticeMode | null>(
@@ -119,6 +122,7 @@ export function SpokenPracticeSurface({
     body = (
       <PracticeSetup
         mode={selectedMode}
+        initialDeckId={initialDeckId}
         onBack={() => setSelectedMode(null)}
         start={practice.start}
       />

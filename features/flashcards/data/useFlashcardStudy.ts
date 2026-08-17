@@ -101,6 +101,12 @@ export interface UseFlashcardStudyResult {
    *  `progress.total` still reflects the ORIGINAL card count even though the
    *  working queue shrinks as cards are mastered. */
   masteredCount: number;
+  /** Re-read the card rows (new layers / sub-cards after an in-session
+   *  enrich/deepen) without restarting the session or resetting progress.
+   *  Optional because cross-set drivers (due review, weak-area drill) have no
+   *  single owning set to re-read — they omit it, and StudyDeck hides the
+   *  enhance affordance without a setId anyway. */
+  refreshCards?: () => Promise<void>;
 }
 
 export interface UseFlashcardStudyOptions {
@@ -268,6 +274,30 @@ export function useFlashcardStudy(
     };
   }, [setId, withSession, mode]);
 
+  // Re-read the card rows (details/layers/sub-cards) WITHOUT restarting the
+  // session — used after an in-session enrich/deepen so the new material shows
+  // immediately. Deliberately NOT the load effect: that would reset progress
+  // and open a second study_session for the same sitting. Learn mode's
+  // working-queue semantics are preserved: already-mastered cards stay OUT of
+  // the refreshed queue, and the progress denominator only GROWS (by
+  // genuinely new cards, e.g. deepen's sub-cards) — never resets.
+  const refreshCards = async (): Promise<void> => {
+    if (!setId) return;
+    const res = await fcService.getSetWithCards(setId);
+    if (!res.data) return;
+    const freshAll = res.data.cards;
+    const knownIds = new Set(cards.map((c) => c.id));
+    for (const id of masteredIds) knownIds.add(id);
+    const addedCount = freshAll.filter((c) => !knownIds.has(c.id)).length;
+    const nextQueue = reshuffleWeighted
+      ? freshAll.filter((c) => !masteredIds.has(c.id))
+      : freshAll;
+    setSet(res.data.set);
+    setCards(nextQueue);
+    if (addedCount > 0) setOriginalCount((n) => n + addedCount);
+    setCurrentIndex((i) => clampIndex(i, nextQueue.length));
+  };
+
   const flip = (): void => {
     setIsFlipped((f) => !f);
   };
@@ -419,5 +449,6 @@ export function useFlashcardStudy(
     masteryByCard,
     sessionId: session?.id ?? null,
     masteredCount: masteredIds.size,
+    refreshCards,
   };
 }

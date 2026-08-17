@@ -38,10 +38,13 @@ export function PracticeSetup({
   mode,
   onBack,
   start,
+  initialDeckId,
 }: {
   mode: SpokenPracticeMode;
   onBack: () => void;
   start: (config: PracticeConfig) => Promise<boolean>;
+  /** Deep-linked deck (a set detail page's "Oral practice" door). */
+  initialDeckId?: string | null;
 }) {
   const cfg = MODE_CONFIG[mode];
   const Icon = cfg.icon;
@@ -53,7 +56,7 @@ export function PracticeSetup({
   const [focus, setFocus] = useState("");
   const [difficulty, setDifficulty] = useState<string>(DIFFICULTY_OPTIONS[1]);
   const [count, setCount] = useState(DEFAULT_PROMPTS);
-  const [deckId, setDeckId] = useState("");
+  const [deckId, setDeckId] = useState(initialDeckId ?? "");
   const [pasted, setPasted] = useState("");
   const [decks, setDecks] = useState<FcSetRow[]>([]);
   const [busy, setBusy] = useState(false);

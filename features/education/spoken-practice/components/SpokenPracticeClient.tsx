@@ -25,8 +25,11 @@ const SpokenPracticeSurface = dynamic(
 
 export function SpokenPracticeClient({
   initialMode,
+  initialDeckId,
 }: {
   initialMode?: string | null;
+  /** Deep-linked deck (e.g. from a set detail page's "Oral practice" door). */
+  initialDeckId?: string | null;
 }) {
-  return <SpokenPracticeSurface initialMode={initialMode} />;
+  return <SpokenPracticeSurface initialMode={initialMode} initialDeckId={initialDeckId} />;
 }
