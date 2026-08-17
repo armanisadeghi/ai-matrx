@@ -16,6 +16,7 @@ import { CheckCheck, Loader2, Route, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useSlotRunner } from "@/features/agents/slots/useSlotRunner";
+import { sourceFeatureFromSurfaceName } from "@/features/agents/utils/source-feature-from-surface";
 import {
   buildMapperVariables,
   describeSuggestion,
@@ -98,7 +99,8 @@ export function BindingSuggestionsTab({
           writeTargets,
         }),
         sourceApp: "matrx-frontend",
-        sourceFeature: "surface-chrome",
+        sourceFeature:
+          sourceFeatureFromSurfaceName(surfaceName) ?? "ai-results",
         onChunk: (full) => setStreamedChars(full.length),
       });
       const parsed = parseMapperResult({
