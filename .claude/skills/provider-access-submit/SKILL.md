@@ -57,8 +57,8 @@ If a precondition fails, update the exact blocker and stop before changing provi
    submitted URLs, evidence links, provider status, and stated review timing.
 8. Record consequential outbound/inbound communication as `crm.interaction`, retaining provider
    thread/message IDs when available. Link it from the task.
-9. Set `Phase: awaiting_provider` and the next due check, or continue to verification when access is
-   immediate.
+9. Set `Phase: awaiting_provider`, `status=planned`, and the next due check, or continue to
+   verification when access is immediate. `active` means someone is working now; waiting is planned.
 
 ## Verification
 

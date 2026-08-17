@@ -105,9 +105,9 @@ Next check:
 ```
 
 Resolve or link the provider `crm.party` when possible. Do not create a CRM interaction for merely
-reading docs. At completion, leave the task `planned` when decision-ready but not started, or
-`active` only when submission/follow-up is already underway. Never leave `active` without a next
-action or due check.
+reading docs. At completion, leave the task `planned` when decision-ready, scheduled, or waiting on
+a provider; use `active` only while an agent or human is working it right now. Never leave `active`
+without an owner and exact current action.
 
 ## Example requests
 

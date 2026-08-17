@@ -17,8 +17,8 @@ on due campaigns and stays quiet when nothing changed.
 ## Durable scheduled prompt
 
 ```text
-Use $provider-access-chase on the AI Matrx Provider Access Launch project. Select only active or
-pending campaigns whose next-check/due time has arrived. Check their recorded email thread,
+Use $provider-access-chase on the AI Matrx Provider Access Launch project. Select only planned or
+active campaigns whose next-check/due time has arrived. Check their recorded email thread,
 developer portal, or support case using existing authenticated access. Record consequential changes
 in the task and CRM, set the next phase/action/check, and verify any approval through the canonical
 integration path. Do not create accounts, keys, scopes, submissions, or sent messages without the
@@ -34,11 +34,13 @@ declared Mandate by `mandate_key`; it may not take a hardcoded agent UUID or sil
 
 1. Read `common-docs/systems/provider-access/FEATURE.md` when available.
 2. Open the live `Provider Access Launch` Project.
-3. Select only tasks in an active/pending phase with a due `Next check` or due date. Never check the
+3. Select only planned/active tasks in a pending phase with a due `Next check` or due date. Never check the
    whole catalog simply because the dispatcher woke.
-4. Build a check identity from `campaign_key + source identity + newest provider event/message ID`.
+4. Set a selected task `active` only while checking it; return it to `planned` when it is waiting on
+   a provider or owner with a future due check.
+5. Build a check identity from `campaign_key + source identity + newest provider event/message ID`.
    Do not write a duplicate CRM interaction or repeat an alert for the same event.
-5. Use the exact recorded email thread, portal application/case ID, or support ticket. Do not search
+6. Use the exact recorded email thread, portal application/case ID, or support ticket. Do not search
    a whole inbox and infer campaign state from an unrelated message.
 
 ## Check order

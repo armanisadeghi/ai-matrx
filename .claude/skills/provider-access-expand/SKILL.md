@@ -22,7 +22,8 @@ permissions, or claim that a provider is easy before scouting.
 - One campaign is one independently approvable access boundary, not necessarily one provider.
 - Stable key: lowercase `provider.capability`.
 - Title: `P0 | Provider | Capability`.
-- New tasks start `planned` with `Phase: discovered` and no due check until scouting starts.
+- New tasks start canonical `inbox` with `Phase: discovered` and no due check until scouting starts.
+  The Projects JSON importer may store legacy `incomplete`; the product normalizes it to `inbox`.
 
 ## Workflow
 
