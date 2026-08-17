@@ -73,6 +73,7 @@ function WorkflowRuntimeDemo() {
   const runId = searchParams.get("run");
 
   const [workflows, setWorkflows] = useState<WorkflowListItem[] | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
   const [selected, setSelected] = useState<string>("");
   const [definition, setDefinition] = useState<WorkflowDefinitionLike | null>(
     null,
@@ -87,14 +88,34 @@ function WorkflowRuntimeDemo() {
     let cancelled = false;
     void dispatch(
       callApi({ path: "/workflows", method: "GET" } as never),
-    ).then((result: unknown) => {
-      if (cancelled) return;
-      const data =
-        typeof result === "object" && result !== null && "data" in result
-          ? (result as { data: unknown }).data
-          : null;
-      setWorkflows(extractWorkflowList(data));
-    });
+    ).then(
+      (result: unknown) => {
+        if (cancelled) return;
+        const data =
+          typeof result === "object" && result !== null && "data" in result
+            ? (result as { data: unknown }).data
+            : null;
+        const error =
+          typeof result === "object" && result !== null && "error" in result
+            ? (result as { error: unknown }).error
+            : null;
+        const list = extractWorkflowList(data);
+        // A failed list must never look like an empty catalog — say so.
+        if (list.length === 0 && error) {
+          setListError("Your workflows could not be loaded. Please try again.");
+        }
+        setWorkflows(list);
+      },
+      (err: unknown) => {
+        if (cancelled) return;
+        setWorkflows([]);
+        setListError(
+          err instanceof Error
+            ? err.message
+            : "Your workflows could not be loaded. Please try again.",
+        );
+      },
+    );
     return () => {
       cancelled = true;
     };
@@ -173,9 +194,18 @@ function WorkflowRuntimeDemo() {
 
   const begin = async (stepMode: boolean) => {
     if (!selected) return;
+    // No definition means we cannot know whether this workflow collects
+    // inputs — starting anyway would silently skip the run form and launch
+    // a guaranteed-to-fail run. Refuse loudly instead.
+    if (!definition) {
+      toast.error(
+        "This workflow's details could not be loaded, so it can't be started from here.",
+      );
+      return;
+    }
     // Workflows that collect inputs (io.user_input) get the generated form
     // first; everything else starts immediately.
-    if (definition && deriveRunForm(definition).length > 0) {
+    if (deriveRunForm(definition).length > 0) {
       setPendingStart({ stepMode });
       return;
     }
@@ -210,6 +240,8 @@ function WorkflowRuntimeDemo() {
           <span className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading workflows…
           </span>
+        ) : listError ? (
+          <span className="text-sm text-destructive">{listError}</span>
         ) : (
           <>
             <select
