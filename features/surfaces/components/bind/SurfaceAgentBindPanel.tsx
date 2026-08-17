@@ -467,7 +467,6 @@ export function SurfaceAgentBindPanel({
           ) : mapTab === "suggest" ? (
             <BindingSuggestionsTab
               surfaceName={surfaceName}
-              surfaceLabel={displaySurface}
               agent={{
                 name: agentName,
                 description: agent?.description ?? "",

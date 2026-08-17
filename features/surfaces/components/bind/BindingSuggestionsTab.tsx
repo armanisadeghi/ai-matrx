@@ -12,7 +12,7 @@
  */
 
 import { useMemo, useState } from "react";
-import { CheckCheck, Loader2, Sparkles, TriangleAlert } from "lucide-react";
+import { CheckCheck, Loader2, Route, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useSlotRunner } from "@/features/agents/slots/useSlotRunner";
@@ -24,6 +24,7 @@ import {
   type MapperAgentInfo,
   type MapperProposal,
 } from "@/features/surfaces/utils/binding-suggestions";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import type {
   SurfaceValue,
   SurfaceWriteTarget,
@@ -42,7 +43,6 @@ const CONFIDENCE_DOT: Record<string, string> = {
 
 export interface BindingSuggestionsTabProps {
   surfaceName: string;
-  surfaceLabel: string;
   agent: MapperAgentInfo;
   /** Declared + baseline values the manual editor also offers. */
   availableSurfaceValues: SurfaceValue[];
@@ -60,7 +60,6 @@ export interface BindingSuggestionsTabProps {
 
 export function BindingSuggestionsTab({
   surfaceName,
-  surfaceLabel,
   agent,
   availableSurfaceValues,
   writeTargets,
@@ -68,6 +67,7 @@ export function BindingSuggestionsTab({
   disabled = false,
   onAccept,
 }: BindingSuggestionsTabProps) {
+  const surfaceLabel = getSurfaceDisplayLabel(surfaceName);
   const { runSlot, running, unavailable, slotError } =
     useSlotRunner(BINDING_MAPPER_SLOT_KEY);
   const [streamedChars, setStreamedChars] = useState(0);
@@ -164,7 +164,7 @@ export function BindingSuggestionsTab({
               </>
             ) : (
               <>
-                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                <Route className="mr-1.5 h-3.5 w-3.5" />
                 Suggest configuration
               </>
             )}
