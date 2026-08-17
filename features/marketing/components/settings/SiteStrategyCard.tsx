@@ -3,9 +3,14 @@
 /**
  * Site strategy interview (WS-11 / M-22) — the frontend entry point for
  * POST /seo/sites/strategy-interview. The user (an editor on the site)
- * describes the business in free text; the server runs the Site Strategy
- * Interviewer system agent and writes seo.site_topic_value rows, returning
- * open_questions the interviewer could not answer confidently.
+ * describes the business in free text; the Site Strategy Interviewer values the
+ * topic tree (seo.site_topic_value) and hands back the open questions it
+ * refused to guess at.
+ *
+ * THE FLOATING LAW: this is a multi-minute paid interview, so it is a DURABLE
+ * STREAMED COMMAND — the interviewer's reasoning streams into the floating
+ * `LiveRunWindow` through `useSeoCommandStream`, and a reload rejoins the run.
+ * The spinner it replaced was the whole defect.
  */
 
 import { useState } from "react";
@@ -17,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
-import { extractErrorMessage } from "@/utils/errors";
+import { useSeoCommandStream } from "@/features/marketing/data/useSeoCommandStream";
 
 const STRATEGY_INTERVIEW_PATH = "/seo/sites/strategy-interview";
 
@@ -26,6 +31,14 @@ interface StrategyInterviewResult {
   unknown_topic_slugs: string[];
   open_questions: string[];
 }
+
+/** The server's own milestones, in the user's words. Never invented stages. */
+const STRATEGY_STAGES: Record<string, string> = {
+  "seo.strategy_started": "Reading your topic tree…",
+  "seo.strategy_agent_completed": "Valuing topics for this business…",
+  "seo.strategy_applied": "Saving topic values…",
+  "seo.strategy_completed": "Strategy interview complete",
+};
 
 export function SiteStrategyCard({
   siteId,
@@ -36,39 +49,38 @@ export function SiteStrategyCard({
 }) {
   const dispatch = useAppDispatch();
   const [businessContext, setBusinessContext] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<StrategyInterviewResult | null>(null);
 
-  const submit = async () => {
+  const command = useSeoCommandStream<StrategyInterviewResult>({
+    key: `strategy.${siteId}`,
+    label: "Site strategy interview",
+    finalKind: "seo.strategy_completed",
+    stages: STRATEGY_STAGES,
+    onComplete: (data) =>
+      toast.success(
+        `Strategy interview saved ${data.valuations_written} topic value${
+          data.valuations_written === 1 ? "" : "s"
+        }`,
+      ),
+  });
+  const submitting = command.isActive;
+  const result = command.run.result ?? null;
+
+  const submit = () => {
     const context = businessContext.trim();
     if (!context) return;
-    setSubmitting(true);
-    try {
-      const response = await dispatch(
+    void command.start(({ consumeStream, signal }) =>
+      dispatch(
         callApi({
           path: STRATEGY_INTERVIEW_PATH,
           method: "POST",
           body: { site_id: siteId, business_context: context },
           scopeOverrides: { organization_id: organizationId },
+          stream: true,
+          consumeStream,
+          signal,
         }),
-      );
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-      const data = response.data as unknown as StrategyInterviewResult;
-      setResult(data);
-      toast.success(
-        `Strategy interview saved ${data.valuations_written} topic value${
-          data.valuations_written === 1 ? "" : "s"
-        }`,
-      );
-    } catch (error) {
-      toast.error("Strategy interview failed", {
-        description: extractErrorMessage(error),
-      });
-    } finally {
-      setSubmitting(false);
-    }
+      ),
+    );
   };
 
   return (
@@ -100,7 +112,7 @@ export function SiteStrategyCard({
             size="sm"
             className="h-8 gap-1.5"
             disabled={!businessContext.trim() || submitting}
-            onClick={() => void submit()}
+            onClick={submit}
           >
             {submitting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -110,6 +122,14 @@ export function SiteStrategyCard({
             Run strategy interview
           </Button>
         </div>
+        {command.run.stage && submitting ? (
+          <p className="text-right text-[11px] text-muted-foreground">
+            {command.run.stage}
+          </p>
+        ) : null}
+        {command.run.error ? (
+          <p className="text-[11px] text-destructive">{command.run.error}</p>
+        ) : null}
         {result ? (
           <div className="grid gap-2 rounded-md border border-border bg-muted/30 p-3">
             <p className="text-xs font-medium text-foreground">

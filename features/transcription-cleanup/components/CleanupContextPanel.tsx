@@ -306,7 +306,7 @@ export function CleanupContextPanel({
                 className="flex-1 min-w-0 bg-transparent text-xs font-medium placeholder:text-muted-foreground/50 focus:outline-none"
               />
 
-              {/* Derived context key — name a block to match an Mandate */}
+              {/* Derived context key — name a block to match a declared context policy */}
               {block.text.trim() && (
                 <code className="shrink-0 rounded bg-muted px-1 py-0.5 text-[9px] text-muted-foreground">
                   {derivedKey}

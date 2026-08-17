@@ -782,6 +782,7 @@ export type Database = {
       }
       mandate: {
         Row: {
+          auto_context_disabled: boolean
           contract: Json
           created_at: string
           created_by: string | null
@@ -804,6 +805,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
+          auto_context_disabled?: boolean
           contract?: Json
           created_at?: string
           created_by?: string | null
@@ -826,6 +828,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
+          auto_context_disabled?: boolean
           contract?: Json
           created_at?: string
           created_by?: string | null

@@ -54,7 +54,7 @@ export interface PendingPrompt {
 export interface ValueMappingResolveResult {
   /** Resolved agent variable values, keyed by variable name. */
   variableValues: Record<string, unknown>;
-  /** Resolved context entries (slot-matched when key matches an Mandate). */
+  /** Resolved context entries (key-matched when the key matches a declared context policy). */
   contextEntries: InstanceContextEntry[];
   /** Targets that need user input via a pre-launch dialog. Must be drained by the caller. */
   pendingPrompts: PendingPrompt[];
