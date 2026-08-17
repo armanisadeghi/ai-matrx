@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P1",
+  "runId": "2026-08-17T081511Z",
+  "state": "closed",
+  "updatedAt": "2026-08-17T08:17:45Z",
+  "summary": "P1 closed with one missing-machinery finding, zero fixes, and no Tier-M candidate.",
+  "source": "2026-08-17T081511Z.json",
+  "eventHash": "b68c30d212a7bb6e362e419f3b8ff817f98e5de3490ddff34522662926174cfd"
+}

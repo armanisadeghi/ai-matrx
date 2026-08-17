@@ -1,81 +1,62 @@
 # Pattern Patrol P1 — No dead ends
 
-**Run:** 2026-08-12 (America/Los_Angeles)
-**Authority:** Tier M for the six previously approved registered-token `EntityRef` repairs; Tier R for all other findings
-**Certification:** **CERTIFIED** under the corrected batch-delta policy
+**Run:** 2026-08-17 01:15 PDT (America/Los_Angeles)
+**Authority:** Tier M/R — automatic only for an unambiguous canonical entity door
+**Certification:** Not applicable — no Tier-M product batch was created
 
 ## Outcome
 
-- **6 verified findings; 6 fixed** across four files.
-- The batch adds canonical Open, New tab, and Peek doors to two task IDs, one app name, one app slug, one organization name, and one organization slug.
-- Current full detector snapshot: **102 raw findings** (71 high, 31 medium) across 63 files: 51 bare IDs, 36 unlinked names, 4 unlinked counts, and 11 door-less files.
-- The prior report's mutation pause was based on infrastructure/global-baseline rejection criteria that were removed in common-docs `2509c74` and frontend `64c99e708`; P1 is not paused.
+- **1 verified structural-novelty finding; 0 fixed.** It is routed to missing rule-level navigation machinery, not to human approval.
+- **1 detector candidate was not a Door Law finding:** `provider_session_id` is the external coding provider's identifier, not an AI Matrx database identity.
+- **1 open P1 sighting was resolved before this run:** the child workflow-run id is no longer rendered as bare text.
+- Current full detector snapshot: **97 raw findings** (66 high, 31 medium) across 61 files: 51 bare IDs, 34 unlinked names, 3 unlinked counts, and 9 door-less files.
+- **Fixed count: 0. Approvals needed: 0. Degradation: none.**
 
 ## Scope scanned
 
-Scope followed the P1 structural-novelty recipe rather than git churn:
+Scope followed the registry's structural-novelty recipe rather than raw git churn. Compared with the prior P1 report commit `c7733a4efec8f1c951623720f868a83fce70e087`, this run inspected:
 
-- current route-leaf and top-level feature-directory inventories;
-- every P1 ledger item (none was open before this recovery);
-- the six previously verified candidates in four recorded files;
-- one full scoreboard refresh after the certified batch.
+- 40 new route leaves;
+- 7 new top-level feature directories (`change-policy`, `github-integration`, `hindsight`, `purpose`, `review-walk`, `vision-interview`, `workflow-runtime`);
+- 267 newly added TSX surfaces under `app/`, `features/`, `components/`, and `lib/` through the full detector;
+- every open P1 ledger item;
+- one full detector pass to refresh the stale scoreboard projection.
 
-This recovery did not expand into the remaining report-only backlog. The full detector snapshot changed from the historical 121-row report to 102 rows; only the six rows named below are attributed to this batch because other source changes landed between snapshots.
+The structural intersection produced two detector candidates. The ledger contributed one additional candidate.
 
-## Fixed Tier-M findings
+## Candidate verification and routing
 
-The six rows remained true positives after rechecking selection/injection rows, headings and prose, row-level sibling doors, ID fallbacks, and self-subject/detail-page cases:
+### Missing machinery — Rulebook rule target
 
-1. `app/(admin)/administration/ai/ai-tasks/page.tsx` — bare task ID.
-2. `app/(admin)/administration/agents/agent-apps/analytics/page.tsx` — app name and slug.
-3. `app/(admin)/administration/agents/agent-apps/executions/page.tsx` — bare task ID.
-4. `app/(core)/organizations/page.tsx` — organization name and slug.
+`features/expertise/components/desks/BacktestDialog.tsx:210` renders a backtest finding's `rule_id` as plain text. The finding identifies a specific rule inside the current Rulebook, but the platform has no canonical rule token, rule route, rule peek, overlay opener, window, or rule-level action target.
 
-Inventory confirmed that `task`, `app`, and `organization` all have canonical `hrefFor` routes and registered peeks. The repair reuses `EntityRef`; it adds no primitive, route, peek, overlay, window, suppression, generated-file edit, or chunk boundary.
+Inventory results:
 
-## Certification
+- `expertise_pack` has `hrefFor: /expertise/{id}` in the entity registry;
+- the Rulebook detail surface owns rule editing, but exposes no stable rule anchor or query target;
+- no rule token appears in the peek registry;
+- no rule-specific opener, window, or action registry exists.
 
-### Adversarial finding and repair
+Normal repair: first add one canonical rule-level target to the Rulebook detail surface, then make every rule citation—including this backtest result—consume it. Choosing whether that target opens, focuses, or edits a rule is feature behavior and must be settled in that focused machinery task; this patrol does not invent a one-off link that lands only on the pack.
 
-The independent certifier found one concrete batch-caused defect: the first draft replaced the analytics `<h4>` and organization `<h3>` with top-level `<span>`-based EntityRefs, removing heading semantics. The final batch restores the original heading wrappers around the EntityRefs.
+### Not a finding — external provider identity
 
-### Final verdict: CERTIFIED
+`features/ai-work/conversations/components/ConversationProvenancePanel.tsx:255` renders `provider_session_id` under “From the coding provider.” The source comments and UI explicitly define it as the provider's own session identifier. It is not an AI Matrx row, has no entity token, and has no canonical provider URL or opener in this repository. The Door Law applies to identities in our system, so no product mutation or exception is appropriate.
 
-Baseline-to-post evidence:
+### Resolved before run — child workflow run
 
-- `pnpm type-check`: 0 → 0.
-- doctrine: 0 → 0.
-- tsconfig: 0 → 0 with the same two inert include notes.
-- UI primitives: 0 → 0 with the same 19 advisory warnings.
-- EntityRef tests: 5/5 → 5/5 with the same pre-existing mock warning.
-- scoped ESLint: the same three pre-existing effect errors and `Sparkles` warning; the bare-task-ID warning was removed.
-- scoped P1 detector rows: **1/2/1/2 → 0/0/0/0**.
-- `git diff --check`: clean.
+The P1 ledger pointed to `features/workflow-runtime/components/ReadoutView.tsx`. Current code no longer renders `childRunId` as text. It renders “Sub-workflow,” its live status, and an expandable `WorkflowRunBoard` bound to the exact child run. The ledger row is closed as `resolved-before-run`.
 
-The managed preview was stopped at the fleet's 8 GB safety threshold while an unrelated browser session compiled `/marketing/content-plan`, before a P1 route rendered. Under the corrected bounded-fallback rule, focused rendered-markup proof covered both distinct risks:
+## Baseline and verification
 
-- table ID: visible text remains `12345678...`, the href contains the full task ID, and Open/Quick look/New tab titles and ARIA labels retain the full ID;
-- card name/slug: original heading semantics remain, both labels resolve to the canonical app route, and both expose Open/Quick look/New tab.
+- `pnpm check:patrol-contracts`: PASS.
+- `pnpm type-check`: baseline FAIL with four existing `MandateTestBench.tsx` errors concerning `mandate_pinned`; no P1 product files changed.
+- `pnpm check:migrations`: exit 0 with one pre-existing non-blocking drift warning for `crm_ui_surface_outreach_lists.sql`; this patrol touched no migration or database path.
+- `pnpm check:dead-ends --json`: 97 findings, 66 high, 31 medium, 61 files.
+- `pnpm check:dead-ends:write`: refreshed `report.json` and `history.json` with the same totals.
+- Prior full snapshot: 102 findings. The current 97-row total is a repository-wide delta since 2026-08-12; this report attributes **zero** fixes to the present run.
+- Adversarial certifier verdict: **NOT APPLICABLE** because no Tier-M product candidate exists.
 
-Surrounding responsive/theme classes and the already-tested EntityRef primitive are unchanged. The certifier found no remaining concrete batch-caused defect and returned **CERTIFIED**.
+## Recursive learning
 
-## Ledger and new baseline
-
-- A checked P1 recovery outcome was added to `.matrx/PATROL_SIGHTINGS.md`; there are no open P1 sightings from this batch.
-- Current full snapshot: 102 findings, 71 high, 31 medium, 63 files.
-- Finding-file list: 63 entries; SHA-256 `efb6df1628971d773111fc18f7be6e1505b4f6d212eeae29b0dc335dd67c9275`.
-- Route-leaf list (`page.tsx` and `page.dev.tsx`): 1,001 entries; SHA-256 `9456c397c6fa4258192d6e02350fde5bdbabfa4ecc06962e7924c09434cb0ebf`.
-- Top-level feature-directory list: 121 entries; SHA-256 `b6bcb08ef4a4e924023386a8e9717df23fd0daac1add8e845e78bc4826115467`.
-- EntityRef importer list: 183 entries; SHA-256 `e2354e93f21dab63d3d2fb6abcc0cff3b4fff3abcc79f003cf1bc8ec038a1fae`.
-- Certified batch commit: `893fd01b5bbce53fd13c432496f365dac8ef8476`; integration base refreshed through `effc858f9b55e5c70abf8f1b2a445d3cb9444f35` before final snapshot.
-
-## Loop health and candidates
-
-- The preceding month does not contain an all-clean P1 run streak, so no longer cadence is proposed.
-- The earlier two infrastructure-driven rejections are invalid under the corrected policy; repeated product-batch rejection is not present, so mutation is not paused.
-- No recurring unregistered class was discovered; no Candidate-bench nomination was added.
-
-## Delivery state
-
-- Certified batch `893fd01b5` was integrated as `2881a9660` and is an ancestor of release commit `9419ff9bd`.
-- Shipped in **v0.4.550**. Vercel production deployment `dpl_C9bwWNG9fJZqdhzpwnnbFQF61c45` built commit `9419ff9` and reached **READY** on 2026-08-12 (America/Los_Angeles).
+The detector's unresolved-ID path should distinguish explicitly external identifiers such as `provider_session_id` from candidate AI Matrx records; that narrow classification would remove a recurring medium false positive without suppressing real registered-token doors.

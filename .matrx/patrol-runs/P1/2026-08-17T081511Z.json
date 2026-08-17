@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P1",
+  "runId": "2026-08-17T081511Z",
+  "baseSha": "313abddba14eccbfcc4b020059ba1a16bb992ea0",
+  "createdAt": "2026-08-17T08:15:19.486Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-17T08:15:19.486Z",
+      "actor": "codex:p1-no-dead-ends",
+      "summary": "P1 structural-novelty scan opened with two detector candidates and one ledger sighting to verify.",
+      "evidence": [
+        "Manifest contract passed for M/R P1.",
+        "Baseline detector: 97 findings, 66 high, 31 medium, 61 files.",
+        "Baseline type-check: four pre-existing MandateTestBench errors."
+      ],
+      "previousEventHash": null,
+      "eventHash": "60fce2354604d2d52f22a8e9108c34804b565d4499129c7af5f400503e2d7a56"
+    },
+    {
+      "sequence": 2,
+      "state": "closed",
+      "at": "2026-08-17T08:17:45Z",
+      "actor": "codex:p1-no-dead-ends",
+      "summary": "P1 closed with one missing-machinery finding, zero fixes, and no Tier-M candidate.",
+      "evidence": [
+        "Structural scope: 40 new routes, 7 new feature directories, 267 new TSX surfaces.",
+        "provider_session_id is an external identifier; workflow child-run sighting resolved before run.",
+        "Rulebook rule_id routed to a canonical rule-level navigation task in the P1 ledger.",
+        "Post detector unchanged at 97 findings; type-check unchanged on four baseline MandateTestBench errors; manifest contracts pass.",
+        "No product batch; independent certification not applicable."
+      ],
+      "previousEventHash": "60fce2354604d2d52f22a8e9108c34804b565d4499129c7af5f400503e2d7a56",
+      "eventHash": "b68c30d212a7bb6e362e419f3b8ff817f98e5de3490ddff34522662926174cfd"
+    }
+  ]
+}
