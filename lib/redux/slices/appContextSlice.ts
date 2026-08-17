@@ -475,7 +475,13 @@ export const appContextPolicy = definePolicy<AppContextState>({
     // to the default "a cache hit suppresses the cold-boot fetch" rule, that
     // record then poisons every subsequent boot until `staleAfter` (5 min).
     // Declaring sufficiency makes the boot reconcile instead.
-    cacheSatisfies: (state) =>
-      Boolean(state?.organization_id ?? state?.personal_organization_id),
+    //
+    // Sufficiency is the ACTIVE org — a record carrying only the personal org
+    // is still hollow. That is the shape every "I have no org selected" boot
+    // writes, so accepting it suppressed the one fetch that reads the user's
+    // durable default-org preference: the user starred a default, and every
+    // subsequent boot restored the org-less cache and nudged them to pick one
+    // again (until `staleAfter` finally reconciled, minutes later).
+    cacheSatisfies: (state) => Boolean(state?.organization_id),
   },
 });

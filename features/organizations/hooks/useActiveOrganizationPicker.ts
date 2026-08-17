@@ -17,6 +17,7 @@ import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap"
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import { useDefaultOrganization } from "./useDefaultOrganization";
+import { useDefaultOrganizationAutoSelect } from "./useDefaultOrganizationAutoSelect";
 
 export function useActiveOrganizationPicker() {
   const dispatch = useAppDispatch();
@@ -36,6 +37,10 @@ export function useActiveOrganizationPicker() {
     if (!isAuthenticated) return;
     void dispatch(ensureScopeTree({}));
   }, [dispatch, isAuthenticated]);
+
+  // Belt to the resolver's braces: a stated default is never left unapplied,
+  // even if the sync fetch that normally applies it never ran.
+  useDefaultOrganizationAutoSelect(organizations);
 
   const selectOrganization = (id: string, name: string) => {
     dispatch(chooseActiveOrganization({ id, name }));

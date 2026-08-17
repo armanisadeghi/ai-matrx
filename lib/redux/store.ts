@@ -38,9 +38,9 @@ import {
   createSyncMiddleware,
   type SyncEngineApi,
 } from "@/lib/sync/engine/middleware";
-import { bootSync } from "@/lib/sync/engine/boot";
+import { bootSync, resyncForIdentity } from "@/lib/sync/engine/boot";
 import { openSyncChannel, type SyncChannel } from "@/lib/sync/channel";
-import { deriveIdentity } from "@/lib/sync/identity";
+import { deriveIdentity, onIdentityChange } from "@/lib/sync/identity";
 import { syncPolicies } from "@/lib/sync/registry";
 import type { IdentityKey } from "@/lib/sync/types";
 import { mapUserData, type UserData } from "@/utils/userDataMapper";
@@ -224,6 +224,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
   });
 
   let bootPromise: Promise<void> | null = null;
+  let identityWatchAttached = false;
   const syncContext: StoreSyncContext = {
     channel: syncChannel,
     identity: initialIdentity,
@@ -246,7 +247,27 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         // opening a second channel or re-running persisted hydration.
         getIdentity: () => syncContext.getIdentity(),
       })
-        .then(() => undefined)
+        .then(() => {
+          // Auth is not always present when the store is built: a page that
+          // rendered anonymous gets its real user from `usePublicAuthSync`
+          // ~100ms later, and a module-level store singleton outlives that
+          // render. Until this watcher existed, the engine kept the `guest:*`
+          // identity for the whole tab, so every identity-scoped cache and
+          // every `remote.fetch` gated on `identity.type === "auth"` (the
+          // active organization among them) stayed dark for the session.
+          if (identityWatchAttached) return;
+          identityWatchAttached = true;
+          onIdentityChange((next) => {
+            if (next.key === syncContext.getIdentity().key) return;
+            syncContext.setIdentity(next);
+            void resyncForIdentity({
+              store,
+              identity: next,
+              policies: syncPolicies,
+              getIdentity: () => syncContext.getIdentity(),
+            });
+          });
+        })
         .catch((error: unknown) => {
           // Loud recovery: allow a later mount to retry a failed bootstrap.
           bootPromise = null;

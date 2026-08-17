@@ -349,6 +349,49 @@ function scheduleColdBootFallbacks(
 }
 
 /**
+ * Re-run the identity-scoped half of boot after an identity SWAP (the common
+ * one: a page that rendered anonymous, then `usePublicAuthSync` lands the real
+ * user ~100ms later — `guest:*` → `auth:<id>`).
+ *
+ * Boot's other half (channel, listeners, legacy migrations, stale timers) is
+ * identity-agnostic and must NOT run twice, so this deliberately does only:
+ * localStorage rehydrate → IDB rehydrate → cold-boot fetches for the NEW
+ * identity. Without it, every `remote.fetch` that keys on `identity.type ===
+ * "auth"` stays permanently short-circuited for the tab — which is exactly how
+ * a signed-in user with a chosen default organization booted with no active
+ * org and got nudged to pick one.
+ *
+ * Never rejects.
+ */
+export async function resyncForIdentity(options: {
+    store: Store;
+    identity: IdentityKey;
+    policies: readonly Policy<any>[];
+    getIdentity: () => IdentityKey;
+}): Promise<void> {
+    const { store, identity, policies, getIdentity } = options;
+    logger.info("boot.identity.resync", { meta: { identity: identity.key } });
+    const fromLocal = new Set(rehydrateFromStorage(policies, identity, store));
+    let fromIdb: readonly string[] = [];
+    try {
+        fromIdb = await hydrateFromIdb(policies, identity, store, fromLocal);
+    } catch (err) {
+        logger.warn("boot.identity.resync.idbFailed", {
+            meta: { error: extractErrorMessage(err) },
+        });
+    }
+    // The identity may have swapped again while IDB was reading — the newer
+    // resync owns the fetches.
+    if (getIdentity().key !== identity.key) return;
+    scheduleColdBootFallbacks(
+        policies,
+        new Set<string>([...fromLocal, ...fromIdb]),
+        store,
+        getIdentity,
+    );
+}
+
+/**
  * Align Redux `theme.mode` with the DOM class SyncBootScript / the server
  * cookie already painted. Slice initialState is `"dark"`, but first paint may
  * be light (cookie, OS fallback, or localStorage read without identity match).
