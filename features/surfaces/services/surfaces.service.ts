@@ -558,6 +558,11 @@ function rowToSurfaceValue(row: UiSurfaceValueRow): SurfaceValue {
       : "string") as SurfaceValue["valueType"],
     alwaysAvailable: row.always_available,
     typicalCharCount: row.typical_char_count,
+    // Carried through so consumers (the AI binding mapper, signal-to-noise
+    // UIs) see the real auto-context flag and group — dropping them here made
+    // every DB-loaded value read as auto-context (Bugbot on PR #159).
+    autoContext: row.auto_context,
+    group: row.group_key,
     sortOrder: row.sort_order,
   };
 }
