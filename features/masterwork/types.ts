@@ -61,6 +61,14 @@ export interface RuleSourceRef {
   /** Set by the Scout interview Approach. */
   interview?: boolean;
   conversation_id?: string;
+  /**
+   * The dump Approach's provenance for a rule distilled from an ATTACHED
+   * entity (`platform.associations` role `distillation_source`): the canonical
+   * token + row id of the source. Rendered as a named door via the registry.
+   */
+  entity?: { token: string; id: string };
+  /** The dump Approach's provenance for a rule distilled from a URL source. */
+  url?: string;
 }
 
 /** One rule of the Rulebook. `id` is the citable handle every audit verdict points at. */
@@ -126,6 +134,42 @@ export interface RulebookSource {
   note?: string;
 }
 
+/**
+ * A URL staged for the dump Approach — durable on
+ * `rulebook.metadata.dump_url_sources` (guarded CAS writes only; see
+ * `writeDumpUrlSources` in service.ts). The scrape-on-add preview is honest UI
+ * only: the SERVER re-fetches every URL through the policy-enforcing scraper
+ * at run time, so nothing but the address and a display title is stored here.
+ */
+export interface DumpUrlSource {
+  url: string;
+  title?: string;
+  added_at: string;
+}
+
+/** The staged dump URLs off a Rulebook's metadata (tolerant read). */
+export function dumpUrlSources(rulebook: Rulebook): DumpUrlSource[] {
+  const meta = rulebook.metadata;
+  if (!meta || typeof meta !== "object" || Array.isArray(meta)) return [];
+  const raw = (meta as Record<string, unknown>).dump_url_sources;
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const rec = item as Record<string, unknown>;
+    if (typeof rec.url !== "string" || !rec.url.trim()) return [];
+    return [
+      {
+        url: rec.url,
+        ...(typeof rec.title === "string" && rec.title.trim()
+          ? { title: rec.title }
+          : {}),
+        added_at:
+          typeof rec.added_at === "string" ? rec.added_at : new Date(0).toISOString(),
+      },
+    ];
+  });
+}
+
 /** The parsed Rulebook — Row with its JSONB columns given their real shapes. */
 export interface Rulebook
   extends Omit<RulebookRow, "rules" | "sections" | "source"> {
@@ -168,6 +212,12 @@ export interface Masterwork {
   rulebook_version: number | null;
   /** When the Expert released it to Operators; null = draft (Studio-only). */
   released_at: string | null;
+  /**
+   * True for the Rulebook's Understudy — the crude one-agent system that runs
+   * from minute one and is rebuilt free on every rules save. Never releasable;
+   * rendered on the Rulebook page, not in the built-Masterworks list.
+   */
+  understudy: boolean;
   /** workflow.definition row version — the CAS token for release writes. */
   version: number;
   created_at: string;

@@ -22,6 +22,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -46,11 +47,13 @@ import {
 } from "../../types";
 import { BuildMasterworkDialog } from "./BuildMasterworkDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
+import { RulebookSourcesPanel } from "./RulebookSourcesPanel";
 import { InterviewButton, ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 import { RuleFeedbackDialog, type RuleFeedbackMode } from "./RuleFeedbackDialog";
 import { RuleReviewWizard } from "./RuleReviewWizard";
 import { computeKpis, RulebookKpiStrip } from "./RulebookKpiStrip";
+import { UnderstudyCard } from "../../understudy/UnderstudyCard";
 // The Final Checkup window (features/masterwork/checkup/) — its one entry point.
 import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/masterworkCheckupWindow";
 
@@ -129,7 +132,28 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
     <div className="space-y-1 text-xs text-muted-foreground">
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
         <span>From the source:</span>
-        {sourceRef.file_id ? (
+        {sourceRef.entity ? (
+          // The dump Approach: the rule came from an ATTACHED entity — the
+          // registry renders its name and its doors (open in new tab + peek).
+          <EntityRef
+            token={sourceRef.entity.token}
+            id={sourceRef.entity.id}
+            name={sourceRef.note ?? null}
+            showIcon={false}
+            openInNewTab
+            className="inline-flex text-xs text-primary"
+          />
+        ) : sourceRef.url ? (
+          // The dump Approach's URL source — the link IS the door.
+          <a
+            href={sourceRef.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            {sourceRef.note ?? sourceRef.url}
+          </a>
+        ) : sourceRef.file_id ? (
           <Link
             href={`/files/f/${sourceRef.file_id}`}
             target="_blank"
@@ -396,6 +420,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [interviewOpen, setInterviewOpen] = useState(
     searchParams.get("interview") === "1",
   );
+  // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
+  // the Sources panel opens and scrolls into view as the next step.
+  const dumpFocus = searchParams.get("dump") === "1";
   // Composer seed for the Scout panel — set when a recording distillation
   // reports gaps and the Expert chooses "Interview me about the gaps".
   const [interviewSeed, setInterviewSeed] = useState<string | undefined>();
@@ -405,6 +432,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const reloadRulebook = useCallback(async () => {
     const r = await getRulebook(rulebookId);
     if (r) setRulebook(r);
+  }, [rulebookId]);
+
+  const reloadMasterworks = useCallback(() => {
+    void listMasterworksForRulebook(rulebookId)
+      .then(setMasterworks)
+      .catch(() => undefined);
   }, [rulebookId]);
 
   useEffect(() => {
@@ -668,6 +701,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const kpis = computeKpis(rulebook);
   const draftCount = kpis.drafts;
   const approvedCount = kpis.approved;
+  // The Understudy (running-from-minute-one) is rendered as its own card and
+  // never counted among the built Masterworks.
+  const understudy = masterworks.find((m) => m.understudy) ?? null;
+  const builtCount = masterworks.filter((m) => !m.understudy).length;
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6">
@@ -746,13 +783,13 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               <Link href={`/masterwork/${rulebook.id}/masterworks`}>
                 <Workflow className="mr-1 h-4 w-4" />
                 Masterworks
-                {masterworks.length > 0 ? ` (${masterworks.length})` : ""}
+                {builtCount > 0 ? ` (${builtCount})` : ""}
               </Link>
             </Button>
           </div>
         </div>
         <div className="mt-3">
-          <RulebookKpiStrip kpis={kpis} />
+          <RulebookKpiStrip kpis={kpis} live={understudy !== null} />
         </div>
         {draftCount > 0 && canEdit ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -781,6 +818,29 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           </div>
         ) : null}
       </div>
+
+      {/* THE UNDERSTUDY — the system that runs from minute one (vision doc
+          13). One crude agent does the whole job now; every rules save
+          rebuilds it for free, so the Expert watches it get better instead
+          of filling in a form and waiting for value. */}
+      <UnderstudyCard
+        rulebookId={rulebook.id}
+        understudy={understudy}
+        approvedCount={approvedCount}
+        canEdit={canEdit}
+        onCreated={reloadMasterworks}
+      />
+
+      {/* Sources — the dump Approach's capture surface. Attach everything
+          (workspace things, uploads, links from external tools), then turn
+          the whole pile into draft rules in one durable run. */}
+      <RulebookSourcesPanel
+        rulebook={rulebook}
+        canEdit={canEdit}
+        autoOpen={dumpFocus}
+        onRulebookChanged={setRulebook}
+        onIngested={reloadRulebook}
+      />
 
       {/* Toolbar */}
       <div className="flex items-center gap-2">

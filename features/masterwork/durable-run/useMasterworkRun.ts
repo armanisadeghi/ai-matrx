@@ -59,11 +59,19 @@ export const MASTERWORK_RUN_WIRE: DurableRunWire = {
  * are one dialog with one running state and one answer — so they share one
  * pointer, and a reload rejoins whichever lane was going.
  */
-export type MasterworkRunSurface = "build" | "ingest" | "audition" | "checkup";
+export type MasterworkRunSurface =
+  | "build"
+  | "ingest"
+  | "dump"
+  | "audition"
+  | "checkup";
 
 const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   build: "masterwork_build_complete",
   ingest: "masterwork_ingest_complete",
+  // The dump Approach (`/masterworks/ingest-dump`) — its own surface + pointer
+  // so a dump never rejoins the single-source ingest dialog or vice versa.
+  dump: "masterwork_ingest_dump_complete",
   audition: "masterwork_audition_verdict",
   checkup: "masterwork_checkup_complete",
 };

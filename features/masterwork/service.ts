@@ -1,7 +1,9 @@
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { pokeUnderstudy } from "./understudy/refresh";
 import {
   parseRulebook,
+  type DumpUrlSource,
   type Masterwork,
   type Rulebook,
   type RulebookRow,
@@ -88,7 +90,13 @@ export async function createDraftRulebook(
       })
       .select("*")
       .single();
-    if (!error) return parseRulebook(data as RulebookRow);
+    if (!error) {
+      const created = parseRulebook(data as RulebookRow);
+      // Running from minute one: the Understudy exists the moment the
+      // Rulebook does — zero rules, pure improvisation on the intake.
+      pokeUnderstudy(created.id);
+      return created;
+    }
     if (error.code === "23505") {
       slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
       continue;
@@ -135,6 +143,10 @@ export async function saveRules(opts: {
       "This Rulebook changed while you were editing (someone else saved a newer version). Reload to get the latest rules — your changes are still on screen.",
     );
   }
+  // ONE funnel covers every FE rules write (editor, wizard, approve-all,
+  // checkup apply): the Understudy rebuilds — free, in place — so the Expert
+  // watches the running system get better as approvals land.
+  pokeUnderstudy(opts.rulebookId);
   return parseRulebook(data as RulebookRow);
 }
 
@@ -155,6 +167,59 @@ export async function updateRulebookMeta(opts: {
     .single();
   if (error) throw error;
   return parseRulebook(data as RulebookRow);
+}
+
+export type DumpUrlWriteResult =
+  | { status: "saved"; rulebook: Rulebook }
+  /** Someone else saved a newer version — `rulebook` is the fresh row. */
+  | { status: "conflict"; rulebook: Rulebook }
+  | { status: "not_found" };
+
+/**
+ * Replace the dump Approach's staged URL list
+ * (`metadata.dump_url_sources`) with a guarded compare-and-swap on the
+ * canonical `version` column — the same optimistic-concurrency contract the
+ * Release flow uses. Read-modify-write happens HERE against the caller's
+ * loaded row: the rest of `metadata` is carried forward untouched, and a
+ * concurrent save (the Scout, another tab) surfaces as a conflict with the
+ * fresh Rulebook instead of silently clobbering it.
+ */
+export async function writeDumpUrlSources(opts: {
+  rulebook: Rulebook;
+  urls: DumpUrlSource[];
+}): Promise<DumpUrlWriteResult> {
+  const { rulebook, urls } = opts;
+  const baseMeta =
+    rulebook.metadata &&
+    typeof rulebook.metadata === "object" &&
+    !Array.isArray(rulebook.metadata)
+      ? (rulebook.metadata as Record<string, unknown>)
+      : {};
+  const metadata = { ...baseMeta, dump_url_sources: urls };
+  const result = await guardedUpdate<RulebookRow>({
+    expectedVersion: rulebook.version,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      rulebookTable()
+        .update({ metadata, version: nextVersion } as never)
+        .eq("id", rulebook.id)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select("*")
+        .maybeSingle(),
+    fetchCurrent: () =>
+      rulebookTable()
+        .select("*")
+        .eq("id", rulebook.id)
+        .is("deleted_at", null)
+        .maybeSingle(),
+  });
+  if (result.status === "saved") {
+    return { status: "saved", rulebook: parseRulebook(result.row) };
+  }
+  if (result.status === "conflict") {
+    return { status: "conflict", rulebook: parseRulebook(result.currentRow) };
+  }
+  return { status: "not_found" };
 }
 
 export async function softDeleteRulebook(rulebookId: string): Promise<void> {
@@ -396,6 +461,7 @@ export function parseMasterworkRow(row: MasterworkDefinitionRow): Masterwork {
       typeof meta.rulebook_version === "number" ? meta.rulebook_version : null,
     released_at:
       typeof meta.released_at === "string" ? meta.released_at : null,
+    understudy: meta.understudy === true,
     version: row.version,
     created_at: row.created_at,
     updated_at: row.updated_at,
