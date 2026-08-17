@@ -125,6 +125,9 @@ export function BindingSuggestionsTab({
     if (!proposal) return;
     const policies: WritePolicyMap = {};
     for (const p of proposal.writePolicies) policies[p.target] = p.policy;
+    // A proposal can survive validation with zero mappings (only policy
+    // entries). Accepting must never wipe already-seeded mappings with an
+    // empty map — the host only overwrites when there is something to apply.
     onAccept(suggestionsToMappings(proposal.suggestions), policies);
   };
 

@@ -479,7 +479,9 @@ export function SurfaceAgentBindPanel({
               targetNames={targets.map((t) => t.name)}
               disabled={busy}
               onAccept={(m, policies) => {
-                setMappings(m);
+                // Only overwrite when the proposal actually mapped something —
+                // a policies-only proposal must not wipe seeded mappings.
+                if (Object.keys(m).length > 0) setMappings(m);
                 setAcceptedPolicies(
                   Object.keys(policies).length > 0 ? policies : null,
                 );
