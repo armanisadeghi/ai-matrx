@@ -5,6 +5,26 @@ description: Entry point and shared SOP for the 2026 Matrx DB transition — any
 
 # DB Change — the transition SOP (read first)
 
+## ⚠️ FIRST: is anyone USING the system right now?
+
+**This SOP is written for a scheduled outage** ("the app is ALREADY DOWN"). That assumption is
+load-bearing for everything below it — especially rule 5's "no compat views, the old name must
+VANISH." **Ask before you start: is the app live, and could a human be mid-session?**
+
+- **Down / no traffic → follow this SOP exactly as written.** Cut clean, no safety nets.
+- **LIVE traffic → rule 5 does NOT apply to a rename, and this is not a judgment call.** The old
+  name keeps working until the new code is deployed (rename + `CREATE VIEW <old> AS SELECT * FROM
+  <new>`, drop the alias once the running SHA carries the new code — or invert the order and
+  rename last). See `common-docs/policies/database-changeover-doctrine.md` §8a-2.
+
+**Why this block exists (2026-08-17):** a live rename of `platform.expertise_pack` →
+`platform.rulebook` landed while production still ran the old code. The DDL→deploy gap is tens of
+minutes, and Arman was inside it dictating expertise. Every tool call died on `42P01`; **11
+finished expert rules were lost** and were recoverable only by reading raw tool-call traces out of
+the database. A `42P01` is invisible to the human it happens to — the agent above it reports
+success in prose. Nothing in this file told that agent to wait, because this file assumes the
+lights are off.
+
 ## 🛑 THE PRIME DIRECTIVE — read this before you touch anything, or you will hurt the project
 
 **This migration is past the point of no return. The app is ALREADY DOWN and stays down until the system is 100% canonical.** There is no safe partial state, nothing to protect, and no going back — the only exit is *forward, completely*. Everything below exists because agents keep half-doing the job and leaving the app in the broken middle. Do not be one of them.
@@ -17,7 +37,7 @@ description: Entry point and shared SOP for the 2026 Matrx DB transition — any
 
 4. **A canonical requirement that seems wrong for this table is a QUESTION FOR THE HUMAN, made BEFORE you start — never a call you make alone and never a thing you skip quietly.** Not every rule fits every table (versioning, for one, is not right for every table). When you think a requirement shouldn't apply, or you're tempted to keep an old structure: **STATE your opinion out loud, give the fact behind it, and ASK.** *"code_file has a bespoke `code_file_versions` table (20 rows, all test) — canonicalize it onto `history.row_versions`, or drop versioning for this table entirely? I lean X because Y."* **Yes → do it that way. No → follow the rule. No clear/blocking answer → STOP and ask again; do not start.** Your opinion is *wanted* — the human almost always has a fact you don't (that's how a weak "keep it just in case" flips to "those are throwaway rows, kill it"). Keeping the opinion to yourself and acting on the assumption is the exact move that destroys the codebase.
 
-5. **NO safety nets. NO "just in case." NO leaving the old way.** No compat views, no leftover legacy tables "for now," no old columns kept beside new ones, no dormant fallbacks, no "I'll migrate it later." The old name/column/table must VANISH so a stale reference errors loudly and gets fixed this pass. A safety net here is not safety — it silently splits data across two shapes and *is* the bug.
+5. **NO safety nets. NO "just in case." NO leaving the old way.** No compat views, no leftover legacy tables "for now," no old columns kept beside new ones, no dormant fallbacks, no "I'll migrate it later." The old name/column/table must VANISH so a stale reference errors loudly and gets fixed this pass. A safety net here is not safety — it silently splits data across two shapes and *is* the bug. **The ONE exception is the live-traffic rename alias in the block at the top of this file** — a deliberately temporary view, dropped the moment the new code is deployed, which is the opposite of "leaving the old way."
 
 6. **SHIP IT — committing and pushing IS the job, not a decision to agonize over.** During a scheduled outage the win condition is: fully canonical + all layers repointed + committed + pushed + lights on. Do not pause to ask "is it OK to release?" — the app is down; the *only* way to lose is to sit on finished work. Commit, push, deploy, in the same pass.
 
