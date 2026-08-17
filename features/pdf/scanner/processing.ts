@@ -1,13 +1,13 @@
 /**
- * Post-save processing status — direct Supabase reads (canonical UI↔DB
- * path; the clean/chunk/NER pipeline runs detached server-side after
- * /pdf/from-images returns, so the FE watches the rows it writes).
+ * Scanner DB reads — direct Supabase (the canonical UI↔DB path).
  *
- * Consumed by ProcessingView's 2s poll:
- * - per-page cleaned counts (docproc.processed_document_pages.cleaned_text)
- * - pipeline completion + entity/chunk totals
- *   (processed_documents.metadata.content_processing.current)
- * - whole-document clean_content presence (the reader's cleaned pane).
+ * 🚨 These are FACT reads, never a progress watch. The clean/chunk/NER pipeline
+ * streams its own work on the save connection (`createScanPdf`), so the 2s poll
+ * that used to live here — per-page cleaned counts, per-page analysis, and the
+ * AI's cleaned text pulled row by row — is deleted. What remains:
+ * - the pre-navigation gate (`verifyCleanContentReady`): clean content must
+ *   actually be readable before we route the user to the extractor;
+ * - the recent-scans list and the raw-text peek.
  */
 
 import { supabase } from "@/utils/supabase/client";
@@ -69,84 +69,6 @@ export async function fetchProcessingStatus(
     entities: current?.entities ?? null,
     chunks: current?.chunks ?? null,
   };
-}
-
-/**
- * Per-page analysis rows for the live ledger: as the detached clean
- * pipeline works, each page gains an AI section title/kind and a cleaned
- * char count. Polled alongside fetchProcessingStatus during the clean step.
- */
-export interface PageAnalysisRow {
-  pageNumber: number;
-  title: string | null;
-  kind: string | null;
-  rawChars: number;
-  cleaned: boolean;
-  usedOcr: boolean;
-}
-
-export async function fetchPageAnalysis(
-  docId: string,
-): Promise<PageAnalysisRow[]> {
-  const { data } = await docprocDb(supabase)
-    .from("processed_document_pages")
-    .select(
-      "page_number, section_title, section_kind, cleaned_char_count, raw_char_count, used_ocr",
-    )
-    .eq("processed_document_id", docId)
-    .order("page_number", { ascending: true });
-  return (data ?? []).map((row) => ({
-    pageNumber: row.page_number,
-    title: row.section_title,
-    kind: row.section_kind,
-    rawChars: row.raw_char_count,
-    cleaned: (row.cleaned_char_count ?? 0) > 0,
-    usedOcr: row.used_ocr,
-  }));
-}
-
-/**
- * The AI's ACTUAL cleaned output for a set of pages — what the model wrote,
- * not how many pages it got through.
- *
- * 🚨 THE FLOATING LAW: a count is not output. The clean step is the expensive,
- * multi-LLM part of this pipeline and the user must watch it produce words.
- * The clean pipeline runs DETACHED server-side (started by /pdf/from-images,
- * no client-reachable stream), so the closest thing to a stream is reading the
- * rows it writes as it writes them. Callers pass ONLY the page numbers they
- * have not read yet — a page's cleaned_text is fetched exactly once, never
- * re-pulled on every 2s tick.
- */
-export interface CleanedPageText {
-  pageNumber: number;
-  title: string | null;
-  text: string;
-}
-
-export async function fetchCleanedPageText(
-  docId: string,
-  pageNumbers: number[],
-): Promise<CleanedPageText[]> {
-  if (pageNumbers.length === 0) return [];
-  const { data, error } = await docprocDb(supabase)
-    .from("processed_document_pages")
-    .select("page_number, section_title, cleaned_text")
-    .eq("processed_document_id", docId)
-    .in("page_number", pageNumbers)
-    .order("page_number", { ascending: true });
-  if (error) {
-    // Transient — the next tick asks for the same pages again (they stay out
-    // of the caller's "seen" set until they actually arrive).
-    console.warn(`[scanner] cleaned-text read failed for doc ${docId}`, error);
-    return [];
-  }
-  return (data ?? [])
-    .filter((row) => (row.cleaned_text ?? "").trim().length > 0)
-    .map((row) => ({
-      pageNumber: row.page_number,
-      title: row.section_title,
-      text: row.cleaned_text as string,
-    }));
 }
 
 /**

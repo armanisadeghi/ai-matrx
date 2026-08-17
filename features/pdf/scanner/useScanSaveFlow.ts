@@ -6,13 +6,19 @@
  * the desktop build must not fork the orchestration).
  *
  * Owns everything between "user hit Save" and "landed on the extractor":
- * - the createScanPdf stream (build → per-page OCR events → ids)
+ * - the createScanPdf stream, end to end: build → per-page OCR events → ids →
+ *   the content-processing pipeline's own events (clean/chunk/embed/NER),
+ *   including each page's finished cleaned TEXT as the model writes it
  * - the ProcessingView state machine + live page ledger
- * - the 2s docproc poll (clean progress, AI page titles, the AI's actual
- *   cleaned TEXT page by page, entities)
  * - the verified-fetch navigation gate (3×2s, loud misses)
  * - the optional parallel context-assignment prompt
  * - background boundary detection for every uploaded photo
+ *
+ * 🚨 THE FLOATING LAW. There is no poll here any more. The clean step used to
+ * be watched through a 2s Supabase poll because the pipeline ran detached; it
+ * runs INLINE on the save stream, so the client reads the work as the server
+ * does it. The only DB read left is the pre-navigation gate, which verifies a
+ * fact rather than watching progress.
  */
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
@@ -20,23 +26,14 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 
 import { createScanPdf, detectDocument } from "./api";
+import type { ScanProcessingEvent } from "./api";
 import type {
   ProcessingPageRow,
   ProcessingState,
 } from "./components/ProcessingView";
-import {
-  fetchCleanedPageText,
-  fetchPageAnalysis,
-  fetchProcessingStatus,
-  fetchRawTextPreview,
-  verifyCleanContentReady,
-} from "./processing";
+import { fetchRawTextPreview, verifyCleanContentReady } from "./processing";
 import type { ScanPdfResult, ScanRotation } from "./types";
 import type { UseScanSessionResult } from "./useScanSession";
-
-/** Stop polling for pipeline progress after this long and move on. */
-const PROCESSING_POLL_TIMEOUT_MS = 4 * 60 * 1000;
-const PROCESSING_POLL_INTERVAL_MS = 2000;
 
 export function defaultScanLabel(): string {
   const now = new Date();
@@ -90,6 +87,8 @@ export function useScanSaveFlow(
   const savePromiseRef = useRef<Promise<ScanPdfResult> | null>(null);
   const contextDoneRef = useRef(true);
   const pendingDocIdRef = useRef<string | null>(null);
+  /** The saved doc, readable from stream callbacks without re-rendering. */
+  const savedDocIdRef = useRef<string | null>(null);
 
   // ── Background boundary detection ───────────────────────────────────────
   // The moment a photo's upload lands, run detect so the crop editor opens
@@ -116,19 +115,14 @@ export function useScanSaveFlow(
   }, [session.items, session.setQuad]);
 
   // ── Lifecycle guard ─────────────────────────────────────────────────────
-  // If the user navigates away mid-save, the save promise still resolves —
-  // without this guard it would start a 4-minute orphan poll and then
-  // router.push the user to the extractor from whatever page they're on.
-  const pollTimerRef = useRef<number | null>(null);
+  // If the user navigates away mid-save, the save stream still resolves —
+  // without this guard it would router.push the user to the extractor from
+  // whatever page they're on.
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
-      if (pollTimerRef.current !== null) {
-        window.clearInterval(pollTimerRef.current);
-        pollTimerRef.current = null;
-      }
     };
   }, []);
 
@@ -152,22 +146,13 @@ export function useScanSaveFlow(
   }, [navigateToDoc]);
 
   // ── Post-save processing orchestration ──────────────────────────────────
-  const pollStartedAtRef = useRef(0);
   const finalizeStartedRef = useRef(false);
-
-  const stopPolling = useCallback(() => {
-    if (pollTimerRef.current !== null) {
-      window.clearInterval(pollTimerRef.current);
-      pollTimerRef.current = null;
-    }
-  }, []);
 
   /** Completion gate: verified fetch (3×2s, loud misses) → navigate. */
   const finalize = useCallback(
     (docId: string) => {
       if (finalizeStartedRef.current) return;
       finalizeStartedRef.current = true;
-      stopPolling();
       setProcessing((p) =>
         p ? { ...p, active: "done", finalizing: true } : p,
       );
@@ -176,113 +161,72 @@ export function useScanSaveFlow(
         maybeNavigate();
       });
     },
-    [stopPolling, maybeNavigate],
+    [maybeNavigate],
   );
 
   /**
-   * Page numbers whose cleaned TEXT has already been pulled. A page's output
-   * is read exactly once — the 2s tick asks only for pages that newly turned
-   * cleaned, so watching the AI work costs one small select per page, not the
-   * whole document every two seconds.
+   * One content-processing event → the live view. The clean stage's `page`
+   * events carry the model's ACTUAL rewrite of that page, which is what the
+   * step exists to show; counters and the ledger sit under it as context.
    */
-  const cleanedTextSeenRef = useRef<Set<number>>(new Set());
+  const applyProcessingEvent = useCallback((event: ScanProcessingEvent) => {
+    setProcessing((p) => {
+      if (!p) return p;
+      const next: ProcessingState = { ...p };
 
-  const startPolling = useCallback(
-    (docId: string) => {
-      if (!mountedRef.current) return;
-      stopPolling();
-      pollStartedAtRef.current = Date.now();
-      cleanedTextSeenRef.current = new Set();
-      pollTimerRef.current = window.setInterval(() => {
-        void Promise.all([
-          fetchProcessingStatus(docId),
-          fetchPageAnalysis(docId).catch(() => null),
-        ])
-          .then(async ([status, analysis]) => {
-            // The AI's actual words for every page that JUST finished. This is
-            // the whole point of the clean step's UI — a count is not output.
-            const freshlyCleaned = (analysis ?? [])
-              .filter(
-                (a) => a.cleaned && !cleanedTextSeenRef.current.has(a.pageNumber),
-              )
-              .map((a) => a.pageNumber);
-            const cleanedText = await fetchCleanedPageText(
-              docId,
-              freshlyCleaned,
-            );
-            for (const row of cleanedText) {
-              cleanedTextSeenRef.current.add(row.pageNumber);
-            }
-
-            setProcessing((p) => {
-              if (!p) return p;
-              const allCleaned =
-                status.pagesTotal > 0 &&
-                status.pagesCleaned >= status.pagesTotal;
-              const active =
-                status.runStatus === "completed"
-                  ? "done"
-                  : allCleaned
-                    ? "entities"
-                    : "clean";
-              // Enrich the live ledger with the AI's per-page analysis
-              // (section titles/kinds land page-by-page as the clean
-              // pipeline works through the document).
-              let pages = p.pages;
-              if (analysis && analysis.length > 0) {
-                const byPage = new Map(pages.map((row) => [row.page, row]));
-                pages = analysis.map((a): ProcessingPageRow => {
-                  const existing = byPage.get(a.pageNumber);
-                  return {
-                    page: a.pageNumber,
-                    chars: existing?.chars ?? a.rawChars,
-                    method: existing?.method ?? (a.usedOcr ? "ocr" : "native"),
-                    preview: existing?.preview,
-                    title: a.title,
-                    kind: a.kind,
-                    cleaned: a.cleaned,
-                  };
-                });
-              }
-              const cleanedPages =
-                cleanedText.length > 0
-                  ? [...p.cleanedPages, ...cleanedText].sort(
-                      (a, b) => a.pageNumber - b.pageNumber,
-                    )
-                  : p.cleanedPages;
-
-              return {
-                ...p,
-                status,
-                pages,
-                cleanedPages,
-                active: p.active === "done" ? "done" : active,
-              };
-            });
-            if (status.runStatus === "completed") finalize(docId);
-          })
-          .catch(() => {
-            // Transient read failure — next tick retries.
-          });
-        if (
-          Date.now() - pollStartedAtRef.current >
-          PROCESSING_POLL_TIMEOUT_MS
-        ) {
-          console.error(
-            `[scanner] processing poll timed out for doc ${docId} — navigating anyway`,
+      if (event.stage === "clean") {
+        if (p.active !== "done") next.active = "clean";
+        if (event.cleanedPage) {
+          const page = event.cleanedPage;
+          next.cleanedPages = [
+            ...p.cleanedPages.filter((row) => row.pageNumber !== page.pageNumber),
+            { pageNumber: page.pageNumber, title: page.title, text: page.text },
+          ].sort((a, b) => a.pageNumber - b.pageNumber);
+          // The ledger learns this page's AI section title/kind at the same
+          // moment — one event, both halves.
+          next.pages = p.pages.map((row) =>
+            row.page === page.pageNumber
+              ? { ...row, title: page.title, kind: page.kind, cleaned: true }
+              : row,
           );
-          finalize(docId);
         }
-      }, PROCESSING_POLL_INTERVAL_MS);
-    },
-    [stopPolling, finalize],
-  );
+      } else if (
+        event.stage === "chunk" ||
+        event.stage === "embed" ||
+        event.stage === "ner" ||
+        event.stage === "enrich"
+      ) {
+        if (p.active !== "done") next.active = "entities";
+      }
+
+      // The scanner's status block is derived from the stream itself now —
+      // the same shape ProcessingView already renders, no DB read.
+      const cleanedCount = next.cleanedPages.length;
+      const total =
+        event.stage === "clean" && event.total > 0
+          ? event.total
+          : (p.status?.pagesTotal ?? p.pageCount ?? 0);
+      next.status = {
+        pagesTotal: total,
+        pagesCleaned: Math.max(cleanedCount, p.status?.pagesCleaned ?? 0),
+        cleanContentReady: cleanedCount > 0,
+        runStatus:
+          event.phase === "error"
+            ? "failed"
+            : (p.status?.runStatus ?? "running"),
+        entities: event.stats?.entities ?? p.status?.entities ?? null,
+        chunks: event.stats?.chunks ?? p.status?.chunks ?? null,
+      };
+      return next;
+    });
+  }, []);
 
   const saveNow = useCallback(() => {
     const uploaded = session.items.filter((i) => i.fileId);
     if (uploaded.length === 0 || processing) return;
 
     pendingDocIdRef.current = null;
+    savedDocIdRef.current = null;
     finalizeStartedRef.current = false;
     contextDoneRef.current = true; // prompt is opt-in from the processing view
     const labelAtSave = session.label.trim() || defaultScanLabel();
@@ -365,24 +309,16 @@ export function useScanSaveFlow(
           };
         });
       },
-    });
-    savePromiseRef.current = promise;
-
-    promise
-      .then((result) => {
+      // The scan is saved and extracted; the pipeline keeps streaming.
+      onScanReady: (result) => {
+        savedDocIdRef.current = result.doc_id ?? null;
         session.clearAfterSave();
         setSavedIds({
           fileId: result.file_id ?? null,
           docId: result.doc_id ?? null,
         });
         setProcessing((p) =>
-          p
-            ? {
-                ...p,
-                active: "clean",
-                pageCount: result.page_count,
-              }
-            : p,
+          p ? { ...p, active: "clean", pageCount: result.page_count } : p,
         );
         const docId = result.doc_id as string;
         // Fallback only — the per-page stream normally set this already.
@@ -392,7 +328,28 @@ export function useScanSaveFlow(
               p && !p.rawPreview ? { ...p, rawPreview: preview } : p,
             );
         });
-        startPolling(docId);
+      },
+      onProcessing: applyProcessingEvent,
+      onProcessingSettled: (status) => {
+        const docId = savedDocIdRef.current;
+        if (!docId) return;
+        if (status === "failed") {
+          // Never silent: the scan itself is safe, but the AI pass is not done.
+          toast.error(
+            "The scan was saved, but its AI processing failed on the server.",
+          );
+        }
+        finalize(docId);
+      },
+    });
+    savePromiseRef.current = promise;
+
+    promise
+      .then((result) => {
+        // The stream ended. `onProcessingSettled` normally finalized already;
+        // this is the backstop for a server that ends without one.
+        const docId = result.doc_id;
+        if (docId) finalize(docId);
       })
       .catch((err: unknown) => {
         const fileId = (err as { fileId?: string | null })?.fileId;
@@ -408,7 +365,7 @@ export function useScanSaveFlow(
         setContextPromptOpen(false);
         contextDoneRef.current = true;
       });
-  }, [session, processing, startPolling]);
+  }, [session, processing, applyProcessingEvent, finalize]);
 
   const onContextPromptChange = useCallback(
     (open: boolean) => {

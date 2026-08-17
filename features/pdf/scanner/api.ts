@@ -198,6 +198,9 @@ export async function createScanPdf(
     onProgress,
     onExtractStarted,
     onPageExtracted,
+    onScanReady,
+    onProcessing,
+    onProcessingSettled,
     signal,
   }: CreateScanPdfCallbacks = {},
 ): Promise<ScanPdfResult> {
@@ -223,10 +226,16 @@ export async function createScanPdf(
       const msg = event.data.user_message ?? event.data.system_message;
       if (msg) onProgress?.(msg);
     }
+    if (event.event === "record_update") {
+      // The pipeline's terminal signal for this document.
+      const status = event.data.status === "failed" ? "failed" : "completed";
+      onProcessingSettled?.(status);
+      continue;
+    }
     if (event.event === "data") {
       const d = event.data as unknown as Record<string, unknown>;
       // Typed mid-stream events (per-page extraction) carry a `type`
-      // discriminant; the terminal ScanPdfResult does not (status/doc_id).
+      // discriminant; the ScanPdfResult does not (status/doc_id).
       if (d && typeof d === "object" && "type" in d) {
         if (d.type === "pdf_extract_started") {
           onExtractStarted?.(Number(d.total_pages ?? 0));
@@ -241,19 +250,20 @@ export async function createScanPdf(
         }
         continue;
       }
-      // Content-processing progress (clean/chunk/embed/NER, `kind`
-      // discriminant) streams AFTER the scan result — never the result.
+      // Content-processing progress (clean/chunk/embed/NER) streams AFTER the
+      // scan result on this same connection — including each page's finished
+      // cleaned text.
       if (d && typeof d === "object" && "kind" in d) {
-        const msg = typeof d.message === "string" ? d.message : null;
-        if (msg) onProgress?.(msg);
+        const processing = parseProcessingEvent(d);
+        if (processing) onProcessing?.(processing);
+        else if (typeof d.message === "string") onProgress?.(d.message);
         continue;
       }
       if (d && typeof d === "object" && "status" in d) {
         result = event.data as unknown as ScanPdfResult;
-        // Resolve the scan NOW — the server keeps streaming pipeline
-        // progress for ~30s+, and it finishes that work even after we
-        // stop reading (streams detach on disconnect, never cancel).
-        break;
+        // Ids reach the caller NOW; keep draining, because everything the
+        // clean step produces still has to arrive.
+        if (result.status !== "error") onScanReady?.(result);
       }
     }
   }

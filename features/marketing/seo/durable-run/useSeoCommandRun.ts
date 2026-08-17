@@ -229,6 +229,7 @@ export function useSeoCommandRun<TResult>(
         return;
       }
 
+      console.log("[seo-cmd-debug]", ctx.rejoin, event.event, JSON.stringify(event.data).slice(0,120));
       const data = eventRecord(event);
       if (!data) return;
       const kind = typeof data.kind === "string" ? data.kind : null;
