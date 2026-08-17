@@ -38,6 +38,16 @@
  * aidream's AuthMiddleware from the browser's stable `X-Fingerprint-ID`, so a
  * guest OWNS its command rows — no Supabase session anywhere in the picture.
  *
+ * ## Live output (`live`) — the other half of THE FLOATING LAW
+ *
+ * Stage lines are what the law PERMITS when there is nothing to show. When the
+ * command runs an agent whose words are the point (the keyword classifier, the
+ * topic assigner, the site strategy interviewer — all three stream their tokens
+ * since aidream made them durable streamed commands), pass `live` and the hook
+ * ADOPTS the stream (`adoptForeignStream`) into the canonical pipeline and
+ * floats it in `LiveRunWindow`. The surface parses nothing and renders nothing
+ * itself — `features/content-ir/FEATURE.md` § No bespoke stream renderers.
+ *
  * 🚨 `POST /seo/collections/{run_id}/rejoin` is NOT that route: its router is
  * mounted behind `require_authenticated` and answers a guest 401
  * `token_required` (measured against production, 2026-08-17). The guest-safe
@@ -49,6 +59,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import type { ForeignStreamConsumer } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { callApi } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -85,6 +99,12 @@ export interface SeoCommandRunState<TResult> {
   runId: string | null;
   /** What the rejoined run was working on, for "still auditing <url>" copy. */
   rejoinedTarget: string | null;
+  /**
+   * The adopted stream's canonical request id — only with `live`. Everything
+   * the model writes is read off this through the canonical selectors; a
+   * surface never touches the text itself.
+   */
+  requestId: string | null;
 }
 
 interface RunPointer {
@@ -196,6 +216,7 @@ export function useSeoCommandRun<TResult>(
     error: null,
     runId: null,
     rejoinedTarget: null,
+      requestId: null,
   });
 
   // Latest-value refs so the stream handler never closes over stale options
@@ -350,6 +371,7 @@ export function useSeoCommandRun<TResult>(
         error: null,
         runId: null,
         rejoinedTarget: null,
+      requestId: null,
       });
       try {
         const response = await dispatch(
@@ -413,6 +435,7 @@ export function useSeoCommandRun<TResult>(
       error: null,
       runId: pointer.runId,
       rejoinedTarget: pointer.target,
+      requestId: null,
     });
     void rejoinSeoCommandRun({
       dispatch,
@@ -427,6 +450,7 @@ export function useSeoCommandRun<TResult>(
           error: null,
           runId: null,
           rejoinedTarget: null,
+      requestId: null,
         });
         // Loud, but not in the user's face: nothing was lost that they can act
         // on, and a tool that opens with a red error nobody caused is worse.
@@ -449,6 +473,7 @@ export function useSeoCommandRun<TResult>(
       error: null,
       runId: null,
       rejoinedTarget: null,
+      requestId: null,
     });
   }, []);
 
