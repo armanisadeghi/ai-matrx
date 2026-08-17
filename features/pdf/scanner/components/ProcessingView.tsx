@@ -9,11 +9,12 @@
  * 1. Build   — from-images stream info events (crop/combine/convert).
  * 2. OCR     — stream `scan_pdf_extract` info; done at the terminal
  *              data event (raw text is real — a peek renders).
- * 3. AI clean— the model's ACTUAL cleaned text, page by page, as the
- *              detached server pipeline writes it (THE FLOATING LAW: a
- *              count is not output). The per-page ledger and the progress
- *              bar sit UNDER that, as context — never instead of it.
- * 4. Entities— DB poll: pipeline completion + entity/chunk totals.
+ * 3. AI clean— the model's ACTUAL cleaned text, page by page, streamed off
+ *              the save connection as the pipeline finishes each page (THE
+ *              FLOATING LAW: a count is not output). The per-page ledger and
+ *              the progress bar sit UNDER that, as context — never instead.
+ * 4. Entities— the same stream's chunk/embed/NER stage events, ending in the
+ *              pipeline's stats event (entity/chunk totals).
  *
  * Navigation happens in the surface once processing completes AND the
  * clean content passes the verified-fetch gate (3×2s retries with
@@ -40,8 +41,8 @@ export type ProcessingStepId = "build" | "ocr" | "clean" | "entities";
 
 /**
  * One row of the live page ledger. Born when the extraction stream emits
- * the page's raw text (chars/method/preview), enriched by the clean-step
- * poll with the AI's section title/kind and cleaned flag.
+ * the page's raw text (chars/method/preview), enriched by that page's clean
+ * event with the AI's section title/kind and cleaned flag.
  */
 export interface ProcessingPageRow {
   page: number;
