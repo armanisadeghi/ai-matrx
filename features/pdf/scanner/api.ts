@@ -102,6 +102,16 @@ export interface CreateScanPdfCallbacks {
   onExtractStarted?: (totalPages: number) => void;
   /** One page's raw text finished (live, in page order). */
   onPageExtracted?: (page: ScanPageExtracted) => void;
+  /**
+   * The scan itself is saved and extracted — ids are known. Fires WELL BEFORE
+   * the promise resolves: the content-processing pipeline (clean → chunk →
+   * embed → NER) keeps streaming on this same connection afterwards.
+   */
+  onScanReady?: (result: ScanPdfResult) => void;
+  /** One content-processing event (clean/chunk/embed/NER), live. */
+  onProcessing?: (event: ScanProcessingEvent) => void;
+  /** The pipeline reached a terminal state on the server. */
+  onProcessingSettled?: (status: "completed" | "failed") => void;
   signal?: AbortSignal;
 }
 
@@ -113,9 +123,74 @@ export interface ScanPageExtracted {
   preview: string;
 }
 
+/** One page's finished AI cleanup, streamed the moment the row is durable. */
+export interface ScanCleanedPage {
+  pageNumber: number;
+  title: string | null;
+  kind: string | null;
+  text: string;
+  truncated: boolean;
+}
+
+/** A content-processing progress event, normalized for the scanner UI. */
+export interface ScanProcessingEvent {
+  stage: string; // materialize | clean | chunk | embed | ner | enrich
+  phase: string; // started | progress | page | heartbeat | done | stats | error
+  message: string;
+  current: number;
+  total: number;
+  /** Present on `clean`/`page` — the model's real output for that page. */
+  cleanedPage: ScanCleanedPage | null;
+  /** Present on the terminal `stats` event. */
+  stats: { entities: number | null; chunks: number | null } | null;
+}
+
+function parseProcessingEvent(
+  d: Record<string, unknown>,
+): ScanProcessingEvent | null {
+  if (d.kind !== "content.processing.progress") return null;
+  const data = (d.data ?? null) as Record<string, unknown> | null;
+  const preview = (data?.preview ?? null) as Record<string, unknown> | null;
+  const cleanedPage =
+    preview && preview.kind === "page_clean" && typeof preview.cleaned_text === "string"
+      ? {
+          pageNumber: Number(preview.page_number ?? 0),
+          title:
+            typeof preview.section_title === "string" ? preview.section_title : null,
+          kind: typeof preview.section_kind === "string" ? preview.section_kind : null,
+          text: preview.cleaned_text,
+          truncated: preview.truncated === true,
+        }
+      : null;
+  const stats =
+    d.phase === "stats" && data
+      ? {
+          entities: typeof data.entities === "number" ? data.entities : null,
+          chunks: typeof data.chunks === "number" ? data.chunks : null,
+        }
+      : null;
+  return {
+    stage: String(d.stage ?? ""),
+    phase: String(d.phase ?? ""),
+    message: typeof d.message === "string" ? d.message : "",
+    current: Number(d.current ?? 0),
+    total: Number(d.total ?? 0),
+    cleanedPage,
+    stats,
+  };
+}
+
 /**
- * Build + persist + extract the scan in one round trip. Resolves with the
- * terminal result (file_id / doc_id) or throws with the server's error.
+ * Build + persist + extract the scan, then watch its content-processing
+ * pipeline — all on ONE connection.
+ *
+ * 🚨 THE FLOATING LAW. This used to `break` out of the stream at the scan
+ * result and let a 2s Supabase poll guess at the rest; the expensive multi-LLM
+ * clean step showed a percentage while the model's rewrite of the user's own
+ * scan stayed invisible until it was over. The server streams that work (it has
+ * since the pipeline moved inline), and each page's cleaned text now rides the
+ * stream as it lands, so the client watches instead of polling. Resolves when
+ * the stream ends; ids reach the caller far earlier via `onScanReady`.
  */
 export async function createScanPdf(
   payload: ScanPdfRequest,
