@@ -396,20 +396,20 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
-    // Expertise Packs — the expert's rulebooks; desks compile from them.
-    label: "Expertise",
-    href: "/expertise",
+    // Masterwork Studio — the Expert's Rulebooks; Masterworks are built from them.
+    label: "Masterwork Studio",
+    href: "/masterwork",
     iconName: "BookOpen",
     section: "primary",
     profileMenu: true,
     dashboard: true,
     description:
-      "Your expertise as a rulebook — rules the AI enforces exactly your way",
+      "Your expertise as a Rulebook — rules the AI enforces exactly your way",
     color: "violet",
     children: [
       {
-        label: "All Packs",
-        href: "/expertise",
+        label: "All Rulebooks",
+        href: "/masterwork",
         iconName: "List",
         exact: true,
       },

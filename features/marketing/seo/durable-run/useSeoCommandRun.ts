@@ -6,7 +6,7 @@
  * This is the SEO FACE of the shared durable-run primitive
  * (`lib/durable-run/useDurableRun.ts`); the mechanics — remember the run id,
  * rejoin on load, settle from server truth, keep a finished answer across a
- * refresh, float a live stream — all live there, because the expertise
+ * refresh, float a live stream — all live there, because the Masterwork
  * pipelines needed the identical thing and a second copy would be a second
  * durability mechanism. What stays here is the SEO wire vocabulary and this
  * hook's shipped shape.

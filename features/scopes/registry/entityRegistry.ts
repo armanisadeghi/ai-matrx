@@ -228,10 +228,10 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Agent Apps",
     hrefFor: (id) => `/agent-apps/${id}`,
   },
-  expertise_pack: {
+  rulebook: {
     Icon: BookOpen,
-    labelPlural: "Expertise Packs",
-    hrefFor: (id) => `/expertise/${id}`,
+    labelPlural: "Rulebooks",
+    hrefFor: (id) => `/masterwork/${id}`,
   },
   // `skill` and `workflow` have peeks but NO detail route anywhere in `app/`
   // (`/agent-connections/skills` is a list; workflows only appear nested under

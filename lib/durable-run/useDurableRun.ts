@@ -29,8 +29,8 @@
  * - `features/marketing/seo/durable-run/useSeoCommandRun.ts` — SEO commands over
  *   `seo.collection_run` (`seo.*` wire kinds). Four public tools + the page
  *   analyzer.
- * - `features/expertise/durable-run/useExpertiseRun.ts` — compile / ingest /
- *   ingest-file / backtest over `platform.expertise_run`.
+ * - `features/masterwork/durable-run/useMasterworkRun.ts` — build / ingest /
+ *   ingest-file / audition over `platform.masterwork_run`.
  *
  * A third domain adds a `DurableRunWire` here and a thin face beside its
  * feature. It never forks this file — that would be the second durability

@@ -1004,15 +1004,15 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/marketing/discovery/youtube?search={id}",
     rlsUsesHasPermission: true,
   },
-  expertise_pack: {
-    resourceType: "expertise_pack",
-    tableName: "expertise_pack",
+  rulebook: {
+    resourceType: "rulebook",
+    tableName: "rulebook",
     schemaName: "platform",
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: null,
-    displayLabel: "Expertise Pack",
-    urlPathTemplate: "/expertise/{id}",
+    displayLabel: "Rulebook",
+    urlPathTemplate: "/masterwork/{id}",
     rlsUsesHasPermission: true,
   },
   growth_loop_run: {

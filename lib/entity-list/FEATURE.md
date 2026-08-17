@@ -12,7 +12,7 @@ proving ground) · `/transcripts` (`features/transcripts/browse/listConfig.tsx`
 — the heterogeneous-rows test: five source shapes collapsed to one row type
 with a `kind` column) · `/work/conversations`
 (`features/ai-work/conversations/listConfig.tsx` — the URL-state + honest-default
-test) · `features/expertise/browse/` · marketing cross-site ranks ·
+test) · `features/masterwork/browse/` · marketing cross-site ranks ·
 `features/canvas/maps/`. CRM consumes `EntityScopeTabs` directly.
 
 ## The URL is the query (`config.urlState`)
