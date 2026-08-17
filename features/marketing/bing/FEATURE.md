@@ -47,6 +47,12 @@ canonical marketing data model.
 - `BingConnectionSummary`, `BingConnectionResource`, `BingSiteBinding`
   (`types.ts`) — client contract mirrors.
 
+The live shared database must admit `provider='bing_webmaster'`,
+`resource_type='bing_webmaster_site'`, and `status='disconnected'` in its
+existing integration CHECK constraints. Those values were added and validated
+in Matrx Main on 2026-08-15; removing any of them breaks connect, discovery, or
+disconnect before the UI can recover.
+
 ---
 
 ## Key flows
@@ -139,3 +145,6 @@ credential vault, token-refresh, and streamed performance-sync lifecycle.
   product flow, moved app credentials and owner intent fully server-side, added
   the callback route, made OAuth primary, and retained API key as a disclosed
   fallback.
+- 2026-08-15 — Codex: Widened and validated the live shared integration CHECK
+  constraints for the Bing provider, discovered-site resource, and disconnected
+  lifecycle state; regenerated the frontend database types from Matrx Main.
