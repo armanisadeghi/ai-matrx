@@ -10,27 +10,27 @@ import type {
   EntityListController,
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
-import { softDeletePack } from "../service";
-import type { ExpertisePackListRow } from "../types";
+import { softDeleteRulebook } from "../service";
+import type { RulebookListRow } from "../types";
 
-export function useExpertiseRowActions(
-  list: EntityListController<ExpertisePackListRow>,
-): EntityRowActionsResult<ExpertisePackListRow> {
+export function useRulebookRowActions(
+  list: EntityListController<RulebookListRow>,
+): EntityRowActionsResult<RulebookListRow> {
   const router = useRouter();
-  const [deleting, setDeleting] = useState<ExpertisePackListRow | null>(null);
+  const [deleting, setDeleting] = useState<RulebookListRow | null>(null);
   const [busy, setBusy] = useState(false);
 
   const confirmDelete = useCallback(async () => {
     if (!deleting) return;
     setBusy(true);
     try {
-      await softDeletePack(deleting.id);
+      await softDeleteRulebook(deleting.id);
       list.removeRow(deleting.id);
       toast.success(`"${deleting.name}" deleted`);
       setDeleting(null);
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Could not delete the pack",
+        err instanceof Error ? err.message : "Could not delete the Rulebook",
       );
     } finally {
       setBusy(false);
@@ -38,7 +38,7 @@ export function useExpertiseRowActions(
   }, [deleting, list]);
 
   const menuFor = useCallback(
-    (row: ExpertisePackListRow) => (): ItemMenuConfig => ({
+    (row: RulebookListRow) => (): ItemMenuConfig => ({
       sections: [
         {
           id: "open",
@@ -48,14 +48,14 @@ export function useExpertiseRowActions(
               label: "Open",
               icon: Eye,
               kind: "link",
-              href: `/expertise/${row.id}`,
+              href: `/masterwork/${row.id}`,
             },
             {
-              id: "desks",
-              label: "Desks",
+              id: "masterworks",
+              label: "Masterworks",
               icon: Workflow,
               kind: "link",
-              href: `/expertise/${row.id}/desks`,
+              href: `/masterwork/${row.id}/masterworks`,
             },
           ],
         },
@@ -68,7 +68,7 @@ export function useExpertiseRowActions(
               icon: Link2,
               onSelect: () => {
                 void navigator.clipboard.writeText(
-                  `${window.location.origin}/expertise/${row.id}`,
+                  `${window.location.origin}/masterwork/${row.id}`,
                 );
                 toast.success("Link copied");
               },
@@ -93,7 +93,7 @@ export function useExpertiseRowActions(
   );
 
   const onOpenRow = useCallback(
-    (row: ExpertisePackListRow) => router.push(`/expertise/${row.id}`),
+    (row: RulebookListRow) => router.push(`/masterwork/${row.id}`),
     [router],
   );
 
@@ -105,10 +105,10 @@ export function useExpertiseRowActions(
         onOpenChange={(open) => {
           if (!open) setDeleting(null);
         }}
-        title="Delete this pack?"
+        title="Delete this Rulebook?"
         description={
           deleting
-            ? `"${deleting.name}" and its ${deleting.principle_count} rules will be removed. Desks already compiled from it keep working, but you won't be able to recompile them.`
+            ? `"${deleting.name}" and its ${deleting.rule_count} rules will be removed. Masterworks already built from it keep working, but you won't be able to rebuild them.`
             : ""
         }
         confirmLabel="Delete"

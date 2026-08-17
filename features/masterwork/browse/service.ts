@@ -10,21 +10,21 @@ import type {
 } from "@/lib/entity-list/types";
 import { getUserOrganizations } from "@/features/organizations/service";
 import type {
-  ExpertisePackListRow,
-  PackSource,
-  PackStatus,
+  RulebookListRow,
+  RulebookSource,
+  RulebookStatus,
 } from "../types";
 
 /**
- * Entity-list service for /expertise — plain PostgREST over
- * platform.expertise_pack (no per-feature RPC yet; the pack population is
+ * Entity-list service for /masterwork — plain PostgREST over
+ * platform.rulebook (no per-feature RPC yet; the Rulebook population is
  * small). THE VIEW LAW: every scope is an explicit predicate, never bare RLS.
  * Scopes served: mine · orgs (blended via the user's membership list, or
  * narrowed to one org) · public.
  */
 
 const SELECT_COLUMNS =
-  "id,name,slug,description,source,principles,version,status,visibility,created_by,organization_id,created_at,updated_at";
+  "id,name,slug,description,source,rules,version,status,visibility,created_by,organization_id,created_at,updated_at";
 
 const SORTABLE = new Set([
   "name",
@@ -66,7 +66,7 @@ async function myOrgs(): Promise<{ ids: string[]; names: Map<string, string> }> 
  * METHODS check bivariantly, so the typed PostgrestFilterBuilder satisfies
  * this without erasing to `any` (same approach as lib/list-scope's EqCapable).
  */
-interface PackFilterable {
+interface RulebookFilterable {
   eq(column: string, value: string): this;
   in(column: string, values: string[]): this;
   or(filters: string): this;
@@ -77,7 +77,7 @@ interface PackFilterable {
 function basePage() {
   return supabase
     .schema("platform")
-    .from("expertise_pack")
+    .from("rulebook")
     .select(SELECT_COLUMNS, { count: "exact" })
     .is("deleted_at", null);
 }
@@ -85,7 +85,7 @@ function basePage() {
 function baseCount() {
   return supabase
     .schema("platform")
-    .from("expertise_pack")
+    .from("rulebook")
     .select("id", { count: "exact", head: true })
     .is("deleted_at", null);
 }
@@ -96,7 +96,7 @@ function baseCount() {
  * QUERY instead of returning the builder. Blended-orgs ids are fetched by the
  * caller first.
  */
-function applyScope<Q extends PackFilterable>(
+function applyScope<Q extends RulebookFilterable>(
   q: Q,
   scope: EntityListQuery["scope"],
   userId: string,
@@ -110,7 +110,7 @@ function applyScope<Q extends PackFilterable>(
   return applyListScope(q, scope, { userId });
 }
 
-function applyFilters<Q extends PackFilterable>(
+function applyFilters<Q extends RulebookFilterable>(
   q: Q,
   query: EntityListQuery,
 ): Q {
@@ -140,17 +140,17 @@ function applyFilters<Q extends PackFilterable>(
   return q;
 }
 
-function toListRow(row: Record<string, unknown>): ExpertisePackListRow {
+function toListRow(row: Record<string, unknown>): RulebookListRow {
   return {
     id: String(row.id),
     name: String(row.name),
     slug: String(row.slug),
     description: String(row.description ?? ""),
-    source: (row.source ?? {}) as PackSource,
+    source: (row.source ?? {}) as RulebookSource,
     version: Number(row.version),
-    status: row.status as PackStatus,
-    visibility: row.visibility as ExpertisePackListRow["visibility"],
-    principle_count: Array.isArray(row.principles) ? row.principles.length : 0,
+    status: row.status as RulebookStatus,
+    visibility: row.visibility as RulebookListRow["visibility"],
+    rule_count: Array.isArray(row.rules) ? row.rules.length : 0,
     created_by: String(row.created_by),
     organization_id: String(row.organization_id),
     created_at: String(row.created_at),
@@ -158,10 +158,10 @@ function toListRow(row: Record<string, unknown>): ExpertisePackListRow {
   };
 }
 
-export async function fetchExpertisePage(
+export async function fetchRulebookPage(
   query: EntityListQuery,
   sort: EntityListSort,
-): Promise<EntityListPage<ExpertisePackListRow>> {
+): Promise<EntityListPage<RulebookListRow>> {
   const userId = requireUserId();
   const { ids: blendedOrgIds } = await myOrgs();
   let q = applyScope(basePage(), query.scope, userId, blendedOrgIds);
@@ -181,7 +181,7 @@ export async function fetchExpertisePage(
   };
 }
 
-export async function fetchExpertiseCounts(
+export async function fetchRulebookCounts(
   query: EntityListQuery,
 ): Promise<EntityScopeCounts> {
   const userId = requireUserId();
@@ -224,9 +224,8 @@ export async function fetchExpertiseCounts(
   return counts;
 }
 
-export async function fetchExpertiseFacets(): Promise<EntityFacets> {
+export async function fetchRulebookFacets(): Promise<EntityFacets> {
   // Status/visibility filter options are static on the columns; no server
   // facet counts needed at this population size.
   return { byKind: {} };
 }
-

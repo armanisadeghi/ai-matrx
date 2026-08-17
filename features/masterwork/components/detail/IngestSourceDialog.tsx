@@ -19,33 +19,34 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { useExpertiseRun } from "../../durable-run/useExpertiseRun";
-import type { ExpertisePack } from "../../types";
+import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import type { Rulebook } from "../../types";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
  * in, one outcome:
  *
  * - PASTE the source text (a chapter, a playbook, a transcribed hour of
- *   talking) → `/expertise-desks/ingest`.
+ *   talking) → `/masterworks/ingest`.
  * - UPLOAD a file (a PDF, a Word document, a recording of you explaining your
- *   method) → `/expertise-desks/ingest-file`. A document is read page by page
+ *   method) → `/masterworks/ingest-file`. A document is read page by page
  *   so every rule comes back anchored to the page it came from; a recording is
  *   transcribed first. Uploads go through the canonical file handler
  *   (`useFileUpload`) — never a hand-rolled upload.
  *
  * Either way the system distills candidate rules, verifies every quote
- * word-for-word against the source, and lands them as DRAFTS the expert
+ * word-for-word against the source, and lands them as DRAFTS the Expert
  * approves one by one. Never auto-activated (human-first).
  *
- * Both lanes are ONE durable run (`useExpertiseRun` → `platform.expertise_run`):
- * reload mid-distillation and this dialog picks the run back up and reports the
- * true outcome — the drafts summary survives a refresh. THE FLOATING LAW: a run
- * that dies on page refresh is the same defect as a spinner.
+ * Both lanes are ONE durable run (`useMasterworkRun` →
+ * `platform.masterwork_run`): reload mid-Distillation and this dialog picks
+ * the run back up and reports the true outcome — the drafts summary survives a
+ * refresh. THE FLOATING LAW: a run that dies on page refresh is the same
+ * defect as a spinner.
  */
 
-const INGEST_PATH = "/expertise-desks/ingest" satisfies keyof paths;
-const INGEST_FILE_PATH = "/expertise-desks/ingest-file" satisfies keyof paths;
+const INGEST_PATH = "/masterworks/ingest" satisfies keyof paths;
+const INGEST_FILE_PATH = "/masterworks/ingest-file" satisfies keyof paths;
 
 /** Documents come back with page anchors; audio/video is transcribed first. */
 const FILE_ACCEPT = ".pdf,.doc,.docx,.txt,.md,.rtf,.epub,.pptx,audio/*,video/*";
@@ -71,7 +72,7 @@ const MODE_OPTIONS: {
   },
 ];
 
-/** The distillation's terminal document, live or restored from the run row. */
+/** The Distillation's terminal document, live or restored from the run row. */
 interface IngestSummary {
   added: number;
   duplicatesSkipped: number;
@@ -132,12 +133,12 @@ const SHAPE_OPTIONS: {
 export function IngestSourceDialog({
   open,
   onOpenChange,
-  pack,
+  rulebook,
   onIngested,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  pack: ExpertisePack;
+  rulebook: Rulebook;
   onIngested?: () => void;
 }) {
   const { upload } = useFileUpload();
@@ -151,14 +152,14 @@ export function IngestSourceDialog({
 
   /**
    * ONE durable run for both lanes — they emit the SAME terminal event
-   * (`expertise_ingest_complete`; the file lane hands off to the text lane for
-   * a transcript), so they are one run to the user and one pointer to rejoin.
-   * `path` is read at launch time, which is what lets the current lane choose
-   * its endpoint without a second hook.
+   * (`masterwork_ingest_complete`; the file lane hands off to the text lane
+   * for a transcript), so they are one run to the user and one pointer to
+   * rejoin. `path` is read at launch time, which is what lets the current lane
+   * choose its endpoint without a second hook.
    */
-  const run = useExpertiseRun<IngestSummary>({
+  const run = useMasterworkRun<IngestSummary>({
     surface: "ingest",
-    packId: pack.id,
+    rulebookId: rulebook.id,
     path: shape === "file" ? INGEST_FILE_PATH : INGEST_PATH,
     parseResult: parseIngestSummary,
   });
@@ -207,7 +208,7 @@ export function IngestSourceDialog({
     }
     await run.launch(
       {
-        pack_id: pack.id,
+        rulebook_id: rulebook.id,
         text,
         mode,
         source_note: sourceNote.trim() || undefined,
@@ -232,9 +233,9 @@ export function IngestSourceDialog({
       const uploaded = await upload(
         { kind: "file", file },
         {
-          folderPath: "Expertise/Sources",
+          folderPath: "Masterwork/Sources",
           fileName: file.name,
-          metadata: { sourceFeature: "expertise", expertise_pack_id: pack.id },
+          metadata: { sourceFeature: "expertise", rulebook_id: rulebook.id },
         },
       );
       fileId = uploaded.fileId;
@@ -249,7 +250,7 @@ export function IngestSourceDialog({
 
     await run.launch(
       {
-        pack_id: pack.id,
+        rulebook_id: rulebook.id,
         file_id: fileId,
         mode,
         source_note: sourceNote.trim() || file.name,

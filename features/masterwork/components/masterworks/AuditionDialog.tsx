@@ -1,17 +1,17 @@
 "use client";
 
-// features/expertise/components/desks/BacktestDialog.tsx
+// features/masterwork/components/masterworks/AuditionDialog.tsx
 //
-// "Compare to the original" — the R2 outcome signal in the UI. The expert
-// puts our desk's output next to the real published work produced from the
-// same inputs (the news-writer play: same newswire, our brief vs the Times'),
-// and the judge scores both against the pack's own rules. Gaps the reference
-// exposes land as DRAFT rules — the backtest feeds the rulebook, closing the
-// loop: run → compare → new rules → recompile → run again.
+// "Compare to the original" — the Audition in the UI. The Expert puts the
+// Masterwork's output next to the real published work produced from the same
+// inputs (the news-writer play: same newswire, our brief vs the Times'), and
+// the judge scores both against the Rulebook's own rules. Gaps the reference
+// exposes land as DRAFT rules — the Audition feeds the Rulebook, closing the
+// loop: run → audition → new rules → rebuild → run again.
 //
-// Server half: aidream POST /expertise-desks/backtest (streaming; verdict
-// event `expertise_backtest_verdict`). Owner-only mount: gap capture writes
-// draft rules through the pack's one write path.
+// Server half: aidream POST /masterworks/audition (streaming; verdict event
+// `masterwork_audition_verdict`). Owner-only mount: gap capture writes draft
+// rules through the Rulebook's one write path.
 
 import { useEffect, useState } from "react";
 import { Scale } from "lucide-react";
@@ -32,7 +32,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import type { paths } from "@/types/python-generated/api-types";
 
-const BACKTEST_PATH = "/expertise-desks/backtest" satisfies keyof paths;
+const AUDITION_PATH = "/masterworks/audition" satisfies keyof paths;
 
 interface RuleFinding {
   rule_id: string;
@@ -40,7 +40,7 @@ interface RuleFinding {
   note: string;
 }
 
-interface BacktestVerdict {
+interface AuditionVerdict {
   verdict: string;
   summary: string;
   findings: RuleFinding[];
@@ -50,7 +50,7 @@ interface BacktestVerdict {
 
 const VERDICT_COPY: Record<string, { label: string; cls: string }> = {
   candidate_better: {
-    label: "Your desk beat the original",
+    label: "Your Masterwork beat the original",
     cls: "border-primary/50 text-primary",
   },
   parity: { label: "On par with the original", cls: "border-border text-foreground" },
@@ -60,19 +60,19 @@ const VERDICT_COPY: Record<string, { label: string; cls: string }> = {
   },
 };
 
-export function BacktestDialog({
+export function AuditionDialog({
   open,
   onOpenChange,
-  packId,
+  rulebookId,
   initialCandidate,
   onGapsCaptured,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  packId: string;
+  rulebookId: string;
   /** Prefill from a finished in-place run, when opened from its result. */
   initialCandidate?: string;
-  /** Fired when gap drafts landed on the pack (refresh rule counts). */
+  /** Fired when gap drafts landed on the Rulebook (refresh rule counts). */
   onGapsCaptured?: () => void;
 }) {
   const dispatch = useAppDispatch();
@@ -80,19 +80,19 @@ export function BacktestDialog({
   const [reference, setReference] = useState("");
   const [contextNote, setContextNote] = useState("");
   const [running, setRunning] = useState(false);
-  const [verdict, setVerdict] = useState<BacktestVerdict | null>(null);
+  const [verdict, setVerdict] = useState<AuditionVerdict | null>(null);
 
-  // Opened from a finished run: the desk's own output IS the candidate, so
-  // adopt it each time the dialog opens with one. Opening with no prefill
-  // (the plain "Compare" entry) leaves whatever the expert already typed —
-  // and a prefill never silently overwrites a verdict from a prior compare.
+  // Opened from a finished run: the Masterwork's own output IS the candidate,
+  // so adopt it each time the dialog opens with one. Opening with no prefill
+  // (the plain "Compare" entry) leaves whatever the Expert already typed —
+  // and a prefill never silently overwrites a verdict from a prior Audition.
   useEffect(() => {
     if (!open || !initialCandidate) return;
     setCandidate(initialCandidate);
     setVerdict(null);
   }, [open, initialCandidate]);
 
-  const compare = async () => {
+  const audition = async () => {
     if (candidate.trim().length < 50 || reference.trim().length < 50) {
       toast.error("Paste both texts first — ours and the original.");
       return;
@@ -102,10 +102,10 @@ export function BacktestDialog({
     try {
       const result = await dispatch(
         callApi({
-          path: BACKTEST_PATH,
+          path: AUDITION_PATH,
           method: "POST",
           body: {
-            pack_id: packId,
+            rulebook_id: rulebookId,
             candidate_text: candidate,
             reference_text: reference,
             context_note: contextNote.trim() || undefined,
@@ -114,7 +114,7 @@ export function BacktestDialog({
           onStreamEvent: (event) => {
             if (event.event !== "data") return;
             const data = event.data as Record<string, unknown>;
-            if (data.type === "expertise_backtest_verdict") {
+            if (data.type === "masterwork_audition_verdict") {
               setVerdict({
                 verdict: String(data.verdict ?? "parity"),
                 summary: String(data.summary ?? ""),
@@ -153,26 +153,30 @@ export function BacktestDialog({
             Compare to the original
           </DialogTitle>
           <DialogDescription>
-            Put your desk&apos;s work next to the real thing made from the same
-            inputs. Both get judged against your rules — and anything the
-            original does that your rulebook misses becomes a draft rule.
+            Put your Masterwork&apos;s work next to the real thing made from the
+            same inputs. Both get judged against your rules — and anything the
+            original does that your Rulebook misses becomes a draft rule.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <Label htmlFor="bt-candidate">Your desk&apos;s output</Label>
+            <Label htmlFor="audition-candidate">
+              Your Masterwork&apos;s output
+            </Label>
             <Textarea
-              id="bt-candidate"
+              id="audition-candidate"
               value={candidate}
               onChange={(e) => setCandidate(e.target.value)}
               rows={5}
-              placeholder="Paste what your desk produced…"
+              placeholder="Paste what your Masterwork produced…"
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="bt-reference">The original (the real published work)</Label>
+            <Label htmlFor="audition-reference">
+              The original (the real published work)
+            </Label>
             <Textarea
-              id="bt-reference"
+              id="audition-reference"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               rows={5}
@@ -180,19 +184,19 @@ export function BacktestDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="bt-context">
+            <Label htmlFor="audition-context">
               What were the shared inputs?{" "}
               <span className="text-muted-foreground">(optional)</span>
             </Label>
             <Input
-              id="bt-context"
+              id="audition-context"
               value={contextNote}
               onChange={(e) => setContextNote(e.target.value)}
               placeholder='e.g. "the Aug 14 newswire" or "the client brief from Monday"'
               maxLength={500}
             />
           </div>
-          <Button onClick={() => void compare()} disabled={running}>
+          <Button onClick={() => void audition()} disabled={running}>
             {running ? "Judging rule by rule…" : "Compare"}
           </Button>
 
@@ -224,7 +228,7 @@ export function BacktestDialog({
                 <div className="rounded-md border border-primary/30 bg-primary/5 p-2">
                   <p className="text-xs font-medium text-foreground">
                     {verdict.gaps_captured > 0
-                      ? `${verdict.gaps_captured} new draft ${verdict.gaps_captured === 1 ? "rule" : "rules"} captured from what the original does better — review them on the pack page.`
+                      ? `${verdict.gaps_captured} new draft ${verdict.gaps_captured === 1 ? "rule" : "rules"} captured from what the original does better — review them on the Rulebook page.`
                       : "The original does these better — no rule covers them yet:"}
                   </p>
                   <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">

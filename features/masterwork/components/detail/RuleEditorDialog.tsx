@@ -22,9 +22,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type {
-  PackPrinciple,
-  PackSections,
-  PrincipleSeverity,
+  RulebookRule,
+  RulebookSections,
+  RuleSeverity,
 } from "../../types";
 
 /**
@@ -34,7 +34,7 @@ import type {
  */
 
 export interface RuleEditorResult {
-  principle: PackPrinciple;
+  rule: RulebookRule;
   isNew: boolean;
 }
 
@@ -52,11 +52,11 @@ function kebab(name: string): string {
 export interface RuleEditorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  sections: PackSections;
-  /** Ids already in the pack — new rules must not collide. */
+  sections: RulebookSections;
+  /** Ids already in the Rulebook — new rules must not collide. */
   existingIds: Set<string>;
   /** Editing an existing rule; undefined = adding a new one. */
-  initial?: PackPrinciple;
+  initial?: RulebookRule;
   defaultSection?: string;
   onSave: (result: RuleEditorResult) => Promise<void>;
 }
@@ -88,7 +88,7 @@ function RuleEditorForm({
   const [rationale, setRationale] = useState(initial?.rationale ?? "");
   const [detection, setDetection] = useState(initial?.detection ?? "");
   const [quote, setQuote] = useState(initial?.quote ?? "");
-  const [severity, setSeverity] = useState<PrincipleSeverity>(
+  const [severity, setSeverity] = useState<RuleSeverity>(
     initial?.severity ?? "major",
   );
   const [section, setSection] = useState(
@@ -112,7 +112,7 @@ function RuleEditorForm({
     try {
       await onSave({
         isNew,
-        principle: {
+        rule: {
           ...(initial ?? {}),
           id,
           name: name.trim(),
@@ -189,7 +189,7 @@ function RuleEditorForm({
               <Label>How bad is breaking it?</Label>
               <Select
                 value={severity}
-                onValueChange={(v) => setSeverity(v as PrincipleSeverity)}
+                onValueChange={(v) => setSeverity(v as RuleSeverity)}
               >
                 <SelectTrigger>
                   <SelectValue />

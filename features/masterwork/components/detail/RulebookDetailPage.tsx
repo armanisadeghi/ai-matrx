@@ -25,31 +25,32 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
-  getPack,
-  listDesksForPack,
-  savePrinciples,
-  updatePackMeta,
+  getRulebook,
+  listMasterworksForRulebook,
+  saveRules,
+  updateRulebookMeta,
 } from "../../service";
 import {
   SEVERITY_LABELS,
-  type ExpertisePack,
-  type PackDesk,
-  type PackPrinciple,
-  type PrincipleSeverity,
-  type PrincipleSourceRef,
+  type Masterwork,
+  type Rulebook,
+  type RulebookRule,
+  type RuleSeverity,
+  type RuleSourceRef,
 } from "../../types";
-import { CompileDeskDialog } from "./CompileDeskDialog";
+import { BuildMasterworkDialog } from "./BuildMasterworkDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
-import { InterviewButton, PackInterviewPanel } from "./PackInterviewPanel";
+import { InterviewButton, ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 
 /**
- * The expert surface: read your rulebook, correct it, grow it. Rules are
+ * The Expert surface: read your Rulebook, correct it, grow it. Rules are
  * grouped by section; each expands to why / how-to-spot-it / the source's own
- * words. Every save bumps the pack version (desks show drift against it).
+ * words. Every save bumps the Rulebook version (Masterworks show drift
+ * against it).
  */
 
-function severityBadge(severity: PrincipleSeverity) {
+function severityBadge(severity: RuleSeverity) {
   const cls =
     severity === "critical"
       ? "border-destructive/50 text-destructive"
@@ -87,9 +88,9 @@ function formatPages(pages: number[]): string {
  * rendered AND linked: the uploaded document opens in the file viewer, the
  * extraction that read it opens in the extraction workspace. A rule whose
  * quote could not be machine-verified says so here, because that is the one
- * thing the expert must check by eye.
+ * thing the Expert must check by eye.
  */
-function RuleProvenance({ sourceRef }: { sourceRef: PrincipleSourceRef }) {
+function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
   const pages = sourceRef.source_pages?.length
     ? formatPages(sourceRef.source_pages)
     : sourceRef.pages
@@ -135,20 +136,20 @@ function RuleProvenance({ sourceRef }: { sourceRef: PrincipleSourceRef }) {
 }
 
 function RuleRow({
-  principle,
+  rule,
   canEdit,
   onEdit,
   onToggleRetired,
   onApprove,
 }: {
-  principle: PackPrinciple;
+  rule: RulebookRule;
   canEdit: boolean;
   onEdit: () => void;
   onToggleRetired: () => void;
   onApprove: () => void;
 }) {
   const [openRow, setOpenRow] = useState(false);
-  const retired = principle.retired === true;
+  const retired = rule.retired === true;
   return (
     <div
       className={`rounded-md border border-border bg-card ${retired ? "opacity-60" : ""}`}
@@ -168,10 +169,10 @@ function RuleRow({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-foreground">
-                {principle.name}
+                {rule.name}
               </span>
-              {severityBadge(principle.severity)}
-              {principle.draft ? (
+              {severityBadge(rule.severity)}
+              {rule.draft ? (
                 <Badge
                   variant="outline"
                   className="px-1.5 py-0 text-[10px] border-primary/40 text-primary"
@@ -189,11 +190,11 @@ function RuleRow({
               ) : null}
             </div>
             <p className="mt-0.5 text-sm text-muted-foreground">
-              {principle.statement}
+              {rule.statement}
             </p>
           </div>
         </button>
-        {canEdit && principle.draft && !retired ? (
+        {canEdit && rule.draft && !retired ? (
           <Button
             size="sm"
             className="h-7 shrink-0"
@@ -206,37 +207,37 @@ function RuleRow({
       </div>
       {openRow ? (
         <div className="space-y-2 border-t border-border px-9 py-2 text-sm">
-          {principle.rationale ? (
+          {rule.rationale ? (
             <div>
               <div className="text-xs font-medium text-muted-foreground">
                 Why it matters
               </div>
-              <p className="text-foreground">{principle.rationale}</p>
+              <p className="text-foreground">{rule.rationale}</p>
             </div>
           ) : null}
-          {principle.detection ? (
+          {rule.detection ? (
             <div>
               <div className="text-xs font-medium text-muted-foreground">
                 How to spot a violation
               </div>
-              <p className="text-foreground">{principle.detection}</p>
+              <p className="text-foreground">{rule.detection}</p>
             </div>
           ) : null}
-          {principle.quote ? (
+          {rule.quote ? (
             <div>
               <div className="text-xs font-medium text-muted-foreground">
                 In the source&apos;s own words
               </div>
               <blockquote className="border-l-2 border-border pl-2 italic text-foreground">
-                “{principle.quote}”
+                “{rule.quote}”
               </blockquote>
             </div>
           ) : null}
-          {principle.source_ref ? (
-            <RuleProvenance sourceRef={principle.source_ref} />
+          {rule.source_ref ? (
+            <RuleProvenance sourceRef={rule.source_ref} />
           ) : null}
           <div className="text-xs text-muted-foreground">
-            Rule id: <code className="font-mono">{principle.id}</code> — audits
+            Rule id: <code className="font-mono">{rule.id}</code> — audits
             cite this id.
           </div>
           {canEdit ? (
@@ -257,50 +258,53 @@ function RuleRow({
   );
 }
 
-export function PackDetailPage({ packId }: { packId: string }) {
-  const [pack, setPack] = useState<ExpertisePack | null>(null);
-  const [desks, setDesks] = useState<PackDesk[]>([]);
+export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
+  const [rulebook, setRulebook] = useState<Rulebook | null>(null);
+  const [masterworks, setMasterworks] = useState<Masterwork[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
-  const [editing, setEditing] = useState<PackPrinciple | undefined>();
+  const [editing, setEditing] = useState<RulebookRule | undefined>();
   const [editorSection, setEditorSection] = useState<string | undefined>();
   const [confirmActivate, setConfirmActivate] = useState(false);
-  const [compileOpen, setCompileOpen] = useState(false);
+  const [buildOpen, setBuildOpen] = useState(false);
   const [ingestOpen, setIngestOpen] = useState(false);
   const searchParams = useSearchParams();
-  // The guided start ("Distill an expert") lands here with ?interview=1 when
-  // the knowledge lives in the expert's head — the interview IS the next step.
+  // The guided start ("Distill your expertise") lands here with ?interview=1
+  // when the knowledge lives in the Expert's head — the Scout interview IS the
+  // next step.
   const [interviewOpen, setInterviewOpen] = useState(
     searchParams.get("interview") === "1",
   );
   const userId = useAppSelector(selectUserId);
 
-  const reloadPack = useCallback(async () => {
-    const p = await getPack(packId);
-    if (p) setPack(p);
-  }, [packId]);
+  const reloadRulebook = useCallback(async () => {
+    const r = await getRulebook(rulebookId);
+    if (r) setRulebook(r);
+  }, [rulebookId]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [p, d] = await Promise.all([
-          getPack(packId),
-          listDesksForPack(packId).catch(() => [] as PackDesk[]),
+        const [r, m] = await Promise.all([
+          getRulebook(rulebookId),
+          listMasterworksForRulebook(rulebookId).catch(() => [] as Masterwork[]),
         ]);
         if (cancelled) return;
-        if (!p) {
-          setError("This pack doesn't exist, or you don't have access to it.");
+        if (!r) {
+          setError(
+            "This Rulebook doesn't exist, or you don't have access to it.",
+          );
         } else {
-          setPack(p);
-          setDesks(d);
+          setRulebook(r);
+          setMasterworks(m);
         }
       } catch (err) {
         if (!cancelled)
           setError(
-            err instanceof Error ? err.message : "Could not load the pack",
+            err instanceof Error ? err.message : "Could not load the Rulebook",
           );
       } finally {
         if (!cancelled) setLoading(false);
@@ -309,83 +313,85 @@ export function PackDetailPage({ packId }: { packId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [packId]);
+  }, [rulebookId]);
 
-  const canEdit = pack !== null && userId !== null && pack.created_by === userId;
+  const canEdit =
+    rulebook !== null && userId !== null && rulebook.created_by === userId;
 
   const existingIds = useMemo(
-    () => new Set((pack?.principles ?? []).map((p) => p.id)),
-    [pack?.principles],
+    () => new Set((rulebook?.rules ?? []).map((r) => r.id)),
+    [rulebook?.rules],
   );
 
   const grouped = useMemo(() => {
-    if (!pack) return [] as { code: string; label: string; rules: PackPrinciple[] }[];
+    if (!rulebook)
+      return [] as { code: string; label: string; rules: RulebookRule[] }[];
     const q = search.trim().toLowerCase();
-    const match = (p: PackPrinciple) =>
+    const match = (r: RulebookRule) =>
       !q ||
-      p.name.toLowerCase().includes(q) ||
-      p.statement.toLowerCase().includes(q) ||
-      p.id.includes(q);
-    const codes = Object.keys(pack.sections);
+      r.name.toLowerCase().includes(q) ||
+      r.statement.toLowerCase().includes(q) ||
+      r.id.includes(q);
+    const codes = Object.keys(rulebook.sections);
     const known = new Set(codes);
     const groups = codes.map((code) => ({
       code,
-      label: pack.sections[code]?.label ?? code,
-      rules: pack.principles.filter((p) => p.section === code && match(p)),
+      label: rulebook.sections[code]?.label ?? code,
+      rules: rulebook.rules.filter((r) => r.section === code && match(r)),
     }));
-    const orphans = pack.principles.filter(
-      (p) => !known.has(p.section) && match(p),
+    const orphans = rulebook.rules.filter(
+      (r) => !known.has(r.section) && match(r),
     );
     if (orphans.length > 0) {
       groups.push({ code: "?", label: "Unsorted", rules: orphans });
     }
     return groups;
-  }, [pack, search]);
+  }, [rulebook, search]);
 
   const persist = useCallback(
-    async (next: PackPrinciple[]) => {
-      if (!pack) return;
+    async (next: RulebookRule[]) => {
+      if (!rulebook) return;
       try {
-        const saved = await savePrinciples({
-          packId: pack.id,
-          expectedVersion: pack.version,
-          principles: next,
+        const saved = await saveRules({
+          rulebookId: rulebook.id,
+          expectedVersion: rulebook.version,
+          rules: next,
         });
-        setPack(saved);
+        setRulebook(saved);
       } catch (err) {
-        // A lost version swap (the interviewer or another tab saved first) is
-        // recoverable: pull the fresh pack so the NEXT save works, then
+        // A lost version swap (the Scout or another tab saved first) is
+        // recoverable: pull the fresh Rulebook so the NEXT save works, then
         // surface what happened. Without this, every later save 409s forever.
-        void reloadPack();
+        void reloadRulebook();
         throw err;
       }
     },
-    [pack, reloadPack],
+    [rulebook, reloadRulebook],
   );
 
   const saveRule = useCallback(
-    async ({ principle, isNew }: RuleEditorResult) => {
-      if (!pack) return;
-      // The expert opening a draft, correcting it, and saving IS approval —
-      // the human-first act the whole distillation loop waits on.
-      const approved = { ...principle, draft: false };
+    async ({ rule, isNew }: RuleEditorResult) => {
+      if (!rulebook) return;
+      // The Expert opening a draft, correcting it, and saving IS approval —
+      // the human-first act the whole Distillation loop waits on.
+      const approved = { ...rule, draft: false };
       const next = isNew
-        ? [...pack.principles, approved]
-        : pack.principles.map((p) => (p.id === approved.id ? approved : p));
+        ? [...rulebook.rules, approved]
+        : rulebook.rules.map((r) => (r.id === approved.id ? approved : r));
       await persist(next);
       toast.success(
-        isNew ? "Rule added" : principle.draft ? "Rule approved" : "Rule saved",
-        { description: `Pack is now version ${pack.version + 1}.` },
+        isNew ? "Rule added" : rule.draft ? "Rule approved" : "Rule saved",
+        { description: `Rulebook is now version ${rulebook.version + 1}.` },
       );
     },
-    [pack, persist],
+    [rulebook, persist],
   );
 
   const approveRule = useCallback(
-    async (rule: PackPrinciple) => {
-      if (!pack) return;
-      const next = pack.principles.map((p) =>
-        p.id === rule.id ? { ...p, draft: false } : p,
+    async (rule: RulebookRule) => {
+      if (!rulebook) return;
+      const next = rulebook.rules.map((r) =>
+        r.id === rule.id ? { ...r, draft: false } : r,
       );
       try {
         await persist(next);
@@ -394,13 +400,13 @@ export function PackDetailPage({ packId }: { packId: string }) {
         toast.error(err instanceof Error ? err.message : "Could not approve");
       }
     },
-    [pack, persist],
+    [rulebook, persist],
   );
 
   const approveAllDrafts = useCallback(async () => {
-    if (!pack) return;
-    const next = pack.principles.map((p) =>
-      p.draft ? { ...p, draft: false } : p,
+    if (!rulebook) return;
+    const next = rulebook.rules.map((r) =>
+      r.draft ? { ...r, draft: false } : r,
     );
     try {
       await persist(next);
@@ -408,13 +414,13 @@ export function PackDetailPage({ packId }: { packId: string }) {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not approve");
     }
-  }, [pack, persist]);
+  }, [rulebook, persist]);
 
   const toggleRetired = useCallback(
-    async (rule: PackPrinciple) => {
-      if (!pack) return;
-      const next = pack.principles.map((p) =>
-        p.id === rule.id ? { ...p, retired: p.retired !== true } : p,
+    async (rule: RulebookRule) => {
+      if (!rulebook) return;
+      const next = rulebook.rules.map((r) =>
+        r.id === rule.id ? { ...r, retired: r.retired !== true } : r,
       );
       try {
         await persist(next);
@@ -425,23 +431,23 @@ export function PackDetailPage({ packId }: { packId: string }) {
         toast.error(err instanceof Error ? err.message : "Could not save");
       }
     },
-    [pack, persist],
+    [rulebook, persist],
   );
 
   const activate = useCallback(async () => {
-    if (!pack) return;
+    if (!rulebook) return;
     try {
-      const saved = await updatePackMeta({
-        packId: pack.id,
+      const saved = await updateRulebookMeta({
+        rulebookId: rulebook.id,
         patch: { status: "active" },
       });
-      setPack(saved);
+      setRulebook(saved);
       setConfirmActivate(false);
-      toast.success("Pack activated — it can now power desks.");
+      toast.success("Rulebook activated — it can now power Masterworks.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not activate");
     }
-  }, [pack]);
+  }, [rulebook]);
 
   if (loading) {
     return (
@@ -450,82 +456,83 @@ export function PackDetailPage({ packId }: { packId: string }) {
       </div>
     );
   }
-  if (error || !pack) {
+  if (error || !rulebook) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-muted-foreground">{error}</p>
         <Button asChild variant="outline" size="sm">
-          <Link href="/expertise">Back to Expertise</Link>
+          <Link href="/masterwork">Back to Masterwork Studio</Link>
         </Button>
       </div>
     );
   }
 
-  const liveRuleCount = pack.principles.filter((p) => p.retired !== true).length;
-  const draftCount = pack.principles.filter((p) => p.draft === true).length;
-  // Only approved (non-draft, non-retired) rules power desks — the compiler
-  // excludes drafts, so the button must not promise what it will refuse.
-  const approvedCount = pack.principles.filter(
-    (p) => p.retired !== true && p.draft !== true,
+  const liveRuleCount = rulebook.rules.filter((r) => r.retired !== true).length;
+  const draftCount = rulebook.rules.filter((r) => r.draft === true).length;
+  // Only approved (non-draft, non-retired) rules power a Masterwork — the
+  // Build excludes drafts, so the button must not promise what it will refuse.
+  const approvedCount = rulebook.rules.filter(
+    (r) => r.retired !== true && r.draft !== true,
   ).length;
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6">
-      {/* Pack summary */}
+      {/* Rulebook summary */}
       <div className="rounded-lg border border-border bg-card p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-muted-foreground" />
               <h2 className="truncate text-base font-semibold text-foreground">
-                {pack.name}
+                {rulebook.name}
               </h2>
             </div>
-            {pack.description ? (
+            {rulebook.description ? (
               <p className="mt-1 text-sm text-muted-foreground">
-                {pack.description}
+                {rulebook.description}
               </p>
             ) : null}
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {pack.source.author ? (
+              {rulebook.source.author ? (
                 <span>
-                  {pack.source.title ? `“${pack.source.title}” — ` : ""}
-                  {pack.source.author}
-                  {pack.source.year ? `, ${pack.source.year}` : ""}
+                  {rulebook.source.title ? `“${rulebook.source.title}” — ` : ""}
+                  {rulebook.source.author}
+                  {rulebook.source.year ? `, ${rulebook.source.year}` : ""}
                 </span>
               ) : null}
               <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                v{pack.version}
+                v{rulebook.version}
               </Badge>
               <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                 {liveRuleCount} rules
               </Badge>
               <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                {pack.status === "draft"
+                {rulebook.status === "draft"
                   ? "Draft"
-                  : pack.status === "active"
+                  : rulebook.status === "active"
                     ? "Active"
                     : "Archived"}
               </Badge>
             </div>
           </div>
           <div className="flex shrink-0 gap-2">
-            {canEdit && pack.status === "draft" ? (
+            {canEdit && rulebook.status === "draft" ? (
               <Button size="sm" onClick={() => setConfirmActivate(true)}>
                 <CheckCircle2 className="mr-1 h-4 w-4" />
                 Activate
               </Button>
             ) : null}
             {approvedCount > 0 ? (
-              <Button size="sm" onClick={() => setCompileOpen(true)}>
+              <Button size="sm" onClick={() => setBuildOpen(true)}>
                 <Hammer className="mr-1 h-4 w-4" />
-                Create a desk
+                Build a Masterwork
               </Button>
             ) : null}
             <Button asChild size="sm" variant="outline">
-              <Link href={`/expertise/${pack.id}/desks`}>
+              <Link href={`/masterwork/${rulebook.id}/masterworks`}>
                 <Workflow className="mr-1 h-4 w-4" />
-                Desks{desks.length > 0 ? ` (${desks.length})` : ""}
+                Masterworks
+                {masterworks.length > 0 ? ` (${masterworks.length})` : ""}
               </Link>
             </Button>
           </div>
@@ -550,7 +557,7 @@ export function PackDetailPage({ packId }: { packId: string }) {
             ) : null}
             {approvedCount === 0 ? (
               <p className="text-xs text-muted-foreground">
-                Approved rules are what power a desk — none yet.
+                Approved rules are what power a Masterwork — none yet.
               </p>
             ) : null}
           </div>
@@ -597,7 +604,7 @@ export function PackDetailPage({ packId }: { packId: string }) {
       </div>
 
       {/* Sections */}
-      {pack.principles.length === 0 ? (
+      {rulebook.rules.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
             No rules yet. The fastest way to fill this in: let us interview you
@@ -663,7 +670,7 @@ export function PackDetailPage({ packId }: { packId: string }) {
                 {group.rules.map((rule) => (
                   <RuleRow
                     key={rule.id}
-                    principle={rule}
+                    rule={rule}
                     canEdit={canEdit}
                     onEdit={() => {
                       setEditing(rule);
@@ -683,7 +690,7 @@ export function PackDetailPage({ packId }: { packId: string }) {
       <RuleEditorDialog
         open={editorOpen}
         onOpenChange={setEditorOpen}
-        sections={pack.sections}
+        sections={rulebook.sections}
         existingIds={existingIds}
         initial={editing}
         defaultSection={editorSection}
@@ -692,39 +699,39 @@ export function PackDetailPage({ packId }: { packId: string }) {
       <ConfirmDialog
         open={confirmActivate}
         onOpenChange={setConfirmActivate}
-        title="Activate this pack?"
-        description="Active packs can power desks — working AI checkers built from these rules. You can keep editing after activation; every save creates a new version."
+        title="Activate this Rulebook?"
+        description="An active Rulebook can power Masterworks — working AI checkers built from these rules. You can keep editing after activation; every save creates a new version."
         confirmLabel="Activate"
         onConfirm={() => void activate()}
       />
-      <CompileDeskDialog
-        open={compileOpen}
-        onOpenChange={setCompileOpen}
-        pack={pack}
-        onCompiled={() => {
-          void listDesksForPack(pack.id)
-            .then(setDesks)
+      <BuildMasterworkDialog
+        open={buildOpen}
+        onOpenChange={setBuildOpen}
+        rulebook={rulebook}
+        onBuilt={() => {
+          void listMasterworksForRulebook(rulebook.id)
+            .then(setMasterworks)
             .catch(() => undefined);
         }}
       />
       <IngestSourceDialog
         open={ingestOpen}
         onOpenChange={setIngestOpen}
-        pack={pack}
+        rulebook={rulebook}
         onIngested={() => {
-          void getPack(pack.id)
-            .then((p) => {
-              if (p) setPack(p);
+          void getRulebook(rulebook.id)
+            .then((r) => {
+              if (r) setRulebook(r);
             })
             .catch(() => undefined);
         }}
       />
       {canEdit ? (
-        <PackInterviewPanel
-          packId={pack.id}
+        <ScoutInterviewPanel
+          rulebookId={rulebook.id}
           open={interviewOpen}
           onOpenChange={setInterviewOpen}
-          onPackChanged={() => void reloadPack()}
+          onRulebookChanged={() => void reloadRulebook()}
         />
       ) : null}
     </div>

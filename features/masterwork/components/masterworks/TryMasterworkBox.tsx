@@ -1,12 +1,12 @@
 "use client";
 
-// features/expertise/components/desks/TryDeskBox.tsx
+// features/masterwork/components/masterworks/TryMasterworkBox.tsx
 //
-// "Try your desk" IN PLACE — the desk is a working AI checker, so the desks
-// page lets the expert run it right here: paste text (edit shape) or a brief
-// (generate shape), watch the real stages tick by, and read the chief's
-// ruling when it lands. The workflow studio stays available as the power
-// door; it is no longer the only way to run a desk.
+// "Try your Masterwork" IN PLACE — the Masterwork is a working AI checker, so
+// the Masterworks page lets the Expert run it right here: paste text (edit
+// shape) or a brief (generate shape), watch the real stages tick by, and read
+// the chief's ruling when it lands. The workflow studio stays available as the
+// power door; it is no longer the only way to run a Masterwork.
 //
 // Canonical machinery, nothing bespoke (mirrors features/vision-interview/
 // hooks/useInterviewRun.ts): callApi starts the run (typed path), the inline
@@ -15,10 +15,10 @@
 // through RichDocument (the one pipeline). The run itself is durable server
 // work — closing the page loses nothing; the run lands in Past runs.
 //
-// And a refresh loses nothing EITHER: the run id is remembered per desk for
-// the tab's lifetime, so on mount we read the run row and either rejoin the
-// live run (attachWorkflowRun replays the node lifecycle we missed) or show
-// the verdict it reached while the expert was away.
+// And a refresh loses nothing EITHER: the run id is remembered per Masterwork
+// for the tab's lifetime, so on mount we read the run row and either rejoin
+// the live run (attachWorkflowRun replays the node lifecycle we missed) or
+// show the verdict it reached while the Expert was away.
 
 import { useEffect, useRef, useState } from "react";
 import { CircleCheck, CircleDashed, CircleX, Play, Scale } from "lucide-react";
@@ -36,8 +36,8 @@ import {
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import {
-  getDeskRunVerdict,
-  type DeskRunVerdict,
+  getMasterworkRunVerdict,
+  type MasterworkRunVerdict,
 } from "../../service";
 
 type Phase = "idle" | "starting" | "running" | "done" | "failed";
@@ -50,32 +50,33 @@ interface StageRow {
 const TERMINAL_STATUSES = ["completed", "failed", "cancelled"];
 
 /**
- * The last run started for this desk, remembered for the tab's lifetime so a
- * refresh rejoins it instead of dropping the expert back to an empty box.
+ * The last run started for this Masterwork, remembered for the tab's lifetime
+ * so a refresh rejoins it instead of dropping the Expert back to an empty box.
  * sessionStorage (not local): a run is a "what am I watching right now",
  * scoped to this tab, and it must never resurrect weeks later.
  */
-const runKey = (deskId: string) => `matrx.expertise.desk-run.${deskId}`;
+const runKey = (masterworkId: string) =>
+  `matrx.masterwork.run.${masterworkId}`;
 
-function rememberRun(deskId: string, runId: string): void {
+function rememberRun(masterworkId: string, runId: string): void {
   try {
-    sessionStorage.setItem(runKey(deskId), runId);
+    sessionStorage.setItem(runKey(masterworkId), runId);
   } catch {
     // Private mode / quota — losing re-attach is a downgrade, never a failure.
   }
 }
 
-function recallRun(deskId: string): string | null {
+function recallRun(masterworkId: string): string | null {
   try {
-    return sessionStorage.getItem(runKey(deskId));
+    return sessionStorage.getItem(runKey(masterworkId));
   } catch {
     return null;
   }
 }
 
-function forgetRun(deskId: string): void {
+function forgetRun(masterworkId: string): void {
   try {
-    sessionStorage.removeItem(runKey(deskId));
+    sessionStorage.removeItem(runKey(masterworkId));
   } catch {
     /* see rememberRun */
   }
@@ -92,21 +93,21 @@ function stageLabel(nodeId: string): string {
   return nodeId.replaceAll("_", " ");
 }
 
-export function TryDeskBox({
-  deskId,
-  deskKind,
+export function TryMasterworkBox({
+  masterworkId,
+  masterworkKind,
   onRunFinished,
   onCompare,
 }: {
-  deskId: string;
-  /** From the desk's compiled_from_pack metadata: "edit" | "generate". */
-  deskKind: string | null;
+  masterworkId: string;
+  /** From the Masterwork's metadata (masterwork_kind): "edit" | "generate". */
+  masterworkKind: string | null;
   /** Fired when a run reaches a terminal state (refresh Past runs). */
   onRunFinished: () => void;
   /**
-   * Owner-only door beside the verdict: hand the desk's own output to the
-   * backtest, prefilled, so "is this actually as good as the real thing?" is
-   * one click from the answer instead of a copy-paste. Omit to hide it.
+   * Owner-only door beside the verdict: hand the Masterwork's own output to
+   * the Audition, prefilled, so "is this actually as good as the real thing?"
+   * is one click from the answer instead of a copy-paste. Omit to hide it.
    */
   onCompare?: (candidateText: string) => void;
 }) {
@@ -115,7 +116,7 @@ export function TryDeskBox({
   const [notes, setNotes] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
   const [stages, setStages] = useState<StageRow[]>([]);
-  const [verdict, setVerdict] = useState<DeskRunVerdict | null>(null);
+  const [verdict, setVerdict] = useState<MasterworkRunVerdict | null>(null);
   const [failureMessage, setFailureMessage] = useState<string | null>(null);
   /** True while showing a run recovered on mount rather than started here. */
   const [rejoined, setRejoined] = useState(false);
@@ -124,7 +125,7 @@ export function TryDeskBox({
   const adoptedRef = useRef<{ requestId: string; conversationId: string } | null>(
     null,
   );
-  const isEdit = deskKind !== "generate";
+  const isEdit = masterworkKind !== "generate";
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -138,12 +139,12 @@ export function TryDeskBox({
     const timer = setInterval(() => {
       const runId = runIdRef.current;
       if (!runId) return;
-      void getDeskRunVerdict(runId)
+      void getMasterworkRunVerdict(runId)
         .then((result) => {
           if (!result) return;
           if (TERMINAL_STATUSES.includes(result.status)) {
             console.error(
-              "[TryDeskBox] run reached a terminal state but the event stream never delivered it — recovered from the run row",
+              "[TryMasterworkBox] run reached a terminal state but the event stream never delivered it — recovered from the run row",
               { runId, status: result.status },
             );
             abortRef.current?.abort();
@@ -168,7 +169,7 @@ export function TryDeskBox({
     // Breadcrumb for the missed-terminal-event investigation (see the
     // backstop below): if the backstop ever fires, this trail shows exactly
     // which event the stream died after.
-    console.debug("[TryDeskBox] run event", event.event, event.node_id ?? "");
+    console.debug("[TryMasterworkBox] run event", event.event, event.node_id ?? "");
     const nodeId = typeof event.node_id === "string" ? event.node_id : null;
     if (nodeId && event.event === "node_started") {
       setStages((prev) =>
@@ -199,7 +200,7 @@ export function TryDeskBox({
       }
       void (async () => {
         try {
-          const result = runId ? await getDeskRunVerdict(runId) : null;
+          const result = runId ? await getMasterworkRunVerdict(runId) : null;
           setVerdict(result);
           setPhase("done");
           // We watched this one land, whether or not we rejoined mid-run —
@@ -227,21 +228,22 @@ export function TryDeskBox({
 
   // ── Re-attach after a refresh ──────────────────────────────────────────
   // The run is durable server work; only this view was ephemeral. On mount,
-  // if this desk has a remembered run: still going → rejoin its event feed
-  // (the feed replays the node lifecycle from the start, so the stage list
-  // rebuilds itself); already finished → show what it decided while we were
-  // away. A run row that no longer reads is forgotten rather than nagged at.
+  // if this Masterwork has a remembered run: still going → rejoin its event
+  // feed (the feed replays the node lifecycle from the start, so the stage
+  // list rebuilds itself); already finished → show what it decided while we
+  // were away. A run row that no longer reads is forgotten rather than nagged
+  // at.
   useEffect(() => {
-    const runId = recallRun(deskId);
+    const runId = recallRun(masterworkId);
     if (!runId) return;
     let cancelled = false;
     const controller = new AbortController();
 
-    void getDeskRunVerdict(runId)
+    void getMasterworkRunVerdict(runId)
       .then((result) => {
         if (cancelled) return;
         if (!result) {
-          forgetRun(deskId);
+          forgetRun(masterworkId);
           return;
         }
         runIdRef.current = runId;
@@ -277,9 +279,9 @@ export function TryDeskBox({
       cancelled = true;
       controller.abort();
     };
-  }, [deskId, dispatch]);
+  }, [masterworkId, dispatch]);
 
-  /** What a finished run produced — the backtest's candidate, when there is one. */
+  /** What a finished run produced — the Audition's candidate, when there is one. */
   const candidateText =
     phase === "done" && verdict
       ? (verdict.editorText ?? verdict.chiefText)
@@ -298,7 +300,7 @@ export function TryDeskBox({
     setFailureMessage(null);
     setRejoined(false);
     runIdRef.current = null;
-    forgetRun(deskId);
+    forgetRun(masterworkId);
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -323,7 +325,7 @@ export function TryDeskBox({
             runIdRef.current = wire.data.run_id;
             // Remembered before the first node event: a refresh one second
             // into a four-minute run must still find its way back.
-            rememberRun(deskId, wire.data.run_id);
+            rememberRun(masterworkId, wire.data.run_id);
             setPhase("running");
             void dispatch(
               followWorkflowRunStream({
@@ -347,7 +349,7 @@ export function TryDeskBox({
         callApi({
           path: "/workflows/{definition_id}/runs",
           method: "POST",
-          pathParams: { definition_id: deskId },
+          pathParams: { definition_id: masterworkId },
           body: { node_inputs: { ask: fieldPayload } } as never,
           stream: true,
           consumeStream: consume,
@@ -401,8 +403,9 @@ export function TryDeskBox({
               ? "Working…"
               : "Run it"}
         </Button>
-        {/* One compare entry per desk: it moves to the verdict (prefilled)
-            the moment there is output to compare, so the two never stack. */}
+        {/* One compare entry per Masterwork: it moves to the verdict
+            (prefilled) the moment there is output to compare, so the two
+            never stack. */}
         {onCompare && !candidateText ? (
           <Button
             size="sm"

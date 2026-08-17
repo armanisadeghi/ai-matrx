@@ -18,16 +18,16 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { createDraftPack } from "../../service";
+import { createDraftRulebook } from "../../service";
 
 /**
- * The guided start of the Expert Distillation System — intake, not a form for
- * a form's sake. Four questions (goal · who runs it · where the knowledge
+ * The guided start of Masterwork Distillation — intake, not a form for a
+ * form's sake. Four questions (goal · who runs it · where the knowledge
  * lives · stakes), answered with one free-text line and clickable bands, then
- * the system routes the expert into the right distillation lane: knowledge in
- * their head → the Interviewer opens immediately; written down / someone
- * else's material → the document lane. The answers land on metadata.intake,
- * where the Interviewer agent reads them so it never re-asks.
+ * the system routes the Expert into the right Distillation Approach: knowledge
+ * in their head → the Scout opens immediately; written down / someone else's
+ * material → the document Approach. The answers land on metadata.intake,
+ * where the Scout reads them so it never re-asks.
  */
 
 const WHO_OPTIONS = [
@@ -54,7 +54,7 @@ const STAKES_OPTIONS = [
 ] as const;
 
 // The benchmark question (intake doc 20): fills the baseline row of the
-// cost/quality scoreboard on day one, in the expert's own words — the floor
+// cost/quality scoreboard on day one, in the Expert's own words — the floor
 // we're beating, not the target. The BRANCH matters more than the score.
 const BENCHMARK_OPTIONS = [
   "It can't do it",
@@ -63,6 +63,19 @@ const BENCHMARK_OPTIONS = [
   "It doesn't have my context",
   "Haven't tried",
 ] as const;
+
+/**
+ * Derive a Rulebook name from the goal: at most `max` characters, truncated on
+ * a word boundary so the name never ends mid-word ("An assistant that does
+ * keyw" was the defect this fixes).
+ */
+function nameFromGoal(goal: string, max = 60): string {
+  const clean = goal.trim().replace(/[.!?]+$/, "");
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[.!?,;:]+$/, "");
+}
 
 function BandPicker({
   label,
@@ -99,7 +112,7 @@ function BandPicker({
   );
 }
 
-export function NewPackDialog({
+export function NewRulebookDialog({
   open,
   onOpenChange,
 }: {
@@ -128,12 +141,10 @@ export function NewPackDialog({
     }
     setSaving(true);
     try {
-      const packName =
-        name.trim() ||
-        goal.trim().slice(0, 60).trim().replace(/[.!?]+$/, "") ||
-        "My expertise";
-      const pack = await createDraftPack({
-        name: packName,
+      const rulebookName =
+        name.trim() || nameFromGoal(goal) || "My expertise";
+      const rulebook = await createDraftRulebook({
+        name: rulebookName,
         description: goal.trim(),
         source: {},
         organizationId,
@@ -146,29 +157,29 @@ export function NewPackDialog({
         },
       });
       onOpenChange(false);
-      // Route into the right distillation lane. Head / split / unsure → the
-      // interview opens on arrival; document-shaped sources go to the pack
-      // page where "From a source" is front and center.
-      const interviewLane =
+      // Route into the right Distillation Approach. Head / split / unsure →
+      // the Scout interview opens on arrival; document-shaped sources go to
+      // the Rulebook page where "From a source" is front and center.
+      const interviewApproach =
         knowledge === null ||
         knowledge === "In my head" ||
         knowledge === "Split across people" ||
         knowledge === "Not sure";
-      toast.success(`"${pack.name}" started`, {
-        description: interviewLane
+      toast.success(`"${rulebook.name}" started`, {
+        description: interviewApproach
           ? "Let's talk — the interview writes your rules down as you speak."
           : "Add your source material and we'll distill the rules from it.",
       });
       startTransition(() =>
         router.push(
-          interviewLane
-            ? `/expertise/${pack.id}?interview=1`
-            : `/expertise/${pack.id}`,
+          interviewApproach
+            ? `/masterwork/${rulebook.id}?interview=1`
+            : `/masterwork/${rulebook.id}`,
         ),
       );
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : "Could not start the pack",
+        err instanceof Error ? err.message : "Could not start the Rulebook",
       );
     } finally {
       setSaving(false);
@@ -226,15 +237,15 @@ export function NewPackDialog({
             onChange={setBenchmark}
           />
           <div className="space-y-1.5">
-            <Label htmlFor="pack-name">
+            <Label htmlFor="rulebook-name">
               Name it <span className="text-muted-foreground">(optional)</span>
             </Label>
             <ProInput
-              id="pack-name"
+              id="rulebook-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Our SEO Keyword Method"
-              auxiliaryControlsLabel="expertise name"
+              auxiliaryControlsLabel="Rulebook name"
             />
           </div>
         </div>

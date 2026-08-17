@@ -10,7 +10,7 @@ import {
 import {
   SEVERITY_LABELS,
   STATUS_LABELS,
-  type ExpertisePackListRow,
+  type RulebookListRow,
 } from "../types";
 
 void SEVERITY_LABELS;
@@ -26,7 +26,7 @@ const VISIBILITY_OPTIONS = [
   { value: "public", label: "Public" },
 ];
 
-function statusBadge(status: ExpertisePackListRow["status"]) {
+function statusBadge(status: RulebookListRow["status"]) {
   const tone =
     status === "active"
       ? "bg-accent text-accent-foreground"
@@ -40,7 +40,7 @@ function statusBadge(status: ExpertisePackListRow["status"]) {
   );
 }
 
-export const EXPERTISE_COLUMNS: EntityColumnSpec<ExpertisePackListRow>[] = [
+export const RULEBOOK_COLUMNS: EntityColumnSpec<RulebookListRow>[] = [
   {
     id: "name",
     label: "Name",
@@ -85,17 +85,15 @@ export const EXPERTISE_COLUMNS: EntityColumnSpec<ExpertisePackListRow>[] = [
     },
   },
   {
-    id: "principle_count",
+    id: "rule_count",
     label: "Rules",
     column: {
-      id: "principle_count",
-      accessorKey: "principle_count",
+      id: "rule_count",
+      accessorKey: "rule_count",
       header: "Rules",
       sortable: false,
       filter: false,
-      cell: (row) => (
-        <span className="tabular-nums">{row.principle_count}</span>
-      ),
+      cell: (row) => <span className="tabular-nums">{row.rule_count}</span>,
     },
   },
   {
