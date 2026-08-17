@@ -34,6 +34,11 @@ export const ALLOWED_SERVER_ACTION_ENDPOINTS: ReadonlySet<string> = new Set([
   // not pages" and write the site rule. aidream
   // services/endpoint_family_sweep/apply.py.
   "/seo/endpoint-families/apply",
+  // Masterwork capture recovery: an Expert's dictated rules failed to save for
+  // an infrastructure reason; accepting replays the stored payload through the
+  // normal Rulebook write path as drafts. aidream
+  // services/distillation/write_recovery.py.
+  "/masterworks/rulebook/restore-write",
 ]);
 
 registerAssistAction({
