@@ -987,6 +987,10 @@
        "default": "user",
        "title": "Agent Type"
       },
+      "auto_context_disabled": {
+       "default": false,
+       "title": "Auto Context Disabled"
+      },
       "category": {
        "default": null,
        "title": "Category"
@@ -1090,6 +1094,14 @@
        "default": {},
        "title": "Ui Gates"
       },
+      "updated_by_system": {
+       "default": null,
+       "title": "Updated By System"
+      },
+      "updated_by_tier": {
+       "default": null,
+       "title": "Updated By Tier"
+      },
       "variable_definitions": {
        "default": null,
        "title": "Variable Definitions"
@@ -1121,6 +1133,10 @@
       "agent_type": {
        "default": null,
        "title": "Agent Type"
+      },
+      "auto_context_disabled": {
+       "default": null,
+       "title": "Auto Context Disabled"
       },
       "category": {
        "default": null,
@@ -1229,6 +1245,14 @@
       "ui_gates": {
        "default": null,
        "title": "Ui Gates"
+      },
+      "updated_by_system": {
+       "default": null,
+       "title": "Updated By System"
+      },
+      "updated_by_tier": {
+       "default": null,
+       "title": "Updated By Tier"
       },
       "variable_definitions": {
        "default": null,
@@ -1660,6 +1684,14 @@
       },
       "target_type": {
        "title": "Target Type"
+      },
+      "updated_by_system": {
+       "default": null,
+       "title": "Updated By System"
+      },
+      "updated_by_tier": {
+       "default": null,
+       "title": "Updated By Tier"
       }
      },
      "required": [
@@ -1739,6 +1771,14 @@
       "target_type": {
        "default": null,
        "title": "Target Type"
+      },
+      "updated_by_system": {
+       "default": null,
+       "title": "Updated By System"
+      },
+      "updated_by_tier": {
+       "default": null,
+       "title": "Updated By Tier"
       }
      },
      "required": [
@@ -1767,6 +1807,10 @@
     "create": {
      "additionalProperties": true,
      "properties": {
+      "auto_context_disabled": {
+       "default": false,
+       "title": "Auto Context Disabled"
+      },
       "category": {
        "default": null,
        "title": "Category"
@@ -1870,6 +1914,10 @@
     "update": {
      "additionalProperties": true,
      "properties": {
+      "auto_context_disabled": {
+       "default": null,
+       "title": "Auto Context Disabled"
+      },
       "category": {
        "default": null,
        "title": "Category"
@@ -4636,6 +4684,10 @@
        "default": "1.0.0",
        "title": "Semver"
       },
+      "side_effect_class": {
+       "default": null,
+       "title": "Side Effect Class"
+      },
       "source_kind": {
        "default": "native",
        "title": "Source Kind"
@@ -4651,6 +4703,14 @@
       "tool_group": {
        "default": "core",
        "title": "Tool Group"
+      },
+      "updated_by_system": {
+       "default": null,
+       "title": "Updated By System"
+      },
+      "updated_by_tier": {
+       "default": null,
+       "title": "Updated By Tier"
       },
       "validation_exempt": {
        "default": false,
@@ -4750,6 +4810,10 @@
        "default": null,
        "title": "Semver"
       },
+      "side_effect_class": {
+       "default": null,
+       "title": "Side Effect Class"
+      },
       "source_kind": {
        "default": null,
        "title": "Source Kind"
@@ -4765,6 +4829,14 @@
       "tool_group": {
        "default": null,
        "title": "Tool Group"
+      },
+      "updated_by_system": {
+       "default": null,
+       "title": "Updated By System"
+      },
+      "updated_by_tier": {
+       "default": null,
+       "title": "Updated By Tier"
       },
       "validation_exempt": {
        "default": null,
@@ -7791,418 +7863,6 @@
    "table": "chat.agent_run_stage",
    "title_column": null,
    "update": "no",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Mandate",
-   "noun": "mandate",
-   "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "contract": {
-       "default": {},
-       "title": "Contract"
-      },
-      "default_agent_id": {
-       "default": null,
-       "title": "Default Agent Id"
-      },
-      "default_agent_version_id": {
-       "default": null,
-       "title": "Default Agent Version Id"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "input_kind": {
-       "default": null,
-       "title": "Input Kind"
-      },
-      "is_enabled": {
-       "default": true,
-       "title": "Is Enabled"
-      },
-      "label": {
-       "title": "Label"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "output_kind": {
-       "default": null,
-       "title": "Output Kind"
-      },
-      "mandate_key": {
-       "title": "Slot Key"
-      },
-      "use_latest": {
-       "default": false,
-       "title": "Use Latest"
-      }
-     },
-     "required": [
-      "mandate_key",
-      "label"
-     ],
-     "title": "CreateAgentSlotItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteAgentSlotItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "contract": {
-       "default": null,
-       "title": "Contract"
-      },
-      "default_agent_id": {
-       "default": null,
-       "title": "Default Agent Id"
-      },
-      "default_agent_version_id": {
-       "default": null,
-       "title": "Default Agent Version Id"
-      },
-      "description": {
-       "default": null,
-       "title": "Description"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "input_kind": {
-       "default": null,
-       "title": "Input Kind"
-      },
-      "is_enabled": {
-       "default": null,
-       "title": "Is Enabled"
-      },
-      "label": {
-       "default": null,
-       "title": "Label"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "output_kind": {
-       "default": null,
-       "title": "Output Kind"
-      },
-      "mandate_key": {
-       "default": null,
-       "title": "Slot Key"
-      },
-      "use_latest": {
-       "default": null,
-       "title": "Use Latest"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateAgentSlotItem",
-     "type": "object"
-    }
-   },
-   "table": "agent.mandate",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Mandate Binding",
-   "noun": "mandate_binding",
-   "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "agent_id": {
-       "default": null,
-       "title": "Agent Id"
-      },
-      "agent_version_id": {
-       "default": null,
-       "title": "Agent Version Id"
-      },
-      "config_overrides": {
-       "default": null,
-       "title": "Config Overrides"
-      },
-      "is_enabled": {
-       "default": true,
-       "title": "Is Enabled"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "principal_type": {
-       "title": "Principal Type"
-      },
-      "mandate_id": {
-       "title": "Slot Id"
-      },
-      "subject_user_id": {
-       "default": null,
-       "title": "Subject User Id"
-      },
-      "use_latest": {
-       "default": false,
-       "title": "Use Latest"
-      }
-     },
-     "required": [
-      "mandate_id",
-      "principal_type"
-     ],
-     "title": "CreateAgentSlotBindingItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteAgentSlotBindingItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "agent_id": {
-       "default": null,
-       "title": "Agent Id"
-      },
-      "agent_version_id": {
-       "default": null,
-       "title": "Agent Version Id"
-      },
-      "config_overrides": {
-       "default": null,
-       "title": "Config Overrides"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "is_enabled": {
-       "default": null,
-       "title": "Is Enabled"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "principal_type": {
-       "default": null,
-       "title": "Principal Type"
-      },
-      "mandate_id": {
-       "default": null,
-       "title": "Slot Id"
-      },
-      "subject_user_id": {
-       "default": null,
-       "title": "Subject User Id"
-      },
-      "use_latest": {
-       "default": null,
-       "title": "Use Latest"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateAgentSlotBindingItem",
-     "type": "object"
-    }
-   },
-   "table": "agent.mandate_binding",
-   "title_column": null,
-   "update": "planned",
-   "view": "no"
-  },
-  {
-   "create": "planned",
-   "delete": "planned",
-   "family": "Other",
-   "identity_fields": [],
-   "label": "Mandate Exemplar",
-   "noun": "mandate_exemplar",
-   "reference": "no",
-   "schemas": {
-    "create": {
-     "additionalProperties": true,
-     "properties": {
-      "captured_agent_id": {
-       "default": null,
-       "title": "Captured Agent Id"
-      },
-      "captured_model_id": {
-       "default": null,
-       "title": "Captured Model Id"
-      },
-      "is_active": {
-       "default": true,
-       "title": "Is Active"
-      },
-      "label": {
-       "title": "Label"
-      },
-      "metadata": {
-       "default": {},
-       "title": "Metadata"
-      },
-      "position": {
-       "default": 1000,
-       "title": "Position"
-      },
-      "reference_artifact": {
-       "default": null,
-       "title": "Reference Artifact"
-      },
-      "reference_output": {
-       "default": null,
-       "title": "Reference Output"
-      },
-      "mandate_id": {
-       "title": "Slot Id"
-      },
-      "source": {
-       "default": "authored",
-       "title": "Source"
-      },
-      "user_input": {
-       "default": null,
-       "title": "User Input"
-      },
-      "variables": {
-       "default": {},
-       "title": "Variables"
-      }
-     },
-     "required": [
-      "mandate_id",
-      "label"
-     ],
-     "title": "CreateAgentSlotExemplarItem",
-     "type": "object"
-    },
-    "delete": {
-     "additionalProperties": true,
-     "properties": {
-      "id": {
-       "title": "Id",
-       "type": "string"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "DeleteAgentSlotExemplarItem",
-     "type": "object"
-    },
-    "update": {
-     "additionalProperties": true,
-     "properties": {
-      "captured_agent_id": {
-       "default": null,
-       "title": "Captured Agent Id"
-      },
-      "captured_model_id": {
-       "default": null,
-       "title": "Captured Model Id"
-      },
-      "id": {
-       "title": "Id",
-       "type": "string"
-      },
-      "is_active": {
-       "default": null,
-       "title": "Is Active"
-      },
-      "label": {
-       "default": null,
-       "title": "Label"
-      },
-      "metadata": {
-       "default": null,
-       "title": "Metadata"
-      },
-      "position": {
-       "default": null,
-       "title": "Position"
-      },
-      "reference_artifact": {
-       "default": null,
-       "title": "Reference Artifact"
-      },
-      "reference_output": {
-       "default": null,
-       "title": "Reference Output"
-      },
-      "mandate_id": {
-       "default": null,
-       "title": "Slot Id"
-      },
-      "source": {
-       "default": null,
-       "title": "Source"
-      },
-      "user_input": {
-       "default": null,
-       "title": "User Input"
-      },
-      "variables": {
-       "default": null,
-       "title": "Variables"
-      }
-     },
-     "required": [
-      "id"
-     ],
-     "title": "UpdateAgentSlotExemplarItem",
-     "type": "object"
-    }
-   },
-   "table": "agent.mandate_exemplar",
-   "title_column": null,
-   "update": "planned",
    "view": "no"
   },
   {
@@ -14152,6 +13812,292 @@
    "view": "no"
   },
   {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Blocklist Entry",
+   "noun": "crm_blocklist_entry",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "expires_at": {
+       "default": null,
+       "title": "Expires At"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "party_id": {
+       "default": null,
+       "title": "Party Id"
+      },
+      "reason": {
+       "default": null,
+       "title": "Reason"
+      },
+      "source": {
+       "default": "manual",
+       "title": "Source"
+      },
+      "subject_kind": {
+       "title": "Subject Kind"
+      },
+      "subject_value": {
+       "title": "Subject Value"
+      }
+     },
+     "required": [
+      "subject_kind",
+      "subject_value"
+     ],
+     "title": "CreateCrmBlocklistEntryItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteCrmBlocklistEntryItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "expires_at": {
+       "default": null,
+       "title": "Expires At"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "party_id": {
+       "default": null,
+       "title": "Party Id"
+      },
+      "reason": {
+       "default": null,
+       "title": "Reason"
+      },
+      "source": {
+       "default": null,
+       "title": "Source"
+      },
+      "subject_kind": {
+       "default": null,
+       "title": "Subject Kind"
+      },
+      "subject_value": {
+       "default": null,
+       "title": "Subject Value"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateCrmBlocklistEntryItem",
+     "type": "object"
+    }
+   },
+   "table": "crm.blocklist_entry",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Contact Candidate",
+   "noun": "crm_contact_candidate",
+   "reference": "no",
+   "schemas": null,
+   "table": "crm.contact_candidate",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Enrichment Call",
+   "noun": "crm_enrichment_call",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "cache_key": {
+       "title": "Cache Key"
+      },
+      "credits_used": {
+       "default": null,
+       "title": "Credits Used"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "estimated_cost_usd": {
+       "default": null,
+       "title": "Estimated Cost Usd"
+      },
+      "expires_at": {
+       "default": null,
+       "title": "Expires At"
+      },
+      "latency_ms": {
+       "default": null,
+       "title": "Latency Ms"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "operation": {
+       "title": "Operation"
+      },
+      "party_id": {
+       "default": null,
+       "title": "Party Id"
+      },
+      "provider": {
+       "title": "Provider"
+      },
+      "request": {
+       "default": {},
+       "title": "Request"
+      },
+      "response": {
+       "default": {},
+       "title": "Response"
+      },
+      "result_count": {
+       "default": 0,
+       "title": "Result Count"
+      },
+      "status": {
+       "default": "ok",
+       "title": "Status"
+      }
+     },
+     "required": [
+      "provider",
+      "operation",
+      "cache_key"
+     ],
+     "title": "CreateCrmEnrichmentCallItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteCrmEnrichmentCallItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "cache_key": {
+       "default": null,
+       "title": "Cache Key"
+      },
+      "credits_used": {
+       "default": null,
+       "title": "Credits Used"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "estimated_cost_usd": {
+       "default": null,
+       "title": "Estimated Cost Usd"
+      },
+      "expires_at": {
+       "default": null,
+       "title": "Expires At"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "latency_ms": {
+       "default": null,
+       "title": "Latency Ms"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "operation": {
+       "default": null,
+       "title": "Operation"
+      },
+      "party_id": {
+       "default": null,
+       "title": "Party Id"
+      },
+      "provider": {
+       "default": null,
+       "title": "Provider"
+      },
+      "request": {
+       "default": null,
+       "title": "Request"
+      },
+      "response": {
+       "default": null,
+       "title": "Response"
+      },
+      "result_count": {
+       "default": null,
+       "title": "Result Count"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateCrmEnrichmentCallItem",
+     "type": "object"
+    }
+   },
+   "table": "crm.enrichment_call",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
    "create": "no",
    "delete": "no",
    "family": "Other",
@@ -17451,6 +17397,10 @@
        "default": {},
        "title": "Lens Config"
       },
+      "lens_visibility": {
+       "default": "with_context",
+       "title": "Lens Visibility"
+      },
       "max_examples_per_review": {
        "default": 25,
        "title": "Max Examples Per Review"
@@ -17485,6 +17435,14 @@
       "subject_selector": {
        "default": {},
        "title": "Subject Selector"
+      },
+      "window_mode": {
+       "default": "since_watermark",
+       "title": "Window Mode"
+      },
+      "window_n": {
+       "default": null,
+       "title": "Window N"
       }
      },
      "required": [
@@ -17536,6 +17494,10 @@
        "default": null,
        "title": "Lens Config"
       },
+      "lens_visibility": {
+       "default": null,
+       "title": "Lens Visibility"
+      },
       "max_examples_per_review": {
        "default": null,
        "title": "Max Examples Per Review"
@@ -17571,6 +17533,14 @@
       "subject_selector": {
        "default": null,
        "title": "Subject Selector"
+      },
+      "window_mode": {
+       "default": null,
+       "title": "Window Mode"
+      },
+      "window_n": {
+       "default": null,
+       "title": "Window N"
       }
      },
      "required": [
@@ -17600,6 +17570,220 @@
    "view": "no"
   },
   {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Regression Case",
+   "noun": "hindsight_regression_case",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_definition_version": {
+       "default": null,
+       "title": "Agent Definition Version"
+      },
+      "consecutive_failures": {
+       "default": 0,
+       "title": "Consecutive Failures"
+      },
+      "conversation_id": {
+       "default": null,
+       "title": "Conversation Id"
+      },
+      "corrected_output_ref": {
+       "default": null,
+       "title": "Corrected Output Ref"
+      },
+      "cx_request_id": {
+       "default": null,
+       "title": "Cx Request Id"
+      },
+      "expectation": {
+       "default": {
+        "kind": "not_worse_than_original"
+       },
+       "title": "Expectation"
+      },
+      "last_checked_at": {
+       "default": null,
+       "title": "Last Checked At"
+      },
+      "last_cost_usd": {
+       "default": null,
+       "title": "Last Cost Usd"
+      },
+      "last_reason": {
+       "default": null,
+       "title": "Last Reason"
+      },
+      "last_replay_group_id": {
+       "default": null,
+       "title": "Last Replay Group Id"
+      },
+      "last_result": {
+       "default": null,
+       "title": "Last Result"
+      },
+      "last_verdict": {
+       "default": null,
+       "title": "Last Verdict"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "origin": {
+       "default": "human_click",
+       "title": "Origin"
+      },
+      "origin_finding_id": {
+       "default": null,
+       "title": "Origin Finding Id"
+      },
+      "snapshot_id": {
+       "title": "Snapshot Id"
+      },
+      "status": {
+       "default": "active",
+       "title": "Status"
+      },
+      "title": {
+       "title": "Title"
+      },
+      "workflow_definition_version": {
+       "default": null,
+       "title": "Workflow Definition Version"
+      }
+     },
+     "required": [
+      "snapshot_id",
+      "title"
+     ],
+     "title": "CreateHindsightRegressionCaseItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteHindsightRegressionCaseItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_definition_version": {
+       "default": null,
+       "title": "Agent Definition Version"
+      },
+      "consecutive_failures": {
+       "default": null,
+       "title": "Consecutive Failures"
+      },
+      "conversation_id": {
+       "default": null,
+       "title": "Conversation Id"
+      },
+      "corrected_output_ref": {
+       "default": null,
+       "title": "Corrected Output Ref"
+      },
+      "cx_request_id": {
+       "default": null,
+       "title": "Cx Request Id"
+      },
+      "expectation": {
+       "default": null,
+       "title": "Expectation"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "last_checked_at": {
+       "default": null,
+       "title": "Last Checked At"
+      },
+      "last_cost_usd": {
+       "default": null,
+       "title": "Last Cost Usd"
+      },
+      "last_reason": {
+       "default": null,
+       "title": "Last Reason"
+      },
+      "last_replay_group_id": {
+       "default": null,
+       "title": "Last Replay Group Id"
+      },
+      "last_result": {
+       "default": null,
+       "title": "Last Result"
+      },
+      "last_verdict": {
+       "default": null,
+       "title": "Last Verdict"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "origin": {
+       "default": null,
+       "title": "Origin"
+      },
+      "origin_finding_id": {
+       "default": null,
+       "title": "Origin Finding Id"
+      },
+      "snapshot_id": {
+       "default": null,
+       "title": "Snapshot Id"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "workflow_definition_version": {
+       "default": null,
+       "title": "Workflow Definition Version"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateHindsightRegressionCaseItem",
+     "type": "object"
+    }
+   },
+   "table": "hindsight.regression_case",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
    "create": "no",
    "delete": "no",
    "family": "Other",
@@ -17611,6 +17795,242 @@
    "table": "hindsight.replay",
    "title_column": null,
    "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Wire Replay Step",
+   "noun": "hindsight_replay_step",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_definition_version": {
+       "default": null,
+       "title": "Agent Definition Version"
+      },
+      "arm_key": {
+       "default": "control",
+       "title": "Arm Key"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "conversation_id": {
+       "default": null,
+       "title": "Conversation Id"
+      },
+      "cost_usd": {
+       "default": 0,
+       "title": "Cost Usd"
+      },
+      "cx_request_id": {
+       "default": null,
+       "title": "Cx Request Id"
+      },
+      "delta": {
+       "default": {},
+       "title": "Delta"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "fidelity": {
+       "default": {},
+       "title": "Fidelity"
+      },
+      "finding_id": {
+       "default": null,
+       "title": "Finding Id"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "output_kind": {
+       "default": "text",
+       "title": "Output Kind"
+      },
+      "pinned_model": {
+       "default": null,
+       "title": "Pinned Model"
+      },
+      "pinned_params": {
+       "default": {},
+       "title": "Pinned Params"
+      },
+      "replay_group_id": {
+       "title": "Replay Group Id"
+      },
+      "sample_count": {
+       "default": 0,
+       "title": "Sample Count"
+      },
+      "samples": {
+       "default": [],
+       "title": "Samples"
+      },
+      "snapshot_id": {
+       "title": "Snapshot Id"
+      },
+      "started_at": {
+       "default": null,
+       "title": "Started At"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "verdict": {
+       "default": null,
+       "title": "Verdict"
+      },
+      "verdicts": {
+       "default": {},
+       "title": "Verdicts"
+      },
+      "workflow_definition_version": {
+       "default": null,
+       "title": "Workflow Definition Version"
+      }
+     },
+     "required": [
+      "snapshot_id",
+      "replay_group_id"
+     ],
+     "title": "CreateHindsightReplayStepItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteHindsightReplayStepItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_definition_version": {
+       "default": null,
+       "title": "Agent Definition Version"
+      },
+      "arm_key": {
+       "default": null,
+       "title": "Arm Key"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "conversation_id": {
+       "default": null,
+       "title": "Conversation Id"
+      },
+      "cost_usd": {
+       "default": null,
+       "title": "Cost Usd"
+      },
+      "cx_request_id": {
+       "default": null,
+       "title": "Cx Request Id"
+      },
+      "delta": {
+       "default": null,
+       "title": "Delta"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "fidelity": {
+       "default": null,
+       "title": "Fidelity"
+      },
+      "finding_id": {
+       "default": null,
+       "title": "Finding Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "output_kind": {
+       "default": null,
+       "title": "Output Kind"
+      },
+      "pinned_model": {
+       "default": null,
+       "title": "Pinned Model"
+      },
+      "pinned_params": {
+       "default": null,
+       "title": "Pinned Params"
+      },
+      "replay_group_id": {
+       "default": null,
+       "title": "Replay Group Id"
+      },
+      "sample_count": {
+       "default": null,
+       "title": "Sample Count"
+      },
+      "samples": {
+       "default": null,
+       "title": "Samples"
+      },
+      "snapshot_id": {
+       "default": null,
+       "title": "Snapshot Id"
+      },
+      "started_at": {
+       "default": null,
+       "title": "Started At"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "verdict": {
+       "default": null,
+       "title": "Verdict"
+      },
+      "verdicts": {
+       "default": null,
+       "title": "Verdicts"
+      },
+      "workflow_definition_version": {
+       "default": null,
+       "title": "Workflow Definition Version"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateHindsightReplayStepItem",
+     "type": "object"
+    }
+   },
+   "table": "hindsight.replay_step",
+   "title_column": null,
+   "update": "planned",
    "view": "no"
   },
   {
@@ -17691,6 +18111,186 @@
    "table": "iam.industry_curators",
    "title_column": null,
    "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Interview Document Revision",
+   "noun": "interview_document_revision",
+   "reference": "no",
+   "schemas": null,
+   "table": "interview.document_revision",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Interview Adversary Hole",
+   "noun": "interview_hole",
+   "reference": "no",
+   "schemas": null,
+   "table": "interview.hole",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Interview Open Question",
+   "noun": "interview_question",
+   "reference": "no",
+   "schemas": null,
+   "table": "interview.question",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Vision Interview Session",
+   "noun": "interview_session",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "current_round": {
+       "default": 0,
+       "title": "Current Round"
+      },
+      "document": {
+       "title": "Document"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "role_bindings": {
+       "default": {},
+       "title": "Role Bindings"
+      },
+      "run_id": {
+       "default": null,
+       "title": "Run Id"
+      },
+      "settings": {
+       "default": {},
+       "title": "Settings"
+      },
+      "stage": {
+       "default": "expand",
+       "title": "Stage"
+      },
+      "title": {
+       "default": "Untitled interview",
+       "title": "Title"
+      },
+      "vision_statement": {
+       "default": null,
+       "title": "Vision Statement"
+      }
+     },
+     "required": [
+      "document"
+     ],
+     "title": "CreateInterviewSessionItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteInterviewSessionItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "current_round": {
+       "default": null,
+       "title": "Current Round"
+      },
+      "document": {
+       "default": null,
+       "title": "Document"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "role_bindings": {
+       "default": null,
+       "title": "Role Bindings"
+      },
+      "run_id": {
+       "default": null,
+       "title": "Run Id"
+      },
+      "settings": {
+       "default": null,
+       "title": "Settings"
+      },
+      "stage": {
+       "default": null,
+       "title": "Stage"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      },
+      "vision_statement": {
+       "default": null,
+       "title": "Vision Statement"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateInterviewSessionItem",
+     "type": "object"
+    }
+   },
+   "table": "interview.session",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Interview Turn",
+   "noun": "interview_turn",
+   "reference": "no",
+   "schemas": null,
+   "table": "interview.turn",
+   "title_column": null,
+   "update": "no",
    "view": "no"
   },
   {
@@ -18358,6 +18958,282 @@
    "title_column": null,
    "update": "planned",
    "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Judge Verdict",
+   "noun": "judge_verdict",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "agreed": {
+       "default": null,
+       "title": "Agreed"
+      },
+      "agreement_at": {
+       "default": null,
+       "title": "Agreement At"
+      },
+      "authority_kind": {
+       "default": null,
+       "title": "Authority Kind"
+      },
+      "authority_ref_id": {
+       "default": null,
+       "title": "Authority Ref Id"
+      },
+      "authority_ref_type": {
+       "default": null,
+       "title": "Authority Ref Type"
+      },
+      "authority_verdict": {
+       "default": null,
+       "title": "Authority Verdict"
+      },
+      "candidate_refs": {
+       "default": [],
+       "title": "Candidate Refs"
+      },
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "consumer": {
+       "default": "unknown",
+       "title": "Consumer"
+      },
+      "invocation": {
+       "default": {},
+       "title": "Invocation"
+      },
+      "judge_key": {
+       "title": "Judge Key"
+      },
+      "judge_version": {
+       "default": 1,
+       "title": "Judge Version"
+      },
+      "mandate": {
+       "default": null,
+       "title": "Mandate"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "mode": {
+       "title": "Mode"
+      },
+      "model": {
+       "default": null,
+       "title": "Model"
+      },
+      "question": {
+       "title": "Question"
+      },
+      "reasoning": {
+       "default": null,
+       "title": "Reasoning"
+      },
+      "reference_ref_id": {
+       "default": null,
+       "title": "Reference Ref Id"
+      },
+      "reference_ref_type": {
+       "default": null,
+       "title": "Reference Ref Type"
+      },
+      "rubric_author": {
+       "default": null,
+       "title": "Rubric Author"
+      },
+      "rubric_fingerprint": {
+       "default": null,
+       "title": "Rubric Fingerprint"
+      },
+      "rubric_name": {
+       "default": null,
+       "title": "Rubric Name"
+      },
+      "rubric_provenance": {
+       "default": null,
+       "title": "Rubric Provenance"
+      },
+      "subject_kind": {
+       "title": "Subject Kind"
+      },
+      "subject_ref_id": {
+       "default": null,
+       "title": "Subject Ref Id"
+      },
+      "subject_ref_type": {
+       "default": null,
+       "title": "Subject Ref Type"
+      },
+      "verdict": {
+       "title": "Verdict"
+      }
+     },
+     "required": [
+      "judge_key",
+      "mode",
+      "question",
+      "subject_kind",
+      "verdict"
+     ],
+     "title": "CreateJudgeVerdictItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteJudgeVerdictItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "agreed": {
+       "default": null,
+       "title": "Agreed"
+      },
+      "agreement_at": {
+       "default": null,
+       "title": "Agreement At"
+      },
+      "authority_kind": {
+       "default": null,
+       "title": "Authority Kind"
+      },
+      "authority_ref_id": {
+       "default": null,
+       "title": "Authority Ref Id"
+      },
+      "authority_ref_type": {
+       "default": null,
+       "title": "Authority Ref Type"
+      },
+      "authority_verdict": {
+       "default": null,
+       "title": "Authority Verdict"
+      },
+      "candidate_refs": {
+       "default": null,
+       "title": "Candidate Refs"
+      },
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "consumer": {
+       "default": null,
+       "title": "Consumer"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "invocation": {
+       "default": null,
+       "title": "Invocation"
+      },
+      "judge_key": {
+       "default": null,
+       "title": "Judge Key"
+      },
+      "judge_version": {
+       "default": null,
+       "title": "Judge Version"
+      },
+      "mandate": {
+       "default": null,
+       "title": "Mandate"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "mode": {
+       "default": null,
+       "title": "Mode"
+      },
+      "model": {
+       "default": null,
+       "title": "Model"
+      },
+      "question": {
+       "default": null,
+       "title": "Question"
+      },
+      "reasoning": {
+       "default": null,
+       "title": "Reasoning"
+      },
+      "reference_ref_id": {
+       "default": null,
+       "title": "Reference Ref Id"
+      },
+      "reference_ref_type": {
+       "default": null,
+       "title": "Reference Ref Type"
+      },
+      "rubric_author": {
+       "default": null,
+       "title": "Rubric Author"
+      },
+      "rubric_fingerprint": {
+       "default": null,
+       "title": "Rubric Fingerprint"
+      },
+      "rubric_name": {
+       "default": null,
+       "title": "Rubric Name"
+      },
+      "rubric_provenance": {
+       "default": null,
+       "title": "Rubric Provenance"
+      },
+      "subject_kind": {
+       "default": null,
+       "title": "Subject Kind"
+      },
+      "subject_ref_id": {
+       "default": null,
+       "title": "Subject Ref Id"
+      },
+      "subject_ref_type": {
+       "default": null,
+       "title": "Subject Ref Type"
+      },
+      "verdict": {
+       "default": null,
+       "title": "Verdict"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateJudgeVerdictItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.judge_verdict",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
   },
   {
    "create": "planned",
@@ -19351,6 +20227,418 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
+   "identity_fields": [],
+   "label": "Mandate",
+   "noun": "mandate",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "contract": {
+       "default": {},
+       "title": "Contract"
+      },
+      "default_agent_id": {
+       "default": null,
+       "title": "Default Agent Id"
+      },
+      "default_agent_version_id": {
+       "default": null,
+       "title": "Default Agent Version Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "input_kind": {
+       "default": null,
+       "title": "Input Kind"
+      },
+      "is_enabled": {
+       "default": true,
+       "title": "Is Enabled"
+      },
+      "label": {
+       "title": "Label"
+      },
+      "mandate_key": {
+       "title": "Mandate Key"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "output_kind": {
+       "default": null,
+       "title": "Output Kind"
+      },
+      "use_latest": {
+       "default": false,
+       "title": "Use Latest"
+      }
+     },
+     "required": [
+      "mandate_key",
+      "label"
+     ],
+     "title": "CreateMandateItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteMandateItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "contract": {
+       "default": null,
+       "title": "Contract"
+      },
+      "default_agent_id": {
+       "default": null,
+       "title": "Default Agent Id"
+      },
+      "default_agent_version_id": {
+       "default": null,
+       "title": "Default Agent Version Id"
+      },
+      "description": {
+       "default": null,
+       "title": "Description"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "input_kind": {
+       "default": null,
+       "title": "Input Kind"
+      },
+      "is_enabled": {
+       "default": null,
+       "title": "Is Enabled"
+      },
+      "label": {
+       "default": null,
+       "title": "Label"
+      },
+      "mandate_key": {
+       "default": null,
+       "title": "Mandate Key"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "output_kind": {
+       "default": null,
+       "title": "Output Kind"
+      },
+      "use_latest": {
+       "default": null,
+       "title": "Use Latest"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateMandateItem",
+     "type": "object"
+    }
+   },
+   "table": "agent.mandate",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Mandate Binding",
+   "noun": "mandate_binding",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_id": {
+       "default": null,
+       "title": "Agent Id"
+      },
+      "agent_version_id": {
+       "default": null,
+       "title": "Agent Version Id"
+      },
+      "config_overrides": {
+       "default": null,
+       "title": "Config Overrides"
+      },
+      "is_enabled": {
+       "default": true,
+       "title": "Is Enabled"
+      },
+      "mandate_id": {
+       "title": "Mandate Id"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "principal_type": {
+       "title": "Principal Type"
+      },
+      "subject_user_id": {
+       "default": null,
+       "title": "Subject User Id"
+      },
+      "use_latest": {
+       "default": false,
+       "title": "Use Latest"
+      }
+     },
+     "required": [
+      "mandate_id",
+      "principal_type"
+     ],
+     "title": "CreateMandateBindingItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteMandateBindingItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "agent_id": {
+       "default": null,
+       "title": "Agent Id"
+      },
+      "agent_version_id": {
+       "default": null,
+       "title": "Agent Version Id"
+      },
+      "config_overrides": {
+       "default": null,
+       "title": "Config Overrides"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_enabled": {
+       "default": null,
+       "title": "Is Enabled"
+      },
+      "mandate_id": {
+       "default": null,
+       "title": "Mandate Id"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "principal_type": {
+       "default": null,
+       "title": "Principal Type"
+      },
+      "subject_user_id": {
+       "default": null,
+       "title": "Subject User Id"
+      },
+      "use_latest": {
+       "default": null,
+       "title": "Use Latest"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateMandateBindingItem",
+     "type": "object"
+    }
+   },
+   "table": "agent.mandate_binding",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Mandate Exemplar",
+   "noun": "mandate_exemplar",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "captured_agent_id": {
+       "default": null,
+       "title": "Captured Agent Id"
+      },
+      "captured_model_id": {
+       "default": null,
+       "title": "Captured Model Id"
+      },
+      "is_active": {
+       "default": true,
+       "title": "Is Active"
+      },
+      "label": {
+       "title": "Label"
+      },
+      "mandate_id": {
+       "title": "Mandate Id"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "position": {
+       "default": 1000,
+       "title": "Position"
+      },
+      "reference_artifact": {
+       "default": null,
+       "title": "Reference Artifact"
+      },
+      "reference_output": {
+       "default": null,
+       "title": "Reference Output"
+      },
+      "source": {
+       "default": "authored",
+       "title": "Source"
+      },
+      "user_input": {
+       "default": null,
+       "title": "User Input"
+      },
+      "variables": {
+       "default": {},
+       "title": "Variables"
+      }
+     },
+     "required": [
+      "mandate_id",
+      "label"
+     ],
+     "title": "CreateMandateExemplarItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteMandateExemplarItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "captured_agent_id": {
+       "default": null,
+       "title": "Captured Agent Id"
+      },
+      "captured_model_id": {
+       "default": null,
+       "title": "Captured Model Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_active": {
+       "default": null,
+       "title": "Is Active"
+      },
+      "label": {
+       "default": null,
+       "title": "Label"
+      },
+      "mandate_id": {
+       "default": null,
+       "title": "Mandate Id"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "position": {
+       "default": null,
+       "title": "Position"
+      },
+      "reference_artifact": {
+       "default": null,
+       "title": "Reference Artifact"
+      },
+      "reference_output": {
+       "default": null,
+       "title": "Reference Output"
+      },
+      "source": {
+       "default": null,
+       "title": "Source"
+      },
+      "user_input": {
+       "default": null,
+       "title": "User Input"
+      },
+      "variables": {
+       "default": null,
+       "title": "Variables"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateMandateExemplarItem",
+     "type": "object"
+    }
+   },
+   "table": "agent.mandate_exemplar",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
    "identity_fields": [
     "id"
    ],
@@ -20300,6 +21588,154 @@
    "title_column": "name",
    "update": "planned",
    "view": "yes"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Output Feedback",
+   "noun": "output_feedback",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "corrected_at": {
+       "default": null,
+       "title": "Corrected At"
+      },
+      "corrected_content": {
+       "default": null,
+       "title": "Corrected Content"
+      },
+      "corrected_ref_id": {
+       "default": null,
+       "title": "Corrected Ref Id"
+      },
+      "corrected_ref_type": {
+       "default": null,
+       "title": "Corrected Ref Type"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "original_content": {
+       "default": null,
+       "title": "Original Content"
+      },
+      "prose": {
+       "default": null,
+       "title": "Prose"
+      },
+      "request_id": {
+       "default": null,
+       "title": "Request Id"
+      },
+      "subject_id": {
+       "title": "Subject Id"
+      },
+      "subject_type": {
+       "title": "Subject Type"
+      },
+      "surface_name": {
+       "default": null,
+       "title": "Surface Name"
+      },
+      "verdict": {
+       "title": "Verdict"
+      }
+     },
+     "required": [
+      "subject_type",
+      "subject_id",
+      "verdict"
+     ],
+     "title": "CreateOutputFeedbackItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteOutputFeedbackItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "corrected_at": {
+       "default": null,
+       "title": "Corrected At"
+      },
+      "corrected_content": {
+       "default": null,
+       "title": "Corrected Content"
+      },
+      "corrected_ref_id": {
+       "default": null,
+       "title": "Corrected Ref Id"
+      },
+      "corrected_ref_type": {
+       "default": null,
+       "title": "Corrected Ref Type"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "original_content": {
+       "default": null,
+       "title": "Original Content"
+      },
+      "prose": {
+       "default": null,
+       "title": "Prose"
+      },
+      "request_id": {
+       "default": null,
+       "title": "Request Id"
+      },
+      "subject_id": {
+       "default": null,
+       "title": "Subject Id"
+      },
+      "subject_type": {
+       "default": null,
+       "title": "Subject Type"
+      },
+      "surface_name": {
+       "default": null,
+       "title": "Surface Name"
+      },
+      "verdict": {
+       "default": null,
+       "title": "Verdict"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateOutputFeedbackItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.output_feedback",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
   },
   {
    "create": "planned",
@@ -22107,6 +23543,226 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
+   "identity_fields": [],
+   "label": "Outcome Event",
+   "noun": "platform_outcome_event",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "campaign_id": {
+       "default": null,
+       "title": "Campaign Id"
+      },
+      "confidence": {
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "dedupe_key": {
+       "title": "Dedupe Key"
+      },
+      "disposition": {
+       "title": "Disposition"
+      },
+      "evidence_id": {
+       "default": null,
+       "title": "Evidence Id"
+      },
+      "evidence_type": {
+       "default": null,
+       "title": "Evidence Type"
+      },
+      "evidence_url": {
+       "default": null,
+       "title": "Evidence Url"
+      },
+      "intent_id": {
+       "title": "Intent Id"
+      },
+      "intent_type": {
+       "title": "Intent Type"
+      },
+      "match_detail": {
+       "default": {},
+       "title": "Match Detail"
+      },
+      "match_method": {
+       "title": "Match Method"
+      },
+      "matched_at": {
+       "title": "Matched At"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "occurred_at": {
+       "title": "Occurred At"
+      },
+      "outcome_kind": {
+       "title": "Outcome Kind"
+      },
+      "party_id": {
+       "default": null,
+       "title": "Party Id"
+      },
+      "status": {
+       "default": "proposed",
+       "title": "Status"
+      },
+      "subject_id": {
+       "title": "Subject Id"
+      },
+      "subject_type": {
+       "title": "Subject Type"
+      }
+     },
+     "required": [
+      "intent_type",
+      "intent_id",
+      "subject_type",
+      "subject_id",
+      "outcome_kind",
+      "occurred_at",
+      "matched_at",
+      "match_method",
+      "confidence",
+      "disposition",
+      "dedupe_key"
+     ],
+     "title": "CreatePlatformOutcomeEventItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeletePlatformOutcomeEventItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "campaign_id": {
+       "default": null,
+       "title": "Campaign Id"
+      },
+      "confidence": {
+       "default": null,
+       "title": "Confidence"
+      },
+      "decided_at": {
+       "default": null,
+       "title": "Decided At"
+      },
+      "decided_by": {
+       "default": null,
+       "title": "Decided By"
+      },
+      "dedupe_key": {
+       "default": null,
+       "title": "Dedupe Key"
+      },
+      "disposition": {
+       "default": null,
+       "title": "Disposition"
+      },
+      "evidence_id": {
+       "default": null,
+       "title": "Evidence Id"
+      },
+      "evidence_type": {
+       "default": null,
+       "title": "Evidence Type"
+      },
+      "evidence_url": {
+       "default": null,
+       "title": "Evidence Url"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "intent_id": {
+       "default": null,
+       "title": "Intent Id"
+      },
+      "intent_type": {
+       "default": null,
+       "title": "Intent Type"
+      },
+      "match_detail": {
+       "default": null,
+       "title": "Match Detail"
+      },
+      "match_method": {
+       "default": null,
+       "title": "Match Method"
+      },
+      "matched_at": {
+       "default": null,
+       "title": "Matched At"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "occurred_at": {
+       "default": null,
+       "title": "Occurred At"
+      },
+      "outcome_kind": {
+       "default": null,
+       "title": "Outcome Kind"
+      },
+      "party_id": {
+       "default": null,
+       "title": "Party Id"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "subject_id": {
+       "default": null,
+       "title": "Subject Id"
+      },
+      "subject_type": {
+       "default": null,
+       "title": "Subject Type"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdatePlatformOutcomeEventItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.outcome_event",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
    "identity_fields": [
     "id"
    ],
@@ -22131,6 +23787,114 @@
    "table": "docproc.processed_document_pages",
    "title_column": null,
    "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Purpose",
+   "noun": "purpose",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "grounding_tag": {
+       "default": "A",
+       "title": "Grounding Tag"
+      },
+      "inputs": {
+       "default": [],
+       "title": "Inputs"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "outputs": {
+       "default": [],
+       "title": "Outputs"
+      },
+      "safe_conditions": {
+       "default": null,
+       "title": "Safe Conditions"
+      },
+      "statement": {
+       "title": "Statement"
+      },
+      "title": {
+       "title": "Title"
+      }
+     },
+     "required": [
+      "title",
+      "statement"
+     ],
+     "title": "CreatePurposeItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeletePurposeItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "grounding_tag": {
+       "default": null,
+       "title": "Grounding Tag"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "inputs": {
+       "default": null,
+       "title": "Inputs"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "outputs": {
+       "default": null,
+       "title": "Outputs"
+      },
+      "safe_conditions": {
+       "default": null,
+       "title": "Safe Conditions"
+      },
+      "statement": {
+       "default": null,
+       "title": "Statement"
+      },
+      "title": {
+       "default": null,
+       "title": "Title"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdatePurposeItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.purpose",
+   "title_column": "title",
+   "update": "planned",
    "view": "no"
   },
   {
@@ -23619,7 +25383,9 @@
        "title": "Queue"
       },
       "surfaces": {
-       "default": [],
+       "default": [
+        "any"
+       ],
        "title": "Surfaces"
       },
       "tags": {
@@ -24464,11 +26230,95 @@
    "delete": "no",
    "family": "Other",
    "identity_fields": [],
+   "label": "AI Visibility Panel",
+   "noun": "seo_ai_visibility_panel",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.ai_visibility_panel",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Backlink Change Event",
+   "noun": "seo_backlink_change_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.backlink_change_event",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Coverage Mention",
+   "noun": "seo_coverage_mention",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.coverage_mention",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Coverage Tracker",
+   "noun": "seo_coverage_tracker",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.coverage_tracker",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Page Measurement Health",
    "noun": "seo_page_measurement_health",
    "reference": "no",
    "schemas": null,
    "table": "seo.page_measurement_health",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "SERP Prospect Mention",
+   "noun": "seo_serp_mention",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.serp_mention",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "SERP Prospect Opportunity",
+   "noun": "seo_serp_opportunity",
+   "reference": "no",
+   "schemas": null,
+   "table": "seo.serp_opportunity",
    "title_column": null,
    "update": "no",
    "view": "no"
@@ -25351,6 +27201,14 @@
        "default": true,
        "title": "Ai Agent Messages"
       },
+      "assistant_destination_id": {
+       "default": null,
+       "title": "Assistant Destination Id"
+      },
+      "assistant_program_key": {
+       "default": null,
+       "title": "Assistant Program Key"
+      },
       "dm_notifications": {
        "default": false,
        "title": "Dm Notifications"
@@ -25447,6 +27305,14 @@
       "ai_agent_messages": {
        "default": null,
        "title": "Ai Agent Messages"
+      },
+      "assistant_destination_id": {
+       "default": null,
+       "title": "Assistant Destination Id"
+      },
+      "assistant_program_key": {
+       "default": null,
+       "title": "Assistant Program Key"
       },
       "dm_notifications": {
        "default": null,
@@ -32305,6 +34171,22 @@
        "default": [],
        "title": "Channels"
       },
+      "compiled_at": {
+       "default": null,
+       "title": "Compiled At"
+      },
+      "confirmed_success_count": {
+       "default": 0,
+       "title": "Confirmed Success Count"
+      },
+      "demoted_at": {
+       "default": null,
+       "title": "Demoted At"
+      },
+      "demotion_reason": {
+       "default": null,
+       "title": "Demotion Reason"
+      },
       "description": {
        "default": null,
        "title": "Description"
@@ -32313,9 +34195,25 @@
        "default": [],
        "title": "Edges"
       },
+      "engram_counter_since": {
+       "default": null,
+       "title": "Engram Counter Since"
+      },
+      "engram_state": {
+       "default": "improvised",
+       "title": "Engram State"
+      },
+      "engram_version_tags": {
+       "default": null,
+       "title": "Engram Version Tags"
+      },
       "entry_nodes": {
        "default": [],
        "title": "Entry Nodes"
+      },
+      "grounding_score": {
+       "default": null,
+       "title": "Grounding Score"
       },
       "is_active": {
        "default": true,
@@ -32348,6 +34246,10 @@
        "default": null,
        "title": "Project Id"
       },
+      "promotion_threshold_k": {
+       "default": null,
+       "title": "Promotion Threshold K"
+      },
       "source_definition_id": {
        "default": null,
        "title": "Source Definition Id"
@@ -32363,6 +34265,14 @@
       "task_id": {
        "default": null,
        "title": "Task Id"
+      },
+      "updated_by_system": {
+       "default": null,
+       "title": "Updated By System"
+      },
+      "updated_by_tier": {
+       "default": null,
+       "title": "Updated By Tier"
       },
       "variables": {
        "default": [],
@@ -32408,6 +34318,22 @@
        "default": null,
        "title": "Channels"
       },
+      "compiled_at": {
+       "default": null,
+       "title": "Compiled At"
+      },
+      "confirmed_success_count": {
+       "default": null,
+       "title": "Confirmed Success Count"
+      },
+      "demoted_at": {
+       "default": null,
+       "title": "Demoted At"
+      },
+      "demotion_reason": {
+       "default": null,
+       "title": "Demotion Reason"
+      },
       "description": {
        "default": null,
        "title": "Description"
@@ -32416,9 +34342,25 @@
        "default": null,
        "title": "Edges"
       },
+      "engram_counter_since": {
+       "default": null,
+       "title": "Engram Counter Since"
+      },
+      "engram_state": {
+       "default": null,
+       "title": "Engram State"
+      },
+      "engram_version_tags": {
+       "default": null,
+       "title": "Engram Version Tags"
+      },
       "entry_nodes": {
        "default": null,
        "title": "Entry Nodes"
+      },
+      "grounding_score": {
+       "default": null,
+       "title": "Grounding Score"
       },
       "id": {
        "title": "Id",
@@ -32456,6 +34398,10 @@
        "default": null,
        "title": "Project Id"
       },
+      "promotion_threshold_k": {
+       "default": null,
+       "title": "Promotion Threshold K"
+      },
       "source_definition_id": {
        "default": null,
        "title": "Source Definition Id"
@@ -32471,6 +34417,14 @@
       "task_id": {
        "default": null,
        "title": "Task Id"
+      },
+      "updated_by_system": {
+       "default": null,
+       "title": "Updated By System"
+      },
+      "updated_by_tier": {
+       "default": null,
+       "title": "Updated By Tier"
       },
       "variables": {
        "default": null,
@@ -32875,6 +34829,122 @@
     }
    },
    "table": "workflow.run",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Run Surface",
+   "noun": "workflow_runtime_surface",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "audience": {
+       "default": "consumer",
+       "title": "Audience"
+      },
+      "config": {
+       "default": {},
+       "title": "Config"
+      },
+      "definition_id": {
+       "title": "Definition Id"
+      },
+      "is_default": {
+       "default": false,
+       "title": "Is Default"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "name": {
+       "default": "Default",
+       "title": "Name"
+      },
+      "profile": {
+       "default": "full",
+       "title": "Profile"
+      },
+      "schema_version": {
+       "default": 1,
+       "title": "Schema Version"
+      }
+     },
+     "required": [
+      "definition_id"
+     ],
+     "title": "CreateWorkflowRuntimeSurfaceItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteWorkflowRuntimeSurfaceItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "audience": {
+       "default": null,
+       "title": "Audience"
+      },
+      "config": {
+       "default": null,
+       "title": "Config"
+      },
+      "definition_id": {
+       "default": null,
+       "title": "Definition Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_default": {
+       "default": null,
+       "title": "Is Default"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "profile": {
+       "default": null,
+       "title": "Profile"
+      },
+      "schema_version": {
+       "default": null,
+       "title": "Schema Version"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateWorkflowRuntimeSurfaceItem",
+     "type": "object"
+    }
+   },
+   "table": "workflow.runtime_surface",
    "title_column": null,
    "update": "planned",
    "view": "no"
