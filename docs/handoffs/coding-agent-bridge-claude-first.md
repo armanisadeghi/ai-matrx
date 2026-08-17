@@ -59,34 +59,39 @@ vision:
 
 ## Remaining work (priority order)
 
-00. **🚨 ARMAN'S DECISION NEEDED: should Claude hooks spool through Matrx Local's durable outbox?**
-    *(Detection and recovery for the 2026-08-16 silent-capture outage are DONE — see Done below.
-    What remains here is one architectural call that an agent may not make unilaterally.)*
+00. **🚨 Capture durability — BUILT 2026-08-17 on Arman's approval. Remaining: watch the drain.**
+    The reconciler (matrx-local `app/services/coding_sessions/capture_reconciler.py`) backfills
+    Claude sessions the hook path never delivered, using the EXISTING importer and the EXISTING
+    outbox — no second transport was added. It runs every 15 min as launcher task
+    `claude_capture_reconciler`; `POST /coding-session/claude/capture/reconcile?dry_run=true`
+    reports the diff without enqueuing.
 
-    **The argument for it.** Detection now tells the owner that capture stopped, but it cannot keep
-    capture running, and it cannot tell a broken connection from a quiet afternoon — because the
-    mirror is its own only sensor. Both halves of the fix already exist and are already running:
-    Matrx Local owns a durable loopback ingress and a background coding-session outbox
-    (`app/services/coding_sessions/`, started in `app/main.py`) that Codex and Cursor already use for
-    exactly this reason — their hooks cannot reuse MCP OAuth — and it already reads Claude's own
-    local session index and transcripts (`claude_session_index.py`, `claude_history.py`), so it can
-    independently observe *"Claude Code was active at T"* with no new sensor at all. Spooling Claude
-    hooks there when the MCP call fails would make capture survive a disconnect instead of ending at
-    one, and would let the platform say the thing it currently cannot: *"you were coding and nothing
-    arrived."* The plugin README declined a second transport once, but that was for a narrow
-    `claude -p` startup RACE where a later prompt re-attaches anyway — a timing edge, not durability;
-    this is a permanent, silent, user-manual-recovery-only data loss, which is a materially different
-    trade, and reusing a transport three other clients already depend on adds no new moving part to
-    run. **Against it:** it is still a second delivery path for one client, it only helps when Matrx
-    Local is installed and running, and THE PRIME RULE asks whether it makes the system simpler to
-    run and finish — a second path never does. **Recommendation:** adopt the *sensor* half
-    unconditionally (have Matrx Local report Claude local activity so the alarm stops guessing) and
-    treat the *spool* half as the genuine second transport it is, for Arman to accept or refuse.
+    **What the live diff found, and it is worse than the one outage:** 235 sessions in the cloud
+    against 815 local session files, with **160 of the 200 most recent local sessions never
+    delivered at all** (all inside the mirroring era, all substantial — 198 of those 200 have 5+
+    user turns). Underneath that sat a second failure: the durable outbox had been **hard-stuck
+    since 2026-08-13** on one row that failed **2,520 times** with HTTP 409 `entry_mutated`,
+    blocking **3,709 rows for four days**. Ordered delivery plus infinite retry equals a permanent
+    stall; terminal rejections are now quarantined (preserved, never dropped) so the queue advances.
 
-    Optional, independent, small: `BridgeHealth` carries no owner-level delivery facts, so a health
-    call without `provider_session_id` cannot say when anything last arrived. Adding
-    `last_observed_at` there would let `/matrx:health` state the gap numerically as well as from the
-    attach receipt. Not required — the receipt check already decides — so it is not built.
+    **Open follow-ups, in order:**
+    - **Confirm the backlog fully drained** and the backfilled sessions landed:
+      `sqlite3 ~/.matrx/matrx.db "select count(*) from coding_session_bridge_outbox"` → 0, and
+      `select count(*) from chat.coding_session where provider_session_id like 'claude-sdk:%'`
+      climbing. At ~1 row/sec the four-day backlog takes about an hour of engine uptime.
+    - **Inspect the one quarantined row** (`coding_session_bridge_quarantine`) and decide whether
+      that event is recoverable or is correctly abandoned. A non-zero count means real events are
+      permanently absent from the platform.
+    - **Find out WHY 160 sessions were never captured.** The reconciler now repairs the symptom, but
+      a hook path that loses 80% of recent sessions is a defect in its own right and the reconciler
+      must not become the excuse not to fix it.
+    - **Desktop surface:** the capture status/reconcile routes have no UI yet; `ClaudeHistorySync.tsx`
+      is the natural home.
+    - Optional, independent, small: `BridgeHealth` carries no owner-level delivery facts, so a health
+      call without `provider_session_id` cannot say when anything last arrived. Adding
+      `last_observed_at` would let `/matrx:health` state the gap numerically as well as from the
+      attach receipt. Not required — the receipt check already decides.
+
 0. **🚨 CONVERSATION MANAGEMENT + WAR ROOM INTEGRATION FIRST (Arman, 2026-08-15).** Before VS Code
    and distribution work: "the way they're managed is a disaster… they need to be fully integrated
    into the war room" so war-room agents "have awareness of these conversations and are able to
