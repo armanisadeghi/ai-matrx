@@ -314,6 +314,21 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-17` — **Configuration Equivalence's `setting_not_supported` warning is now user-visible.**
+  The server-side law (`common-docs/systems/configuration-equivalence/FEATURE.md`) began emitting
+  a standard `warning` stream event when a requested setting is unexpectedly dropped during
+  translation (`code: "setting_not_supported"`, `level: "low"`, `recoverable: true`,
+  `metadata.dropped`). The event was already captured into Redux (`addWarning` →
+  `activeRequests[reqId].warnings`, wired in `process-stream.ts` since before this change) but
+  never rendered — `AgentAssistantMessage` filtered to `level === "high"` only
+  (`selectHighWarnings`), so a `low`-level drop was invisible. Added `selectVisibleWarnings`
+  (`active-requests.selectors.ts`) — high-severity warnings plus a small explicit
+  `PROMOTED_WARNING_CODES` allowlist (today: `setting_not_supported`) — and switched
+  `AgentAssistantMessage` to it. Renders through the existing canonical `AssistantWarning`
+  component (amber advisory treatment, friendly `user_message` primary, code/detail behind a
+  disclosure) — no new component, no new slice, no new event handling. A dropped setting now
+  shows the same inline "the run completed, here's what you should know" treatment as any other
+  recoverable warning, never as an error.
 - `2026-08-17` — **A FAILED headless run now reports WHY it failed.** `jsonExtractionComplete`
   is set from the stream's FINAL chunk (`process-stream`, `isComplete: isFinal`), which arrives
   on failed runs too, and `waitForExtraction` checked it BEFORE the request status — so a run

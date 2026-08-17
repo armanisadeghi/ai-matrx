@@ -1590,6 +1590,39 @@ export const selectHighWarnings = (requestId: string) =>
     },
   );
 
+/**
+ * Warning codes promoted to inline display regardless of `level`.
+ *
+ * A low/medium-severity warning is telemetry by default (FEATURE.md's
+ * documented policy) — but `setting_not_supported` is the client half of the
+ * Configuration Equivalence law (common-docs/systems/configuration-equivalence/
+ * FEATURE.md): an UNEXPECTED drop of a requested setting during translation
+ * (model/provider swap, unsupported control value). The user chose that
+ * setting; silently swallowing it is exactly the failure the law exists to
+ * kill, so it is promoted even though the server marks it `level: "low"`
+ * (the run still completed normally — this is advisory, never an error).
+ */
+const PROMOTED_WARNING_CODES: ReadonlySet<string> = new Set([
+  "setting_not_supported",
+]);
+
+/**
+ * High-severity warnings plus any warning whose `code` is explicitly
+ * promoted (see `PROMOTED_WARNING_CODES`). This is the set `AssistantWarning`
+ * actually renders inline — `selectHighWarnings` stays available for callers
+ * that want the stricter, level-only cut.
+ */
+export const selectVisibleWarnings = (requestId: string) =>
+  createSelector(
+    (state: RootState) => state.activeRequests.byRequestId[requestId]?.warnings,
+    (warnings): WarningPayload[] | undefined => {
+      if (!warnings) return undefined;
+      return warnings.filter(
+        (w) => w.level === "high" || PROMOTED_WARNING_CODES.has(w.code),
+      );
+    },
+  );
+
 // =============================================================================
 // Info Event Selectors
 // =============================================================================
