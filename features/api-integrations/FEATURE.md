@@ -1,8 +1,16 @@
+---
+type: Feature
+title: API integrations — index card
+description: Pointer-only map to the real frontend integration and MCP connection surfaces and their cross-repository operating contracts.
+tags: [integrations, mcp, oauth, credentials]
+timestamp: 2026-08-17T00:00:00Z
+---
+
 # FEATURE.md — `api-integrations` (index card)
 
 **Status:** `pointer only — no code lives here`
 **Tier:** `2`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-08-17`
 
 > This directory contains ONLY this file. There is no catalog UI, no `components/`, no
 > `types.ts`, no barrel — earlier revisions of this doc described a feature that does not
@@ -29,6 +37,12 @@ before changing MCP credential storage or resolution in any repo.
 **Microsoft identity, Graph, Work IQ MCP, and Microsoft 365:** the cross-repo execution plan is
 `/Users/armanisadeghi/code/common-docs/projects/microsoft-platform-integration/PLAN.md`. Read it
 before adding a Microsoft OAuth client, scope, callback, MCP server, or connection surface.
+
+**Provider access discovery, scope selection, submissions, verification, and follow-through:** the
+cross-repo operating contract is
+`/Users/armanisadeghi/code/common-docs/systems/provider-access/FEATURE.md`. Read it before creating
+or changing a provider app, permission campaign, API key, remote MCP connection, publisher listing,
+review dossier, or approval monitor.
 
 ## Invariants that survive from the old doc
 
@@ -75,6 +89,7 @@ implementation (it also adds the origin check and listener cleanup the settings 
 
 ## Change log
 
+- `2026-08-17` — linked the cross-repo provider access and approval operating system.
 - `2026-08-15` — linked the cross-repo Microsoft platform integration program before its first
   production OAuth/MCP implementation.
 - `2026-08-15` — Cloudflare Bot Fight Mode challenged Vercel's authenticated token-persist
