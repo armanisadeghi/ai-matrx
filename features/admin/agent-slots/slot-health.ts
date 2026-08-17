@@ -7,6 +7,7 @@
 
 import { isJsonObject } from "@/types/json";
 import { parseSlotContract } from "@/features/agents/slots/overrides";
+import { splitSlotKey } from "@/features/agents/slots/slot-key";
 import type {
   SlotCodeTruth,
   SlotConsoleData,
@@ -56,6 +57,10 @@ export interface SlotRow {
   slot: SlotDefinitionRow;
   id: string;
   slotKey: string;
+  /** First segment of the canonical `<feature>.<slot>` key. */
+  feature: string;
+  /** Everything after the first dot; later dots remain part of the slot. */
+  slotName: string;
   label: string | null;
   /** The agent behind the slot default — null only when the pin is broken. */
   agentId: string | null;
@@ -171,11 +176,14 @@ export function buildRow(
   // columns (which are null for most slots and were reporting "—"/"text"
   // while the contract declared five required variables).
   const contract = parseSlotContract(slot.contract);
+  const slotKeyParts = splitSlotKey(slot.slot_key);
 
   return {
     slot,
     id: slot.id,
     slotKey: slot.slot_key,
+    feature: slotKeyParts.feature,
+    slotName: slotKeyParts.slot,
     label: slot.label,
     agentId,
     agentName,
@@ -211,13 +219,11 @@ export function buildRow(
 
 export const HEALTH_CLASS: Record<SlotHealth, string> = {
   ok: "text-emerald-600 border-emerald-500/40 bg-emerald-500/10",
-  "code ↔ agent drift":
-    "text-rose-600 border-rose-500/40 bg-rose-500/10",
+  "code ↔ agent drift": "text-rose-600 border-rose-500/40 bg-rose-500/10",
   "code truth import failed":
     "text-amber-600 border-amber-500/40 bg-amber-500/10",
   "version drift": "text-amber-600 border-amber-500/40 bg-amber-500/10",
-  "code ↔ contract drift":
-    "text-amber-600 border-amber-500/40 bg-amber-500/10",
+  "code ↔ contract drift": "text-amber-600 border-amber-500/40 bg-amber-500/10",
   "agent archived": "text-rose-600 border-rose-500/40 bg-rose-500/10",
   "not a system agent": "text-rose-600 border-rose-500/40 bg-rose-500/10",
   "unresolved pin": "text-rose-600 border-rose-500/40 bg-rose-500/10",

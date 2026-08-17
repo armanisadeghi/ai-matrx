@@ -32,6 +32,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { fetchAgentsListFull } from "@/features/agents/redux/agent-definition/thunks";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { splitSlotKey } from "@/features/agents/slots/slot-key";
 import {
   fetchSlotOverridesData,
   type SlotBindingRow,
@@ -59,11 +60,6 @@ interface SlotView {
   settingsOnly: boolean;
 }
 
-function slotDomain(slotKey: string): string {
-  const dot = slotKey.indexOf(".");
-  return dot > 0 ? slotKey.slice(0, dot) : slotKey;
-}
-
 export function SlotOverridesPage() {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
@@ -83,7 +79,8 @@ export function SlotOverridesPage() {
         setLoadError(null);
       })
       .catch((err: unknown) => {
-        const message = (err as { message?: string } | null)?.message ?? "unknown error";
+        const message =
+          (err as { message?: string } | null)?.message ?? "unknown error";
         setLoadError(message);
         toast.error(`Couldn't load agent slots: ${message}`);
       })
@@ -111,11 +108,15 @@ export function SlotOverridesPage() {
     if (!data || !userId) return [];
     const myOrgIds = new Set(organizations.map((o) => o.id));
     return data.slots.map((slot) => {
-      const bindings = data.bindings.filter((b) => b.slot_id === slot.id && b.is_enabled);
+      const bindings = data.bindings.filter(
+        (b) => b.slot_id === slot.id && b.is_enabled,
+      );
       const myBinding =
         data.bindings.find(
           (b) =>
-            b.slot_id === slot.id && b.principal_type === "user" && b.subject_user_id === userId,
+            b.slot_id === slot.id &&
+            b.principal_type === "user" &&
+            b.subject_user_id === userId,
         ) ?? null;
       const orgBindings: Record<string, SlotBindingRow> = {};
       for (const b of bindings) {
@@ -148,12 +149,12 @@ export function SlotOverridesPage() {
         provenance === "system" &&
         Boolean(
           (myBinding?.is_enabled && myBinding.config_overrides != null) ||
-            Object.values(orgBindings).some((b) => b.config_overrides != null),
+          Object.values(orgBindings).some((b) => b.config_overrides != null),
         );
 
       return {
         slot,
-        domain: slotDomain(slot.slot_key),
+        domain: splitSlotKey(slot.slot_key).feature,
         defaultAgentId,
         defaultAgentName,
         myBinding,
@@ -189,8 +190,15 @@ export function SlotOverridesPage() {
   if (loadError || !data) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-destructive">Couldn't load agent slots: {loadError}</p>
-        <Button variant="outline" size="sm" onClick={() => load()} className="gap-1.5">
+        <p className="text-sm text-destructive">
+          Couldn't load agent slots: {loadError}
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => load()}
+          className="gap-1.5"
+        >
           <RefreshCw className="h-3.5 w-3.5" /> Retry
         </Button>
       </div>
@@ -202,8 +210,8 @@ export function SlotOverridesPage() {
       <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
           <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-muted-foreground">
-            Every step below runs a system-provided agent. Swap in one of your own agents, or
-            keep the system agent and override its settings.
+            Every step below runs a system-provided agent. Swap in one of your
+            own agents, or keep the system agent and override its settings.
           </p>
           <OverriddenCountBadge
             overridden={
@@ -238,7 +246,9 @@ export function SlotOverridesPage() {
                   canEditAnyOrg={adminOrgs.length > 0}
                   open={openSlotId === view.slot.id}
                   onToggle={() =>
-                    setOpenSlotId((prev) => (prev === view.slot.id ? null : view.slot.id))
+                    setOpenSlotId((prev) =>
+                      prev === view.slot.id ? null : view.slot.id,
+                    )
                   }
                   onChanged={() => load()}
                 />
@@ -368,7 +378,9 @@ function SlotCard({
                   className="font-medium text-foreground/80"
                 />
               ) : (
-                <span className="font-medium text-foreground/80">{view.resolvedAgentName}</span>
+                <span className="font-medium text-foreground/80">
+                  {view.resolvedAgentName}
+                </span>
               )}
               {view.provenance !== "system" ? (
                 <span className="inline-flex min-w-0 items-center gap-1 text-muted-foreground/60">
@@ -413,7 +425,10 @@ function SlotCard({
           {Object.keys(view.orgBindings).length > 0 && !canEditAnyOrg ? (
             <p className="mb-3 text-[11.5px] text-muted-foreground">
               {Object.entries(view.orgBindings).map(([orgId, b], i) => (
-                <span key={orgId} className="inline-flex flex-wrap items-center gap-1">
+                <span
+                  key={orgId}
+                  className="inline-flex flex-wrap items-center gap-1"
+                >
                   {i > 0 ? <span aria-hidden> · </span> : null}
                   <EntityRef
                     token="organization"
@@ -426,7 +441,9 @@ function SlotCard({
                     <EntityRef
                       token="agent"
                       id={b.agent_id}
-                      name={data.agentsById[b.agent_id]?.name ?? "a custom agent"}
+                      name={
+                        data.agentsById[b.agent_id]?.name ?? "a custom agent"
+                      }
                       showIcon={false}
                     />
                   ) : (

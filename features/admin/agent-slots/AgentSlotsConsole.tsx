@@ -196,7 +196,10 @@ export function AgentSlotsConsole() {
               ? truthResult.reason.message
               : String(truthResult.reason);
           setCodeTruthError(message);
-          console.error("[agent-slots] code truth unavailable", truthResult.reason);
+          console.error(
+            "[agent-slots] code truth unavailable",
+            truthResult.reason,
+          );
         } else {
           setCodeTruthBySlotKey(
             Object.fromEntries(
@@ -245,9 +248,7 @@ export function AgentSlotsConsole() {
   const rows = useMemo(() => {
     if (!data) return [];
     return data.slots
-      .map((slot) =>
-        buildRow(slot, data, codeTruthBySlotKey[slot.slot_key]),
-      )
+      .map((slot) => buildRow(slot, data, codeTruthBySlotKey[slot.slot_key]))
       .sort(
         (left, right) =>
           HEALTH_PRIORITY[left.health] - HEALTH_PRIORITY[right.health] ||
@@ -276,8 +277,7 @@ export function AgentSlotsConsole() {
     };
     for (const r of rows) {
       if (r.health === "ok") health.ok += 1;
-      else if (r.health === "code ↔ agent drift")
-        health.code_agent_drift += 1;
+      else if (r.health === "code ↔ agent drift") health.code_agent_drift += 1;
       else if (r.health === "code ↔ contract drift")
         health.code_contract_drift += 1;
       else if (r.health === "code truth import failed")
@@ -426,14 +426,29 @@ export function AgentSlotsConsole() {
   const columns = useMemo((): MatrxColumnDef<SlotRow>[] => {
     return [
       {
-        id: "slotKey",
-        accessorKey: "slotKey",
+        id: "feature",
+        accessorKey: "feature",
+        header: "Feature",
+        filter: "select",
+        width: 150,
+        cell: (r) => (
+          <span className="whitespace-nowrap font-mono text-xs">
+            {r.feature}
+          </span>
+        ),
+      },
+      {
+        id: "slotName",
+        accessorKey: "slotName",
         header: "Slot",
-        width: 240,
+        width: 190,
         cell: (r) => (
           <div className="flex flex-col items-start gap-0.5">
-            <span className="whitespace-nowrap font-mono text-xs">
-              {r.slotKey}
+            <span
+              className="whitespace-nowrap font-mono text-xs"
+              title={`Full slot key: ${r.slotKey}`}
+            >
+              {r.slotName}
             </span>
             {r.isPlaceholder && (
               <Badge variant="outline" className="text-[10px]">
@@ -725,6 +740,8 @@ export function AgentSlotsConsole() {
               rowAttributes: (r) => ({
                 id: r.id,
                 slot_key: r.slotKey,
+                feature: r.feature,
+                slot: r.slotName,
                 health: r.health,
                 enabled: r.isEnabled,
               }),
