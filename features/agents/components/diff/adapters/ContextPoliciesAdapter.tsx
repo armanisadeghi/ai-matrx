@@ -53,7 +53,7 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
       {node.children.map((child, i) => {
         const oldPolicy = child.oldValue as ContextPolicyLike | undefined;
         const newPolicy = child.newValue as ContextPolicyLike | undefined;
-        const slotKey = newPolicy?.key ?? oldPolicy?.key ?? child.key;
+        const policyKey = newPolicy?.key ?? oldPolicy?.key ?? child.key;
 
         // Edited policy → word/line-level diff so only the changed text is tinted.
         if (child.changeType === "modified" && oldPolicy && newPolicy) {
@@ -66,7 +66,7 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
                 className="grid grid-cols-[200px_1fr] text-xs border-t border-border/30"
               >
                 <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
-                  {slotKey}
+                  {policyKey}
                 </div>
                 <div className="min-w-0 overflow-x-auto">
                   <InlineTextDiff original={oldText} modified={newText} />
@@ -82,7 +82,7 @@ function ContextPoliciesDiffRenderer({ node }: FieldDiffProps) {
             className="grid grid-cols-[200px_1fr_1fr] text-xs border-t border-border/30"
           >
             <div className="px-3 py-1.5 border-r border-border text-muted-foreground pl-8 font-mono">
-              {slotKey}
+              {policyKey}
             </div>
             <div
               className={cn(

@@ -101,10 +101,10 @@ function inferContextType(value: unknown): ContextObjectType {
 function classifyTarget(
   name: string,
   variableNames: Set<string>,
-  slotMap: Map<string, ContextPolicy | { key: string; type?: ContextObjectType; label?: string }>,
+  policyMap: Map<string, ContextPolicy | { key: string; type?: ContextObjectType; label?: string }>,
 ): "variable" | "context_slot" | "unknown" {
   if (variableNames.has(name)) return "variable";
-  if (slotMap.has(name)) return "context_slot";
+  if (policyMap.has(name)) return "context_slot";
   return "unknown";
 }
 
@@ -112,15 +112,15 @@ function pushContextEntry(
   out: InstanceContextEntry[],
   targetName: string,
   value: unknown,
-  slotMap: Map<string, ContextPolicy | { key: string; type?: ContextObjectType; label?: string }>,
+  policyMap: Map<string, ContextPolicy | { key: string; type?: ContextObjectType; label?: string }>,
 ): void {
-  const slot = slotMap.get(targetName);
+  const policy = policyMap.get(targetName);
   out.push({
     key: targetName,
     value,
-    slotMatched: !!slot,
-    type: slot?.type ?? inferContextType(value),
-    label: slot?.label ?? targetName,
+    slotMatched: !!policy,
+    type: policy?.type ?? inferContextType(value),
+    label: policy?.label ?? targetName,
   });
 }
 
@@ -143,7 +143,7 @@ export function resolveValueMappings(
   const defs = variableDefinitions ?? [];
   const slots = contextPolicies ?? [];
   const variableNames = new Set(defs.map((v) => v.name));
-  const slotMap = new Map<string, { key: string; type?: ContextObjectType; label?: string }>(
+  const policyMap = new Map<string, { key: string; type?: ContextObjectType; label?: string }>(
     slots.map((s) => [s.key, s]),
   );
 
@@ -164,7 +164,7 @@ export function resolveValueMappings(
       mapping,
       applicationScope,
       variableNames,
-      slotMap,
+      policyMap,
       variableValues,
       contextEntries,
       pendingPrompts,
@@ -190,12 +190,12 @@ export function resolveValueMappings(
         }
       }
     }
-    for (const [slotKey] of slotMap) {
-      if (consumedMappingKeys.has(slotKey)) continue;
-      if (slotKey in applicationScope) {
-        const v = applicationScope[slotKey];
+    for (const [policyKey] of policyMap) {
+      if (consumedMappingKeys.has(policyKey)) continue;
+      if (policyKey in applicationScope) {
+        const v = applicationScope[policyKey];
         if (v !== undefined) {
-          pushContextEntry(contextEntries, slotKey, v, slotMap);
+          pushContextEntry(contextEntries, policyKey, v, policyMap);
         }
       }
     }
@@ -216,7 +216,7 @@ function resolveOne(
   mapping: ValueMapping,
   applicationScope: ApplicationScope,
   variableNames: Set<string>,
-  slotMap: Map<string, { key: string; type?: ContextObjectType; label?: string }>,
+  policyMap: Map<string, { key: string; type?: ContextObjectType; label?: string }>,
   variableValues: Record<string, unknown>,
   contextEntries: InstanceContextEntry[],
   pendingPrompts: PendingPrompt[],
@@ -224,7 +224,7 @@ function resolveOne(
   errors: string[],
   forToolArgs: boolean,
 ): void {
-  const targetKind = classifyTarget(targetName, variableNames, slotMap);
+  const targetKind = classifyTarget(targetName, variableNames, policyMap);
 
   switch (mapping.mapType) {
     case "surface_value": {
@@ -243,7 +243,7 @@ function resolveOne(
         v,
         variableValues,
         contextEntries,
-        slotMap,
+        policyMap,
       );
       return;
     }
@@ -255,7 +255,7 @@ function resolveOne(
         mapping.target,
         variableValues,
         contextEntries,
-        slotMap,
+        policyMap,
       );
       return;
     }
@@ -297,7 +297,7 @@ function writeResolvedValue(
   value: unknown,
   variableValues: Record<string, unknown>,
   contextEntries: InstanceContextEntry[],
-  slotMap: Map<string, { key: string; type?: ContextObjectType; label?: string }>,
+  policyMap: Map<string, { key: string; type?: ContextObjectType; label?: string }>,
 ): void {
   if (targetKind === "variable") {
     variableValues[targetName] = value;
@@ -305,7 +305,7 @@ function writeResolvedValue(
   }
   // Unknown targets fall through as context entries — matches the legacy
   // "ad-hoc context" behavior.
-  pushContextEntry(contextEntries, targetName, value, slotMap);
+  pushContextEntry(contextEntries, targetName, value, policyMap);
 }
 
 // ---------------------------------------------------------------------------
@@ -325,7 +325,7 @@ export function applyResolvedPrompts(
     | null
     | undefined,
 ): ValueMappingResolveResult {
-  const slotMap = new Map<string, { key: string; type?: ContextObjectType; label?: string }>(
+  const policyMap = new Map<string, { key: string; type?: ContextObjectType; label?: string }>(
     (contextPolicies ?? []).map((s) => [s.key, s]),
   );
   for (const prompt of result.pendingPrompts) {
@@ -334,7 +334,7 @@ export function applyResolvedPrompts(
     if (prompt.targetKind === "variable") {
       result.variableValues[prompt.targetName] = v;
     } else {
-      pushContextEntry(result.contextEntries, prompt.targetName, v, slotMap);
+      pushContextEntry(result.contextEntries, prompt.targetName, v, policyMap);
     }
   }
   // Drained.

@@ -28,7 +28,7 @@ import type { DeadEndFinding, DeadEndRuleId, DeadEndSeverity } from "./types";
 
 /** Property names that mean "the human-readable identity of a record". */
 const NAME_PROPERTY_RE =
-  /^(name|title|label|displayName|fullName|agentName|noteTitle|fileName|filename|mandateKey|slotKey|slug)$/;
+  /^(name|title|label|displayName|fullName|agentName|noteTitle|fileName|filename|mandateKey|policyKey|slug)$/;
 
 /** Property names that mean "a raw identifier the user cannot read". */
 const ID_PROPERTY_RE = /^(id|.+_id|.+Id|uuid|.+Uuid|.+UUID)$/;

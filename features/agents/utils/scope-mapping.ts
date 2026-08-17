@@ -71,7 +71,7 @@ export function mapScopeToInstance(
   const defs = variableDefinitions ?? [];
   const slots = contextPolicies ?? [];
   const variableNames = new Set(defs.map((v) => v.name));
-  const slotMap = new Map(slots.map((s) => [s.key, s]));
+  const policyMap = new Map(slots.map((s) => [s.key, s]));
 
   const variableValues: Record<string, unknown> = {};
   const contextEntries: InstanceContextEntry[] = [];
@@ -90,13 +90,13 @@ export function mapScopeToInstance(
       if (variableNames.has(targetName)) {
         variableValues[targetName] = value;
       } else {
-        const slot = slotMap.get(targetName);
+        const policy = policyMap.get(targetName);
         contextEntries.push({
           key: targetName,
           value,
-          slotMatched: !!slot,
-          type: slot?.type ?? inferContextType(value),
-          label: slot?.label ?? targetName,
+          slotMatched: !!policy,
+          type: policy?.type ?? inferContextType(value),
+          label: policy?.label ?? targetName,
         });
       }
     }
@@ -104,7 +104,7 @@ export function mapScopeToInstance(
 
   // ── Pass 2: contextMappings (UI key → agent context-policy key) ───────────
   if (contextMappings) {
-    for (const [sourceKey, slotKey] of Object.entries(contextMappings)) {
+    for (const [sourceKey, policyKey] of Object.entries(contextMappings)) {
       if (mappedScopeKeys.has(sourceKey)) {
         continue;
       }
@@ -115,13 +115,13 @@ export function mapScopeToInstance(
 
       mappedScopeKeys.add(sourceKey);
 
-      const slot = slotMap.get(slotKey);
+      const policy = policyMap.get(policyKey);
       contextEntries.push({
-        key: slotKey,
+        key: policyKey,
         value,
-        slotMatched: !!slot,
-        type: slot?.type ?? inferContextType(value),
-        label: slot?.label ?? slotKey,
+        slotMatched: !!policy,
+        type: policy?.type ?? inferContextType(value),
+        label: policy?.label ?? policyKey,
       });
     }
   }
@@ -135,25 +135,25 @@ export function mapScopeToInstance(
         value as Record<string, unknown>,
       )) {
         if (ctxVal === undefined) continue;
-        const slot = slotMap.get(ctxKey);
+        const policy = policyMap.get(ctxKey);
         contextEntries.push({
           key: ctxKey,
           value: ctxVal,
-          slotMatched: !!slot,
-          type: slot?.type ?? inferContextType(ctxVal),
-          label: slot?.label ?? ctxKey,
+          slotMatched: !!policy,
+          type: policy?.type ?? inferContextType(ctxVal),
+          label: policy?.label ?? ctxKey,
         });
       }
       continue;
     }
 
-    const slot = slotMap.get(key);
+    const policy = policyMap.get(key);
     contextEntries.push({
       key,
       value,
-      slotMatched: !!slot,
-      type: slot?.type ?? inferContextType(value),
-      label: slot?.label ?? key,
+      slotMatched: !!policy,
+      type: policy?.type ?? inferContextType(value),
+      label: policy?.label ?? key,
     });
   }
 
@@ -236,7 +236,7 @@ export function mapScopeToInstanceWithSurface(
       ...Object.keys(contextMappings ?? {}),
       ...Object.keys(surfaceValueMappings ?? {}),
     ]);
-    const declaredSlots = new Set((contextPolicies ?? []).map((slot) => slot.key));
+    const declaredSlots = new Set((contextPolicies ?? []).map((policy) => policy.key));
     const redundantKeys = new Set([
       "full_document_text",
       "content",

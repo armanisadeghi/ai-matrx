@@ -63,10 +63,10 @@ export function ContextPolicyMappingEditor({
     new Set(Object.keys(mappings).filter((k) => !STANDARD_SCOPES.includes(k))),
   );
 
-  const setMapping = (scopeName: string, slotKey: string) => {
+  const setMapping = (scopeName: string, policyKey: string) => {
     const next = { ...mappings };
-    if (slotKey && slotKey !== "_none_") {
-      next[scopeName] = slotKey;
+    if (policyKey && policyKey !== "_none_") {
+      next[scopeName] = policyKey;
     } else {
       delete next[scopeName];
     }
@@ -76,7 +76,7 @@ export function ContextPolicyMappingEditor({
   const toggleStandardScope = (scopeName: string, enabled: boolean) => {
     // Toggling a standard row off only clears its mapping — the row stays
     // visible (it's a standard key); toggling on is a no-op until the user
-    // selects a slot.
+    // selects a context policy.
     if (!enabled) {
       const next = { ...mappings };
       delete next[scopeName];
@@ -124,12 +124,12 @@ export function ContextPolicyMappingEditor({
           <SelectItem value="_none_">
             <span className="text-muted-foreground italic">None</span>
           </SelectItem>
-          {contextPolicies.map((slot) => (
-            <SelectItem key={slot.key} value={slot.key}>
+          {contextPolicies.map((policy) => (
+            <SelectItem key={policy.key} value={policy.key}>
               <div className="flex items-center gap-2">
-                <code className="font-mono text-xs">{slot.key}</code>
+                <code className="font-mono text-xs">{policy.key}</code>
                 <span className="text-[10px] text-muted-foreground">
-                  {slot.type}
+                  {policy.type}
                 </span>
               </div>
             </SelectItem>

@@ -293,7 +293,22 @@ export function IngestSourceDialog({
                 </p>
               ))}
             </div>
-            {running ? <LoadingSpinner size="sm" /> : null}
+            {running ? (
+              <div className="flex items-start gap-2">
+                <LoadingSpinner size="sm" />
+                {/* The stream detaches server-side on disconnect, so the
+                    distillation finishes and its drafts land on the pack even
+                    if this tab goes away. Saying so is what stops the user
+                    re-running (and paying for) work that is already done —
+                    this page cannot yet REJOIN it, because expertise ingest
+                    has no durable run row to rejoin (see FEATURE.md). */}
+                <p className="text-xs text-muted-foreground">
+                  This keeps running on our servers even if you close this or
+                  reload — your drafts will be waiting on the pack. Don&apos;t
+                  start it again.
+                </p>
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="space-y-3">

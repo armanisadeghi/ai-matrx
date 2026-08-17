@@ -169,7 +169,21 @@ export function CompileDeskDialog({
                 </p>
               ))}
             </div>
-            {running ? <LoadingSpinner size="sm" /> : null}
+            {running ? (
+              <div className="flex items-start gap-2">
+                <LoadingSpinner size="sm" />
+                {/* The compile stream detaches server-side on disconnect, so
+                    the desk is still built if this tab goes away. This page
+                    cannot REJOIN it — expertise compiles have no durable run
+                    row to rejoin (see FEATURE.md) — so the honest thing is to
+                    say where the result lands and stop a duplicate compile. */}
+                <p className="text-xs text-muted-foreground">
+                  This keeps running on our servers even if you close this or
+                  reload — the finished desk appears on this pack. Don&apos;t
+                  start it again.
+                </p>
+              </div>
+            ) : null}
           </div>
         ) : (
           <div className="space-y-3">

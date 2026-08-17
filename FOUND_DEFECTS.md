@@ -17,6 +17,29 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D208 — the Context Policy rename's last tail: `slotMatched` / `slot_matched` (2026-08-17)
+
+Found by the final Mandate/Context-Policy verification sweep. Every *readable* "slot" is gone and
+every unambiguous local identifier was converted, but ~25 files still carry `slotMatched` (camel)
+and `messages.slice.ts:57` carries **`slot_matched` (snake)**, which is the giveaway: that shape
+crosses to aidream inside the context-entry payload and is **not in the OpenAPI**, so nothing
+type-checks it and a client-only rename would be silently dropped by the server rather than
+failing loudly.
+
+**Why it was left, not fixed:** renaming it needs the aidream half checked first — exactly the
+lockstep rule that `slot_pinned` was broken by (see below). This is an identifier-only defect: no
+user or agent can read it.
+
+**The fix:** confirm what aidream reads for this field, rename both halves in one cross-repo
+change (`slotMatched` → `policyMatched`, `slot_matched` → `policy_matched`), or confirm the server
+ignores it entirely and rename the client freely.
+
+Adjacent, deliberately untouched (a THIRD lineage neither campaign covered): the Scopes
+context-lab demos (`app/(dev)/demos/scopes/context-lab/**`) use "slot" as a synonym for the
+canonical **Item** — "Which slot does it fill?", "Typed slot", "Required slots". Per Vocabulary
+Law 2 that is drift worth reporting; it belongs to the Org/Scope campaign, not to Mandates or
+Context Policy, and renaming it is a naming call on the Scopes surface, not a sweep.
+
 ### D207 — Surface Context reports an empty-but-REAL value as "required missing" (2026-08-16)
 
 `hasValue` in `features/window-panels/windows/surfaces/SurfaceContextWindow.tsx` (twin in
