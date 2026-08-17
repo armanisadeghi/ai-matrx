@@ -18,7 +18,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
@@ -172,6 +172,21 @@ export function useFlashcardStudy(
   const [originalCount, setOriginalCount] = useState(0);
   const [masteredIds, setMasteredIds] = useState<Set<string>>(new Set());
 
+  // Render-synced mirrors for `refreshCards`, whose queue rebuild runs AFTER
+  // an awaited fetch: reading the closure state there would resurrect
+  // anything graded/mastered while the request was in flight (the keyboard
+  // still grades while the Enhance dialog is open). The refs are read
+  // synchronously after the await, so the rebuild always sees the latest
+  // committed session state.
+  const cardsRef = useRef(cards);
+  const currentIndexRef = useRef(currentIndex);
+  const masteredIdsRef = useRef(masteredIds);
+  useEffect(() => {
+    cardsRef.current = cards;
+    currentIndexRef.current = currentIndex;
+    masteredIdsRef.current = masteredIds;
+  }, [cards, currentIndex, masteredIds]);
+
   // Load the set, its cards, and the current user's existing mastery per card.
   // All state writes happen inside the async body so none fire synchronously in
   // the effect (which would trigger cascading renders).
@@ -277,25 +292,48 @@ export function useFlashcardStudy(
   // Re-read the card rows (details/layers/sub-cards) WITHOUT restarting the
   // session — used after an in-session enrich/deepen so the new material shows
   // immediately. Deliberately NOT the load effect: that would reset progress
-  // and open a second study_session for the same sitting. Learn mode's
-  // working-queue semantics are preserved: already-mastered cards stay OUT of
-  // the refreshed queue, and the progress denominator only GROWS (by
-  // genuinely new cards, e.g. deepen's sub-cards) — never resets.
+  // and open a second study_session for the same sitting.
+  //
+  // THE SESSION QUEUE IS STATE, NOT A VIEW OF THE SET. Learn mode requeues
+  // missed cards and drops mastered ones, so the queue's ORDER and MEMBERSHIP
+  // are the session; rebuilding from set order would resurrect mastered cards
+  // and teleport the learner off the card they just enriched. So: refresh each
+  // queued card's row IN PLACE (new layers/sub-card details show immediately),
+  // drop only cards deleted server-side, append genuinely new cards (deepen's
+  // sub-cards) at the end, keep the learner anchored on the SAME card, and
+  // only GROW the progress denominator — never reset it.
   const refreshCards = async (): Promise<void> => {
     if (!setId) return;
     const res = await fcService.getSetWithCards(setId);
     if (!res.data) return;
     const freshAll = res.data.cards;
-    const knownIds = new Set(cards.map((c) => c.id));
-    for (const id of masteredIds) knownIds.add(id);
-    const addedCount = freshAll.filter((c) => !knownIds.has(c.id)).length;
-    const nextQueue = reshuffleWeighted
-      ? freshAll.filter((c) => !masteredIds.has(c.id))
-      : freshAll;
+    const freshById = new Map(freshAll.map((c) => [c.id, c]));
+    // Read the render-synced refs, NOT the closure state — a grade or
+    // navigation during the fetch has already committed by the time the
+    // await resumes, and everything below runs in one synchronous block so
+    // nothing can interleave between the read and the writes.
+    const prevQueue = cardsRef.current;
+    const mastered = masteredIdsRef.current;
+    const currentId = prevQueue[currentIndexRef.current]?.id ?? null;
+    const knownIds = new Set(prevQueue.map((c) => c.id));
+    for (const id of mastered) knownIds.add(id);
+    const added = freshAll.filter((c) => !knownIds.has(c.id));
+    const nextQueue = [
+      ...prevQueue.flatMap((c) => {
+        const fresh = freshById.get(c.id);
+        return fresh ? [fresh] : [];
+      }),
+      ...added,
+    ];
     setSet(res.data.set);
     setCards(nextQueue);
-    if (addedCount > 0) setOriginalCount((n) => n + addedCount);
-    setCurrentIndex((i) => clampIndex(i, nextQueue.length));
+    if (added.length > 0) setOriginalCount((n) => n + added.length);
+    const anchored = currentId
+      ? nextQueue.findIndex((c) => c.id === currentId)
+      : -1;
+    setCurrentIndex((i) =>
+      anchored >= 0 ? anchored : clampIndex(i, nextQueue.length),
+    );
   };
 
   const flip = (): void => {
