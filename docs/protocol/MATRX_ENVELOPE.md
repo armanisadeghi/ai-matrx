@@ -19,8 +19,15 @@
 - **`matrx_version`** *(int, required)* — the sentinel **and** the contract version.
   **Presence is the only trigger:** `"matrx_version" in obj` → Matrx envelope, else
   ignore. No normal data carries this key → zero-collision early-exit.
-- **`kind`** *(string, required)* — the **orchestrator/family** the envelope routes
-  to. A small **registered** set (never ad-hoc). Each `kind` declares a `category`.
+- **`kind`** *(string, required)* — the **family**: the safety class the envelope routes
+  to. A small **registered** set (never ad-hoc). Each family declares a `category`.
+  🚨 **Say "family", never bare "kind", for this axis (lexicon, ruled 2026-08-17).** The
+  word `kind` also names a content Shape (`content_ir.kind_definition.kind`) and the media
+  primitive axis (`media_config.py`), so unqualified "kind" here is ambiguous. The **wire
+  key stays `kind`** for now — that is UNFINISHED WORK under vocabulary Law 4 awaiting
+  Arman's ruling (O-1), not a decision that internal names may keep the old word. Canon:
+  `common-docs/systems/vocabulary/FEATURE.md` § Settled — Content IR / Shapes ·
+  `common-docs/systems/content-ir-system/NOMENCLATURE.md`.
 - **`type`** *(string, required)* — the specific op within the `kind`. Descriptive
   (`create_project_with_tasks`, `user_table_cell`, `is_valid_email`).
 - **`items`** *(array, required)* — the **universal payload**. Every `(kind, type)`
