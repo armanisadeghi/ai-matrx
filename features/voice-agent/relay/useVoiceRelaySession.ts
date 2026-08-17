@@ -42,6 +42,8 @@ import {
   getOrCreateLedger,
   registerCommunicationLedgerTool,
 } from "./questionLedger";
+import { composeBrainMessage } from "./sideChannel";
+import type { QuestionPacing } from "./types";
 
 /** The Communicator's Mandate — resolve it (and refuse loudly) in the surface. */
 export const VOICE_COMMUNICATOR_MANDATE_KEY = "voice.communicator";
@@ -63,6 +65,12 @@ export interface UseVoiceRelaySessionOpts {
   sourceFeature: SourceFeature;
   /** DB surface for realtime tool resolution. Defaults to chat-voice. */
   surface?: string;
+  /**
+   * Question pacing (ruling 3 — configuration, never dogma). The surface sets
+   * this default; user-visible control layers on top. Named in every delivery
+   * cue so the Communicator knows the active mode.
+   */
+  questionPacing?: QuestionPacing;
 }
 
 export interface VoiceRelaySessionApi extends VoiceSessionApi {
@@ -79,9 +87,19 @@ export interface VoiceRelaySessionApi extends VoiceSessionApi {
 export function useVoiceRelaySession(
   opts: UseVoiceRelaySessionOpts,
 ): VoiceRelaySessionApi {
-  const { communicatorAgentId, primaryAgentId, surfaceKey, sourceFeature, surface } =
-    opts;
+  const {
+    communicatorAgentId,
+    primaryAgentId,
+    surfaceKey,
+    sourceFeature,
+    surface,
+    questionPacing,
+  } = opts;
   const effectiveSurface = surface ?? "matrx-user/chat-voice";
+  const pacingRef = useRef<QuestionPacing>(questionPacing ?? "one_at_a_time");
+  useEffect(() => {
+    pacingRef.current = questionPacing ?? "one_at_a_time";
+  }, [questionPacing]);
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
@@ -124,7 +142,15 @@ export function useVoiceRelaySession(
           );
           return;
         }
-        dispatch(setUserInputText({ conversationId: targetConversationId, text: transcript }));
+        // THE SIDE CHANNEL (ruling 6): the brain gets the user's verbatim
+        // words, preceded by everything spoken in the voice layer since its
+        // last turn (<voice_exchange> block) — so it always sees what the
+        // Communicator asked/mirrored on its behalf.
+        const message = composeBrainMessage(
+          created.drainVoiceExchange(),
+          transcript,
+        );
+        dispatch(setUserInputText({ conversationId: targetConversationId, text: message }));
         void dispatch(smartExecute({ conversationId: targetConversationId }));
       },
     });
@@ -228,6 +254,7 @@ export function useVoiceRelaySession(
         if (answer.trim().length > 0) {
           controller.speakDelivery(answer, {
             ledgerSummary: getOrCreateLedger(instanceId).serialize(),
+            pacing: pacingRef.current,
           });
         } else {
           // Settled with nothing to say — disarm rather than leave the
@@ -251,7 +278,10 @@ export function useVoiceRelaySession(
     const targetConversationId = conversationIdRef.current;
     if (!targetConversationId || !text.trim()) return;
     controller?.markAwaitingBrain();
-    dispatch(setUserInputText({ conversationId: targetConversationId, text }));
+    const message = controller
+      ? composeBrainMessage(controller.drainVoiceExchange(), text)
+      : text;
+    dispatch(setUserInputText({ conversationId: targetConversationId, text: message }));
     void dispatch(smartExecute({ conversationId: targetConversationId }));
   };
 

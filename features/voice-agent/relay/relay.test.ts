@@ -12,6 +12,11 @@ import {
   NARRATION_CUE_PREFIX,
 } from "./relayProtocol";
 import { createQuestionLedger } from "./questionLedger";
+import {
+  composeBrainMessage,
+  createVoiceExchangeLog,
+  formatVoiceExchange,
+} from "./sideChannel";
 import { createVoiceRelayController } from "./relayController";
 import type { RelaySessionHandle } from "./types";
 import type { XaiServerEvent } from "../transport/serverEvents";
@@ -40,6 +45,50 @@ describe("relayProtocol", () => {
     const cue = buildNarrationCueText("Searching the knowledge base");
     expect(cue.startsWith(NARRATION_CUE_PREFIX)).toBe(true);
     expect(cue).toContain("Searching the knowledge base");
+  });
+});
+
+describe("relayProtocol pacing", () => {
+  it("names the active pacing mode in the delivery cue, defaulting to one_at_a_time", () => {
+    expect(buildDeliveryCueText("Hi.")).toContain("Pacing mode: one_at_a_time");
+    expect(buildDeliveryCueText("Hi.", { pacing: "grouped" })).toContain(
+      "Pacing mode: grouped",
+    );
+  });
+});
+
+// ── Side channel (voice_exchange) ───────────────────────────────────────────
+
+describe("sideChannel", () => {
+  it("drains recorded turns into an XML block and clears", () => {
+    const log = createVoiceExchangeLog();
+    log.record("communicator", "So the key parts are A & B?");
+    log.record("user", "yes <exactly>");
+    const turns = log.drain();
+    expect(log.size()).toBe(0);
+    const block = formatVoiceExchange(turns);
+    expect(block).toContain("<voice_exchange");
+    expect(block).toContain("<communicator>So the key parts are A &amp; B?</communicator>");
+    expect(block).toContain("<user>yes &lt;exactly&gt;</user>");
+  });
+
+  it("composeBrainMessage prepends the block only when turns exist", () => {
+    expect(composeBrainMessage([], "just me")).toBe("just me");
+    const withBlock = composeBrainMessage(
+      [{ speaker: "communicator", text: "I asked about budget." }],
+      "around 5k",
+    );
+    expect(withBlock.startsWith("<voice_exchange")).toBe(true);
+    expect(withBlock.endsWith("around 5k")).toBe(true);
+  });
+
+  it("ignores empty turns and caps runaway text", () => {
+    const log = createVoiceExchangeLog();
+    log.record("user", "   ");
+    expect(log.size()).toBe(0);
+    log.record("communicator", "x".repeat(5_000));
+    const [turn] = log.drain();
+    expect(turn.text.length).toBeLessThanOrEqual(1_501);
   });
 });
 
@@ -233,6 +282,32 @@ describe("relayController", () => {
     // A later legitimate response (e.g. tool continuation) is not cancelled.
     emit(responseCreated);
     expect(getCancels()).toBe(0);
+  });
+
+  it("records the Communicator's spoken transcript into the voice exchange", () => {
+    const controller = createVoiceRelayController({
+      onUserUtterance: () => {},
+      log: () => {},
+    });
+    const { handle, emit } = makeHandle();
+    controller.binding.attach(handle);
+
+    emit({
+      type: "response.output_audio_transcript.done",
+      transcript: "Great — so budget is the main concern. What's the timeline?",
+    });
+    controller.recordSideChannelUserTurn("wait, say that again");
+
+    const turns = controller.drainVoiceExchange();
+    expect(turns).toEqual([
+      {
+        speaker: "communicator",
+        text: "Great — so budget is the main concern. What's the timeline?",
+      },
+      { speaker: "user", text: "wait, say that again" },
+    ]);
+    // Drain clears — the next brain turn starts a fresh exchange.
+    expect(controller.drainVoiceExchange()).toEqual([]);
   });
 
   it("drops cues after detach instead of throwing", () => {

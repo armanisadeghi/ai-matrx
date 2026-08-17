@@ -40,10 +40,19 @@ export interface LedgerQuestion {
   status: LedgerQuestionStatus;
 }
 
+/**
+ * Question pacing (Arman's ruling 3, 2026-08-17): configuration, never dogma.
+ * The surface sets the default; the user sees and controls it; the
+ * Communicator's cue names the active mode.
+ */
+export type QuestionPacing = "one_at_a_time" | "grouped";
+
 /** Options for a delivery cue (the primary agent's answer → speech). */
 export interface DeliveryCueOptions {
   /** Named speaking role in multi-agent surfaces ("Adversary", "Scout"). */
   speakerRole?: string;
   /** Serialized open-question ledger injected with every delivery. */
   ledgerSummary?: string;
+  /** Active pacing mode, named in the cue. Defaults to one_at_a_time. */
+  pacing?: QuestionPacing;
 }
