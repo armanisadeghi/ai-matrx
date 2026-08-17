@@ -21,24 +21,7 @@
 
 ## STATUS — live and verified (compressed)
 
-- **The four NEAR-FREE Approaches SHIPPED (2026-08-17):** ✅ #11 Hardest-Case Debrief chip +
-  ✅ #15 Vacation Trigger chip on `ScoutInterviewPanel` (CDM multi-pass probing + succession
-  framing added to the Scout's DB instructions via agent_author — agent v7; prose never in code);
-  ✅ Oracle tap in-app ⋯-menu half ("Add to Rulebook" beside Create Task in
-  `messageActionRegistry.ts`); ✅ Oracle tap thumbs half (tiny auto-fading `RulebookNudge` in
-  `AssistantActionBar`, both verdicts, hidden for zero-Rulebook users, cached check). ONE
-  implementation for both Oracle entries: overlay `addToRulebookDialog` +
-  `features/masterwork/oracle/service.ts` `appendDraftRuleFromMessage` (name word-boundary 60,
-  statement cap 4000, `draft:true`, `severity:major`,
-  `source_ref {approach:"oracle_tap", conversation_id, note}`) through the canonical `saveRules`
-  CAS with bounded re-read retry. Browser-verified end-to-end on the shared preview (chips stage
-  their text; ⋯-menu save landed a draft on Hopkins and was confirmed in the DB then cleaned;
-  nudge appears on verdict click and opens the same dialog). Details:
-  `features/masterwork/FEATURE.md` § The Oracle tap. **Small follow-ups:** register `oracle_tap`
-  as a (disabled) `platform.approach` row when the email/SMS halves land; the Scout agent's
-  declared VARIABLE is still `pack_id` ("expertise pack…") while its prompt + every caller use
-  `rulebook_id` — a rename leftover agent_author refuses to patch (`variables` not an editable
-  key); fix the variable declaration through whatever sanctioned path can write it.
+- Scout `pack_id` variable residue: **FIXED live 2026-08-17** — `variable_definitions` renamed to `rulebook_id` with Rulebook-vocabulary helpText (direct DB write; agent_author refuses variables edits).
 
 - **THE GUIDED START REBUILT IN THE HOUSE PATTERN (2026-08-17, Arman's "those stupid little small
   bubbles are horrible").** `NewRulebookDialog` DELETED; `/masterwork/new`
