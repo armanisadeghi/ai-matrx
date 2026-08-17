@@ -9,7 +9,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Loader2 } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import type { OrchestraAccent } from "../constants";
 import type { OrchestraConfig, OrchestraMember } from "../types";
 
@@ -25,13 +25,20 @@ export interface OrchestraBuilderCanvasProps {
   onOpenOrchestrator: () => void;
 }
 
-const OrchestraBuilderCanvas = dynamic(() => import("./OrchestraBuilderCanvasImpl"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-full w-full items-center justify-center bg-textured">
-      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-    </div>
-  ),
-});
+const OrchestraBuilderCanvas = dynamic(
+  () => import("./OrchestraBuilderCanvasImpl"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center bg-textured text-sm text-muted-foreground">
+        <SuspenseLoader
+          size="md"
+          centered={false}
+          message="Loading orchestra canvas…"
+        />
+      </div>
+    ),
+  },
+);
 
 export default OrchestraBuilderCanvas;

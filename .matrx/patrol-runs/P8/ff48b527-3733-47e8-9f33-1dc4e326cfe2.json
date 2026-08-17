@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P8",
+  "runId": "ff48b527-3733-47e8-9f33-1dc4e326cfe2",
+  "baseSha": "5e69b7560",
+  "createdAt": "2026-08-17T19:43:07.403Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-17T19:43:07.403Z",
+      "actor": "/root",
+      "summary": "Follow-up bounded batch for two verified central bare spinners discovered by the P8 structural-novelty scan.",
+      "evidence": [
+        "Prior 15-file candidate independently certified and delivered before opening this follow-up run."
+      ],
+      "previousEventHash": null,
+      "eventHash": "4438cf95f87815c690dc78f011d706ea8776438dc7c1ac97d3501abbf83603f7"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-17T19:43:29.687Z",
+      "actor": "/root",
+      "summary": "Replaced the final two verified central bare spinners with contextual canonical loaders.",
+      "evidence": [
+        "Mandate picker preserves lazy-open loading branch and popover geometry.",
+        "Orchestra canvas preserves the single next/dynamic boundary and full-canvas wrapper."
+      ],
+      "previousEventHash": "4438cf95f87815c690dc78f011d706ea8776438dc7c1ac97d3501abbf83603f7",
+      "eventHash": "047d3fa7bfaf3c7ee5edd1542e8da8e10b2eaeeba40917ec3db598a0f80248ea"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-17T19:43:58.022Z",
+      "actor": "/root",
+      "summary": "Prepared the two-file follow-up candidate with contextual canonical loaders and unchanged behavior boundaries.",
+      "evidence": [
+        "pnpm type-check: PASS",
+        "Scoped ESLint: PASS",
+        "Prettier: PASS",
+        "git diff --check: PASS",
+        "pnpm check:patrol-contracts: PASS",
+        "Focused scan leaves only contextual Checking and saving status",
+        "Static proof confirms lazy-open branch and single next/dynamic canvas boundary are unchanged"
+      ],
+      "previousEventHash": "047d3fa7bfaf3c7ee5edd1542e8da8e10b2eaeeba40917ec3db598a0f80248ea",
+      "eventHash": "7b50e70fb0fe8d7a6dadf0bcdf16c70136410595c32a7c8e0f95f970d540e643"
+    }
+  ]
+}

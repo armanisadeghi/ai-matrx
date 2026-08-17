@@ -22,10 +22,22 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertCircle, Check, Loader2, RotateCcw, Settings2, ShieldCheck } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  Loader2,
+  RotateCcw,
+  Settings2,
+  ShieldCheck,
+} from "lucide-react";
 import Link from "next/link";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { isJsonObject, type JsonValue } from "@/types/json";
@@ -102,7 +114,6 @@ export function MandateAgentPicker({
   const ownedAgents = useAppSelector(selectOwnedAgents);
   const sharedAgents = useAppSelector(selectSharedWithMeAgents);
 
-
   const load = useCallback(() => {
     if (!userId) return;
     fetchMandatePickerData(mandateKey, userId)
@@ -112,7 +123,10 @@ export function MandateAgentPicker({
       })
       .catch((err: unknown) => {
         const message = err instanceof Error ? err.message : String(err);
-        console.error(`[mandates] picker failed to load ${mandateKey}:`, message);
+        console.error(
+          `[mandates] picker failed to load ${mandateKey}:`,
+          message,
+        );
         setLoadError(message);
       });
   }, [mandateKey, userId]);
@@ -164,7 +178,10 @@ export function MandateAgentPicker({
       // agent the execution RPC can't see (inaccessible, deleted) is never
       // silently bound, even when the mandate declares no contract requirements.
       await dispatch(fetchAgentExecutionMinimal(candidateId)).unwrap();
-      const payload = selectAgentExecutionPayload(store.getState(), candidateId);
+      const payload = selectAgentExecutionPayload(
+        store.getState(),
+        candidateId,
+      );
       if (!payload.isReady) {
         setPreflight(
           "Could not verify this agent — it may be inaccessible or deleted.",
@@ -180,8 +197,12 @@ export function MandateAgentPicker({
             contextPolicies: payload.contextPolicies ?? [],
           })
         : compareStoredContract(parseMandateContract(data.mandate.contract), {
-            variableNames: (payload.variableDefinitions ?? []).map((v) => v.name),
-            contextPolicyKeys: (payload.contextPolicies ?? []).map((s) => s.key),
+            variableNames: (payload.variableDefinitions ?? []).map(
+              (v) => v.name,
+            ),
+            contextPolicyKeys: (payload.contextPolicies ?? []).map(
+              (s) => s.key,
+            ),
           });
       if (!check.passing) {
         setPreflight(
@@ -237,7 +258,9 @@ export function MandateAgentPicker({
         // research's "Override removed.") — a second toast here doubles it.
         await override.reset();
       } else {
-        await removeMandateBinding(dispatch, mandateKey, { principalType: "user" });
+        await removeMandateBinding(dispatch, mandateKey, {
+          principalType: "user",
+        });
         toast.success("Back to the system default.");
       }
       load();
@@ -279,8 +302,12 @@ export function MandateAgentPicker({
             {loadError}
           </p>
         ) : !data ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center py-6 text-xs text-muted-foreground">
+            <SuspenseLoader
+              size="sm"
+              centered={false}
+              message="Loading mandate details…"
+            />
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -289,7 +316,8 @@ export function MandateAgentPicker({
                 {data.mandate.label ?? data.mandate.mandate_key}
               </p>
               <p className="text-[11.5px] text-muted-foreground">
-                Pick which agent runs this step. Yours must accept the same inputs.
+                Pick which agent runs this step. Yours must accept the same
+                inputs.
               </p>
             </div>
 
@@ -336,7 +364,8 @@ export function MandateAgentPicker({
 
             {saving ? (
               <p className="flex items-center gap-1.5 text-[11.5px] text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" /> Checking and saving…
+                <Loader2 className="h-3 w-3 animate-spin" /> Checking and
+                saving…
               </p>
             ) : null}
             {preflight ? (
@@ -347,7 +376,8 @@ export function MandateAgentPicker({
             ) : null}
 
             <p className="text-[10.5px] text-muted-foreground">
-              Settings-only overrides (model, thinking level) and org-wide overrides live in{" "}
+              Settings-only overrides (model, thinking level) and org-wide
+              overrides live in{" "}
               <Link
                 href="/agents/mandates"
                 className="underline underline-offset-2 hover:text-foreground"

@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P8",
-  "runId": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26",
-  "state": "delivered",
-  "updatedAt": "2026-08-17T19:42:45.544Z",
-  "summary": "DELIVERED: independently certified contextual-loader candidate is on origin/main and included in v0.4.762.",
-  "source": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26.json",
-  "eventHash": "d1fa38db99870f6109f426fd505b9c85de92172690727d743ae595bace7b7e2f"
+  "runId": "ff48b527-3733-47e8-9f33-1dc4e326cfe2",
+  "state": "certifying",
+  "updatedAt": "2026-08-17T19:43:58.022Z",
+  "summary": "Prepared the two-file follow-up candidate with contextual canonical loaders and unchanged behavior boundaries.",
+  "source": "ff48b527-3733-47e8-9f33-1dc4e326cfe2.json",
+  "eventHash": "7b50e70fb0fe8d7a6dadf0bcdf16c70136410595c32a7c8e0f95f970d540e643"
 }
