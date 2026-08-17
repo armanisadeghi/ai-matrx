@@ -21,7 +21,13 @@ import { AgentPeekButton } from "./AgentPeekButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentIODetails } from "./AgentIODetails";
 import { accentClasses } from "./accents";
-import type { OrchestraAccent } from "../constants";
+import {
+  DEFAULT_ORCHESTRA_RESULT_MODE,
+  ORCHESTRA_RESULT_MODES,
+  ORCHESTRA_RESULT_MODE_META,
+  type OrchestraAccent,
+  type OrchestraResultMode,
+} from "../constants";
 import type { OrchestraMember } from "../types";
 
 export interface MemberInspectorProps {
@@ -41,12 +47,16 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
   const [roleTitle, setRoleTitle] = useState(member.roleTitle ?? "");
   const [gap, setGap] = useState(member.gap ?? "");
   const [required, setRequired] = useState(member.required === true);
+  const [resultMode, setResultMode] = useState<OrchestraResultMode>(
+    member.resultMode ?? DEFAULT_ORCHESTRA_RESULT_MODE,
+  );
   const [saving, setSaving] = useState(false);
 
   const dirty =
     roleTitle !== (member.roleTitle ?? "") ||
     gap !== (member.gap ?? "") ||
-    required !== (member.required === true);
+    required !== (member.required === true) ||
+    resultMode !== (member.resultMode ?? DEFAULT_ORCHESTRA_RESULT_MODE);
 
   const handleSave = async () => {
     setSaving(true);
@@ -59,6 +69,7 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
           gap: gap.trim(),
           pos: member.pos ?? undefined,
           required,
+          resultMode,
         },
         // A person just typed this. Whatever the AI drafted, a human has now
         // verified it — grounding "V" (Engram §4.5).
@@ -143,6 +154,47 @@ export function MemberInspector({ orchestratorId, member, accent, onClose }: Mem
             </p>
           </div>
           <Switch id="member-required" checked={required} onCheckedChange={setRequired} />
+        </div>
+
+        {/* How its result comes back (D-40). This is the Orchestra's defining
+            power: the leader can route a member's answer onward WITHOUT
+            holding it in its own context. */}
+        <div className="space-y-1.5 rounded-md border border-border bg-background p-3">
+          <label className="text-xs font-medium text-foreground">
+            When this member answers
+          </label>
+          <div className="space-y-1.5 pt-0.5">
+            {ORCHESTRA_RESULT_MODES.map((mode) => {
+              const meta = ORCHESTRA_RESULT_MODE_META[mode];
+              const selected = resultMode === mode;
+              return (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setResultMode(mode)}
+                  aria-pressed={selected}
+                  className={cn(
+                    "w-full rounded-md border p-2 text-left transition-colors",
+                    selected
+                      ? cn("border-transparent ring-1", a.ring, a.soft)
+                      : "border-border hover:bg-muted/50",
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "text-[11px] font-medium",
+                      selected ? a.text : "text-foreground",
+                    )}
+                  >
+                    {meta.label}
+                  </div>
+                  <p className="text-[11px] leading-snug text-muted-foreground">
+                    {meta.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Agent I/O — what this member consumes + produces (lazy-loaded full def) */}

@@ -29,6 +29,8 @@ import {
   isOrchestraMarkerRole,
   isOrchestraDepthBudget,
   isOrchestraMode,
+  isOrchestraResultMode,
+  DEFAULT_ORCHESTRA_RESULT_MODE,
 } from "../constants";
 import type {
   OrchestraConfig,
@@ -84,12 +86,16 @@ function configToMeta(cfg: OrchestraConfig): Json {
 // title lives in the association's `label` column (see load()/addMember()).
 function metaToMemberMeta(
   meta: Json | null | undefined,
-): Pick<OrchestraMemberMeta, "gap" | "pos" | "required"> {
+): Pick<OrchestraMemberMeta, "gap" | "pos" | "required" | "resultMode"> {
   const m = asRecord(meta);
-  const out: Pick<OrchestraMemberMeta, "gap" | "pos" | "required"> = {};
+  const out: Pick<OrchestraMemberMeta, "gap" | "pos" | "required" | "resultMode"> = {};
   if (typeof m.gap === "string") out.gap = m.gap;
   // Strict bool — mirrors the server's strict parse (a string "true" is not a declaration).
   if (m.required === true) out.required = true;
+  // Wire key is snake_case (the server reads metadata.result_mode). Strict —
+  // the server REFUSES to run an unrecognized value, so the builder must never
+  // present one as if it were saved.
+  if (isOrchestraResultMode(m.result_mode)) out.resultMode = m.result_mode;
   if (m.pos && typeof m.pos === "object") {
     const p = m.pos as Record<string, unknown>;
     if (typeof p.x === "number" && typeof p.y === "number") out.pos = { x: p.x, y: p.y };
@@ -152,6 +158,7 @@ export const orchestrasService = {
           gap: meta.gap ?? null,
           pos: meta.pos ?? null,
           required: meta.required === true,
+          resultMode: meta.resultMode ?? DEFAULT_ORCHESTRA_RESULT_MODE,
         };
       });
 
@@ -214,7 +221,18 @@ export const orchestrasService = {
       position: args?.position,
       // `required` is written ONLY as a JSON true — the server (and this
       // service's reader) strict-parse it, so no false/undefined noise on edges.
-      metadata: { gap: meta.gap, pos: meta.pos, ...(meta.required === true ? { required: true } : {}) } as Json,
+      // `result_mode` (wire key, snake_case) is written only when it is NOT the
+      // default: the server treats an absent key as "inline", so an all-default
+      // roster leaves edges exactly as they were before D-40.
+      metadata: {
+        gap: meta.gap,
+        pos: meta.pos,
+        ...(meta.required === true ? { required: true } : {}),
+        ...(isOrchestraResultMode(meta.resultMode) &&
+        meta.resultMode !== DEFAULT_ORCHESTRA_RESULT_MODE
+          ? { result_mode: meta.resultMode }
+          : {}),
+      } as Json,
     });
   },
 

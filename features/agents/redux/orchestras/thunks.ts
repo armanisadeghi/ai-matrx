@@ -10,6 +10,7 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { orchestrasService } from "@/features/agents/orchestras/service/orchestrasService";
 import type { OrchestraConfig, OrchestraMember, OrchestraMemberMeta } from "@/features/agents/orchestras/types";
+import { DEFAULT_ORCHESTRA_RESULT_MODE } from "@/features/agents/orchestras/constants";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { purposeService, type GroundingTag } from "@/features/purpose/service";
 import { orchestrasActions } from "./slice";
@@ -181,6 +182,7 @@ export function addAgentToOrchestra(args: {
       gap: args.meta?.gap ?? null,
       pos: args.meta?.pos ?? null,
       required: args.meta?.required === true,
+      resultMode: args.meta?.resultMode ?? DEFAULT_ORCHESTRA_RESULT_MODE,
     };
     dispatch(orchestrasActions.memberAdded({ orchestratorId: args.orchestratorId, member }));
 
@@ -233,9 +235,11 @@ export function reorderOrchestraMembers(args: {
             roleTitle: m.roleTitle ?? undefined,
             gap: m.gap ?? undefined,
             pos: m.pos ?? undefined,
-            // Reorder is a full-metadata upsert — carrying the flag through is
-            // what keeps a reorder from silently un-designating a member.
+            // Reorder is a full-metadata upsert — carrying these through is
+            // what keeps a reorder from silently un-designating a member or
+            // resetting how its result comes back.
             required: m.required === true,
+            resultMode: m.resultMode ?? DEFAULT_ORCHESTRA_RESULT_MODE,
           },
         }),
       ),
@@ -294,6 +298,7 @@ export function saveMemberMeta(args: {
         gap: m?.gap ?? undefined,
         pos: m?.pos ?? undefined,
         required: m?.required === true,
+        resultMode: m?.resultMode ?? DEFAULT_ORCHESTRA_RESULT_MODE,
       },
     });
     if (isScopesRpcErr(res)) {

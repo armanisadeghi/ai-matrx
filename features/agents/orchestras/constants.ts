@@ -111,3 +111,47 @@ export function isOrchestraDepthBudget(value: unknown): value is number {
 export function isOrchestraMode(value: unknown): value is OrchestraMode {
   return typeof value === "string" && (ORCHESTRA_MODES as readonly string[]).includes(value);
 }
+
+/**
+ * How ONE member's result comes back to the orchestrator (D-40). Stored as
+ * `result_mode` on the MEMBER edge's metadata jsonb; the aidream runtime puts
+ * it straight onto the projected tool (`AgentToolSpec.result_mode`) and
+ * strict-parses it — an unknown value fails the run loudly rather than
+ * silently running the member inline. Mirrors
+ * aidream/services/orchestras/models.py RESULT_MODES; change in lockstep.
+ */
+export const ORCHESTRA_RESULT_MODES = ["inline", "reference", "inline_once"] as const;
+
+export type OrchestraResultMode = (typeof ORCHESTRA_RESULT_MODES)[number];
+
+export const DEFAULT_ORCHESTRA_RESULT_MODE: OrchestraResultMode = "inline";
+
+/** Non-technical labels for the member result-routing control. The Creator is
+ * a subject-matter expert, not an engineer: this is about whether the leader
+ * READS the member's answer or just passes it along. */
+export const ORCHESTRA_RESULT_MODE_META: Record<
+  OrchestraResultMode,
+  { label: string; description: string }
+> = {
+  inline: {
+    label: "Read it",
+    description:
+      "The orchestrator receives this member's full answer and reasons over it. Best when it has to judge, correct, or weave the answer into its own.",
+  },
+  reference: {
+    label: "Pass it along without reading it",
+    description:
+      "The answer is stored and the orchestrator gets only a short label for it — it can hand it to another member or return it, without spending its own context on the content. Best for long documents, transcripts, and data.",
+  },
+  inline_once: {
+    label: "Read it once, then keep only the label",
+    description:
+      "The orchestrator reads the full answer this turn, then keeps only a short label for it afterwards. Best when it needs the content once to decide something.",
+  },
+};
+
+export function isOrchestraResultMode(value: unknown): value is OrchestraResultMode {
+  return (
+    typeof value === "string" && (ORCHESTRA_RESULT_MODES as readonly string[]).includes(value)
+  );
+}

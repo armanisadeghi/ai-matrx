@@ -4,7 +4,7 @@
 // these types describe the relationship layer that rides on platform.associations.
 
 import type { Json } from "@/types/database.types";
-import type { OrchestraAccent, OrchestraMode } from "./constants";
+import type { OrchestraAccent, OrchestraMode, OrchestraResultMode } from "./constants";
 
 /** A saved 2D position on the builder canvas. */
 export interface CanvasPos {
@@ -55,6 +55,14 @@ export interface OrchestraMemberMeta {
    * + a forced turn; a run that still skips it is never marked complete).
    */
   required?: boolean;
+  /**
+   * How this member's result comes back to the orchestrator (D-40). Absent =
+   * "inline". `reference` is the routing-without-holding behaviour the
+   * Orchestra is built on: the answer goes to the conversation value store and
+   * the orchestrator holds only a descriptor. Written to the edge metadata as
+   * `result_mode` (wire key); the server strict-parses it.
+   */
+  resultMode?: OrchestraResultMode;
 }
 
 /** A Orchestra summary as returned by the `orchestra_list()` RPC (resolved/camelCased). */
@@ -82,6 +90,8 @@ export interface OrchestraMember {
   pos: CanvasPos | null;
   /** Designated member (C-26): must be consulted before the orchestrator finishes. */
   required: boolean;
+  /** How its result comes back (D-40). Always resolved — "inline" by default. */
+  resultMode: OrchestraResultMode;
 }
 
 /** Full builder state for a single Orchestra: marker config + ordered members. */
