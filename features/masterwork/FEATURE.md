@@ -16,11 +16,14 @@
 
 ## Status
 
-- **Live:** `/masterwork` (Masterwork Studio — entity-list shell), `/masterwork/[id]`
-  (rule editor + "Build a Masterwork" dialog + "From a source" ingest dialog +
-  "Interview me" side sheet), `/masterwork/[id]/masterworks` (built Masterworks +
-  version-drift flags), `/masterwork/admin` (feature map), `/encore` + `/encore/[id]`
-  (the Operator surface — see the Encore bullet below).
+- **Live:** `/masterwork` (the module landing — guests get the marketing page,
+  signed-in Experts get the Masterwork HOME; see § The landing below),
+  `/masterwork/all` (Masterwork Studio — entity-list shell over platform.rulebook),
+  `/masterwork/[id]` (rule editor + "Build a Masterwork" dialog + "From a source"
+  ingest dialog + "Interview me" side sheet), `/masterwork/[id]/masterworks` (built
+  Masterworks + version-drift flags), `/masterwork/admin` (feature map),
+  `/masterwork/encore` + `/masterwork/encore/[id]` (the Operator surface — see the
+  Encore bullet below).
 - **The guided start (2026-08-15):** "New Rulebook" is the four-question intake from the
   Distillation vision (goal · who runs it · where the knowledge lives · stakes → stored on
   `metadata.intake`), then routes by source: knowledge in-head/unsure → `/masterwork/[id]?interview=1`
@@ -45,8 +48,10 @@
   `RuleProvenance` renders those anchors as DOORS — the page numbers, a link to the source file,
   and a link to the extraction that read it — and flags a quote that failed verbatim
   verification.
-- **Encore (2026-08-17) — the Operator door.** `/encore` (released Masterworks the viewer can
-  reach, shelved mine / my-orgs / public) and `/encore/[id]` (the run experience). A Masterwork
+- **Encore (2026-08-17) — the Operator door.** `/masterwork/encore` (released Masterworks the
+  viewer can reach, shelved mine / my-orgs / public) and `/masterwork/encore/[id]` (the run
+  experience; moved from the short-lived `/encore` namespace 2026-08-17, pre-launch, no
+  redirects). A Masterwork
   is **draft** until the Expert presses **Release** on the Studio's Masterworks page
   (`metadata.released_at` stamp on workflow.definition, guarded CAS on `version` via
   `setMasterworkReleased`); **only released Masterworks appear on Encore**, and the Encore run
@@ -66,6 +71,36 @@
 - **Next (work order: docs/handoffs/masterwork-distillation.md):** the Arman-SEO honest test
   (Rulebook `arman-seo-method` scaffolded, draft, owned by Arman — the interview Approach
   unblocks it).
+
+## The landing — `/masterwork` (2026-08-17)
+
+One URL, two audiences (module-landing-pages doctrine, branch-in-page):
+
+- **Guests** get the public marketing landing — `MasterworkLanding`
+  (`features/auth/components/module-landing/landings/MasterworkLanding.tsx`, the
+  shared `ModuleLanding` shell inside `MarketingPageShell`), registered in
+  `MODULE_LANDING_DIRECTORY` so it appears on `/features`. The spine, in Expert
+  language: you talk → rules you approve → a system that works exactly your way →
+  proof against plain AI. Never a login wall.
+- **Signed-in Experts** get the Masterwork HOME (`features/masterwork/home/`):
+  your Rulebooks with review-progress KPIs (`computeKpis`), your built Masterworks
+  with release state + quality trend (latest vs. previous
+  `platform.masterwork_run.quality_score`), recent runs in Expert words, the
+  Approach registry as "Start here" tiles (each opens `NewRulebookDialog`), and
+  the "How it's improving" panel. Every named entity is a door; every count links
+  to the list behind it. The Rulebook LIST lives at `/masterwork/all`
+  (the established `/x/all` pattern).
+
+**"How it's improving" — the HONESTY CONTRACT.** The five Masterwork agents
+(mandates `masterwork.scout` / `source_distiller` / `exemplar_distiller` /
+`rulebook_auditor` / `audition_judge`) are enrolled in Hindsight, but `hindsight.*`
+is NOT browser-readable (the schema is not PostgREST-exposed, and RLS scopes rows
+to the platform operators' own accounts). The panel therefore renders ONLY what a
+signed-in user can truly read: the public mandate registry (`fetchMandatePins`)
+plus each bound agent's `agent.definition` revision count + last-changed date. It
+NEVER fabricates review activity. Closing the gap (review summaries/findings for
+Experts) needs a deliberate server-side read path — tracked in
+`docs/handoffs/masterwork-distillation.md`.
 
 ## Data
 
@@ -308,6 +343,14 @@ pipeline) is what still takes code. Never hardcode an Approach list again.
    never types, unless they want to.
 
 ## Change log
+
+- 2026-08-17 — **The landing shipped + routes settled.** `/masterwork` is the module landing
+  (guest marketing page via `ModuleLanding` + directory registration; authed Masterwork HOME —
+  `features/masterwork/home/`: Rulebook KPIs, Masterworks with quality trend, recent runs,
+  Approach tiles, the honest "How it's improving" panel). The Rulebook list moved to
+  `/masterwork/all`; Encore moved to `/masterwork/encore` + `/masterwork/encore/[id]` (old
+  `/encore` deleted, pre-launch, no redirects); nav children + FeatureAdminMap + every internal
+  link updated. `computeKpis` widened to `Pick<Rulebook,"rules">` so overview surfaces can reuse it.
 
 - 2026-08-17 — **The Final Checkup shipped** (`features/masterwork/checkup/`, section above): the
   split-down-the-middle `masterworkCheckupWindow`, findings streamed one at a time off the durable

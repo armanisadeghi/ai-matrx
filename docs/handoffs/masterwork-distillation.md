@@ -132,12 +132,14 @@
 - **Encore SHIPPED (2026-08-17) — the Operator door exists.** Draft→released lifecycle on the
   Masterwork (`workflow.definition.metadata.released_at`; Release/Un-release on the Studio's
   Masterworks page, guarded CAS on `version`, direct supabase-js — RLS `std_update` covers it,
-  no server hop). `/encore` lists released Masterworks by declared scope (mine/orgs/public,
+  no server hop). `/masterwork/encore` (moved from `/encore` 2026-08-17, pre-launch, no
+  redirects) lists released Masterworks by declared scope (mine/orgs/public,
   VIEW-LAW predicates; "shared" shelf deferred until the generic shared-with-me filter exists —
-  lib/list-scope Brief 3A) with jargon-free cards; `/encore/[id]` is the run experience reusing
+  lib/list-scope Brief 3A) with jargon-free cards; `/masterwork/encore/[id]` is the run
+  experience reusing
   `TryMasterworkBox` verbatim + the Operator's OWN run history. Doors both ways (By <expert> →
   Rulebook when readable; owner → Studio; Studio → View in Encore). Strunk `24df673f` is
-  RELEASED and live on /encore (browser-verified, desktop+mobile+dark). Found+fixed live:
+  RELEASED and live on Encore (browser-verified, desktop+mobile+dark). Found+fixed live:
   `TERMINAL_STATUSES` missed `errored` (box spun forever on an errored run); live definition
   descriptions carried retired vocabulary + raw UUIDs (rows cleaned, build.py no longer embeds
   the id). NOTE: an Encore run start 422s / errors until production aidream picks up the
@@ -156,6 +158,39 @@
   soft-deleted (mandate pins `c55b52c9-…`), test residue removed (was defect 4), two
   unmirrored shareable-registry rows (`interview_session`, `workflow_runtime_surface`) added
   to the FE TS mirror.
+
+- **The landing SHIPPED + routes settled (2026-08-17, Arman's green-lit brief).** `/masterwork`
+  is now the module landing: guests get the marketing page (`MasterworkLanding` via the shared
+  `ModuleLanding` shell, registered in `MODULE_LANDING_DIRECTORY` → appears on `/features`;
+  spine: talk → rules you approve → a system that works exactly your way → proof against vanilla
+  AI); signed-in Experts get the Masterwork HOME (`features/masterwork/home/`): Rulebook cards
+  with review-progress KPIs, Masterworks with release state + quality trend
+  (`platform.masterwork_run.quality_score` latest vs. previous), recent runs in Expert words,
+  `platform.approach` "Start here" tiles (each opens NewRulebookDialog), and "How it's
+  improving". The Rulebook list moved to `/masterwork/all`; Encore moved to
+  `/masterwork/encore` (+ `/[id]`; old `/encore` deleted, no redirects). Nav children,
+  FeatureAdminMap, and every internal link updated. Browser-verified: guest SSR (curl, 200 +
+  marketing copy), authed home with live data, `/masterwork/all`, `/masterwork/encore` +
+  run page, mobile 375, dark. Old `/encore` 404s; guest `/masterwork/all` → `/masterwork`;
+  guest `/masterwork/encore` → login with destination preserved.
+- **🚨 THE HINDSIGHT READ GAP (2026-08-17) — "How it's improving" renders the honest floor.**
+  Arman ruled the Expert-facing panel in; the intended read (recent reviews, what they found,
+  what changed) is NOT browser-readable today for two independent reasons: (1) the `hindsight`
+  schema is not in PostgREST's exposed schemas (`schema_truth_snapshot.exposed_schemas`), so
+  `supabase.schema("hindsight")` fails before RLS is even consulted; (2) RLS scopes
+  `hindsight.enrollment` (and its components via `enrollment_id`) to `created_by` /
+  `iam.has_access` — the five Masterwork enrollments are `visibility='personal'` rows owned by
+  two admin accounts, and the two views (`v_change_history`, `v_finding_effectiveness`) are
+  `security_invoker`, so they don't launder it. The aidream `/hindsight/*` REST surface is
+  ownership/admin-scoped the same way, and adding an endpoint was explicitly out of this lane's
+  scope. The shipped panel therefore reads ONLY truth a user can reach: `agent.mandate` (public
+  rows, via `fetchMandatePins`) + `agent.definition` revision count / last-changed date /
+  `updated_by_tier|updated_by_system` for the five bound agents — zero fabricated activity.
+  **Closing it properly** = a deliberate access decision (likely a `SECURITY DEFINER` aggregate
+  RPC returning de-identified review summaries for the five Masterwork mandates — never widening
+  the enrollments to public, which would expose reviewer transcripts), then swapping
+  `fetchImprovementRows` to consume it. Files: `features/masterwork/home/service.ts`
+  (§ "How it's improving") + `HowItsImprovingPanel.tsx`.
 
 ## Decisions — RULED and EXECUTED 2026-08-17
 

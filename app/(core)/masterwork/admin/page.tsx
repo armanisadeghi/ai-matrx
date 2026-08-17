@@ -71,6 +71,35 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
   ],
   components: [
     {
+      name: "MasterworkHomePage",
+      filePath: "features/masterwork/home/MasterworkHomePage.tsx",
+      description:
+        "The authed landing body: Rulebook cards with review progress, Masterworks with release state + quality trend, recent runs, Approach start tiles, the improvement panel.",
+      tier: "internal",
+    },
+    {
+      name: "HowItsImprovingPanel",
+      filePath: "features/masterwork/home/HowItsImprovingPanel.tsx",
+      description:
+        "The honest Hindsight panel — renders only what a signed-in user can truly read (public mandate registry + agent revision counts); never fabricates review activity.",
+      tier: "internal",
+    },
+    {
+      name: "home service",
+      filePath: "features/masterwork/home/service.ts",
+      description:
+        "Bounded overview reads for the landing (your Rulebooks / Masterworks / runs / quality scores) + fetchImprovementRows.",
+      tier: "internal",
+    },
+    {
+      name: "MasterworkLanding (marketing)",
+      filePath:
+        "features/auth/components/module-landing/landings/MasterworkLanding.tsx",
+      description:
+        "The guest marketing landing (ModuleLanding shell), registered in MODULE_LANDING_DIRECTORY so it appears on /features.",
+      tier: "internal",
+    },
+    {
       name: "Final Checkup — CheckupWindow",
       filePath: "features/masterwork/checkup/CheckupWindow.tsx",
       description:
