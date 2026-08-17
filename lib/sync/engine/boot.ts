@@ -192,8 +192,18 @@ async function hydrateFromIdb(
     identity: IdentityKey,
     store: Store,
     alreadyHydrated: ReadonlySet<string>,
+    getIdentity: () => IdentityKey,
 ): Promise<string[]> {
     const hydrated: string[] = [];
+    // Each read is a turn of the event loop, so the identity can swap mid-pass
+    // (sign-in lands ~100ms after an anonymous first render). A record read for
+    // the OUTGOING identity must never be dispatched over the incoming one's
+    // state — `remote.fetch` already drops its late results the same way.
+    const stillCurrent = () => {
+        if (getIdentity().key === identity.key) return true;
+        logger.debug("boot.idb.identityMoved", { meta: { identity: identity.key } });
+        return false;
+    };
     const warmCachePolicies = policies.filter(
         (p) => getPreset(p.config.preset).storageTier === "idb",
     );
@@ -206,6 +216,7 @@ async function hydrateFromIdb(
                 policy.config.sliceName,
                 policy.config.version,
             );
+            if (!stillCurrent()) return hydrated;
             if (record) {
                 if (record.identityKey !== identity.key) {
                     logger.debug("boot.idb.identityMismatch", {
@@ -349,6 +360,49 @@ function scheduleColdBootFallbacks(
 }
 
 /**
+ * Re-run the identity-scoped half of boot after an identity SWAP (the common
+ * one: a page that rendered anonymous, then `usePublicAuthSync` lands the real
+ * user ~100ms later — `guest:*` → `auth:<id>`).
+ *
+ * Boot's other half (channel, listeners, legacy migrations, stale timers) is
+ * identity-agnostic and must NOT run twice, so this deliberately does only:
+ * localStorage rehydrate → IDB rehydrate → cold-boot fetches for the NEW
+ * identity. Without it, every `remote.fetch` that keys on `identity.type ===
+ * "auth"` stays permanently short-circuited for the tab — which is exactly how
+ * a signed-in user with a chosen default organization booted with no active
+ * org and got nudged to pick one.
+ *
+ * Never rejects.
+ */
+export async function resyncForIdentity(options: {
+    store: Store;
+    identity: IdentityKey;
+    policies: readonly Policy<any>[];
+    getIdentity: () => IdentityKey;
+}): Promise<void> {
+    const { store, identity, policies, getIdentity } = options;
+    logger.info("boot.identity.resync", { meta: { identity: identity.key } });
+    const fromLocal = new Set(rehydrateFromStorage(policies, identity, store));
+    let fromIdb: readonly string[] = [];
+    try {
+        fromIdb = await hydrateFromIdb(policies, identity, store, fromLocal, getIdentity);
+    } catch (err) {
+        logger.warn("boot.identity.resync.idbFailed", {
+            meta: { error: extractErrorMessage(err) },
+        });
+    }
+    // The identity may have swapped again while IDB was reading — the newer
+    // resync owns the fetches.
+    if (getIdentity().key !== identity.key) return;
+    scheduleColdBootFallbacks(
+        policies,
+        new Set<string>([...fromLocal, ...fromIdb]),
+        store,
+        getIdentity,
+    );
+}
+
+/**
  * Align Redux `theme.mode` with the DOM class SyncBootScript / the server
  * cookie already painted. Slice initialState is `"dark"`, but first paint may
  * be light (cookie, OS fallback, or localStorage read without identity match).
@@ -432,12 +486,22 @@ export async function bootSync(options: BootOptions): Promise<BootResult> {
     const idbHydration: Promise<readonly string[]> = (async () => {
         let hydrated: readonly string[] = [];
         try {
-            hydrated = await hydrateFromIdb(policies, identity, store, hydratedFromLocal);
+            hydrated = await hydrateFromIdb(
+                policies,
+                identity,
+                store,
+                hydratedFromLocal,
+                getIdentity,
+            );
         } catch (err) {
             logger.warn("boot.idb.pass.failed", {
                 meta: { error: extractErrorMessage(err) },
             });
         }
+        // A swap during the IDB pass means `resyncForIdentity` already owns the
+        // new identity's hydration + fetches; scheduling boot's here would fire
+        // them against state that is no longer this identity's.
+        if (getIdentity().key !== identity.key) return hydrated;
         const after = new Set<string>([...hydratedFromLocal, ...hydrated]);
         scheduleColdBootFallbacks(policies, after, store, getIdentity);
         return hydrated;
