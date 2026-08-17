@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P3",
   "runId": "2026-08-17T131440Z",
-  "state": "certified",
-  "updatedAt": "2026-08-17T13:35:26.669Z",
-  "summary": "CERTIFIED exact candidate e8a5e84287f0d68962bcbcd067419432d706fcc2; no concrete batch-caused defect.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-17T13:35:37.418Z",
+  "summary": "Certified P3 mobile-friendly repair batch queued for fast integration with exact candidate ancestry preserved.",
   "source": "2026-08-17T131440Z.json",
-  "eventHash": "f97962a76afaa185032b9ecfeaffdd8fef8f841e063cae6bc77146b8890410b5"
+  "eventHash": "c0b07e33ae62d4ba6eee47b6161c6791f9f12bb04cc2975bf47b52d00b726c7e"
 }

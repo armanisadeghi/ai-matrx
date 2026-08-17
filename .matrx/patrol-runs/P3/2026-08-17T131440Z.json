@@ -141,6 +141,22 @@
       },
       "previousEventHash": "b6ea2884ce99591bed0f9781ee1ca74348293b0a4c5c5b71bc1961417f88ffcf",
       "eventHash": "f97962a76afaa185032b9ecfeaffdd8fef8f841e063cae6bc77146b8890410b5"
+    },
+    {
+      "sequence": 11,
+      "state": "delivery_queued",
+      "at": "2026-08-17T13:35:37.418Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Certified P3 mobile-friendly repair batch queued for fast integration with exact candidate ancestry preserved.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P3/2026-08-17T131440Z"
+      ],
+      "delivery": {
+        "candidateSha": "e8a5e84287f0d68962bcbcd067419432d706fcc2",
+        "preservedRef": "refs/heads/patrol-runs/P3/2026-08-17T131440Z"
+      },
+      "previousEventHash": "f97962a76afaa185032b9ecfeaffdd8fef8f841e063cae6bc77146b8890410b5",
+      "eventHash": "c0b07e33ae62d4ba6eee47b6161c6791f9f12bb04cc2975bf47b52d00b726c7e"
     }
   ]
 }
