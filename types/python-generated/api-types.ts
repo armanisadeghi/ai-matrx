@@ -21613,12 +21613,12 @@ export interface components {
         AgentStartStrictInput: {
             /**
              * Mandate Key
-             * @description Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id. Exactly one of the two must be set.
+             * @description Mandate key naming the JOB this step performs (e.g. 'podcast.deep_research'). The database decides which agent runs it, resolved at run time — so an org or user Binding swaps this step's agent without touching the workflow. Preferred over agent_id; when both are set, mandate_key wins and agent_id is treated as the build-time snapshot (drift display only).
              */
             mandate_key?: string | null;
             /**
              * Agent Id
-             * @description UUID of a specific agent (or agent version, when is_version=true). Pins this step to one agent forever — prefer mandate_key.
+             * @description UUID of a specific agent (or agent version, when is_version=true). Alone, pins this step to one agent forever — prefer mandate_key. Beside a mandate_key it is only the build-time snapshot of what the mandate resolved to at authoring, so drift is displayable.
              */
             agent_id?: string | null;
             /**
@@ -23808,6 +23808,17 @@ export interface components {
              * @default true
              */
             capture_gaps?: boolean;
+            /**
+             * Compare Vanilla
+             * @description Three-way harness: also run a RAW vanilla model (same tier as the Masterwork's primary agent, no Rulebook) on vanilla_input and judge it against the same reference. A paid call — opt-in.
+             * @default false
+             */
+            compare_vanilla?: boolean;
+            /**
+             * Vanilla Input
+             * @description compare_vanilla only: the SAME input the Masterwork was given (the text to edit, or the job brief), so the vanilla arm is a fair fight.
+             */
+            vanilla_input?: string | null;
         };
         /** AuthorityCandidate */
         AuthorityCandidate: {
@@ -38603,6 +38614,11 @@ export interface components {
              * @default 2500
              */
             chunk_words?: number;
+            /**
+             * Approach
+             * @description Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults from mode: instructional -> 'source', exemplar -> 'exemplar'. The file lane sets 'file' when it delegates a transcript down this lane.
+             */
+            approach?: string | null;
         };
         /**
          * InitialIterationRequest
