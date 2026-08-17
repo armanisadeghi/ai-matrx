@@ -74,6 +74,35 @@ call, fixtures for the 5 test modules; the loud raise stays).
   mandate) · envelope core: `aidream/services/matrx_envelope/`.
 - No DB column is involved in C2 (confirmed vs `types/database.types.ts`).
 
+### C4 build map (scouted 2026-08-17; line refs pre-C2/C3 — translate names after they land)
+
+- **Generator input already exists:** `block-dispatch.tsx` exports
+  `BLOCK_DISPATCH_CLASSIFICATION` (per-classification membership) — pair its primitive entries
+  with the generated `*BlockData` payload types in `types/python-generated/stream-events.ts`
+  (L2402+; today NOTHING links a dispatch entry to its payload type — the registry closes that).
+  Fence-language sub-dispatch `CODE_LANGUAGE_DISPATCH` (~L498, unexported) is a second axis
+  worth enumerating. Copy the crosswalk generator's `--check`/refresh + committed-JSON pattern
+  verbatim (`package.json` L128–137).
+- **Bundled row shape:** `system-components.ts` `getSystemComponentEntries` — one
+  `role='output'` row per binding facet; drift test `__tests__/component-registry.test.ts:64`.
+- **Doctor check goes in the `component` block** (`shape-doctor.ts` L734–761; new
+  `FindingCode` members at L308). Checks needing the generated JSON can be CLI-emitted
+  (precedent: `vocab-unclassified`). Callers to update if input widens: `admin/shape-doctor-server.ts`,
+  `scripts/shape/check-shapes.ts`, `studio/shape-detail-server.ts`.
+- **Agent injection points:** aidream `matrx_ai/tools/implementations/kind_component.py`
+  `kindcomp_get_context` (L109; module doc admits the agent has NO enumeration of bundled keys)
+  — add `bindable_primitives`; constants + `PROPS_CONTRACT` in `kind_shared.py`. FE:
+  `studio/kind-agent-intents.ts` `composeKindAgentIntent` (the `schemaBlock` precedent) +
+  surface value in `manifests/admin-kind-registry.manifest.ts` for `kind_architect`.
+- **props_transform → bundled: real seam mismatch, decide deliberately.** The db path
+  transforms the kind VALUE onto `props.data`; the bundled path emits `serverData` via each
+  kind's `toLegacyServerData`. A bundled transform must sit on the serverData side, and the
+  Babel compiler only loads behind the lazy db-component shell — precompile or lazy-load, never
+  pull `@babel/standalone` into the main chat bundle. `component-registry.ts:169` hard-nulls
+  `propsTransform` for the compiled tier; bundled DB rows already carry it through (L153).
+- **Display/consumer seams:** `kindIsRoutable` (`KindInstanceRender.tsx` L46) ·
+  `KindRegistryAdminClient.tsx` bridge badge (L307) · `KindExamplePreview.tsx` route footnote.
+
 ## Done
 
 - C1 — docs + lexicon shipped in all three repos; mirror verified byte-identical.
