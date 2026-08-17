@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-05-13`
+**Last updated:** `2026-08-17`
 
 ---
 
@@ -21,7 +21,7 @@ they need to fill out forms, ship something, or address a message.
 
 **Routes**
 
-- `app/(authenticated)/settings/profile/page.tsx` — standalone route. Thin
+- `app/(transitional)/settings/profile/page.tsx` — standalone route. Thin
   wrapper that renders `<UserProfilePage />`.
 
 **Settings registry tabs** (`features/settings/registry.ts`)
@@ -39,7 +39,7 @@ All five children render the same `UserProfilePage` with a different
 **Hooks**
 
 - `useUserProfile()` (`features/user-profile/hooks/useUserProfile.ts`) — fetch,
-  edit, save the account-level identity (auth metadata + `public.profiles`).
+  edit, save the account-level identity (auth metadata + `users.profiles`).
   Dispatches `setUserMetadata(...)` after save so the global header avatar/name
   refresh immediately.
 - `useUserFormProfile()` (`features/user-profile/hooks/useUserFormProfile.ts`)
@@ -52,10 +52,10 @@ All five children render the same `UserProfilePage` with a different
   the `profiles` row, with sensible defaults if the row doesn't exist yet).
 - `PATCH /api/user/profile` — accepts a partial `UserAccountData`. Writes
   auth-metadata fields via `supabase.auth.updateUser({ data })` and upserts
-  `public.profiles`. Echoes the canonical state back.
+  `users.profiles`. Echoes the canonical state back.
 - `GET /api/user/form-profile` — returns `UserFormProfileData`. Empty defaults
   when the row doesn't exist yet.
-- `PATCH /api/user/form-profile` — partial upsert into `public.user_form_profile`
+- `PATCH /api/user/form-profile` — partial upsert into `users.user_form_profile`
   by `user_id`. Only fields present in the body are written.
 
 **Redux slice(s)**
@@ -74,15 +74,15 @@ All five children render the same `UserProfilePage` with a different
 - `auth.users.user_metadata` — owner: Supabase Auth. Fields edited here:
   `full_name`, `name`, `preferred_username`, `avatar_url`, `picture`. Updated
   via `supabase.auth.updateUser({ data })`; do NOT write to this table directly.
-- `public.profiles` — chat-visible profile, RLS: owner can update, all
+- `users.profiles` — chat-visible profile, RLS: owner can update, all
   authenticated users can SELECT (chat needs to see other users' display names
   and avatars). Fields: `display_name` (NOT NULL, default `'User'`),
   `avatar_url`, `status_text`, `is_online`, `last_seen_at`.
-- `public.user_form_profile` — RLS: owner-only on all four CRUD operations.
+- `users.user_form_profile` — RLS: owner-only on all four CRUD operations.
   PK is `user_id`. JSONB columns: `phones`, `emails`, `social_handles`,
   `emergency_contacts`, `images`, `custom_fields`. Scalar text + DOB columns
   for legal name, addresses, work info.
-- `public.user_email_preferences` — NOT owned by this feature; lives in
+- `users.user_email_preferences` — NOT owned by this feature; lives in
   `EmailTab` (`features/settings/tabs/EmailTab.tsx`) via
   `/api/user/email-preferences`. Mentioned only so contributors know not to
   re-implement it here.
@@ -117,7 +117,7 @@ All five children render the same `UserProfilePage` with a different
 4. `save()` diffs local state vs. the last server snapshot and PATCHes only
    the changed keys to `/api/user/profile`.
 5. Route updates `auth.users.user_metadata` via
-   `supabase.auth.updateUser({ data: {...} })` AND upserts `public.profiles`.
+   `supabase.auth.updateUser({ data: {...} })` AND upserts `users.profiles`.
 6. Route echoes the canonical state back; hook calls
    `dispatch(setUserMetadata({ fullName, name, preferredUsername, avatarUrl, picture }))`.
 7. Every component subscribing to `selectActiveUserName` / `selectUserAvatarUrl`
@@ -163,13 +163,13 @@ All five children render the same `UserProfilePage` with a different
   Without it the global header avatar/name won't refresh until the page is
   reloaded. The hook handles this — if you write a new save path, replicate
   it.
-- **`display_name` in `public.profiles` is `NOT NULL` with a default `'User'`.**
+- **`display_name` in `users.profiles` is `NOT NULL` with a default `'User'`.**
   If the client clears it, the API route substitutes a fallback (auth
   `full_name` → literal `'User'`) so the upsert never fails on the constraint.
-- **`public.profiles` is publicly readable** (RLS qual = `true` on SELECT).
+- **`users.profiles` is publicly readable** (RLS qual = `true` on SELECT).
   Don't put anything sensitive in `status_text` — every authenticated user can
   read it. Address, phone, DOB, legal name, etc. all live on
-  `public.user_form_profile`, which has strict owner-only SELECT.
+  `users.user_form_profile`, which has strict owner-only SELECT.
 - **`user_form_profile` rows are upserted, not inserted-then-updated.** The
   table's PK is `user_id`. First save creates the row; subsequent saves
   update it. Client code should treat "no row" and "row of nulls" identically.
@@ -181,6 +181,11 @@ All five children render the same `UserProfilePage` with a different
   lazy default export because the settings registry types require
   `ComponentType<Record<string, never>>` (no props). We deliberately accepted
   the duplication over a more clever abstraction.
+- **`idle` is a loading state.** Both profile hooks start at `idle` during SSR
+  and the browser's first render, then begin fetching in an effect. The page
+  renders only its stable loading shell until both sources settle, so hydrated
+  Redux identity and locale-formatted timestamps never enter pre-hydration
+  markup.
 - **Avatar upload is delegated to `features/image-manager/components/ProfilePhotoTab`.**
   When that component runs, it calls `supabase.auth.updateUser({ data: {
   avatar_url, picture } })` directly. After a successful upload the user's
@@ -202,7 +207,7 @@ All five children render the same `UserProfilePage` with a different
   `features/image-manager/components/ProfilePhotoTab` (avatar uploader).
 - Depended on by: agent flows that read a user's shipping/billing address,
   agent-on-behalf-of-user forms that need legal name, the chat presence
-  feature (which reads `public.profiles`).
+  feature (which reads `users.profiles`).
 - Cross-links: `features/settings/FEATURE.md`, `features/image-manager/FEATURE.md`.
 
 ---
@@ -220,10 +225,13 @@ should describe the migration path.
 
 Newest first. Each entry: date, author/agent, one-line summary.
 
+- `2026-08-17` — agent: Treat both hooks' initial `idle` state as loading so
+  `/settings/profile` server output stays stable through hydration; added the
+  SSR regression test and corrected current route/schema pointers.
 - `2026-05-13` — agent: Initial implementation. Two API routes
   (`/api/user/profile`, `/api/user/form-profile`), two hooks, six form
   sections, five settings registry sub-tabs. Replaces the broken read-only
-  `app/(authenticated)/settings/profile/page.tsx`.
+  `app/(transitional)/settings/profile/page.tsx`.
 
 ---
 

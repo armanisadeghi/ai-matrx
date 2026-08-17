@@ -147,9 +147,23 @@ export function UserProfilePage({
     }
   }, [account.loadState, defaultSection]);
 
-  if (account.loadState === "loading" || formProfile.loadState === "loading") {
+  // Both hooks begin at `idle` during SSR and the browser's first render;
+  // their effects start the requests only after hydration. Rendering the
+  // profile while either source is still idle exposes client-hydrated Redux
+  // text (notably the locale-formatted last-sign-in timestamp) to SSR, so the
+  // server and browser can disagree before React takes control.
+  if (
+    account.loadState === "idle" ||
+    account.loadState === "loading" ||
+    formProfile.loadState === "idle" ||
+    formProfile.loadState === "loading"
+  ) {
     return (
-      <div className="flex h-full items-center justify-center py-12">
+      <div
+        className="flex h-full items-center justify-center py-12"
+        role="status"
+        aria-label="Loading profile"
+      >
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
       </div>
     );
