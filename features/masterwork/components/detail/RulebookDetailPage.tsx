@@ -132,6 +132,10 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
         )}
         {pages ? <span>· {pages}</span> : null}
         {sourceRef.exemplar ? <span>· worked out from an example</span> : null}
+        {sourceRef.approach ? (
+          // The registry stamp — which Distillation Approach produced this rule.
+          <span>· via the {sourceRef.approach.replace(/-/g, " ")} Approach</span>
+        ) : null}
         {sourceRef.page_extraction_job_id ? (
           <Link
             href={`/knowledge/extractions/${sourceRef.page_extraction_job_id}`}

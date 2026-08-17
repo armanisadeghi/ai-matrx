@@ -33,6 +33,12 @@ export interface RuleSourceRef {
   page_extraction_run_id?: string;
   /** Chunk index in the ingestion run that produced this rule. */
   chunk?: number;
+  /**
+   * The Distillation Approach that produced this rule — a `platform.approach`
+   * key (interview / source / exemplar / file / …), stamped by every lane
+   * through the one shared rule builder. Additive; older rules lack it.
+   */
+  approach?: string;
   /** Ingestion run id (docproc / extraction run) for full traceability. */
   run_id?: string;
   /** Free-form pointer ("Chapter 6", timestamp for audio, etc.). */

@@ -21,6 +21,14 @@
 
 ## STATUS — live and verified (compressed)
 
+- **Approaches are a REGISTRY, not an `if` (2026-08-17):** `platform.approach` (canonical
+  system-variant catalog via `create_entity_table`; seeded interview/source/exemplar/file with
+  mandate_key + intake_query) drives the NewRulebookDialog picker (registry cards, "Suggested
+  for you" from the knowledge answer, row's `intake_query` routes); every lane stamps
+  `source_ref.approach` through `build_draft_rules` / the `rulebook` tool; RuleProvenance shows
+  it. Add-an-Approach-with-an-existing-lane = a row, zero code — contract in both FEATURE.mds.
+  ⚠️ NOTE for the concurrent monologue-distiller session: give your new lane a
+  `platform.approach` row + pass its key as `approach` so its rules stamp correctly.
 - **The full loop is LIVE on `/masterwork`:** guided intake → Scout interview
   (`masterwork_scout` `4a0b2f8e-…`, `rulebook` tool) or source/exemplar/file ingest → Expert
   review → Build → run in place → "What did it get wrong?" → Audition → gaps become drafts.

@@ -132,6 +132,30 @@
 - `components/masterworks/MasterworkDriftDialog.tsx` — the rule-level drift answer over
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
+## The Approach Registry — `platform.approach` (2026-08-17)
+
+**"Intake is a registry of Approaches, never a hardcoded flow."** The
+"how do you want to do this?" step of `NewRulebookDialog` renders the ENABLED
+rows of `platform.approach` (canonical system-variant catalog table; family
+`'distillation'`; seeded: `interview` · `source` · `exemplar` · `file`) as
+Expert-language cards — label, blurb, "You bring", time shape — read directly
+via supabase-js in [`browse/approaches.ts`](./browse/approaches.ts). The
+knowledge-lives answer marks one card "Suggested for you" (soft hint, never a
+route); the chosen row's `intake_query` is appended to `/masterwork/{id}`
+(interview carries `{"interview":"1"}` so the Scout opens on arrival), and the
+chosen key lands on `metadata.intake.approach` for the Scout to read.
+
+**Every rule says which Approach produced it:** the server lanes stamp
+`source_ref.approach = <key>` through the one shared rule builder (aidream
+`services/distillation/` — see its FEATURE.md § The Approach Registry);
+`RuleProvenance` shows it subtly ("via the … Approach"). Additive — old rules
+keep their shape.
+
+**Adding Approach #5 = a ROW** when its `mandate_key` exists and its
+`intake_query` points at an existing lane surface — it shows in the picker
+with zero code. A genuinely new lane implementation (new surface, new server
+pipeline) is what still takes code. Never hardcode an Approach list again.
+
 ## Registration
 
 - Entity token `rulebook` (platform.entity_types; renamed from `expertise_pack`) + FE overlay in
