@@ -22,6 +22,7 @@ import type { CmsPageEditorTab } from "@/features/cms/agent-context/buildCmsPage
 import { useCmsResearchLineage } from "@/features/cms/hooks/useCmsResearchLineage";
 import { useCmsPagePlanContext } from "@/features/cms/hooks/useCmsPagePlanContext";
 import { ResearchLineagePanel } from "@/features/cms/components/ResearchLineagePanel";
+import { PageSeoPlanSection } from "@/features/cms/components/PageSeoPlanSection";
 import {
   CmsPageAiActionDialog,
   type CmsPageAiIntent,
@@ -1043,6 +1044,15 @@ export default function PageEditor({
               {activeTab === "seo" && (
                 <div className="h-full overflow-auto">
                   <div className="p-6 max-w-2xl mx-auto space-y-5">
+                    {/* THE PLAN, above the values it plans for. One SEO plan per
+                        page, stored on `web.page` and edited by THE canonical
+                        editor — the same one the page workspace and the content
+                        plan mount. The fields below stay what this page SERVES. */}
+                    <PageSeoPlanSection
+                      page={page}
+                      site={site}
+                      onPageChanged={onRefetchPage}
+                    />
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h2 className="text-sm font-semibold text-foreground">

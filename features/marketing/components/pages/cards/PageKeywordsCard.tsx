@@ -4,7 +4,9 @@
  * PageKeywordsCard — the keyword batch attached to this page, riding the
  * REAL keyword plane end-to-end: chips are `seo.keyword` library rows linked
  * by `seo_keyword → web_page` association edges (role `supporting`), the
- * primary stays `web.page.target_keyword` (the column PageIntentCard owns),
+ * primary stays `web.page.target_keyword` (the legacy text column — the PLAN's
+ * keywords are `SeoPlanEditor`'s `desired_values.keyword_plan` library ids, and
+ * converging these two batches is the migration's remaining half),
  * and adding goes through the canonical KeywordInput (library resolution,
  * GSC/analyzer suggestions, Keyword Intelligence). The page analyzer's
  * server-written keyword edges surface here automatically — same edge space.

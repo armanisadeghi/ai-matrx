@@ -4,7 +4,7 @@
  * DesiredSection — the shared presentational frame for a card's desired-value
  * editing area. Renders the observed/desired divider, the caller's fields,
  * and the standard Save affordance driven by a `useDesiredValueSlice`.
- * Mirrors PageIntentCard's save-button conventions so every desired editor
+ * Mirrors the SEO plan editor's save-button conventions so every desired editor
  * on the workspace feels identical.
  */
 

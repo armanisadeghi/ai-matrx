@@ -22,6 +22,10 @@ import { useRef, useState } from "react";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 
 import type { MarketingSite } from "@/features/marketing/types";
+import {
+  PAGE_ROLES,
+  type PageRole,
+} from "@/features/marketing/seo/plan/plan-model";
 
 import type { PlanNodeRow } from "../types";
 import type { Archetype, ExpandedArchetype } from "./archetypes";
@@ -90,8 +94,10 @@ export interface FamilyNamesResult {
  */
 export const KEYWORD_STRATEGIST_MANDATE = "content_plan.keyword_strategist";
 
-export const PAGE_ROLES = ["money", "supporting", "navigational"] as const;
-export type PageRole = (typeof PAGE_ROLES)[number];
+// ONE list of page roles, owned by the SEO plan model (the store the
+// strategist's assignments land in) and re-exported here for this parser's
+// existing consumers.
+export { PAGE_ROLES, type PageRole };
 
 export interface KeywordAssignment {
   route: string;

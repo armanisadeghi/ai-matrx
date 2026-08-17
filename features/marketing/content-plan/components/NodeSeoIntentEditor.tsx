@@ -1,13 +1,23 @@
 "use client";
 
 /**
- * The planned page's canonical SEO intent: one primary keyword, supporting
- * keyword association edges, and the metadata the eventual page should use.
+ * 🚨 LEGACY — the SEO intent of a plan node that has NO real page yet.
+ *
+ * THE ONE SEO plan lives on `web.page` and is edited by
+ * `features/marketing/seo/plan/SeoPlanEditor.tsx` (content-planning invariant
+ * 9; Arman, 2026-08-16). This file is the remaining editor of the plan-node
+ * store (`plan.node.primary_keyword_id`, its `secondary_keyword` edges, its
+ * meta columns, and `attributes.keyword_strategy`), and NodePanel falls back to
+ * it only while a node has no `web.page` to plan against. It is deleted whole —
+ * this editor and `SeoPlanSection` below — when the storage migration lands.
+ *
  * Keyword entry is delegated to KeywordPicker → canonical KeywordInput; this
  * component only composes the plan-specific persistence around it.
  */
+import Link from "next/link";
 import { BrainCircuit, X } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,8 +38,14 @@ import {
   usePlanNodeEdgeMutation,
   usePlanNodeEdges,
 } from "../data/hooks";
+import {
+  readNodeKeywordStrategy,
+  type NodeKeywordStrategy,
+} from "../setup/keyword-strategy";
+import type { PlanNodeRow } from "../types";
 import { PLAN_NODE_SECONDARY_KEYWORD_ROLE, SEO_KEYWORD_TOKEN } from "../types";
 import { KeywordPicker } from "./KeywordPicker";
+import { planNodeHref } from "./PlanContextPanel";
 
 const L = surfaceValueLabels(contentPlanNodeManifest);
 
@@ -250,3 +266,145 @@ export function NodeSeoIntentEditor({
     </div>
   );
 }
+
+/**
+ * LEGACY, AND ONLY WHILE THE STORE IS LEGACY. The strategist's assignment as
+ * stored on `plan.node.attributes.keyword_strategy` — page role, the money
+ * routes this page feeds, and the planned internal links. It renders in
+ * exactly ONE place: the NodePanel branch for a node with no `web.page` yet,
+ * where nothing else can show this data. Everywhere a real page exists, THE
+ * SEO plan is `SeoPlanEditor` over `web.page.desired_values.keyword_plan`,
+ * directly editable. Delete this together with `NodeSeoIntentEditor` when the
+ * storage migration lands.
+ */
+export function SeoPlanSection({
+  planNode,
+  siteNodes,
+  workspaceHref,
+}: {
+  planNode: PlanNodeRow;
+  siteNodes: readonly PlanNodeRow[];
+  workspaceHref: string;
+}) {
+  // `keyword_strategy` is agent-written jsonb and the reader only proves it is
+  // an object — normalize the array/string fields so one malformed record
+  // can't take down the whole panel.
+  const raw: NodeKeywordStrategy | null = readNodeKeywordStrategy(planNode);
+  const strategy = raw
+    ? {
+        page_role: typeof raw.page_role === "string" ? raw.page_role : "page",
+        reason: typeof raw.reason === "string" ? raw.reason : "",
+        supports_routes: Array.isArray(raw.supports_routes)
+          ? raw.supports_routes.filter((r) => typeof r === "string")
+          : [],
+        internal_links: Array.isArray(raw.internal_links)
+          ? raw.internal_links.filter(
+              (l) =>
+                l &&
+                typeof l === "object" &&
+                typeof l.to_route === "string" &&
+                typeof l.anchor_text === "string",
+            )
+          : [],
+        secondary_keywords: Array.isArray(raw.secondary_keywords)
+          ? raw.secondary_keywords.filter((k) => typeof k === "string")
+          : [],
+      }
+    : null;
+
+  // THE DOOR LAW: a strategy route that IS a plan node opens that node in the
+  // plan workspace; a route the plan doesn't know renders as plain text.
+  const nodeByRoute = new Map<string, PlanNodeRow>();
+  for (const node of siteNodes) {
+    if (node.route) nodeByRoute.set(node.route, node);
+  }
+  const routeDoor = (route: string) => {
+    const target = nodeByRoute.get(route);
+    return target ? (
+      <Link
+        href={planNodeHref(target.site_id, target.id)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-mono text-primary underline underline-offset-2"
+      >
+        {route}
+      </Link>
+    ) : (
+      <span className="font-mono" title="This route is not in the plan">
+        {route}
+      </span>
+    );
+  };
+
+  return (
+    <section className="space-y-1.5">
+      <h3 className="text-xs font-semibold text-foreground">SEO plan</h3>
+      {strategy ? (
+        <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="text-[10px] capitalize">
+              {strategy.page_role.replace(/[_-]/g, " ")} page
+            </Badge>
+            {strategy.secondary_keywords.map((phrase) => (
+              <Badge key={phrase} variant="outline" className="text-[10px]">
+                {phrase}
+              </Badge>
+            ))}
+          </div>
+          {strategy.reason ? (
+            <p className="text-xs text-muted-foreground">{strategy.reason}</p>
+          ) : null}
+          {strategy.supports_routes.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-foreground">
+                Feeds authority to
+              </p>
+              <ul className="space-y-0.5 text-xs text-muted-foreground">
+                {strategy.supports_routes.map((route) => (
+                  <li key={route}>{routeDoor(route)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {strategy.internal_links.length > 0 ? (
+            <div className="space-y-1">
+              <p className="text-[11px] font-medium text-foreground">
+                Planned internal links — place these while writing
+              </p>
+              <ul className="space-y-1 text-xs text-muted-foreground">
+                {strategy.internal_links.map((link) => (
+                  <li
+                    key={`${link.to_route}-${link.anchor_text}`}
+                    className="flex flex-wrap items-baseline gap-1.5"
+                  >
+                    <span className="text-foreground">
+                      &ldquo;{link.anchor_text}&rdquo;
+                    </span>
+                    <span aria-hidden="true">&rarr;</span>
+                    {routeDoor(link.to_route)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          No site-wide keyword strategy has been applied to this page. The
+          strategist assigns each page a role, keywords, and planned internal
+          links — run it from the{" "}
+          <Link
+            href={workspaceHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline underline-offset-2"
+          >
+            plan workspace
+          </Link>
+          .
+        </p>
+      )}
+    </section>
+  );
+}
+

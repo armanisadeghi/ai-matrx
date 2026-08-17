@@ -417,6 +417,9 @@ export function SectionCard({
   );
   const card = (
     <section
+      // `id` as well as the locate-on-page attribute: a card is a destination,
+      // so every cross-surface door can deep-link straight to it (`#link_plan`).
+      id={anchor}
       data-surface-value={anchor}
       data-section-card
       className={cn(

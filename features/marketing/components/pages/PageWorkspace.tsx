@@ -88,7 +88,7 @@ import { PageBlockedChecksCard } from "@/features/marketing/components/pages/car
 import { PageFindingsCard } from "@/features/marketing/components/pages/cards/PageFindingsCard";
 import { PageLinksCard } from "@/features/marketing/components/pages/cards/PageLinksCard";
 import { PageBacklinksCard } from "@/features/marketing/components/pages/cards/PageBacklinksCard";
-import { PageIntentCard } from "@/features/marketing/components/pages/cards/PageIntentCard";
+import { SeoPlanEditor } from "@/features/marketing/seo/plan/SeoPlanEditor";
 import { SerpPreview } from "@/features/marketing/components/pages/cards/SerpPreviewCard";
 import {
   SocialCardPlan,
@@ -658,11 +658,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
         </SectionCard>
       ),
       plan: (
-        <PageIntentCard
-          // Reseed ONLY when an intent-owned field changes server-side —
-          // keying on updated_at would wipe in-progress intent edits every
-          // time a sibling card saves desired values (same page row).
-          key={`${page.id}:${page.target_keyword ?? ""}:${page.meta_title_desired ?? ""}:${page.meta_description_desired ?? ""}`}
+        <SeoPlanEditor
           page={page}
           brandId={brandId}
           observedTitle={head.title}
@@ -670,7 +666,8 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           observedH1={
             headings.all.find((heading) => heading.level === 1)?.text ?? null
           }
-          analyzerKeywords={analyzerKeywordSuggestions}
+          // Same page, same screen — the door is the in-page card anchor.
+          linkPlanHref="#link_plan"
         />
       ),
     },

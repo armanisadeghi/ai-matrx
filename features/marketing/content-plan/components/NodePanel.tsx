@@ -82,8 +82,12 @@ import { NodeRealityCard } from "./NodeRealityCard";
 import { NodeMeasureCard } from "./NodeMeasureCard";
 import { NodeStepRail } from "./NodeStepRail";
 import { PageDraftEditor } from "./PageDraftEditor";
-import { NodeSeoIntentEditor } from "./NodeSeoIntentEditor";
-import { planNodeHref, SeoPlanSection } from "./PlanContextPanel";
+import {
+  NodeSeoIntentEditor,
+  SeoPlanSection,
+} from "./NodeSeoIntentEditor";
+import { planNodeHref } from "./PlanContextPanel";
+import { SeoPlanEditor } from "@/features/marketing/seo/plan/SeoPlanEditor";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
@@ -1151,6 +1155,20 @@ export function NodePanel({
             </PanelSection>
 
             <PanelSection title="Targeting">
+              {/* 🚨 ONE SEO PLAN PER PAGE, ON `web.page` (content-planning
+                  invariant 9). The moment this node HAS a real page, its plan
+                  is edited here by THE canonical editor, against the one
+                  store — never a second copy on the node. A node with no page
+                  yet has nowhere canonical to plan into, so it falls back to
+                  the legacy plan-node fields below; that branch disappears
+                  when the storage migration lands. */}
+              {measurement.data?.page ? (
+                <SeoPlanEditor
+                  variant="bare"
+                  page={measurement.data.page}
+                  brandId={measurement.brandId}
+                />
+              ) : (
               <div>
                 <NodeSeoIntentEditor
                   nodeId={node.id}
@@ -1210,6 +1228,7 @@ export function NodePanel({
                   />
                 </div>
               </div>
+              )}
             </PanelSection>
 
             <PanelSection title="Research lineage">
