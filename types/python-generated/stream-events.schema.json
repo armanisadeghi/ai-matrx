@@ -1036,7 +1036,7 @@
                 "type": "null"
               }
             ],
-            "default": 0.0,
+            "default": 0,
             "title": "Cost"
           }
         },
@@ -1226,7 +1226,7 @@
             "title": "Total Cost"
           },
           "known_cost_subtotal": {
-            "default": 0.0,
+            "default": 0,
             "title": "Known Cost Subtotal",
             "type": "number"
           },
@@ -1394,7 +1394,7 @@
             "type": "null"
           }
         ],
-        "default": 0.0,
+        "default": 0,
         "title": "Cost"
       }
     },
@@ -1584,7 +1584,7 @@
         "title": "Total Cost"
       },
       "known_cost_subtotal": {
-        "default": 0.0,
+        "default": 0,
         "title": "Known Cost Subtotal",
         "type": "number"
       },
@@ -2030,7 +2030,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0.0,
+        "default": 0,
         "title": "Progress",
         "type": "number"
       },
@@ -4355,7 +4355,7 @@
         "type": "string"
       },
       "elapsed_seconds": {
-        "default": 0.0,
+        "default": 0,
         "title": "Elapsed Seconds",
         "type": "number"
       },
@@ -5467,7 +5467,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost",
         "type": "number"
       },
@@ -5527,7 +5527,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost",
         "type": "number"
       },
@@ -6495,7 +6495,7 @@
         "title": "Bottom Left"
       },
       "confidence": {
-        "default": 0.0,
+        "default": 0,
         "title": "Confidence",
         "type": "number"
       },
@@ -7470,6 +7470,310 @@
     "title": "MasterworkIngestCompleteData",
     "type": "object"
   },
+  "MasterworkShortlistData": {
+    "$defs": {
+      "MasterworkShortlistItem": {
+        "description": "One conversation the shortlister picked, with its plain-language reason.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "reason": {
+            "default": "",
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key"
+        ],
+        "title": "MasterworkShortlistItem",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Result of the chat-import shortlister: which of the Expert's\nconversations look worth distilling. Selection help only — the Expert\nconfirms the selection in the picker.",
+    "properties": {
+      "type": {
+        "const": "masterwork_shortlist",
+        "default": "masterwork_shortlist",
+        "title": "Type",
+        "type": "string"
+      },
+      "selected": {
+        "items": {
+          "$ref": "#/$defs/MasterworkShortlistItem"
+        },
+        "title": "Selected",
+        "type": "array"
+      },
+      "considered": {
+        "default": 0,
+        "title": "Considered",
+        "type": "integer"
+      }
+    },
+    "title": "MasterworkShortlistData",
+    "type": "object"
+  },
+  "MasterworkDumpProgressData": {
+    "additionalProperties": false,
+    "description": "One step of the resource-dump distillation lane (POST\n/masterworks/ingest-dump). Chunk-level detail still arrives as the\nunderlying lane's ``masterwork_ingest_progress`` events; this event is the\nper-RESOURCE frame around them.",
+    "properties": {
+      "type": {
+        "const": "masterwork_dump_progress",
+        "default": "masterwork_dump_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "resource_index": {
+        "title": "Resource Index",
+        "type": "integer"
+      },
+      "resource_count": {
+        "title": "Resource Count",
+        "type": "integer"
+      },
+      "kind": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Kind"
+      },
+      "token": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Token"
+      },
+      "id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Id"
+      },
+      "url": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Url"
+      },
+      "title": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Title"
+      },
+      "rules_added": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rules Added"
+      },
+      "rules_added_total": {
+        "default": 0,
+        "title": "Rules Added Total",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "step",
+      "message",
+      "resource_index",
+      "resource_count"
+    ],
+    "title": "MasterworkDumpProgressData",
+    "type": "object"
+  },
+  "MasterworkDumpCompleteData": {
+    "$defs": {
+      "MasterworkDumpResourceOutcome": {
+        "description": "One resource's outcome inside a dump ingest — honest per-resource\naccounting, so a refused URL or an unsupported entity type is a visible\nrow, never a silent skip.",
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Token"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Id"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Title"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "rules_added": {
+            "default": 0,
+            "title": "Rules Added",
+            "type": "integer"
+          },
+          "duplicates": {
+            "default": 0,
+            "title": "Duplicates",
+            "type": "integer"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          }
+        },
+        "required": [
+          "kind",
+          "status"
+        ],
+        "title": "MasterworkDumpResourceOutcome",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Terminal result of POST /masterworks/ingest-dump — totals plus the full\nper-resource outcome list.",
+    "properties": {
+      "type": {
+        "const": "masterwork_dump_complete",
+        "default": "masterwork_dump_complete",
+        "title": "Type",
+        "type": "string"
+      },
+      "rulebook_id": {
+        "title": "Rulebook Id",
+        "type": "string"
+      },
+      "rulebook_version": {
+        "title": "Rulebook Version",
+        "type": "integer"
+      },
+      "added": {
+        "default": 0,
+        "title": "Added",
+        "type": "integer"
+      },
+      "duplicates_skipped": {
+        "default": 0,
+        "title": "Duplicates Skipped",
+        "type": "integer"
+      },
+      "quotes_verified": {
+        "default": 0,
+        "title": "Quotes Verified",
+        "type": "integer"
+      },
+      "quotes_unverified": {
+        "default": 0,
+        "title": "Quotes Unverified",
+        "type": "integer"
+      },
+      "resources": {
+        "items": {
+          "$ref": "#/$defs/MasterworkDumpResourceOutcome"
+        },
+        "title": "Resources",
+        "type": "array"
+      }
+    },
+    "required": [
+      "rulebook_id",
+      "rulebook_version"
+    ],
+    "title": "MasterworkDumpCompleteData",
+    "type": "object"
+  },
   "MasterworkAuditionProgressData": {
     "additionalProperties": false,
     "description": "One stage of an Audition (vanilla arm generation, per-arm judging).",
@@ -7973,7 +8277,7 @@
             "type": "object"
           },
           "confidence": {
-            "default": 0.0,
+            "default": 0,
             "title": "Confidence",
             "type": "number"
           },
@@ -8077,7 +8381,7 @@
             "type": "object"
           },
           "confidence": {
-            "default": 0.0,
+            "default": 0,
             "title": "Confidence",
             "type": "number"
           },

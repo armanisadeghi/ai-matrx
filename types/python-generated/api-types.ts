@@ -8768,6 +8768,140 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/ingest-corpus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Corpus
+         * @description The 'Everything you've published' Approach (`body_of_work`): the
+         *     Expert's own published pieces — uploaded files AND pasted links — in one
+         *     gesture. Each piece is tracked on a durable per-piece frontier
+         *     (`platform.masterwork_corpus_item`), distilled through the existing lanes,
+         *     then ONE synthesis pass drafts the cross-piece rules only the whole body
+         *     of work can show. Crash/deploy/reload-safe: re-submitting skips every
+         *     piece that already succeeded.
+         */
+        post: operations["ingest_rulebook_corpus_masterworks_ingest_corpus_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-dump": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Dump
+         * @description The 'dump' Approach: many resources (platform entities + URLs) in one
+         *     gesture. Each resource resolves to text and routes through the existing
+         *     lanes; the terminal ``masterwork_dump_complete`` carries per-resource
+         *     outcomes (ok / failed / unsupported — never a silent skip).
+         */
+        post: operations["ingest_rulebook_dump_masterworks_ingest_dump_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/chat-import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Chat Import
+         * @description Parse an uploaded/pasted chat export and list its conversations for the
+         *     picker. Deterministic — no AI, no writes; access-gated on the file.
+         */
+        post: operations["preview_chat_import_masterworks_chat_import_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/chat-import/shortlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Shortlist Chat Import
+         * @description The picker's AI assist: which conversations look worth distilling
+         *     (Mandate masterwork.transcript_shortlister). Selection help only.
+         */
+        post: operations["shortlist_chat_import_masterworks_chat_import_shortlist_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Chat
+         * @description The chat-import Approach: distill the SELECTED conversations of an
+         *     AI-chat export (ChatGPT / Claude / Gemini / Grok / Meta / coding tools /
+         *     pasted text) into DRAFT rules mining the EXPERT's own judgment.
+         */
+        post: operations["ingest_rulebook_chat_masterworks_ingest_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Conversations
+         * @description The zero-upload lane: distill the Expert's own AI MATRX conversations
+         *     (chat.message, strict owner scope) into DRAFT rules.
+         */
+        post: operations["ingest_rulebook_conversations_masterworks_ingest_conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/audition": {
         parameters: {
             query?: never;
@@ -8824,6 +8958,30 @@ export interface paths {
          *     findings as they arrive.
          */
         post: operations["checkup_masterwork_endpoint_masterworks_checkup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/understudy/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Refresh Understudy Endpoint
+         * @description Create or rebuild the Rulebook's Understudy — the system that runs from
+         *     minute one (vision doc 13). Idempotent, free (no AI call: the ONE generic
+         *     Understudy agent is shared; only a RUN costs money), updates the same
+         *     workflow row in place. The FE calls this after every rules save and at
+         *     Rulebook creation; the server-side rules funnel pokes it on its own.
+         */
+        post: operations["refresh_understudy_endpoint_masterworks_understudy_refresh_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -27028,6 +27186,70 @@ export interface components {
             /** Default */
             default?: unknown;
         };
+        /** ChatConversationPreview */
+        ChatConversationPreview: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /** Provider */
+            provider: string;
+            /** Turns */
+            turns: number;
+            /** User Words */
+            user_words: number;
+            /** Total Words */
+            total_words: number;
+            /** Started At */
+            started_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /**
+         * ChatImportPreviewRequest
+         * @description Parse a chat export and list its conversations — no AI, no writes.
+         */
+        ChatImportPreviewRequest: {
+            /**
+             * File Id
+             * @description cld_files id of an uploaded chat export (zip/json/jsonl/txt/md).
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted conversation (the universal 'paste anything' door).
+             */
+            text?: string | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
+        /** ChatImportPreviewResponse */
+        ChatImportPreviewResponse: {
+            /** Conversations */
+            conversations: components["schemas"]["ChatConversationPreview"][];
+            /** Providers */
+            providers: string[];
+            /**
+             * Skipped Files
+             * @default 0
+             */
+            skipped_files?: number;
+            /** Notes */
+            notes?: string[];
+        };
         /**
          * ChatMessageInput
          * @description One LLM message on the request wire.
@@ -27334,6 +27556,43 @@ export interface components {
             deprecated_keys_found?: string[][];
         } & {
             [key: string]: unknown;
+        };
+        /**
+         * ChatShortlistRequest
+         * @description Ask the shortlister Mandate which conversations look worth distilling.
+         *     Selection HELP only — the Expert confirms in the picker; nothing writes.
+         */
+        ChatShortlistRequest: {
+            /**
+             * File Id
+             * @description cld_files id of an uploaded chat export (zip/json/jsonl/txt/md).
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted conversation (the universal 'paste anything' door).
+             */
+            text?: string | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Topic
+             * @description What the Rulebook is about, in the Expert's words.
+             */
+            topic?: string | null;
         };
         /**
          * ChatToolCallInput
@@ -33965,6 +34224,39 @@ export interface components {
                 [key: string]: "declared_sample" | "last_test_output" | "last_live_output";
             };
         };
+        /**
+         * DumpResource
+         * @description One resource inside a dump ingest — a platform entity (token + id) or a
+         *     public URL. Validated loudly up front so a malformed resource never gets
+         *     halfway into a paid run.
+         */
+        DumpResource: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "entity" | "url";
+            /**
+             * Token
+             * @description platform.entity_types token (kind='entity' only).
+             */
+            token?: string | null;
+            /**
+             * Id
+             * @description The entity row id (kind='entity' only).
+             */
+            id?: string | null;
+            /**
+             * Url
+             * @description Public page URL (kind='url' only).
+             */
+            url?: string | null;
+            /**
+             * Title
+             * @description Optional display label the client already knows.
+             */
+            title?: string | null;
+        };
         /** DuplicatePagesRequest */
         DuplicatePagesRequest: {
             /** Output Mode */
@@ -38649,6 +38941,197 @@ export interface components {
             claim?: string;
         };
         /**
+         * IngestChatRequest
+         * @description Distill selected conversations from a chat export into DRAFT rules.
+         *
+         *     The chat-import Approach: the transcript distiller mines the EXPERT's own
+         *     judgment (corrections, insistences, rejections, repeated demands) — never
+         *     the AI's opinions. Never limited to one chat: ``conversation_keys`` selects
+         *     from the parsed export; omitted means every parsed conversation (within
+         *     the corpus cost cap). Human-first invariant: drafts only.
+         */
+        IngestChatRequest: {
+            /**
+             * File Id
+             * @description cld_files id of an uploaded chat export (zip/json/jsonl/txt/md).
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted conversation (the universal 'paste anything' door).
+             */
+            text?: string | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Conversation Keys
+             * @description Parsed conversation keys to distill (from the preview). None = all.
+             */
+            conversation_keys?: string[] | null;
+            /**
+             * Source Note
+             * @description Where this came from ('my ChatGPT export, Aug 2026').
+             */
+            source_note?: string | null;
+        };
+        /**
+         * IngestConversationsRequest
+         * @description Distill the Expert's own AI MATRX conversations — the zero-upload lane.
+         *
+         *     The platform already holds this corpus (chat.message, including coding
+         *     sessions projected through the coding-session bridge). Strict owner scope:
+         *     only the caller's own conversations are readable. Drafts only.
+         */
+        IngestConversationsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Conversation Ids
+             * @description chat.conversation ids owned by the caller.
+             */
+            conversation_ids: string[];
+            /**
+             * Source Note
+             * @description Optional label ('my AI Matrx SEO chats').
+             */
+            source_note?: string | null;
+        };
+        /**
+         * IngestCorpusRequest
+         * @description Distill an Expert's whole BODY OF PUBLISHED WORK into draft rules.
+         *
+         *     The 'Everything you've published' Approach (`body_of_work`): many pieces in
+         *     one gesture — uploaded files AND pasted URLs. Each piece is scraped/read and
+         *     distilled ON ITS OWN through the existing lanes (so per-piece rules carry
+         *     the same page/quote anchors those lanes always produce), tracked on a
+         *     durable per-piece frontier (`platform.masterwork_corpus_item`) so a crash,
+         *     deploy, or closed laptop costs nothing — re-running the same request skips
+         *     every piece that already succeeded. When every piece has finished, ONE
+         *     synthesis pass (`masterwork.corpus_synthesizer`) reads across the whole
+         *     corpus and drafts the rules only the body of work can show, citing the
+         *     pieces that prove each one.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestCorpusRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Urls
+             * @description Links to the Expert's published pieces, as pasted.
+             */
+            urls?: string[];
+            /**
+             * File Ids
+             * @description cld_files ids uploaded through the canonical file handler.
+             */
+            file_ids?: string[];
+            /**
+             * Mode
+             * @description exemplar (default — published work IS the finished work) or instructional when the corpus teaches.
+             * @default exemplar
+             * @enum {string}
+             */
+            mode?: "instructional" | "exemplar";
+            /**
+             * Source Note
+             * @description Where this body of work is from ('my blog, 2019-2026').
+             */
+            source_note?: string | null;
+        };
+        /**
+         * IngestDumpRequest
+         * @description Distill a RESOURCE DUMP — 'here is everything, figure it out' — into
+         *     draft rules. Each resource (a note, transcript, recording session, file,
+         *     flashcard set, document, or URL) resolves to text and routes through the
+         *     EXISTING lanes; per-resource outcomes are accumulated honestly (ok /
+         *     failed / unsupported — never a silent skip), and rules land per resource
+         *     so partial progress survives a failure.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestDumpRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Resources
+             * @description The dumped resources, in the order the user gave them.
+             */
+            resources: components["schemas"]["DumpResource"][];
+            /**
+             * Mode
+             * @description instructional = the sources teach; exemplar = the sources ARE examples of great finished work.
+             * @default instructional
+             * @enum {string}
+             */
+            mode?: "instructional" | "exemplar";
+            /**
+             * Source Note
+             * @description Where this dump came from ('everything about my SEO method').
+             */
+            source_note?: string | null;
+        };
+        /**
          * IngestFileRequest
          * @description Distill an UPLOADED FILE into DRAFT rules on an existing rulebook.
          *
@@ -38706,6 +39189,18 @@ export interface components {
              * @default 6
              */
             pages_per_chunk?: number;
+            /**
+             * Approach
+             * @description Registered Distillation Approach key stamped on every rule's source_ref.approach. Defaults to this lane's own stamps ('file', or 'monologue' for a recording); the corpus lane passes 'body_of_work'.
+             */
+            approach?: string | null;
+            /**
+             * Source Ref Extra
+             * @description Extra provenance keys merged into every rule's source_ref — how a delegating lane anchors rules to the piece they came from. Never overrides the lane's own keys.
+             */
+            source_ref_extra?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /** IngestReport */
         IngestReport: {
@@ -38827,6 +39322,13 @@ export interface components {
              * @description Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults from mode: instructional -> 'source', exemplar -> 'exemplar'. The file lane sets 'file' when it delegates a transcript down this lane.
              */
             approach?: string | null;
+            /**
+             * Source Ref Extra
+             * @description Extra provenance keys merged into every rule's source_ref — how a delegating lane (the corpus lane) anchors rules to the piece they came from ({url, corpus_item_id}). Never overrides the lane's own keys.
+             */
+            source_ref_extra?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /**
          * InitialIterationRequest
@@ -39522,7 +40024,7 @@ export interface components {
          */
         JsonSchemaProperty: {
             /** Type */
-            type?: ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string") | ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string")[] | null;
+            type?: ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null") | ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null")[] | null;
             /** Description */
             description?: string | null;
             /** Enum */
@@ -57603,6 +58105,29 @@ export interface components {
         UnarchiveWorkflowResponse: {
             /** Unarchived */
             unarchived: boolean;
+        };
+        /** UnderstudyRefreshRequest */
+        UnderstudyRefreshRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Rulebook Id
+             * Format: uuid
+             */
+            rulebook_id: string;
         };
         /** UnmappedValueMapping */
         UnmappedValueMapping: {
@@ -76554,6 +77079,204 @@ export interface operations {
             };
         };
     };
+    ingest_rulebook_corpus_masterworks_ingest_corpus_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestCorpusRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_dump_masterworks_ingest_dump_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestDumpRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_chat_import_masterworks_chat_import_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatImportPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatImportPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    shortlist_chat_import_masterworks_chat_import_shortlist_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatShortlistRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_chat_masterworks_ingest_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_conversations_masterworks_ingest_conversations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestConversationsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     audition_masterwork_endpoint_masterworks_audition_post: {
         parameters: {
             query?: never;
@@ -76630,6 +77353,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CheckupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_understudy_endpoint_masterworks_understudy_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnderstudyRefreshRequest"];
             };
         };
         responses: {

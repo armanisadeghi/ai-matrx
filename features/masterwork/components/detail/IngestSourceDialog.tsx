@@ -72,8 +72,9 @@ const MODE_OPTIONS: {
   },
 ];
 
-/** The Distillation's terminal document, live or restored from the run row. */
-interface IngestSummary {
+/** The Distillation's terminal document, live or restored from the run row.
+ * Shared with ChatImportDialog — both lanes emit `masterwork_ingest_complete`. */
+export interface IngestSummary {
   added: number;
   duplicatesSkipped: number;
   quotesUnverified: number;
@@ -84,7 +85,7 @@ interface IngestSummary {
   followupSeed: string | null;
 }
 
-function parseIngestSummary(raw: unknown): IngestSummary | null {
+export function parseIngestSummary(raw: unknown): IngestSummary | null {
   if (!raw || typeof raw !== "object") return null;
   const data = raw as Record<string, unknown>;
   // `added` may legitimately be 0 (a source with nothing new in it), so its
@@ -101,7 +102,7 @@ function parseIngestSummary(raw: unknown): IngestSummary | null {
   };
 }
 
-function describeIngest({
+export function describeIngest({
   added,
   duplicatesSkipped,
   quotesUnverified,

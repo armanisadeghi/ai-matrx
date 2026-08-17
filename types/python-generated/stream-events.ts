@@ -927,6 +927,44 @@ export interface MasterworkCorpusProgressData {
   total_segments?: number | null;
 }
 
+export interface MasterworkDumpResourceOutcome {
+  kind: string;
+  token?: string | null;
+  id?: string | null;
+  url?: string | null;
+  title?: string | null;
+  status: string;
+  rules_added?: number;
+  duplicates?: number;
+  error?: string | null;
+}
+
+export interface MasterworkDumpCompleteData {
+  type?: "masterwork_dump_complete";
+  rulebook_id: string;
+  rulebook_version: number;
+  added?: number;
+  duplicates_skipped?: number;
+  quotes_verified?: number;
+  quotes_unverified?: number;
+  resources?: MasterworkDumpResourceOutcome[];
+}
+
+export interface MasterworkDumpProgressData {
+  type?: "masterwork_dump_progress";
+  step: string;
+  message: string;
+  resource_index: number;
+  resource_count: number;
+  kind?: string | null;
+  token?: string | null;
+  id?: string | null;
+  url?: string | null;
+  title?: string | null;
+  rules_added?: number | null;
+  rules_added_total?: number;
+}
+
 export interface MasterworkIngestCompleteData {
   type?: "masterwork_ingest_complete";
   rulebook_id: string;
@@ -972,6 +1010,17 @@ export interface MasterworkRunSnapshotData {
   error?: Record<string, unknown> | null;
   result?: Record<string, unknown> | null;
   completed_at?: string | null;
+}
+
+export interface MasterworkShortlistItem {
+  key: string;
+  reason?: string;
+}
+
+export interface MasterworkShortlistData {
+  type?: "masterwork_shortlist";
+  selected?: MasterworkShortlistItem[];
+  considered?: number;
 }
 
 export interface AudioBlock {
@@ -1692,11 +1741,14 @@ export type TypedDataPayload =
   | MasterworkCheckupProgressData
   | MasterworkCorpusCleanedData
   | MasterworkCorpusProgressData
+  | MasterworkDumpCompleteData
+  | MasterworkDumpProgressData
   | MasterworkIngestCompleteData
   | MasterworkIngestProgressData
   | MasterworkRunData
   | MasterworkRunFailedData
   | MasterworkRunSnapshotData
+  | MasterworkShortlistData
   | MediaBlockData
   | MediaNoticeData
   | MemoryBufferSpawnedData

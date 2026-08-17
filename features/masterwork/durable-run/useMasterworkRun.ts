@@ -62,16 +62,26 @@ export const MASTERWORK_RUN_WIRE: DurableRunWire = {
 export type MasterworkRunSurface =
   | "build"
   | "ingest"
+  | "chat"
   | "dump"
+  | "corpus"
   | "audition"
   | "checkup";
 
 const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   build: "masterwork_build_complete",
   ingest: "masterwork_ingest_complete",
+  // The chat-import Approach (`/masterworks/ingest-chat` + the zero-upload
+  // `/masterworks/ingest-conversations`) — one dialog, one running state, one
+  // pointer; the path picks the lane at launch time.
+  chat: "masterwork_ingest_complete",
   // The dump Approach (`/masterworks/ingest-dump`) — its own surface + pointer
   // so a dump never rejoins the single-source ingest dialog or vice versa.
   dump: "masterwork_ingest_dump_complete",
+  // The "Everything you've published" (body_of_work) Approach
+  // (`/masterworks/ingest-corpus`) — its own surface + pointer for the same
+  // reason, even though its terminal event type matches the ingest lanes'.
+  corpus: "masterwork_ingest_complete",
   audition: "masterwork_audition_verdict",
   checkup: "masterwork_checkup_complete",
 };

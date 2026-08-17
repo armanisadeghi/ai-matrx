@@ -33383,6 +33383,101 @@ export type Database = {
         }
         Relationships: []
       }
+      masterwork_corpus_item: {
+        Row: {
+          attempts: number
+          canonical_key: string
+          claimed_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          duplicates_skipped: number
+          error: Json | null
+          id: string
+          kind: string
+          label: string | null
+          lease_expires_at: string | null
+          metadata: Json
+          organization_id: string
+          quotes_unverified: number
+          quotes_verified: number
+          raw_value: string
+          rulebook_id: string
+          rules_added: number
+          run_id: string | null
+          source_meta: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attempts?: number
+          canonical_key: string
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duplicates_skipped?: number
+          error?: Json | null
+          id?: string
+          kind: string
+          label?: string | null
+          lease_expires_at?: string | null
+          metadata?: Json
+          organization_id: string
+          quotes_unverified?: number
+          quotes_verified?: number
+          raw_value: string
+          rulebook_id: string
+          rules_added?: number
+          run_id?: string | null
+          source_meta?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attempts?: number
+          canonical_key?: string
+          claimed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          duplicates_skipped?: number
+          error?: Json | null
+          id?: string
+          kind?: string
+          label?: string | null
+          lease_expires_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          quotes_unverified?: number
+          quotes_verified?: number
+          raw_value?: string
+          rulebook_id?: string
+          rules_added?: number
+          run_id?: string | null
+          source_meta?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "masterwork_corpus_item_rulebook_id_fkey"
+            columns: ["rulebook_id"]
+            isOneToOne: false
+            referencedRelation: "rulebook"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       masterwork_run: {
         Row: {
           completed_at: string | null

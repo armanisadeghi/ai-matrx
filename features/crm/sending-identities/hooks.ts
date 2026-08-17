@@ -56,6 +56,8 @@ export function useConnectableMailboxes(enabled: boolean) {
   const [mailboxes, setMailboxes] = useState<ConnectableMailbox[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const reload = () => setReloadToken((token) => token + 1);
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -76,9 +78,9 @@ export function useConnectableMailboxes(enabled: boolean) {
     return () => {
       cancelled = true;
     };
-  }, [enabled]);
+  }, [enabled, reloadToken]);
 
-  return { mailboxes, loading, error };
+  return { mailboxes, loading, error, reload };
 }
 
 export function useSendingIdentity(identityId: string) {
