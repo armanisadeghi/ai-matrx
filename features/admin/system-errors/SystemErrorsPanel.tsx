@@ -29,6 +29,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { apiGet } from "@/lib/api/typed-client";
 import { toast } from "@/lib/toast";
 
@@ -181,7 +182,11 @@ export default function SystemErrorsPanel() {
           Unresolved only
         </Button>
         <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
-          {loading ? "loading…" : `${rows.length} row(s)`}
+          {loading ? (
+            <SuspenseLoader centered={false} size="xs" message="Loading system errors…" />
+          ) : (
+            `${rows.length} row(s)`
+          )}
         </span>
       </div>
 

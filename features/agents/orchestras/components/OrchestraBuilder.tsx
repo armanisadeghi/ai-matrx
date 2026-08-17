@@ -26,6 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
 import { Button } from "@/components/ui/button";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import {
@@ -170,7 +171,7 @@ export function OrchestraBuilder({ orchestratorId }: { orchestratorId: string })
   if (loading) {
     return (
       <div className="bg-textured flex h-full items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <SuspenseLoader centered={false} message="Loading orchestra builder…" />
       </div>
     );
   }

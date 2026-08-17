@@ -26,6 +26,7 @@ import { Check, Loader2, RefreshCw, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
@@ -197,7 +198,9 @@ export function LandscapeBriefCard({
       </CardHeader>
       <CardContent className="space-y-4">
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p className="text-sm text-muted-foreground">
+            <SuspenseLoader centered={false} message="Loading competitor landscape…" />
+          </p>
         ) : !brief ? (
           <p className="text-sm text-muted-foreground">
             Nothing established yet. Work it out first — competitor judgments

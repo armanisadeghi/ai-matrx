@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "patrolId": "P8",
-  "runId": "01a0009c-dfb8-7991-a488-441139eb6a50",
-  "state": "delivered",
-  "updatedAt": "2026-08-17T19:19:55.690Z",
-  "summary": "DELIVERED: the independently certified contextual-loader candidate is on origin/main and included in v0.4.702.",
-  "source": "01a0009c-dfb8-7991-a488-441139eb6a50.json",
-  "eventHash": "4f37ffe6a2b184489c4cab5f334859ce33de6778f8027c327fcca4892ca21564"
+  "runId": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26",
+  "state": "fixing",
+  "updatedAt": "2026-08-17T19:29:55.525Z",
+  "summary": "Replaced eight verified generic loading states across seven files with contextual canonical loaders.",
+  "source": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26.json",
+  "eventHash": "67e93d05b61fba7f67f9b8ac2974a0f3f9e5da701743999344172db66076a82d"
 }

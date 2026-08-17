@@ -22,6 +22,7 @@ import {
 import { toast } from "@/lib/toast";
 import Link from "next/link";
 
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -407,7 +408,7 @@ export function PipelineGraph() {
       return (
         <div className="p-3">
           <div className="rounded-2xl border border-border/40 bg-card/40 p-6 flex items-center justify-center">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <SuspenseLoader centered={false} message="Loading research plan…" />
           </div>
         </div>
       );

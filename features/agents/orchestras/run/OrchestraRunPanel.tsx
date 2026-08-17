@@ -11,7 +11,8 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ExternalLink, Loader2, Play, X } from "lucide-react";
+import { ExternalLink, Play, X } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { accentClasses } from "../components/accents";
@@ -28,7 +29,7 @@ const AgentRunnerPage = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <SuspenseLoader centered={false} message="Loading orchestra run…" />
       </div>
     ),
   },

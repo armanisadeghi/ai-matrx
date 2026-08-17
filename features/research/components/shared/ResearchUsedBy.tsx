@@ -15,6 +15,7 @@
 
 import { ExternalLink } from "lucide-react";
 
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { getEntityInfo } from "@/features/scopes/registry/entityRegistry";
@@ -107,7 +108,9 @@ export function ResearchUsedBy({ token, id }: ResearchUsedByProps) {
           shows up here.
         </p>
       ) : (
-        <p className="text-xs text-muted-foreground">Loading…</p>
+        <p className="text-xs text-muted-foreground">
+          <SuspenseLoader centered={false} size="xs" message="Loading research usage…" />
+        </p>
       )}
     </section>
   );

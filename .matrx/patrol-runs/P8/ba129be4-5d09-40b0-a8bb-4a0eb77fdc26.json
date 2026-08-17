@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P8",
+  "runId": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26",
+  "baseSha": "edc63f092",
+  "createdAt": "2026-08-17T19:28:11.634Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-17T19:28:11.634Z",
+      "actor": "p8-patrol-worker",
+      "summary": "Started the 2026-08-17 structural-novelty Real Loading States patrol after reconciling the prior delivered candidate.",
+      "evidence": [
+        "Baseline checks: clean worktree, pnpm type-check PASS, check:patrol-contracts PASS, preview lease owned by this checkout.",
+        "Last monthly full pass was 2026-08-14; this run scopes to structural novelty plus open P8 sightings."
+      ],
+      "previousEventHash": null,
+      "eventHash": "337120aac7cbfea5d7f69c2a3de5f48744096acca745249aa2b78a5e11e5d068"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-17T19:29:55.525Z",
+      "actor": "p8-patrol-worker",
+      "summary": "Replaced eight verified generic loading states across seven files with contextual canonical loaders.",
+      "evidence": [
+        "The existing wrappers, data/control flow, theme classes, responsive behavior, and the SafeBlockRenderer dynamic boundary remain unchanged.",
+        "Two string-only control slots remain open as missing primitive-mapping evidence; one comment-only match is excluded."
+      ],
+      "previousEventHash": "337120aac7cbfea5d7f69c2a3de5f48744096acca745249aa2b78a5e11e5d068",
+      "eventHash": "67e93d05b61fba7f67f9b8ac2974a0f3f9e5da701743999344172db66076a82d"
+    }
+  ]
+}

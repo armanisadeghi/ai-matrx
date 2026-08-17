@@ -33,6 +33,7 @@ import { AlertCircle, ExternalLink, Loader2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
@@ -188,7 +189,9 @@ export function PlanContextPanel({
             {primaryKeyword}
           </Badge>
         ) : keywordLabels.isLoading ? (
-          <p className="text-xs text-muted-foreground">Loading…</p>
+          <p className="text-xs text-muted-foreground">
+            <SuspenseLoader centered={false} size="xs" message="Loading target keyword…" />
+          </p>
         ) : (
           <p className="text-xs text-muted-foreground">
             No target keyword is set for this page.{" "}

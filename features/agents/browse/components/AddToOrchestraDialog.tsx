@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { Network, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +57,7 @@ export function AddToOrchestraDialog({ agentId, agentName, open, onClose }: Prop
 
         {status === "loading" && sets.length === 0 ? (
           <div className="flex items-center justify-center py-8 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <SuspenseLoader centered={false} message="Loading orchestras…" />
           </div>
         ) : sets.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">

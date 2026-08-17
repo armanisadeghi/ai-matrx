@@ -18,13 +18,13 @@ import {
   ArrowDownUp,
   ChevronDown,
   KeyRound,
-  Loader2,
   RefreshCw,
   ShieldCheck,
   Building2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -182,7 +182,7 @@ export function MandateOverridesPage() {
   if (loading || (!data && !loadError)) {
     return (
       <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <SuspenseLoader centered={false} message="Loading mandate overrides…" />
       </div>
     );
   }

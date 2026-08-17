@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, GitBranch, Loader2, RefreshCw, Unplug } from "lucide-react";
+import { ExternalLink, GitBranch, RefreshCw, Unplug } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { isJsonObject } from "@/types/json";
@@ -31,8 +32,8 @@ export function GitHubConnectionCard({ compact = false }: { compact?: boolean })
               </span>
             </div>
             {github.loading ? (
-              <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+              <p className="mt-1 text-xs text-muted-foreground">
+                <SuspenseLoader centered={false} size="xs" message="Loading GitHub account…" />
               </p>
             ) : connected ? (
               <p className="mt-1 text-xs text-muted-foreground">

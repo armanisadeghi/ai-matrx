@@ -8,7 +8,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Loader2 } from "lucide-react";
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -58,8 +58,8 @@ export function AgentIODetails({
       <div className="space-y-1.5">
         <div className="text-xs font-medium text-muted-foreground">Inputs</div>
         {!ready ? (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+          <div className="text-xs text-muted-foreground">
+            <SuspenseLoader centered={false} size="xs" message="Loading agent inputs…" />
           </div>
         ) : !variableDefs || variableDefs.length === 0 ? (
           <div className="text-xs text-muted-foreground/70">No declared inputs.</div>
@@ -89,8 +89,8 @@ export function AgentIODetails({
       <div className="space-y-1.5">
         <div className="text-xs font-medium text-muted-foreground">Output</div>
         {!ready ? (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+          <div className="text-xs text-muted-foreground">
+            <SuspenseLoader centered={false} size="xs" message="Loading agent output…" />
           </div>
         ) : outputProps.length === 0 ? (
           <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[11px] text-muted-foreground">

@@ -15,6 +15,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
@@ -314,7 +315,11 @@ function WorkflowRuntimeDemo() {
           {viewButton("surface", "Surface")}
           {viewButton("builder", "Builder")}
           {!surfaceLoaded ? (
-            <Loader2 className="ml-1 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            <SuspenseLoader
+              centered={false}
+              size="xs"
+              message="Loading workflow views…"
+            />
           ) : null}
         </div>
       ) : null}
@@ -386,7 +391,7 @@ export default function WorkflowRuntimeDemoPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center p-8">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <SuspenseLoader centered={false} message="Loading workflow runtime…" />
         </div>
       }
     >
