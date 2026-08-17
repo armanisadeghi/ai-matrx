@@ -322,7 +322,7 @@ export const mandatesManifest: SurfaceManifest = {
   surfaceName: MANDATES_SURFACE_NAME,
   readiness: "partial",
   readinessNote:
-    "Console emitter is live (list, health roll-up, selected mandate + pin + contract + overrides), and the bench's exemplars + exemplar draft are published up through bench-draft.ts. Candidate-run state (comparison columns, batch results, verdict notes) still lives in MandateTestBench local state and is not lifted into the scope. Write targets are code-only (not mirrored to DB).",
+    "Console emitter is live (list, health roll-up, selected mandate + pin + contract + overrides), and the bench's exemplars + exemplar draft are published up through bench-draft.ts. Candidate-run state (comparison columns, batch results, verdict notes) still lives in MandateTestBench local state and is not lifted into the scope.",
   label: "Mandates Admin",
   urlPattern: "/administration/agents/mandates",
   intro: `<surface_intro>
