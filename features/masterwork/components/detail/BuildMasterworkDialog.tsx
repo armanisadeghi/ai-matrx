@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import type { paths } from "@/types/python-generated/api-types";
@@ -237,7 +237,7 @@ export function BuildMasterworkDialog({
                 <Label htmlFor="masterwork-deliverable">
                   What does this Masterwork produce?
                 </Label>
-                <Textarea
+                <ProTextarea
                   id="masterwork-deliverable"
                   value={deliverable}
                   onChange={(e) => setDeliverable(e.target.value)}

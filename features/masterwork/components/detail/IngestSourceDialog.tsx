@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
@@ -422,7 +422,7 @@ export function IngestSourceDialog({
             ) : (
             <div className="space-y-1.5">
               <Label htmlFor="ingest-text">The source material</Label>
-              <Textarea
+              <ProTextarea
                 id="ingest-text"
                 value={text}
                 onChange={(e) => setText(e.target.value)}

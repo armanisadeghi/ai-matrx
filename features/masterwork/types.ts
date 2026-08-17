@@ -67,8 +67,30 @@ export interface RulebookRule {
   retired?: boolean;
   /** Drafts (from ingestion or the Scout) awaiting the Expert's approval. */
   draft?: boolean;
+  /**
+   * The Expert rejected this rule; `feedback` carries their reason. The Scout
+   * clears it next turn — rewrite per the feedback (re-queues as a fresh
+   * draft) or withdraw the rule. Rejected rules never power a Build.
+   */
+  rejected?: boolean;
+  /**
+   * Transient review note from the Expert — the reason on a rejected rule, or
+   * a request-changes note on any rule. It is review state, never part of the
+   * rule: the Scout applying it consumes it, and approval clears it.
+   */
+  feedback?: string;
   /** Back-reference to the source location this rule was distilled from. */
   source_ref?: RuleSourceRef;
+}
+
+/** The one review state of a rule — precedence retired > rejected > draft > approved. */
+export type RuleState = "approved" | "draft" | "rejected" | "retired";
+
+export function ruleState(rule: RulebookRule): RuleState {
+  if (rule.retired === true) return "retired";
+  if (rule.rejected === true) return "rejected";
+  if (rule.draft === true) return "draft";
+  return "approved";
 }
 
 export interface RulebookSectionDef {

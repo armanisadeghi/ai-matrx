@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import type {
   RulebookRule,
   RulebookSections,
@@ -154,7 +154,7 @@ function RuleEditorForm({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="rule-statement">What&apos;s the rule?</Label>
-            <Textarea
+            <ProTextarea
               id="rule-statement"
               value={statement}
               onChange={(e) => setStatement(e.target.value)}
@@ -164,7 +164,7 @@ function RuleEditorForm({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="rule-rationale">Why does it matter?</Label>
-            <Textarea
+            <ProTextarea
               id="rule-rationale"
               value={rationale}
               onChange={(e) => setRationale(e.target.value)}
@@ -176,7 +176,7 @@ function RuleEditorForm({
             <Label htmlFor="rule-detection">
               How would you catch someone breaking it?
             </Label>
-            <Textarea
+            <ProTextarea
               id="rule-detection"
               value={detection}
               onChange={(e) => setDetection(e.target.value)}
@@ -223,7 +223,7 @@ function RuleEditorForm({
             <Label htmlFor="rule-quote">
               In the source&apos;s own words (optional)
             </Label>
-            <Textarea
+            <ProTextarea
               id="rule-quote"
               value={quote}
               onChange={(e) => setQuote(e.target.value)}

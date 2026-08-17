@@ -24,7 +24,7 @@ import { useEffect, useRef, useState } from "react";
 import { CircleCheck, CircleDashed, CircleX, Play, Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { callApi } from "@/lib/api/call-api";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
@@ -370,7 +370,7 @@ export function TryMasterworkBox({
 
   return (
     <div className="space-y-2">
-      <Textarea
+      <ProTextarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
@@ -382,7 +382,7 @@ export function TryMasterworkBox({
         disabled={phase === "starting" || phase === "running"}
       />
       {isEdit ? (
-        <Textarea
+        <ProTextarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={1}

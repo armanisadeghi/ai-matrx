@@ -132,9 +132,27 @@
    rules.
 3. **Copy is for a brilliant NON-technical Expert** — a doctor must be able to correct their
    Rulebook here.
+4. **Review states are transient, and the Scout must clear them.** A rule can be `draft`,
+   approved, `rejected` (+ the Expert's written reason in `feedback`), or `retired`
+   (`ruleState()` in `types.ts` is the ONE precedence). `feedback` on any rule is a
+   request-changes note. The Scout resolves all open feedback every turn through the `rulebook`
+   tool: a rejected rule is rewritten per the feedback (re-queued as a fresh draft) or
+   withdrawn; a change request is applied in place (an APPROVED rule stays approved). Applying
+   feedback consumes it; the Expert approving clears it. A rejected rule always keeps
+   `draft: true` so a Build can never include it. Approve-all never touches rejected rules.
+5. **Every textarea in this module is `ProTextarea`** (mic + transcription) — the Expert talks,
+   never types, unless they want to.
 
 ## Change log
 
+- 2026-08-17 — **The review loop closes both ways** (Arman's feedback): Reject-with-feedback and
+  Request-changes on every rule (`RuleFeedbackDialog`), rejected/change-requested badges + the
+  feedback shown on the rule row, the Scout receives `open_feedback` from the `rulebook` tool
+  read and its instructions require clearing it every turn (aidream
+  `services/distillation/tools.py` + the `masterwork_scout` DB agent). Plus the focus review
+  wizard (`RuleReviewWizard` — one rule at a time, approve/reject/edit/skip, auto-advance) and
+  the gamified KPI strip (`RulebookKpiStrip` — approved/waiting/rejected counts, review-progress
+  bar, next-step encouragement). All module textareas moved to `ProTextarea`.
 - 2026-08-17 — **The Masterwork rename executed** (lexicon ruled 2026-08-16). Feature dir
   `features/expertise/` → `features/masterwork/`; routes `/expertise*` → `/masterwork*` (no
   redirects — the old namespace is gone); components renamed (NewRulebookDialog,

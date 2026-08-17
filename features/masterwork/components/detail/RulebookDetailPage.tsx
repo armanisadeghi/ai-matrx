@@ -10,11 +10,14 @@ import {
   Hammer,
   ChevronDown,
   ChevronRight,
+  ListTodo,
   MessageCircleQuestion,
+  MessageSquareWarning,
   Pencil,
   Plus,
   RotateCcw,
   Workflow,
+  XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +34,7 @@ import {
   updateRulebookMeta,
 } from "../../service";
 import {
+  ruleState,
   SEVERITY_LABELS,
   type Masterwork,
   type Rulebook,
@@ -42,6 +46,9 @@ import { BuildMasterworkDialog } from "./BuildMasterworkDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
 import { InterviewButton, ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
+import { RuleFeedbackDialog, type RuleFeedbackMode } from "./RuleFeedbackDialog";
+import { RuleReviewWizard } from "./RuleReviewWizard";
+import { computeKpis, RulebookKpiStrip } from "./RulebookKpiStrip";
 
 /**
  * The Expert surface: read your Rulebook, correct it, grow it. Rules are
@@ -141,18 +148,30 @@ function RuleRow({
   onEdit,
   onToggleRetired,
   onApprove,
+  onReject,
+  onRequestChanges,
 }: {
   rule: RulebookRule;
   canEdit: boolean;
   onEdit: () => void;
   onToggleRetired: () => void;
   onApprove: () => void;
+  onReject: () => void;
+  onRequestChanges: () => void;
 }) {
   const [openRow, setOpenRow] = useState(false);
-  const retired = rule.retired === true;
+  const state = ruleState(rule);
+  const retired = state === "retired";
+  const rejected = state === "rejected";
   return (
     <div
-      className={`rounded-md border border-border bg-card ${retired ? "opacity-60" : ""}`}
+      className={`rounded-md border bg-card ${
+        retired
+          ? "border-border opacity-60"
+          : rejected
+            ? "border-destructive/40"
+            : "border-border"
+      }`}
     >
       <div className="flex w-full items-start gap-2 px-3 py-2">
         <button
@@ -172,12 +191,28 @@ function RuleRow({
                 {rule.name}
               </span>
               {severityBadge(rule.severity)}
-              {rule.draft ? (
+              {state === "draft" ? (
                 <Badge
                   variant="outline"
                   className="px-1.5 py-0 text-[10px] border-primary/40 text-primary"
                 >
                   Draft — needs your approval
+                </Badge>
+              ) : null}
+              {rejected ? (
+                <Badge
+                  variant="outline"
+                  className="px-1.5 py-0 text-[10px] border-destructive/50 text-destructive"
+                >
+                  Rejected — with the interviewer
+                </Badge>
+              ) : null}
+              {rule.feedback && !rejected ? (
+                <Badge
+                  variant="outline"
+                  className="px-1.5 py-0 text-[10px] border-primary/40 text-primary"
+                >
+                  Change requested
                 </Badge>
               ) : null}
               {retired ? (
@@ -194,17 +229,35 @@ function RuleRow({
             </p>
           </div>
         </button>
-        {canEdit && rule.draft && !retired ? (
-          <Button
-            size="sm"
-            className="h-7 shrink-0"
-            onClick={onApprove}
-          >
-            <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-            Approve
-          </Button>
+        {canEdit && state === "draft" ? (
+          <div className="flex shrink-0 gap-1">
+            <Button size="sm" className="h-7" onClick={onApprove}>
+              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+              Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 border-destructive/40 text-destructive hover:text-destructive"
+              onClick={onReject}
+            >
+              <XCircle className="mr-1 h-3.5 w-3.5" />
+              Reject
+            </Button>
+          </div>
         ) : null}
       </div>
+      {rule.feedback ? (
+        <div className="mx-3 mb-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs">
+          <span className="font-medium text-foreground">
+            {rejected ? "Why you rejected it: " : "Your change request: "}
+          </span>
+          <span className="text-muted-foreground">{rule.feedback}</span>
+          <span className="ml-1 text-muted-foreground">
+            — the interviewer picks this up on their next turn.
+          </span>
+        </div>
+      ) : null}
       {openRow ? (
         <div className="space-y-2 border-t border-border px-9 py-2 text-sm">
           {rule.rationale ? (
@@ -241,11 +294,17 @@ function RuleRow({
             cite this id.
           </div>
           {canEdit ? (
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-wrap gap-2 pt-1">
               <Button size="sm" variant="outline" onClick={onEdit}>
                 <Pencil className="mr-1 h-3.5 w-3.5" />
                 Edit
               </Button>
+              {!retired && !rejected ? (
+                <Button size="sm" variant="outline" onClick={onRequestChanges}>
+                  <MessageSquareWarning className="mr-1 h-3.5 w-3.5" />
+                  {rule.feedback ? "Change the request" : "Request changes"}
+                </Button>
+              ) : null}
               <Button size="sm" variant="ghost" onClick={onToggleRetired}>
                 <RotateCcw className="mr-1 h-3.5 w-3.5" />
                 {retired ? "Restore" : "Retire"}
@@ -270,6 +329,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [confirmActivate, setConfirmActivate] = useState(false);
   const [buildOpen, setBuildOpen] = useState(false);
   const [ingestOpen, setIngestOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [feedbackTarget, setFeedbackTarget] = useState<{
+    rule: RulebookRule;
+    mode: RuleFeedbackMode;
+  } | null>(null);
   const searchParams = useSearchParams();
   // The guided start ("Distill your expertise") lands here with ?interview=1
   // when the knowledge lives in the Expert's head — the Scout interview IS the
@@ -387,12 +451,16 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     [rulebook, persist],
   );
 
+  // Approval clears review state: rejected and feedback are transient — an
+  // approved rule carries neither.
   const approveRule = useCallback(
     async (rule: RulebookRule) => {
       if (!rulebook) return;
-      const next = rulebook.rules.map((r) =>
-        r.id === rule.id ? { ...r, draft: false } : r,
-      );
+      const next = rulebook.rules.map((r) => {
+        if (r.id !== rule.id) return r;
+        const { rejected: _rejected, feedback: _feedback, ...rest } = r;
+        return { ...rest, draft: false };
+      });
       try {
         await persist(next);
         toast.success(`"${rule.name}" approved`);
@@ -403,11 +471,16 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     [rulebook, persist],
   );
 
+  // "Approve all" means the rules WAITING ON the Expert — never rejected ones
+  // (those are the interviewer's queue, and approving them would erase the
+  // Expert's own written reasons).
   const approveAllDrafts = useCallback(async () => {
     if (!rulebook) return;
-    const next = rulebook.rules.map((r) =>
-      r.draft ? { ...r, draft: false } : r,
-    );
+    const next = rulebook.rules.map((r) => {
+      if (ruleState(r) !== "draft") return r;
+      const { feedback: _feedback, ...rest } = r;
+      return { ...rest, draft: false };
+    });
     try {
       await persist(next);
       toast.success("All suggested rules approved");
@@ -415,6 +488,41 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       toast.error(err instanceof Error ? err.message : "Could not approve");
     }
   }, [rulebook, persist]);
+
+  // Reject: the rule leaves the Expert's queue and waits for the interviewer,
+  // who must rewrite it per this feedback (fresh draft) or withdraw it. A
+  // rejected rule keeps draft=true so a Build can never include it.
+  const rejectRule = useCallback(
+    async (rule: RulebookRule, feedbackText: string) => {
+      if (!rulebook) return;
+      const next = rulebook.rules.map((r) =>
+        r.id === rule.id
+          ? { ...r, draft: true, rejected: true, feedback: feedbackText }
+          : r,
+      );
+      await persist(next);
+      toast.success(`"${rule.name}" rejected`, {
+        description: "The interviewer will rewrite it or drop it on their next turn.",
+      });
+    },
+    [rulebook, persist],
+  );
+
+  // Request changes: the rule keeps its state (approved stays approved); the
+  // note rides along until the interviewer applies it.
+  const requestChanges = useCallback(
+    async (rule: RulebookRule, feedbackText: string) => {
+      if (!rulebook) return;
+      const next = rulebook.rules.map((r) =>
+        r.id === rule.id ? { ...r, feedback: feedbackText } : r,
+      );
+      await persist(next);
+      toast.success(`Change request saved for "${rule.name}"`, {
+        description: "It is applied on the interviewer's next turn.",
+      });
+    },
+    [rulebook, persist],
+  );
 
   const toggleRetired = useCallback(
     async (rule: RulebookRule) => {
@@ -467,13 +575,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     );
   }
 
-  const liveRuleCount = rulebook.rules.filter((r) => r.retired !== true).length;
-  const draftCount = rulebook.rules.filter((r) => r.draft === true).length;
-  // Only approved (non-draft, non-retired) rules power a Masterwork — the
-  // Build excludes drafts, so the button must not promise what it will refuse.
-  const approvedCount = rulebook.rules.filter(
-    (r) => r.retired !== true && r.draft !== true,
-  ).length;
+  // Only approved rules power a Masterwork — the Build excludes drafts and
+  // rejected rules, so the button must not promise what it will refuse.
+  const kpis = computeKpis(rulebook);
+  const draftCount = kpis.drafts;
+  const approvedCount = kpis.approved;
 
   return (
     <div className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6">
@@ -502,9 +608,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               ) : null}
               <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                 v{rulebook.version}
-              </Badge>
-              <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                {liveRuleCount} rules
               </Badge>
               <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                 {rulebook.status === "draft"
@@ -537,24 +640,28 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             </Button>
           </div>
         </div>
-        {draftCount > 0 ? (
+        <div className="mt-3">
+          <RulebookKpiStrip kpis={kpis} />
+        </div>
+        {draftCount > 0 && canEdit ? (
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <p className="text-xs text-primary">
-              {draftCount} suggested {draftCount === 1 ? "rule" : "rules"}{" "}
-              awaiting your approval — approve each one, or open it to correct
-              it first.
-            </p>
-            {canEdit ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-6 px-2 text-xs"
-                onClick={() => void approveAllDrafts()}
-              >
-                <CheckCircle2 className="mr-1 h-3 w-3" />
-                Approve all
-              </Button>
-            ) : null}
+            <Button
+              size="sm"
+              className="h-7"
+              onClick={() => setWizardOpen(true)}
+            >
+              <ListTodo className="mr-1 h-3.5 w-3.5" />
+              Review one by one
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={() => void approveAllDrafts()}
+            >
+              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+              Approve all
+            </Button>
             {approvedCount === 0 ? (
               <p className="text-xs text-muted-foreground">
                 Approved rules are what power a Masterwork — none yet.
@@ -679,6 +786,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     }}
                     onToggleRetired={() => void toggleRetired(rule)}
                     onApprove={() => void approveRule(rule)}
+                    onReject={() => setFeedbackTarget({ rule, mode: "reject" })}
+                    onRequestChanges={() =>
+                      setFeedbackTarget({ rule, mode: "request" })
+                    }
                   />
                 ))}
               </div>
@@ -695,6 +806,40 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         initial={editing}
         defaultSection={editorSection}
         onSave={saveRule}
+      />
+      <RuleFeedbackDialog
+        open={feedbackTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setFeedbackTarget(null);
+        }}
+        mode={feedbackTarget?.mode ?? "request"}
+        ruleName={feedbackTarget?.rule.name ?? ""}
+        onSubmit={async (text) => {
+          if (!feedbackTarget) return;
+          try {
+            if (feedbackTarget.mode === "reject") {
+              await rejectRule(feedbackTarget.rule, text);
+            } else {
+              await requestChanges(feedbackTarget.rule, text);
+            }
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Could not save");
+            throw err;
+          }
+        }}
+      />
+      <RuleReviewWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        rulebook={rulebook}
+        onApprove={approveRule}
+        onReject={rejectRule}
+        onEdit={(rule) => {
+          setWizardOpen(false);
+          setEditing(rule);
+          setEditorSection(undefined);
+          setEditorOpen(true);
+        }}
       />
       <ConfirmDialog
         open={confirmActivate}

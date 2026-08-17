@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import type { paths } from "@/types/python-generated/api-types";
@@ -163,7 +163,7 @@ export function AuditionDialog({
             <Label htmlFor="audition-candidate">
               Your Masterwork&apos;s output
             </Label>
-            <Textarea
+            <ProTextarea
               id="audition-candidate"
               value={candidate}
               onChange={(e) => setCandidate(e.target.value)}
@@ -175,7 +175,7 @@ export function AuditionDialog({
             <Label htmlFor="audition-reference">
               The original (the real published work)
             </Label>
-            <Textarea
+            <ProTextarea
               id="audition-reference"
               value={reference}
               onChange={(e) => setReference(e.target.value)}
