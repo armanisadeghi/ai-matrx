@@ -154,7 +154,16 @@ export function gradeCard(args: GradeCardArgs) {
 
       // 3. Coerce via the shared spoken coercer (partial-tolerant on error).
       const grade = coerceSpokenGrade(runResult.data);
-      if (!grade) throw new Error("grader did not return a structured grade");
+      if (!grade) {
+        // The run's OWN reason wins. A failed run already carries the specific
+        // cause (a provider rejection, a timeout) — inventing "no structured
+        // grade" here buried it: on 2026-08-17 every card in a session showed
+        // that sentence while the real cause was a Google 400 on the grader's
+        // thinking level. Only claim a shape problem when the run succeeded.
+        throw new Error(
+          runResult.error ?? "grader did not return a structured grade",
+        );
+      }
       // Flatten the SpokenGrade adapter onto the slice's per-card wire shape:
       // the verdict's result token + explanation, plus the spoken extras.
       const result = verdictResult(grade.verdict);

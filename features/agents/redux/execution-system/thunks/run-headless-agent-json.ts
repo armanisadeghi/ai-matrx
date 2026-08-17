@@ -687,12 +687,18 @@ async function waitForExtraction(
 
       const state = getState();
 
-      if (selectJsonExtractionComplete(requestId)(state)) {
-        return settle("extraction-complete", msgs.noJson);
-      }
-
       const status = selectRequestStatus(requestId)(state);
 
+      // 🚨 THE ERROR CHECK RUNS FIRST, and that ordering is load-bearing.
+      // `jsonExtractionComplete` is set from the stream's FINAL chunk
+      // (process-stream `isComplete: isFinal`) — which arrives on a FAILED run
+      // too. Checking extraction first therefore reported "the agent finished
+      // but produced no structured JSON" for runs that never got to think:
+      // every FastFire grade on 2026-08-17 was a Google 400 ("Thinking level
+      // MINIMAL is not supported for this model") reported to the user, the
+      // console, and the Error Inspector as a missing-JSON problem. A failed
+      // request has a real, specific reason attached — never overwrite it with
+      // a generic one.
       if (status === "error") {
         // Fast-fail — but surface any PARTIAL value extracted before the
         // failure so soft consumers (hints, tips) can still use it.
@@ -704,6 +710,10 @@ async function waitForExtraction(
           error: reqError?.user_message ?? reqError?.message ?? msgs.streamError,
           ...base(),
         };
+      }
+
+      if (selectJsonExtractionComplete(requestId)(state)) {
+        return settle("extraction-complete", msgs.noJson);
       }
 
       // Stream over, extraction never finalized: give Redux a bounded settle
