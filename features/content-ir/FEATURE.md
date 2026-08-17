@@ -2,6 +2,8 @@
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md` — read it before using this frontend implementation document as a platform-wide status source.
 
+🚨 **ONE SYSTEM (Arman, 2026-08-17): Matrx Actions, render block types, and artifacts ARE Content IR** — Actions are the automated family, primitives are Shapes without a schema (arrival forms permanent — NOT "everything becomes JSON"), artifacts merge in. Phased plan + constraints: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/UNIFICATION.md` — read it before touching convergence in ANY repo.
+
 🚨 **Nomenclature is settled (2026-08-17) — `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/NOMENCLATURE.md`.** `legacyBlockType` → **`primitive`** (the Shape→platform-component binding channel and the ~95% render path — never call it legacy), envelope `kind` → spoken as **`family`**, `scalar_generic` → **`primitive`** + **`io_generic`**, and a Shape that maps onto an existing primitive **binds** to it (`primitive-bound`) instead of getting a bespoke component. Block-type string values, routes, and dispatch outcomes are FROZEN; XML block types are permanent. Lexicon rows: `common-docs/systems/vocabulary/FEATURE.md` § Settled — Content IR / Shapes.
 
 **Status:** Phases 0–5 live, ALWAYS ON — no env flag (repo rule: features are never guarded behind environment variables). One library parses every JSON region — live agent streams, DB reloads, any source — into one IR that all layers pass through without reprocessing.
