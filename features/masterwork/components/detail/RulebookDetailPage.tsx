@@ -150,6 +150,7 @@ function RuleRow({
   onApprove,
   onReject,
   onRequestChanges,
+  onReconsider,
 }: {
   rule: RulebookRule;
   canEdit: boolean;
@@ -158,6 +159,7 @@ function RuleRow({
   onApprove: () => void;
   onReject: () => void;
   onRequestChanges: () => void;
+  onReconsider: () => void;
 }) {
   const [openRow, setOpenRow] = useState(false);
   const state = ruleState(rule);
@@ -245,6 +247,18 @@ function RuleRow({
               Reject
             </Button>
           </div>
+        ) : null}
+        {canEdit && rejected ? (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 shrink-0"
+            onClick={onReconsider}
+            title="Take it back from the interviewer and review it yourself again."
+          >
+            <RotateCcw className="mr-1 h-3.5 w-3.5" />
+            Reconsider
+          </Button>
         ) : null}
       </div>
       {rule.feedback ? (
@@ -437,8 +451,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     async ({ rule, isNew }: RuleEditorResult) => {
       if (!rulebook) return;
       // The Expert opening a draft, correcting it, and saving IS approval —
-      // the human-first act the whole Distillation loop waits on.
-      const approved = { ...rule, draft: false };
+      // the human-first act the whole Distillation loop waits on. Approval
+      // consumes ALL review state: a hand-fixed rejected rule is resolved
+      // (never "with the interviewer" while secretly enforced), and a
+      // change request the Expert applied themselves is done.
+      const { rejected: _rejected, feedback: _feedback, ...rest } = rule;
+      const approved = { ...rest, draft: false };
       const next = isNew
         ? [...rulebook.rules, approved]
         : rulebook.rules.map((r) => (r.id === approved.id ? approved : r));
@@ -452,10 +470,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   );
 
   // Approval clears review state: rejected and feedback are transient — an
-  // approved rule carries neither.
+  // approved rule carries neither. Returns whether the save actually landed
+  // so callers that auto-advance (the wizard) can stop instead of counting a
+  // failed save as a decision.
   const approveRule = useCallback(
-    async (rule: RulebookRule) => {
-      if (!rulebook) return;
+    async (rule: RulebookRule): Promise<boolean> => {
+      if (!rulebook) return false;
       const next = rulebook.rules.map((r) => {
         if (r.id !== rule.id) return r;
         const { rejected: _rejected, feedback: _feedback, ...rest } = r;
@@ -464,8 +484,31 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       try {
         await persist(next);
         toast.success(`"${rule.name}" approved`);
+        return true;
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Could not approve");
+        return false;
+      }
+    },
+    [rulebook, persist],
+  );
+
+  // The Expert's self-service exit from "rejected": bring the rule back into
+  // their own review queue (a rejected rule must never be a dead end that
+  // only the interviewer can clear).
+  const reconsiderRule = useCallback(
+    async (rule: RulebookRule) => {
+      if (!rulebook) return;
+      const next = rulebook.rules.map((r) => {
+        if (r.id !== rule.id) return r;
+        const { rejected: _rejected, feedback: _feedback, ...rest } = r;
+        return { ...rest, draft: true };
+      });
+      try {
+        await persist(next);
+        toast.success(`"${rule.name}" is back in your review queue`);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not save");
       }
     },
     [rulebook, persist],
@@ -790,6 +833,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     onRequestChanges={() =>
                       setFeedbackTarget({ rule, mode: "request" })
                     }
+                    onReconsider={() => void reconsiderRule(rule)}
                   />
                 ))}
               </div>

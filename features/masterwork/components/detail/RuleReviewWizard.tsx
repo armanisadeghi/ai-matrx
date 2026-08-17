@@ -40,7 +40,8 @@ export function RuleReviewWizard({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rulebook: Rulebook;
-  onApprove: (rule: RulebookRule) => Promise<void>;
+  /** Resolves true only when the save actually landed. */
+  onApprove: (rule: RulebookRule) => Promise<boolean>;
   onReject: (rule: RulebookRule, feedback: string) => Promise<void>;
   /** Closes the wizard and opens the full editor on this rule. */
   onEdit: (rule: RulebookRule) => void;
@@ -86,7 +87,11 @@ export function RuleReviewWizard({
     if (!rule) return;
     setBusy(true);
     try {
-      await onApprove(rule);
+      // A failed save (lost version swap while the Scout writes, network)
+      // must NOT count as a decision or advance — the Expert stays on the
+      // card and the page-level toast says what happened.
+      const landed = await onApprove(rule);
+      if (!landed) return;
       setDecided((d) => d + 1);
       advance();
     } finally {

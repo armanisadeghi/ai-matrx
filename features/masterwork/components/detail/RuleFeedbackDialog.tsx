@@ -52,6 +52,8 @@ export function RuleFeedbackDialog({
     try {
       await onSubmit(text);
       onOpenChange(false);
+    } catch {
+      // The caller already toasted; stay open so the Expert's text survives.
     } finally {
       setBusy(false);
     }

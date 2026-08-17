@@ -42,7 +42,8 @@ export function computeKpis(rulebook: Rulebook): RulebookKpis {
     else if (state === "rejected") rejected += 1;
     else if (state === "draft") drafts += 1;
     else approved += 1;
-    if (rule.feedback && state !== "rejected") changeRequests += 1;
+    if (rule.feedback && state !== "rejected" && state !== "retired")
+      changeRequests += 1;
   }
   const live = approved + drafts + rejected;
   return {

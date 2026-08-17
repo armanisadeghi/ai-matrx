@@ -900,6 +900,10 @@
                   "default": "user",
                   "title": "Agent Type"
                 },
+                "auto_context_disabled": {
+                  "default": false,
+                  "title": "Auto Context Disabled"
+                },
                 "category": {
                   "default": null,
                   "title": "Category"
@@ -1002,6 +1006,14 @@
                 "ui_gates": {
                   "default": {},
                   "title": "Ui Gates"
+                },
+                "updated_by_system": {
+                  "default": null,
+                  "title": "Updated By System"
+                },
+                "updated_by_tier": {
+                  "default": null,
+                  "title": "Updated By Tier"
                 },
                 "variable_definitions": {
                   "default": null,
@@ -1455,6 +1467,10 @@
                 "rating_id": {
                   "default": null,
                   "title": "Rating Id"
+                },
+                "record_class": {
+                  "default": "contact",
+                  "title": "Record Class"
                 },
                 "registration_number": {
                   "default": null,
@@ -4317,6 +4333,10 @@
                   "default": null,
                   "title": "Agent Type"
                 },
+                "auto_context_disabled": {
+                  "default": null,
+                  "title": "Auto Context Disabled"
+                },
                 "category": {
                   "default": null,
                   "title": "Category"
@@ -4424,6 +4444,14 @@
                 "ui_gates": {
                   "default": null,
                   "title": "Ui Gates"
+                },
+                "updated_by_system": {
+                  "default": null,
+                  "title": "Updated By System"
+                },
+                "updated_by_tier": {
+                  "default": null,
+                  "title": "Updated By Tier"
                 },
                 "variable_definitions": {
                   "default": null,
@@ -4905,6 +4933,10 @@
                 "rating_id": {
                   "default": null,
                   "title": "Rating Id"
+                },
+                "record_class": {
+                  "default": null,
+                  "title": "Record Class"
                 },
                 "registration_number": {
                   "default": null,
@@ -10002,102 +10034,6 @@
     },
     {
       "category": "pure",
-      "doc": "Pointer to one Expertise Pack (platform.expertise_pack) row by id (RLS-scoped, read-only).",
-      "item_model": "RecordRef",
-      "kind": "reference",
-      "purposes": [
-        "substitute",
-        "expand",
-        "inline",
-        "context"
-      ],
-      "schema": {
-        "additionalProperties": false,
-        "properties": {
-          "items": {
-            "items": {
-              "additionalProperties": true,
-              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
-              "properties": {
-                "description": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Description"
-                },
-                "id": {
-                  "title": "Id",
-                  "type": "string"
-                },
-                "label": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Label"
-                },
-                "purpose": {
-                  "default": "substitute",
-                  "title": "Purpose",
-                  "type": "string"
-                },
-                "slot": {
-                  "anyOf": [
-                    {
-                      "type": "string"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ],
-                  "default": null,
-                  "title": "Slot"
-                }
-              },
-              "required": [
-                "id"
-              ],
-              "title": "RecordRef",
-              "type": "object"
-            },
-            "type": "array"
-          },
-          "kind": {
-            "const": "reference",
-            "type": "string"
-          },
-          "matrx_version": {
-            "const": 1,
-            "type": "integer"
-          },
-          "type": {
-            "const": "expertise_pack",
-            "type": "string"
-          }
-        },
-        "required": [
-          "matrx_version",
-          "kind",
-          "type",
-          "items"
-        ],
-        "type": "object"
-      },
-      "type": "expertise_pack"
-    },
-    {
-      "category": "pure",
       "doc": "Pointer to one Flashcard (education.fc_card) row by id (RLS-scoped, read-only).",
       "item_model": "RecordRef",
       "kind": "reference",
@@ -11540,6 +11476,102 @@
         "type": "object"
       },
       "type": "learn_doc"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Initiative (marketing.initiative) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "marketing_initiative",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "marketing_initiative"
     },
     {
       "category": "pure",
@@ -14334,6 +14366,102 @@
         "type": "object"
       },
       "type": "research_topic"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Rulebook (platform.rulebook) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "rulebook",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "rulebook"
     },
     {
       "category": "pure",
@@ -19198,6 +19326,102 @@
         "type": "object"
       },
       "type": "workflow"
+    },
+    {
+      "category": "pure",
+      "doc": "Pointer to one Workflow Plan (workflow.plan) row by id (RLS-scoped, read-only).",
+      "item_model": "RecordRef",
+      "kind": "reference",
+      "purposes": [
+        "substitute",
+        "expand",
+        "inline",
+        "context"
+      ],
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "additionalProperties": true,
+              "description": "Pointer to one row of a registered user-owned resource, by primary id.",
+              "properties": {
+                "description": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Description"
+                },
+                "id": {
+                  "title": "Id",
+                  "type": "string"
+                },
+                "label": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Label"
+                },
+                "purpose": {
+                  "default": "substitute",
+                  "title": "Purpose",
+                  "type": "string"
+                },
+                "slot": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null,
+                  "title": "Slot"
+                }
+              },
+              "required": [
+                "id"
+              ],
+              "title": "RecordRef",
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "kind": {
+            "const": "reference",
+            "type": "string"
+          },
+          "matrx_version": {
+            "const": 1,
+            "type": "integer"
+          },
+          "type": {
+            "const": "workflow_plan",
+            "type": "string"
+          }
+        },
+        "required": [
+          "matrx_version",
+          "kind",
+          "type",
+          "items"
+        ],
+        "type": "object"
+      },
+      "type": "workflow_plan"
     },
     {
       "category": "pure",

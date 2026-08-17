@@ -30,10 +30,17 @@ import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import { supabase } from "@/utils/supabase/client";
-import { SCOUT_AGENT_ID } from "../../agents";
 
 const SOURCE_FEATURE = "masterwork" as const;
+/**
+ * Which agent conducts the interview is DB-managed via the `masterwork.scout`
+ * Mandate (declared in aidream `mandates/client_mandates.py`, rebindable from
+ * /administration/agents/mandates). No hardcoded agent id, no silent fallback —
+ * if the Mandate can't resolve, the panel says so and refuses.
+ */
+const SCOUT_MANDATE_KEY = "masterwork.scout";
 /** How often (ms) to check whether the Scout landed new draft rules. */
 const RULEBOOK_WATCH_INTERVAL_MS = 5000;
 
@@ -94,15 +101,17 @@ const ELICITATION_CHIPS = [
 
 function InterviewConversation({
   rulebookId,
+  agentId,
   seedText,
 }: {
   rulebookId: string;
+  agentId: string;
   seedText?: string;
 }) {
   const surfaceKey = `masterwork-interview:${rulebookId}`;
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const { conversationId } = useAgentLauncher(SCOUT_AGENT_ID, {
+  const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
     runtime: { variables: { rulebook_id: rulebookId } },
@@ -173,6 +182,34 @@ function InterviewConversation({
   );
 }
 
+/** Resolve the Scout through its Mandate before any conversation exists. */
+function MandateGatedConversation({
+  rulebookId,
+  seedText,
+}: {
+  rulebookId: string;
+  seedText?: string;
+}) {
+  const { mandate, loading, error } = useMandate(SCOUT_MANDATE_KEY);
+  if (loading) return <ChatRoomSkeleton />;
+  if (error || !mandate?.agentId) {
+    return (
+      <div className="px-4 py-6 text-sm text-muted-foreground">
+        The interviewer isn&apos;t available right now
+        {error ? ` (${error})` : ""}. An administrator can bind one to the
+        `masterwork.scout` Mandate.
+      </div>
+    );
+  }
+  return (
+    <InterviewConversation
+      rulebookId={rulebookId}
+      agentId={mandate.agentId}
+      seedText={seedText}
+    />
+  );
+}
+
 export function ScoutInterviewPanel({
   rulebookId,
   open,
@@ -232,7 +269,7 @@ export function ScoutInterviewPanel({
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-hidden">
           {open ? (
-            <InterviewConversation rulebookId={rulebookId} seedText={seedText} />
+            <MandateGatedConversation rulebookId={rulebookId} seedText={seedText} />
           ) : null}
         </div>
       </SheetContent>
