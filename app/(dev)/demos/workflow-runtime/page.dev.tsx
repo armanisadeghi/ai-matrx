@@ -74,6 +74,7 @@ function WorkflowRuntimeDemo() {
 
   const [workflows, setWorkflows] = useState<WorkflowListItem[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [listRequestNonce, setListRequestNonce] = useState(0);
   const [selected, setSelected] = useState<string>("");
   const [definition, setDefinition] = useState<WorkflowDefinitionLike | null>(
     null,
@@ -101,9 +102,11 @@ function WorkflowRuntimeDemo() {
             : null;
         const list = extractWorkflowList(data);
         // A failed list must never look like an empty catalog — say so.
-        if (list.length === 0 && error) {
-          setListError("Your workflows could not be loaded. Please try again.");
-        }
+        setListError(
+          list.length === 0 && error
+            ? "Your workflows could not be loaded. Please try again."
+            : null,
+        );
         setWorkflows(list);
       },
       (err: unknown) => {
@@ -119,7 +122,13 @@ function WorkflowRuntimeDemo() {
     return () => {
       cancelled = true;
     };
-  }, [dispatch]);
+  }, [dispatch, listRequestNonce]);
+
+  const retryWorkflowList = () => {
+    setWorkflows(null);
+    setListError(null);
+    setListRequestNonce((nonce) => nonce + 1);
+  };
 
   // The synchronous resets live in the select handler (an event handler may
   // set state; a sync set inside an effect cascades renders — compiler lint).
@@ -241,7 +250,16 @@ function WorkflowRuntimeDemo() {
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading workflows…
           </span>
         ) : listError ? (
-          <span className="text-sm text-destructive">{listError}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-destructive">{listError}</span>
+            <button
+              type="button"
+              onClick={retryWorkflowList}
+              className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground"
+            >
+              Try again
+            </button>
+          </div>
         ) : (
           <>
             <select
