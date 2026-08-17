@@ -75,6 +75,7 @@ import { createAudioPlayback } from "../audio/audioPlayback";
 import { createTokenManager, type TokenError } from "../transport/tokenManager";
 import { createXaiClient, type XaiClientError } from "../transport/xaiClient";
 import type { XaiServerEvent } from "../transport/serverEvents";
+import type { VoiceRelayBinding } from "../relay/types";
 import {
   voiceDebugLog,
   voiceDebugSetFlags,
@@ -119,6 +120,15 @@ interface UseXaiVoiceSessionOpts {
   addedToolIds?: string[];
   /** Resolve/execute against an agent VERSION row. Mirrors the resolve hook. */
   isVersion?: boolean;
+  /**
+   * Voice Communication Layer binding (SoR:
+   * common-docs/systems/voice-communication-layer/FEATURE.md). When present,
+   * the session declares `turn_detection.create_response: false` — the voice
+   * model never auto-answers the user; the relay routes transcripts to a
+   * primary text agent and cues speech explicitly. Attached for the session's
+   * lifetime; its cleanup rides the session-subscription teardown.
+   */
+  relay?: VoiceRelayBinding;
 }
 
 /** Default DB surface for the live `/chat/voice` route. */
@@ -156,6 +166,7 @@ export function useXaiVoiceSession(
     sessionId,
     addedToolIds,
     isVersion,
+    relay,
   } = opts;
   const dispatch = useAppDispatch();
   // Read store directly inside the reveal rAF so we don't subscribe / re-render
@@ -205,6 +216,8 @@ export function useXaiVoiceSession(
   sessionIdRef.current = sessionId ?? null;
   addedToolIdsRef.current = addedToolIds ?? [];
   isVersionRef.current = isVersion ?? false;
+  const relayRef = useRef<VoiceRelayBinding | undefined>(relay);
+  relayRef.current = relay;
 
   // Buffered tool calls from `response.function_call_arguments.done`, flushed
   // on `response.done` so parallel calls land in one batch with ONE
@@ -1018,9 +1031,22 @@ export function useXaiVoiceSession(
           voiceId: voiceIdRef.current,
           instructions: instructionsRef.current,
           tools: [...toolsRef.current],
+          // Relay sessions: the voice model never auto-answers a user turn
+          // (THE ROUTING LAW — the relay routes it to the primary agent).
+          createResponseOnTurn: relayRef.current ? false : undefined,
         }),
         capture.start(),
       ]);
+      // Attach the Voice Communication Layer relay for this session. Its
+      // cleanup rides the session-subscription teardown, so stop() detaches it.
+      if (relayRef.current) {
+        const detachRelay = relayRef.current.attach({
+          sendRaw: (payload) => xaiClientRef.current?.sendRaw(payload),
+          cancelResponse: () => xaiClientRef.current?.cancelResponse(),
+          onEvent: (cb) => client.onEvent(cb),
+        });
+        sessionUnsubsRef.current.push(detachRelay);
+      }
       voiceDebugLog(instanceId, "info", "ws.open", "socket open, mic started");
       voiceDebugIncr(instanceId, "connectOkCount");
       mirrorFlags();
@@ -1125,6 +1151,7 @@ export function useXaiVoiceSession(
         voiceId: voiceIdRef.current,
         instructions: instructionsRef.current,
         tools: [...tools],
+        createResponseOnTurn: relayRef.current ? false : undefined,
       }),
     );
   }, [instanceId, tools]);

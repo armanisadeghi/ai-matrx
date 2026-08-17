@@ -10,6 +10,15 @@ export interface SessionUpdatePayload {
   voiceId: VoiceId;
   instructions: string;
   tools: RealtimeToolSet;
+  /**
+   * When false, server VAD still detects turns (transcription events fire)
+   * but the model does NOT auto-generate a response — a response happens only
+   * on an explicit `response.create`. This is THE ROUTING LAW's mechanical
+   * half for the Voice Communication Layer (the relay routes the user's
+   * transcript to a primary text agent and cues speech itself). Default true
+   * (omitted on the wire) — every non-relay surface keeps today's behavior.
+   */
+  createResponseOnTurn?: boolean;
 }
 
 /**
@@ -43,7 +52,10 @@ export function buildSessionUpdate(payload: SessionUpdatePayload): string {
     session: {
       voice: payload.voiceId,
       instructions: payload.instructions,
-      turn_detection: { type: "server_vad" },
+      turn_detection:
+        payload.createResponseOnTurn === false
+          ? { type: "server_vad", create_response: false }
+          : { type: "server_vad" },
       tools,
       input_audio_transcription: { model: "grok-2-audio" },
       audio: {
@@ -76,6 +88,38 @@ export function buildFunctionCallOutput(callId: string, output: string): string 
   });
 }
 
-export function buildResponseCreate(): string {
+export function buildResponseCreate(instructions?: string): string {
+  if (instructions && instructions.trim().length > 0) {
+    return JSON.stringify({
+      type: "response.create",
+      response: { instructions },
+    });
+  }
   return JSON.stringify({ type: "response.create" });
+}
+
+/**
+ * Inject a text message into the realtime conversation (the Voice
+ * Communication Layer's cue channel — a primary agent's answer, a narration
+ * cue). `id` is client-minted so the relay can prune its own items later.
+ */
+export function buildConversationTextItem(
+  id: string,
+  role: "user" | "assistant",
+  text: string,
+): string {
+  return JSON.stringify({
+    type: "conversation.item.create",
+    item: {
+      id,
+      type: "message",
+      role,
+      content: [{ type: "input_text", text }],
+    },
+  });
+}
+
+/** Delete a previously client-minted conversation item (relay window pruning). */
+export function buildConversationItemDelete(itemId: string): string {
+  return JSON.stringify({ type: "conversation.item.delete", item_id: itemId });
 }
