@@ -8,10 +8,8 @@
 
 import { studyMediaService } from "@/features/education/media/service";
 import { EDU_MEMORY_AGENTS } from "@/features/education/memory/agents";
-import {
-  coerceMemoryAid,
-  memoryAidCounts,
-} from "@/features/education/memory/types";
+import { coerceMemoryAid } from "@/features/content-ir/kinds/memory-aid";
+import { memoryAidCounts } from "@/features/education/memory/types";
 import { runAgentExtraction } from "../runAgentExtraction";
 import { recordSourceLineage } from "../recordSourceLineage";
 import { buildSourceTrust } from "../sourceTrust";
