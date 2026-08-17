@@ -65,6 +65,22 @@
       },
       "previousEventHash": "4b6062f145a5e93692be091cf8b2b26b8d99e954a716880fc85ebadb52b90fb1",
       "eventHash": "83e11e7493c17ac88cdb71119a163752f41cf3f9df21ef6901a3da3fb163fdec"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-17T19:18:32.442Z",
+      "actor": "p8-delivery-reconciler",
+      "summary": "Delivery reconciliation: the certified loader candidate is already preserved as an ancestor of origin/main.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P8/01a0009c-dfb8-7991-a488-441139eb6a50"
+      ],
+      "delivery": {
+        "candidateSha": "e67fb5fd9b3820fc76962879ce1f43ab5b75b97a",
+        "preservedRef": "refs/heads/patrol-runs/P8/01a0009c-dfb8-7991-a488-441139eb6a50"
+      },
+      "previousEventHash": "83e11e7493c17ac88cdb71119a163752f41cf3f9df21ef6901a3da3fb163fdec",
+      "eventHash": "dcb28e5c05a1a278549dda65318978d437e6ab368ca11b35c8f6254a5afd7ede"
     }
   ]
 }
