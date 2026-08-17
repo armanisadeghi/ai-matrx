@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26",
-  "state": "fixing",
-  "updatedAt": "2026-08-17T19:29:55.525Z",
-  "summary": "Replaced eight verified generic loading states across seven files with contextual canonical loaders.",
+  "state": "certifying",
+  "updatedAt": "2026-08-17T19:39:26.996Z",
+  "summary": "Prepared the first bounded 15-file candidate: 17 generic loading callsites now use contextual canonical loaders without changing wrappers, control flow, or dynamic boundaries.",
   "source": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26.json",
-  "eventHash": "67e93d05b61fba7f67f9b8ac2974a0f3f9e5da701743999344172db66076a82d"
+  "eventHash": "30579ba341c4d545ac356cb2e592b30ca8eb700b8383a84530d67ef00279975a"
 }

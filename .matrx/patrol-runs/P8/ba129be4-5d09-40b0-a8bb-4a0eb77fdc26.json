@@ -30,6 +30,23 @@
       ],
       "previousEventHash": "337120aac7cbfea5d7f69c2a3de5f48744096acca745249aa2b78a5e11e5d068",
       "eventHash": "67e93d05b61fba7f67f9b8ac2974a0f3f9e5da701743999344172db66076a82d"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-17T19:39:26.996Z",
+      "actor": "/root",
+      "summary": "Prepared the first bounded 15-file candidate: 17 generic loading callsites now use contextual canonical loaders without changing wrappers, control flow, or dynamic boundaries.",
+      "evidence": [
+        "pnpm type-check: PASS",
+        "pnpm check:patrol-contracts: PASS",
+        "git diff --check: PASS",
+        "Scoped ESLint delta: no new errors; four errors reproduce on the parent revision",
+        "Representative core-route browser smoke: HTTP 200, final DOM rendered, no console warnings/errors",
+        "Transient fallback geometry and dynamic boundaries verified statically across all 15 files"
+      ],
+      "previousEventHash": "67e93d05b61fba7f67f9b8ac2974a0f3f9e5da701743999344172db66076a82d",
+      "eventHash": "30579ba341c4d545ac356cb2e592b30ca8eb700b8383a84530d67ef00279975a"
     }
   ]
 }
