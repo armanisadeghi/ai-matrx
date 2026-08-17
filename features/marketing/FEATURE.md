@@ -510,6 +510,21 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-17 — **The last three spinner-over-an-agent SEO surfaces stream, and the
+  canonical hook grew the live half instead of gaining a twin.** aidream turned
+  `/seo/keywords/classify`, `/seo/keywords/assign-topics` and
+  `/seo/sites/strategy-interview` into durable streamed commands (real milestones +
+  the agent's own tokens); here, `seo/durable-run/useSeoCommandRun.ts` — already THE
+  way a surface runs a durable SEO command — took an opt-in `live: {label}` that
+  ADOPTS the stream (`adoptForeignStream`) and floats it in `LiveRunWindow`.
+  `SiteStrategyCard` and both cards in `KeywordDataQualityPanel` consume it; the
+  ~88s classification behind a bare spinner is gone. Omit `live` and the existing
+  consumers (page audit, robots tester, structured-data validator) are untouched —
+  a stage line is the right answer for a command with no model output to show.
+  Live-verified with real paid runs against a local aidream. **Caveat worth
+  knowing before you copy this:** FOUND_DEFECTS **D209** — an adopted stream renders
+  live and then blanks at settle (the settled renderer wants `serverProcessedBlocks`
+  a system run never sends). Shared-renderer bug, chipped, not patched from here.
 - 2026-08-17 — Codex: **URL Change Discovery setup and evidence are now part of
   Site Integrations.** Matrx CMS needs no setup; externally hosted clients get
   a rotatable, site-scoped webhook and the exact IndexNow key-file location;

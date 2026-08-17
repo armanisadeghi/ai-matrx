@@ -146,12 +146,15 @@ carry no agent-run import at all. That is the signature to search on next time.
 
 ### Open — found, not fixed
 
-- **The scanner's clean step still cannot truly stream.** The pipeline runs
-  detached server-side after `/pdf/from-images` returns and exposes no
-  client-reachable stream, so reading its rows as it writes them is the ceiling.
-  The real upgrade is an aidream change: emit the docproc clean pipeline as a
-  stream (it already has the shape — `rag.stage.progress` / `page_clean`), then
-  the scanner adopts it and the poll dies. Cross-repo, own session.
+- ~~The scanner's clean step cannot truly stream~~ — **DONE 2026-08-17,** both
+  halves in one session. aidream's clean stage emits each page's ACTUAL cleaned
+  text as it lands (`phase:"page"` + the `page_clean` preview, after persist);
+  `createScanPdf` stopped breaking out of the stream at the scan result, so the
+  pipeline's own events drive `ProcessingView` and the 2s poll (plus
+  `fetchPageAnalysis` / `fetchCleanedPageText`) is deleted. The premise that the
+  pipeline "runs detached" was already stale — it moved inline onto the save
+  stream earlier; the client was still polling beside a live wire.
+  Live-verified with a real scan.
 - ~~A Transcript Studio pass that finishes while the page is away cannot be
   APPLIED~~ — **DONE 2026-08-17.** Every pass (cleaning, concept, module, and
   Scribe's recording-aligned clean) now stamps its replace-window onto
@@ -349,7 +352,7 @@ retention seams (`LIVE_RUN_RETENTION.md`): owner reaps defer while any viewer ho
 runs live in the `runSets` slice with an epoch guard so stale streams cannot stomp the active
 run. Guard tests: `request-viewer-retention.test.ts`, `run-sets.test.ts`.
 
-### 7. Marketing miscellaneous — image runs + agent sets DONE 2026-08-11; 3 server-blocked
+### 7. Marketing miscellaneous — DONE (image runs + agent sets 2026-08-11; the 3 server-blocked 2026-08-17)
 
 - ~~`features/marketing/lib/generate-page-image.ts`~~ — **DONE.** The shared
   `runHeadlessAgent` shell (consumed by the image plan card, the site media desk, and
@@ -373,14 +376,21 @@ run. Guard tests: `request-viewer-retention.test.ts`, `run-sets.test.ts`.
   (`agent-set-sync:${orchestratorId}`), each retry re-binding that window under a
   "retry N of 3" label, and the finished description is held so it survives completion.
   Live-verified on a real set: streamed, completed, both members got roles.
-- `SiteStrategyCard.tsx:106` and `KeywordDataQualityPanel.tsx:99,211` — **verified: all
-  three ARE AI runs, not plain saves.** They POST to `/seo/sites/strategy-interview`,
-  `/seo/keywords/classify` and `/seo/keywords/assign-topics`, each of which runs a system
-  agent inside the request (the classifier measures ~88s for 40 keywords). **Not
-  fixable from here:** these are synchronous JSON endpoints with no stream to adopt, so
-  the FE has nothing to bind — the work is server-side in aidream (stream the route, or
-  emit phase/info milestones the way content_plan `_progress` does), then adopt with
-  `adoptForeignStream`. Do NOT paper over it with invented client-side stages.
+- ~~`SiteStrategyCard.tsx` and `KeywordDataQualityPanel.tsx` — server-blocked~~ —
+  **DONE 2026-08-17, both repos in one session.** aidream turned all three routes
+  (`/seo/keywords/classify`, `/seo/keywords/assign-topics`,
+  `/seo/sites/strategy-interview`) into durable streamed commands on the EXISTING
+  `SeoCommandRun` + `run_streamed_command` funnel — real milestones (eligible set,
+  batch plan, the phrases in flight, what landed) plus the agent's own tokens
+  (`stream_output=True`), result persisted on the run row, rejoin by run id.
+  Here, the `live` option was added to the canonical
+  `features/marketing/seo/durable-run/useSeoCommandRun.ts` (adopt +
+  `useFloatingLiveRun`) and the three surfaces consume it. No invented stages.
+  **Read this before copying the pattern:** it also exposed **D209** — an adopted
+  stream's output blanks in the window at settle, because the settled renderer
+  wants `serverProcessedBlocks` a system run never sends. Live rendering is
+  correct; only the finished frame is lost, and every adopted-stream surface has
+  it. Chipped, with an exact repro in FOUND_DEFECTS.md.
 
 ### 8. Refresh-fragility — four SEO surfaces DONE 2026-08-17; expertise blocked server-side
 

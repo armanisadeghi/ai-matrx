@@ -166,7 +166,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_mandate",
     label: "Selected mandate",
     description:
-      "Full detail of the open mandate: slot_key, label, description, default agent (name + type), pin state (use_latest, pinned version, latest version, drift), health, input/output kinds, enabled flag, overrides count. Absent when no row is selected.",
+      "Full detail of the open mandate: mandate_key, label, description, default agent (name + type), pin state (use_latest, pinned version, latest version, drift), health, input/output kinds, enabled flag, overrides count. Absent when no row is selected.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 600,
