@@ -57,7 +57,7 @@ export const GSC_ASSIST_SURFACE = "matrx-user/marketing";
 
 /** The agent-mandate the launch actions resolve at click time (swappable from
  * the admin mandates console, no deploy). Declared server-side in aidream
- * `services/seo/keyword_agents.py` and synced to `agent.slot_definition`. */
+ * `services/seo/keyword_agents.py` and synced to `agent.mandate`. */
 const PAGE_ANALYZER_MANDATE = "seo.page_analyzer";
 
 // Conservative thresholds — an assist that fires on noise trains the user

@@ -37,7 +37,7 @@
  *     user's own external coding agent ....... not our agent → allowlist it
  *
  * HOW TO FIX A REAL ONE: create the agent in the DB via aidream's agent-service
- * builder, declare a mandate in aidream `services/agent_slots/client_slots.py`,
+ * builder, declare a mandate in aidream `services/mandates/client_mandates.py`,
  * then resolve it here (`useMandate` / `resolveMandate` /
  * `useAgentLauncher().launchMandate` / `launchAgentExecution({mandateKey})`) and
  * DELETE the constant. A "fallback prompt if the mandate is missing" is the same
@@ -301,7 +301,7 @@ function main(): void {
       `\n  ${C.yellow}Fix:${C.reset} put the agent in the DB, declare a mandate in aidream`,
     );
     console.log(
-      `  ${C.dim}services/agent_slots/client_slots.py, resolve it here (useMandate /${C.reset}`,
+      `  ${C.dim}services/mandates/client_mandates.py, resolve it here (useMandate /${C.reset}`,
     );
     console.log(
       `  ${C.dim}launchMandate / launchAgentExecution({mandateKey})), and DELETE the constant.${C.reset}`,

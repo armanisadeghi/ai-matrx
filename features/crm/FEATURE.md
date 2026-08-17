@@ -314,7 +314,7 @@ Dialog` runs the `crm.save_contact` mandate → `data_action(operation=
   to another entity — that belongs to the associations system, not a bespoke CRM
   tool, and forking one here would be the defect.
 - **Server halves:** agent `CRM Contact Saver` (`d9607d65`), mandate declared in
-  aidream `services/agent_slots/client_slots.py`. **Live status: blocked on an
+  aidream `services/mandates/client_mandates.py`. **Live status: blocked on an
   aidream deploy — see D192 in `FOUND_DEFECTS.md`.**
 
 ## Native contact import (`/crm/import`)

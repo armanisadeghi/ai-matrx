@@ -11,7 +11,7 @@
  * **The canonical answer is an AGENT MANDATE.** Code names a `slot_key`; the DB
  * decides which agent runs it. Declare `code_editor.generic`,
  * `code_editor.prompt_app_ui`, and `code_editor.dynamic_context` in aidream
- * `services/agent_slots/client_slots.py` (seeded on the ids below), then
+ * `services/mandates/client_mandates.py` (seeded on the ids below), then
  * resolve them here via `useMandate` / `launchAgentExecution({mandateKey})` /
  * `useAgentLauncher().launchMandate`, and DELETE these constants. Recipe:
  * `features/agents/mandates/FEATURE.md`; law + worklist:

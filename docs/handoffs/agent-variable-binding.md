@@ -143,6 +143,6 @@ proven patterns to extend, not reinvent: matrx-frontend's surface-manifest drift
   `type_mismatch` may block. Renames, defaults, and deliberate blanks must save.
 - **No JSON fields in the UI, ever** — ruled repeatedly. Settings use the canonical
   `instanceModelOverrides` + `RunConfigOverrides` layer.
-- **"Overrides" is reserved** for `config_overrides` on a run. A `slot_binding` is a **binding**.
+- **"Overrides" is reserved** for `config_overrides` on a run. A `mandate_binding` is a **binding**.
 - **Shared checkout:** `release.sh` commits the shared index. Commit with explicit pathspecs, and
   never blanket-stash.

@@ -22,7 +22,7 @@ export const ORCHESTRATOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
  *
  * Run headlessly via `launchAgentExecution({ mandateKey })`. A raw UUID lived here
  * until 2026-08-16; the mandate is declared in aidream
- * `services/agent_slots/client_slots.py` and is the only sanctioned way to name
+ * `services/mandates/client_mandates.py` and is the only sanctioned way to name
  * this agent from code.
  */
 export const ORCHESTRA_ROLE_DESCRIBER_MANDATE_KEY = "orchestras.role_describer";

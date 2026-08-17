@@ -15,7 +15,7 @@ import type { AgentConfigKey } from "../../admin/types";
 /**
  * The system agents that drive the research pipeline, one AGENT MANDATE per
  * role. The system default (master agent + pinned version) is DB-truth on
- * `agent.slot_definition` — rebind from /administration/agents/mandates — and is
+ * `agent.mandate` — rebind from /administration/agents/mandates — and is
  * fetched at render time via `useResearchAgentRoles`, so this file can never
  * drift from what the server actually runs (the pre-mandate hardcoded UUID maps
  * here drifted on all 7 roles).
@@ -42,7 +42,7 @@ export const SUGGEST_MANDATE_KEY = "research.suggest_setup";
 export interface AgentRoleDefinition {
   /** JSONB key in `rs_topic.agent_config`. `null` for system-only roles. */
   configKey: AgentConfigKey | null;
-  /** The mandate backing this role (`agent.slot_definition.slot_key`). */
+  /** The mandate backing this role (`agent.mandate.mandate_key`). */
   mandateKey: string;
   label: string;
   description: string;

@@ -75,11 +75,11 @@ research linking: start with the final report (the "Document"), user picks the t
 - **The AI runner:** `features/marketing/content-plan/setup/ai.ts` — mandate constants, output
   coercion, variable builders, `useSetupAgents`; runs through `useLiveAgentRun` so every step
   streams into `<LiveRunDisplay>`.
-- **Agent mandates (canonical, verified live 2026-08-13):** `agent.slot_definition` holds all seven
+- **Agent mandates (canonical, verified live 2026-08-13):** `agent.mandate` holds all seven
   `content_plan.*` mandates, every one `is_enabled` with a `default_agent_id` bound. Resolution is
   `resolveMandate` (`features/agents/mandates/service.ts`) — platform default overlaid with the
-  user's `agent.slot_binding`; an unseeded/disabled/version-pinned mandate THROWS with the reason and
-  never falls back. Server declarations: aidream `agent_slots/client_slots.py`. **Never a raw UUID
+  user's `agent.mandate_binding`; an unseeded/disabled/version-pinned mandate THROWS with the reason and
+  never falls back. Server declarations: aidream `mandates/client_mandates.py`. **Never a raw UUID
   in a component.** Rebind UI: `/agents/mandates` (user), `/administration/agents/mandates` (admin).
   **Known platform gap:** `launchAgentExecution` consumers — content-plan named explicitly in
   `features/agents/mandates/FEATURE.md` — apply a binding's *agent* but not its `config_overrides`,

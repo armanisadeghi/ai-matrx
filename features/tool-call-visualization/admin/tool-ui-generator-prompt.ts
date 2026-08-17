@@ -23,7 +23,7 @@
 
 /**
  * The mandate that decides which agent generates tool-result renderers.
- * Declared in aidream `services/agent_slots/client_slots.py`; resolved inside
+ * Declared in aidream `services/mandates/client_mandates.py`; resolved inside
  * `useToolComponentAgent` via `launchMandate`. Never put an agent UUID here.
  */
 export const TOOL_UI_COMPONENT_GENERATOR_MANDATE_KEY =

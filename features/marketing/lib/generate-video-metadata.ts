@@ -31,7 +31,7 @@ import {
  * "Marketing Video Metadata Writer" in the DB does not change what runs here.
  *
  * **Fix (do not do it comment-only — it needs the aidream half):** declare
- * `marketing.video_metadata` in aidream `services/agent_slots/client_slots.py`
+ * `marketing.video_metadata` in aidream `services/mandates/client_mandates.py`
  * seeded on this id, resolve it here (`useMandate` /
  * `launchAgentExecution({mandateKey})`), then delete this constant.
  *

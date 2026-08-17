@@ -27,7 +27,7 @@ const SOURCE_KEY = "notes.unorganized";
 /** `/notes` resolves to this surface (features/surfaces/utils/route-to-surface.ts). */
 export const NOTES_ASSIST_SURFACE = "matrx-user/notes";
 
-/** Agent-mandate the launch action resolves at click time (agent.slot_definition,
+/** Agent-mandate the launch action resolves at click time (agent.mandate,
  * seeded by migrations/agent_slots_assist_producers_seed.sql — swappable from
  * the admin mandates console, no deploy). */
 export const NOTES_ORGANIZER_MANDATE = "notes.organizer";

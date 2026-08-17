@@ -83,7 +83,7 @@ Full detail in `PODCAST_PIPELINE.md` §3. Summary:
 **Agents (master / pinned version):**
 
 - Script (legacy, 2-host, best quality): `podcast_script_educational` `4541ba46`, `_news` `23ca9704`, `_persian` `3456f665`.
-- Script (generic, host-count-aware) — **rebound 2026-08-08** to the hardened versions: solo `3f0b22c2`, multihost (2–4) `29bebcba`, roundtable (5–10) `b23156bf`. The DB mandate (`agent.slot_definition`, `podcast.*_script`) is the pin authority — rebind there, never in code.
+- Script (generic, host-count-aware) — **rebound 2026-08-08** to the hardened versions: solo `3f0b22c2`, multihost (2–4) `29bebcba`, roundtable (5–10) `b23156bf`. The DB mandate (`agent.mandate`, `podcast.*_script`) is the pin authority — rebind there, never in code.
 - Audio: Gemini english `055c6d30` / persian `21238b08`; **ElevenLabs dialogue `podcast_audio_dialogue` master `88f05360`, version `293425be`** (model `eleven_v3` = `7b1bc855…`).
 - Companion: blog `58204bd9`, show-notes `b1910198`, chapters/title/audience built but unwired.
 
@@ -165,7 +165,7 @@ Ordered by importance. These are the honest gaps.
 
 7. ~~Script-agent SELECTION is not a registry~~ **SUPERSEDED by Mandates
    (2026-08-08).** Every pipeline agent resolves through a `podcast.*` mandate in
-   `agent.slot_definition` (admin console `/administration/agents/mandates`;
+   `agent.mandate` (admin console `/administration/agents/mandates`;
    declarations in `aidream/services/agent_slots/podcast_slots.py`). Swapping
    or upgrading an agent is a DB rebind. The band ROUTER (which mandate runs for a
    given host count/format/language) is still code in `_create_script` —

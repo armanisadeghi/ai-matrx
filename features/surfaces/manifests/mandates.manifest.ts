@@ -2,7 +2,7 @@
  * Surface manifest — Mandates admin (`matrx-admin/mandates`).
  *
  * ADMIN SURFACE. Drives `/administration/agents/mandates` — the console over
- * every DB-managed mandate (`agent.slot_definition` / `agent.slot_binding`):
+ * every DB-managed mandate (`agent.mandate` / `agent.mandate_binding`):
  * current pin (vs latest), health, enable/disable, rebind, per-principal
  * overrides, and the exemplar test bench. Backed by
  * `features/admin/mandates/MandatesConsole.tsx`; cross-repo
@@ -22,8 +22,8 @@
  * Almost everything this console shows is OBSERVED OPERATIONAL EVIDENCE, and
  * evidence is never agent-writable. `mandate_count`, `mandates_summary`,
  * `health_summary`, `unhealthy_mandates`, `system_agent_count` and
- * `selected_mandate_health` are MEASURED from the live `agent.slot_definition` /
- * `agent.slot_binding` rows and the canonical agent slice — health in
+ * `selected_mandate_health` are MEASURED from the live `agent.mandate` /
+ * `agent.mandate_binding` rows and the canonical agent slice — health in
  * particular is computed, not authored, so an agent writing it would be
  * fabricating the state of the system. That is the same line
  * `education-grade-work` drew around grader output and `transcripts-cleanup`
@@ -328,7 +328,7 @@ export const mandatesManifest: SurfaceManifest = {
   intro: `<surface_intro>
 This is an ADMIN surface: the Mandates console at /administration/agents/mandates.
 
-A mandate is a named platform position (agent.slot_definition) whose work is done by a pinned SYSTEM agent — e.g. "the conversation labeler". The console shows every mandate with its current pin (a specific agent version, or floating "latest"), a worst-first Health verdict (including live code↔agent and code↔contract drift), per-principal bindings (agent.slot_binding), and an exemplar test bench for comparing candidate agents against stored real inputs.
+A mandate is a named platform position (agent.mandate) whose work is done by a pinned SYSTEM agent — e.g. "the conversation labeler". The console shows every mandate with its current pin (a specific agent version, or floating "latest"), a worst-first Health verdict (including live code↔agent and code↔contract drift), per-principal bindings (agent.mandate_binding), and an exemplar test bench for comparing candidate agents against stored real inputs.
 
 Two laws govern this page: (1) THE SYSTEM-AGENT LAW — a mandate default may only reference a system (builtin) agent; "not a system agent" health is always a defect to fix. (2) Latest is not always better — pins exist so a mandate's behavior only changes deliberately; "version drift" means a newer version exists, not that rebinding is required.
 

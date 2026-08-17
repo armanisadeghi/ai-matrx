@@ -100,7 +100,7 @@ export const PERSISTENCE_REGION = "us-east-1";
 
 /**
  * The mandate that decides WHICH agent runs the locked `/chat/voice` intro
- * experience. Declared in aidream `services/agent_slots/client_slots.py`;
+ * experience. Declared in aidream `services/mandates/client_mandates.py`;
  * resolved via `resolveMandateServer` in the route. Duplicating the resolved
  * agent in the Agent Builder (then binding it here) is the supported way to
  * create a custom voice agent.

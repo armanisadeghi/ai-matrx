@@ -9,7 +9,7 @@ import {
 
 /**
  * Resolve the research agent roles against the agent-mandate registry (DB-truth
- * pins from `agent.slot_definition`). Roles whose mandate is missing or has no
+ * pins from `agent.mandate`). Roles whose mandate is missing or has no
  * master id are dropped LOUDLY (console.error inside fetchMandatePins) rather
  * than rendered with a stale hardcoded id — a missing mandate is a platform
  * defect, not something to paper over client-side.

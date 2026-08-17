@@ -77,10 +77,10 @@ plan CRUD through it.
   bullets below).
   🚨 **Agents are addressed by MANDATE KEY, never a UUID.** `content_plan.*` mandates
   resolve through `resolveMandate` (`features/agents/mandates/service.ts`) —
-  `agent.slot_definition` for the platform default, `agent.slot_binding` for
+  `agent.mandate` for the platform default, `agent.mandate_binding` for
   the user's own override. An unseeded, disabled, or version-pinned mandate
   THROWS with the reason; it never falls back to a hardcoded agent. Adding a
-  step means declaring a mandate in aidream's `agent_slots/client_slots.py` and
+  step means declaring a mandate in aidream's `mandates/client_mandates.py` and
   consuming its key here. **Known gap:** `launchAgentExecution` consumers
   (this feature included) apply a binding's _agent_ but not its
   `config_overrides`, so a model/thinking-only override is inert here.

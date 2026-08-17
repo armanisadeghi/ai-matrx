@@ -13,6 +13,6 @@
  * dedup system exists to clean up. If the slot cannot resolve, the affordance
  * does not render — never a hardcoded agent id, never a raw insert.
  *
- * Declared server-side in aidream `services/agent_slots/client_slots.py`.
+ * Declared server-side in aidream `services/mandates/client_mandates.py`.
  */
 export const CRM_SAVE_CONTACT_AGENT_MANDATE = "crm.save_contact";

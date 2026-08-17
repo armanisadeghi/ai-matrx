@@ -16,7 +16,7 @@ vision: []
 
 ## Phase 1 — AI-mapped bindings (SHIPPED 2026-08-17)
 
-- DB agent **Surface Binding Mapper** `1cc19e9f-189d-43f6-b902-3c692346cab1` (builtin, structured output; created via `agent_author`). Mandate **`surfaces_client.binding_mapper`** declared in aidream `services/agent_slots/client_slots.py` (merged, aidream PR #88) and seeded live in `agent.slot_definition`.
+- DB agent **Surface Binding Mapper** `1cc19e9f-189d-43f6-b902-3c692346cab1` (builtin, structured output; created via `agent_author`). Mandate **`surfaces_client.binding_mapper`** declared in aidream `services/mandates/client_mandates.py` (merged, aidream PR #88) and seeded live in `agent.mandate`.
 - FE: `features/surfaces/utils/binding-suggestions.ts` (pure payload/parse/convert core, referential validation against declared names), `features/surfaces/components/bind/BindingSuggestionsTab.tsx` (run → review rows with confidence + plain-language reasons → accept into the manual editor), tabbed step 2 in `SurfaceAgentBindPanel` ("AI map" default for new binds / "Map manually"). Accepted write-policy suggestions layer over prior-tier stored policies at save.
 - The agent's DB prompt carries the **context-slot doctrine**: context slots are mapped aggressively to rich values (visibility), variables conservatively; `typical_char_count` guards context bloat; `unmapped` is used deliberately to keep noise away from the agent.
 

@@ -26,19 +26,19 @@ Route: `app/(core)/agents/mandates/page.tsx` (+ `MandatesHeader` in the shell he
 - **Swaps are floating-only** (`agent_id` + `use_latest`) — the client run path has no version channel; version pinning is the admin console's business.
 - **Settings editor patches only `model` + `thinking_level`** and preserves unknown `config_overrides` keys it doesn't own.
 - Agent options come from the canonical Redux listing (`fetchAgentsListFull` + `selectOwnedAgents`/`selectSharedWithMeAgents`) — never a raw table query (ESLint `matrx/no-raw-agent-list-query`).
-- **One write path.** Bindings are written ONLY through the aidream bind endpoint (`PUT/DELETE /agent-slots/{slot_key}/binding`) — a supabase `.insert()/.update()` on `agent.slot_binding` from this repo is a defect (it skips bind-time contract enforcement: required variables/context slots superset + the candidate's `output_schema` must carry the mandate's required output keys). The server is the authority; `compareStoredContract` (`contract-compare.ts`) is only the instant client pre-flight; the 422 detail is the contract verdict — surface it verbatim. Refresh the generated API types whenever the endpoint changes.
+- **One write path.** Bindings are written ONLY through the aidream bind endpoint (`PUT/DELETE /agent-slots/{slot_key}/binding`) — a supabase `.insert()/.update()` on `agent.mandate_binding` from this repo is a defect (it skips bind-time contract enforcement: required variables/context slots superset + the candidate's `output_schema` must carry the mandate's required output keys). The server is the authority; `compareStoredContract` (`contract-compare.ts`) is only the instant client pre-flight; the 422 detail is the contract verdict — surface it verbatim. Refresh the generated API types whenever the endpoint changes.
 
 ## Migrating a hardcoded call site (the sweep)
 
-`agent.slot_definition` rows carrying `metadata.migration_status='placeholder'` are call sites that still run a hardcoded id; `metadata.code_ref` names the exact constant. That query IS the worklist:
+`agent.mandate` rows carrying `metadata.migration_status='placeholder'` are call sites that still run a hardcoded id; `metadata.code_ref` names the exact constant. That query IS the worklist:
 
 ```sql
-select slot_key, metadata->>'code_ref' from agent.slot_definition
+select mandate_key, metadata->>'code_ref' from agent.mandate
 where deleted_at is null and metadata->>'migration_status' = 'placeholder'
   and metadata->>'side' = 'client';
 ```
 
-Recipe: React run site → `useMandateRunner`; React non-run site (a `defaultAgentId` prop, an on-click launch) → `useMandate` + gate the affordance on resolution; thunk/handler → `await resolveMandate`. Drop `<MandateAgentPicker>` wherever the user should be able to choose. Then move the mandate from aidream's `scripts/seed_slot_placeholders.py` into a real `declare_slot(...)` in `aidream/services/agent_slots/client_slots.py` and release — `sync_declared_slots` pops the placeholder marker, so the DB stops claiming the hardcoded path still runs.
+Recipe: React run site → `useMandateRunner`; React non-run site (a `defaultAgentId` prop, an on-click launch) → `useMandate` + gate the affordance on resolution; thunk/handler → `await resolveMandate`. Drop `<MandateAgentPicker>` wherever the user should be able to choose. Then move the mandate from aidream's `scripts/seed_slot_placeholders.py` into a real `declare_slot(...)` in `aidream/services/mandates/client_mandates.py` and release — `sync_declared_slots` pops the placeholder marker, so the DB stops claiming the hardcoded path still runs.
 
 **Migrated:** research Outputs Studio (3), content-plan setup (7), kind architect, kind creator (twin collapsed to one floating mandate), agent-app coding agent, flashcards spoken-front TTS, War Room (3), chat defaults (`chat.default_new_chat` + `chat.cx_default`), `projects.create_assistant`. **Remaining: NONE — the client placeholder worklist is empty** (the query above returns zero rows; `prompts.categorizer` was deleted as a dead pin). A new hardcoded agent id is a new placeholder to seed + migrate, not a precedent.
 
