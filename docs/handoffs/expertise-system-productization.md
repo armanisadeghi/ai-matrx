@@ -6,12 +6,23 @@
 >
 > - **🚨 Arman's ruling, 2026-08-16 — THE MOST IMPORTANT LINE IN THIS FILE: everything described here is part of the CORE MASTERWORK SYSTEM.** It is not a separate product, a sibling system, or an adjacent feature. It drifted out and got built *completely outside* the system it belongs to **for one reason: vocabulary.** It was misnamed, therefore misplaced, therefore lost. **These systems only work when all the parts of them are there** — treat every future decision here as a Masterwork decision.
 > - Masterwork's own design docs are `/Users/armanisadeghi/code/common-docs/projects/advanced-expert-capture-system/` (folder name also superseded). **Read `initial-plan-docs/32-distillation-methods.md` first** — this lane is one of Masterwork's **Distillation Methods**, exactly as the shipped `vision-interview` system is (that one is **Vision Extraction**).
-> - **pack** → recommendation **Rulebook** (this app's own UI already says *"a pack is one expert's rulebook"* in three places). UNSETTLED.
-> - **desk** → recommendation **Masterwork** (a desk is precisely "an Expert's judgment as a running AI system"; one Rulebook can yield several). Running one is an **Encore**. UNSETTLED.
+> - **pack** → recommendation **Rulebook** (this app's own UI already says *"a pack is one expert's rulebook"* in three places). Arman: *"Rulebook might be a good one."* Closest to decided of anything here — still UNSETTLED.
+> - 🔴 **desk** → **Arman, 2026-08-16: "desk means nothing to me."** The hardest no in the set. Standing recommendation is **Masterwork** (a desk is precisely "an Expert's judgment as a running AI system"; one Rulebook can yield several; running one is an **Encore**) — but he has NOT ruled. UNSETTLED.
 > - **compile / compiler** (leaks to users as "Starting the compiler…") → recommendation **Build**. UNSETTLED.
 > - **backtest** → recommendation is this UI's own honest words, **"Compare to the original"**. **Replay** is reserved for Hindsight and means something different (re-running a past request under a change). UNSETTLED.
 > - **"Expertise System" / "expertise capture" / "expert distillation" as the name of the program is SETTLED — it is Masterwork.** Fix that on sight. Route `/expertise`, table `platform.expertise_pack`, services `expertise_desks` / `expertise_ingest`, the `expertise` source-feature slug and entity token all still carry the drifted name; under Law 4 a rename goes all the way, so this is planned work with a data migration — **not** something to half-do.
 > - **SME** is fine in internal prose, but is **Expert** in every product surface.
+>
+> **🔴 Arman's position, 2026-08-16 — he does not love these names.** **"Desk" means nothing
+> to him.** *Rulebook* might be right. Several others are confusing. *Engram* only makes sense
+> if the thing it names doesn't already have a name. In his words, he **doesn't even know what
+> they should be — "which makes them not right, but also not wrong until we properly name
+> them."** So treat every term above as **provisional in both directions**: do not defend it,
+> do not spread it, do not read shipped code as endorsement — and do not declare it wrong and
+> substitute your own. It is undecided, and the owner has said so.
+>
+> **A dedicated naming session is queued** — the full Masterwork inventory and the prompt that
+> runs it: `/Users/armanisadeghi/code/common-docs/systems/vocabulary/MASTERWORK-NAMING-SESSION.md`
 >
 > **Law 1 — agents never coin, rename, or "improve" a name.** **Law 5 — an Unsettled term is
 > not authority; do not treat the recommendations as decided.** If you are working on this
