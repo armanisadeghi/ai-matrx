@@ -115,6 +115,32 @@
       ],
       "previousEventHash": "01d410db0c96fc64104de83e6da53c9685c8eb0db1558045ea0b6f981ee215b3",
       "eventHash": "b6ea2884ce99591bed0f9781ee1ca74348293b0a4c5c5b71bc1961417f88ffcf"
+    },
+    {
+      "sequence": 10,
+      "state": "certified",
+      "at": "2026-08-17T13:35:26.669Z",
+      "actor": "/root/p3_certifier",
+      "summary": "CERTIFIED exact candidate e8a5e84287f0d68962bcbcd067419432d706fcc2; no concrete batch-caused defect.",
+      "evidence": [
+        "Independent adversarial certification verified product bytes, append-only run history, 16=10+4+2 finding arithmetic, durable viewport detector 21 to 8, Tailwind compilation, desktop propagation, 164 window-panel tests, and clean diff."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "e8a5e84287f0d68962bcbcd067419432d706fcc2",
+        "certifierTaskId": "/root/p3_certifier",
+        "checks": [
+          "Candidate identity exact",
+          "Product files byte-identical to initially tested batch",
+          "Append-only run hash chain valid",
+          "Finding and detector arithmetic reconciled",
+          "Tailwind desktop and window propagation verified",
+          "Window-panel tests 19 suites / 164 tests passed",
+          "git diff --check passed"
+        ]
+      },
+      "previousEventHash": "b6ea2884ce99591bed0f9781ee1ca74348293b0a4c5c5b71bc1961417f88ffcf",
+      "eventHash": "f97962a76afaa185032b9ecfeaffdd8fef8f841e063cae6bc77146b8890410b5"
     }
   ]
 }
