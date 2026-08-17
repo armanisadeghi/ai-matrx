@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26",
-  "state": "certified",
-  "updatedAt": "2026-08-17T19:42:15.772Z",
-  "summary": "CERTIFIED: exact candidate d82ac5e38 passes all batch-delta and representative rendering checks.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-17T19:42:33.049Z",
+  "summary": "Certified candidate is already integrated on origin/main; queueing permanent delivery evidence.",
   "source": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26.json",
-  "eventHash": "af135086ee27e7d3f1d9dc220035af4c2eb8239eea3526d767006efa7c4c7020"
+  "eventHash": "85e36f845fd42d3c9a3848f41ce7cd337f64781d002d5ac8b8f5ed7102b423b0"
 }
