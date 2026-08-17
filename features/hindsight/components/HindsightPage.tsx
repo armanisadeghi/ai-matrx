@@ -3,7 +3,7 @@
 /**
  * HindsightPage — the platform reads its own history and improves itself.
  *
- * Enroll an agent, workflow, tool, or environment; every N real runs a reviewer
+ * Enroll an agent, workflow, one workflow step, tool, or environment; every N real runs a reviewer
  * agent reads the ACTUAL transcripts and proposes fixes across four levers,
  * with Replay evidence. This is the ONE home for the Hindsight admin surface.
  */
@@ -63,8 +63,9 @@ export function HindsightPage() {
           <h1 className="text-xl font-semibold">Hindsight</h1>
           <p className="max-w-3xl text-sm text-muted-foreground">
             The platform reads its own history and improves itself. Enroll an
-            agent, workflow, tool, or environment; every N real runs a reviewer
-            agent reads the actual transcripts — never metrics alone — and
+            agent, workflow, one workflow step, tool, or environment; every N
+            real runs a reviewer agent reads the actual transcripts — never
+            metrics alone — and
             proposes fixes across four levers: instructions, resources, tool
             design, and architecture.
           </p>

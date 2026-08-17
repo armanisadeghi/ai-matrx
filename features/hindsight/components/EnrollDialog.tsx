@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * EnrollDialog — put an agent, workflow, tool, or environment under continuous
+ * EnrollDialog — put an agent, workflow, one workflow step, tool, or environment under continuous
  * review.
  *
  * A half-filled form must NEVER be destroyed by a stray click. Radix dismisses

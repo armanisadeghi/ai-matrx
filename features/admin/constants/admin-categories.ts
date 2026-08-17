@@ -1185,7 +1185,7 @@ export const adminCategoriesData: AdminCategory[] = [
       {
         title: "Hindsight",
         description:
-          "Continuous review — enroll an agent, workflow, tool, or environment and every N real runs a reviewer agent reads the actual transcripts and proposes fixes across four levers (instructions, resources, tool design, architecture), with Replay evidence and one-click apply.",
+          "Continuous review — enroll an agent, workflow, one workflow step, tool, or environment and every N real runs a reviewer agent reads the actual transcripts and proposes fixes across four levers (instructions, resources, tool design, architecture), with Replay evidence and one-click apply.",
         iconName: "Telescope",
         link: "/administration/agents/hindsight",
         isNew: true,
