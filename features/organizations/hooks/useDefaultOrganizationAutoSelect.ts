@@ -17,7 +17,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
   selectOrgBootstrapResolved,
@@ -48,6 +48,7 @@ export function useDefaultOrganizationAutoSelect(
   organizations: readonly OrgNode[],
 ): void {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
   const activeOrgId = useAppSelector(selectOrganizationId);
   const bootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const defaultOrganizationId = useAppSelector(selectDefaultOrganizationId);
@@ -61,10 +62,15 @@ export function useDefaultOrganizationAutoSelect(
     const match = organizations.find((o) => o.id === defaultOrganizationId);
     if (!match) return;
 
-    // Give the primary resolve its grace period, then re-check: an org that
-    // landed in the meantime cancels the recovery (the effect re-runs on
-    // `activeOrgId`, and this timer is cleared on the way out).
+    // Give the primary resolve its grace period, then re-check the LIVE store
+    // before writing. Effect cleanup cancels the timer in the ordinary case,
+    // but that runs a render later — and `setOrganization` also clears scope /
+    // project / task / conversation, so a stale fire would not merely be
+    // redundant, it would throw away the working context of whoever selected
+    // in the meantime (the resolver, another tab's broadcast, or the user).
     const timer = setTimeout(() => {
+      const live = store.getState().appContext;
+      if (live.organization_id) return;
       console.warn(
         "[organizations] Active org was empty while a default organization is set — selecting it. " +
           "The appContextPolicy resolve should have done this; if you are seeing this line, that path failed.",
@@ -75,6 +81,7 @@ export function useDefaultOrganizationAutoSelect(
     return () => clearTimeout(timer);
   }, [
     dispatch,
+    store,
     activeOrgId,
     bootstrapResolved,
     defaultOrganizationId,
