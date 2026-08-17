@@ -32,6 +32,8 @@ import {
   PenLine,
   Scissors,
   Boxes,
+  Mic,
+  Headphones,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -99,6 +101,25 @@ const OTHER_STUDY_MODES = [
     description: "Type the answer from memory",
     icon: PenLine,
     path: "write",
+  },
+] as const;
+
+/** Voice/audio study modes that live on their own education routes (built
+ *  surfaces that were previously unreachable from a deck — THE DOOR LAW). */
+const VOICE_STUDY_MODES = [
+  {
+    key: "practice-oral",
+    label: "Oral practice",
+    description: "Answer out loud, graded by voice",
+    icon: Mic,
+    href: (setId: string) => `/education/practice-oral?deck=${setId}`,
+  },
+  {
+    key: "audio-review",
+    label: "Audio review",
+    description: "Hands-free listen-and-answer loop",
+    icon: Headphones,
+    href: (setId: string) => `/education/audio-study/review?deck=${setId}`,
   },
 ] as const;
 
@@ -263,6 +284,8 @@ export function SetDetailView({ setId }: { setId: string }) {
     | "fastfire"
     | "edit"
     | "sessions"
+    | "practice-oral"
+    | "audio-review"
     | null
   >(null);
 
@@ -291,7 +314,9 @@ export function SetDetailView({ setId }: { setId: string }) {
       | "write"
       | "fastfire"
       | "edit"
-      | "sessions",
+      | "sessions"
+      | "practice-oral"
+      | "audio-review",
     path: string,
   ) => {
     if (isPending) return;
@@ -456,6 +481,20 @@ export function SetDetailView({ setId }: { setId: string }) {
                         onClick={() =>
                           navigate(m.key, `${EDU_BASE}/${setId}/${m.path}`)
                         }
+                      >
+                        <m.icon className="mr-2 h-4 w-4 text-muted-foreground" />
+                        <div className="flex flex-col">
+                          <span>{m.label}</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {m.description}
+                          </span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                    {VOICE_STUDY_MODES.map((m) => (
+                      <DropdownMenuItem
+                        key={m.key}
+                        onClick={() => navigate(m.key, m.href(setId))}
                       >
                         <m.icon className="mr-2 h-4 w-4 text-muted-foreground" />
                         <div className="flex flex-col">

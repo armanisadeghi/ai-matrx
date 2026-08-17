@@ -59,6 +59,8 @@ export function LearnSurface({ setId }: { setId: string }) {
           voiceTestForCard={getVoiceTestForCard}
           masteryByCard={study.masteryByCard}
           sessionId={study.sessionId}
+          setId={setId}
+          onCardsChanged={() => void study.refreshCards?.()}
           errorTitle="Couldn't load this set"
           emptyBody="This set has no cards yet. Generate some in chat to study it."
           completionTitle="All cards mastered"

@@ -25,7 +25,7 @@
 //
 // Mirrors the deck's existing AskAiPanel affordance. React Compiler is on.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Brain, Loader2, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -59,21 +59,29 @@ export function MemoryAidButton({
 }) {
   const dispatch = useAppDispatch();
   // The run's conversation instance is owned HERE (the inline display is the
-  // screen), not by a floating window.
+  // screen), not by a floating window. The HOST MOUNTS THIS COMPONENT WITH
+  // key={cardId}: a card change remounts it, which resets all live state and
+  // releases the claimed conversation via the handle's own unmount cleanup —
+  // the previous card's stream can never leak into the next card's display.
+  // (The stored aid is keyed off the card's own rows, so it survives — that
+  // difference is the whole point: a reset effect here once destroyed the
+  // paid result, D151.)
   const run = useLiveRunHandle();
   const openWindow = useOpenLiveRunWindow();
   const [loading, setLoading] = useState(false);
   const [asked, setAsked] = useState(false);
   const [hint, setHint] = useState<MemoryHintPayload | null>(null);
 
-  // Reset the LIVE run state when the card changes. The stored aid below is
-  // keyed off the card's own rows, so it needs no reset — that difference is
-  // the whole point: this effect used to be what destroyed the paid result.
+  // An in-flight run that resolves AFTER this card's instance unmounted must
+  // not claim a conversation (the handle's cleanup already ran — a late claim
+  // would leak the instance) — the mounted ref guards both async landings.
+  const mountedRef = useRef(false);
   useEffect(() => {
-    setHint(null);
-    setAsked(false);
-    setLoading(false);
-  }, [cardId]);
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // The newest aid persisted on this card, if any.
   const stored = (() => {
@@ -90,6 +98,9 @@ export function MemoryAidButton({
     setLoading(true);
     setAsked(true);
     setHint(null);
+    // A re-tap replaces the previous run — release it so the inline display
+    // starts pending instead of replaying the old stream.
+    run.release();
     // The aid streams INLINE below, in the spot the finished hint occupies —
     // no window opens; the learner can open the conversation with the chat
     // button if they want to talk to the AI about it.
@@ -99,9 +110,14 @@ export function MemoryAidButton({
         back,
         topic,
         cardId,
-        onConversationCreated: run.claim,
+        onConversationCreated: (conversationId) => {
+          if (mountedRef.current) run.claim(conversationId);
+        },
       }),
     );
+    // The aid is persisted on ITS card by the lane (D151), so dropping a
+    // post-unmount local paint loses nothing.
+    if (!mountedRef.current) return;
     setHint(result);
     setLoading(false);
   }

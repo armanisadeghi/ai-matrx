@@ -12,16 +12,16 @@ import { SpokenPracticeClient } from "@/features/education/spoken-practice/compo
 export const metadata: Metadata = toolMetadata("practice-oral");
 
 interface PracticeOralPageProps {
-  searchParams: Promise<{ mode?: string }>;
+  searchParams: Promise<{ mode?: string; deck?: string }>;
 }
 
 export default async function PracticeOralToolPage({
   searchParams,
 }: PracticeOralPageProps) {
-  const { mode } = await searchParams;
+  const { mode, deck } = await searchParams;
   return (
     <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto bg-textured">
-      <SpokenPracticeClient initialMode={mode ?? null} />
+      <SpokenPracticeClient initialMode={mode ?? null} initialDeckId={deck ?? null} />
     </div>
   );
 }

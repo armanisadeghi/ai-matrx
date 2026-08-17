@@ -101,6 +101,12 @@ export interface UseFlashcardStudyResult {
    *  `progress.total` still reflects the ORIGINAL card count even though the
    *  working queue shrinks as cards are mastered. */
   masteredCount: number;
+  /** Re-read the card rows (new layers / sub-cards after an in-session
+   *  enrich/deepen) without restarting the session or resetting progress.
+   *  Optional because cross-set drivers (due review, weak-area drill) have no
+   *  single owning set to re-read — they omit it, and StudyDeck hides the
+   *  enhance affordance without a setId anyway. */
+  refreshCards?: () => Promise<void>;
 }
 
 export interface UseFlashcardStudyOptions {
@@ -268,6 +274,21 @@ export function useFlashcardStudy(
     };
   }, [setId, withSession, mode]);
 
+  // Re-read the card rows (details/layers/sub-cards) WITHOUT restarting the
+  // session — used after an in-session enrich/deepen so the new material shows
+  // immediately. Deliberately NOT the load effect: that would reset progress
+  // and open a second study_session for the same sitting.
+  const refreshCards = async (): Promise<void> => {
+    if (!setId) return;
+    const res = await fcService.getSetWithCards(setId);
+    if (!res.data) return;
+    const freshCards = res.data.cards;
+    setSet(res.data.set);
+    setCards(freshCards);
+    setOriginalCount(freshCards.length);
+    setCurrentIndex((i) => clampIndex(i, freshCards.length));
+  };
+
   const flip = (): void => {
     setIsFlipped((f) => !f);
   };
@@ -419,5 +440,6 @@ export function useFlashcardStudy(
     masteryByCard,
     sessionId: session?.id ?? null,
     masteredCount: masteredIds.size,
+    refreshCards,
   };
 }
