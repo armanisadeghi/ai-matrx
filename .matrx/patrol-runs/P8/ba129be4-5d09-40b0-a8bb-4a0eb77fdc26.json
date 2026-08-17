@@ -47,6 +47,66 @@
       ],
       "previousEventHash": "67e93d05b61fba7f67f9b8ac2974a0f3f9e5da701743999344172db66076a82d",
       "eventHash": "30579ba341c4d545ac356cb2e592b30ca8eb700b8383a84530d67ef00279975a"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-17T19:42:15.772Z",
+      "actor": "/root/p8_exact_certifier",
+      "summary": "CERTIFIED: exact candidate d82ac5e38 passes all batch-delta and representative rendering checks.",
+      "evidence": [],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "d82ac5e38275c1b1a4b216e314d0169c749f264a",
+        "certifierTaskId": "/root/p8_exact_certifier",
+        "checks": [
+          "17 replacements across 15 files use canonical SuspenseLoader with contextual labels",
+          "Loading conditions, wrapper geometry, theme/responsive classes, and dynamic-import boundaries unchanged",
+          "git diff --check: PASS",
+          "pnpm type-check: PASS",
+          "pnpm check:patrol-contracts: PASS",
+          "Prettier: PASS",
+          "Scoped ESLint delta: PASS; all four errors reproduce on base 458decd82",
+          "Representative Bing callback route: HTTP 200, final DOM rendered, no console warnings/errors"
+        ]
+      },
+      "previousEventHash": "30579ba341c4d545ac356cb2e592b30ca8eb700b8383a84530d67ef00279975a",
+      "eventHash": "af135086ee27e7d3f1d9dc220035af4c2eb8239eea3526d767006efa7c4c7020"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-17T19:42:33.049Z",
+      "actor": "/root",
+      "summary": "Certified candidate is already integrated on origin/main; queueing permanent delivery evidence.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P8/ba129be4-5d09-40b0-a8bb-4a0eb77fdc26"
+      ],
+      "delivery": {
+        "candidateSha": "d82ac5e38275c1b1a4b216e314d0169c749f264a",
+        "preservedRef": "refs/heads/patrol-runs/P8/ba129be4-5d09-40b0-a8bb-4a0eb77fdc26"
+      },
+      "previousEventHash": "af135086ee27e7d3f1d9dc220035af4c2eb8239eea3526d767006efa7c4c7020",
+      "eventHash": "85e36f845fd42d3c9a3848f41ce7cd337f64781d002d5ac8b8f5ed7102b423b0"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-17T19:42:45.544Z",
+      "actor": "/root",
+      "summary": "DELIVERED: independently certified contextual-loader candidate is on origin/main and included in v0.4.762.",
+      "evidence": [
+        "candidate d82ac5e38 is an ancestor of integrated release commit 86891bafa",
+        "integrated commit is an ancestor of origin/main"
+      ],
+      "delivery": {
+        "candidateSha": "d82ac5e38275c1b1a4b216e314d0169c749f264a",
+        "preservedRef": "refs/heads/patrol-runs/P8/ba129be4-5d09-40b0-a8bb-4a0eb77fdc26",
+        "integratedSha": "86891bafa",
+        "release": "v0.4.762"
+      },
+      "previousEventHash": "85e36f845fd42d3c9a3848f41ce7cd337f64781d002d5ac8b8f5ed7102b423b0",
+      "eventHash": "d1fa38db99870f6109f426fd505b9c85de92172690727d743ae595bace7b7e2f"
     }
   ]
 }

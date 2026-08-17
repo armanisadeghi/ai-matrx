@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26",
-  "state": "certifying",
-  "updatedAt": "2026-08-17T19:39:26.996Z",
-  "summary": "Prepared the first bounded 15-file candidate: 17 generic loading callsites now use contextual canonical loaders without changing wrappers, control flow, or dynamic boundaries.",
+  "state": "delivered",
+  "updatedAt": "2026-08-17T19:42:45.544Z",
+  "summary": "DELIVERED: independently certified contextual-loader candidate is on origin/main and included in v0.4.762.",
   "source": "ba129be4-5d09-40b0-a8bb-4a0eb77fdc26.json",
-  "eventHash": "30579ba341c4d545ac356cb2e592b30ca8eb700b8383a84530d67ef00279975a"
+  "eventHash": "d1fa38db99870f6109f426fd505b9c85de92172690727d743ae595bace7b7e2f"
 }
