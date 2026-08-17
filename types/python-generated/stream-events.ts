@@ -603,6 +603,33 @@ export interface ExpertiseIngestProgressData {
   rules_found?: number | null;
 }
 
+export interface ExpertiseRunData {
+  type?: "expertise_run";
+  run_id: string;
+  pack_id: string;
+  operation: string;
+  label?: string | null;
+}
+
+export interface ExpertiseRunFailedData {
+  type?: "expertise_run_failed";
+  run_id: string;
+  error?: Record<string, unknown> | null;
+}
+
+export interface ExpertiseRunSnapshotData {
+  type?: "expertise_run_snapshot";
+  run_id: string;
+  pack_id: string;
+  operation: string;
+  label?: string | null;
+  status: string;
+  live?: boolean;
+  error?: Record<string, unknown> | null;
+  result?: Record<string, unknown> | null;
+  completed_at?: string | null;
+}
+
 export interface ExtractionIndexCompleteData {
   type?: "extraction_index_complete";
   run_id: string;
@@ -1557,6 +1584,9 @@ export type TypedDataPayload =
   | ExpertiseBacktestVerdictData
   | ExpertiseIngestCompleteData
   | ExpertiseIngestProgressData
+  | ExpertiseRunData
+  | ExpertiseRunFailedData
+  | ExpertiseRunSnapshotData
   | ExtractionIndexCompleteData
   | ExtractionIndexProgressData
   | FetchResultsData
@@ -1684,6 +1714,7 @@ export function isContextGroomedEvent(value: unknown): value is ContextGroomedEv
 // --- SEO Streamed Result Models (kind-discriminated data events) ---
 
 export interface KeywordClassifyResult {
+  result_kind?: "keywords.classify";
   eligible?: number;
   batches?: number;
   updated?: number;

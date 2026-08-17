@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileUp, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -17,11 +17,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
-import { extractErrorMessage } from "@/utils/errors";
 import type { paths } from "@/types/python-generated/api-types";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
+import { useExpertiseRun } from "../../durable-run/useExpertiseRun";
 import type { ExpertisePack } from "../../types";
 
 /**
@@ -39,6 +37,11 @@ import type { ExpertisePack } from "../../types";
  * Either way the system distills candidate rules, verifies every quote
  * word-for-word against the source, and lands them as DRAFTS the expert
  * approves one by one. Never auto-activated (human-first).
+ *
+ * Both lanes are ONE durable run (`useExpertiseRun` → `platform.expertise_run`):
+ * reload mid-distillation and this dialog picks the run back up and reports the
+ * true outcome — the drafts summary survives a refresh. THE FLOATING LAW: a run
+ * that dies on page refresh is the same defect as a spinner.
  */
 
 const INGEST_PATH = "/expertise-desks/ingest" satisfies keyof paths;
@@ -67,6 +70,40 @@ const MODE_OPTIONS: {
       "Examples of great output — the rules behind them get worked out for you.",
   },
 ];
+
+/** The distillation's terminal document, live or restored from the run row. */
+interface IngestSummary {
+  added: number;
+  duplicatesSkipped: number;
+  quotesUnverified: number;
+}
+
+function parseIngestSummary(raw: unknown): IngestSummary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as Record<string, unknown>;
+  // `added` may legitimately be 0 (a source with nothing new in it), so its
+  // PRESENCE is what makes this a result, never its truthiness.
+  if (!("added" in data)) return null;
+  return {
+    added: Number(data.added ?? 0),
+    duplicatesSkipped: Number(data.duplicates_skipped ?? 0),
+    quotesUnverified: Number(data.quotes_unverified ?? 0),
+  };
+}
+
+function describeIngest({
+  added,
+  duplicatesSkipped,
+  quotesUnverified,
+}: IngestSummary): string {
+  return (
+    `${added} suggested ${added === 1 ? "rule" : "rules"} added as drafts` +
+    (duplicatesSkipped ? `, ${duplicatesSkipped} duplicates skipped` : "") +
+    (quotesUnverified
+      ? `. ${quotesUnverified} ${quotesUnverified === 1 ? "quote" : "quotes"} could not be verified word-for-word — those rules are flagged for your review.`
+      : ". Every quote verified word-for-word against your source.")
+  );
+}
 
 /** Human size — a 3 KB file reading "0.0 MB" looks like a broken upload. */
 function formatSize(bytes: number): string {
@@ -103,7 +140,6 @@ export function IngestSourceDialog({
   pack: ExpertisePack;
   onIngested?: () => void;
 }) {
-  const dispatch = useAppDispatch();
   const { upload } = useFileUpload();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [shape, setShape] = useState<SourceShape>("text");
@@ -111,53 +147,52 @@ export function IngestSourceDialog({
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<IngestMode>("instructional");
   const [sourceNote, setSourceNote] = useState("");
-  const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<string[]>([]);
-  const [summary, setSummary] = useState<string | null>(null);
-
-  const reset = () => {
-    setProgress([]);
-    setSummary(null);
-    setRunning(false);
-  };
+  const [uploading, setUploading] = useState(false);
 
   /**
-   * Both lanes emit the SAME two events (`expertise_ingest_progress` /
-   * `expertise_ingest_complete`) — the file lane hands off to the text lane
-   * for a transcript — so one handler serves both.
-   *
-   * A `fatal_error` arrives as an `error` EVENT on the stream, never as
-   * `result.error` (that is only the HTTP-level failure). The server writes
-   * those messages for this user ("This source is too large…", "Only the
-   * pack's owner…") — dropping them leaves a dead dialog, so they are
-   * captured here and rethrown by the caller.
+   * ONE durable run for both lanes — they emit the SAME terminal event
+   * (`expertise_ingest_complete`; the file lane hands off to the text lane for
+   * a transcript), so they are one run to the user and one pointer to rejoin.
+   * `path` is read at launch time, which is what lets the current lane choose
+   * its endpoint without a second hook.
    */
-  const streamFatal = useRef<string | null>(null);
+  const run = useExpertiseRun<IngestSummary>({
+    surface: "ingest",
+    packId: pack.id,
+    path: shape === "file" ? INGEST_FILE_PATH : INGEST_PATH,
+    parseResult: parseIngestSummary,
+  });
+  const running = run.running || uploading;
+  const summary = run.result ? describeIngest(run.result) : null;
+  const progress = uploading
+    ? [`Uploading “${file?.name ?? "your file"}”…`, ...run.stages]
+    : run.stages;
+  const rejoining = run.status === "rejoining";
 
-  const handleStreamEvent = (event: { event: string; data?: unknown }) => {
-    if (event.event === "error") {
-      const payload = event.data as { message?: string; user_message?: string };
-      streamFatal.current =
-        payload?.user_message || payload?.message || "The source could not be read.";
-      return;
-    }
-    if (event.event !== "data") return;
-    const data = event.data as Record<string, unknown>;
-    if (data.type === "expertise_ingest_progress") {
-      setProgress((prev) => [...prev, String(data.message ?? "")]);
-    } else if (data.type === "expertise_ingest_complete") {
-      const added = Number(data.added ?? 0);
-      const dupes = Number(data.duplicates_skipped ?? 0);
-      const unverified = Number(data.quotes_unverified ?? 0);
-      setSummary(
-        `${added} suggested ${added === 1 ? "rule" : "rules"} added as drafts` +
-          (dupes ? `, ${dupes} duplicates skipped` : "") +
-          (unverified
-            ? `. ${unverified} ${unverified === 1 ? "quote" : "quotes"} could not be verified word-for-word — those rules are flagged for your review.`
-            : ". Every quote verified word-for-word against your source."),
-      );
-    }
+  const reset = () => {
+    run.reset();
+    setUploading(false);
   };
+
+  // Drafts that landed while the user was away still have to reach the page
+  // behind this dialog.
+  useEffect(() => {
+    if (run.result) onIngested?.();
+  }, [run.result, onIngested]);
+
+  useEffect(() => {
+    if (run.error) toast.error(run.error);
+  }, [run.error]);
+
+  // A run picked back up after a reload has to be VISIBLE. Rejoining behind a
+  // closed dialog would leave the user staring at a page that says nothing is
+  // happening — the same defect as losing the run.
+  const reopenedRef = useRef(false);
+  useEffect(() => {
+    if (reopenedRef.current || open || !run.running) return;
+    reopenedRef.current = true;
+    onOpenChange(true);
+  }, [open, run.running, onOpenChange]);
 
   const ingest = async () => {
     if (shape === "file") {
@@ -170,36 +205,15 @@ export function IngestSourceDialog({
       );
       return;
     }
-    setRunning(true);
-    setProgress(["Reading the source…"]);
-    setSummary(null);
-    streamFatal.current = null;
-    try {
-      const result = await dispatch(
-        callApi({
-          path: INGEST_PATH,
-          method: "POST",
-          body: {
-            pack_id: pack.id,
-            text: text,
-            mode,
-            source_note: sourceNote.trim() || undefined,
-          } as never,
-          stream: true,
-          onStreamEvent: handleStreamEvent,
-        }),
-      );
-      if (streamFatal.current) throw new Error(streamFatal.current);
-      if (result.error) throw new Error(extractErrorMessage(result.error));
-      onIngested?.();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Could not ingest the source";
-      setProgress((prev) => [...prev, `Problem: ${message}`]);
-      toast.error(message);
-    } finally {
-      setRunning(false);
-    }
+    await run.launch(
+      {
+        pack_id: pack.id,
+        text,
+        mode,
+        source_note: sourceNote.trim() || undefined,
+      },
+      sourceNote.trim() || "your pasted source",
+    );
   };
 
   const ingestFile = async () => {
@@ -207,10 +221,11 @@ export function IngestSourceDialog({
       toast.error("Choose a document or a recording first.");
       return;
     }
-    setRunning(true);
-    setProgress([`Uploading “${file.name}”…`]);
-    setSummary(null);
-    streamFatal.current = null;
+    // The upload happens BEFORE the run exists — there is no run row to rejoin
+    // until the server has the file, so a reload during the upload legitimately
+    // loses only the upload, and nothing has been paid for yet.
+    setUploading(true);
+    let fileId: string;
     try {
       // The ONE upload path (features/files) — it creates the cld_files row
       // the server then reads, processes into pages, and distills.
@@ -222,33 +237,25 @@ export function IngestSourceDialog({
           metadata: { sourceFeature: "expertise", expertise_pack_id: pack.id },
         },
       );
-      setProgress((prev) => [...prev, "Uploaded. Reading it…"]);
-
-      const result = await dispatch(
-        callApi({
-          path: INGEST_FILE_PATH,
-          method: "POST",
-          body: {
-            pack_id: pack.id,
-            file_id: uploaded.fileId,
-            mode,
-            source_note: sourceNote.trim() || file.name,
-          } as never,
-          stream: true,
-          onStreamEvent: handleStreamEvent,
-        }),
-      );
-      if (streamFatal.current) throw new Error(streamFatal.current);
-      if (result.error) throw new Error(extractErrorMessage(result.error));
-      onIngested?.();
+      fileId = uploaded.fileId;
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Could not read that file";
-      setProgress((prev) => [...prev, `Problem: ${message}`]);
-      toast.error(message);
+        err instanceof Error ? err.message : "Could not upload that file";
+      run.fail(message);
+      return;
     } finally {
-      setRunning(false);
+      setUploading(false);
     }
+
+    await run.launch(
+      {
+        pack_id: pack.id,
+        file_id: fileId,
+        mode,
+        source_note: sourceNote.trim() || file.name,
+      },
+      sourceNote.trim() || file.name,
+    );
   };
 
   return (
@@ -284,7 +291,7 @@ export function IngestSourceDialog({
               Review the drafts
             </Button>
           </div>
-        ) : running || progress.length > 1 ? (
+        ) : running || progress.length > 0 ? (
           <div className="space-y-2">
             <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
               {progress.map((line, i) => (
@@ -296,16 +303,10 @@ export function IngestSourceDialog({
             {running ? (
               <div className="flex items-start gap-2">
                 <LoadingSpinner size="sm" />
-                {/* The stream detaches server-side on disconnect, so the
-                    distillation finishes and its drafts land on the pack even
-                    if this tab goes away. Saying so is what stops the user
-                    re-running (and paying for) work that is already done —
-                    this page cannot yet REJOIN it, because expertise ingest
-                    has no durable run row to rejoin (see FEATURE.md). */}
                 <p className="text-xs text-muted-foreground">
-                  This keeps running on our servers even if you close this or
-                  reload — your drafts will be waiting on the pack. Don&apos;t
-                  start it again.
+                  {rejoining
+                    ? "Picking this back up — it kept reading while you were away."
+                    : "This keeps running on our servers even if you close this or reload — come back and it picks up where it left off."}
                 </p>
               </div>
             ) : null}

@@ -281,6 +281,74 @@ function requireBody(
   return result.data as Record<string, unknown>;
 }
 
+/** One plan route and the `web.page` record that carries its SEO plan. */
+export interface PlannedPageAnchor {
+  route: string;
+  url: string;
+  webPageId: string;
+}
+
+export interface PlannedPagesResult {
+  pages: PlannedPageAnchor[];
+  /** Routes with no anchor, each with the server's reason. Never swallowed. */
+  problems: string[];
+}
+
+/**
+ * Ensure the `web.page` record that carries each route's SEO plan.
+ *
+ * Arman's ruling, 2026-08-16 (`common-docs/systems/content-planning/FEATURE.md`
+ * invariant 9): one SEO plan per page, on `web.page`. This is the ONE way the
+ * client gets such a row, and it is deliberately a server call rather than a
+ * direct insert: the table's unique arbiter is `(site_id, url_hash)`, and
+ * `url_hash` is the platform's one stored-identity digest — it lives in
+ * `matrx_scraper.utils.url` and a TypeScript copy would be a second identity
+ * rule for the arbiter that stops duplicate pages existing.
+ *
+ * Reading and WRITING the plan itself stays direct-to-Supabase, as always
+ * (`updatePageDesiredValues`). Only minting the anchor comes through here.
+ */
+export async function ensurePlannedPages(
+  dispatch: AppDispatch,
+  siteId: string,
+  routes: string[],
+): Promise<PlannedPagesResult> {
+  if (routes.length === 0) return { pages: [], problems: [] };
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/planned-pages",
+      method: "POST",
+      pathParams: { site_id: siteId },
+      body: { routes },
+    }),
+  );
+  const body = requireBody(result, "planned-pages");
+  const rawPages = Array.isArray(body.pages) ? body.pages : [];
+  const problems = Array.isArray(body.problems)
+    ? body.problems.filter((p): p is string => typeof p === "string")
+    : [];
+  const pages: PlannedPageAnchor[] = [];
+  for (const row of rawPages) {
+    if (!row || typeof row !== "object") continue;
+    const entry = row as Record<string, unknown>;
+    const route = typeof entry.route === "string" ? entry.route : "";
+    const webPageId =
+      typeof entry.web_page_id === "string" ? entry.web_page_id : "";
+    if (!route || !webPageId) {
+      problems.push(
+        `A planned-page row came back without a route or page id: ${JSON.stringify(entry)}`,
+      );
+      continue;
+    }
+    pages.push({
+      route,
+      url: typeof entry.url === "string" ? entry.url : "",
+      webPageId,
+    });
+  }
+  return { pages, problems };
+}
+
 /** Diff the plan against its paired CMS site. `cmsSite` given once pairs them. */
 export async function bridgeReconcile(
   dispatch: AppDispatch,

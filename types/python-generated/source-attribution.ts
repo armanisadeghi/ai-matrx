@@ -111,6 +111,7 @@ export const SOURCE_FEATURES = [
   "doc_verify",
   "fork_and_run",
   "hindsight",
+  "hindsight/wire_replay",
   "hindsight_replay",
   "kg_clustering_namer",
   "manual",
@@ -134,6 +135,8 @@ export const SOURCE_FEATURES = [
   "workflow_recovery_advisor",
   "workflow_run",
   "workflow_worker",
+  "vision_interview",
+  "vision_interview_tracker",
   "youtube_transcription",
 ] as const;
 

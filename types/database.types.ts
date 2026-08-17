@@ -33141,6 +33141,80 @@ export type Database = {
         }
         Relationships: []
       }
+      expertise_run: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: Json | null
+          heartbeat_at: string
+          id: string
+          label: string | null
+          metadata: Json
+          operation: string
+          organization_id: string
+          pack_id: string
+          result: Json | null
+          settings: Json
+          started_at: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          heartbeat_at?: string
+          id?: string
+          label?: string | null
+          metadata?: Json
+          operation: string
+          organization_id: string
+          pack_id: string
+          result?: Json | null
+          settings?: Json
+          started_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          heartbeat_at?: string
+          id?: string
+          label?: string | null
+          metadata?: Json
+          operation?: string
+          organization_id?: string
+          pack_id?: string
+          result?: Json | null
+          settings?: Json
+          started_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expertise_run_pack_id_fkey"
+            columns: ["pack_id"]
+            isOneToOne: false
+            referencedRelation: "expertise_pack"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flexible_data: {
         Row: {
           category_id: string | null

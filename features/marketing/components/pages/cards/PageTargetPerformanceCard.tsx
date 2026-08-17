@@ -222,7 +222,7 @@ export function PageTargetPerformanceCard({ page }: { page: MarketingPage }) {
         <div className="flex items-center gap-2 p-3">
           <Crosshair className="h-4 w-4 shrink-0 text-muted-foreground" />
           <p className="text-xs text-muted-foreground">
-            No target keyword set — choose one in Page intent (or promote a
+            No target keyword set — choose one in the SEO plan (or promote a
             supporting keyword from the Keyword batch) to see rank, Search
             Console, and AI-answer evidence here.
           </p>

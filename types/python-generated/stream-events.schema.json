@@ -7079,6 +7079,174 @@
     "title": "DictionaryPublishCompleteData",
     "type": "object"
   },
+  "ExpertiseRunData": {
+    "additionalProperties": false,
+    "description": "The FIRST event of every durable expertise run — its receipt number.\n\nThe browser stores nothing but this id and rejoins by it through\n``POST /expertise-desks/runs/{run_id}/rejoin``; the run's state itself lives\nin ``platform.expertise_run``. Announced before any work begins, so losing\nthe connection one second in still leaves something to come back to.",
+    "properties": {
+      "type": {
+        "const": "expertise_run",
+        "default": "expertise_run",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "pack_id": {
+        "title": "Pack Id",
+        "type": "string"
+      },
+      "operation": {
+        "title": "Operation",
+        "type": "string"
+      },
+      "label": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Label"
+      }
+    },
+    "required": [
+      "run_id",
+      "pack_id",
+      "operation"
+    ],
+    "title": "ExpertiseRunData",
+    "type": "object"
+  },
+  "ExpertiseRunSnapshotData": {
+    "additionalProperties": false,
+    "description": "What a rejoin gets once the run is no longer executing in this process:\nthe durable row, once. It carries the SAME result document the live terminal\nevent carried, so a reloaded page lands on the finished answer rather than an\nempty dialog.",
+    "properties": {
+      "type": {
+        "const": "expertise_run_snapshot",
+        "default": "expertise_run_snapshot",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "pack_id": {
+        "title": "Pack Id",
+        "type": "string"
+      },
+      "operation": {
+        "title": "Operation",
+        "type": "string"
+      },
+      "label": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Label"
+      },
+      "status": {
+        "title": "Status",
+        "type": "string"
+      },
+      "live": {
+        "default": false,
+        "title": "Live",
+        "type": "boolean"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      },
+      "result": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Result"
+      },
+      "completed_at": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Completed At"
+      }
+    },
+    "required": [
+      "run_id",
+      "pack_id",
+      "operation",
+      "status"
+    ],
+    "title": "ExpertiseRunSnapshotData",
+    "type": "object"
+  },
+  "ExpertiseRunFailedData": {
+    "additionalProperties": false,
+    "description": "A live run died. Mirrored into the replay channel so a connection that is\nalready following gets the failure, not silence.",
+    "properties": {
+      "type": {
+        "const": "expertise_run_failed",
+        "default": "expertise_run_failed",
+        "title": "Type",
+        "type": "string"
+      },
+      "run_id": {
+        "title": "Run Id",
+        "type": "string"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      }
+    },
+    "required": [
+      "run_id"
+    ],
+    "title": "ExpertiseRunFailedData",
+    "type": "object"
+  },
   "DeskCompileProgressData": {
     "additionalProperties": false,
     "description": "One step of compiling an Expertise Pack into a desk (agents + workflow).",

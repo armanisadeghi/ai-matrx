@@ -248,7 +248,7 @@ export function PageKeywordsCard({
             </span>
           ) : (
             <p className="text-xs text-muted-foreground">
-              No target keyword yet — set one in Page intent, or promote a
+              No target keyword yet — set one in the SEO plan, or promote a
               supporting keyword below.
             </p>
           )}

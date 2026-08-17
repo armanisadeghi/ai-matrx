@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Hammer, PenLine } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -17,15 +17,19 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
 import type { paths } from "@/types/python-generated/api-types";
+import { useExpertiseRun } from "../../durable-run/useExpertiseRun";
 import type { ExpertisePack } from "../../types";
 
 /**
  * "Create a desk" — the ONE button that turns a pack into a working checker.
  * Streams compile progress from aidream POST /expertise-desks/compile and
  * lands on the new desk. Plain language throughout.
+ *
+ * The compile is a DURABLE run (`useExpertiseRun` → `platform.expertise_run`):
+ * reload the page mid-compile and this dialog picks the run back up and reports
+ * the true outcome — a finished desk is still here after a refresh. THE
+ * FLOATING LAW: a run that dies on page refresh is the same defect as a spinner.
  */
 
 const COMPILE_PATH = "/expertise-desks/compile" satisfies keyof paths;
@@ -35,6 +39,19 @@ type DeskKind = "edit" | "generate";
 interface CompleteInfo {
   workflow_id: string;
   name: string;
+}
+
+/** The compile's terminal event, narrowed. A desk with no workflow id is not a
+ *  desk the user can open, so it is rejected rather than shown as success. */
+function parseCompiled(raw: unknown): CompleteInfo | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as Record<string, unknown>;
+  const workflowId = typeof data.workflow_id === "string" ? data.workflow_id : "";
+  if (!workflowId) return null;
+  return {
+    workflow_id: workflowId,
+    name: typeof data.name === "string" ? data.name : "Your desk",
+  };
 }
 
 export function CompileDeskDialog({
@@ -48,69 +65,50 @@ export function CompileDeskDialog({
   pack: ExpertisePack;
   onCompiled?: () => void;
 }) {
-  const dispatch = useAppDispatch();
   const [kind, setKind] = useState<DeskKind>("edit");
   const [name, setName] = useState("");
   const [deliverable, setDeliverable] = useState("");
-  const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<string[]>([]);
-  const [done, setDone] = useState<CompleteInfo | null>(null);
 
-  const reset = () => {
-    setProgress([]);
-    setDone(null);
-    setRunning(false);
-  };
+  const run = useExpertiseRun<CompleteInfo>({
+    surface: "compile",
+    packId: pack.id,
+    path: COMPILE_PATH,
+    parseResult: parseCompiled,
+  });
+  const { running, stages: progress, result: done, error, reset } = run;
+  const rejoining = run.status === "rejoining";
 
-  const compile = async () => {
-    setRunning(true);
-    setProgress(["Starting the compiler…"]);
-    setDone(null);
-    try {
-      const result = await dispatch(
-        callApi({
-          path: COMPILE_PATH,
-          method: "POST",
-          body: {
-            pack_id: pack.id,
-            desk_kind: kind,
-            name: name.trim() || undefined,
-            deliverable:
-              kind === "generate"
-                ? deliverable.trim() || undefined
-                : undefined,
-          } as never,
-          stream: true,
-          onStreamEvent: (event) => {
-            if (event.event !== "data") return;
-            const data = event.data as Record<string, unknown>;
-            if (data.type === "desk_compile_progress") {
-              setProgress((prev) => [...prev, String(data.message ?? "")]);
-            } else if (data.type === "desk_compile_complete") {
-              setDone({
-                workflow_id: String(data.workflow_id ?? ""),
-                name: String(data.name ?? ""),
-              });
-            }
-          },
-        }),
-      );
-      if (result.error) {
-        throw new Error(
-          typeof result.error === "string"
-            ? result.error
-            : "The compiler reported a problem.",
-        );
-      }
-      onCompiled?.();
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Could not compile the desk";
-      setProgress((prev) => [...prev, `Problem: ${message}`]);
-      toast.error(message);
-    } finally {
-      setRunning(false);
-    }
+  // The pack list behind this dialog must reflect a desk that finished while
+  // the user was away, not only one they watched finish.
+  useEffect(() => {
+    if (done) onCompiled?.();
+  }, [done, onCompiled]);
+
+  // A run picked back up after a reload has to be VISIBLE. Rejoining it behind
+  // a closed dialog would leave the user staring at a page that says nothing is
+  // happening — the same defect as losing the run.
+  const reopenedRef = useRef(false);
+  useEffect(() => {
+    if (reopenedRef.current || open || !running) return;
+    reopenedRef.current = true;
+    onOpenChange(true);
+  }, [open, running, onOpenChange]);
+
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
+
+  const compile = () => {
+    void run.launch(
+      {
+        pack_id: pack.id,
+        desk_kind: kind,
+        name: name.trim() || undefined,
+        deliverable:
+          kind === "generate" ? deliverable.trim() || undefined : undefined,
+      },
+      name.trim() || `${pack.name} Desk`,
+    );
   };
 
   return (
@@ -160,7 +158,7 @@ export function CompileDeskDialog({
               </Button>
             </div>
           </div>
-        ) : running || progress.length > 1 ? (
+        ) : running || progress.length > 0 ? (
           <div className="space-y-2">
             <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
               {progress.map((line, i) => (
@@ -172,15 +170,10 @@ export function CompileDeskDialog({
             {running ? (
               <div className="flex items-start gap-2">
                 <LoadingSpinner size="sm" />
-                {/* The compile stream detaches server-side on disconnect, so
-                    the desk is still built if this tab goes away. This page
-                    cannot REJOIN it — expertise compiles have no durable run
-                    row to rejoin (see FEATURE.md) — so the honest thing is to
-                    say where the result lands and stop a duplicate compile. */}
                 <p className="text-xs text-muted-foreground">
-                  This keeps running on our servers even if you close this or
-                  reload — the finished desk appears on this pack. Don&apos;t
-                  start it again.
+                  {rejoining
+                    ? "Picking this compile back up — it kept running while you were away."
+                    : "This keeps running on our servers even if you close this or reload — come back and it picks up where it left off."}
                 </p>
               </div>
             ) : null}
@@ -266,7 +259,7 @@ export function CompileDeskDialog({
             >
               Cancel
             </Button>
-            <Button onClick={() => void compile()} disabled={running}>
+            <Button onClick={compile} disabled={running}>
               {running ? "Compiling…" : "Create the desk"}
             </Button>
           </DialogFooter>
