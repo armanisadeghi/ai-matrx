@@ -86,11 +86,17 @@ import {
 } from "./service";
 
 /**
- * 🚨 WIRE ENUM — `"slot_pinned"` is aidream's literal, not ours. It is NOT a
- * Mandate-rename straggler: renaming it here sends an enum the server rejects
- * (422) while the dropdown silently mislabels itself. It flips only when the
- * server flips it and `pnpm sync-types` regenerates this union. (Broken once by
- * the rename sweep on 2026-08-17, restored the same day.)
+ * 🚨 WIRE ENUM — `"slot_pinned"` is aidream's literal, not ours, and it is NOT a
+ * Mandate-rename straggler. This union is derived from the generated
+ * `api-types.ts`, which is generated from PRODUCTION, and production still
+ * spells it `slot_pinned`. Renaming it by hand sends an enum the deployed server
+ * rejects while the dropdown silently mislabels itself — which is exactly what
+ * the 2026-08-17 sweep did before this was restored.
+ *
+ * aidream's UNDEPLOYED main already spells it `mandate_pinned`, so it flips on
+ * its own the moment `pnpm sync-types` runs against the renamed server. That is
+ * one line of `docs/handoffs/mandate-rename-endpoint-lockstep.md` — do it there,
+ * with the paths and the code-truth fixtures, never on its own.
  */
 type CandidateSelection = NonNullable<MandateTestCandidate["selection"]>;
 

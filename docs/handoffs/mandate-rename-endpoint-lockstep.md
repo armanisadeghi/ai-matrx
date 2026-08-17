@@ -20,6 +20,24 @@ curl -s https://server.app.matrxserver.com/openapi.json \
 
 Empty → still blocked; do nothing. Non-empty → do the work below **in the same session** and push.
 
+**Checked 2026-08-17 (final verification sweep): still EMPTY — production has not deployed.** It
+answers `/agent-slots/code-truth` with 401 and `/mandates/code-truth` with 404, on git_sha
+`b4721489`. Do not flip yet.
+
+🚨 **Two things that make this look deployed when it is not — do not be fooled by either:**
+
+1. **A local aidream on `localhost:8000` is already renamed.** The dev server talks to *that*, not
+   to production, so `/administration/agents/mandates` shows a **404** code-truth banner locally
+   while production would 500. Its OpenAPI already serves `/mandates/{mandate_key}/*`, `Mandate*`
+   schemas, and `selection: "mandate_pinned"`. A local curl is NOT the gate — the gate above hits
+   `server.app.matrxserver.com`, and `pnpm sync-types` must run against the same server the
+   deployed client will talk to.
+2. **Production is ALREADY failing, for a different reason.** The deployed build still runs
+   `SELECT * FROM agent.slot_definition`, a table the DB rename removed, so every mandate read
+   there raises `SchemaMismatchError` (42P01) and code-truth 500s. That is deploy lag on a fix that
+   is already written and pushed on aidream main — it is NOT a reason to flip this repo early, and
+   flipping early fixes nothing.
+
 ## The exact list of held names
 
 | Where | Held name | Becomes |
