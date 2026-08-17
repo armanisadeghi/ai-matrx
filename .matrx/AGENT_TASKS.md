@@ -42,7 +42,11 @@ Saved Request = an `agent.shortcut` row under the seeded `ai-work-saved-requests
 Product contract: `/Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md`. Retired prompt tables are not candidates. This is the foundation consumed by TASK-006.
 
 ### TASK-006: Expose the certified managed Claude runtime in AI Work
-- **Status:** ready
+- **Status:** ready — **the LOCAL half shipped 2026-08-17** (matrx-local runtime + `/work/new`
+  "Claude Code on my Mac" destination + capability-gated `ContinueOnMyMacPanel` on the provenance
+  view, production-E2E-verified; see `docs/handoffs/coding-agent-bridge-claude-first.md` item 2).
+  Remaining here is the HOSTED sandbox lane (subtasks below), live-token streaming, a row-menu
+  Continue chip, and native fork.
 - **Created:** 2026-08-15
 - **Source:** The managed Claude backend passed paid START/STREAM/RESUME/CANCEL/FORK certification, but the live UI still renders a disabled “certification pending” button.
 
