@@ -33,4 +33,18 @@ describe("FieldFormatPicker layout", () => {
 
     expect(html).toContain('class="space-y-2"');
   });
+
+  it("can keep format options in a popover without resizing a dense row", () => {
+    const html = renderToStaticMarkup(
+      <FieldFormatPicker
+        dataType="datetime"
+        value={{ id: "datetime", options: {} }}
+        onChange={() => undefined}
+        optionsPresentation="popover"
+      />,
+    );
+
+    expect(html).toContain('aria-label="Format options for Date &amp; time"');
+    expect(html).not.toContain(">Style<");
+  });
 });

@@ -38,7 +38,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -591,33 +590,10 @@ export default function TableConfigModal({
     }
   };
 
-  const getDataTypeColor = (dataType: string) => {
-    const colors = {
-      string: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-      number:
-        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      integer:
-        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-      boolean:
-        "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-      date: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-      datetime:
-        "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-      json: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-      array: "bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200",
-    };
-    return (dataType in colors ? colors[dataType as keyof typeof colors] : undefined) || colors.string;
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      {/* The width clamp is load-bearing on a phone: the Fields tab's
-          fixed-width selects push the dialog's min-content width past 375px,
-          which dragged the footer's Save button off-screen for EVERY control
-          in here. Clamp the frame to the viewport and let the wide tab scroll
-          sideways inside its own box instead of the page. */}
-      <DialogContent className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-[800px] max-h-[90dvh] overflow-hidden">
-        <DialogHeader>
+      <DialogContent className="max-h-[92dvh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden p-0 sm:w-[calc(100vw-2rem)] sm:max-w-6xl">
+        <DialogHeader className="shrink-0 border-b px-4 py-3 pr-12 sm:px-5">
           <DialogTitle className="flex min-w-0 items-center gap-2">
             <Settings className="h-5 w-5" />
             <span className="shrink-0">Configure Table:</span>
@@ -634,16 +610,16 @@ export default function TableConfigModal({
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="fields" className="flex-1 overflow-hidden">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="fields" className="min-h-0">
+          <TabsList className="mx-3 mt-2 grid w-auto grid-cols-2 sm:mx-4">
             <TabsTrigger value="fields">Fields & Order</TabsTrigger>
             <TabsTrigger value="table">Table Settings</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="fields" className="flex-1 overflow-hidden mt-4">
+          <TabsContent value="fields" className="mt-0 min-h-0 overflow-hidden">
             <div
               ref={scrollRef}
-              className="space-y-2 max-h-[50dvh] overflow-y-auto overflow-x-auto pr-2 scroll-smooth"
+              className="max-h-[62dvh] space-y-2 overflow-x-hidden overflow-y-auto px-3 py-3 scroll-smooth [scrollbar-gutter:stable] sm:px-4"
               onDragOver={(e) => {
                 // Keep auto-scroll responsive even when hovering gaps between cards.
                 if (draggedField) {
@@ -653,21 +629,6 @@ export default function TableConfigModal({
               }}
               onDrop={handleDrop}
             >
-              {Object.keys(dataTypeChanges).length > 0 && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                  <div className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-                    <AlertTriangle className="h-4 w-4" />
-                    <span className="font-medium">
-                      Data Type Changes Detected
-                    </span>
-                  </div>
-                  <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                    Changing data types will attempt to convert existing data.
-                    Some conversions may fail.
-                  </p>
-                </div>
-              )}
-
               {fields.map((field, index) => (
                 <React.Fragment key={field.id}>
                   {/* Drop ghost — a colored bar showing exactly where the
@@ -676,10 +637,14 @@ export default function TableConfigModal({
                     <div className="h-1.5 -my-0.5 rounded-full bg-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.25)] transition-all" />
                   )}
                   <Card
-                    className={`cursor-move transition-all ${
+                    data-field-card={field.id}
+                    data-converting={Boolean(dataTypeChanges[field.id])}
+                    className={`cursor-move border-2 transition-[border-color,background-color,opacity,transform] ${
                       draggedField === field.id ? "opacity-40 scale-[0.98]" : ""
                     } ${
-                      dataTypeChanges[field.id] ? "ring-2 ring-amber-400" : ""
+                      dataTypeChanges[field.id]
+                        ? "border-amber-400 bg-amber-50/40 dark:bg-amber-950/20"
+                        : "border-border"
                     }`}
                     draggable
                     onDragStart={(e) => handleDragStart(e, field.id)}
@@ -687,159 +652,157 @@ export default function TableConfigModal({
                     onDrop={handleDrop}
                     onDragEnd={handleDragEnd}
                   >
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <div className="grid min-w-0 flex-1 grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap sm:gap-x-3 sm:gap-y-0">
-                        <div className="col-span-2 min-w-0 sm:col-span-1 sm:flex-1">
-                          <div className="flex items-center gap-2">
-                            <Input
-                              value={field.display_name}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  field.id,
-                                  "display_name",
-                                  e.target.value,
-                                )
-                              }
-                              className="h-10 text-base sm:h-7 sm:text-sm"
-                            />
-                          </div>
-                          <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                            #{field.field_order} • {field.field_name}
-                          </p>
+                    <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-x-2 gap-y-2 px-2.5 py-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:grid-cols-[auto_minmax(13rem,1fr)_8rem_9.5rem_7.5rem_6.5rem_auto] lg:gap-x-3">
+                      <GripVertical className="col-start-1 row-start-1 h-4 w-4 self-center text-muted-foreground lg:row-start-1" />
+                      <div className="col-span-2 col-start-2 row-start-1 min-w-0 sm:col-span-2 lg:col-span-1 lg:col-start-2">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={field.display_name}
+                            onChange={(e) =>
+                              handleFieldChange(
+                                field.id,
+                                "display_name",
+                                e.target.value,
+                              )
+                            }
+                            className="h-8 text-sm"
+                          />
                         </div>
+                        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                          #{field.field_order} • {field.field_name}
+                        </p>
+                      </div>
 
-                        {/* Two adjacent selects that can both read "Text" are
+                      {/* Two adjacent selects that can both read "Text" are
                             unreadable without captions — "Stores" is the
                             database type (changing it rewrites data), "Shows
                             as" is the display format (changing it never does). */}
-                        <div className="shrink-0">
-                          <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-muted-foreground">
-                            Stores
-                          </span>
-                          <Select
-                            value={field.data_type}
-                            onValueChange={(value) =>
-                              handleFieldChange(field.id, "data_type", value)
-                            }
-                          >
-                            <SelectTrigger className="h-10 w-full text-xs sm:h-7 sm:w-28">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {DATA_TYPES.map((type) => (
-                                <SelectItem key={type.value} value={type.value}>
-                                  <div>
-                                    <div className="font-medium">
-                                      {type.label}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {type.description}
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <FieldFormatPicker
-                          label="Shows as"
-                          layout="embedded"
-                          optionsClassName="order-last col-span-2 mt-1 w-full border-t border-border/60 pt-2 sm:mt-2 sm:basis-full"
-                          triggerClassName="h-10 w-full sm:h-7 sm:w-32"
-                          dataType={field.data_type}
-                          value={
-                            formatChanges[field.id] ??
-                            resolveFieldFormat(field.data_type, field.metadata)
+                      <div className="col-start-2 row-start-2 min-w-0 lg:col-start-3 lg:row-start-1">
+                        <span className="mb-0.5 block text-[10px] uppercase tracking-wide text-muted-foreground">
+                          Stores
+                        </span>
+                        <Select
+                          value={field.data_type}
+                          onValueChange={(value) =>
+                            handleFieldChange(field.id, "data_type", value)
                           }
-                          onChange={(next) => {
-                            setFormatChanges((prev) => ({
-                              ...prev,
-                              [field.id]: next,
-                            }));
-                            setHasChanges(true);
-                          }}
-                        />
+                        >
+                          <SelectTrigger className="h-8 w-full text-xs">
+                            <span className="truncate">
+                              {DATA_TYPES.find(
+                                (type) => type.value === field.data_type,
+                              )?.label ?? "Text"}
+                            </span>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DATA_TYPES.map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                <div>
+                                  <div className="font-medium">
+                                    {type.label}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {type.description}
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1.5">
-                            <Checkbox
-                              id={`required-${field.id}`}
-                              checked={field.is_required}
-                              onCheckedChange={(checked) =>
-                                handleFieldChange(
-                                  field.id,
-                                  "is_required",
-                                  checked,
-                                )
-                              }
-                            />
-                            <Label
-                              htmlFor={`required-${field.id}`}
-                              className="text-[11px]"
-                            >
-                              Req
-                            </Label>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Checkbox
-                              id={`public-${field.id}`}
-                              checked={field.is_public}
-                              onCheckedChange={(checked) =>
-                                handleFieldChange(
-                                  field.id,
-                                  "is_public",
-                                  checked,
-                                )
-                              }
-                            />
-                            <Label
-                              htmlFor={`public-${field.id}`}
-                              className="text-[11px]"
-                            >
-                              Pub
-                            </Label>
-                          </div>
-                        </div>
+                      <FieldFormatPicker
+                        label="Shows as"
+                        className="col-start-3 row-start-2 min-w-0 space-y-0 lg:col-start-4 lg:row-start-1"
+                        optionsPresentation="popover"
+                        triggerClassName="h-8 w-full"
+                        dataType={field.data_type}
+                        value={
+                          formatChanges[field.id] ??
+                          resolveFieldFormat(field.data_type, field.metadata)
+                        }
+                        onChange={(next) => {
+                          setFormatChanges((prev) => ({
+                            ...prev,
+                            [field.id]: next,
+                          }));
+                          setHasChanges(true);
+                        }}
+                      />
 
-                        <div className="flex items-center justify-end gap-2">
-                          {dataTypeChanges[field.id] && (
-                            <Badge
-                              variant="outline"
-                              className="shrink-0 border-amber-400 text-amber-600"
-                            >
-                              Will convert
-                            </Badge>
-                          )}
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 shrink-0 text-muted-foreground hover:text-destructive sm:h-7 sm:w-7"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void handleDeleteField(field);
-                            }}
-                            disabled={
-                              loading ||
-                              fields.length <= 1 ||
-                              deletingFieldId === field.id
+                      <div className="col-start-2 row-start-3 flex h-8 items-center gap-3 sm:col-span-2 sm:col-start-4 sm:row-start-2 lg:col-span-1 lg:col-start-5 lg:row-start-1">
+                        <div className="flex items-center gap-1.5">
+                          <Checkbox
+                            id={`required-${field.id}`}
+                            checked={field.is_required}
+                            onCheckedChange={(checked) =>
+                              handleFieldChange(
+                                field.id,
+                                "is_required",
+                                checked,
+                              )
                             }
-                            title={
-                              fields.length <= 1
-                                ? "A table must keep at least one column"
-                                : `Remove ${field.display_name}`
-                            }
+                          />
+                          <Label
+                            htmlFor={`required-${field.id}`}
+                            className="text-[11px]"
                           >
-                            {deletingFieldId === field.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Trash2 className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
+                            Req
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Checkbox
+                            id={`public-${field.id}`}
+                            checked={field.is_public}
+                            onCheckedChange={(checked) =>
+                              handleFieldChange(field.id, "is_public", checked)
+                            }
+                          />
+                          <Label
+                            htmlFor={`public-${field.id}`}
+                            className="text-[11px]"
+                          >
+                            Pub
+                          </Label>
                         </div>
                       </div>
+
+                      <div className="col-span-2 col-start-3 row-start-3 flex h-8 items-center justify-end sm:col-span-1 sm:col-start-4 sm:row-start-1 lg:col-start-6 lg:row-start-1 lg:justify-start">
+                        {dataTypeChanges[field.id] && (
+                          <Badge
+                            variant="outline"
+                            className="shrink-0 border-amber-400 text-amber-600"
+                          >
+                            Will convert
+                          </Badge>
+                        )}
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="col-start-4 row-start-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive sm:col-start-5 lg:col-start-7 lg:row-start-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleDeleteField(field);
+                        }}
+                        disabled={
+                          loading ||
+                          fields.length <= 1 ||
+                          deletingFieldId === field.id
+                        }
+                        title={
+                          fields.length <= 1
+                            ? "A table must keep at least one column"
+                            : `Remove ${field.display_name}`
+                        }
+                      >
+                        {deletingFieldId === field.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
                     </div>
                   </Card>
                   {/* Drop ghost at the very end of the list. */}
@@ -853,12 +816,12 @@ export default function TableConfigModal({
             </div>
           </TabsContent>
 
-          <TabsContent value="table" className="flex-1 overflow-hidden mt-4">
+          <TabsContent value="table" className="mt-0 min-h-0 overflow-hidden">
             {/* Own scroll area, same as the Fields tab: this tab's content is
                 taller than the dialog on a laptop, and the parent's
                 `overflow-hidden` clips the tail with no scrollbar — which is
                 how the Data Validation section arrived unreachable. */}
-            <div className="space-y-6 max-h-[50dvh] overflow-y-auto pr-2">
+            <div className="max-h-[62dvh] space-y-6 overflow-y-auto px-4 py-3 [scrollbar-gutter:stable]">
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="table-name">Table Name</Label>
@@ -917,7 +880,8 @@ export default function TableConfigModal({
                 <h3 className="text-sm font-medium">Data Validation</h3>
                 <div className="flex items-center justify-between gap-4 p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
-                    {toValidationMode(tableInfo.validation_mode) === "strict" ? (
+                    {toValidationMode(tableInfo.validation_mode) ===
+                    "strict" ? (
                       <ShieldCheck className="h-4 w-4 shrink-0 text-green-600" />
                     ) : (
                       <Shield className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -961,12 +925,19 @@ export default function TableConfigModal({
           </div>
         )}
 
-        <DialogFooter>
-          <div className="flex justify-between items-center w-full">
-            <div className="text-sm text-muted-foreground">
-              {hasChanges ? "You have unsaved changes" : "No changes made"}
+        <DialogFooter className="shrink-0 border-t px-4 py-3 sm:px-5">
+          <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-h-5 items-center gap-2 text-sm text-muted-foreground">
+              {Object.keys(dataTypeChanges).length > 0 && (
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600" />
+              )}
+              {Object.keys(dataTypeChanges).length > 0
+                ? `${Object.keys(dataTypeChanges).length} ${Object.keys(dataTypeChanges).length === 1 ? "column" : "columns"} will be converted when saved`
+                : hasChanges
+                  ? "You have unsaved changes"
+                  : "No changes made"}
             </div>
-            <div className="flex gap-2">
+            <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={onClose} disabled={loading}>
                 <X className="h-4 w-4 mr-2" />
                 Cancel

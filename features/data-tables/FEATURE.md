@@ -3,7 +3,7 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-08-16`
+**Last updated:** `2026-08-17`
 
 ---
 
@@ -36,7 +36,7 @@
 - ✅ **Column-type badges** — every header now shows the `data_type` under the display name
 - ✅ **`op:'merge'` in `udt_bulk_write`** — applied live + verified; partial-row patch via `jsonb_concat`
 - ✅ **Table-native selection + scoped copy** — every `UserTableViewer` surface has persistent page-spanning row checkboxes, icon-only direct Copy / Copy for AI, selected-row copy, and a large non-blocking WindowPanel workspace for exact row/column projection. The workspace reuses the canonical `MatrxDataTable` search, whole-word matching, per-column filters, layered advanced filters, sorting, pagination, and selection at every table size.
-- ✅ **Responsive Table Settings + dataset door** — column controls use a phone-safe two-column grid with the format option rail on its own row, tap-sized inputs/actions, and the dialog title renders the dataset through `EntityRef` so the named resource always opens.
+- ✅ **Stable responsive Table Settings + dataset door** — the wide desktop dialog uses the available viewport instead of crushing rows into 800px; deterministic desktop/tablet/phone grids keep every column card the same height; format-specific controls float in a popover; conversion status stays in the fixed footer; the selected border is internal and unclipped; dropdowns add no horizontal scroll or layout shift. The title renders the dataset through `EntityRef` so the named resource always opens.
 
 **P4 workbook surface (lossless spreadsheet, v1):**
 - ✅ `udt_workbook_snapshots` table — append-only content store keyed by `workbook_id`; RLS mirrors `udt_workbooks`; viewers see all snapshots they can view the parent of; editors can append; in `supabase_realtime` publication.
@@ -540,6 +540,8 @@ into:
 Decide before agent-heavy workloads land.
 
 ## Change log
+
+- 2026-08-17 — codex: **Table Settings rebuilt around zero-shift row geometry.** Removed the 800px desktop cap, oversized conditional warning, horizontal list scroll, flex wrapping, expanding inline format-option rails, and clipped outer selection ring. The dialog now uses a max-6xl edge-efficient frame; one explicit responsive grid aligns name/storage/format/flags/status/delete; every card reserves the same border and status geometry; format options use the shared picker's new popover presentation; conversion state occupies the footer's existing status slot. Browser stress tests at 1440×1000, 1024×768, 768×768, and 375×812 held dialog width/height, list scroll size/position, and every card rectangle unchanged while storage/format dropdowns opened and changed, the format popover opened, and its nested percentage dropdown opened.
 
 - 2026-08-16 — codex: **Table Settings is phone-safe and its dataset identity is a door.** The column editor uses a responsive two-column grid, tap-sized controls, and the shared `FieldFormatPicker` embedded layout so conditional format options take a full-width rail instead of squeezing the row sideways. The title now renders the named dataset through `EntityRef` with open/peek actions. Focused picker tests preserve both embedded and default stacked contracts.
 
