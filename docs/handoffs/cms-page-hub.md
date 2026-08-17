@@ -45,39 +45,50 @@ create it, never pretend the step didn't exist), what happens DURING (the editor
 comes AFTER (measurement, analysis, findings — the feedback loop back into editing). A tab is a
 reused canonical component, never a rebuilt poorer one (Inventory Law).
 
-## WHAT'S NEXT — the open front (verified against code 2026-08-17; chips fired, none started)
+## WHAT'S NEXT — the open front (updated 2026-08-17)
 
-**The active front is the SEO-plan unification.** Arman's ruling is canon
-(`common-docs/systems/content-planning/FEATURE.md` invariant 9): ONE SEO plan per page, on
-`web.page` (`meta_*_desired` columns + `desired_values`), creatable at planning time; desired
-(plan) / observed (crawl) / served (CMS columns) stay distinct; everything else unifies. The
-typed contract is LIVE on main (`PageKeywordPlan` / `desired_values.keyword_plan`,
-`features/marketing/types.ts`) — nothing else has been built yet. Verified 2026-08-17: the
-strategist still writes `plan.node.attributes.keyword_strategy`, `NodeSeoIntentEditor` still
-exists, no planned-status `web.page` rows exist. Three chips are fired and specced (each prompt
-is a complete self-contained brief — re-fire from here if they go stale):
+**The SEO-plan unification is DONE on both halves.** Arman's ruling is canon
+(`common-docs/systems/content-planning/FEATURE.md` invariant 9): ONE SEO plan per
+page, on `web.page` (`meta_*_desired` + `desired_values`), creatable at planning
+time; desired (plan) / observed (crawl) / served (CMS columns) stay distinct.
 
-1. **"Unify SEO plan storage onto web.page desired_values"** (cross-repo): planned-status
-   `web.page` rows created at plan/CMS-create time (crawler ADOPTS by URL, never duplicates);
-   plan.node SEO fields copied into `desired_values` (strategy internal links →
-   `outbound_links`, unifying the two link-prescription systems); aidream `page_pipeline.py` +
-   FE `keyword-strategy.ts` rewired to the one store; column drops deferred to a verified
-   follow-up; proven on cosmeticinjectables (baa61391) before platform-wide.
-2. **"One SEO plan editor across plan, marketing, and CMS"**: one editable component absorbing
-   `PageIntentCard`'s keyword section, `NodeSeoIntentEditor`, and the read-only
-   `SeoPlanSection`; mounted in the plan workspace, the marketing page workspace, and the CMS
-   SEO tab (served fields stay; plan section above them; one-click Create plan when no page row).
-3. **"Fix ContextMenuV3 mobile wrapper breaking table rows"**: cloneElement fix for the
-   `display:contents` div that is invalid around `<tr>` (hydration errors on /cms/html-pages
-   at mobile widths).
+1. ~~**Unify SEO plan storage onto web.page desired_values**~~ — **DONE
+   2026-08-17, verified against the live DB.** `web.page.status` gained
+   `planned` (migrations `0382`/`0383`); planned rows are created at plan/CMS
+   time through the ONE writer (`ensure_planned_page_urls`) and the crawler
+   ADOPTS them by URL (`planned → active`) instead of duplicating — proven on
+   cosmeticinjectables (8 routes: 4 adopted existing rows, 4 new planned rows,
+   0 duplicates). `plan.node`'s SEO fields were copied onto the page records for
+   **567 of 567** nodes (`aidream/scripts/migrate_plan_seo_to_page.py`,
+   idempotent; `--verify-only` reports 0 unmoved) and **nothing reads them any
+   more** — aidream `page_pipeline` / `cms_fill` / `brief_writer` /
+   `setup_agents` read `services/content_plan/page_seo_plan.py`, and the client
+   reads `features/marketing/content-plan/page-seo-plan.ts`. The strategist's
+   internal links are now the existing `outbound_links` plan (one link system).
+   **Column drops are deliberately NOT done** — plan.node still holds its
+   copies; retiring them is a separate change after production verification.
+2. ~~**One SEO plan editor across plan, marketing, and CMS**~~ — DONE
+   (`features/marketing/seo/plan/`, commit a21854870). `plan-model.ts` is the
+   canonical per-page normalizer; the site-wide index above builds on it and
+   must never re-implement it.
+3. **Fix ContextMenuV3 mobile wrapper breaking table rows** — still open.
+   cloneElement fix for the `display:contents` div that is invalid around
+   `<tr>` (hydration errors on /cms/html-pages at mobile widths).
 
-**After 1+2 land:** the best-in-class layer on the one store (SERP-intent targets,
-entity/heading coverage vs plan, tracking against plan); any bulk SEO-plan generation follows
-effort tiers + estimate-before-the-button (never a mid-run kill). **Also open, lower priority:**
-research CMS-array reverse filter (`client_pages.research_topic_ids` in the CMS DB), CMS
-components→page usage join (lowest value), Research tab (blocked on website-factory p3/p4/p5).
-**Data note:** no production row carries `keyword_strategy` or `web_page_id` yet — the new
-surfaces show honest empty states until the strategist runs and a published page is crawled.
+**Next on the one store:** the best-in-class layer (SERP-intent targets,
+entity/heading coverage vs plan, tracking against plan); any bulk SEO-plan
+generation follows effort tiers + estimate-before-the-button (never a mid-run
+kill). **Also open, lower priority:** research CMS-array reverse filter
+(`client_pages.research_topic_ids` in the CMS DB), CMS components→page usage
+join (lowest value), Research tab (blocked on website-factory p3/p4/p5).
+
+**One real risk, recorded not hidden:** a planned page's URL is derived from
+`web.site.root_url` + the plan route, while `web_announce`/`cms_publish`
+anchors a published CMS page at its `page_urls().live_url`. For a CMS site
+still served at `mymatrx.com/c/{slug}` those are two different URLs and
+therefore two `web.page` rows for one page. Every paired site we plan for has
+its own domain, where they agree — but attaching a domain later is the case to
+watch, and unifying the two derivations is the follow-up.
 
 ## Current state — verified against code + browser 2026-08-15
 
@@ -189,7 +200,7 @@ surfaces show honest empty states until the strategist runs and a published page
    internal-link prescription systems; the CMS SEO tab reuses none of the canonical SERP verdict
    components). Interim: `SeoPlanSection` now renders inside NodePanel's Targeting section, so
    the strategy view reaches both the CMS tab and the workspace.
-   **ARCHITECTURE RULED 2026-08-16 (Arman): ONE SEO plan per page, on `web.page` —
+   **ARCHITECTURE RULED 2026-08-16 (Arman), BUILT 2026-08-17: ONE SEO plan per page, on `web.page` —
    `common-docs/systems/content-planning/FEATURE.md` invariant 9 is the canon.** Desired
    (plan) / observed (crawl) / served (CMS columns) stay distinct; everything else unifies.
    The typed contract is live (`PageKeywordPlan` / `desired_values.keyword_plan`,
