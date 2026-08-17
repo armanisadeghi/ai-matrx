@@ -33,17 +33,27 @@ type SchemaArrivalListener = (kind: string, schema: KindSchema | null) => void;
 const reportedFieldlessWarmKinds = new Set<string>();
 
 /**
- * Loud recovery: a `content_ir.kind_definition` row carrying NO fields tried to
- * replace a compiled schema. The compiled floor is kept (see `ensureWarm`), and
- * the row is a real data defect — `data` needs the flattened fields, or the
- * kind must stop shipping a compiled schema.
+ * Loud recovery: the schema adapter returned a fieldless object override even
+ * though it must omit unflattenable object contracts. The compiled floor is
+ * kept (see `ensureWarm`) and the adapter invariant failure is captured once.
  */
 function reportFieldlessWarmSchema(kind: string): void {
   if (reportedFieldlessWarmKinds.has(kind)) return;
   reportedFieldlessWarmKinds.add(kind);
-  const message = `[content-ir] kind_definition row for "${kind}" reconstructed to ZERO fields (data is null/empty) — keeping the compiled schema so the kind still parses. Fix the row: without fields every payload field becomes residue and the kind component renders empty.`;
-  console.error(message);
-  captureError({ source: "content-ir", message, relation: kind, raw: { kind } });
+  const message = `[content-ir] schema adapter returned an unusable fieldless override for "${kind}" — keeping the compiled schema so the kind still parses.`;
+  try {
+    captureError({
+      source: "content-ir",
+      message,
+      operation: "select",
+      relation: kind,
+      callSite: "KindRegistry.ensureWarm",
+      hint: "The content_ir schema source must omit unavailable object schemas instead of returning an empty field map.",
+      raw: { kind, recovery: "compiled_schema_retained" },
+    });
+  } catch {
+    /* diagnostics must never break registry recovery */
+  }
 }
 
 class KindRegistry {
@@ -160,18 +170,12 @@ class KindRegistry {
           }
           for (const [kind, schema] of Object.entries(schemas)) {
             const existing = this.defs.get(kind);
-            // 🚨 A FIELDLESS ROW IS AN ABSENCE, NOT A SCHEMA (D209 follow-on).
-            // A python-owned kind leaves `kind_definition.data` NULL whenever
-            // its schema is too nested for aidream's all-or-nothing
-            // `fields_from_json_schema` (133 of 140 active kinds — D156), and
-            // that reconstructs here as a schema with ZERO fields. Letting it
-            // "override" a compiled schema means every field of a live payload
-            // becomes residue: the parser's `root.value` collapses to
-            // `{__kind}`, `toLegacyServerData` finds nothing, and the kind
-            // component renders an EMPTY card — measured on the keyword
-            // classifier, whose 5,097-char result rendered as "0 results".
-            // Keep the compiled floor and SCREAM; a real DB schema (fields
-            // present) still wins, exactly as documented above.
+            // Defensive invariant: the content_ir adapter omits Python-owned
+            // object contracts that cannot be faithfully flattened from
+            // `emitted_json_schema` into KindSchema. If any source still
+            // returns a fieldless override, keep the compiled floor and report
+            // the adapter defect before it can collapse every payload field
+            // into residue and render an empty component.
             // `root` is the OTHER legal shape of an empty field map (a
             // non-object root form), so a row carrying one is a real schema.
             if (

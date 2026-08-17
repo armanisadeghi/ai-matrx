@@ -2,13 +2,11 @@
  * REGRESSION GUARD: a `content_ir.kind_definition` row with NO fields must not
  * erase a compiled schema.
  *
- * A python-owned kind leaves `kind_definition.data` NULL whenever its schema is
- * too nested for aidream's all-or-nothing `fields_from_json_schema` (133 of 140
- * active kinds — D156), and the warm sweep reconstructs that as a schema with
- * zero fields. Because DB rows override compiled schemas once warm, such a row
- * silently un-taught the parser the kind's entire shape: every field of a live
- * payload landed in `residue.extra`, `root.value` collapsed to `{__kind}`, the
- * legacy bridge found nothing, and the kind component rendered an EMPTY card.
+ * The canonical content_ir adapter omits Python-owned object contracts it
+ * cannot faithfully flatten. The registry still defends against any source
+ * violating that invariant: a fieldless override cannot erase a compiled
+ * schema and emits one structured diagnostic, without mirroring itself through
+ * `console.error` into a duplicate Error Inspector entry.
  *
  * Measured on the keyword classifier (2026-08-17): a 5,097-character result
  * rendered as "Keyword intent classification 0 — Waiting for the first
@@ -28,11 +26,13 @@ const RICH: KindSchema = {
   },
 };
 
-async function warmWith(schema: KindSchema) {
+async function warmWith(schemas: Record<string, KindSchema>) {
   jest.resetModules();
+  const captureError = jest.fn();
+  jest.doMock("@/lib/diagnostics/errorCaptureStore", () => ({ captureError }));
   jest.doMock("../registry/schema-source-kind-tables", () => ({
     listKindSchemasFromTables: jest.fn(async () => ({
-      schemas: { kind_under_test: schema },
+      schemas,
       entries: [],
     })),
     getKindSchemaAndMetaBySlugFromTables: jest.fn(async () => null),
@@ -50,36 +50,63 @@ async function warmWith(schema: KindSchema) {
   }));
   const { kindRegistry } = await import("../registry/kind-registry");
   await kindRegistry.ensureWarm();
-  return kindRegistry;
+  return { kindRegistry, captureError };
 }
 
 afterEach(() => {
   jest.dontMock("../registry/schema-source-kind-tables");
   jest.dontMock("../registry/system-kinds");
+  jest.dontMock("@/lib/diagnostics/errorCaptureStore");
   jest.resetModules();
 });
 
-test("a fieldless DB row keeps the compiled schema (and screams)", async () => {
-  const error = jest.spyOn(console, "error").mockImplementation(() => {});
-  const registry = await warmWith(FIELDLESS);
+test("an omitted unavailable schema quietly keeps the compiled floor", async () => {
+  const { kindRegistry, captureError } = await warmWith({});
 
-  expect(Object.keys(registry.getSchema("kind_under_test")?.fields ?? {})).toEqual(
-    ["results"],
+  expect(
+    Object.keys(kindRegistry.getSchema("kind_under_test")?.fields ?? {}),
+  ).toEqual(["results"]);
+  expect(captureError).not.toHaveBeenCalled();
+});
+
+test("a fieldless adapter result keeps the floor and emits one structured diagnostic", async () => {
+  const error = jest.spyOn(console, "error").mockImplementation(() => {});
+  const { kindRegistry, captureError } = await warmWith({
+    kind_under_test: FIELDLESS,
+  });
+
+  expect(
+    Object.keys(kindRegistry.getSchema("kind_under_test")?.fields ?? {}),
+  ).toEqual(["results"]);
+  expect(captureError).toHaveBeenCalledTimes(1);
+  expect(captureError).toHaveBeenCalledWith(
+    expect.objectContaining({
+      source: "content-ir",
+      operation: "select",
+      relation: "kind_under_test",
+      callSite: "KindRegistry.ensureWarm",
+      raw: {
+        kind: "kind_under_test",
+        recovery: "compiled_schema_retained",
+      },
+    }),
   );
-  // Loud recovery — the row is a real data defect, never silently absorbed.
-  expect(error).toHaveBeenCalledWith(
-    expect.stringContaining("reconstructed to ZERO fields"),
-  );
+  // Structured capture is primary; console capture would persist the same
+  // logical incident a second time under source `console-error`.
+  expect(error).not.toHaveBeenCalled();
   error.mockRestore();
 });
 
 test("a DB row WITH fields still overrides the compiled schema", async () => {
-  const registry = await warmWith({
-    kind: "kind_under_test",
-    fields: { headline: { type: "string", required: true } },
+  const { kindRegistry, captureError } = await warmWith({
+    kind_under_test: {
+      kind: "kind_under_test",
+      fields: { headline: { type: "string", required: true } },
+    },
   });
 
-  expect(Object.keys(registry.getSchema("kind_under_test")?.fields ?? {})).toEqual(
-    ["headline"],
-  );
+  expect(
+    Object.keys(kindRegistry.getSchema("kind_under_test")?.fields ?? {}),
+  ).toEqual(["headline"]);
+  expect(captureError).not.toHaveBeenCalled();
 });

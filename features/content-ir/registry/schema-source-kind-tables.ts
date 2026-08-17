@@ -131,6 +131,38 @@ function asStoredData(value: Json, kind: string): StoredFieldElement[] {
 }
 
 /**
+ * Python owns some object contracts only as `emitted_json_schema`: its
+ * all-or-nothing flattener deliberately leaves `data` NULL when the contract
+ * cannot be represented faithfully as `StoredFieldElement[]`. That is schema
+ * unavailability for the parser, not an empty object schema.
+ */
+function hasUnflattenedObjectContract(
+  data: Json,
+  emittedJsonSchema: Json | null | undefined,
+): boolean {
+  if (data !== null && data !== undefined) return false;
+  if (
+    emittedJsonSchema === null ||
+    emittedJsonSchema === undefined ||
+    typeof emittedJsonSchema !== "object" ||
+    Array.isArray(emittedJsonSchema)
+  ) {
+    return false;
+  }
+
+  const schema = emittedJsonSchema as Record<string, Json | undefined>;
+  const schemaType = schema.type;
+  return (
+    schemaType === "object" ||
+    (Array.isArray(schemaType) && schemaType.includes("object")) ||
+    (schema.properties !== null &&
+      schema.properties !== undefined &&
+      typeof schema.properties === "object" &&
+      !Array.isArray(schema.properties))
+  );
+}
+
+/**
  * PURE reconstruction: rows (+ edges) → the registry's `{ schemas, entries }`.
  * Resolves each edge's `child_definition_id` to the child's kind slug via the
  * id→slug map, so the single source of truth for refs (the edge table) rebuilds
@@ -161,8 +193,9 @@ export function reconstructKindRegistry(
 
   const schemas: Record<string, KindSchema> = {};
   const entries: BlockSchemaEntry[] = [];
+  const seenKinds = new Set<string>();
   for (const d of defs) {
-    if (schemas[d.kind]) {
+    if (seenKinds.has(d.kind)) {
       // A duplicate slug is a DATA defect (the DB now blocks it — see
       // `migrations/kind_definition_global_slug_unique.sql`), never a reason to
       // take down the ENTIRE registry. This line used to throw, so one
@@ -178,16 +211,18 @@ export function reconstructKindRegistry(
     // floor covers anything genuinely needed, and a broken kind was unusable
     // anyway. This is a recovery path firing → a real data defect upstream.
     try {
-      const schema = storageToKindSchema(d.kind, {
-        data: asStoredData(d.data, d.kind),
-        edges: edgesByParent.get(d.id) ?? [],
-      });
-      schemas[d.kind] = schema;
+      const schema = hasUnflattenedObjectContract(d.data, d.emitted_json_schema)
+        ? null
+        : storageToKindSchema(d.kind, {
+            data: asStoredData(d.data, d.kind),
+            edges: edgesByParent.get(d.id) ?? [],
+          });
+      if (schema) schemas[d.kind] = schema;
       entries.push({
         id: d.id,
         label: d.label,
         slug: d.kind,
-        fields: schema.fields,
+        fields: schema?.fields ?? {},
         ...(d.is_active !== undefined && d.is_active !== null
           ? { isActive: d.is_active }
           : {}),
@@ -196,6 +231,7 @@ export function reconstructKindRegistry(
         emittedJsonSchema: d.emitted_json_schema ?? null,
         isContractArtifact: d.is_contract_artifact ?? false,
       });
+      seenKinds.add(d.kind);
     } catch (err) {
       console.warn(
         `[content_ir] skipped malformed kind "${d.kind}": ${
@@ -290,7 +326,7 @@ export async function getKindSchemaAndMetaBySlugFromTables(
   const { data: defs, error: defErr } = await supabase
     .schema("content_ir")
     .from("kind_definition")
-    .select("id, kind, label, data, metadata")
+    .select("id, kind, label, data, metadata, emitted_json_schema")
     .eq("kind", kind)
     .is("deleted_at", null)
     .order("created_at", { ascending: true })
@@ -341,6 +377,9 @@ export async function getKindSchemaAndMetaBySlugFromTables(
   }
 
   const loadingComponent = kindLoadingComponentFromMetadata(def.metadata ?? null);
+  if (hasUnflattenedObjectContract(def.data, def.emitted_json_schema)) {
+    return { schema: null, loadingComponent };
+  }
   try {
     return {
       schema: storageToKindSchema(def.kind, {

@@ -253,6 +253,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-17 — **A Content IR recovery no longer creates a second persisted symptom through the console fallback.** The kind-registry fieldless-schema guard now emits only its structured `content-ir` capture, with a named `operation`, `relation`, `callSite`, recovery data, and an adapter-specific hint. The global `console.error` adapter remains the production safety net, but structured producers must not mirror the same incident into it; source is part of the capture signature, so that mirror previously bypassed in-memory dedupe and persisted one logical incident twice.
 - 2026-08-13 — **Captured errors can be reconciled in place.** AccessGate uses
   the new `resolveCapturedError` seam to replace `reason: "unknown"` with the
   resolver's definite record state without creating an occurrence or changing

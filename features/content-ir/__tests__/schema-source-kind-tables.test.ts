@@ -68,7 +68,7 @@ describe("content_ir read adapter — reconstruction", () => {
   // aidream's `fields_from_json_schema` stores a NULL `data[]` but a COMPLETE
   // `emitted_json_schema`. The adapter must carry that column through verbatim
   // — reading only `data` made 140 active kinds look contract-less.
-  it("carries emitted_json_schema through verbatim, including for a NULL-data kind", () => {
+  it("carries an unflattened object contract but omits its unavailable parser schema", () => {
     const nested = {
       type: "object",
       required: ["ideas"],
@@ -97,18 +97,43 @@ describe("content_ir read adapter — reconstruction", () => {
         data: null,
       },
     ];
-    const { entries } = reconstructKindRegistry(defs, []);
+    const { schemas, entries } = reconstructKindRegistry(defs, []);
     const py = entries.find((e) => e.slug === "topic_ideas");
     expect(py).toBeDefined();
-    // Fieldless, but NOT contract-less.
+    // The catalog still carries the authoritative contract verbatim.
     expect(py!.fields).toEqual({});
     expect(py!.emittedJsonSchema).toEqual(nested);
     // No nesting is flattened on the way through.
     expect(JSON.stringify(py!.emittedJsonSchema)).toBe(JSON.stringify(nested));
+    // But NULL `data` cannot faithfully teach the streaming parser this object
+    // shape. Omission preserves any compiled floor instead of inventing an
+    // empty object schema that would turn every payload field into residue.
+    expect(schemas.topic_ideas).toBeUndefined();
     // An absent column reads as null, never undefined-by-omission.
     expect(
       entries.find((e) => e.slug === "no_schema")!.emittedJsonSchema,
     ).toBeNull();
+    expect(schemas.no_schema).toEqual({ kind: "no_schema", fields: {} });
+  });
+
+  it("also recognizes nullable object schemas as unflattened contracts", () => {
+    const { schemas } = reconstructKindRegistry(
+      [
+        {
+          id: "nullable-object",
+          kind: "nullable_object",
+          label: "Nullable Object",
+          data: null,
+          emitted_json_schema: {
+            type: ["object", "null"],
+            properties: { title: { type: "string" } },
+          },
+        },
+      ],
+      [],
+    );
+
+    expect(schemas.nullable_object).toBeUndefined();
   });
 
   it("preserves field ORDER from the data array", () => {
@@ -146,7 +171,12 @@ describe("content_ir read adapter — reconstruction", () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     const defs: KindDefProjection[] = [
       { id: "x", kind: "bad", label: "Bad", data: { not: "an array" } },
-      { id: "y", kind: "good", label: "Good", data: [{ name: "t", type: "string" }] },
+      {
+        id: "y",
+        kind: "good",
+        label: "Good",
+        data: [{ name: "t", type: "string" }],
+      },
     ];
     const { schemas } = reconstructKindRegistry(defs, []);
     expect(schemas.good).toBeDefined();
@@ -191,5 +221,58 @@ describe("content_ir read adapter — reconstruction", () => {
       expect.stringContaining('skipped malformed kind "broken"'),
     );
     warn.mockRestore();
+  });
+});
+
+describe("content_ir read adapter — cold tier", () => {
+  afterEach(() => {
+    jest.dontMock("@/utils/supabase/client");
+    jest.resetModules();
+  });
+
+  it("returns schema unavailable for a NULL-data object contract", async () => {
+    jest.resetModules();
+
+    const query = (result: unknown) => {
+      const builder: Record<string, jest.Mock | unknown> = {};
+      for (const method of ["select", "eq", "is", "order", "limit", "in"]) {
+        builder[method] = jest.fn(() => builder);
+      }
+      builder.then = (
+        resolve: (value: unknown) => unknown,
+        reject: (reason: unknown) => unknown,
+      ) => Promise.resolve(result).then(resolve, reject);
+      return builder;
+    };
+
+    const definitionQuery = query({
+      data: [
+        {
+          id: "py-object",
+          kind: "py_object",
+          label: "Python Object",
+          data: null,
+          metadata: { loading_component: "card" },
+          emitted_json_schema: {
+            type: "object",
+            properties: { nested: { type: "object" } },
+          },
+        },
+      ],
+      error: null,
+    });
+    const edgeQuery = query({ data: [], error: null });
+    const from = jest.fn((table: string) =>
+      table === "kind_definition" ? definitionQuery : edgeQuery,
+    );
+    jest.doMock("@/utils/supabase/client", () => ({
+      supabase: { schema: jest.fn(() => ({ from })) },
+    }));
+
+    const { getKindSchemaAndMetaBySlugFromTables } =
+      await import("../registry/schema-source-kind-tables");
+    const result = await getKindSchemaAndMetaBySlugFromTables("py_object");
+
+    expect(result).toEqual({ schema: null, loadingComponent: "card" });
   });
 });
