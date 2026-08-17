@@ -158,7 +158,6 @@ describe("buildRebindFixBrief", () => {
         {
           source_file: "/srv/aidream/podcast_generator.py",
           line: 188,
-          passes_user_input: false,
         },
       ],
       bound_agent: {
