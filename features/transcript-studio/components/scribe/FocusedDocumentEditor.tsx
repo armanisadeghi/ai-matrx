@@ -99,9 +99,10 @@ export function FocusedDocumentEditor({
 
       <ProTextarea
         ref={textareaRef}
-        value={draft}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={flush}
+      value={draft}
+      onChange={(e) => onChange(e.target.value)}
+      enableTextStats
+      onBlur={flush}
         onRequestClose={handleCloseConfirmed}
         placeholder="Draft your document here, or ask the assistant to build it."
         wrapperClassName="flex min-h-0 flex-1 flex-col px-4 py-4"

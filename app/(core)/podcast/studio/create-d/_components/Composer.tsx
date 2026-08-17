@@ -150,6 +150,7 @@ export function Composer({ shows }: ComposerProps) {
               placeholder={active.placeholder}
               autoGrow
               minHeight={sourceKind === "topic" ? 96 : 220}
+              enableTextStats
               rows={sourceKind === "topic" ? 3 : 9}
               showCopyButton={false}
               className="border-0 bg-transparent px-0 text-lg leading-relaxed shadow-none focus-visible:ring-0"

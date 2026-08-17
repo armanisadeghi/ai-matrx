@@ -105,7 +105,7 @@ export default function KindBuilderClient() {
             autoGrow
             minHeight={160}
             maxHeight={420}
-            enableTextStats={false}
+            enableTextStats
           />
         </label>
 

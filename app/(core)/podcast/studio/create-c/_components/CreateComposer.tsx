@@ -165,6 +165,7 @@ export function CreateComposer() {
               dir={isRtl ? "rtl" : undefined}
               autoGrow
               minHeight={sourceKind === "topic" ? 88 : 176}
+              enableTextStats
               className="text-base"
             />
           ) : activeSource.control === "urls" ? (

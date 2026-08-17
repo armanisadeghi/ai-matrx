@@ -75,6 +75,7 @@ export function PasteContentModal({
         autoGrow
         minHeight={200}
         maxHeight={400}
+        enableTextStats
         className="text-base"
         wrapperClassName="w-full"
       />

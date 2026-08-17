@@ -16,6 +16,7 @@ import {
   Pencil,
   Stethoscope,
   Plus,
+  RefreshCw,
   RotateCcw,
   Quote,
   Workflow,
@@ -31,10 +32,16 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import {
-  fetchAssistLaunch,
-  MASTERWORK_RULEBOOK_SURFACE,
-} from "../../assists";
+  SurfaceRuntimeProvider,
+  useSurfaceClientTools,
+  useSurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { fetchAssistLaunch, MASTERWORK_RULEBOOK_SURFACE } from "../../assists";
 import {
   getRulebook,
   listMasterworksForRulebook,
@@ -56,10 +63,17 @@ import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RulebookSourcesPanel } from "./RulebookSourcesPanel";
 import { InterviewButton, ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
-import { RuleFeedbackDialog, type RuleFeedbackMode } from "./RuleFeedbackDialog";
+import {
+  RuleFeedbackDialog,
+  type RuleFeedbackMode,
+} from "./RuleFeedbackDialog";
 import { RuleReviewWizard } from "./RuleReviewWizard";
 import { computeKpis, RulebookKpiStrip } from "./RulebookKpiStrip";
 import { UnderstudyCard } from "../../understudy/UnderstudyCard";
+import {
+  buildRulebookSurfaceScope,
+  type RulebookDraftSnapshot,
+} from "../../agent-context/rulebookSurfaceScope";
 // The Final Checkup window (features/masterwork/checkup/) — its one entry point.
 import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/masterworkCheckupWindow";
 
@@ -119,6 +133,75 @@ function formatClock(seconds: number): string {
   return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
 }
 
+function requireRuleDraftInput(
+  value: unknown,
+  rulebook: Rulebook,
+): {
+  draft: Partial<RulebookDraftSnapshot>;
+  initial: RulebookRule | undefined;
+} {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Rule draft must be an object.");
+  }
+  const input = value as Record<string, unknown>;
+  if (input.mode !== "new" && input.mode !== "edit") {
+    throw new Error('Rule draft mode must be "new" or "edit".');
+  }
+
+  const initial =
+    input.mode === "edit"
+      ? rulebook.rules.find(
+          (rule) => rule.id === String(input.rule_id ?? "").trim(),
+        )
+      : undefined;
+  if (input.mode === "edit" && !initial) {
+    throw new Error(
+      "Edit mode needs a rule_id that exists in the open Rulebook.",
+    );
+  }
+
+  const draft: Partial<RulebookDraftSnapshot> = {
+    mode: input.mode,
+    rule_id: initial?.id ?? null,
+  };
+  for (const key of [
+    "name",
+    "statement",
+    "rationale",
+    "detection",
+    "quote",
+  ] as const) {
+    const field = input[key];
+    if (field === undefined) continue;
+    if (typeof field !== "string") {
+      throw new Error(`Rule draft ${key} must be text.`);
+    }
+    draft[key] = field;
+  }
+  if (input.severity !== undefined) {
+    if (
+      input.severity !== "critical" &&
+      input.severity !== "major" &&
+      input.severity !== "minor"
+    ) {
+      throw new Error("Rule draft severity must be critical, major, or minor.");
+    }
+    draft.severity = input.severity;
+  }
+  if (input.section !== undefined) {
+    if (
+      typeof input.section !== "string" ||
+      !Object.hasOwn(rulebook.sections, input.section)
+    ) {
+      throw new Error(
+        "Rule draft section must be one of the section codes in this Rulebook.",
+      );
+    }
+    draft.section = input.section;
+  }
+  return { draft, initial };
+}
+
 function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
   const pages = sourceRef.source_pages?.length
     ? formatPages(sourceRef.source_pages)
@@ -132,7 +215,8 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
         ? `at ${formatClock(sourceRef.time_range.start)}–${formatClock(sourceRef.time_range.end)}`
         : `at ${formatClock(sourceRef.time_range.start)}`
       : null;
-  const label = sourceRef.note ?? (sourceRef.interview ? "your interview" : "ingested");
+  const label =
+    sourceRef.note ?? (sourceRef.interview ? "your interview" : "ingested");
 
   return (
     <div className="space-y-1 text-xs text-muted-foreground">
@@ -185,7 +269,9 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
         {sourceRef.exemplar ? <span>· worked out from an example</span> : null}
         {sourceRef.approach ? (
           // The registry stamp — which Distillation Approach produced this rule.
-          <span>· via the {sourceRef.approach.replace(/-/g, " ")} Approach</span>
+          <span>
+            · via the {sourceRef.approach.replace(/-/g, " ")} Approach
+          </span>
         ) : null}
         {sourceRef.page_extraction_job_id ? (
           <Link
@@ -375,8 +461,8 @@ function RuleRow({
             <RuleProvenance sourceRef={rule.source_ref} />
           ) : null}
           <div className="text-xs text-muted-foreground">
-            Rule id: <code className="font-mono">{rule.id}</code> — audits
-            cite this id.
+            Rule id: <code className="font-mono">{rule.id}</code> — audits cite
+            this id.
           </div>
           {canEdit ? (
             <div className="flex flex-wrap gap-2 pt-1">
@@ -411,6 +497,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<RulebookRule | undefined>();
   const [editorSection, setEditorSection] = useState<string | undefined>();
+  const [stagedRuleDraft, setStagedRuleDraft] = useState<
+    Partial<RulebookDraftSnapshot> | undefined
+  >();
+  const [activeRuleDraft, setActiveRuleDraft] =
+    useState<RulebookDraftSnapshot | null>(null);
+  const [draftRevision, setDraftRevision] = useState(0);
   const [confirmActivate, setConfirmActivate] = useState(false);
   const [buildOpen, setBuildOpen] = useState(false);
   const [ingestOpen, setIngestOpen] = useState(false);
@@ -477,7 +569,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       try {
         const [r, m] = await Promise.all([
           getRulebook(rulebookId),
-          listMasterworksForRulebook(rulebookId).catch(() => [] as Masterwork[]),
+          listMasterworksForRulebook(rulebookId).catch(
+            () => [] as Masterwork[],
+          ),
         ]);
         if (cancelled) return;
         if (!r) {
@@ -534,6 +628,190 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     }
     return groups;
   }, [rulebook, search]);
+
+  const visibleRules = useMemo(
+    () => grouped.flatMap((group) => group.rules),
+    [grouped],
+  );
+
+  const refreshWorkspace = useCallback(async () => {
+    const [nextRulebook, nextMasterworks] = await Promise.all([
+      getRulebook(rulebookId),
+      listMasterworksForRulebook(rulebookId),
+    ]);
+    if (!nextRulebook) {
+      throw new Error(
+        "This Rulebook no longer exists, or you no longer have access to it.",
+      );
+    }
+    setRulebook(nextRulebook);
+    setMasterworks(nextMasterworks);
+    return {
+      rulebook_version: nextRulebook.version,
+      masterwork_count: nextMasterworks.length,
+    };
+  }, [rulebookId]);
+
+  const buildSurfaceScope = useCallback(() => {
+    if (!rulebook) {
+      throw new Error("The Rulebook surface is still loading.");
+    }
+    return buildRulebookSurfaceScope({
+      rulebook,
+      masterworks,
+      canEdit,
+      searchQuery: search,
+      visibleRules,
+      activeRule: editing ?? null,
+      activeRuleDraft,
+      workspaceState: {
+        editor_open: editorOpen,
+        interview_open: interviewOpen,
+        ingest_open: ingestOpen,
+        corpus_open: corpusOpen,
+        build_open: buildOpen,
+        review_wizard_open: wizardOpen,
+        activate_confirmation_open: confirmActivate,
+        feedback_rule_id: feedbackTarget?.rule.id ?? null,
+        feedback_mode: feedbackTarget?.mode ?? null,
+        dump_focus: dumpFocus,
+        assist_key: assistKey,
+      },
+    });
+  }, [
+    activeRuleDraft,
+    assistKey,
+    buildOpen,
+    canEdit,
+    confirmActivate,
+    corpusOpen,
+    dumpFocus,
+    editing,
+    editorOpen,
+    feedbackTarget,
+    ingestOpen,
+    interviewOpen,
+    masterworks,
+    rulebook,
+    search,
+    visibleRules,
+    wizardOpen,
+  ]);
+
+  const getPageApplicationScope = useCallback(
+    () =>
+      buildApplicationScopeFromMenuContext({
+        selectedText: window.getSelection()?.toString() ?? "",
+        selectionRange: null,
+        contextData: buildSurfaceScope() as Record<string, unknown>,
+      }),
+    [buildSurfaceScope],
+  );
+
+  useSurfaceWriteHandlers(MASTERWORK_RULEBOOK_SURFACE_NAME, {
+    rule_draft: (value: unknown) => {
+      if (!rulebook) throw new Error("The Rulebook is still loading.");
+      if (!canEdit) throw new Error("You cannot edit this Rulebook.");
+      const next = requireRuleDraftInput(value, rulebook);
+      setEditing(next.initial);
+      setEditorSection(next.draft.section);
+      setStagedRuleDraft(next.draft);
+      setActiveRuleDraft(null);
+      setDraftRevision((revision) => revision + 1);
+      setEditorOpen(true);
+    },
+    search_query: (value: unknown) => {
+      if (typeof value !== "string") {
+        throw new Error("Rule search must be text.");
+      }
+      setSearch(value);
+    },
+  });
+
+  useSurfaceClientTools(MASTERWORK_RULEBOOK_SURFACE_NAME, {
+    masterwork_refresh_rulebook: async () => refreshWorkspace(),
+  });
+
+  const handleEditorOpenChange = useCallback((open: boolean) => {
+    setEditorOpen(open);
+    if (!open) {
+      setStagedRuleDraft(undefined);
+      setActiveRuleDraft(null);
+    }
+  }, []);
+
+  const pageMenuSections = useMemo<ContextMenuExtraSection[]>(
+    () => [
+      {
+        id: "masterwork-rulebook-actions",
+        label: "Rulebook",
+        anchor: "after-compare",
+        items: [
+          {
+            kind: "item",
+            id: "refresh-rulebook",
+            label: "Refresh Rulebook",
+            icon: RefreshCw,
+            onSelect: () => {
+              void refreshWorkspace()
+                .then(() => toast.success("Rulebook refreshed"))
+                .catch((err: unknown) =>
+                  toast.error(
+                    err instanceof Error ? err.message : "Could not refresh",
+                  ),
+                );
+            },
+          },
+          ...(canEdit
+            ? ([
+                {
+                  kind: "item" as const,
+                  id: "add-rule",
+                  label: "Add rule",
+                  icon: Plus,
+                  onSelect: () => {
+                    setEditing(undefined);
+                    setEditorSection(undefined);
+                    setStagedRuleDraft(undefined);
+                    setDraftRevision((revision) => revision + 1);
+                    setEditorOpen(true);
+                  },
+                },
+                {
+                  kind: "item" as const,
+                  id: "interview-me",
+                  label: "Interview me",
+                  icon: MessageCircleQuestion,
+                  onSelect: () => setInterviewOpen(true),
+                },
+                {
+                  kind: "item" as const,
+                  id: "ingest-source",
+                  label: "From a source",
+                  icon: FileUp,
+                  onSelect: () => setIngestOpen(true),
+                },
+              ] satisfies ContextMenuExtraSection["items"])
+            : []),
+          {
+            kind: "link",
+            id: "open-record",
+            label: "Your words",
+            icon: Quote,
+            href: `/masterwork/${rulebookId}/record`,
+          },
+          {
+            kind: "link",
+            id: "open-masterworks",
+            label: "Masterworks",
+            icon: Workflow,
+            href: `/masterwork/${rulebookId}/masterworks`,
+          },
+        ],
+      },
+    ],
+    [canEdit, refreshWorkspace, rulebookId],
+  );
 
   const persist = useCallback(
     async (next: RulebookRule[]) => {
@@ -654,7 +932,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       );
       await persist(next);
       toast.success(`"${rule.name}" rejected`, {
-        description: "The interviewer will rewrite it or drop it on their next turn.",
+        description:
+          "The interviewer will rewrite it or drop it on their next turn.",
       });
     },
     [rulebook, persist],
@@ -738,381 +1017,434 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const builtCount = masterworks.filter((m) => !m.understudy).length;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6">
-      {/* Rulebook summary */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <h2 className="truncate text-base font-semibold text-foreground">
-                {rulebook.name}
-              </h2>
-            </div>
-            {rulebook.description ? (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {rulebook.description}
-              </p>
-            ) : null}
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {rulebook.source.author ? (
-                <span>
-                  {rulebook.source.title ? `“${rulebook.source.title}” — ` : ""}
-                  {rulebook.source.author}
-                  {rulebook.source.year ? `, ${rulebook.source.year}` : ""}
-                </span>
-              ) : null}
-              <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                v{rulebook.version}
-              </Badge>
-              <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                {rulebook.status === "draft"
-                  ? "Draft"
-                  : rulebook.status === "active"
-                    ? "Active"
-                    : "Archived"}
-              </Badge>
-            </div>
-          </div>
-          <div className="flex shrink-0 gap-2">
-            {canEdit && rulebook.status === "draft" ? (
-              <Button size="sm" onClick={() => setConfirmActivate(true)}>
-                <CheckCircle2 className="mr-1 h-4 w-4" />
-                Activate
-              </Button>
-            ) : null}
-            {/* THE FINAL CHECKUP (features/masterwork/checkup/) — the finish
+    <SurfaceRuntimeProvider
+      surfaceName={MASTERWORK_RULEBOOK_SURFACE_NAME}
+      getScope={buildSurfaceScope}
+      isEditable={canEdit}
+    >
+      <NonEditableContextMenu
+        sourceFeature="masterwork"
+        surfaceName={MASTERWORK_RULEBOOK_SURFACE_NAME}
+        menuVersion={1}
+        getApplicationScope={getPageApplicationScope}
+        contextData={buildSurfaceScope() as Record<string, unknown>}
+        contentSource={{ type: "raw" }}
+        entity={{
+          type: "rulebook",
+          id: rulebook.id,
+          title: rulebook.name,
+          isOwner: canEdit,
+        }}
+        extraSections={pageMenuSections}
+      >
+        <div
+          className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6"
+          data-surface-value="rulebook"
+        >
+          {/* Rulebook summary */}
+          <div className="rounded-lg border border-border bg-card p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  <h2
+                    className="truncate text-base font-semibold text-foreground"
+                    data-surface-value="rulebook_name"
+                  >
+                    {rulebook.name}
+                  </h2>
+                </div>
+                {rulebook.description ? (
+                  <p
+                    className="mt-1 text-sm text-muted-foreground"
+                    data-surface-value="rulebook_description"
+                  >
+                    {rulebook.description}
+                  </p>
+                ) : null}
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  {rulebook.source.author ? (
+                    <span>
+                      {rulebook.source.title
+                        ? `“${rulebook.source.title}” — `
+                        : ""}
+                      {rulebook.source.author}
+                      {rulebook.source.year ? `, ${rulebook.source.year}` : ""}
+                    </span>
+                  ) : null}
+                  <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                    v{rulebook.version}
+                  </Badge>
+                  <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                    {rulebook.status === "draft"
+                      ? "Draft"
+                      : rulebook.status === "active"
+                        ? "Active"
+                        : "Archived"}
+                  </Badge>
+                </div>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                {canEdit && rulebook.status === "draft" ? (
+                  <Button size="sm" onClick={() => setConfirmActivate(true)}>
+                    <CheckCircle2 className="mr-1 h-4 w-4" />
+                    Activate
+                  </Button>
+                ) : null}
+                {/* THE FINAL CHECKUP (features/masterwork/checkup/) — the finish
                 line. Press it when you feel done and we read everything you
                 ever told us back against every rule you have. Owned entirely
                 by the checkup window; this is its only entry point. */}
-            {canEdit && approvedCount > 0 ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => openCheckup({ rulebookId: rulebook.id })}
-              >
-                <Stethoscope className="mr-1 h-4 w-4" />
-                Final checkup
-              </Button>
-            ) : null}
-            {approvedCount > 0 ? (
-              <Button size="sm" onClick={() => setBuildOpen(true)}>
-                <Hammer className="mr-1 h-4 w-4" />
-                Build a Masterwork
-              </Button>
-            ) : null}
-            {/* THE RECORD — everything the Expert has said about this
+                {canEdit && approvedCount > 0 ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openCheckup({ rulebookId: rulebook.id })}
+                  >
+                    <Stethoscope className="mr-1 h-4 w-4" />
+                    Final checkup
+                  </Button>
+                ) : null}
+                {approvedCount > 0 ? (
+                  <Button size="sm" onClick={() => setBuildOpen(true)}>
+                    <Hammer className="mr-1 h-4 w-4" />
+                    Build a Masterwork
+                  </Button>
+                ) : null}
+                {/* THE RECORD — everything the Expert has said about this
                 Rulebook. Their words are the most valuable thing here; they
                 are never more than one click away. */}
-            <Button asChild size="sm" variant="outline">
-              <Link href={`/masterwork/${rulebook.id}/record`}>
-                <Quote className="mr-1 h-4 w-4" />
-                Your words
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="outline">
-              <Link href={`/masterwork/${rulebook.id}/masterworks`}>
-                <Workflow className="mr-1 h-4 w-4" />
-                Masterworks
-                {builtCount > 0 ? ` (${builtCount})` : ""}
-              </Link>
-            </Button>
-          </div>
-        </div>
-        <div className="mt-3">
-          <RulebookKpiStrip kpis={kpis} live={understudy !== null} />
-        </div>
-        {/* The improvement brain's chips — what to try on the Expert next
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/masterwork/${rulebook.id}/record`}>
+                    <Quote className="mr-1 h-4 w-4" />
+                    Your words
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <Link href={`/masterwork/${rulebook.id}/masterworks`}>
+                    <Workflow className="mr-1 h-4 w-4" />
+                    Masterworks
+                    {builtCount > 0 ? ` (${builtCount})` : ""}
+                  </Link>
+                </Button>
+              </div>
+            </div>
+            <div className="mt-3">
+              <RulebookKpiStrip kpis={kpis} live={understudy !== null} />
+            </div>
+            {/* The improvement brain's chips — what to try on the Expert next
             (aidream/services/masterwork_assists/). Renders nothing when the
             producer has nothing to say; a chip only ever expands on click,
             and its verb button navigates back here with ?assist=… which
             opens the right lane seeded (never auto-sent). */}
-        <AssistStrip
-          surfaceName={MASTERWORK_RULEBOOK_SURFACE}
-          filter={(a) => a.entityId === rulebookId}
-          className="mt-2"
-        />
-        {draftCount > 0 && canEdit ? (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              className="h-7"
-              onClick={() => setWizardOpen(true)}
-            >
-              <ListTodo className="mr-1 h-3.5 w-3.5" />
-              Review one by one
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7"
-              onClick={() => void approveAllDrafts()}
-            >
-              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-              Approve all
-            </Button>
-            {approvedCount === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Approved rules are what power a Masterwork — none yet.
-              </p>
+            <AssistStrip
+              surfaceName={MASTERWORK_RULEBOOK_SURFACE}
+              filter={(a) => a.entityId === rulebookId}
+              className="mt-2"
+            />
+            {draftCount > 0 && canEdit ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  className="h-7"
+                  onClick={() => setWizardOpen(true)}
+                >
+                  <ListTodo className="mr-1 h-3.5 w-3.5" />
+                  Review one by one
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7"
+                  onClick={() => void approveAllDrafts()}
+                >
+                  <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                  Approve all
+                </Button>
+                {approvedCount === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Approved rules are what power a Masterwork — none yet.
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
-        ) : null}
-      </div>
 
-      {/* THE UNDERSTUDY — the system that runs from minute one (vision doc
+          {/* THE UNDERSTUDY — the system that runs from minute one (vision doc
           13). One crude agent does the whole job now; every rules save
           rebuilds it for free, so the Expert watches it get better instead
           of filling in a form and waiting for value. */}
-      <UnderstudyCard
-        rulebookId={rulebook.id}
-        understudy={understudy}
-        approvedCount={approvedCount}
-        canEdit={canEdit}
-        onCreated={reloadMasterworks}
-      />
+          <div data-surface-value="understudy">
+            <UnderstudyCard
+              rulebookId={rulebook.id}
+              understudy={understudy}
+              approvedCount={approvedCount}
+              canEdit={canEdit}
+              onCreated={reloadMasterworks}
+            />
+          </div>
 
-      {/* Sources — the dump Approach's capture surface. Attach everything
+          {/* Sources — the dump Approach's capture surface. Attach everything
           (workspace things, uploads, links from external tools), then turn
           the whole pile into draft rules in one durable run. */}
-      <RulebookSourcesPanel
-        rulebook={rulebook}
-        canEdit={canEdit}
-        autoOpen={dumpFocus}
-        onRulebookChanged={setRulebook}
-        onIngested={reloadRulebook}
-      />
+          <RulebookSourcesPanel
+            rulebook={rulebook}
+            canEdit={canEdit}
+            autoOpen={dumpFocus}
+            onRulebookChanged={setRulebook}
+            onIngested={reloadRulebook}
+          />
 
-      {/* Toolbar */}
-      <div className="flex items-center gap-2">
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search rules…"
-          className="h-8 max-w-xs"
-        />
-        {canEdit ? (
-          <>
-            <Button
-              size="sm"
-              className="h-8"
-              onClick={() => {
-                setEditing(undefined);
-                setEditorSection(undefined);
-                setEditorOpen(true);
-              }}
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Add rule
-            </Button>
-            <InterviewButton
-              className="h-8"
-              onClick={() => setInterviewOpen(true)}
+          {/* Toolbar */}
+          <div className="flex items-center gap-2">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search rules…"
+              className="h-8 max-w-xs"
+              data-surface-value="search_query"
             />
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8"
-              onClick={() => setIngestOpen(true)}
-            >
-              <FileUp className="mr-1 h-4 w-4" />
-              From a source
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8"
-              onClick={() => setCorpusOpen(true)}
-            >
-              <BookOpen className="mr-1 h-4 w-4" />
-              Your published work
-            </Button>
-          </>
-        ) : null}
-      </div>
+            {canEdit ? (
+              <>
+                <Button
+                  size="sm"
+                  className="h-8"
+                  onClick={() => {
+                    setEditing(undefined);
+                    setEditorSection(undefined);
+                    setStagedRuleDraft(undefined);
+                    setEditorOpen(true);
+                  }}
+                >
+                  <Plus className="mr-1 h-4 w-4" />
+                  Add rule
+                </Button>
+                <InterviewButton
+                  className="h-8"
+                  onClick={() => setInterviewOpen(true)}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8"
+                  onClick={() => setIngestOpen(true)}
+                >
+                  <FileUp className="mr-1 h-4 w-4" />
+                  From a source
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8"
+                  onClick={() => setCorpusOpen(true)}
+                >
+                  <BookOpen className="mr-1 h-4 w-4" />
+                  Your published work
+                </Button>
+              </>
+            ) : null}
+          </div>
 
-      {/* Sections */}
-      {rulebook.rules.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No rules yet. The fastest way to fill this in: let us interview you
-            — talk about how you work, and rules get written down as you speak.
-          </p>
-          {canEdit ? (
-            <div className="mt-3 flex items-center justify-center gap-2">
-              <Button size="sm" onClick={() => setInterviewOpen(true)}>
-                <MessageCircleQuestion className="mr-1 h-4 w-4" />
-                Start the interview
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setEditing(undefined);
-                  setEditorOpen(true);
-                }}
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Add a rule by hand
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setIngestOpen(true)}
-              >
-                <FileUp className="mr-1 h-4 w-4" />
-                From a document
-              </Button>
-            </div>
-          ) : null}
-        </div>
-      ) : (
-        grouped.map((group) =>
-          group.rules.length === 0 && search ? null : (
-            <section key={group.code} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-foreground">
-                  {group.label}
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    {group.rules.length}{" "}
-                    {group.rules.length === 1 ? "rule" : "rules"}
-                  </span>
-                </h3>
-                {canEdit && group.code !== "?" ? (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7"
-                    onClick={() => {
-                      setEditing(undefined);
-                      setEditorSection(group.code);
-                      setEditorOpen(true);
-                    }}
-                  >
-                    <Plus className="mr-1 h-3.5 w-3.5" />
-                    Add here
-                  </Button>
+          {/* Sections */}
+          <div data-surface-value="rules" className="contents">
+            {rulebook.rules.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No rules yet. The fastest way to fill this in: let us
+                  interview you — talk about how you work, and rules get written
+                  down as you speak.
+                </p>
+                {canEdit ? (
+                  <div className="mt-3 flex items-center justify-center gap-2">
+                    <Button size="sm" onClick={() => setInterviewOpen(true)}>
+                      <MessageCircleQuestion className="mr-1 h-4 w-4" />
+                      Start the interview
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditing(undefined);
+                        setStagedRuleDraft(undefined);
+                        setEditorOpen(true);
+                      }}
+                    >
+                      <Plus className="mr-1 h-4 w-4" />
+                      Add a rule by hand
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIngestOpen(true)}
+                    >
+                      <FileUp className="mr-1 h-4 w-4" />
+                      From a document
+                    </Button>
+                  </div>
                 ) : null}
               </div>
-              <div className="space-y-1.5">
-                {group.rules.map((rule) => (
-                  <RuleRow
-                    key={rule.id}
-                    rule={rule}
-                    canEdit={canEdit}
-                    onEdit={() => {
-                      setEditing(rule);
-                      setEditorSection(undefined);
-                      setEditorOpen(true);
-                    }}
-                    onToggleRetired={() => void toggleRetired(rule)}
-                    onApprove={() => void approveRule(rule)}
-                    onReject={() => setFeedbackTarget({ rule, mode: "reject" })}
-                    onRequestChanges={() =>
-                      setFeedbackTarget({ rule, mode: "request" })
-                    }
-                    onReconsider={() => void reconsiderRule(rule)}
-                  />
-                ))}
-              </div>
-            </section>
-          ),
-        )
-      )}
+            ) : (
+              grouped.map((group) =>
+                group.rules.length === 0 && search ? null : (
+                  <section key={group.code} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {group.label}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {group.rules.length}{" "}
+                          {group.rules.length === 1 ? "rule" : "rules"}
+                        </span>
+                      </h3>
+                      {canEdit && group.code !== "?" ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7"
+                          onClick={() => {
+                            setEditing(undefined);
+                            setEditorSection(group.code);
+                            setStagedRuleDraft(undefined);
+                            setEditorOpen(true);
+                          }}
+                        >
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          Add here
+                        </Button>
+                      ) : null}
+                    </div>
+                    <div className="space-y-1.5">
+                      {group.rules.map((rule) => (
+                        <RuleRow
+                          key={rule.id}
+                          rule={rule}
+                          canEdit={canEdit}
+                          onEdit={() => {
+                            setEditing(rule);
+                            setEditorSection(undefined);
+                            setStagedRuleDraft(undefined);
+                            setEditorOpen(true);
+                          }}
+                          onToggleRetired={() => void toggleRetired(rule)}
+                          onApprove={() => void approveRule(rule)}
+                          onReject={() =>
+                            setFeedbackTarget({ rule, mode: "reject" })
+                          }
+                          onRequestChanges={() =>
+                            setFeedbackTarget({ rule, mode: "request" })
+                          }
+                          onReconsider={() => void reconsiderRule(rule)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                ),
+              )
+            )}
+          </div>
 
-      <RuleEditorDialog
-        open={editorOpen}
-        onOpenChange={setEditorOpen}
-        sections={rulebook.sections}
-        existingIds={existingIds}
-        initial={editing}
-        defaultSection={editorSection}
-        onSave={saveRule}
-      />
-      <RuleFeedbackDialog
-        open={feedbackTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setFeedbackTarget(null);
-        }}
-        mode={feedbackTarget?.mode ?? "request"}
-        ruleName={feedbackTarget?.rule.name ?? ""}
-        onSubmit={async (text) => {
-          if (!feedbackTarget) return;
-          try {
-            if (feedbackTarget.mode === "reject") {
-              await rejectRule(feedbackTarget.rule, text);
-            } else {
-              await requestChanges(feedbackTarget.rule, text);
-            }
-          } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Could not save");
-            throw err;
-          }
-        }}
-      />
-      <RuleReviewWizard
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
-        rulebook={rulebook}
-        onApprove={approveRule}
-        onReject={rejectRule}
-        onEdit={(rule) => {
-          setWizardOpen(false);
-          setEditing(rule);
-          setEditorSection(undefined);
-          setEditorOpen(true);
-        }}
-      />
-      <ConfirmDialog
-        open={confirmActivate}
-        onOpenChange={setConfirmActivate}
-        title="Activate this Rulebook?"
-        description="An active Rulebook can power Masterworks — working AI checkers built from these rules. You can keep editing after activation; every save creates a new version."
-        confirmLabel="Activate"
-        onConfirm={() => void activate()}
-      />
-      <BuildMasterworkDialog
-        open={buildOpen}
-        onOpenChange={setBuildOpen}
-        rulebook={rulebook}
-        onBuilt={() => {
-          void listMasterworksForRulebook(rulebook.id)
-            .then(setMasterworks)
-            .catch(() => undefined);
-        }}
-      />
-      <IngestSourceDialog
-        open={ingestOpen}
-        onOpenChange={setIngestOpen}
-        rulebook={rulebook}
-        onIngested={() => {
-          void getRulebook(rulebook.id)
-            .then((r) => {
-              if (r) setRulebook(r);
-            })
-            .catch(() => undefined);
-        }}
-        onFollowupSeed={(seed) => {
-          setInterviewSeed(seed);
-          setInterviewOpen(true);
-        }}
-      />
-      <BodyOfWorkDialog
-        open={corpusOpen}
-        onOpenChange={setCorpusOpen}
-        rulebook={rulebook}
-        onIngested={() => void reloadRulebook()}
-      />
-      {canEdit ? (
-        <ScoutInterviewPanel
-          rulebookId={rulebook.id}
-          rulebookName={rulebook.name}
-          open={interviewOpen}
-          onOpenChange={setInterviewOpen}
-          onRulebookChanged={() => void reloadRulebook()}
-          seedText={interviewSeed}
-        />
-      ) : null}
-    </div>
+          <RuleEditorDialog
+            open={editorOpen}
+            onOpenChange={handleEditorOpenChange}
+            sections={rulebook.sections}
+            existingIds={existingIds}
+            initial={editing}
+            defaultSection={editorSection}
+            onSave={saveRule}
+            surfaceName={MASTERWORK_RULEBOOK_SURFACE_NAME}
+            getSurfaceScope={buildSurfaceScope}
+            stagedDraft={stagedRuleDraft}
+            draftRevision={draftRevision}
+            onDraftChange={setActiveRuleDraft}
+          />
+          <RuleFeedbackDialog
+            open={feedbackTarget !== null}
+            onOpenChange={(open) => {
+              if (!open) setFeedbackTarget(null);
+            }}
+            mode={feedbackTarget?.mode ?? "request"}
+            ruleName={feedbackTarget?.rule.name ?? ""}
+            onSubmit={async (text) => {
+              if (!feedbackTarget) return;
+              try {
+                if (feedbackTarget.mode === "reject") {
+                  await rejectRule(feedbackTarget.rule, text);
+                } else {
+                  await requestChanges(feedbackTarget.rule, text);
+                }
+              } catch (err) {
+                toast.error(
+                  err instanceof Error ? err.message : "Could not save",
+                );
+                throw err;
+              }
+            }}
+          />
+          <RuleReviewWizard
+            open={wizardOpen}
+            onOpenChange={setWizardOpen}
+            rulebook={rulebook}
+            onApprove={approveRule}
+            onReject={rejectRule}
+            onEdit={(rule) => {
+              setWizardOpen(false);
+              setEditing(rule);
+              setEditorSection(undefined);
+              setStagedRuleDraft(undefined);
+              setEditorOpen(true);
+            }}
+          />
+          <ConfirmDialog
+            open={confirmActivate}
+            onOpenChange={setConfirmActivate}
+            title="Activate this Rulebook?"
+            description="An active Rulebook can power Masterworks — working AI checkers built from these rules. You can keep editing after activation; every save creates a new version."
+            confirmLabel="Activate"
+            onConfirm={() => void activate()}
+          />
+          <BuildMasterworkDialog
+            open={buildOpen}
+            onOpenChange={setBuildOpen}
+            rulebook={rulebook}
+            onBuilt={() => {
+              void listMasterworksForRulebook(rulebook.id)
+                .then(setMasterworks)
+                .catch(() => undefined);
+            }}
+          />
+          <IngestSourceDialog
+            open={ingestOpen}
+            onOpenChange={setIngestOpen}
+            rulebook={rulebook}
+            onIngested={() => {
+              void getRulebook(rulebook.id)
+                .then((r) => {
+                  if (r) setRulebook(r);
+                })
+                .catch(() => undefined);
+            }}
+            onFollowupSeed={(seed) => {
+              setInterviewSeed(seed);
+              setInterviewOpen(true);
+            }}
+          />
+          <BodyOfWorkDialog
+            open={corpusOpen}
+            onOpenChange={setCorpusOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+          />
+          {canEdit ? (
+            <ScoutInterviewPanel
+              rulebookId={rulebook.id}
+              rulebookName={rulebook.name}
+              open={interviewOpen}
+              onOpenChange={setInterviewOpen}
+              onRulebookChanged={() => void reloadRulebook()}
+              seedText={interviewSeed}
+            />
+          ) : null}
+        </div>
+      </NonEditableContextMenu>
+    </SurfaceRuntimeProvider>
   );
 }

@@ -610,6 +610,7 @@ export function GeneratorForm({
               // stopping it — an empty topic box was rendering 904px tall and
               // pushing the whole form off screen.
               maxHeight={sourceKind === "topic" ? 240 : 420}
+              enableTextStats
               className="text-base"
             />
           ) : activeSource.control === "urls" ? (

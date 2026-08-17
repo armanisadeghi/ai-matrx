@@ -471,6 +471,7 @@ export function IngestSourceDialog({
                     : "Paste the text here — long is fine; it gets split automatically."
                 }
                 rows={10}
+                enableTextStats
               />
             </div>
             )}

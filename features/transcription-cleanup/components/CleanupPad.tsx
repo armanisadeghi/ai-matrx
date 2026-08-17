@@ -2571,9 +2571,10 @@ export default function CleanupPad({
             getApplicationScope={transcriptGetScope}
             // The pad owns recording (toolbar mic streams into this value) and
             // cleanup (Clean button) — a second mic/cleanup here would conflict.
-            enableVoice={false}
-            enableCleanup={false}
-            value={transcriptDisplay}
+          enableVoice={false}
+          enableCleanup={false}
+          enableTextStats
+          value={transcriptDisplay}
             onChange={(e) => handleDraftChange(e.target.value)}
             onFocus={handleTranscriptFocus}
             onBlur={handleTranscriptBlur}
@@ -2670,9 +2671,10 @@ export default function CleanupPad({
             getApplicationScope={cleanGetScope}
             // The pad owns recording (toolbar mic streams into this value) and
             // cleanup (Clean button) — a second mic/cleanup here would conflict.
-            enableVoice={false}
-            enableCleanup={false}
-            value={responseValue}
+          enableVoice={false}
+          enableCleanup={false}
+          enableTextStats
+          value={responseValue}
             onChange={(e) => handleResponseChange(e.target.value)}
             onFocus={handleCleanFocus}
             placeholder={responsePlaceholder}
@@ -2879,9 +2881,10 @@ export default function CleanupPad({
             getApplicationScope={customGetScope}
             // The pad owns recording (toolbar mic streams into this value) and
             // cleanup (Clean button) — a second mic/cleanup here would conflict.
-            enableVoice={false}
-            enableCleanup={false}
-            value={activeSlotValue}
+          enableVoice={false}
+          enableCleanup={false}
+          enableTextStats
+          value={activeSlotValue}
             onChange={(e) => handleCustomChange(e.target.value)}
             onFocus={handleCustomFocus}
             placeholder={customPlaceholder}

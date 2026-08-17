@@ -384,6 +384,7 @@ export function TryMasterworkBox({
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={3}
+        enableTextStats={isEdit}
         placeholder={
           isEdit
             ? "Paste the text to check against your rules…"

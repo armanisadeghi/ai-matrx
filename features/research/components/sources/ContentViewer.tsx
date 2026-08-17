@@ -104,6 +104,7 @@ export function ContentViewer({
           autoGrow
           minHeight={400}
           maxHeight={600}
+          enableTextStats
           className="font-mono text-xs"
           wrapperClassName="w-full"
         />

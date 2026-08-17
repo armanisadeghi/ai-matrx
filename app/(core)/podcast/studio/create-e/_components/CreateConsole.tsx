@@ -376,6 +376,7 @@ function SourceStage({
             dir={isRtl ? "rtl" : undefined}
             autoGrow
             minHeight={source.kind === "topic" ? 120 : 220}
+            enableTextStats
             className="border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
             showCopyButton={false}
           />

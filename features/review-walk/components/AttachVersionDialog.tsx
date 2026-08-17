@@ -92,6 +92,7 @@ export function AttachVersionDialog({
             autoGrow
             minHeight={160}
             maxHeight={420}
+            enableTextStats
             className="text-base"
             style={{ fontSize: "16px" }}
             placeholder="Write or paste the output you wanted…"

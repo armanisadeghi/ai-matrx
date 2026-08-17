@@ -177,6 +177,7 @@ import { Field } from '@/components/official/Field';
   enableCleanup={true}             // AI "Clean up" item — ON by default
   cleanupAgentId={null}            // override the cleanup agent (default: surface "clean" role)
   cleanupContextItems={[]}         // extra context blocks for the cleanup agent
+  enableTextStats={false}          // opt in for long-form authoring surfaces
 
   // --- submit button (bottom-right, primary) ---
   onSubmit={() => {}}                      // enables the button + shortcuts
@@ -264,7 +265,6 @@ import { Field } from '@/components/official/Field';
             "placeholder",
             "voice",
             "… menu",
-            "text stats",
             "clean up",
             "no label",
           ]}
@@ -435,11 +435,12 @@ import { Field } from '@/components/official/Field';
         {/* 6. Auto-grow within a clamped range */}
         <Variant
           title="6. Auto-grow (clamped min/max)"
-          features={["autoGrow", "minHeight", "maxHeight"]}
+          features={["autoGrow", "minHeight", "maxHeight", "text stats opt-in"]}
           code={`<ProTextarea
   autoGrow
   minHeight={60}
   maxHeight={240}
+  enableTextStats
   value={v}
   onChange={(e) => setV(e.target.value)}
   placeholder="Grows with your content up to 240px…"
@@ -449,6 +450,7 @@ import { Field } from '@/components/official/Field';
             autoGrow
             minHeight={60}
             maxHeight={240}
+            enableTextStats
             value={grow}
             onChange={(e) => setGrow(e.target.value)}
             placeholder="Grows with your content up to 240px…"

@@ -69,6 +69,7 @@ export function SourceInput({
             dir={rtl ? "rtl" : undefined}
             autoGrow
             minHeight={200}
+            enableTextStats
             className="text-base"
           />
         )

@@ -475,6 +475,14 @@ export function surfaceFromPathname(
     return "matrx-user/education-learn-authoring";
   }
 
+  // One Rulebook is `/masterwork/[rulebookId]`. Its record and built-output
+  // children are distinct pages and must not inherit this editor's scope;
+  // hubs such as `/masterwork/all`, `/new`, and `/encore` are excluded by the
+  // exact one-segment shape.
+  if (/^\/masterwork\/[^/]+\/?$/.test(stripped)) {
+    return "matrx-user/masterwork-rulebook";
+  }
+
   const marketing = resolveMarketingSurface(stripped);
   if (marketing) return marketing;
 

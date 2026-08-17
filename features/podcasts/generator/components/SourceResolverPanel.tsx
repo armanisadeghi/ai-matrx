@@ -369,6 +369,7 @@ function ResolvedTextEditor({
         dir={rtl ? "rtl" : undefined}
         autoGrow
         minHeight={168}
+        enableTextStats
         className="text-base"
       />
     </div>

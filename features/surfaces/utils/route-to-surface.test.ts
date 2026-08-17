@@ -212,6 +212,34 @@ describe("Agent surface resolution (nested [id])", () => {
   });
 });
 
+describe("Masterwork Rulebook surface resolution", () => {
+  const RULEBOOK = "8d1d4f08-c4c0-4e1d-ba9a-51d5d7bf69fb";
+
+  it("recognizes only the one-Rulebook workspace", () => {
+    expect(surfaceFromPathname(`/masterwork/${RULEBOOK}`)).toBe(
+      "matrx-user/masterwork-rulebook",
+    );
+    expect(surfaceFromPathname(`/masterwork/${RULEBOOK}/`)).toBe(
+      "matrx-user/masterwork-rulebook",
+    );
+  });
+
+  it("does not steal Masterwork hubs or Rulebook child pages", () => {
+    for (const path of [
+      "/masterwork",
+      "/masterwork/all",
+      "/masterwork/new",
+      "/masterwork/encore",
+      `/masterwork/${RULEBOOK}/record`,
+      `/masterwork/${RULEBOOK}/masterworks`,
+    ]) {
+      expect(surfaceFromPathname(path)).not.toBe(
+        "matrx-user/masterwork-rulebook",
+      );
+    }
+  });
+});
+
 describe("Admin surface resolution (post catch-all removal)", () => {
   it("resolves registered admin families by specific prefix", () => {
     expect(surfaceFromPathname("/administration/agents/system-agents")).toBe(

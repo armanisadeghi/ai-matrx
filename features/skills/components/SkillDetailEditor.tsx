@@ -830,6 +830,7 @@ function BodyEditor({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoGrow={true}
+          enableTextStats
           // rows={14}
           disabled={disabled}
           className="font-mono text-xs border-0 rounded-none focus-visible:ring-0 resize-y"

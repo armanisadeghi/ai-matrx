@@ -439,9 +439,10 @@ export default function ComponentsPage() {
                           >
                             <ProTextarea
                               ref={htmlTextareaRef}
-                              value={editHtml}
-                              onChange={(e) => setEditHtml(e.target.value)}
-                              className="font-mono text-xs min-h-[120px]"
+                            value={editHtml}
+                            onChange={(e) => setEditHtml(e.target.value)}
+                            enableTextStats
+                            className="font-mono text-xs min-h-[120px]"
                               surfaceName={
                                 CMS_COMPONENT_CONTEXT_MENU_PROPS.surfaceName
                               }
@@ -466,9 +467,10 @@ export default function ComponentsPage() {
                           >
                             <ProTextarea
                               ref={cssTextareaRef}
-                              value={editCss}
-                              onChange={(e) => setEditCss(e.target.value)}
-                              className="font-mono text-xs min-h-[80px]"
+                            value={editCss}
+                            onChange={(e) => setEditCss(e.target.value)}
+                            enableTextStats
+                            className="font-mono text-xs min-h-[80px]"
                               surfaceName={
                                 CMS_COMPONENT_CONTEXT_MENU_PROPS.surfaceName
                               }

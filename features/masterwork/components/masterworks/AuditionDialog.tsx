@@ -289,6 +289,7 @@ export function AuditionDialog({
               value={candidate}
               onChange={(e) => setCandidate(e.target.value)}
               rows={5}
+              enableTextStats
               placeholder="Paste what your Masterwork produced…"
             />
           </div>
@@ -301,6 +302,7 @@ export function AuditionDialog({
               value={reference}
               onChange={(e) => setReference(e.target.value)}
               rows={5}
+              enableTextStats
               placeholder="Paste the real thing — the article, the brief, the deliverable…"
             />
           </div>
@@ -339,6 +341,7 @@ export function AuditionDialog({
                   value={vanillaInput}
                   onChange={(e) => setVanillaInput(e.target.value)}
                   rows={4}
+                  enableTextStats
                   placeholder="Paste the SAME input you gave your Masterwork (the text to edit, or the job brief)…"
                 />
               ) : null}

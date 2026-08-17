@@ -1016,9 +1016,10 @@ export function TranscriptViewer() {
                   ref={editContentRef}
                   surfaceName={TRANSCRIPTS_CONTEXT_MENU_PROPS.surfaceName}
                   getApplicationScope={getEditorApplicationScope}
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  rows={16}
+                value={editContent}
+                onChange={(e) => setEditContent(e.target.value)}
+                enableTextStats
+                rows={16}
                   className="text-sm leading-relaxed min-h-[40dvh] resize-y"
                   disabled={contentSaveBusy}
                   // ProTextarea has no built-in iOS 16px guard; keep ≥16px so iOS

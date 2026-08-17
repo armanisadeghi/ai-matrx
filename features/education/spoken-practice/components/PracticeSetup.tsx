@@ -229,6 +229,7 @@ export function PracticeSetup({
             onChange={(e) => setPasted(e.target.value)}
             placeholder="Notes, an outline, or a source passage to ground the session in…"
             rows={3}
+            enableTextStats
           />
         )}
 

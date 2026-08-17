@@ -134,6 +134,7 @@ export function CreateViewA() {
               dir={isRtl ? "rtl" : undefined}
               autoGrow
               minHeight={sourceKind === "topic" ? 110 : 200}
+              enableTextStats
               className="text-base"
             />
           )}

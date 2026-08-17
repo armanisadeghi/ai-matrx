@@ -288,9 +288,10 @@ export function WorkingDocumentHeader({
               header (shrink-0 in the column) grows with it — no separate
               container height to manage. ProTextarea owns mic + copy controls. */}
           <ProTextarea
-            value={draft}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={flush}
+          value={draft}
+          onChange={(e) => onChange(e.target.value)}
+          enableTextStats
+          onBlur={flush}
             placeholder="Empty. Ask the agent to draft, splice, or rework your recordings — or type here. Your edits and the agent's stay in sync each round."
             className="h-40 max-h-[70dvh] min-h-[6rem] resize-y overflow-y-auto bg-muted/40 text-base leading-relaxed text-foreground focus:bg-background"
           />

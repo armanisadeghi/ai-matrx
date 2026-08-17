@@ -54,6 +54,8 @@ export interface ProJsonTextareaProps extends Omit<
   ProTextareaProps,
   "value" | "onChange" | "getApplicationScope"
 > {
+  /** JSON is inherently long-form; stats are enabled here by default. */
+  enableTextStats?: boolean;
   value: string;
   onChange: React.ChangeEventHandler<HTMLTextAreaElement>;
   rootType?: "any" | "object" | "array";
@@ -496,6 +498,7 @@ export const ProJsonTextarea = React.forwardRef<
     onParsedChange,
     getApplicationScope,
     surfaceContextItems,
+    enableTextStats = true,
     ...props
   },
   ref,
@@ -688,6 +691,7 @@ export const ProJsonTextarea = React.forwardRef<
         )}
         surfaceContextItems={resolvedScopeItems}
         getApplicationScope={resolveApplicationScope}
+        enableTextStats={enableTextStats}
         {...props}
       />
 

@@ -98,6 +98,7 @@ import { contentPlanEntitiesManifest } from "./content-plan-entities.manifest";
 import { contentPlanListManifest } from "./content-plan-list.manifest";
 import { contentPlanNodeManifest } from "./content-plan-node.manifest";
 import { contentPlanSetupManifest } from "./content-plan-setup.manifest";
+import { masterworkRulebookManifest } from "./masterwork-rulebook.manifest";
 import { agentsHubManifest } from "./agents-hub.manifest";
 import { organizationsManifest } from "./organizations.manifest";
 import { dashboardManifest } from "./dashboard.manifest";
@@ -282,6 +283,7 @@ const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   contentPlanSetupManifest,
   contentPlanEntitiesManifest,
   contentPlanNodeManifest,
+  masterworkRulebookManifest,
   // 2026-07-24 fleet push — hub/list + workspace surfaces.
   agentsHubManifest,
   organizationsManifest,

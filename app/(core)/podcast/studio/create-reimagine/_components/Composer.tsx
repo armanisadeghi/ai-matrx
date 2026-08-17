@@ -240,6 +240,7 @@ export function Composer() {
               dir={isRtl ? "rtl" : undefined}
               autoGrow
               minHeight={sourceKind === "topic" ? 88 : 176}
+              enableTextStats
               showCopyButton={false}
               className="border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
             />

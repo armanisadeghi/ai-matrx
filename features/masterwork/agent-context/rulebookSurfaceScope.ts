@@ -1,0 +1,138 @@
+import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import {
+  ruleState,
+  type Masterwork,
+  type Rulebook,
+  type RulebookRule,
+} from "../types";
+
+export interface RulebookDraftSnapshot {
+  mode: "new" | "edit";
+  rule_id: string | null;
+  name: string;
+  statement: string;
+  rationale: string;
+  detection: string;
+  quote: string;
+  severity: RulebookRule["severity"];
+  section: string;
+}
+
+export interface RulebookWorkspaceState {
+  editor_open: boolean;
+  interview_open: boolean;
+  ingest_open: boolean;
+  corpus_open: boolean;
+  build_open: boolean;
+  review_wizard_open: boolean;
+  activate_confirmation_open: boolean;
+  feedback_rule_id: string | null;
+  feedback_mode: string | null;
+  dump_focus: boolean;
+  assist_key: string | null;
+}
+
+export interface BuildRulebookSurfaceScopeArgs {
+  rulebook: Rulebook;
+  masterworks: Masterwork[];
+  canEdit: boolean;
+  searchQuery: string;
+  visibleRules: RulebookRule[];
+  activeRule: RulebookRule | null;
+  activeRuleDraft: RulebookDraftSnapshot | null;
+  workspaceState: RulebookWorkspaceState;
+}
+
+function rulebookAsText(rulebook: Rulebook): string {
+  const lines = [
+    `# ${rulebook.name}`,
+    rulebook.description ?? "",
+    `Status: ${rulebook.status} · Version: ${rulebook.version}`,
+  ];
+  for (const [code, section] of Object.entries(rulebook.sections)) {
+    lines.push(`\n## ${section.label} (${code})`);
+    for (const rule of rulebook.rules.filter((item) => item.section === code)) {
+      lines.push(
+        `\n### ${rule.name} [${rule.id}]`,
+        `State: ${ruleState(rule)} · Severity: ${rule.severity}`,
+        rule.statement,
+      );
+      if (rule.rationale) lines.push(`Why: ${rule.rationale}`);
+      if (rule.detection) lines.push(`Detection: ${rule.detection}`);
+      if (rule.quote) lines.push(`Source words: ${rule.quote}`);
+      if (rule.feedback) lines.push(`Review feedback: ${rule.feedback}`);
+    }
+  }
+  return lines.filter(Boolean).join("\n");
+}
+
+export function buildRulebookSurfaceScope({
+  rulebook,
+  masterworks,
+  canEdit,
+  searchQuery,
+  visibleRules,
+  activeRule,
+  activeRuleDraft,
+  workspaceState,
+}: BuildRulebookSurfaceScopeArgs): SurfaceScopePayload {
+  const approvedRules = rulebook.rules.filter(
+    (rule) => ruleState(rule) === "approved",
+  );
+  const draftRules = rulebook.rules.filter(
+    (rule) => ruleState(rule) === "draft",
+  );
+  const rejectedRules = rulebook.rules.filter(
+    (rule) => ruleState(rule) === "rejected",
+  );
+  const retiredRules = rulebook.rules.filter(
+    (rule) => ruleState(rule) === "retired",
+  );
+  const understudy = masterworks.find((item) => item.understudy) ?? null;
+  const builtMasterworks = masterworks.filter((item) => !item.understudy);
+
+  return {
+    selection: "",
+    text_before: "",
+    text_after: "",
+    content: rulebookAsText(rulebook),
+    context: {
+      surface: "masterwork_rulebook",
+      rulebook_id: rulebook.id,
+      current_filter: searchQuery,
+    },
+    rulebook_id: rulebook.id,
+    rulebook_name: rulebook.name,
+    rulebook_description: rulebook.description ?? "",
+    rulebook_status: rulebook.status,
+    rulebook_version: rulebook.version,
+    rulebook_visibility: rulebook.visibility,
+    rulebook_organization_id: rulebook.organization_id,
+    can_edit: canEdit,
+    rulebook,
+    source: rulebook.source,
+    source_title: rulebook.source.title ?? "",
+    source_author: rulebook.source.author ?? "",
+    sections: rulebook.sections,
+    rules: rulebook.rules,
+    approved_rules: approvedRules,
+    draft_rules: draftRules,
+    rejected_rules: rejectedRules,
+    retired_rules: retiredRules,
+    rule_counts: {
+      total: rulebook.rules.length,
+      approved: approvedRules.length,
+      draft: draftRules.length,
+      rejected: rejectedRules.length,
+      retired: retiredRules.length,
+    },
+    masterworks,
+    understudy,
+    built_masterworks: builtMasterworks,
+    search_query: searchQuery,
+    visible_rules: visibleRules,
+    active_rule: activeRule,
+    active_rule_draft: activeRuleDraft,
+    workspace_state: workspaceState,
+  };
+}

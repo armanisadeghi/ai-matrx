@@ -921,9 +921,10 @@ export default function PageEditor({
                     {codeTab === "html" && (
                       <ProTextarea
                         ref={textareaRef}
-                        value={htmlContent}
-                        onChange={(e) => setHtmlContent(e.target.value)}
-                        placeholder={"<div>\n  <h1>Your page content here…</h1>\n</div>"}
+                      value={htmlContent}
+                      onChange={(e) => setHtmlContent(e.target.value)}
+                      enableTextStats
+                      placeholder={"<div>\n  <h1>Your page content here…</h1>\n</div>"}
                         className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
                         wrapperClassName="absolute inset-0"
                         surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
@@ -933,9 +934,10 @@ export default function PageEditor({
                     {codeTab === "css" && (
                       <ProTextarea
                         ref={textareaRef}
-                        value={cssContent}
-                        onChange={(e) => setCssContent(e.target.value)}
-                        placeholder={"/* Page-specific styles */\n\nh1 {\n  color: #333;\n}"}
+                      value={cssContent}
+                      onChange={(e) => setCssContent(e.target.value)}
+                      enableTextStats
+                      placeholder={"/* Page-specific styles */\n\nh1 {\n  color: #333;\n}"}
                         className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
                         wrapperClassName="absolute inset-0"
                         surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}
@@ -945,9 +947,10 @@ export default function PageEditor({
                     {codeTab === "js" && (
                       <ProTextarea
                         ref={textareaRef}
-                        value={jsContent}
-                        onChange={(e) => setJsContent(e.target.value)}
-                        placeholder={"// Page-specific JavaScript\n\nconsole.log('Page loaded');"}
+                      value={jsContent}
+                      onChange={(e) => setJsContent(e.target.value)}
+                      enableTextStats
+                      placeholder={"// Page-specific JavaScript\n\nconsole.log('Page loaded');"}
                         className="absolute inset-0 rounded-none border-0 resize-none font-mono text-sm leading-relaxed focus-visible:ring-0"
                         wrapperClassName="absolute inset-0"
                         surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}

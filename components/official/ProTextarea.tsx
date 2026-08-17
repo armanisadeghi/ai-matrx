@@ -30,10 +30,9 @@
  *     default: General Chat (`helpAgentId` to override).
  *   - **Custom Agent** — OFF by default (`enableCustomAgent`). Same flow; no
  *     preset default until `customAgentId` is set (agent filter TBD).
- * - **Text stats** — character/word/line counts via a pinned stats bar (ON by
- *   default when the "…" menu is shown) and a "Text stats" detail view in the
- *   menu. Pass `enableTextStats={false}` to hide entirely; users can toggle the
- *   bar off from the menu.
+ * - **Text stats** — character/word/line counts via a pinned stats bar and a
+ *   "Text stats" detail view in the menu. OFF by default; pass
+ *   `enableTextStats` on long-form editors where those measurements help.
  * - **Submit button** — opt-in via `onSubmit`. Renders a primary-colored Send
  *   button at bottom-right. `Cmd/Ctrl + Enter` triggers it. `submitOnEnter`
  *   makes plain Enter submit (Shift+Enter still inserts newline).
@@ -247,11 +246,10 @@ export interface ProTextareaProps extends React.TextareaHTMLAttributes<HTMLTextA
   enableBoundAgents?: boolean;
   /**
    * Text stats (chars, words, lines, paragraphs) in the "…" menu + optional
-   * pinned stats bar. ON by default when the menu is shown. Pass `false` to
-   * hide entirely.
+   * pinned stats bar. OFF by default; pass `true` for long-form authoring.
    */
   enableTextStats?: boolean;
-  /** Initial pinned stats bar visibility. Default: true. */
+  /** Initial pinned stats bar visibility when text stats are enabled. Default: true. */
   defaultShowTextStatsBar?: boolean;
   /** When provided, renders a prominent submit button at the bottom-right. */
   onSubmit?: () => void;
@@ -326,7 +324,7 @@ export const ProTextarea = React.forwardRef<
       getApplicationScope,
       surfaceContextItems,
       enableBoundAgents = true,
-      enableTextStats = true,
+      enableTextStats = false,
       defaultShowTextStatsBar = true,
       onSubmit,
       submitDisabled,

@@ -706,6 +706,7 @@ export function ChatImportDialog({
                   onChange={(e) => setText(e.target.value)}
                   placeholder="Paste the conversation here — any format works. Several conversations at once is fine."
                   rows={9}
+                  enableTextStats
                 />
               </div>
             ) : null}

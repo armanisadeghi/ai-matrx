@@ -190,6 +190,7 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
               dir={isRtl ? "rtl" : undefined}
               autoGrow
               minHeight={sourceKind === "topic" ? 88 : 156}
+              enableTextStats
               showCopyButton={false}
               className="text-base"
             />

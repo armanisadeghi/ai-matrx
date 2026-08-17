@@ -14,9 +14,10 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 
 /** `<client>/<surface>` — must match the producer's RULEBOOK_SURFACE. */
-export const MASTERWORK_RULEBOOK_SURFACE = "matrx-user/masterwork-rulebook";
+export const MASTERWORK_RULEBOOK_SURFACE = MASTERWORK_RULEBOOK_SURFACE_NAME;
 
 export interface MasterworkAssistLaunch {
   open: "interview" | "ingest";
@@ -44,7 +45,11 @@ export async function fetchAssistLaunch(
     .maybeSingle();
   if (error || !data) return null;
   const metadata = data.metadata;
-  if (typeof metadata !== "object" || metadata === null || Array.isArray(metadata)) {
+  if (
+    typeof metadata !== "object" ||
+    metadata === null ||
+    Array.isArray(metadata)
+  ) {
     return null;
   }
   const launch = (metadata as Record<string, unknown>).launch;
@@ -52,7 +57,12 @@ export async function fetchAssistLaunch(
     return null;
   }
   const rec = launch as Record<string, unknown>;
-  const open = rec.open === "ingest" ? "ingest" : rec.open === "interview" ? "interview" : null;
+  const open =
+    rec.open === "ingest"
+      ? "ingest"
+      : rec.open === "interview"
+        ? "interview"
+        : null;
   if (!open) return null;
   return {
     open,

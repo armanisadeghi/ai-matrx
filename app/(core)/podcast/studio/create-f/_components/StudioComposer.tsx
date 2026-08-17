@@ -133,6 +133,7 @@ export function StudioComposer() {
                 dir={language?.rtl ? "rtl" : undefined}
                 autoGrow
                 minHeight={draft.sourceKind === "topic" ? 84 : 150}
+                enableTextStats
                 className="text-base"
                 showCopyButton={false}
               />
