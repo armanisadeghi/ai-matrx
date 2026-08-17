@@ -24,10 +24,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { smartExecute } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
-import {
-  selectIsExecuting,
-  selectLatestAnswerText,
-} from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
+import { selectLatestAnswerText } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useVoiceAgentInstance } from "../hooks/useVoiceAgentInstance";
 import { useRealtimeAgentConfig } from "../hooks/useRealtimeAgentConfig";
 import { useXaiVoiceSession, type VoiceSessionApi } from "../hooks/useXaiVoiceSession";
@@ -163,38 +160,86 @@ export function useVoiceRelaySession(
   usePersistVoiceTranscript({ instanceId });
 
   // ── Brain watch: narrate the wait, deliver the answer ───────────────────
-  const brainBusy = useAppSelector(
-    conversationId ? selectIsExecuting(conversationId) : () => false,
+  // Keyed on the conversation's full InstanceStatus, NOT the boolean
+  // executing flag: "paused" (client-tool delegation) must not deliver a
+  // partial answer, and "error"/"cancelled" must never be spoken as if the
+  // brain finished successfully.
+  const brainStatus = useAppSelector((s) =>
+    conversationId
+      ? (s.conversations?.byConversationId[conversationId]?.status ?? "ready")
+      : "ready",
   );
-  const prevBusyRef = useRef(false);
+  const brainBusy =
+    brainStatus === "running" ||
+    brainStatus === "streaming" ||
+    brainStatus === "paused";
+  const prevStatusRef = useRef<string>("ready");
   const narrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const wasBusy = prevBusyRef.current;
-    prevBusyRef.current = brainBusy;
-    if (!controller) return;
+    const prev = prevStatusRef.current;
+    prevStatusRef.current = brainStatus;
+    if (!controller || brainStatus === prev) return;
 
-    if (brainBusy && !wasBusy) {
-      // Rule 2b — one truthful narration cue if the brain takes a while.
+    const clearNarrationTimer = () => {
+      if (narrationTimerRef.current) {
+        clearTimeout(narrationTimerRef.current);
+        narrationTimerRef.current = null;
+      }
+    };
+    // "paused" counts as active: a resumed turn may settle from it directly.
+    const wasActive =
+      prev === "running" || prev === "streaming" || prev === "paused";
+
+    if ((brainStatus === "running" || brainStatus === "streaming") && !wasActive) {
+      // Turn started — rule 2b: one truthful narration cue if it takes a while.
+      clearNarrationTimer();
       narrationTimerRef.current = setTimeout(() => {
         controller.speakNarration("Passing that along — one moment.");
       }, NARRATION_DELAY_MS);
       return;
     }
 
-    if (!brainBusy && wasBusy && conversationId) {
-      if (narrationTimerRef.current) {
-        clearTimeout(narrationTimerRef.current);
-        narrationTimerRef.current = null;
+    if (!wasActive) return;
+    clearNarrationTimer();
+
+    switch (brainStatus) {
+      case "paused":
+        // Client-tool delegation — the brain is mid-turn, NOT done. No
+        // delivery; keep awaiting; one truthful line so the pause isn't dead air.
+        controller.speakNarration(
+          "The primary agent is finishing a step before answering.",
+        );
+        return;
+      case "error":
+      case "cancelled":
+        // A failed/aborted turn is never spoken as an answer. Truthful status,
+        // then disarm the watchdog (no delivery is coming for this turn).
+        controller.speakNarration(
+          brainStatus === "error"
+            ? "The primary agent hit a problem with that message — the user can try again."
+            : "That request was stopped — the user can continue whenever they like.",
+        );
+        controller.clearAwaitingBrain();
+        return;
+      case "complete": {
+        if (!conversationId) return;
+        const answer = selectLatestAnswerText(conversationId)(store.getState());
+        if (answer.trim().length > 0) {
+          controller.speakDelivery(answer, {
+            ledgerSummary: getOrCreateLedger(instanceId).serialize(),
+          });
+        } else {
+          // Settled with nothing to say — disarm rather than leave the
+          // watchdog armed against a delivery that will never come.
+          controller.clearAwaitingBrain();
+        }
+        return;
       }
-      const answer = selectLatestAnswerText(conversationId)(store.getState());
-      if (answer.trim().length > 0) {
-        controller.speakDelivery(answer, {
-          ledgerSummary: getOrCreateLedger(instanceId).serialize(),
-        });
-      }
+      default:
+        return;
     }
-  }, [brainBusy, conversationId, controller, instanceId, store]);
+  }, [brainStatus, controller, conversationId, instanceId, store]);
 
   useEffect(() => {
     return () => {

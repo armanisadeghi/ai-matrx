@@ -217,6 +217,24 @@ describe("relayController", () => {
     expect(deletes[0].item_id).toBe("relay_cue_1");
   });
 
+  it("clearAwaitingBrain disarms the watchdog when a turn settles with no delivery", () => {
+    const controller = createVoiceRelayController({
+      onUserUtterance: () => {},
+      log: () => {},
+    });
+    const { handle, emit, getCancels } = makeHandle();
+    controller.binding.attach(handle);
+
+    emit(transcriptDone("hi"));
+    expect(controller.isAwaitingBrain()).toBe(true);
+    // The brain failed / answered empty — no delivery will come.
+    controller.clearAwaitingBrain();
+    expect(controller.isAwaitingBrain()).toBe(false);
+    // A later legitimate response (e.g. tool continuation) is not cancelled.
+    emit(responseCreated);
+    expect(getCancels()).toBe(0);
+  });
+
   it("drops cues after detach instead of throwing", () => {
     const controller = createVoiceRelayController({
       onUserUtterance: () => {},
