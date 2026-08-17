@@ -1360,7 +1360,11 @@ export function SetupView() {
         siteId,
         assignments: keywordStrategy.assignments,
       });
-      await queryClient.invalidateQueries({ queryKey: planKeys.nodes(siteId) });
+      // The strategy now lives on `web.page` (content-planning invariant 9),
+      // so it is the SEO-plan index that went stale, not the node list.
+      await queryClient.invalidateQueries({
+        queryKey: planKeys.seoPlans(siteId),
+      });
       if (result.failures.length > 0) {
         setKeywordError(
           `Bound ${result.bound} page(s); ${result.failures.length} problem(s) — ${result.failures[0]}`,
@@ -1372,7 +1376,7 @@ export function SetupView() {
       }
       if (result.bound > 0 || result.secondaryKeywords > 0) {
         setKeywordsAppliedAt(new Date().toISOString());
-        // Each page keeps its own share in `attributes.keyword_strategy`; the
+        // Each page keeps its own share in `web.page.desired_values`; the
         // strategist's whole-plan summary and warnings belong to no page, so
         // they are recorded on the site instead of dropped at Apply.
         try {

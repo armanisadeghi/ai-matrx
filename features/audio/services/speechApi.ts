@@ -4,7 +4,7 @@ import type { components } from "@/types/python-generated/api-types";
 import type { TranscriptionOptions, TranscriptionResult } from "../types";
 import { CATALOG_VOICES } from "@/features/audio/service/engines";
 
-type TranscriptionWire = components["schemas"]["TranscriptionResponse"];
+type TranscriptionWire = components["schemas"]["aidream__services__audio__speech__TranscriptionResponse"];
 type SpeechWire = components["schemas"]["SpeechResponse"];
 
 function normalizeTranscription(data: TranscriptionWire): TranscriptionResult {

@@ -38,6 +38,7 @@ import {
   removeNodeTopic,
   unlinkPartyFromSite,
 } from "./associations";
+import { loadSitePlanIndex } from "../page-seo-plan";
 import { fetchPartiesByIds } from "@/features/crm/service";
 import type { PartyRow } from "@/features/crm/types";
 import {
@@ -84,6 +85,7 @@ export const planKeys = {
     ["content-plan", "node-artifacts", nodeId] as const,
   reality: (siteId: string) => ["content-plan", "reality", siteId] as const,
   cmsPages: (siteId: string) => ["content-plan", "cms-pages", siteId] as const,
+  seoPlans: (siteId: string) => ["content-plan", "seo-plans", siteId] as const,
 };
 
 /** Per-site plan aggregates for the /marketing/content-plan list page. */
@@ -99,6 +101,20 @@ export function usePlanNodes(siteId: string | null) {
   return useQuery({
     queryKey: planKeys.nodes(siteId ?? "none"),
     queryFn: ({ signal }) => listPlanNodes(siteId as string, signal),
+    enabled: Boolean(siteId),
+    placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * The site's per-page SEO plans, keyed by route — THE one store
+ * (`web.page.desired_values`, content-planning invariant 9). Loaded once per
+ * site because every plan surface renders a page AND its siblings' roles.
+ */
+export function useSitePlanIndex(siteId: string | null) {
+  return useQuery({
+    queryKey: planKeys.seoPlans(siteId ?? "none"),
+    queryFn: ({ signal }) => loadSitePlanIndex(siteId as string, signal),
     enabled: Boolean(siteId),
     placeholderData: keepPreviousData,
   });

@@ -203,7 +203,7 @@ export function MandatesConsole() {
         } else {
           setCodeTruthByMandateKey(
             Object.fromEntries(
-              truthResult.value.slots.map((s) => [s.slot_key, s]),
+              truthResult.value.mandates.map((s) => [s.mandate_key, s]),
             ),
           );
           setCodeTruthError(null);

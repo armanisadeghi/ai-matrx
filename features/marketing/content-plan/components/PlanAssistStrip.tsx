@@ -17,6 +17,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import type { Assist } from "@/features/assists/types";
+import { useSitePlanIndex } from "../data/hooks";
 import type { CmsPageMapEntry } from "../setup/bridge";
 import type { PlanNodeRow } from "../types";
 import {
@@ -85,14 +86,22 @@ export function PlanAssistStrip({
     });
   }, [enabled, siteId, siteLabel, nodeRows, pagesByNodeId, userId, dispatch]);
 
+  // The keyword sweep reads THE one SEO-plan store (content-planning invariant
+  // 9), so it waits for that index — a chip fired against a half-loaded read
+  // would tell the user every page is missing a keyword.
+  const sitePlans = useSitePlanIndex(keywordSweepEnabled ? siteId : null);
+  const sitePlanIndex = sitePlans.data ?? null;
+
   useEffect(() => {
     if (!keywordSweepEnabled || !siteId || !userId || !siteLabel) return;
+    if (!sitePlanIndex) return;
     if (keywordSweptSites.has(siteId)) return;
     keywordSweptSites.add(siteId);
     void produceKeywordAssists({
       siteId,
       siteLabel,
       nodeRows,
+      sitePlans: sitePlanIndex,
       userId,
       dispatch,
     }).then((gapFound) => {
@@ -101,7 +110,15 @@ export function PlanAssistStrip({
       // scan — no network until a gap exists).
       if (!gapFound) keywordSweptSites.delete(siteId);
     });
-  }, [keywordSweepEnabled, siteId, siteLabel, nodeRows, userId, dispatch]);
+  }, [
+    keywordSweepEnabled,
+    siteId,
+    siteLabel,
+    nodeRows,
+    sitePlanIndex,
+    userId,
+    dispatch,
+  ]);
 
   return (
     <AssistStrip

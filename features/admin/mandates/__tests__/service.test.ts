@@ -28,7 +28,7 @@ function result(
   return {
     id,
     created_at: createdAt,
-    slot_key: "seo.classify",
+    mandate_key: "seo.classify",
     exemplar_id: "exemplar-1",
     candidate_id: "candidate-1",
     candidate_label: "Latest",
@@ -84,7 +84,7 @@ describe("mandate owner bench service", () => {
 
   it("uses callApi for one all-exemplar batch and preserves explicit empty overrides", async () => {
     const response: MandateTestBatchResponse = {
-      slot_key: "seo.classify",
+      mandate_key: "seo.classify",
       exemplar_count: 1,
       columns: [
         { candidate_id: "baseline", label: "Baseline", selection: "current" },
@@ -124,9 +124,9 @@ describe("mandate owner bench service", () => {
 
     expect(callApiMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: "/agent-slots/{slot_key}/tests",
+        path: "/mandates/{mandate_key}/tests",
         method: "POST",
-        pathParams: { slot_key: "seo.classify" },
+        pathParams: { mandate_key: "seo.classify" },
         connectTimeoutMs: 10 * 60_000,
         totalTimeoutMs: null,
         body: expect.objectContaining({
@@ -159,7 +159,7 @@ describe("mandate owner bench service", () => {
       fetchMandateCodeTruthReport(dispatch as unknown as AppDispatch),
     ).resolves.toEqual(response);
     expect(callApiMock).toHaveBeenCalledWith({
-      path: "/agent-slots/code-truth",
+      path: "/mandates/code-truth",
       method: "GET",
     });
   });
@@ -185,7 +185,7 @@ describe("mandate owner bench service", () => {
 
     await expect(
       fetchMandateVariableVerdicts(dispatch as unknown as AppDispatch, {
-        slot_key: "podcast.deep_research",
+        mandate_key: "podcast.deep_research",
         resolution: "code_declaration_found",
         drift: "code_only",
         bound_agent_drift: "code_only",
@@ -204,9 +204,9 @@ describe("mandate owner bench service", () => {
       }),
     ).resolves.toEqual(response);
     expect(callApiMock).toHaveBeenCalledWith({
-      path: "/agent-slots/{slot_key}/variable-verdicts",
+      path: "/mandates/{mandate_key}/variable-verdicts",
       method: "POST",
-      pathParams: { slot_key: "podcast.deep_research" },
+      pathParams: { mandate_key: "podcast.deep_research" },
       body: { code_values: { user_request: "example value" } },
     });
   });

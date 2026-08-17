@@ -38,16 +38,22 @@ import {
   usePlanNodeEdgeMutation,
   usePlanNodeEdges,
 } from "../data/hooks";
-import {
-  readNodeKeywordStrategy,
-  type NodeKeywordStrategy,
-} from "../setup/keyword-strategy";
+import { planForRoute, type SitePlanIndex } from "../page-seo-plan";
 import type { PlanNodeRow } from "../types";
 import { PLAN_NODE_SECONDARY_KEYWORD_ROLE, SEO_KEYWORD_TOKEN } from "../types";
 import { KeywordPicker } from "./KeywordPicker";
 import { planNodeHref } from "./PlanContextPanel";
 
 const L = surfaceValueLabels(contentPlanNodeManifest);
+
+/** A planned link stores an absolute URL; a plan node knows only its route. */
+function routeOf(url: string): string {
+  try {
+    return new URL(url).pathname || "/";
+  } catch {
+    return url;
+  }
+}
 
 export function NodeSeoIntentEditor({
   nodeId,
@@ -277,40 +283,47 @@ export function NodeSeoIntentEditor({
  * directly editable. Delete this together with `NodeSeoIntentEditor` when the
  * storage migration lands.
  */
+/**
+ * The applied site-wide keyword strategy for one planned page — read from THE
+ * one store, `web.page.desired_values` (content-planning invariant 9), through
+ * the site plan index. Nothing here reads `plan.node`'s retired SEO fields.
+ *
+ * `sitePlans` is null while the index loads and empty when the site has no
+ * page records yet; both render the honest empty state rather than a spinner
+ * inside a section that is usually empty anyway.
+ */
 export function SeoPlanSection({
   planNode,
   siteNodes,
+  sitePlans,
   workspaceHref,
 }: {
   planNode: PlanNodeRow;
   siteNodes: readonly PlanNodeRow[];
+  sitePlans: SitePlanIndex | null;
   workspaceHref: string;
 }) {
-  // `keyword_strategy` is agent-written jsonb and the reader only proves it is
-  // an object — normalize the array/string fields so one malformed record
-  // can't take down the whole panel.
-  const raw: NodeKeywordStrategy | null = readNodeKeywordStrategy(planNode);
-  const strategy = raw
-    ? {
-        page_role: typeof raw.page_role === "string" ? raw.page_role : "page",
-        reason: typeof raw.reason === "string" ? raw.reason : "",
-        supports_routes: Array.isArray(raw.supports_routes)
-          ? raw.supports_routes.filter((r) => typeof r === "string")
-          : [],
-        internal_links: Array.isArray(raw.internal_links)
-          ? raw.internal_links.filter(
-              (l) =>
-                l &&
-                typeof l === "object" &&
-                typeof l.to_route === "string" &&
-                typeof l.anchor_text === "string",
-            )
-          : [],
-        secondary_keywords: Array.isArray(raw.secondary_keywords)
-          ? raw.secondary_keywords.filter((k) => typeof k === "string")
-          : [],
-      }
-    : null;
+  const plan = planForRoute(sitePlans, planNode.route);
+  const strategy =
+    plan &&
+    (plan.draft.pageRole ||
+      plan.draft.supportsRoutes.length > 0 ||
+      plan.draft.reason ||
+      plan.secondaryKeywords.length > 0 ||
+      plan.outboundLinks.length > 0)
+      ? {
+          page_role: plan.draft.pageRole || "page",
+          reason: plan.draft.reason,
+          supports_routes: plan.draft.supportsRoutes,
+          // The link plan is keyed by URL (it can name pages the plan does not
+          // own); the door below matches on route, so compare on the path.
+          internal_links: plan.outboundLinks.map((link) => ({
+            to_route: routeOf(link.url),
+            anchor_text: link.anchor_text ?? "",
+          })),
+          secondary_keywords: plan.secondaryKeywords.map((kw) => kw.phrase),
+        }
+      : null;
 
   // THE DOOR LAW: a strategy route that IS a plan node opens that node in the
   // plan workspace; a route the plan doesn't know renders as plain text.

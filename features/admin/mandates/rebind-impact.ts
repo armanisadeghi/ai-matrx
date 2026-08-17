@@ -30,7 +30,7 @@
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import type { components } from "@/types/python-generated/api-types";
 
-type MandateCodeTruth = components["schemas"]["SlotCodeTruth"];
+type MandateCodeTruth = components["schemas"]["MandateCodeTruth"];
 
 /** Per-variable verdict. Mirrors the cross-repo scenario matrix. */
 export type RebindVerdict =

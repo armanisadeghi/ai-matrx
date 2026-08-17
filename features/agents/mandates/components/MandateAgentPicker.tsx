@@ -13,7 +13,7 @@
  * rendered through the ONE canonical picker (AgentListInlinePicker).
  *
  * Writes ride the ONE bind path (aidream PUT/DELETE
- * /agent-slots/{slot_key}/binding). The candidate is contract-checked
+ * /mandates/{mandate_key}/binding). The candidate is contract-checked
  * client-side as an instant pre-flight; the server's bind-time check is the
  * authority and its 422 detail is shown VERBATIM. Saving invalidates the
  * client mandate cache, so any mounted useMandate consumer re-resolves

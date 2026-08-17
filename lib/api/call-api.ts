@@ -1230,11 +1230,28 @@ function isAiTurnPath(path: string): boolean {
 // These are typed aliases — they carry the full body type inferrence.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * The scope fields THIS transport injects (`buildRequestBody` above), so a
+ * caller never supplies them by hand. aidream marks them required on the
+ * request schema — correct for an external client, wrong for a caller here,
+ * which would otherwise have to reach into Redux for an org id the transport is
+ * about to overwrite it with anyway. Callers may still pass one explicitly
+ * (caller values win); `scopeOverrides` is the deliberate way to redirect it.
+ */
+type TransportInjectedScope = "organization_id" | "project_id" | "task_id";
+
+type WithInjectedScope<T> = Omit<T, TransportInjectedScope> &
+  Partial<Pick<T, Extract<keyof T, TransportInjectedScope>>>;
+
 /** Body type for POST /ai/agents/{agent_id} */
-export type AgentStartBody = components["schemas"]["AgentStartRequest"];
+export type AgentStartBody = WithInjectedScope<
+  components["schemas"]["AgentStartRequest"]
+>;
 
 /** Body type for POST /ai/prompts/{prompt_id} */
-export type PromptStartBody = components["schemas"]["PromptStartRequest"];
+export type PromptStartBody = WithInjectedScope<
+  components["schemas"]["PromptStartRequest"]
+>;
 
 /** Body type for POST /ai/agents-blocks/{agent_id} */
 export type AgentBlocksStartBody =

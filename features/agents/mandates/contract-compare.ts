@@ -14,7 +14,7 @@
  *   `{required_variables, required_context_slots}` (names only) vs the
  *   candidate's declared names. Same result shape, same rule.
  *
- * The server's bind-time check (aidream PUT /agent-slots/{slot_key}/binding)
+ * The server's bind-time check (aidream PUT /mandates/{mandate_key}/binding)
  * is the authority; this is the instant client-side pre-flight.
  */
 

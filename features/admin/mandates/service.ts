@@ -489,18 +489,18 @@ export async function deleteMandateExemplar(id: string): Promise<void> {
 }
 
 /** All bench transport shapes come from aidream's generated OpenAPI contract. */
-export type MandateTestCandidate = components["schemas"]["SlotCandidate"];
+export type MandateTestCandidate = components["schemas"]["MandateCandidate"];
 export type MandateTestBatchRequest =
-  components["schemas"]["SlotTestBatchRequest"];
+  components["schemas"]["MandateTestBatchRequest"];
 export type MandateTestBatchResponse =
-  components["schemas"]["SlotTestBatchResponse"];
-export type MandateTestResponse = components["schemas"]["SlotTestResult"];
-export type MandateTestRequest = components["schemas"]["SlotTestRequest"];
-export type MandateCodeTruth = components["schemas"]["SlotCodeTruth"];
+  components["schemas"]["MandateTestBatchResponse"];
+export type MandateTestResponse = components["schemas"]["MandateTestResult"];
+export type MandateTestRequest = components["schemas"]["MandateTestRequest"];
+export type MandateCodeTruth = components["schemas"]["MandateCodeTruth"];
 export type MandateCodeTruthReport =
-  components["schemas"]["SlotCodeTruthReport"];
+  components["schemas"]["MandateCodeTruthReport"];
 export type MandateVariableVerdictRequest =
-  components["schemas"]["SlotVariableVerdictRequest"];
+  components["schemas"]["MandateVariableVerdictRequest"];
 export type MandateVariableResolution =
   components["schemas"]["VariableResolution"];
 export type MandateVariableVerdict = components["schemas"]["VariableVerdict"];
@@ -521,16 +521,16 @@ function isStringArray(value: unknown): boolean {
 function isMandateCodeTruthReport(value: unknown): value is MandateCodeTruthReport {
   if (!isJsonObject(value)) return false;
   if (
-    !Array.isArray(value.slots) ||
+    !Array.isArray(value.mandates) ||
     !isStringArray(value.import_failures) ||
     !isJsonObject(value.counts)
   ) {
     return false;
   }
-  return value.slots.every((mandate) => {
+  return value.mandates.every((mandate) => {
     if (!isJsonObject(mandate)) return false;
     if (
-      typeof mandate.slot_key !== "string" ||
+      typeof mandate.mandate_key !== "string" ||
       typeof mandate.resolution !== "string" ||
       !CODE_TRUTH_RESOLUTION.has(mandate.resolution) ||
       typeof mandate.drift !== "string" ||
@@ -598,7 +598,7 @@ export async function fetchMandateCodeTruthReport(
 ): Promise<MandateCodeTruthReport> {
   const response = await dispatch(
     callApi({
-      path: "/agent-slots/code-truth",
+      path: "/mandates/code-truth",
       method: "GET",
     }),
   );
@@ -649,16 +649,16 @@ export async function fetchMandateVariableVerdicts(
   const body: MandateVariableVerdictRequest = { code_values: codeValues };
   const response = await dispatch(
     callApi({
-      path: "/agent-slots/{slot_key}/variable-verdicts",
+      path: "/mandates/{mandate_key}/variable-verdicts",
       method: "POST",
-      pathParams: { slot_key: codeTruth.slot_key },
+      pathParams: { mandate_key: codeTruth.mandate_key },
       body,
     }),
   );
   if (response.error) throw new Error(response.error.message);
   if (!response.data) {
     throw new Error(
-      `Agent mandate ${codeTruth.slot_key} returned no variable verdicts.`,
+      `Agent mandate ${codeTruth.mandate_key} returned no variable verdicts.`,
     );
   }
   return response.data;
@@ -673,9 +673,9 @@ export async function runMandateTests(
 ): Promise<MandateTestBatchResponse> {
   const response = await dispatch(
     callApi({
-      path: "/agent-slots/{slot_key}/tests",
+      path: "/mandates/{mandate_key}/tests",
       method: "POST",
-      pathParams: { slot_key: mandateKey },
+      pathParams: { mandate_key: mandateKey },
       body: request,
       // Batch responses do not send headers until every exemplar/candidate
       // cell has completed. Four exemplars × three columns already exceeds
@@ -714,9 +714,9 @@ export async function runMandateAdHocTest(
   };
   const response = await dispatch(
     callApi({
-      path: "/agent-slots/{slot_key}/test",
+      path: "/mandates/{mandate_key}/test",
       method: "POST",
-      pathParams: { slot_key: mandateKey },
+      pathParams: { mandate_key: mandateKey },
       body,
       // One agent run, not a batch — but a slow model on a long prompt still
       // outruns the default connect deadline, and this endpoint sends no
@@ -749,7 +749,7 @@ export function isMandateTestResult(value: unknown): value is MandateTestRespons
   return (
     typeof value.id === "string" &&
     typeof value.created_at === "string" &&
-    typeof value.slot_key === "string" &&
+    typeof value.mandate_key === "string" &&
     (typeof value.exemplar_id === "string" || value.exemplar_id == null) &&
     typeof value.candidate_id === "string" &&
     typeof value.candidate_label === "string" &&
@@ -766,7 +766,7 @@ function isMandateTestBatchResponse(
 ): value is MandateTestBatchResponse {
   if (!isJsonObject(value)) return false;
   if (
-    typeof value.slot_key !== "string" ||
+    typeof value.mandate_key !== "string" ||
     typeof value.exemplar_count !== "number" ||
     !Array.isArray(value.columns) ||
     !Array.isArray(value.exemplars)

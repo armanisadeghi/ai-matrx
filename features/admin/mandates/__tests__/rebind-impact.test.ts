@@ -127,7 +127,7 @@ describe("buildRebindFixBrief", () => {
 
   it("includes the live runner, source, bound-agent declaration, and call sites", () => {
     const codeTruth = {
-      slot_key: "podcast.deep_research",
+      mandate_key: "podcast.deep_research",
       resolution: "code_declaration_found" as const,
       drift: "code_only" as const,
       bound_agent_drift: "code_only" as const,
@@ -170,7 +170,7 @@ describe("buildRebindFixBrief", () => {
     };
     const impact = codeTruthRebindImpact(codeTruth);
     const brief = buildRebindFixBrief({
-      mandateKey: codeTruth.slot_key,
+      mandateKey: codeTruth.mandate_key,
       candidateName: codeTruth.bound_agent.name,
       impact,
       codeTruth,

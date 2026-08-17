@@ -28,7 +28,7 @@
  * is the FIRST test case of a cold mandate: the bar every later run is judged
  * against.
  *
- * No progress UI: `POST /agent-slots/{slot_key}/test` returns one completed
+ * No progress UI: `POST /mandates/{mandate_key}/test` returns one completed
  * result and exposes no requestId, so there is no stream to render. When that
  * endpoint learns to stream, this panel adopts it and renders the canonical
  * LiveRunWindow — it must never grow a hand-rolled progress bar instead.

@@ -26,7 +26,7 @@ import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { Assist } from "@/features/assists/types";
 import { assistPriority } from "@/features/assists/types";
 import { listSiteKeywordValues } from "./data/service";
-import { KEYWORD_STRATEGY_ATTR_KEY } from "./setup/keyword-strategy";
+import { planForRoute, type SitePlanIndex } from "./page-seo-plan";
 import type { CmsPageMapEntry } from "./setup/bridge";
 import type { PlanNodeRow } from "./types";
 
@@ -49,19 +49,28 @@ export function isPlanAssist(assist: Assist, siteId: string): boolean {
   );
 }
 
-/** A page carries a keyword assignment through EITHER of the two places the
- * feature writes one: the FK, or the whole-plan strategy record (which is what
- * a supporting page gets — a page role and the money routes it feeds). Mirrors
- * `assert_brief_preconditions` in aidream's brief_writer.py; the two must agree
- * or the UI offers a fix for a gap the server does not see. */
-export function hasKeywordAssignment(node: PlanNodeRow): boolean {
-  if (node.primary_keyword_id) return true;
-  const attributes = node.attributes;
-  if (!attributes || typeof attributes !== "object" || Array.isArray(attributes)) {
-    return false;
-  }
-  const strategy = (attributes as Record<string, unknown>)[KEYWORD_STRATEGY_ATTR_KEY];
-  return Boolean(strategy && typeof strategy === "object" && !Array.isArray(strategy));
+/**
+ * A page carries a keyword assignment when its SEO plan names a target
+ * keyword OR gives it a role (which is what a supporting page gets — a role
+ * plus the money routes it feeds).
+ *
+ * Read from THE one store, `web.page.desired_values.keyword_plan`
+ * (content-planning invariant 9), through the site plan index. Mirrors
+ * `assert_brief_preconditions` in aidream's `brief_writer.py`; the two must
+ * agree or the UI offers a fix for a gap the server does not see.
+ *
+ * `plans === null` means the index has not loaded — that is UNKNOWN, not a
+ * gap, so it answers `true`. A chip that fires on a still-loading read is a
+ * wrong chip, and no chip beats a wrong chip.
+ */
+export function hasKeywordAssignment(
+  node: PlanNodeRow,
+  plans: SitePlanIndex | null | undefined,
+): boolean {
+  if (plans === null || plans === undefined) return true;
+  const plan = planForRoute(plans, node.route);
+  if (!plan) return false;
+  return Boolean(plan.draft.primaryKeywordId || plan.draft.pageRole);
 }
 
 /**
@@ -84,13 +93,16 @@ export async function produceKeywordAssists(args: {
   siteId: string;
   siteLabel: string;
   nodeRows: readonly PlanNodeRow[];
+  /** The site's SEO plans (THE one store). Null = not loaded; no chip fires. */
+  sitePlans: SitePlanIndex | null;
   userId: string;
   dispatch: AppDispatch;
 }): Promise<boolean> {
-  const { siteId, siteLabel, nodeRows, userId, dispatch } = args;
+  const { siteId, siteLabel, nodeRows, sitePlans, userId, dispatch } = args;
+  if (!sitePlans) return false;
 
   const missing = nodeRows.filter(
-    (node) => !node.deleted_at && !hasKeywordAssignment(node),
+    (node) => !node.deleted_at && !hasKeywordAssignment(node, sitePlans),
   );
   if (missing.length === 0) return false;
 

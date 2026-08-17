@@ -11,7 +11,7 @@
  *
  * READS ride RLS directly (mandate definitions are public; RLS scopes bindings
  * to rows the caller can see). WRITES go through the ONE bind path — aidream
- * PUT/DELETE /agent-slots/{slot_key}/binding — because binding is genuine
+ * PUT/DELETE /mandates/{mandate_key}/binding — because binding is genuine
  * compute: the server contract-checks the candidate agent (required
  * variables/context policies + output_schema vs the mandate's required output
  * keys) at WRITE time and rejects with a 422 whose detail is shown to the
@@ -258,9 +258,9 @@ export async function putMandateBinding(
 ): Promise<void> {
   const result = await dispatch(
     callApi({
-      path: "/agent-slots/{slot_key}/binding",
+      path: "/mandates/{mandate_key}/binding",
       method: "PUT",
-      pathParams: { slot_key: mandateKey },
+      pathParams: { mandate_key: mandateKey },
       body: {
         principal_type: principal.principalType,
         agent_id: input.agentId,
@@ -287,9 +287,9 @@ export async function removeMandateBinding(
 ): Promise<void> {
   const result = await dispatch(
     callApi({
-      path: "/agent-slots/{slot_key}/binding",
+      path: "/mandates/{mandate_key}/binding",
       method: "DELETE",
-      pathParams: { slot_key: mandateKey },
+      pathParams: { mandate_key: mandateKey },
       body: {
         principal_type: principal.principalType,
         ...(principal.organizationId

@@ -47,6 +47,7 @@ import {
   usePlanNodeEdgeMutation,
   usePlanNodeEdges,
   usePlanNodes,
+  useSitePlanIndex,
   useReparentPlanNode,
   useUpdatePlanNode,
 } from "../data/hooks";
@@ -88,6 +89,7 @@ import {
 } from "./NodeSeoIntentEditor";
 import { planNodeHref } from "./PlanContextPanel";
 import { SeoPlanEditor } from "@/features/marketing/seo/plan/SeoPlanEditor";
+import { useNodeSeoPlan } from "@/features/marketing/seo/plan/useNodeSeoPlan";
 import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
 import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
@@ -154,6 +156,8 @@ export function NodePanel({
   // Whole-site node list — resolves the SEO plan's cross-page routes to real
   // node doors (shared react-query key with the workbench; no double fetch).
   const siteNodes = usePlanNodes(siteId);
+  // THE one SEO-plan store, site-wide (content-planning invariant 9).
+  const sitePlans = useSitePlanIndex(siteId);
   const deepening = deepen.run.status === "running";
   const deepeningThisNode = deepening && deepen.nodeId === node.id;
 
@@ -260,7 +264,7 @@ export function NodePanel({
    * `keywordStaged` is the in-between: they've chosen one and haven't saved. The
    * fix then isn't "pick a keyword", it's "press Save" — so say that instead.
    */
-  const keywordGap = !hasKeywordAssignment(node);
+  const keywordGap = !hasKeywordAssignment(node, sitePlans.data ?? null);
   const keywordStaged =
     keywordGap &&
     Boolean(draft.primary_keyword_id) &&
@@ -304,6 +308,15 @@ export function NodePanel({
   const measurement = useNodeMeasurement({
     cmsPage: cmsPage ?? null,
     reality,
+  });
+  // THE ONE SEO plan record behind this node: the CMS id join first, the
+  // site's route index second, and a one-click create when neither answers.
+  const nodeSeoPlan = useNodeSeoPlan({
+    siteId,
+    route: node.route,
+    sitePlans: sitePlans.data ?? null,
+    sitePlansLoading: sitePlans.isLoading,
+    cmsJoinedWebPageId: measurement.webPageId,
   });
   const getScope = () =>
     createContentPlanNodeScope({
@@ -1156,20 +1169,47 @@ export function NodePanel({
 
             <PanelSection title="Targeting">
               {/* 🚨 ONE SEO PLAN PER PAGE, ON `web.page` (content-planning
-                  invariant 9). The moment this node HAS a real page, its plan
-                  is edited here by THE canonical editor, against the one
-                  store — never a second copy on the node. A node with no page
-                  yet has nowhere canonical to plan into, so it falls back to
-                  the legacy plan-node fields below; that branch disappears
-                  when the storage migration lands. */}
-              {measurement.data?.page ? (
+                  invariant 9). The moment this node HAS a page record — built
+                  in the CMS or merely PLANNED — its plan is edited here by THE
+                  canonical editor, against the one store, never a second copy
+                  on the node. Below that: one click to create the record, and
+                  the legacy plan-node fields, which the storage migration
+                  retires. */}
+              {nodeSeoPlan.state === "ready" && nodeSeoPlan.page ? (
                 <SeoPlanEditor
                   variant="bare"
-                  page={measurement.data.page}
-                  brandId={measurement.brandId}
+                  page={nodeSeoPlan.page}
+                  brandId={nodeSeoPlan.brandId}
                 />
               ) : (
               <div>
+                {nodeSeoPlan.state === "creatable" ? (
+                  <div className="mb-3 rounded-md border border-dashed border-border p-2.5">
+                    <p className="text-xs text-muted-foreground">
+                      This page has no plan record yet, so its keywords and
+                      desired search appearance are still stored on the plan
+                      node. Creating the record moves them onto the one page
+                      record every surface reads.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 h-7 text-xs"
+                      disabled={nodeSeoPlan.creating}
+                      onClick={() => void nodeSeoPlan.create()}
+                    >
+                      {nodeSeoPlan.creating ? (
+                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                      ) : null}
+                      Create the plan record
+                    </Button>
+                    {nodeSeoPlan.error ? (
+                      <p className="mt-1.5 text-xs text-destructive">
+                        {nodeSeoPlan.error.message}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
                 <NodeSeoIntentEditor
                   nodeId={node.id}
                   siteId={siteId}
@@ -1224,6 +1264,7 @@ export function NodePanel({
                   <SeoPlanSection
                     planNode={node}
                     siteNodes={siteNodes.data ?? []}
+                    sitePlans={sitePlans.data ?? null}
                     workspaceHref={planNodeHref(siteId, node.id)}
                   />
                 </div>

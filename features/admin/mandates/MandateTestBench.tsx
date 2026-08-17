@@ -86,10 +86,10 @@ import {
 } from "./service";
 
 /**
- * 🚨 WIRE ENUM — `"slot_pinned"` is aidream's literal, not ours, and it is NOT a
+ * 🚨 WIRE ENUM — `"mandate_pinned"` is aidream's literal, not ours, and it is NOT a
  * Mandate-rename straggler. This union is derived from the generated
  * `api-types.ts`, which is generated from PRODUCTION, and production still
- * spells it `slot_pinned`. Renaming it by hand sends an enum the deployed server
+ * spells it `mandate_pinned`. Renaming it by hand sends an enum the deployed server
  * rejects while the dropdown silently mislabels itself — which is exactly what
  * the 2026-08-17 sweep did before this was restored.
  *
@@ -122,7 +122,7 @@ function benchOverridesId(draftId: string): string {
 
 const SELECTION_LABEL: Record<CandidateSelection, string> = {
   current: "Current setup (what users get now)",
-  slot_pinned: "Pinned version",
+  mandate_pinned: "Pinned version",
   latest: "Latest version",
   agent: "Different system agent",
   version: "Specific saved version",
@@ -148,7 +148,7 @@ function candidateLabel(draft: CandidateDraft): string {
   switch (draft.selection) {
     case "current":
       return "Current setup";
-    case "slot_pinned":
+    case "mandate_pinned":
       return "Pinned version";
     case "latest":
       return "Latest version";
@@ -441,7 +441,7 @@ function CandidateEditor({
                   key={selection}
                   value={selection}
                   disabled={
-                    selection === "slot_pinned" &&
+                    selection === "mandate_pinned" &&
                     !mandate.default_agent_version_id
                   }
                 >
@@ -642,7 +642,7 @@ export function MandateTestBench({
       toast.error(`${label}: choose a saved version.`);
       return null;
     }
-    if (draft.selection === "slot_pinned" && !mandate.default_agent_version_id) {
+    if (draft.selection === "mandate_pinned" && !mandate.default_agent_version_id) {
       toast.error(`${label}: this mandate is not pinned to a version.`);
       return null;
     }

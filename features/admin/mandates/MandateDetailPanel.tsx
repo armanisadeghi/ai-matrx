@@ -895,7 +895,7 @@ function StatusBanner({
             </div>
           </div>
           <CopyButton
-            content={`Fix the code-truth import failure for mandate "${row.mandateKey}".\n\nRead /Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FEATURE.md first.\n\nImport failure: ${row.codeTruth?.import_error ?? "unknown"}\n\nRestore the declaring module so GET /agent-slots/code-truth reports code_declaration_found, then verify every variable and call site. Do not change the mandate pin or contract to hide the import failure.`}
+            content={`Fix the code-truth import failure for mandate "${row.mandateKey}".\n\nRead /Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FEATURE.md first.\n\nImport failure: ${row.codeTruth?.import_error ?? "unknown"}\n\nRestore the declaring module so GET /mandates/code-truth reports code_declaration_found, then verify every variable and call site. Do not change the mandate pin or contract to hide the import failure.`}
             label="Copy import-fix brief"
             size="sm"
           />
@@ -1435,7 +1435,7 @@ export function MandateDetailView({
       .then((result) => {
         if (cancelled) return;
         setVerdictState({
-          mandateKey: truth.slot_key,
+          mandateKey: truth.mandate_key,
           verdicts: result.verdicts ?? [],
           error: null,
         });
@@ -1443,7 +1443,7 @@ export function MandateDetailView({
       .catch((error: unknown) => {
         if (cancelled) return;
         setVerdictState({
-          mandateKey: truth.slot_key,
+          mandateKey: truth.mandate_key,
           verdicts: [],
           error: describeError(error),
         });

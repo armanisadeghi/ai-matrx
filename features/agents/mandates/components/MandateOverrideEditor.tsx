@@ -4,7 +4,7 @@
  * Per-mandate override editor — one principal (me, or an org I admin) at a time:
  * swap the agent (my agents, contract-checked) and/or override settings
  * (model, thinking level). Writes ride the ONE bind path — aidream
- * PUT/DELETE /agent-slots/{slot_key}/binding — which contract-enforces the
+ * PUT/DELETE /mandates/{mandate_key}/binding — which contract-enforces the
  * candidate at write time; its 422 detail is surfaced to the user VERBATIM.
  * The client-side check here is the instant pre-flight only.
  */

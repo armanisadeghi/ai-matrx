@@ -43,7 +43,11 @@ export default async function CrmChaseboxRoute() {
           </h1>
         </div>
       </PageHeader>
-      <ChaseboxPage />
+      {/* The page reads `?queue=` so an assist chip can open one queue
+          directly; `useSearchParams` needs a boundary above it. */}
+      <Suspense fallback={null}>
+        <ChaseboxPage />
+      </Suspense>
     </>
   );
 }
