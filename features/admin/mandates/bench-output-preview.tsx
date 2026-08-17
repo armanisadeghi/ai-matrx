@@ -4,7 +4,7 @@
  * ONE renderer for a bench run's output — shared by the batch result rows and
  * the ad-hoc "Try it now" panel. It exists as its own module because both
  * consumers need it and a second, poorer copy is exactly how a media result
- * ends up rendered as a raw expiring URL: an image-producing slot's output IS
+ * ends up rendered as a raw expiring URL: an image-producing mandate's output IS
  * a file URL, so it is resolved back to its `file_id` and rendered through
  * `InlineMediaRef`, never as text. Long text is capped so a 200KB run cannot
  * be dumped into the DOM.

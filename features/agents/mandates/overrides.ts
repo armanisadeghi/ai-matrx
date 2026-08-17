@@ -52,9 +52,9 @@ export function parseMandateContract(contract: Json): MandateContract {
   if (Array.isArray(vars)) {
     out.requiredVariables = vars.filter((v): v is string => typeof v === "string");
   }
-  const mandates = contract.required_context_slots;
-  if (Array.isArray(mandates)) {
-    out.requiredContextSlots = mandates.filter((v): v is string => typeof v === "string");
+  const slots = contract.required_context_slots;
+  if (Array.isArray(slots)) {
+    out.requiredContextSlots = slots.filter((v): v is string => typeof v === "string");
   }
   const outputKeys = contract.required_output_keys;
   if (Array.isArray(outputKeys)) {
