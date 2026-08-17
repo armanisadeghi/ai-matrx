@@ -7,10 +7,21 @@ import {
   Rocket,
   Wrench,
   Upload,
-  LayoutPanelTop
+  LayoutPanelTop,
+  Sparkles
 } from "lucide-react";
 
 const CREATION_OPTIONS = [
+  {
+    href: "/agents/new/studio",
+    icon: Sparkles,
+    iconClass: "text-amber-600 dark:text-amber-400",
+    title: "Agent Studio",
+    description:
+      "Coming soon — describe it, talk it through, or import your ChatGPT/Claude chats and we build the agent",
+    gradient: "from-amber-500/5 to-purple-500/10",
+    badge: "Coming soon",
+  },
   {
     href: "/agents/new/manual",
     icon: Plus,
@@ -98,8 +109,13 @@ export default function NewAgentPage() {
                     <Icon className={`h-5 w-5 ${option.iconClass}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-base font-semibold text-foreground">
+                    <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
                       {option.title}
+                      {"badge" in option && option.badge ? (
+                        <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-400">
+                          {option.badge}
+                        </span>
+                      ) : null}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {option.description}
