@@ -114,24 +114,11 @@ export const variableValueToDisplay = (value: unknown): string => {
   return value == null ? "" : String(value);
 };
 
-/**
- * Formats a resolved variables record into display lines for the user bubble.
- * Returns an empty string when there are no non-empty values.
- *
- *   { user_name: "Mike", age: 26 }  →  "User Name: Mike\nAge: 26"
- */
-export const formatVariablesForDisplay = (
-  variables: Record<string, unknown>,
-): string =>
-  Object.entries(variables)
-    .filter(
-      ([, v]) => v != null && v !== "" && !(Array.isArray(v) && v.length === 0),
-    )
-    .map(
-      ([k, v]) =>
-        `${formatVariableDisplayName(k)}: ${variableValueToDisplay(v)}`,
-    )
-    .join("\n");
+// Rendering a whole variables record for a human lives in
+// `./variable-display-lines.ts` — `buildVariableDisplayLines` (React surfaces)
+// and `formatVariableDisplayLines` (text surfaces). The naive
+// "every key: every value" formatter that used to live here printed the record
+// ids surfaces wire on the user's behalf as raw UUIDs; do not reintroduce it.
 
 /** Regex matching auto-generated placeholder names like `new_variable_7`. */
 export const AUTO_VARIABLE_NAME_RE = /^new_variable_(\d+)$/;

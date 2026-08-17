@@ -45,7 +45,7 @@ import {
   extractVariables,
   formatPayloadJson,
 } from "../utils/formatRecoveryDisplay";
-import { formatVariablesForDisplay } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 import { toast } from "@/lib/toast";
 
 function formatTimestamp(ts: number): string {
@@ -85,7 +85,7 @@ function RecoveryInputSection({
   userInput: string;
   variables: Record<string, unknown> | null;
 }) {
-  const variableLines = variables ? formatVariablesForDisplay(variables) : "";
+  const variableLines = variables ? formatVariableDisplayLines(variables) : "";
 
   return (
     <div className="space-y-4">

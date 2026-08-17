@@ -1,5 +1,5 @@
 import type { PayloadRecord } from "@/lib/persistence/payloadSafetyStore";
-import { formatVariablesForDisplay } from "@/features/agents/utils/variable-utils";
+import { formatVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 
 function extractMessageText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -76,7 +76,7 @@ export function buildHumanReadableRecoveryText(
 ): string {
   const input = extractUserInput(record.payload, record.rawUserInput);
   const variables = extractVariables(record.payload);
-  const variableLines = variables ? formatVariablesForDisplay(variables) : "";
+  const variableLines = variables ? formatVariableDisplayLines(variables) : "";
 
   if (input && variableLines) {
     return `${input}\n\n--- Variables ---\n${variableLines}`;
