@@ -21,6 +21,23 @@
 
 ## STATUS — live and verified (compressed)
 
+- **THE IMPROVEMENT BRAIN SHIPPED (2026-08-17, Arman GO on all recommendations).** The Approach
+  selector + elicitation-move producer: `aidream/services/masterwork_assists/` (system of record:
+  its FEATURE.md) raises `platform.assists` chips on `/masterwork/[id]` (AssistStrip under the KPI
+  strip, surface `matrx-user/masterwork-rulebook`) — deterministic layer (thin/one-sided section →
+  seeded section interview · 3+ approved rules → critique-a-bad-draft with a REAL weak draft
+  generated at sweep time · unaddressed weak/losing Audition → the failure lever · no
+  exemplar-sourced rules → ask for examples), move ledger on `rulebook.metadata.elicitation`
+  (7-day re-offer gate; `research` move key registered but deferred), and the
+  `masterwork.approach_selector` Mandate firing ONLY when deterministic found nothing (once/day
+  cap). Two new DB agents on Gemini 3.7 Flash behind Mandates `masterwork.approach_selector` +
+  `masterwork.bad_draft` (no seed fallback). Chips navigate to `?assist=<key>`; the page's
+  `fetchAssistLaunch` (features/masterwork/assists.ts) opens the Scout panel seeded (never
+  auto-sends) or the ingest dialog. Always the NORMAL priority band; live-cap 2 chips/Rulebook;
+  hourly system task `masterwork_assists` (…386, handler-gated, migration 0386 ledgered). Proven
+  live 11/11 by `aidream/scripts/_verify_masterwork_assists.py` on the SEO + Strunk Rulebooks,
+  incl. dedupe/ledger idempotence and a generated bad draft.
+
 - **THE UNDERSTUDY SHIPPED (2026-08-17, Arman approved all recommendations + ruled Gemini 3.7
   Flash).** The system runs from minute one: every Rulebook gets ONE free one-agent Masterwork
   (`ask -> understudy -> show`; mandate `masterwork.understudy`, DB agent `8bb1d53f-…`, model on
