@@ -6,14 +6,19 @@
 // (mnemonics + analogies + memory palace). A thin hook shell over the canonical
 // `useFloatingAgentRun` primitive: the aids STREAM into the floating
 // LiveRunWindow as they are written (THE FLOATING LAW — never a spinner while
-// AI works). The caller persists the result to study_media and renders it via
-// MemoryAidView.
+// AI works; the create page has no inline render target of its own, so the
+// float is correct here, and the registered `memory_aid` kind renders as its
+// component token-by-token). The caller persists the result to study_media,
+// which `MemoryAidBlock` (the canonical kind component) renders.
 //
 // React Compiler is on: no manual memo.
 
 import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
 import { EDU_MEMORY_AGENTS } from "./agents";
-import { coerceMemoryAid, type MemoryAidPayload } from "./types";
+import {
+  coerceMemoryAid,
+  type MemoryAidPayload,
+} from "@/features/content-ir/kinds/memory-aid";
 
 const EXTRACTION_TIMEOUT_MS = 120_000;
 

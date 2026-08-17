@@ -129,10 +129,15 @@ No class-E box-in-a-box was found: every non-canvas consumer wraps at most in `h
 
 - **Unregistered `__kind` slugs with hand-written renderers.** `study_summary`
   (`features/education/convert/generators/summary.ts:76`, rendered by
-  `features/education/onboard/components/SummaryDetail.tsx:70`) and `memory_aid`
-  (`features/education/memory/components/MemoryAidView.tsx`) both write a `__kind` into
-  `study_media.ir_envelope` but are not in the registry, so they can never stream in chat or reach a
-  kind component. Registering them is the fix; the current renderers become the kind components.
+  `features/education/onboard/components/SummaryDetail.tsx:70`) writes a `__kind` into
+  `study_media.ir_envelope` but is not in the registry, so it can never stream in chat or reach a
+  kind component. Registering it is the fix; the current renderer becomes the kind component.
+  **`memory_aid` + `memory_hint`: DONE 2026-08-17** — registered, activated, canonical components
+  `MemoryAidBlock`/`MemoryHintBlock`, hand-rolled renderers deleted (compiled bridge
+  `features/content-ir/kinds/memory-aid.ts`, migration `migrations/kind_memory_aid_full.sql`;
+  follow the same recipe for `study_summary`). One mechanical follow-up from that session:
+  `pnpm check:shapes:crosswalk:refresh` from a machine with DB access (the cloud container's
+  egress blocked the DB hostname; the kind rows are live so the refresh needs no decisions).
 - **Gray area, needs Arman's ruling, not an agent's.** (a) `features/education/assessment/**`
   renders `education.assessment_item` rows (question / options / correct_answer / explanation) —
   the `quiz_set` shape plus grading, attempts and trust. (b)

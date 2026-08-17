@@ -36,7 +36,7 @@
  *
  * WRITE TARGETS — two, on the CREATE view only, and the scoping is the whole
  * ruling. The only editable fields in this entire subtree are `MemoryNew`'s
- * source picker, topic and focus; `MemoryDetail` and `MemoryAidView` hold zero
+ * source picker, topic and focus; `MemoryDetail` and `MemoryAidBlock` hold zero
  * inputs, and the aid's own text is not editable anywhere in the app (the human
  * path for changing an aid is Regenerate, which routes back to `/new`). So the
  * composer is the write half, and it splits into TWO independent decisions

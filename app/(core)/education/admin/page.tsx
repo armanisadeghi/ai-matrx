@@ -504,10 +504,10 @@ const EDUCATION_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
-      name: "MemoryAidView / MemoryHome / MemoryNew / MemoryDetail",
-      filePath: "features/education/memory/components/MemoryAidView.tsx",
+      name: "MemoryHome / MemoryNew / MemoryDetail",
+      filePath: "features/education/memory/components/MemoryDetail.tsx",
       description:
-        "VISION §11 Memory Tools surface: list-first home, generate (deck/topic → memory_aid agent), and the aid viewer (mnemonics/analogies/palace + trust). MemoryAidButton is the opt-in proactive per-card affordance mounted in StudyDeck.",
+        "VISION §11 Memory Tools surface: list-first home, generate (deck/topic → memory_aid agent), and the aid viewer (trust + owner controls; the aid body renders through MemoryAidBlock, the canonical kind component for the registered memory_aid kind). MemoryAidButton is the opt-in proactive per-card affordance mounted in StudyDeck (streams inline; MemoryHintBlock renders the memory_hint kind).",
       tier: "official",
     },
     {

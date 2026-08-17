@@ -15,7 +15,10 @@ import {
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { EDU_MEMORY_AGENTS } from "../agents";
-import { coerceMemoryHint, type MemoryHintPayload } from "../types";
+import {
+  coerceMemoryHint,
+  type MemoryHintPayload,
+} from "@/features/content-ir/kinds/memory-aid";
 
 export interface MemoryHintContext {
   front: string;

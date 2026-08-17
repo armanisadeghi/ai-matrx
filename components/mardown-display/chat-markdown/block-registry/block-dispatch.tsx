@@ -262,6 +262,11 @@ export function isBlockLoading(block: {
  *    flip for the registered `media_chapters` kind (`__kind` JSON arrival
  *    only — no tag/fence surface); never emitted upstream. STREAMING bridge:
  *    `chapters` is an array of a child kind, so rows appear one at a time.
+ *  - `memory_aid` / `memory_hint` — produced ONLY by `applyIrKindRoute`'s
+ *    compiled-bridge flips for those registered kinds (`__kind` JSON arrival
+ *    only — no tag/fence surface); never emitted upstream. STREAMING bridges:
+ *    `mnemonics` / `analogies` / `loci` are arrays of child kinds, so aids
+ *    appear one at a time; the hint shows a writing row until `aid` parses.
  *  - `episode_title_options` — produced ONLY by `applyIrKindRoute`'s
  *    compiled-bridge flip for the registered `episode_title_options` kind
  *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
@@ -289,6 +294,8 @@ export type FeSynthesizedBlockType =
   | "keyword_serp_intent_analysis"
   | "page_brief"
   | "media_chapters"
+  | "memory_aid"
+  | "memory_hint"
   | "episode_title_options"
   | "seo_package"
   | "plan_page_research"
@@ -372,6 +379,8 @@ export type ShapeBlockType =
   | "keyword_serp_intent_analysis"
   | "page_brief"
   | "media_chapters"
+  | "memory_aid"
+  | "memory_hint"
   | "episode_title_options"
   | "seo_package"
   | "plan_page_research"
@@ -1424,6 +1433,52 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.MediaChaptersBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (memory_aid → memory_aid): STREAMING bridge — mnemonics /
+  // analogies / palace loci appear one at a time as their objects close.
+  memory_aid: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.MemoryAidBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (memory_hint → memory_hint): the one-glance per-flashcard
+  // aid; the component shows a writing row until the aid text parses.
+  memory_hint: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.MemoryHintBlock
           key={index}
           serverData={block.serverData}
         />

@@ -22,8 +22,8 @@ import { studyMediaService } from "@/features/education/media/service";
 import type { StudyMediaRow } from "@/features/education/media/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMemoryScope } from "@/features/surfaces/manifests/education-memory.manifest";
-import { coerceMemoryAid } from "../types";
-import { MemoryAidView } from "./MemoryAidView";
+import MemoryAidBlock from "@/components/mardown-display/blocks/memory-aid/MemoryAidBlock";
+import { coerceMemoryAid } from "@/features/content-ir/kinds/memory-aid";
 
 const SURFACE_NAME = "matrx-user/education-memory";
 
@@ -207,7 +207,10 @@ export function MemoryDetail({ mediaId }: { mediaId: string }) {
       </div>
 
       <div data-surface-value="aid_content">
-        <MemoryAidView envelope={media.ir_envelope} />
+        {/* THE CANONICAL COMPONENT LAW: the registered `memory_aid` kind renders
+            through its ONE kind component — the same pixels as the live run
+            window and chat. */}
+        <MemoryAidBlock serverData={media.ir_envelope} />
       </div>
 
       {trust && (

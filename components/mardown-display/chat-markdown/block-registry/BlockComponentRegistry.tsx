@@ -23,6 +23,8 @@ import KeywordSerpIntentAnalysisBlock from "../../blocks/keyword-research/Keywor
 import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MediaChaptersBlock from "../../blocks/media-chapters/MediaChaptersBlock";
+import MemoryAidBlock from "../../blocks/memory-aid/MemoryAidBlock";
+import MemoryHintBlock from "../../blocks/memory-aid/MemoryHintBlock";
 import SeoPackageBlock from "../../blocks/seo-package/SeoPackageBlock";
 import PlanPageResearchBlock from "../../blocks/page-pipeline/PlanPageResearchBlock";
 import PlanPageOutlineBlock from "../../blocks/page-pipeline/PlanPageOutlineBlock";
@@ -317,6 +319,16 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <MediaChaptersBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  MemoryAidBlock: (props: React.ComponentProps<typeof MemoryAidBlock>) => (
+    <LazyBlockWrapper>
+      <MemoryAidBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  MemoryHintBlock: (props: React.ComponentProps<typeof MemoryHintBlock>) => (
+    <LazyBlockWrapper>
+      <MemoryHintBlock {...props} />
     </LazyBlockWrapper>
   ),
   SeoPackageBlock: (props: React.ComponentProps<typeof SeoPackageBlock>) => (

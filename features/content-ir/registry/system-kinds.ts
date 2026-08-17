@@ -73,6 +73,7 @@ import { SEO_AUTHORITY_ROUTE_KIND_DEFINITIONS } from "../kinds/seo-authority-rou
 import { PAGE_BRIEF_KIND_DEFINITIONS } from "../kinds/page-brief";
 import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-options";
 import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
+import { MEMORY_AID_KIND_DEFINITIONS } from "../kinds/memory-aid";
 import { SEO_PACKAGE_KIND_DEFINITIONS } from "../kinds/seo-package";
 import { PLAN_PAGE_RESEARCH_KIND_DEFINITIONS } from "../kinds/plan-page-research";
 import { PLAN_PAGE_OUTLINE_KIND_DEFINITIONS } from "../kinds/plan-page-outline";
@@ -103,6 +104,10 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...PAGE_BRIEF_KIND_DEFINITIONS,
   ...EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS,
   ...MEDIA_CHAPTERS_KIND_DEFINITIONS,
+  // Education Memory Tools (VISION §11): the full memory-aid artifact + the
+  // per-flashcard hint. Registered 2026-08-17 after both shipped unregistered
+  // and streamed as raw JSON in the LiveRunWindow.
+  ...MEMORY_AID_KIND_DEFINITIONS,
   ...SEO_PACKAGE_KIND_DEFINITIONS,
   // Website Factory per-page pipeline (`plan.node_artifact`, one kind per
   // step): research → family placement → draft → review → build. Every one is
