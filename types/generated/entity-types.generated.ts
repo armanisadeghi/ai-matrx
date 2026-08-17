@@ -54,9 +54,6 @@ export type EntityTypeToken =
   | "agent_run"
   | "agent_run_stage"
   | "agent_shortcut"
-  | "agent_slot"
-  | "agent_slot_binding"
-  | "agent_slot_exemplar"
   | "agent_surface_binding"
   | "agent_template"
   | "agent_usage"
@@ -206,6 +203,9 @@ export type EntityTypeToken =
   | "kg_value_match"
   | "league_membership"
   | "learn_doc"
+  | "mandate"
+  | "mandate_binding"
+  | "mandate_exemplar"
   | "marketing_initiative"
   | "membership"
   | "message"
@@ -714,9 +714,6 @@ export type ScopeableEntityToken =
   | "agent_run"
   | "agent_run_stage"
   | "agent_shortcut"
-  | "agent_slot"
-  | "agent_slot_binding"
-  | "agent_slot_exemplar"
   | "agent_surface_binding"
   | "agent_template"
   | "agent_usage"
@@ -850,6 +847,9 @@ export type ScopeableEntityToken =
   | "kg_value_match"
   | "league_membership"
   | "learn_doc"
+  | "mandate"
+  | "mandate_binding"
+  | "mandate_exemplar"
   | "marketing_initiative"
   | "membership"
   | "message"
@@ -1072,9 +1072,6 @@ export type ScopeableEntityToken =
 /** Tokens flagged `is_listed` — surfaced in list/nav UIs. */
 export type ListedEntityToken =
   | "agent"
-  | "agent_slot"
-  | "agent_slot_binding"
-  | "agent_slot_exemplar"
   | "ai_model"
   | "ai_model_alias"
   | "ai_provider"
@@ -1093,6 +1090,9 @@ export type ListedEntityToken =
   | "hindsight_replay_step"
   | "interview_session"
   | "learn_doc"
+  | "mandate"
+  | "mandate_binding"
+  | "mandate_exemplar"
   | "marketing_initiative"
   | "party"
   | "plan_entity"
@@ -1127,9 +1127,6 @@ export const ENTITY_TYPE_METADATA = {
   "agent_run": { token: "agent_run", schema: "chat", table: "agent_run", label: "Agent Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_run_stage": { token: "agent_run_stage", schema: "chat", table: "agent_run_stage", label: "Agent Run Stage", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_shortcut": { token: "agent_shortcut", schema: "agent", table: "shortcut", label: "Agent Shortcut", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
-  "agent_slot": { token: "agent_slot", schema: "agent", table: "slot_definition", label: "Agent Slot", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "agent_slot_binding": { token: "agent_slot_binding", schema: "agent", table: "slot_binding", label: "Agent Slot Binding", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "agent_slot_exemplar": { token: "agent_slot_exemplar", schema: "agent", table: "slot_exemplar", label: "Agent Slot Exemplar", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "agent_surface_binding": { token: "agent_surface_binding", schema: "platform", table: "associations", label: "Agent Surface Binding", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "label", contentRole: null, referenceCategory: null },
   "agent_template": { token: "agent_template", schema: "agent", table: "template", label: "Agent Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "agent_usage": { token: "agent_usage", schema: "agent", table: "usage", label: "Agent Usage", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Agents", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1279,6 +1276,9 @@ export const ENTITY_TYPE_METADATA = {
   "kg_value_match": { token: "kg_value_match", schema: "rag", table: "kg_value_matches", label: "KG Value Match", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "league_membership": { token: "league_membership", schema: "education", table: "league_membership", label: "League Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "learn_doc": { token: "learn_doc", schema: "education", table: "learn_doc", label: "Study Guide", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
+  "mandate": { token: "mandate", schema: "agent", table: "mandate", label: "Mandate", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "mandate_binding": { token: "mandate_binding", schema: "agent", table: "mandate_binding", label: "Mandate Binding", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "mandate_exemplar": { token: "mandate_exemplar", schema: "agent", table: "mandate_exemplar", label: "Mandate Exemplar", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "marketing_initiative": { token: "marketing_initiative", schema: "marketing", table: "initiative", label: "Initiative", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "membership": { token: "membership", schema: "iam", table: "memberships", label: "Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "message": { token: "message", schema: "chat", table: "message", label: "Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1514,9 +1514,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "agent_run",
   "agent_run_stage",
   "agent_shortcut",
-  "agent_slot",
-  "agent_slot_binding",
-  "agent_slot_exemplar",
   "agent_surface_binding",
   "agent_template",
   "agent_usage",
@@ -1666,6 +1663,9 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "kg_value_match",
   "league_membership",
   "learn_doc",
+  "mandate",
+  "mandate_binding",
+  "mandate_exemplar",
   "marketing_initiative",
   "membership",
   "message",
