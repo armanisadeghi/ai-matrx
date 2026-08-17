@@ -17,38 +17,6 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
-### D209 — an ADOPTED stream's output VANISHES from the window the moment the run ends (2026-08-17)
-
-Measured live on `/marketing/admin/keyword-data-quality` against a local aidream (real paid runs,
-`localhost:8000`), sampling the window's rendered text every 900ms:
-
-```
-"", "", "Classifying keywords...", "Processing…",
-"Keyword intent classification 2 — Classifying rhinoplasty financing options 92 com…" (307 chars)
-"…" (595 chars)          ← the kind component, rendering token by token. Correct.
-"", "", "", "", ""       ← the stream ends and the window goes BLANK.
-```
-
-So the pipeline works right up to the finish line: the server streams (58 compact chunk lines
-captured off the wire in the browser), `adoptForeignStream` adopts, the `keyword_classification_batch`
-kind component renders LIVE — and then the settled render shows nothing.
-
-**Where it is, not who caused it.** Nothing reaps the row (no `removeRequest` fires) and nothing
-clears the blocks. `EnhancedChatMarkdown` switches renderers at `isSettled = !isStreamActive`: the
-live path renders `unifiedSlots` (which is what shows the kind block), and the settled path builds
-`blocks` from `serverProcessedBlocks` — which a **system run never sends**. An adopted pipeline
-stream therefore has a live renderer and no settled one.
-
-**Why nobody hit it before:** every existing adopted-stream surface (keyword research, reputation,
-YouTube) re-renders its PERSISTED result after the run, so the blank window reads as "the run is
-over" rather than as lost output. The three SEO command surfaces do the same, so no result is lost
-— but the window still blanks, and per THE FLOATING LAW the finished output is what the user came
-for.
-
-**Why it was not fixed here:** the fix is in the canonical renderer that every chat message also
-goes through. It needs its own session with the render pipeline in front of it — not a patch bolted
-on from a marketing surface. Repro above is exact and cheap.
-
 ### D208 — the Context Policy rename's last tail: `slotMatched` / `slot_matched` (2026-08-17)
 
 Found by the final Mandate/Context-Policy verification sweep. Every *readable* "slot" is gone and
@@ -1066,6 +1034,8 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 ---
 
 ## RESOLVED
+
+- **D209 — an adopted stream's output vanished when the run ended (2026-08-17):** `selectUnifiedSlots` hid every `sub_agent` block range unconditionally; a server-orchestrated run adopted via `adoptForeignStream` has no owning `agent_call`, so its only content block was hidden at operation completion — the hide is now gated on `toolCallId` (`features/agents/redux/execution-system/active-requests/active-requests.selectors.ts`, guard `__tests__/adopted-sub-agent-visibility.test.ts`). Fixing it surfaced a second class: a fieldless warm `kind_definition` row was erasing compiled schemas, rendering the finished kind card EMPTY (`features/content-ir/registry/kind-registry.ts`, guard `features/content-ir/__tests__/warm-fieldless-schema.test.ts`).
 
 - **D202 — A conversation can be filed directly under a project (2026-08-16):** Arman ruled direct filing IS allowed; `conversation → project` registered in `platform.association_types` (`container_side=target`, `conveys_max=editor`, matching every other `* → project` pair) and `project` restored to `HOME_TOKENS` / `WorkHomeToken` — `migrations/conversation_project_association_pair.sql`, `features/ai-work/compose/components/HomeStep.tsx`.
 - **D74 — Automatic broken-link evidence and openable report (2026-08-15):** crawl-completion status pass + deterministic findings + canonical Broken Links report; production session `8168bcba-932d-4424-b1a7-5cab7eda53b4` populated 3,761 edges, recorded 85 real external 404 occurrences, opened 20 findings, and produced zero false broken homepage edges — see `features/marketing/FEATURE.md` and aidream `matrx_scraper/web_crawl/FEATURE.md`.

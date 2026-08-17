@@ -892,6 +892,17 @@ export const selectUnifiedSlots = (requestId: string) =>
       // main transcript: the owning agent_call card renders them, and they
       // never persist to the parent conversation, so hiding them live keeps
       // the transcript identical before and after a reload.
+      //
+      // 🚨 HIDING IS CONDITIONAL ON AN OWNER (D209). The hide is a HANDOFF to
+      // the agent_call card, and `toolCallId` is that card — stamped at
+      // `trackOperationInit` from the in-flight `agent_call` tool. A sub_agent
+      // op with NO owning tool call has no card, so hiding its range renders it
+      // NOWHERE. That is exactly the shape of a SERVER-orchestrated run adopted
+      // through `adoptForeignStream`: the sub-agent IS the whole run (aidream
+      // emits `sub_agent` init/completion for the mandate it runs), there is no
+      // parent transcript and no agent_call, and its output — the only content
+      // the window has — vanished the moment the operation completed. Measured
+      // live on /marketing/admin/keyword-data-quality, 2026-08-17.
       const childOwnedBlockIds = new Set<string>();
       for (const op of [
         ...Object.values(activeOperations ?? {}),
@@ -899,7 +910,8 @@ export const selectUnifiedSlots = (requestId: string) =>
       ]) {
         if (
           op.operation !== "sub_agent" ||
-          typeof op.blockAnchor !== "number"
+          typeof op.blockAnchor !== "number" ||
+          !op.toolCallId
         ) {
           continue;
         }
