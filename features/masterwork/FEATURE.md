@@ -187,6 +187,11 @@ pipeline) is what still takes code. Never hardcode an Approach list again.
 
 ## Change log
 
+- 2026-08-17 — Added permanent compatibility redirects for every shipped Expertise URL:
+  `/expertise` → `/masterwork`, `/expertise/[id]` → `/masterwork/[id]`,
+  `/expertise/[id]/desks` → `/masterwork/[id]/masterworks`, and `/expertise/admin` →
+  `/masterwork/admin`. The canonical namespace remains Masterwork-only; old bookmarks never
+  dead-end.
 - 2026-08-17 — **Encore shipped** (the Operator door): `/encore` + `/encore/[id]`, the
   draft→released lifecycle (`metadata.released_at`, Release/Un-release in the Studio with a
   guarded version CAS), Studio↔Encore doors both ways, per-Operator run history, nav entry.
@@ -202,8 +207,8 @@ pipeline) is what still takes code. Never hardcode an Approach list again.
   the gamified KPI strip (`RulebookKpiStrip` — approved/waiting/rejected counts, review-progress
   bar, next-step encouragement). All module textareas moved to `ProTextarea`.
 - 2026-08-17 — **The Masterwork rename executed** (lexicon ruled 2026-08-16). Feature dir
-  `features/expertise/` → `features/masterwork/`; routes `/expertise*` → `/masterwork*` (no
-  redirects — the old namespace is gone); components renamed (NewRulebookDialog,
+  `features/expertise/` → `features/masterwork/`; canonical routes `/expertise*` →
+  `/masterwork*` (the old namespace has permanent compatibility redirects only); components renamed (NewRulebookDialog,
   RulebookDetailPage, MasterworksPage, MasterworkDriftDialog, ScoutInterviewPanel,
   BuildMasterworkDialog, TryMasterworkBox, AuditionDialog, MasterworkStudioPage); types renamed
   (Rulebook/RulebookRule/Masterwork/…); DB contract moved to `platform.rulebook` (`rules`

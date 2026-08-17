@@ -341,6 +341,30 @@ const nextConfig = {
                 destination: '/agents/orchestras/:orchestratorId',
                 permanent: true,
             },
+            // 2026-08-17: The Vocabulary Law 4 rename moved the shipped
+            // Expertise surface into Masterwork Studio. The old routes were
+            // public, so bookmarks and links written before the rename remain
+            // permanent doors into their exact canonical counterparts.
+            {
+                source: '/expertise/:id/desks',
+                destination: '/masterwork/:id/masterworks',
+                permanent: true,
+            },
+            {
+                source: '/expertise/admin',
+                destination: '/masterwork/admin',
+                permanent: true,
+            },
+            {
+                source: '/expertise/:id',
+                destination: '/masterwork/:id',
+                permanent: true,
+            },
+            {
+                source: '/expertise',
+                destination: '/masterwork',
+                permanent: true,
+            },
             // 2026-07-26: YouTube Discovery graduated from a dev demo into its
             // permanent authenticated Marketing home. These must be config
             // redirects (not only route shims): the deployment proxy sends
@@ -420,6 +444,7 @@ const nextConfig = {
             // before the rename points at the old paths.
             { source: '/agents/slots', destination: '/agents/mandates', permanent: true },
             { source: '/administration/agents/slots', destination: '/administration/agents/mandates', permanent: true },
+            { source: '/api/admin/agent-slots/agent-identity', destination: '/api/admin/mandates/agent-identity', permanent: true },
             // Short alias for the phone scanner surface (canonical: /tools/scanner).
             { source: '/scan', destination: '/tools/scanner', permanent: false },
             // /org/* (old slug-only path) and /organizations/[id]/* (old UUID-only settings path)
