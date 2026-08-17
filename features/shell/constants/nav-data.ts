@@ -396,8 +396,9 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
-    // Masterwork Studio — the Expert's Rulebooks; Masterworks are built from them.
-    label: "Masterwork Studio",
+    // Masterwork — the feature. The Studio is one surface INSIDE it (the
+    // house pattern: the app is named for the thing, never for one room).
+    label: "Masterwork",
     href: "/masterwork",
     iconName: "BookOpen",
     section: "primary",
