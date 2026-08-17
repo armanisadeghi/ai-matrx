@@ -1,9 +1,18 @@
 # Education Hub — FEATURE.md
 
-**Status:** scaffolded · **Tier:** 1 · **Last updated:** 2026-08-17
+**Status:** live but pre-launch · **Tier:** 1 · **Last updated:** 2026-08-17
+
+> 🚨 **START AT THE CROSS-REPO PROJECT, NOT HERE:**
+> **`/Users/armanisadeghi/code/common-docs/projects/education-platform/README.md`**
+> The education product spans this repo + aidream + the shared database. That project holds the
+> canonical vision (Arman's), the measured **`GAP_ANALYSIS.md` (2026-08-17)** which supersedes
+> every prior status claim, the execution plan to launch, twelve parallel work packages, and the
+> live boards agents write to while they work. **`docs/proposals/education-projects/STATUS.md`
+> and `docs/handoffs/education-hub-remaining.md` declared this system complete on 2026-07-14 and
+> are archived there — do not cite them as current state.**
 
 > 🔴 **THE SOURCE OF TRUTH IS THE VISION DOC, NOT THIS FILE.**
-> [`app/(core)/education/VISION-education-hub.md`](../../app/(core)/education/VISION-education-hub.md) defines WHAT the Education Hub is and does. This FEATURE.md documents only HOW it is built. **If anything here — or in the code — drifts from the vision, the vision wins, and you must report the drift to the user immediately. Do not silently "fix" the vision to match the code.** When the user approves a change that expands or improves the vision, update the vision doc first, then this file.
+> `common-docs/projects/education-platform/VISION.md` (the repo copies are now pointers) defines WHAT the Education Hub is and does. This FEATURE.md documents only HOW it is built. **If anything here — or in the code — drifts from the vision, the vision wins, and you must report the drift to the user immediately. Do not silently "fix" the vision to match the code.** When the user approves a change that expands or improves the vision, update the vision doc first, then this file.
 
 ---
 
