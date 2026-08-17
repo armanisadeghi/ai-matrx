@@ -16,10 +16,10 @@ where not exists (
   where organization_id = '39c38960-d30c-4840-b0c1-c9960de95582' and kind = 'generated_image_set' and deleted_at is null);
 
 insert into content_ir.kind_example
-  (kind_definition_id, kind_version, data, label, source, is_canonical, validation_status, validated_at, organization_id)
+  (kind_definition_id, kind_version, data, label, source, is_canonical, organization_id)
 select kd.id, kd.version,
        $mtx${"images": [{"file_id": "db22f2a2-9548-4eb7-946b-19b267bdee09", "url": "https://cdn.matrxserver.com/4cf62e4e-2679-484f-b652-034e697418df/db22f2a2-9548-4eb7-946b-19b267bdee09?v=84f485d6", "cdn_url": "https://cdn.matrxserver.com/4cf62e4e-2679-484f-b652-034e697418df/db22f2a2-9548-4eb7-946b-19b267bdee09?v=84f485d6", "mime_type": "image/jpeg", "width": 1536, "height": 1024}], "count": 1, "model": "flux-1.1-pro", "usage": {"cost_usd": 0.04}}$mtx$::jsonb,
-       'Canonical example', 'authored', true, 'passed', now(), '39c38960-d30c-4840-b0c1-c9960de95582'
+       'Canonical example', 'authored', true, '39c38960-d30c-4840-b0c1-c9960de95582'
 from content_ir.kind_definition kd
 where kd.organization_id = '39c38960-d30c-4840-b0c1-c9960de95582' and kd.kind = 'generated_image_set' and kd.deleted_at is null
   and not exists (
@@ -37,10 +37,10 @@ where not exists (
   where organization_id = '39c38960-d30c-4840-b0c1-c9960de95582' and kind = 'generated_video_set' and deleted_at is null);
 
 insert into content_ir.kind_example
-  (kind_definition_id, kind_version, data, label, source, is_canonical, validation_status, validated_at, organization_id)
+  (kind_definition_id, kind_version, data, label, source, is_canonical, organization_id)
 select kd.id, kd.version,
        $mtx${"videos": [{"url": "https://cdn.matrxserver.com/4cf62e4e-2679-484f-b652-034e697418df/28805c30-3848-40eb-8f51-b7d34ea4ea15?v=d7a1a053", "mime_type": "video/mp4", "duration_seconds": 8.0}], "count": 1, "model": "veo-3", "usage": {"cost_usd": 0.75}}$mtx$::jsonb,
-       'Canonical example', 'authored', true, 'passed', now(), '39c38960-d30c-4840-b0c1-c9960de95582'
+       'Canonical example', 'authored', true, '39c38960-d30c-4840-b0c1-c9960de95582'
 from content_ir.kind_definition kd
 where kd.organization_id = '39c38960-d30c-4840-b0c1-c9960de95582' and kd.kind = 'generated_video_set' and kd.deleted_at is null
   and not exists (
@@ -58,10 +58,10 @@ where not exists (
   where organization_id = '39c38960-d30c-4840-b0c1-c9960de95582' and kind = 'generated_audio' and deleted_at is null);
 
 insert into content_ir.kind_example
-  (kind_definition_id, kind_version, data, label, source, is_canonical, validation_status, validated_at, organization_id)
+  (kind_definition_id, kind_version, data, label, source, is_canonical, organization_id)
 select kd.id, kd.version,
        $mtx${"audio_url": "https://cdn.matrxserver.com/4cf62e4e-2679-484f-b652-034e697418df/1f2e3d4c-5b6a-4798-8899-aabbccddeeff?v=1a2b3c4d", "mime_type": "audio/mpeg", "duration_seconds": 42.5, "model": "eleven_v3", "usage": {"cost_usd": 0.02}}$mtx$::jsonb,
-       'Canonical example', 'authored', true, 'passed', now(), '39c38960-d30c-4840-b0c1-c9960de95582'
+       'Canonical example', 'authored', true, '39c38960-d30c-4840-b0c1-c9960de95582'
 from content_ir.kind_definition kd
 where kd.organization_id = '39c38960-d30c-4840-b0c1-c9960de95582' and kd.kind = 'generated_audio' and kd.deleted_at is null
   and not exists (
