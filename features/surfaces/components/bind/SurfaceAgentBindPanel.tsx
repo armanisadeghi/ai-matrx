@@ -31,6 +31,8 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { SurfaceVariableBindingList } from "@/features/surfaces/admin/columns/SurfaceVariableBinding";
 import { GlobalBindAgentGuard } from "@/features/surfaces/components/bind/GlobalBindAgentGuard";
+import { BindingSuggestionsTab } from "@/features/surfaces/components/bind/BindingSuggestionsTab";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 import { BASELINE_VALUES } from "@/features/surfaces/manifests/_baseline.manifest";
 import { buildBindingTargets } from "@/features/surfaces/utils/buildBindingTargets";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
@@ -49,6 +51,7 @@ import type {
   SurfaceValue,
   ValueMapping,
   ValueMappingMap,
+  WritePolicyMap,
 } from "@/features/surfaces/types";
 import type { RootState } from "@/lib/redux/store";
 import { cn } from "@/lib/utils";
@@ -110,6 +113,11 @@ export function SurfaceAgentBindPanel({
     currentUserId ?? undefined,
   );
   const [mappings, setMappings] = useState<ValueMappingMap>({});
+  // Write-policy overrides accepted from the AI proposal. Null = untouched,
+  // so a plain manual bind keeps carrying the prior tier's stored policies.
+  const [acceptedPolicies, setAcceptedPolicies] =
+    useState<WritePolicyMap | null>(null);
+  const [mapTab, setMapTab] = useState<"suggest" | "manual">("suggest");
   const [busy, setBusy] = useState(false);
   const [guardOpen, setGuardOpen] = useState(false);
   const [seededForAgent, setSeededForAgent] = useState<string | null>(null);
@@ -200,6 +208,8 @@ export function SurfaceAgentBindPanel({
       null;
     if (existing) {
       setMappings(cloneMappings(existing.valueMappings));
+      // Editing an existing binding — open on the editor, not the suggester.
+      setMapTab("manual");
       setSeededForAgent(agentId);
       return;
     }
@@ -242,12 +252,16 @@ export function SurfaceAgentBindPanel({
     setAgentId(id);
     setSeededForAgent(null);
     setMappings({});
+    setAcceptedPolicies(null);
+    setMapTab("suggest");
   };
 
   const handleBackToPicker = () => {
     setAgentId(null);
     setSeededForAgent(null);
     setMappings({});
+    setAcceptedPolicies(null);
+    setMapTab("suggest");
   };
 
   const handleSave = async () => {
@@ -303,7 +317,12 @@ export function SurfaceAgentBindPanel({
         surfaceName,
         scope: bindScope,
         valueMappings: mappings,
-        writePolicies: priorAtTier?.writePolicies,
+        // Accepted AI policy suggestions layer over the prior tier's stored
+        // overrides; an untouched proposal keeps the round-trip exactly as
+        // before (prior policies carried, never silently cleared).
+        writePolicies: acceptedPolicies
+          ? { ...priorAtTier?.writePolicies, ...acceptedPolicies }
+          : priorAtTier?.writePolicies,
         accessOrgId,
       });
       toast.success(`Bound to ${displaySurface}`);
@@ -412,11 +431,29 @@ export function SurfaceAgentBindPanel({
             {(loadingValues || !agentReady) && (
               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
             )}
+            <div className="ml-auto flex items-center rounded-md border border-border p-0.5">
+              {(
+                [
+                  ["suggest", "AI map"],
+                  ["manual", "Map manually"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setMapTab(key)}
+                  className={cn(
+                    "rounded px-2 py-0.5 text-[10px] transition-colors",
+                    mapTab === key
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="text-[11px] text-muted-foreground leading-snug">
-            For each agent variable or context slot, choose what this surface
-            should supply — or leave the agent&apos;s default / prompt the user.
-          </p>
           {!agentReady ? (
             <div className="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -427,14 +464,43 @@ export function SurfaceAgentBindPanel({
               This agent has no variables or context slots to map. You can still
               bind it — it will appear on the surface with no wired inputs.
             </p>
-          ) : (
-            <SurfaceVariableBindingList
-              targets={targets}
-              value={mappings}
+          ) : mapTab === "suggest" ? (
+            <BindingSuggestionsTab
+              surfaceName={surfaceName}
+              surfaceLabel={displaySurface}
+              agent={{
+                name: agentName,
+                description: agent?.description ?? "",
+                variableDefinitions: agent?.variableDefinitions ?? [],
+                contextSlots: agent?.contextSlots ?? [],
+              }}
               availableSurfaceValues={availableSurfaceValues}
+              writeTargets={getManifest(surfaceName)?.writeTargets ?? []}
+              targetNames={targets.map((t) => t.name)}
               disabled={busy}
-              onChange={setMappings}
+              onAccept={(m, policies) => {
+                setMappings(m);
+                setAcceptedPolicies(
+                  Object.keys(policies).length > 0 ? policies : null,
+                );
+                setMapTab("manual");
+              }}
             />
+          ) : (
+            <>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                For each agent variable or context slot, choose what this
+                surface should supply — or leave the agent&apos;s default /
+                prompt the user.
+              </p>
+              <SurfaceVariableBindingList
+                targets={targets}
+                value={mappings}
+                availableSurfaceValues={availableSurfaceValues}
+                disabled={busy}
+                onChange={setMappings}
+              />
+            </>
           )}
         </div>
       </div>
