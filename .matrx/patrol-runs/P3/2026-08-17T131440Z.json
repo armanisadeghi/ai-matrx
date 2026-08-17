@@ -43,6 +43,42 @@
       ],
       "previousEventHash": "076df598ade26d7c249b0e06d6ddb7c14ae1cb487e14c6cf2849ba0eb29700b7",
       "eventHash": "3c17b0c099a70917908b40017e2d81c7c4b269b30273197b93b4195f2ff8d8bf"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-17T13:29:39.258Z",
+      "actor": "/root/p3_certifier",
+      "summary": "REJECTED candidate 90218e7c8: the report undercounted 16 repaired occurrences as 15 and misstated the durable detector's 21→8 delta.",
+      "evidence": [
+        "No product defect was found; desktop preservation, Tailwind compilation, window propagation, 164 tests, diff-check, and run-record verification passed."
+      ],
+      "previousEventHash": "3c17b0c099a70917908b40017e2d81c7c4b269b30273197b93b4195f2ff8d8bf",
+      "eventHash": "fce9695d729b7e7eea8c9a2f5cd53bfa8e3e536d5f1921c7f4156aed88b6cded"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-17T13:29:39.819Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Corrected the two report projection defects without changing the certified product diff.",
+      "evidence": [
+        "Findings/fixed count is now 16; durable numeric-vh detector is now recorded as 21→8 with 10 live tokens removed, six prototype expressions and two comments remaining."
+      ],
+      "previousEventHash": "fce9695d729b7e7eea8c9a2f5cd53bfa8e3e536d5f1921c7f4156aed88b6cded",
+      "eventHash": "c3c2389de2420b43e1b7ec7a0a73c18fa39e361dfd89cb1868f0e181c2ffba9b"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-17T13:29:40.366Z",
+      "actor": "pattern-patrol-p3-worker",
+      "summary": "Corrected candidate is ready for independent exact-SHA re-certification.",
+      "evidence": [
+        "Product files are byte-identical to rejected candidate 90218e7c8; only report and permanent record projections changed."
+      ],
+      "previousEventHash": "c3c2389de2420b43e1b7ec7a0a73c18fa39e361dfd89cb1868f0e181c2ffba9b",
+      "eventHash": "3091e1dbda1862660f66655708d6420a8776ba8bc4f76e8323f6e42ab6cc9dd4"
     }
   ]
 }

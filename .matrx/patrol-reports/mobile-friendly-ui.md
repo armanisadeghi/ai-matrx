@@ -5,8 +5,8 @@
 - **Base:** `244042ddc314ba7995e3d8e8a3ed79aae9e5baca` (`v0.4.762`)
 - **Run kind:** structural-novelty scope + open-sighting verification + periodic full viewport/fixed-bottom pass
 - **Current state:** exact candidate pending independent certification
-- **Findings:** 15 verified occurrences in 14 files
-- **Fixed in candidate:** 15
+- **Findings:** 16 verified occurrences in 14 files
+- **Fixed in candidate:** 16
 - **Approvals needed:** 0
 - **Degradation:** none; the exact-worktree preview lease was unavailable, so bounded static/component proof is recorded for the certifier
 
@@ -42,9 +42,10 @@ Current structural baseline:
 
 ### Dynamic viewport units — 10 code tokens in 9 files
 
-The full detector found 23 raw lines. Triage identified 10 live code tokens,
-six expressions in the confirmed zero-consumer resizable prototype, and seven
-comments/explanatory references. The live code tokens are now `dvh` with every
+The durable numeric-unit detector found 21 raw lines. Triage identified 10 live
+code tokens, six expressions in the confirmed zero-consumer resizable
+prototype, and five comments/explanatory references. The live code tokens are
+now `dvh` with every
 numeric value and every other property unchanged:
 
 - one new expertise dialog max-height
@@ -54,9 +55,10 @@ numeric value and every other property unchanged:
 - two AI Visibility live-window openings
 - the content-plan brief window
 
-The changed-file legacy viewport detector moved 10 → 0. The remaining full-pass
-matches are only the six zero-consumer prototype expressions and four current
-comments after related comments were made truthful.
+The changed-file legacy viewport detector moved 10 → 0 and the durable full
+numeric-unit detector moved 21 → 8. The eight remaining matches are the six
+zero-consumer prototype expressions and two current comments after related
+comments were made truthful.
 
 ### Established touch floor — 4 structurally new surfaces
 
@@ -124,7 +126,10 @@ product-layout choice requiring Arman was found.
 
 ## Certification
 
-Pending independent adversarial review of the exact candidate SHA.
+The first exact candidate was **REJECTED** because this report said 15 findings
+instead of 16 and misstated the durable detector's 21 → 8 line delta. The
+product diff passed every adversarial check. Those projection defects are now
+corrected; the new exact candidate is pending independent re-certification.
 
 ## Recursive learning
 

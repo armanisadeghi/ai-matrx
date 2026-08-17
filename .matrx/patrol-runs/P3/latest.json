@@ -3,8 +3,8 @@
   "patrolId": "P3",
   "runId": "2026-08-17T131440Z",
   "state": "certifying",
-  "updatedAt": "2026-08-17T13:22:01.154Z",
-  "summary": "Candidate checks are complete and the batch is ready for independent exact-SHA adversarial review.",
+  "updatedAt": "2026-08-17T13:29:40.366Z",
+  "summary": "Corrected candidate is ready for independent exact-SHA re-certification.",
   "source": "2026-08-17T131440Z.json",
-  "eventHash": "3c17b0c099a70917908b40017e2d81c7c4b269b30273197b93b4195f2ff8d8bf"
+  "eventHash": "3091e1dbda1862660f66655708d6420a8776ba8bc4f76e8323f6e42ab6cc9dd4"
 }
