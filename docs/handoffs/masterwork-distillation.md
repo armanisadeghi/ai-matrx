@@ -45,6 +45,17 @@
   review-progress bar, next-step encouragement). Every textarea in the module is
   **ProTextarea** (mic + live transcription). Browser-verified end-to-end: a live rejected
   rule (`never-open-with-brand-name`, Strunk) is sitting in the Scout's queue as a demo.
+- **Adversarial round (2026-08-17) closed:** an independent attacker confirmed wire parity,
+  mandate sync, CAS discipline, the citation gate, and agent-write invariants all HELD; its 8
+  confirmed defects are FIXED and pushed — the editor path now consumes review state (a
+  hand-fixed rejected rule can never reach a Build while reading "with the interviewer"),
+  the wizard stops on failed saves instead of counting them, rejected rules have a
+  self-service "Reconsider" exit, pre-rename history rows retagged (version log/snapshots
+  whole again), stored `expertise_pack` envelopes resolve via a legacy alias (+ manifests
+  remirrored), the Scout now runs through the `masterwork.scout` Mandate (hardcoded UUID
+  deleted; mandate seeded live), the auditor agent row/tool copy renamed, matrx-extend
+  generated types refreshed, the tool sees `retired` and coerces section shapes, Audition
+  judges APPROVED rules only, and stale `processing` run rows are repaired in the ledger.
 - Fixed along the way: word-boundary name truncation (was defect 3), duplicate Audition judge
   soft-deleted (mandate pins `c55b52c9-…`), test residue removed (was defect 4), two
   unmirrored shareable-registry rows (`interview_session`, `workflow_runtime_surface`) added
