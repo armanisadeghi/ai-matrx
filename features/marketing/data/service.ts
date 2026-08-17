@@ -1490,6 +1490,40 @@ export async function updatePageIntent(
  * areas can never clobber each other; a true concurrent edit of the same page
  * still trips the version guard (one silent retry, then a loud error).
  */
+/**
+ * Current `desired_values` for a set of pages on one site, keyed by page id.
+ *
+ * The batch read a whole-plan write needs: `updatePageDesiredValues` merges at
+ * the KEY level, so a caller replacing an ARRAY slice (`outbound_links`,
+ * `image_plan`) must first read what is there or it silently deletes entries
+ * somebody else added. One query for the whole set, never one per page.
+ */
+export async function getPagesDesiredValues(
+  siteId: string,
+  pageIds: string[],
+): Promise<Map<string, PageDesiredValues>> {
+  const wanted = [...new Set(pageIds)].filter(Boolean);
+  const byId = new Map<string, PageDesiredValues>();
+  if (wanted.length === 0) return byId;
+  const db = await authenticatedWebDb(supabase);
+  const response = await db
+    .from("page")
+    .select("id, desired_values")
+    .eq("site_id", siteId)
+    .in("id", wanted)
+    .is("deleted_at", null);
+  if (response.error) throw response.error;
+  for (const row of response.data ?? []) {
+    byId.set(
+      row.id,
+      isJsonRecord(row.desired_values)
+        ? (row.desired_values as PageDesiredValues)
+        : {},
+    );
+  }
+  return byId;
+}
+
 export async function updatePageDesiredValues(
   input: UpdatePageDesiredValuesInput,
   attempt = 0,
