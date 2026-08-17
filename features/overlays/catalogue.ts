@@ -485,6 +485,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  addToRulebookDialog: {
+    label: "Add to Rulebook",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   instanceUIStateWindow: {
     label: "Instance U I State Window",
     instanceMode: "singleton",

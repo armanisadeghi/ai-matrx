@@ -39,6 +39,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { openAssistantMessageEditor } from "../message-options/openAssistantMessageEditor";
 import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
 import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
+import { RulebookNudge } from "@/features/masterwork/oracle/RulebookNudge";
 import { toast } from "@/lib/toast";
 import {
   selectMessageById,
@@ -208,8 +209,17 @@ export function AssistantActionBar({
     surfaceName: surfaceKey ?? null,
     originalContent: content,
   });
+  // The Oracle-tap nudge fires only on an ACTIVE verdict click (either
+  // direction — "a thumbs up is awesome feedback regardless"), never on
+  // hydration and never on a retraction (clicking the active verdict).
+  const [verdictClickCount, setVerdictClickCount] = useState(0);
   const handleVerdict = (clicked: "positive" | "negative") => {
-    void setVerdict(clicked).catch(() => toast.error("Failed to save feedback"));
+    const isRetraction = verdict === clicked;
+    void setVerdict(clicked)
+      .then(() => {
+        if (!isRetraction) setVerdictClickCount((n) => n + 1);
+      })
+      .catch(() => toast.error("Failed to save feedback"));
   };
 
   // For multi-iteration agentic turns, the surrounding AssistantTurnGroup
@@ -442,6 +452,16 @@ export function AssistantActionBar({
           content={content}
           surfaceName={surfaceKey ?? null}
           agentId={agentId ?? null}
+          className="mt-1"
+        />
+
+        {/* The Oracle-tap follow-up: after either verdict, a tiny
+            auto-fading "Add to a Rulebook" strip (never shown to users with
+            zero Rulebooks; same dialog as the ⋯ menu's Add to Rulebook). */}
+        <RulebookNudge
+          verdictClickCount={verdictClickCount}
+          content={copySpeakContent}
+          conversationId={conversationId}
           className="mt-1"
         />
       </div>

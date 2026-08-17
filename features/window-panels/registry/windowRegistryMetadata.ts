@@ -1912,6 +1912,14 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
   {
+    slug: "add-to-rulebook-dialog",
+    overlayId: "addToRulebookDialog",
+    kind: "modal",
+    label: "Add to Rulebook",
+    defaultData: { initialContent: null, initialConversationId: null },
+    ephemeral: true,
+  },
+  {
     slug: "email-input-dialog",
     overlayId: "emailDialog",
     kind: "modal",

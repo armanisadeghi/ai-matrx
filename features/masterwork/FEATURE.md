@@ -343,6 +343,39 @@ keep their shape.
 with zero code. A genuinely new lane implementation (new surface, new server
 pipeline) is what still takes code. Never hardcode an Approach list again.
 
+## The Oracle tap — `oracle/` (2026-08-17, Approach #10's in-app half)
+
+Colleagues (and the Expert themself) already ask the AI questions all day; an answer worth keeping
+becomes Rulebook material. Two entry points, ONE implementation:
+
+- **"Add to Rulebook" in the message ⋯ menu** — `messageActionRegistry.ts` (`add-to-rulebook`,
+  beside Create Task), assistant + user menus' Actions group.
+- **The thumbs follow-up nudge** — [`oracle/RulebookNudge.tsx`](./oracle/RulebookNudge.tsx),
+  rendered by `AssistantActionBar`: after the user actively SETS a verdict (positive OR negative —
+  "a thumbs up is awesome feedback regardless of whether a Masterwork was involved", Arman), a tiny
+  inline pill offers "Add to a Rulebook". Auto-fades ~8s, X + click-away dismiss, never blocks the
+  chat, never renders for a user with zero Rulebooks (`hasAnyRulebook()`, cached one head-count per
+  session), never fires on hydration or a retraction.
+
+Both open the **`addToRulebookDialog` overlay** ([`oracle/AddToRulebookDialog.tsx`](./oracle/AddToRulebookDialog.tsx),
+opener `features/overlays/openers/addToRulebookDialog.tsx`): pick one of YOUR Rulebooks
+(`listMyRulebooks()` — explicit mine predicate per THE VIEW LAW; zero Rulebooks → a door to
+`/masterwork`), see the derived rule name, save. The write is
+[`oracle/service.ts`](./oracle/service.ts) `appendDraftRuleFromMessage`: name = first meaningful
+line, word-boundary-truncated at 60 chars; statement = the turn content capped at 4,000 chars;
+`draft: true` (invariant 1 — the Expert approves it in review); `severity: "major"`;
+`source_ref = { approach: "oracle_tap", conversation_id, note: "Saved from a conversation" }`. It
+consumes the canonical `saveRules` CAS from `service.ts` (never a second write path) with a bounded
+re-read retry, since appending is commutative. Rule ids minted via the shared `nextRuleId`.
+`oracle_tap` is not (yet) a `platform.approach` row — it has no intake entry point; register it
+when the email/SMS halves of Approach #10 land.
+
+The interview-variant Approaches ride the same session: `ScoutInterviewPanel`'s
+`ELICITATION_CHIPS` now include **"Walk me through a hard case"** (#11 Hardest-Case Debrief — the
+chip only stages the story invitation; the multi-pass Critical Decision Method probing lives in the
+Scout's DB instructions, agent v7) and **"If I left for two weeks…"** (#15 Vacation Trigger,
+succession framing — also a Scout instruction section). Agent prose is NEVER in code.
+
 ## Guided intake follows the house pattern (Arman, 2026-08-17)
 
 > Born from a defect: the first "New Rulebook" intake was a cramped dialog whose questions were
@@ -396,6 +429,11 @@ implementation.
 
 ## Change log
 
+- 2026-08-17 — **The Oracle tap (in-app) + two interview-variant Approaches shipped.** New
+  `oracle/` (service + AddToRulebookDialog + RulebookNudge, overlay `addToRulebookDialog`),
+  "Add to Rulebook" in the message ⋯ menu, the thumbs follow-up nudge in `AssistantActionBar`,
+  and the Hardest-Case Debrief + Vacation Trigger chips on `ScoutInterviewPanel` (CDM probing
+  added to the Scout's DB instructions, agent v7). See § The Oracle tap.
 - 2026-08-17 — **The guided start rebuilt in the house pattern.** `NewRulebookDialog` (chip-bubble
   intake in a dialog) DELETED; replaced by the full page `/masterwork/new`
   (`intake/NewRulebookFlow.tsx`): big default-filled option tiles for the four intake questions

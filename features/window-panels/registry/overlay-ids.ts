@@ -18,6 +18,7 @@
  */
 
 export const OVERLAY_IDS = [
+  "addToRulebookDialog",
   "adminIndicator",
   "imagePeekHost",
   "adminStateAnalyzer",

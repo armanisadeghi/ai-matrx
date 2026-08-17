@@ -17,6 +17,7 @@
  */
 
 import {
+  BookOpen,
   Copy,
   FileText,
   Eye,
@@ -409,6 +410,39 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
               metadata: ctx.metadata,
             }),
           ),
+        );
+        onClose();
+      },
+      category: "Actions",
+      showToast: false,
+    },
+    {
+      // The Oracle tap (Masterwork Approach #10, in-app half): an answer
+      // worth keeping lands in one of the user's Rulebooks as a DRAFT rule.
+      // Same dialog + append path as the thumbs follow-up nudge — ONE
+      // implementation (features/masterwork/oracle/).
+      key: "add-to-rulebook",
+      icon: BookOpen,
+      iconColor: "text-violet-500 dark:text-violet-400",
+      label: "Add to Rulebook",
+      action: () => {
+        if (
+          !requireAuth(
+            ctx,
+            "add-to-rulebook",
+            "Add to Rulebook",
+            "Sign in to save answers into your Rulebooks.",
+          )
+        )
+          return;
+        dispatch(
+          openOverlay({
+            overlayId: "addToRulebookDialog",
+            data: {
+              initialContent: turnText,
+              initialConversationId: conversationId ?? null,
+            },
+          }),
         );
         onClose();
       },

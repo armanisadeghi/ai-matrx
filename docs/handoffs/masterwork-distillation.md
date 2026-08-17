@@ -21,6 +21,25 @@
 
 ## STATUS — live and verified (compressed)
 
+- **The four NEAR-FREE Approaches SHIPPED (2026-08-17):** ✅ #11 Hardest-Case Debrief chip +
+  ✅ #15 Vacation Trigger chip on `ScoutInterviewPanel` (CDM multi-pass probing + succession
+  framing added to the Scout's DB instructions via agent_author — agent v7; prose never in code);
+  ✅ Oracle tap in-app ⋯-menu half ("Add to Rulebook" beside Create Task in
+  `messageActionRegistry.ts`); ✅ Oracle tap thumbs half (tiny auto-fading `RulebookNudge` in
+  `AssistantActionBar`, both verdicts, hidden for zero-Rulebook users, cached check). ONE
+  implementation for both Oracle entries: overlay `addToRulebookDialog` +
+  `features/masterwork/oracle/service.ts` `appendDraftRuleFromMessage` (name word-boundary 60,
+  statement cap 4000, `draft:true`, `severity:major`,
+  `source_ref {approach:"oracle_tap", conversation_id, note}`) through the canonical `saveRules`
+  CAS with bounded re-read retry. Browser-verified end-to-end on the shared preview (chips stage
+  their text; ⋯-menu save landed a draft on Hopkins and was confirmed in the DB then cleaned;
+  nudge appears on verdict click and opens the same dialog). Details:
+  `features/masterwork/FEATURE.md` § The Oracle tap. **Small follow-ups:** register `oracle_tap`
+  as a (disabled) `platform.approach` row when the email/SMS halves land; the Scout agent's
+  declared VARIABLE is still `pack_id` ("expertise pack…") while its prompt + every caller use
+  `rulebook_id` — a rename leftover agent_author refuses to patch (`variables` not an editable
+  key); fix the variable declaration through whatever sanctioned path can write it.
+
 - **THE GUIDED START REBUILT IN THE HOUSE PATTERN (2026-08-17, Arman's "those stupid little small
   bubbles are horrible").** `NewRulebookDialog` DELETED; `/masterwork/new`
   (`features/masterwork/intake/NewRulebookFlow.tsx`) is now the one intake — a full page with big
@@ -319,16 +338,20 @@ critique lane · 5. AI-transcript import (provider gallery + guides + zero-uploa
 8. Red-Pen lane — markup + 5-second mic "why?" per strike-through
 9. Bad Example probe — "what's wrong with this?" over generated decoys (feeds `detection`)
 10. Oracle tap — capture the questions colleagues ask the expert + the answers. Arman's
-    channel spec: (a) email-in address, (b) SMS (we have text messaging), (c) in-app: the
-    message "..." actions menu gets "Add to Rulebook" beside create-task/create-note, and
-    (d) the thumbs up/down on ANY agent response gets a tiny non-disruptive follow-up
-    popover: "does this belong in one of your Rulebooks?" — a thumbs-up is Rulebook
-    material whether or not a Masterwork produced it.
-11. Hardest-Case Debrief — Critical Decision Method over one war story (interview variant)
+    channel spec: (a) email-in address, (b) SMS (we have text messaging), (c) ✅ in-app: the
+    message "..." actions menu gets "Add to Rulebook" beside create-task/create-note
+    (SHIPPED 2026-08-17), and (d) ✅ the thumbs up/down on ANY agent response gets a tiny
+    non-disruptive follow-up popover: "does this belong in one of your Rulebooks?" — a
+    thumbs-up is Rulebook material whether or not a Masterwork produced it (SHIPPED
+    2026-08-17; see STATUS). (a)+(b) remain open.
+11. ✅ Hardest-Case Debrief — Critical Decision Method over one war story (interview
+    variant) — SHIPPED 2026-08-17 (chip + Scout CDM instructions; see STATUS)
 12. Exception Hunter — "when does this rule NOT apply?" per approved rule
 13. Triad game — which two of three cases are alike, and why (repertory grid)
 14. Prediction Ledger — cheap predictions on real cases, scored against outcomes
-15. Vacation Trigger — succession-framed interview variant (one registry row)
+15. ✅ Vacation Trigger — succession-framed interview variant — SHIPPED 2026-08-17 (chip +
+    Scout instructions; the registry row is deliberately not minted yet — the chip is the
+    entry point, same as the monologue precedent)
 Plus the cross-cutting **Masterwork M&M** — a standing 15-minute weekly worst-run review
 ritual (delivery vehicle for 9/12 and the failure lever, not a lane).
 

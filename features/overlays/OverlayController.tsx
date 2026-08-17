@@ -618,6 +618,10 @@ const MasterworkCheckupWindow = lazyOverlay(
   () => import("@/features/masterwork/checkup/CheckupWindow"),
   { ssr: false },
 );
+const AddToRulebookDialog = lazyOverlay(
+  () => import("@/features/masterwork/oracle/AddToRulebookDialog"),
+  { ssr: false },
+);
 const InstanceUIStateWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/admin/InstanceUIStateWindow"),
   { ssr: false },
@@ -1063,6 +1067,9 @@ export default function OverlayController() {
     masterworkCheckupWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "masterworkCheckupWindow"),
     ),
+    addToRulebookDialog: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "addToRulebookDialog"),
+    ),
     agentRunWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentRunWindow"),
     ),
@@ -1395,6 +1402,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     masterworkCheckupWindow: useAppSelector((s) =>
       selectOverlayData(s, "masterworkCheckupWindow"),
+    ) as Record<string, unknown> | null,
+    addToRulebookDialog: useAppSelector((s) =>
+      selectOverlayData(s, "addToRulebookDialog"),
     ) as Record<string, unknown> | null,
     agentRunWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentRunWindow"),
@@ -2509,6 +2519,33 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "masterworkCheckupWindow" }))
             }
             rulebookId={rulebookId}
+          />
+        );
+      })()}
+
+      {/* addToRulebookDialog — the Oracle tap picker (message ⋯ menu +
+          thumbs follow-up nudge share this ONE dialog). */}
+      {(() => {
+        const isOpen = isOpenById.addToRulebookDialog;
+        const data = dataById.addToRulebookDialog as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <AddToRulebookDialog
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "addToRulebookDialog" }))
+            }
+            initialContent={
+              typeof data?.initialContent === "string"
+                ? data.initialContent
+                : null
+            }
+            initialConversationId={
+              typeof data?.initialConversationId === "string"
+                ? data.initialConversationId
+                : null
+            }
           />
         );
       })()}

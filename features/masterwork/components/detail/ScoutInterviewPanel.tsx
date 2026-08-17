@@ -109,6 +109,23 @@ const ELICITATION_CHIPS = [
     message:
       "I have an example of past work that came out exactly right. Here's what it was: ",
   },
+  // Hardest-Case Debrief (Approach #11) — Critical Decision Method over ONE
+  // recent war story. The chip only invites the story; the multi-pass CDM
+  // probing (what did you notice first? what would a competent novice have
+  // done wrong? when did you know?) is the SCOUT'S job, held in its DB
+  // instructions — never more chips, never prose in code.
+  {
+    label: "Walk me through a hard case",
+    message:
+      "I want to tell you about one recent case that was genuinely hard — walk me through it like a debrief and pull the rules out of what I did. The case was: ",
+  },
+  // Vacation Trigger (Approach #15) — succession framing surfaces the
+  // unwritten knowledge that only exists in the Expert's head.
+  {
+    label: "If I left for two weeks…",
+    message:
+      "Imagine I'm out for two weeks starting tomorrow. Ask me what my stand-in would need to know that isn't written anywhere — what breaks when I'm gone.",
+  },
 ] as const;
 
 /**
