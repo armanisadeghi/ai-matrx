@@ -288,6 +288,20 @@ built** — Arman floated it and was explicitly unsure it earns its cost.
 4. **Distillation → Engram interface** (`common-docs/systems/engram/VISION.md` §5): emit
    candidate specialists/contracts/acceptance criteria, not just rules.
 
+### Arman's rulings, 2026-08-17 (evening) — all five lanes GO
+
+- **All lane recommendations approved as pitched** (Understudy, body_of_work corpus, dump,
+  selector/moves, transcript import). All five Phase-2 builds dispatched simultaneously.
+- **Model tiers:** the Masterwork mid-tier default is **Gemini 3.7 Flash** (promo pricing —
+  Arman: "amazing for this stuff"); the smart tier is Opus 5 / a GPT model, later. Model
+  choice ALWAYS lives on the DB agent row, resolved from the live catalog — never in code.
+- **THE EXTERNAL-SOURCES RULE:** our own systems must never blind a lane to where the real
+  data lives. Meetings: Google Meet, Teams, and Zoom are the leaders — the Meeting Scavenger
+  must offer easy connections/import guides for them, not just our transcripts. Messages:
+  email + SMS threads from iCloud, Google phones, WhatsApp. The transcript-import lane's
+  provider-gallery + hand-holding-guide-page pattern is the HOUSE PATTERN for all external
+  source onboarding; its components must be reusable for future galleries.
+
 ## The Approach build list — Arman's ruling 2026-08-17: "No idea is turned away until we test it and it sucks"
 
 Every Approach below gets BUILT. The goal: so many ways of distilling that it is impossible
