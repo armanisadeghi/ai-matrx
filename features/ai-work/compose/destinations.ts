@@ -6,19 +6,20 @@
  *
  *   • `ai-matrx` is live today. It runs through the ONE canonical execution
  *     path (`launchAgentExecution`) and leaves a canonical conversation.
- *   • Every provider destination is capability-gated and currently
- *     unselectable. Claude Code's state comes from the LIVE backend contract
- *     (`readManagedCapability`); Codex/Cursor/VS Code have no managed runtime
- *     at all, so their reason is a constant fact, not a guess.
- *
- * Wiring an available provider destination into a real launch is TASK-006
- * (PLAN Lane 5). Until that certification pass, `selectable` stays false for
- * every provider even when the backend reports `available: true` — the button
- * that would run it does not exist yet, and offering it would be the fake
- * "Resume" this product forbids.
+ *   • `claude-code` is live when the user's OWN Matrx Local desktop app
+ *     reports its local Claude Code runtime available (installed `claude`,
+ *     signed-in subscription login, approved folders). The session runs on
+ *     the user's Mac and mirrors into a canonical conversation as it runs.
+ *     The check is the LIVE engine answer over the per-user bridge channel
+ *     (`readLocalRuntimeCapability`) — never a guess. The hosted sandbox
+ *     runtime (`readManagedCapability`) remains a separate, backend-certified
+ *     lane that this composer does not launch yet.
+ *   • Codex/Cursor have no managed runtime at all, so their reason is a
+ *     constant fact; VS Code work starts inside the editor.
  */
 
 import type { ManagedCapability } from "@/features/ai-work/lib/managedClaudeCapability";
+import type { LocalRuntimeCapability } from "@/features/ai-work/lib/matrxLocalRuntime";
 
 export type WorkDestinationId =
   | "ai-matrx"
@@ -43,9 +44,9 @@ export const WORK_DESTINATIONS: readonly WorkDestinationDef[] = [
   },
   {
     id: "claude-code",
-    label: "Claude Code",
+    label: "Claude Code on my Mac",
     summary:
-      "Claude Code does the work on your behalf and mirrors the session back into AI Matrx.",
+      "Claude Code runs on your own computer, in a folder you approved, and the session mirrors into AI Matrx as it runs.",
   },
   {
     id: "codex",
@@ -73,32 +74,47 @@ export interface DestinationAvailability {
 }
 
 /**
- * The one place a destination's runnability is decided. `capability` is the
- * live managed-Claude contract; it only ever affects `claude-code`.
+ * The one place a destination's runnability is decided.
+ *
+ * `localCapability` is the LIVE answer from the user's own Matrx Local app
+ * (undefined while a caller has not asked yet); `capability` is the hosted
+ * managed-sandbox contract and is reported as context, never as a launch path
+ * from here.
  */
 export function destinationAvailability(
   id: WorkDestinationId,
   capability: ManagedCapability,
+  localCapability?: LocalRuntimeCapability,
 ): DestinationAvailability {
   if (id === "ai-matrx") return { selectable: true, reason: null };
 
   if (id === "claude-code") {
-    if (capability.state === "loading") {
-      return { selectable: false, reason: "Checking the live backend…" };
+    const local = localCapability ?? null;
+    if (!local || local.state === "loading") {
+      return { selectable: false, reason: "Checking your Matrx Local app…" };
     }
-    if (!capability.available) {
+    if (local.state === "unreachable") {
       return {
         selectable: false,
         reason:
-          capability.reason ??
-          "The managed Claude runtime reports itself unavailable.",
+          local.reasons[0] ??
+          "Matrx Local is not reachable. Open the desktop app on your Mac and sign in.",
       };
     }
-    return {
-      selectable: false,
-      reason:
-        "The managed Claude runtime is available, but starting a session from the web is not certified yet. Start it from Claude Code and it appears in Conversations.",
-    };
+    if (!local.available) {
+      return {
+        selectable: false,
+        reason: local.reasons.join(" · ") || "The local runtime is not ready.",
+      };
+    }
+    if (local.approvedFolders.length === 0) {
+      return {
+        selectable: false,
+        reason:
+          "No folders are approved for agent runs yet. Approve one in Matrx Local (Claude Code → Agent Runtime).",
+      };
+    }
+    return { selectable: true, reason: null };
   }
 
   if (id === "vscode") {

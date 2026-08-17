@@ -63,6 +63,12 @@ import {
   readManagedCapability,
   type ManagedCapability,
 } from "@/features/ai-work/lib/managedClaudeCapability";
+import {
+  INITIAL_LOCAL_CAPABILITY,
+  readLocalRuntimeCapability,
+  startLocalRuntimeSession,
+  type LocalRuntimeCapability,
+} from "@/features/ai-work/lib/matrxLocalRuntime";
 import type { WorkDestinationId } from "../destinations";
 import {
   createSavedRequest,
@@ -164,6 +170,10 @@ function ComposerBody({
   const [destination, setDestination] = useState<WorkDestinationId>("ai-matrx");
   const [capability, setCapability] =
     useState<ManagedCapability>(INITIAL_CAPABILITY);
+  const [localCapability, setLocalCapability] = useState<LocalRuntimeCapability>(
+    INITIAL_LOCAL_CAPABILITY,
+  );
+  const [localFolder, setLocalFolder] = useState<string>("");
   const [requestText, setRequestText] = useState("");
   const [homes, setHomes] = useState<SavedRequestHome[]>([]);
   const [openStep, setOpenStep] = useState<number>(2);
@@ -183,6 +193,13 @@ function ComposerBody({
     let cancelled = false;
     void readManagedCapability().then((next) => {
       if (!cancelled) setCapability(next);
+    });
+    // The LOCAL runtime answer comes from the user's own Matrx Local app over
+    // the per-user bridge channel — a timeout is reported as unreachable.
+    void readLocalRuntimeCapability().then((next) => {
+      if (cancelled) return;
+      setLocalCapability(next);
+      setLocalFolder((current) => current || (next.approvedFolders[0] ?? ""));
     });
     return () => {
       cancelled = true;
@@ -229,9 +246,12 @@ function ComposerBody({
   }, [savedRequestId, conversationId, agentId, dispatch, onAgentChange]);
 
   const canRun =
-    destination === "ai-matrx" &&
     requestText.trim().length > 0 &&
-    Boolean(conversationId);
+    (destination === "ai-matrx"
+      ? Boolean(conversationId)
+      : destination === "claude-code"
+        ? localCapability.available && Boolean(localFolder)
+        : false);
 
   /**
    * Applies the Home picks as REAL canonical edges once the conversation row
@@ -287,7 +307,42 @@ function ComposerBody({
     }
   };
 
+  const handleRunOnMyMac = async () => {
+    if (!canRun || destination !== "claude-code") return;
+    setLaunching(true);
+    try {
+      const run = await startLocalRuntimeSession({
+        workspace: localFolder,
+        prompt: requestText.trim(),
+      });
+      if (!run.conversation_id) {
+        toast.success(
+          "Claude Code is starting on your Mac. The conversation appears in Conversations as soon as the first turn lands.",
+        );
+        return;
+      }
+      setLaunched(run.conversation_id);
+      toast.success(
+        "Claude Code is running on your Mac. The session mirrors into this conversation at each turn.",
+      );
+      await attachHomes(run.conversation_id);
+    } catch (error) {
+      console.error("[ai-work/new] local launch failed", error);
+      toast.error(
+        error instanceof Error
+          ? `Claude Code could not start on your Mac — ${error.message}`
+          : "Claude Code could not start on your Mac.",
+      );
+    } finally {
+      setLaunching(false);
+    }
+  };
+
   const handleRun = async () => {
+    if (destination === "claude-code") {
+      await handleRunOnMyMac();
+      return;
+    }
     if (!canRun || !conversationId) return;
     setLaunching(true);
     const handle = openLiveRun({
@@ -398,7 +453,13 @@ function ComposerBody({
         step={1}
         title="Who does the work"
         question="Choose where this work runs."
-        answer={destination === "ai-matrx" ? "AI Matrx" : undefined}
+        answer={
+          destination === "ai-matrx"
+            ? "AI Matrx"
+            : destination === "claude-code"
+              ? "Claude Code on my Mac"
+              : undefined
+        }
         complete
         open={openStep === 1}
         onToggle={() => toggle(1)}
@@ -406,8 +467,39 @@ function ComposerBody({
         <DestinationStep
           value={destination}
           capability={capability}
+          localCapability={localCapability}
           onChange={setDestination}
         />
+        {destination === "claude-code" && localCapability.available && (
+          <div className="mt-3 flex flex-col gap-1.5">
+            <label
+              htmlFor="ai-work-local-folder"
+              className="text-xs font-medium text-foreground"
+            >
+              Folder on your Mac
+            </label>
+            <select
+              id="ai-work-local-folder"
+              value={localFolder}
+              onChange={(event) => setLocalFolder(event.target.value)}
+              className="h-8 rounded-md border border-border bg-background px-2 text-sm"
+            >
+              {localCapability.approvedFolders.map((folder) => (
+                <option key={folder} value={folder}>
+                  {folder}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Only folders you approved in Matrx Local are offered. The session
+              runs with your own Claude Code login
+              {localCapability.claudeAccountLabel
+                ? ` (${localCapability.claudeAccountLabel})`
+                : ""}
+              .
+            </p>
+          </div>
+        )}
       </ComposerSection>
 
       <ComposerSection
@@ -584,10 +676,16 @@ function ComposerBody({
       >
         <dl className="grid grid-cols-[9rem_1fr] gap-x-3 gap-y-1.5 text-xs">
           <dt className="text-muted-foreground">Destination</dt>
-          <dd className="text-foreground">AI Matrx</dd>
+          <dd className="text-foreground">
+            {destination === "claude-code"
+              ? `Claude Code on my Mac — ${localFolder || "no folder chosen"}`
+              : "AI Matrx"}
+          </dd>
           <dt className="text-muted-foreground">Expert system</dt>
           <dd className="text-foreground">
-            {defaultAgentName ?? "The selected agent"}
+            {destination === "claude-code"
+              ? "Claude Code itself (your Mac's own configuration)"
+              : (defaultAgentName ?? "The selected agent")}
           </dd>
           <dt className="text-muted-foreground">Added skills</dt>
           <dd className="text-foreground">

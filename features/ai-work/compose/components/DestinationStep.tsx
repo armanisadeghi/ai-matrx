@@ -13,6 +13,7 @@
 import { CircleDot, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ManagedCapability } from "@/features/ai-work/lib/managedClaudeCapability";
+import type { LocalRuntimeCapability } from "@/features/ai-work/lib/matrxLocalRuntime";
 import {
   WORK_DESTINATIONS,
   destinationAvailability,
@@ -22,10 +23,12 @@ import {
 export function DestinationStep({
   value,
   capability,
+  localCapability,
   onChange,
 }: {
   value: WorkDestinationId;
   capability: ManagedCapability;
+  localCapability?: LocalRuntimeCapability;
   onChange: (id: WorkDestinationId) => void;
 }) {
   return (
@@ -34,6 +37,7 @@ export function DestinationStep({
         const { selectable, reason } = destinationAvailability(
           destination.id,
           capability,
+          localCapability,
         );
         const selected = selectable && value === destination.id;
         return (

@@ -48,6 +48,7 @@ import {
 } from "@/features/ai-work/lib/codingSessionPresentation";
 import { appLabel } from "@/features/agents/redux/conversation-history/source-registry";
 import type { ProviderConversation } from "@/features/ai-work/service/providerConversation";
+import { ContinueOnMyMacPanel } from "./ContinueOnMyMacPanel";
 import {
   conversationTypeLabel,
   originClassLabel,
@@ -289,6 +290,14 @@ export function ConversationProvenancePanel({
             primary?.provider_project_key ?? <Absent />}
         </Fact>
       </Group>
+
+      {/* ── Native continuation, capability-gated by the user's own Mac ──── */}
+      {primary?.provider === "claude_code" && primary.provider_session_id && (
+        <ContinueOnMyMacPanel
+          providerSessionId={primary.provider_session_id}
+          conversationId={conversation.id}
+        />
+      )}
 
       {/* ── From AI Matrx ────────────────────────────────────────────────── */}
       <Group source="matrx">
