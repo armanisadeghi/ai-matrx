@@ -32299,6 +32299,78 @@ export type Database = {
         }
         Relationships: []
       }
+      approach: {
+        Row: {
+          blurb: string
+          cost_time_shape: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          enabled: boolean
+          family: string
+          id: string
+          intake_query: Json
+          key: string
+          label: string
+          mandate_key: string
+          metadata: Json
+          organization_id: string
+          sort_order: number
+          source_ref_stamp: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          what_it_needs: string
+        }
+        Insert: {
+          blurb?: string
+          cost_time_shape?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          family?: string
+          id?: string
+          intake_query?: Json
+          key: string
+          label: string
+          mandate_key: string
+          metadata?: Json
+          organization_id: string
+          sort_order?: number
+          source_ref_stamp: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          what_it_needs?: string
+        }
+        Update: {
+          blurb?: string
+          cost_time_shape?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          enabled?: boolean
+          family?: string
+          id?: string
+          intake_query?: Json
+          key?: string
+          label?: string
+          mandate_key?: string
+          metadata?: Json
+          organization_id?: string
+          sort_order?: number
+          source_ref_stamp?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          what_it_needs?: string
+        }
+        Relationships: []
+      }
       assists: {
         Row: {
           action: Json

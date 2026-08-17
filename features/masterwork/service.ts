@@ -41,6 +41,8 @@ export interface RulebookIntake {
   stakes?: string;
   /** "If you handed this to ChatGPT today…" — the baseline we're beating. */
   benchmark?: string;
+  /** The Distillation Approach the Expert picked (platform.approach key). */
+  approach?: string;
 }
 
 export interface CreateRulebookInput {
