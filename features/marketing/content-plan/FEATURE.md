@@ -737,6 +737,20 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-17 — **The NodePanel's Targeting section now edits THE one SEO plan,
+  not a second copy on the node.** `features/marketing/seo/plan/SeoPlanEditor`
+  — the single canonical editor, also mounted in the marketing page workspace
+  and the CMS page editor's SEO tab — renders here the moment a node has a
+  `web.page` record, resolved by the CMS id join first and the site's route
+  index (`useSitePlanIndex` / `planForRoute`) second, with one click to mint the
+  record through the existing `ensurePlannedPages` endpoint when neither
+  answers. The read-only `SeoPlanSection` that used to live in
+  `PlanContextPanel` is gone from that panel (a plan you cannot edit where you
+  read it is banned); its legacy `plan.node.attributes.keyword_strategy` reader
+  moved beside `NodeSeoIntentEditor`, so the whole plan-node SEO store is now
+  one file that dies in one piece. `PAGE_ROLES` has ONE owner
+  (`seo/plan/plan-model.ts`); `setup/ai.ts` re-exports it.
+
 - 2026-08-16 — **The page's words became editable (P4's whole reason for
   existing).** `components/PageDraftEditor.tsx` renders the `draft`/`review`
   artifact as a PAGE — heading, opening, sections (heading, a subdued

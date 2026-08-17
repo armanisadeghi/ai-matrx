@@ -508,6 +508,21 @@ UI-complete here but only take effect once P1's service layer reads them.
 
 ## Change log
 
+- `2026-08-17` — **The page editor's SEO tab gained THE SEO plan, above the
+  values it serves.** `components/PageSeoPlanSection.tsx` mounts the ONE
+  canonical editor (`features/marketing/seo/plan/SeoPlanEditor`) — target and
+  supporting keywords as `seo.keyword` library ids, page role, the money routes
+  this page feeds, the reasoning, the desired meta, and the planned internal
+  links with a door to the Link plan card — directly editable here, never a
+  read-only summary that sends the user to another surface. Two records stay
+  distinct on screen: the PLAN (one row, on `web.page`, shared with the page
+  workspace and the content plan) and the SERVED meta fields below it. The join
+  is the existing durable `client_pages.web_page_id`; when a page has none, the
+  section says which of the four reasons applies and offers ONE click that
+  creates the record (`createManualPage` + `CmsPageService.setWebPageLink`, the
+  canonical insert and the one writer of that column). No second resolver, no
+  new column, no CMS-local copy of the plan.
+
 - `2026-08-15` — The CMS access predicate now consumes the canonical
   `satisfiesPermissionLevel` helper instead of maintaining a second local
   viewer/editor/admin rank map. Existing owner, organization-member, admin,

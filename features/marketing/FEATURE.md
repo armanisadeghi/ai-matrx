@@ -510,6 +510,22 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-17 — **ONE canonical, directly-editable SEO plan editor.**
+  `seo/plan/` is the new home of the per-page SEO plan: `plan-model.ts` (the
+  normalizer over `web.page.desired_values.keyword_plan` + the desired meta
+  columns, and the ONE owner of `PAGE_ROLES`), `SeoPlanFields.tsx` (per-field
+  children, per THE CANONICAL COMPONENT LAW), `SeoPlanEditor.tsx` (the one
+  editor, `card` on the workspace and `bare` inside a host frame), and the two
+  host resolvers `useNodeSeoPlan` / `useCmsPageSeoPlan`. It is mounted in all
+  three homes — the page workspace's Plan lane, the content-plan NodePanel, and
+  the CMS page editor's SEO tab — and saves through the existing
+  `updatePageIntent` (columns, optimistic concurrency) and
+  `updatePageDesiredValues` (the merge-safe slice write); the legacy
+  `target_keyword` text column is passed through untouched. `PageIntentCard` and
+  `PlanContextPanel`'s read-only `SeoPlanSection` were deleted, not shimmed.
+  `SectionCard` now carries `id={anchor}`, so the plan's door to the Link plan
+  card (and every future cross-surface deep link) resolves.
+
 - 2026-08-17 — **The last three spinner-over-an-agent SEO surfaces stream, and the
   canonical hook grew the live half instead of gaining a twin.** aidream turned
   `/seo/keywords/classify`, `/seo/keywords/assign-topics` and
