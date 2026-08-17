@@ -20,7 +20,7 @@ export default function ExtensionPrivacyPolicyPage() {
           <h1 className="text-4xl font-bold tracking-tight">
             Matrx Extend — Chrome Extension Privacy Policy
           </h1>
-          <p className="text-muted-foreground">Last updated: July 12, 2026</p>
+          <p className="text-muted-foreground">Last updated: August 17, 2026</p>
         </div>
 
         <div className="prose prose-neutral dark:prose-invert max-w-none space-y-8">
@@ -35,8 +35,8 @@ export default function ExtensionPrivacyPolicyPage() {
             </p>
             <p>
               You can use the extension either with a Matrx account or{" "}
-              <strong>as a guest, without creating an account</strong>. Guest use
-              is described in its own section below.
+              <strong>as a guest, without creating an account</strong>. Guest
+              use is described in its own section below.
             </p>
             <p>
               This policy describes only the extension&rsquo;s data practices.
@@ -62,15 +62,24 @@ export default function ExtensionPrivacyPolicyPage() {
               Everything the extension does serves that one purpose: answering
               questions about the current page, pulling information out of it,
               and — only when you ask — performing actions on it such as filling
-              a form or navigating. It reads a page only when you engage it on
-              that page, and actions that change a page ask for your
-              confirmation first.
+              a form or navigating. It processes page content only for a feature
+              you invoke or an automatic capture you explicitly enable. The
+              default permission mode asks before actions that change a page;
+              privileged actions always require confirmation.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold">What the extension accesses</h2>
-            <p>The extension only accesses data when a user takes a deliberate action in the side panel, popup, or context menu. It does not run in the background scanning or collecting data from sites the user visits.</p>
+            <h2 className="text-2xl font-semibold">
+              What the extension accesses
+            </h2>
+            <p>
+              On a fresh install, the extension accesses page content only when
+              you take a deliberate action in the side panel, popup, or context
+              menu. You may separately enable automatic page capture in
+              Settings; that setting is off by default and can be turned off at
+              any time.
+            </p>
             <ul className="list-disc pl-6 space-y-2">
               <li>
                 <strong>Account information.</strong> Your Matrx user identity
@@ -85,21 +94,23 @@ export default function ExtensionPrivacyPolicyPage() {
                 click an action such as &ldquo;Scrape this page&rdquo;,
                 &ldquo;Run SEO audit&rdquo;, or &ldquo;Extract data&rdquo;, the
                 extension reads the current tab&rsquo;s DOM (text, images,
-                links, structured data) and sends a cleaned representation to
-                your Matrx account. We do not capture pages you have not asked
-                to capture.
+                links, structured data) and processes a cleaned representation
+                locally or sends it to the Matrx service when the feature
+                requires server processing or saving. We do not capture pages
+                you have not acted on unless you explicitly enable automatic
+                capture in Settings.
               </li>
               <li>
                 <strong>Chat input you provide.</strong> Messages you type into
                 the Chat tab, plus any context you explicitly attach (for
-                example, the current page title and URL), are sent to your
-                Matrx backend so your selected agent can respond. Conversation
-                history is stored under your account.
+                example, the current page title and URL), are sent to your Matrx
+                backend so your selected agent can respond. Conversation history
+                is stored under your account.
               </li>
               <li>
                 <strong>Saved extraction patterns.</strong> Patterns you define
-                in the Data tab — selectors, field names, the URL or domain
-                they apply to — are saved to your Matrx account so they can be
+                in the Data tab — selectors, field names, the URL or domain they
+                apply to — are saved to your Matrx account so they can be
                 reapplied on future visits.
               </li>
               <li>
@@ -112,13 +123,15 @@ export default function ExtensionPrivacyPolicyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold">What the extension does NOT do</h2>
+            <h2 className="text-2xl font-semibold">
+              What the extension does NOT do
+            </h2>
             <ul className="list-disc pl-6 space-y-2">
               <li>
-                <strong>We do not train AI models on your data.</strong>{" "}
-                Content captured through the extension is stored in your
-                account so you can use it. It is not used to train, fine-tune,
-                or improve any model — ours or anyone else&rsquo;s.
+                <strong>We do not train AI models on your data.</strong> Content
+                captured through the extension is stored in your account so you
+                can use it. It is not used to train, fine-tune, or improve any
+                model — ours or anyone else&rsquo;s.
               </li>
               <li>
                 <strong>We do not sell or rent your data</strong> to data
@@ -130,14 +143,16 @@ export default function ExtensionPrivacyPolicyPage() {
                 creditworthiness determinations.
               </li>
               <li>
-                <strong>We do not run background scraping.</strong> The
-                extension only reads page content in response to an explicit
-                user action; there is no silent crawling, no automatic
-                background submission of browsing activity, and no telemetry on
-                pages you have not chosen to act on.
+                <strong>Automatic capture is opt-in.</strong> It is off on a
+                fresh install. If you enable it in Settings, the extension
+                captures the active page after navigation so it is ready for
+                your next chat request. The extension does not silently crawl
+                unrelated tabs, and it does not send browsing telemetry.
               </li>
               <li>
-                <strong>We do not let humans browse your captured content</strong>{" "}
+                <strong>
+                  We do not let humans browse your captured content
+                </strong>{" "}
                 except (a) with your affirmative consent, (b) as required for
                 security or fraud investigation, or (c) to comply with
                 applicable law.
@@ -166,38 +181,48 @@ export default function ExtensionPrivacyPolicyPage() {
               <li>
                 <strong>AI model providers.</strong> To generate a response, the
                 Matrx backend forwards your message and any page context you
-                included to the AI model provider that the agent you are using is
-                configured to run on (for example Anthropic, OpenAI, or Google).
-                This means the content of a page you engage the assistant on can
-                be sent to that provider. Providers are used to generate your
-                response; we do not authorize them to use your content to train
-                their models.
+                included to the AI model provider that the agent you are using
+                is configured to run on (for example Anthropic, OpenAI, or
+                Google). This means the content of a page you engage the
+                assistant on can be sent to that provider. Providers are used to
+                generate your response; we do not authorize them to use your
+                content to train their models.
               </li>
             </ul>
             <p>
-              No other third parties receive your content. If you have paired the
-              optional Matrx desktop companion app, the extension may communicate
-              with it locally on your machine; that traffic does not leave your
-              device.
+              No other third parties receive your content. If you have paired
+              the optional Matrx desktop companion app, the extension may
+              communicate with it locally on your machine; that traffic does not
+              leave your device.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-2xl font-semibold">Why each Chrome permission is requested</h2>
+            <h2 className="text-2xl font-semibold">
+              Why each Chrome permission is requested
+            </h2>
             <ul className="list-disc pl-6 space-y-2">
               <li>
-                <strong>Host access (<code>&lt;all_urls&gt;</code>).</strong>{" "}
+                <strong>
+                  Host access (<code>&lt;all_urls&gt;</code>).
+                </strong>{" "}
                 Required because users decide which pages to scrape, audit, or
                 extract structured data from — the extension cannot know in
-                advance which sites a user will work with. Content scripts are
-                only injected when the user explicitly clicks an action; the
-                extension does not run on, observe, or transmit data from pages
-                the user has not chosen to act on.
+                advance which sites a user will work with. A lightweight
+                content-script bridge is present on normal web pages so the side
+                panel can respond immediately; it does not transmit page content
+                until the user invokes a feature or has explicitly enabled
+                automatic capture.
               </li>
               <li>
                 <strong>activeTab + scripting.</strong> Used to inject the
                 scrape collectors and the structured-data picker into the
                 current tab when the user triggers them.
+              </li>
+              <li>
+                <strong>tabs + tabGroups.</strong> Lets the assistant identify
+                the active page and, when requested, open, switch, close, or
+                group browser tabs.
               </li>
               <li>
                 <strong>storage.</strong> Persists your session tokens,
@@ -210,13 +235,13 @@ export default function ExtensionPrivacyPolicyPage() {
               </li>
               <li>
                 <strong>identity.</strong> Powers the OAuth sign-in flow via{" "}
-                <code>chrome.identity.launchWebAuthFlow</code> against the
-                Matrx Supabase auth endpoint.
+                <code>chrome.identity.launchWebAuthFlow</code> against the Matrx
+                Supabase auth endpoint.
               </li>
               <li>
-                <strong>offscreen.</strong> Holds long-running fetch/SSE
-                streams (agent responses, scrape pipelines) so they are not cut
-                off when Chrome suspends the service worker.
+                <strong>offscreen.</strong> Holds long-running fetch/SSE streams
+                (agent responses, scrape pipelines) so they are not cut off when
+                Chrome suspends the service worker.
               </li>
               <li>
                 <strong>nativeMessaging.</strong> Optional. When the user has
@@ -227,8 +252,7 @@ export default function ExtensionPrivacyPolicyPage() {
               </li>
               <li>
                 <strong>alarms.</strong> Schedules a token refresh ahead of
-                expiry so the user does not have to re-authenticate every
-                hour.
+                expiry and runs user-scheduled tasks at the requested time.
               </li>
               <li>
                 <strong>contextMenus.</strong> Adds right-click actions for
@@ -243,9 +267,33 @@ export default function ExtensionPrivacyPolicyPage() {
                 captured data to the user&rsquo;s local file system.
               </li>
               <li>
-                <strong>webNavigation.</strong> Detects tab navigation events
-                so the extension can recognize when the user has returned to a
-                page that already has a saved extraction pattern.
+                <strong>webNavigation.</strong> Detects tab navigation events so
+                the extension can recognize when the user has returned to a page
+                that already has a saved extraction pattern.
+              </li>
+              <li>
+                <strong>history + bookmarks + sessions.</strong> Lets the
+                assistant search browser history, read bookmarks, and restore a
+                recently closed tab only when the user requests those actions.
+              </li>
+              <li>
+                <strong>notifications.</strong> Alerts the user when a task they
+                started completes or needs attention.
+              </li>
+              <li>
+                <strong>debugger.</strong> Supports advanced browser functions
+                Chrome does not expose through narrower APIs, including
+                full-page capture, PDF export, workflow recording, page-network
+                inspection, accessibility inspection, difficult page
+                interaction, and viewport emulation. It is not used to execute
+                code. Chrome displays its debugging banner whenever this access
+                is active.
+              </li>
+              <li>
+                <strong>Optional permissions.</strong> Cookies, page capture,
+                clipboard read, and tab capture are off until the user grants
+                them at runtime for the matching advanced feature. They can be
+                revoked from the extension Settings or Chrome settings.
               </li>
             </ul>
           </section>
@@ -255,8 +303,8 @@ export default function ExtensionPrivacyPolicyPage() {
               Guest access (using the extension without an account)
             </h2>
             <p>
-              You can open the side panel and use the assistant immediately, as a
-              guest, without signing up. Guest use works the same way as
+              You can open the side panel and use the assistant immediately, as
+              a guest, without signing up. Guest use works the same way as
               signed-in use, and this policy applies to it in full.
             </p>
             <p>To make that work, when you use the extension as a guest:</p>
@@ -265,26 +313,28 @@ export default function ExtensionPrivacyPolicyPage() {
                 <strong>We create an anonymous account for you.</strong> Your
                 installation generates a random identifier (it is not derived
                 from your name, email, IP address, device hardware, or any other
-                personal information). We send that identifier with your requests
-                and use it to create and recognize an anonymous account on our
-                servers, so your conversation can be processed and so we can
-                apply fair-use limits.
+                personal information). We send that identifier with your
+                requests and use it to create and recognize an anonymous account
+                on our servers, so your conversation can be processed and so we
+                can apply fair-use limits.
               </li>
               <li>
-                <strong>Your guest activity is stored under that anonymous
-                account</strong> — the same conversations and content described
-                elsewhere in this policy, handled the same way. It is not linked
-                to a real-world identity, because we do not have one for you.
+                <strong>
+                  Your guest activity is stored under that anonymous account
+                </strong>{" "}
+                — the same conversations and content described elsewhere in this
+                policy, handled the same way. It is not linked to a real-world
+                identity, because we do not have one for you.
               </li>
               <li>
                 <strong>If you later create an account or sign in,</strong> your
                 guest activity is carried over and becomes part of that account.
               </li>
               <li>
-                <strong>You can clear it.</strong> Uninstalling the extension, or
-                clearing its local storage, discards the identifier on your
-                device. To delete the anonymous account data held on our servers,
-                email{" "}
+                <strong>You can clear it.</strong> Uninstalling the extension,
+                or clearing its local storage, discards the identifier on your
+                device. To delete the anonymous account data held on our
+                servers, email{" "}
                 <a href="mailto:support@aimatrx.com" className="underline">
                   support@aimatrx.com
                 </a>
@@ -312,16 +362,13 @@ export default function ExtensionPrivacyPolicyPage() {
               </li>
               <li>
                 <strong>Delete saved data</strong> (captures, patterns,
-                conversations, SEO audits) at any time from your Matrx
-                account, or by emailing us.
+                conversations, SEO audits) at any time from your Matrx account,
+                or by emailing us.
               </li>
               <li>
                 <strong>Account deletion</strong> requests — for a full account
                 or for an anonymous guest account — can be sent to{" "}
-                <a
-                  href="mailto:support@aimatrx.com"
-                  className="underline"
-                >
+                <a href="mailto:support@aimatrx.com" className="underline">
                   support@aimatrx.com
                 </a>
                 .
@@ -341,8 +388,8 @@ export default function ExtensionPrivacyPolicyPage() {
             <h2 className="text-2xl font-semibold">Changes</h2>
             <p>
               We will update the &ldquo;Last updated&rdquo; date and the body of
-              this page if our extension data practices change. Material
-              changes will also be surfaced in the extension itself.
+              this page if our extension data practices change. Material changes
+              will also be surfaced in the extension itself.
             </p>
           </section>
 
@@ -350,13 +397,10 @@ export default function ExtensionPrivacyPolicyPage() {
             <h2 className="text-2xl font-semibold">Contact</h2>
             <p>
               Questions about this policy or a request related to your data:{" "}
-              <a
-                href="mailto:support@aimatrx.com"
-                className="underline"
-              >
+              <a href="mailto:support@aimatrx.com" className="underline">
                 support@aimatrx.com
-              </a>
-              {" "}or via our{" "}
+              </a>{" "}
+              or via our{" "}
               <Link href="/contact" className="underline">
                 contact form
               </Link>
