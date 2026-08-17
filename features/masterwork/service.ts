@@ -426,7 +426,7 @@ export async function listMasterworksForRulebook(
 
 /**
  * Release / un-release a Masterwork (the Studio action). Released = an
- * Operator can find and run it on /encore; draft = Studio-only. The stamp is
+ * Operator can find and run it on /masterwork/encore; draft = Studio-only. The stamp is
  * `metadata.released_at`, written with a guarded compare-and-swap on the
  * definition's `version` so a concurrent Studio save surfaces as a conflict
  * instead of silently losing either write (metadata is read-modify-write).

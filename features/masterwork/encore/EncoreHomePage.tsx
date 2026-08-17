@@ -30,7 +30,7 @@ function EncoreCard({ masterwork }: { masterwork: EncoreMasterwork }) {
   return (
     <div className="flex flex-col rounded-lg border border-border bg-card p-4">
       <Link
-        href={`/encore/${masterwork.id}`}
+        href={`/masterwork/encore/${masterwork.id}`}
         className="font-medium text-foreground hover:underline"
       >
         {masterwork.name}
@@ -50,7 +50,7 @@ function EncoreCard({ masterwork }: { masterwork: EncoreMasterwork }) {
       ) : null}
       <div className="mt-auto pt-3">
         <Button asChild size="sm" className="w-full sm:w-auto">
-          <Link href={`/encore/${masterwork.id}`}>
+          <Link href={`/masterwork/encore/${masterwork.id}`}>
             <Play className="mr-1 h-4 w-4" />
             Run
           </Link>
@@ -104,7 +104,7 @@ export function EncoreHomePage() {
           here — ready to run with their judgment built in.
         </p>
         <Button asChild size="sm" variant="outline">
-          <Link href="/masterwork">
+          <Link href="/masterwork/all">
             <BookOpen className="mr-1 h-4 w-4" />
             Build one in Masterwork Studio
           </Link>

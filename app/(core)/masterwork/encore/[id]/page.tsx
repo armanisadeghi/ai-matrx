@@ -1,15 +1,16 @@
-// app/(core)/masterwork/[id]/page.tsx
+// app/(core)/masterwork/encore/[id]/page.tsx
 //
-// Rulebook detail — THE Expert surface: read and edit your Rulebook.
+// Run one released Masterwork — the Encore run experience (input form, live
+// streamed run, result, this Operator's own run history).
 
 "use client";
 
 import { use } from "react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
-import { RulebookDetailPage } from "@/features/masterwork/components/detail/RulebookDetailPage";
+import { EncoreRunPage } from "@/features/masterwork/encore/EncoreRunPage";
 
-export default function RulebookRoute({
+export default function EncoreRunRoute({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -21,17 +22,17 @@ export default function RulebookRoute({
         left={
           <>
             <ChevronLeftTapButton
-              href="/masterwork/all"
-              ariaLabel="Back to Masterwork Studio"
+              href="/masterwork/encore"
+              ariaLabel="Back to Encore"
             />
             <h1 className="ml-2 truncate text-sm font-medium text-foreground">
-              Rulebook
+              Run
             </h1>
           </>
         }
       />
       <div className="h-full overflow-y-auto bg-textured pt-[calc(var(--shell-header-h)+1rem)]">
-        <RulebookDetailPage rulebookId={id} />
+        <EncoreRunPage masterworkId={id} />
       </div>
     </>
   );

@@ -105,7 +105,7 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-muted-foreground">{error}</p>
         <Button asChild variant="outline" size="sm">
-          <Link href="/encore">Back to Encore</Link>
+          <Link href="/masterwork/encore">Back to Encore</Link>
         </Button>
       </div>
     );
@@ -133,7 +133,7 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
           </Button>
         ) : (
           <Button asChild variant="outline" size="sm">
-            <Link href="/encore">Back to Encore</Link>
+            <Link href="/masterwork/encore">Back to Encore</Link>
           </Button>
         )}
       </div>

@@ -15,9 +15,17 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
   routes: [
     {
       url: "/masterwork",
-      label: "Masterwork Studio (Rulebook list)",
-      description: "Canonical entity-list shell over platform.rulebook.",
+      label: "Masterwork landing",
+      description:
+        "The module home. Guests get the marketing landing (ModuleLanding); signed-in Experts get the Masterwork home — Rulebooks with review KPIs, built Masterworks with release state + quality trend, recent runs, Approach start tiles, and the 'How it's improving' Hindsight panel.",
       filePath: "app/(core)/masterwork/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/masterwork/all",
+      label: "All Rulebooks (Masterwork Studio list)",
+      description: "Canonical entity-list shell over platform.rulebook.",
+      filePath: "app/(core)/masterwork/all/page.tsx",
       status: "Live",
     },
     {
@@ -37,19 +45,19 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
-      url: "/encore",
+      url: "/masterwork/encore",
       label: "Encore (Operator home)",
       description:
         "Every RELEASED Masterwork the viewer can reach (mine / orgs / public shelves), one primary action: Run.",
-      filePath: "app/(core)/encore/page.tsx",
+      filePath: "app/(core)/masterwork/encore/page.tsx",
       status: "Live",
     },
     {
-      url: "/encore/[id]",
+      url: "/masterwork/encore/[id]",
       label: "Encore run page",
       description:
         "Run one released Masterwork: input form, live streamed run (TryMasterworkBox machinery), result, the Operator's own run history.",
-      filePath: "app/(core)/encore/[id]/page.tsx",
+      filePath: "app/(core)/masterwork/encore/[id]/page.tsx",
       status: "Live",
     },
   ],

@@ -157,7 +157,7 @@ export interface RulebookListRow {
  *
  * Lifecycle: every Build lands as a DRAFT. The Expert releases it from the
  * Studio (`metadata.released_at` gets stamped); only a released Masterwork
- * appears on /encore, where an Operator runs it. Un-release clears the stamp.
+ * appears on /masterwork/encore, where an Operator runs it. Un-release clears the stamp.
  */
 export interface Masterwork {
   id: string;

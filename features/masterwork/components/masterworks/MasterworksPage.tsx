@@ -135,7 +135,7 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
   const isOwner =
     rulebook !== null && userId !== null && rulebook.created_by === userId;
   // Release / un-release in flight for one Masterwork (the Studio's lifecycle
-  // action — released Masterworks appear on /encore for Operators).
+  // action — released Masterworks appear on /masterwork/encore for Operators).
   const [releaseBusy, setReleaseBusy] = useState<string | null>(null);
 
   const toggleReleased = async (masterwork: Masterwork) => {
@@ -221,7 +221,7 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-muted-foreground">{error}</p>
         <Button asChild variant="outline" size="sm">
-          <Link href="/masterwork">Back to Masterwork Studio</Link>
+          <Link href="/masterwork/all">Back to Masterwork Studio</Link>
         </Button>
       </div>
     );
@@ -346,7 +346,7 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
                     ) : null}
                     {masterwork.released_at !== null ? (
                       <Button asChild size="sm" variant="outline">
-                        <Link href={`/encore/${masterwork.id}`}>
+                        <Link href={`/masterwork/encore/${masterwork.id}`}>
                           <Play className="mr-1 h-4 w-4" />
                           View in Encore
                         </Link>

@@ -410,14 +410,13 @@ export const primaryNavItems: ShellNavItem[] = [
     children: [
       {
         label: "All Rulebooks",
-        href: "/masterwork",
+        href: "/masterwork/all",
         iconName: "List",
-        exact: true,
       },
       {
         // Encore — the Operator door: run a released Masterwork.
         label: "Encore",
-        href: "/encore",
+        href: "/masterwork/encore",
         iconName: "Zap",
         description: "Run a released Masterwork — expert judgment on demand",
       },
