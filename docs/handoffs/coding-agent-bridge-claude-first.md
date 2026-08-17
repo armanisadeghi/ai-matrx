@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-16
+updated: 2026-08-17
 repos: [matrx-frontend, aidream, matrx-local, matrx-claude-plugin, matrx-codex-plugin, matrx-cursor-plugin, matrx-vscode, matrx-sandbox, common-docs]
 vision:
   - /Users/armanisadeghi/code/common-docs/projects/ai-work-hub/PLAN.md
@@ -124,10 +124,25 @@ vision:
     into another application's data, so it is Matrx-Local-only, single-field, atomic, fenced against
     concurrent Claude writes, allowlisted to bound sessions, and must not fight the server ladder
     (an AI Matrx rename becomes `title_source=user`, which inbound sync must then respect).
-2. **Managed-Claude launch and continuation (`TASK-006`).** Backend is production-CERTIFIED
-   (start/stream/resume/cancel/fork). Consume capabilities + NDJSON + cancel in `/work/new` and
-   conversation detail. Native Resume/Fork strictly capability-gated; everything else is a labeled
-   seeded handoff, never a generic "Resume".
+2. **Managed-Claude launch and continuation (`TASK-006`).** The LOCAL half SHIPPED and was
+   production-proven 2026-08-17: matrx-local's `local_runtime.py` starts/natively-resumes/cancels
+   Claude Code on the user's own Mac (own installed CLI + subscription login; API-key env
+   precedence blanked), persists through the certified import path into the native ledger at turn
+   boundaries, and is reachable from the browser over the EXISTING `matrx-local-bridge:<userId>`
+   Broadcast rpc channel (`coding_runtime.*`). Frontend doors live: `/work/new` destination
+   "Claude Code on my Mac" (live-gated + approved-folder picker) and the provenance view's
+   capability-gated `ContinueOnMyMacPanel` (native resume only when Claude's own transcript +
+   workspace exist locally). Desktop: Agent Runtime card (approvals, runs, Stop) on the Claude
+   history page. E2E evidence: `matrx-local/scripts/_verify_local_claude_runtime_e2e.py`
+   (production binding `7b5bbe22-0613-5b02-b455-c754adf1b55d`, native, entries 10→17 across
+   resume, cancel settled). **Remaining in TASK-006:** the HOSTED sandbox lane's launch UI
+   (capabilities + NDJSON + cancel from `/work/new`), live-token streaming to the browser
+   (today the canonical conversation advances at turn boundaries — mid-turn realtime needs
+   either faster mirror passes or an event relay), a "Continue on my Mac" chip on the
+   conversations ROW menu (the door currently lives one click in, on the provenance view the
+   row opens), and native fork. Note: continuing a hook-mirrored (event_mirror, raw-UUID)
+   session natively mints the composite-identity native binding → its own conversation (the
+   known dual-binding item 1); the panel reports where turns land.
 3. **`/work/automations` and the workflow handoff are still absent.** The composer and Saved
    Requests shipped (see Done); Timing currently doors into `/schedules/new`, and a Saved Request
    cannot yet be attached to a workflow or an app event. Reuse the existing durable workers and
