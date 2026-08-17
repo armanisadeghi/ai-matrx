@@ -47,7 +47,10 @@ import {
 function ConfidenceDots({ score }: { score: number | null }) {
   if (!score) return null;
   return (
-    <span className="inline-flex items-center gap-1.5" title={`The analyst rates its own certainty ${score} out of 5`}>
+    <span
+      className="inline-flex items-center gap-1.5"
+      title={`The analyst rates its own certainty ${score} out of 5`}
+    >
       <span className="text-xs text-muted-foreground">How sure we are</span>
       <span className="inline-flex gap-0.5">
         {[1, 2, 3, 4, 5].map((step) => (
@@ -151,7 +154,9 @@ export function LandscapeBriefCard({
       toast.success("Saved. Everything we run from here uses your words.");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Could not save your corrections",
+        error instanceof Error
+          ? error.message
+          : "Could not save your corrections",
       );
     } finally {
       setBusy(null);
@@ -199,7 +204,10 @@ export function LandscapeBriefCard({
       <CardContent className="space-y-4">
         {loading ? (
           <p className="text-sm text-muted-foreground">
-            <SuspenseLoader centered={false} message="Loading competitor landscape…" />
+            <SuspenseLoader
+              centered={false}
+              message="Loading competitor landscape…"
+            />
           </p>
         ) : !brief ? (
           <p className="text-sm text-muted-foreground">
@@ -210,7 +218,9 @@ export function LandscapeBriefCard({
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={brief.status === "confirmed" ? "default" : "outline"}>
+              <Badge
+                variant={brief.status === "confirmed" ? "default" : "outline"}
+              >
                 {brief.status === "confirmed"
                   ? "You confirmed this"
                   : brief.status === "auto_accepted"
@@ -226,15 +236,16 @@ export function LandscapeBriefCard({
 
             {brief.brief_markdown ? (
               <div className="rounded-lg border bg-card p-3">
-                <BasicMarkdownContent content={brief.brief_markdown} showCopyButton={false} />
+                <BasicMarkdownContent
+                  content={brief.brief_markdown}
+                  showCopyButton={false}
+                />
               </div>
             ) : null}
 
             {serviceLines.length > 1 ? (
               <div className="space-y-1.5">
-                <Label>
-                  Your services reach different distances
-                </Label>
+                <Label>Your services reach different distances</Label>
                 <p className="text-xs text-muted-foreground">
                   This is the part that decides who counts as a competitor. A
                   national rival in one of these is not a rival in another.

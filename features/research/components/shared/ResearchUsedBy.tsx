@@ -103,13 +103,17 @@ export function ResearchUsedBy({ token, id }: ResearchUsedByProps) {
         </ul>
       ) : assoc.status === "ready" ? (
         <p className="text-xs text-muted-foreground">
-          Nothing consumes this research yet. Attach it to a site, plan page,
-          or canonical page from that record&apos;s research panel, and it
-          shows up here.
+          Nothing consumes this research yet. Attach it to a site, plan page, or
+          canonical page from that record&apos;s research panel, and it shows up
+          here.
         </p>
       ) : (
         <p className="text-xs text-muted-foreground">
-          <SuspenseLoader centered={false} size="xs" message="Loading research usage…" />
+          <SuspenseLoader
+            centered={false}
+            size="xs"
+            message="Loading research usage…"
+          />
         </p>
       )}
     </section>

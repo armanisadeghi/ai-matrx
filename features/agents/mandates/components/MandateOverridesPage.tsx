@@ -210,9 +210,9 @@ export function MandateOverridesPage() {
       <div className="mx-auto w-full max-w-4xl px-4 pb-16 pt-[calc(var(--shell-header-h)+0.75rem)]">
         <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
           <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-muted-foreground">
-            Every Mandate below is a named job, fulfilled by default by a
-            system agent. Swap in one of your own agents, or keep the system
-            agent and override its settings.
+            Every Mandate below is a named job, fulfilled by default by a system
+            agent. Swap in one of your own agents, or keep the system agent and
+            override its settings.
           </p>
           <OverriddenCountBadge
             overridden={
@@ -308,7 +308,9 @@ function MandateCard({
 }) {
   const { mandate } = view;
   const disabled = !mandate.is_enabled;
-  const mandateBindings = data.bindings.filter((b) => b.mandate_id === mandate.id);
+  const mandateBindings = data.bindings.filter(
+    (b) => b.mandate_id === mandate.id,
+  );
 
   return (
     <article
@@ -419,7 +421,10 @@ function MandateCard({
         <div className="border-t border-border/50 px-4 py-3.5">
           {/* Which layer decides the agent for THIS user, in the one truthful
               precedence chain. */}
-          <MandateResolutionRibbon provenance={view.provenance} className="mb-3" />
+          <MandateResolutionRibbon
+            provenance={view.provenance}
+            className="mb-3"
+          />
 
           {/* Org overrides the user can SEE but not edit (member, not admin).
               Every org and agent named here is a door (THE DOOR LAW). */}

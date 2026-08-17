@@ -67,7 +67,10 @@ import { LivePipelineActivity } from "../live-pipeline/LivePipelineActivity";
 import { TopicSettingsPanel } from "../TopicSettingsPanel";
 import { PipelineNextSteps } from "../PipelineNextSteps";
 
-import { PipelineStageNode, type PipelineStageStatus } from "./PipelineStageNode";
+import {
+  PipelineStageNode,
+  type PipelineStageStatus,
+} from "./PipelineStageNode";
 import {
   PipelineEdge,
   PipelineCurvedEdge,
@@ -755,7 +758,10 @@ export function PipelineGraph() {
               icon={FileText}
               label="Content"
               count={p.total_content}
-              hint={hintFor("content", `top ${topic.scrapes_per_keyword ?? 5}/kw`)}
+              hint={hintFor(
+                "content",
+                `top ${topic.scrapes_per_keyword ?? 5}/kw`,
+              )}
               status={contentStatus}
               href={`${base}/content`}
               onAction={handleAnalyze}
@@ -1138,8 +1144,8 @@ export function PipelineGraph() {
               </h3>
               <p className="text-[11px] text-muted-foreground leading-snug mb-2">
                 Keywords drive everything downstream. Add a few search terms and
-                the pipeline graph will light up — or hit Run pipeline to let the
-                agent suggest them.
+                the pipeline graph will light up — or hit Run pipeline to let
+                the agent suggest them.
               </p>
               <Link
                 href={`${base}/keywords`}

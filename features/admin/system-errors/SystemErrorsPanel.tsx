@@ -183,7 +183,11 @@ export default function SystemErrorsPanel() {
         </Button>
         <span className="ml-auto text-xs text-gray-500 dark:text-gray-400">
           {loading ? (
-            <SuspenseLoader centered={false} size="xs" message="Loading system errors…" />
+            <SuspenseLoader
+              centered={false}
+              size="xs"
+              message="Loading system errors…"
+            />
           ) : (
             `${rows.length} row(s)`
           )}

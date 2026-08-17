@@ -37,8 +37,14 @@ import { useOrchestra } from "../hooks/useOrchestra";
 import { useOrchestrasList } from "../hooks/useOrchestrasList";
 import { useEnsureAgentsLoaded } from "../hooks/useEnsureAgentsLoaded";
 import { useOrchestratorPromptStatus } from "../hooks/useOrchestratorPromptStatus";
-import { addAgentToOrchestra, createOrchestra } from "@/features/agents/redux/orchestras/thunks";
-import { enableOrchestratorSync, syncOrchestratorPrompt } from "../orchestrator/thunks";
+import {
+  addAgentToOrchestra,
+  createOrchestra,
+} from "@/features/agents/redux/orchestras/thunks";
+import {
+  enableOrchestratorSync,
+  syncOrchestratorPrompt,
+} from "../orchestrator/thunks";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { selectDisplayConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
 import { OrchestraRunStatusContext } from "../run/OrchestraRunStatusContext";
@@ -59,11 +65,18 @@ const OrchestraRunPanel = dynamic(
   { ssr: false },
 );
 
-export function OrchestraBuilder({ orchestratorId }: { orchestratorId: string }) {
+export function OrchestraBuilder({
+  orchestratorId,
+}: {
+  orchestratorId: string;
+}) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { members, config, label, exists, status } = useOrchestra(orchestratorId);
-  const orchestrator = useAppSelector((s) => selectAgentById(s, orchestratorId));
+  const { members, config, label, exists, status } =
+    useOrchestra(orchestratorId);
+  const orchestrator = useAppSelector((s) =>
+    selectAgentById(s, orchestratorId),
+  );
   const accent = config.accent ?? DEFAULT_ORCHESTRA_ACCENT;
   const a = accentClasses(accent);
 
@@ -121,18 +134,25 @@ export function OrchestraBuilder({ orchestratorId }: { orchestratorId: string })
   // Observed even while the panel is closed — a still-streaming run keeps
   // lighting the canvas after the user closes the panel (retainOnUnmount).
   const runSurfaceKey = `orchestra-builder:${orchestratorId}`;
-  const runConversationId = useAppSelector(selectDisplayConversation(runSurfaceKey));
+  const runConversationId = useAppSelector(
+    selectDisplayConversation(runSurfaceKey),
+  );
   const runStatus = useOrchestraMemberRunStatus(runConversationId, memberIds);
   // Derived — when a member is removed it simply resolves to null and the
   // inspector unmounts (no setState-in-effect cleanup needed).
-  const editingMember = editingId ? members.find((m) => m.agentId === editingId) ?? null : null;
+  const editingMember = editingId
+    ? (members.find((m) => m.agentId === editingId) ?? null)
+    : null;
   const title = label?.trim() || orchestrator?.name || "Orchestra";
 
-  const handleAdd = (agentId: string) => dispatch(addAgentToOrchestra({ orchestratorId, agentId }));
+  const handleAdd = (agentId: string) =>
+    dispatch(addAgentToOrchestra({ orchestratorId, agentId }));
 
   const handleSyncPrompt = async () => {
     setSyncing(true);
-    const res = await dispatch(syncOrchestratorPrompt({ orchestratorId, memberIds }));
+    const res = await dispatch(
+      syncOrchestratorPrompt({ orchestratorId, memberIds }),
+    );
     setSyncing(false);
     if (res.ok) {
       const updated = res.membersUpdated ?? 0;
@@ -162,11 +182,15 @@ export function OrchestraBuilder({ orchestratorId }: { orchestratorId: string })
         "Added an <available_agents> section to the system prompt — opened it for review. Use 'Sync agent listings' to fill it from your members.",
       );
     } else {
-      toast.error(res.error ?? "Could not set up syncing for this orchestrator.");
+      toast.error(
+        res.error ?? "Could not set up syncing for this orchestrator.",
+      );
     }
   };
 
-  const loading = status === "idle" || (status === "loading" && members.length === 0 && !exists);
+  const loading =
+    status === "idle" ||
+    (status === "loading" && members.length === 0 && !exists);
 
   if (loading) {
     return (
@@ -180,7 +204,12 @@ export function OrchestraBuilder({ orchestratorId }: { orchestratorId: string })
   if (status === "ready" && !exists && members.length === 0) {
     return (
       <div className="bg-textured flex h-full flex-col items-center justify-center p-6 pt-[var(--shell-header-h)] text-center">
-        <div className={cn("mb-4 flex h-14 w-14 items-center justify-center rounded-2xl", a.glyph)}>
+        <div
+          className={cn(
+            "mb-4 flex h-14 w-14 items-center justify-center rounded-2xl",
+            a.glyph,
+          )}
+        >
           <Network className="h-7 w-7" />
         </div>
         <h2 className="text-base font-semibold text-foreground">
@@ -191,19 +220,26 @@ export function OrchestraBuilder({ orchestratorId }: { orchestratorId: string })
           the bigger picture.
         </p>
         <div className="mt-5 flex gap-2">
-          <Button variant="ghost" onClick={() => router.push("/agents/orchestras")}>
+          <Button
+            variant="ghost"
+            onClick={() => router.push("/agents/orchestras")}
+          >
             Cancel
           </Button>
           <Button
             disabled={creating}
             onClick={async () => {
               setCreating(true);
-              const res = await dispatch(createOrchestra({ orchestratorId, config: { accent } }));
+              const res = await dispatch(
+                createOrchestra({ orchestratorId, config: { accent } }),
+              );
               setCreating(false);
               if (!res.ok) router.push("/agents/orchestras");
             }}
           >
-            {creating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+            {creating ? (
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : null}
             Create Orchestra
           </Button>
         </div>
@@ -267,7 +303,11 @@ export function OrchestraBuilder({ orchestratorId }: { orchestratorId: string })
       href: `/agents/${orchestratorId}/build`,
       newTab: true,
     },
-    { label: "Set settings", icon: Settings2, onPress: () => setSettingsOpen(true) },
+    {
+      label: "Set settings",
+      icon: Settings2,
+      onPress: () => setSettingsOpen(true),
+    },
   ];
 
   return (
@@ -347,7 +387,8 @@ export function OrchestraBuilder({ orchestratorId }: { orchestratorId: string })
               <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-card/70 px-6 py-5 text-center backdrop-blur">
                 <MousePointerClick className="h-5 w-5 text-muted-foreground" />
                 <p className="max-w-[15rem] text-xs text-muted-foreground">
-                  Drag agents from the library — or click one — to add them to this Orchestra.
+                  Drag agents from the library — or click one — to add them to
+                  this Orchestra.
                 </p>
               </div>
             </div>

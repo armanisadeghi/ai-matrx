@@ -88,9 +88,7 @@ function WorkflowRuntimeDemo() {
 
   useEffect(() => {
     let cancelled = false;
-    void dispatch(
-      callApi({ path: "/workflows", method: "GET" } as never),
-    ).then(
+    void dispatch(callApi({ path: "/workflows", method: "GET" } as never)).then(
       (result: unknown) => {
         if (cancelled) return;
         const data =
@@ -190,9 +188,7 @@ function WorkflowRuntimeDemo() {
         ? { nodeInputs }
         : {}),
     };
-    const newRunId = stepMode
-      ? await startStepRun(args)
-      : await startRun(args);
+    const newRunId = stepMode ? await startStepRun(args) : await startRun(args);
     if (!newRunId) return;
     toast.success(
       stepMode
@@ -243,7 +239,9 @@ function WorkflowRuntimeDemo() {
 
   return (
     <div className="matrx-touch-targets mx-auto max-w-5xl space-y-4 p-4">
-      <h1 className="text-lg font-semibold">Workflow Runtime — live run board</h1>
+      <h1 className="text-lg font-semibold">
+        Workflow Runtime — live run board
+      </h1>
 
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
         {workflows === null ? (
@@ -304,7 +302,9 @@ function WorkflowRuntimeDemo() {
           definition={definition}
           starting={starting}
           startLabel={pendingStart.stepMode ? "Run step-by-step" : "Run"}
-          onStart={(nodeInputs) => void launch(pendingStart.stepMode, nodeInputs)}
+          onStart={(nodeInputs) =>
+            void launch(pendingStart.stepMode, nodeInputs)
+          }
           onCancel={() => setPendingStart(null)}
         />
       ) : null}
@@ -353,22 +353,20 @@ function WorkflowRuntimeDemo() {
               Start a run to watch it on this surface.
             </p>
           )
+        ) : definition ? (
+          // No surface yet: the builder's null-surface state IS the hint +
+          // one-click create card — render it bare, no second wrapper.
+          <SurfaceBuilder
+            definitionId={selected}
+            definition={definition}
+            surface={null}
+            onSaved={setSurface}
+          />
         ) : (
-          definition ? (
-            // No surface yet: the builder's null-surface state IS the hint +
-            // one-click create card — render it bare, no second wrapper.
-            <SurfaceBuilder
-              definitionId={selected}
-              definition={definition}
-              surface={null}
-              onSaved={setSurface}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              This workflow has no run surface yet, and its definition could
-              not be loaded to generate one.
-            </p>
-          )
+          <p className="text-sm text-muted-foreground">
+            This workflow has no run surface yet, and its definition could not
+            be loaded to generate one.
+          </p>
         )
       ) : null}
 
@@ -391,7 +389,10 @@ export default function WorkflowRuntimeDemoPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center p-8">
-          <SuspenseLoader centered={false} message="Loading workflow runtime…" />
+          <SuspenseLoader
+            centered={false}
+            message="Loading workflow runtime…"
+          />
         </div>
       }
     >

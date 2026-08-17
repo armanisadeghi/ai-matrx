@@ -23,7 +23,10 @@ export default async function AgentHindsightRoute({
         <Suspense
           fallback={
             <div className="flex h-64 items-center justify-center rounded-md bg-muted/50">
-              <SuspenseLoader centered={false} message="Loading hindsight workspace…" />
+              <SuspenseLoader
+                centered={false}
+                message="Loading hindsight workspace…"
+              />
             </div>
           }
         >

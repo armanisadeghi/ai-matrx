@@ -61,11 +61,18 @@ export function OrchestraRunPanel({
   return (
     <div className="flex h-full w-[24rem] shrink-0 flex-col border-l border-border bg-card xl:w-[28rem]">
       <div className="flex shrink-0 items-center gap-2.5 border-b border-border p-3">
-        <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg shadow-sm", a.glyph)}>
+        <div
+          className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-lg shadow-sm",
+            a.glyph,
+          )}
+        >
           <Play className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-foreground">Run set</div>
+          <div className="truncate text-sm font-semibold text-foreground">
+            Run set
+          </div>
           <div className="text-[11px] text-muted-foreground">
             Members light up on the canvas as they run
           </div>
@@ -80,7 +87,12 @@ export function OrchestraRunPanel({
             <ExternalLink className="h-4 w-4" />
           </Link>
         </Button>
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close run panel">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          aria-label="Close run panel"
+        >
           <X className="h-4 w-4" />
         </Button>
       </div>

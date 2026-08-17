@@ -40,8 +40,12 @@ export function AgentIODetails({
   const dispatch = useAppDispatch();
   const a = accentClasses(accent);
   const ready = useAppSelector((s) => selectAgentReadyForBuilder(s, agentId));
-  const variableDefs = useAppSelector((s) => selectAgentVariableDefinitions(s, agentId));
-  const outputSchema = useAppSelector((s) => selectAgentOutputSchema(s, agentId));
+  const variableDefs = useAppSelector((s) =>
+    selectAgentVariableDefinitions(s, agentId),
+  );
+  const outputSchema = useAppSelector((s) =>
+    selectAgentOutputSchema(s, agentId),
+  );
 
   // Lazy-load the full definition (variables + output schema are NOT in the list row).
   useEffect(() => {
@@ -59,18 +63,35 @@ export function AgentIODetails({
         <div className="text-xs font-medium text-muted-foreground">Inputs</div>
         {!ready ? (
           <div className="text-xs text-muted-foreground">
-            <SuspenseLoader centered={false} size="xs" message="Loading agent inputs…" />
+            <SuspenseLoader
+              centered={false}
+              size="xs"
+              message="Loading agent inputs…"
+            />
           </div>
         ) : !variableDefs || variableDefs.length === 0 ? (
-          <div className="text-xs text-muted-foreground/70">No declared inputs.</div>
+          <div className="text-xs text-muted-foreground/70">
+            No declared inputs.
+          </div>
         ) : (
           <div className="space-y-1.5">
             {variableDefs.map((v) => (
-              <div key={v.name} className="rounded-md border border-border bg-muted/30 px-2 py-1.5">
+              <div
+                key={v.name}
+                className="rounded-md border border-border bg-muted/30 px-2 py-1.5"
+              >
                 <div className="flex items-center gap-1.5">
-                  <code className="text-[11px] font-semibold text-foreground">{v.name}</code>
+                  <code className="text-[11px] font-semibold text-foreground">
+                    {v.name}
+                  </code>
                   {v.required && (
-                    <span className={cn("rounded px-1 text-[9px] font-semibold", a.soft, a.text)}>
+                    <span
+                      className={cn(
+                        "rounded px-1 text-[9px] font-semibold",
+                        a.soft,
+                        a.text,
+                      )}
+                    >
                       required
                     </span>
                   )}
@@ -90,7 +111,11 @@ export function AgentIODetails({
         <div className="text-xs font-medium text-muted-foreground">Output</div>
         {!ready ? (
           <div className="text-xs text-muted-foreground">
-            <SuspenseLoader centered={false} size="xs" message="Loading agent output…" />
+            <SuspenseLoader
+              centered={false}
+              size="xs"
+              message="Loading agent output…"
+            />
           </div>
         ) : outputProps.length === 0 ? (
           <div className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-[11px] text-muted-foreground">
@@ -99,12 +124,19 @@ export function AgentIODetails({
         ) : (
           <div className="space-y-1 rounded-md border border-border bg-muted/30 p-2">
             {outputProps.map(([field, def]) => (
-              <div key={field} className="flex items-center justify-between gap-2 text-[11px]">
+              <div
+                key={field}
+                className="flex items-center justify-between gap-2 text-[11px]"
+              >
                 <span className="flex items-center gap-1 truncate">
                   <code className="font-semibold text-foreground">{field}</code>
-                  {requiredOut.has(field) && <span className={cn("text-[9px]", a.text)}>*</span>}
+                  {requiredOut.has(field) && (
+                    <span className={cn("text-[9px]", a.text)}>*</span>
+                  )}
                 </span>
-                <span className="shrink-0 font-mono text-muted-foreground">{propType(def)}</span>
+                <span className="shrink-0 font-mono text-muted-foreground">
+                  {propType(def)}
+                </span>
               </div>
             ))}
           </div>

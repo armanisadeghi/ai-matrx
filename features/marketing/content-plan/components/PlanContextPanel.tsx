@@ -101,7 +101,11 @@ export function PlanContextPanel({
             : "The plan node may have been deleted, or it belongs to a plan you cannot see."}
         </p>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => void node.refetch()}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void node.refetch()}
+          >
             Retry
           </Button>
           {planSiteId ? (
@@ -183,14 +187,20 @@ export function PlanContextPanel({
       ) : null}
 
       <section className="space-y-1.5">
-        <h3 className="text-xs font-semibold text-foreground">Target keyword</h3>
+        <h3 className="text-xs font-semibold text-foreground">
+          Target keyword
+        </h3>
         {primaryKeyword ? (
           <Badge variant="secondary" className="text-xs">
             {primaryKeyword}
           </Badge>
         ) : keywordLabels.isLoading ? (
           <p className="text-xs text-muted-foreground">
-            <SuspenseLoader centered={false} size="xs" message="Loading target keyword…" />
+            <SuspenseLoader
+              centered={false}
+              size="xs"
+              message="Loading target keyword…"
+            />
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">

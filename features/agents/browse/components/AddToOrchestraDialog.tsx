@@ -30,14 +30,21 @@ interface Props {
   onClose: () => void;
 }
 
-export function AddToOrchestraDialog({ agentId, agentName, open, onClose }: Props) {
+export function AddToOrchestraDialog({
+  agentId,
+  agentName,
+  open,
+  onClose,
+}: Props) {
   const dispatch = useAppDispatch();
   const { sets, status } = useOrchestrasList();
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const add = async (orchestratorId: string, name: string) => {
     setBusyId(orchestratorId);
-    const res = await dispatch(addAgentToOrchestra({ orchestratorId, agentId }));
+    const res = await dispatch(
+      addAgentToOrchestra({ orchestratorId, agentId }),
+    );
     setBusyId(null);
     if (res.ok) {
       toast.success(`Added to "${name}"`);
@@ -52,7 +59,9 @@ export function AddToOrchestraDialog({ agentId, agentName, open, onClose }: Prop
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add to Orchestra</DialogTitle>
-          <DialogDescription className="truncate">{agentName}</DialogDescription>
+          <DialogDescription className="truncate">
+            {agentName}
+          </DialogDescription>
         </DialogHeader>
 
         {status === "loading" && sets.length === 0 ? (
