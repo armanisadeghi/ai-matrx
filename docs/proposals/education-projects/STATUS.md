@@ -1,3 +1,11 @@
+> 🚨 **SUPERSEDED 2026-08-17 — DO NOT CITE AS CURRENT STATE.**
+> This document declared the student-facing study system complete. An eight-pass audit on
+> 2026-08-17 measured live code, the live database and every doc and found otherwise. The
+> current-state document is
+> **`/Users/armanisadeghi/code/common-docs/projects/education-platform/GAP_ANALYSIS.md`**, and the
+> plan to launch is that project's `MASTER_PLAN.md`. A copy of this file is archived there.
+> Kept here only so the history stays legible.
+
 # Education Hub — Current Status (living doc)
 
 > **This is the single "where are we" document for the Education Hub.** It supersedes the
