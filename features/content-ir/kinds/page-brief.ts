@@ -1,7 +1,7 @@
 /**
  * `page_brief` — one page's content brief, as a Shape.
  *
- * Produced by the `content_plan.brief_writer` agent slot, which aidream runs
+ * Produced by the `content_plan.brief_writer` Mandate, which aidream runs
  * SERVER-side (`POST /content-plan/nodes/{id}/draft-brief` →
  * `aidream/services/content_plan/brief_writer.py`) and persists whole to
  * `plan.node.metadata.ai_brief_draft`. The client adopts that stream

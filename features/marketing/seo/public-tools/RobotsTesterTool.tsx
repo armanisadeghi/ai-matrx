@@ -26,8 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useShare } from "@/features/sharing/hooks/useShare";
-import { callApi } from "@/lib/api/call-api";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 import { cn } from "@/lib/utils";
 import type { components } from "@/types/python-generated/api-types";
 
@@ -116,16 +115,21 @@ function testTarget(input: string): { siteUrl: string; path: string } {
 }
 
 export function RobotsTesterTool() {
-  const dispatch = useAppDispatch();
   const { share, copied, fallbackDialog } = useShare();
   const [url, setUrl] = useState("");
   const [crawler, setCrawler] = useState("Googlebot");
-  const [running, setRunning] = useState(false);
-  const [stage, setStage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<ValidatedRobotsCheckResult | null>(null);
+  // Durable — see `useSeoCommandRun`: the check's `seo.collection_run` row is
+  // claimed server-side before the fetch, so a reload rejoins it by id.
+  const command = useSeoCommandRun<ValidatedRobotsCheckResult>({
+    key: "robots-tester",
+    path: "/seo/public/robots-check",
+    finalKind: "seo.robots_check_result",
+    stageLabels: STAGE_LABELS,
+    parseResult: (raw) => (isRobotsCheckResult(raw) ? raw : null),
+  });
+  const { running, stage, error, result, rejoinedTarget, status } = command;
 
-  async function run(event: FormEvent<HTMLFormElement>) {
+  function run(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const input = url.trim();
     if (!input || running) return;
@@ -134,7 +138,7 @@ export function RobotsTesterTool() {
     try {
       target = testTarget(input);
     } catch (targetError) {
-      setError(
+      command.fail(
         targetError instanceof Error
           ? targetError.message
           : "Enter a valid page URL.",
@@ -142,55 +146,15 @@ export function RobotsTesterTool() {
       return;
     }
 
-    setRunning(true);
-    setError(null);
-    setResult(null);
-    setStage("Connecting");
-    try {
-      const response = await dispatch(
-        callApi({
-          path: "/seo/public/robots-check",
-          method: "POST",
-          body: {
-            url: target.siteUrl,
-            paths: [target.path],
-            user_agents: [crawler],
-            force_refresh: true,
-          },
-          stream: true,
-          onStreamEvent: (evt) => {
-            if (evt.event === "error") {
-              const message = evt.data.user_message ?? evt.data.message;
-              setError(
-                typeof message === "string" ? message : "The check failed.",
-              );
-              return;
-            }
-            if (evt.event !== "data" || !isRecord(evt.data)) return;
-            const kind =
-              typeof evt.data.kind === "string" ? evt.data.kind : null;
-            if (!kind) return;
-            if (kind === "seo.robots_check_result") {
-              if (isRobotsCheckResult(evt.data.result)) {
-                setResult(evt.data.result);
-              } else {
-                setError(
-                  "The server returned an incomplete robots.txt result.",
-                );
-              }
-              return;
-            }
-            setStage(STAGE_LABELS[kind] ?? kind);
-          },
-        }),
-      );
-      if (response.error) throw new Error(response.error.message);
-    } catch (runError) {
-      setError(runError instanceof Error ? runError.message : String(runError));
-    } finally {
-      setRunning(false);
-      setStage(null);
-    }
+    void command.launch(
+      {
+        url: target.siteUrl,
+        paths: [target.path],
+        user_agents: [crawler],
+        force_refresh: true,
+      },
+      input,
+    );
   }
 
   const primaryCheck = result?.checks[0];
@@ -284,7 +248,11 @@ export function RobotsTesterTool() {
 
           <div aria-live="polite">
             {running && stage ? (
-              <p className="text-xs text-muted-foreground">{stage}…</p>
+              <p className="text-xs text-muted-foreground">
+                {status === "rejoining" && rejoinedTarget
+                  ? `Still testing ${rejoinedTarget} — ${stage}…`
+                  : `${stage}…`}
+              </p>
             ) : null}
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
           </div>

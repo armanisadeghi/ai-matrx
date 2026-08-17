@@ -286,7 +286,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "kind_builder_can_start",
     label: "Kind builder can start",
     description:
-      "True when kind_builder_structure is non-empty AND the architect agent slot resolved — mirrors the page's own Start-button enablement. Present only on kind_registry_section=build.",
+      "True when kind_builder_structure is non-empty AND the architect Mandate resolved — mirrors the page's own Start-button enablement. Present only on kind_registry_section=build.",
     valueType: "boolean",
     alwaysAvailable: false,
     typicalCharCount: 5,

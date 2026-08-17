@@ -9,8 +9,8 @@
  * (terminology / pronunciation layered into the agent).
  *
  * The thread agent ID is hardcoded here (matching the `transcripts-cleanup`
- * pattern). AGENT ID vs AGENT SLOT: the thread agent's runtime default is the
- * `war_room.thread` AGENT SLOT (`WAR_ROOM_THREAD_AGENT_SLOT` in
+ * pattern). AGENT ID vs AGENT MANDATE: the thread agent's runtime default is the
+ * `war_room.thread` AGENT MANDATE (`WAR_ROOM_THREAD_AGENT_MANDATE` in
  * `features/war-room/constants`) — that is what the War Room actually runs.
  * A manifest is STATIC module-scope data seeded into `ui_surface_agent_role`,
  * so it cannot resolve a slot; the id below is a SEED MIRROR of the slot's

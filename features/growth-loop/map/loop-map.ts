@@ -461,7 +461,7 @@ export const STAGES: LoopStage[] = [
       },
       ai: {
         state: "partial",
-        note: "7 SEO agent slots exist and page analyzers run, but no agent reviews the finding register itself.",
+        note: "7 SEO Mandates exist and page analyzers run, but no agent reviews the finding register itself.",
         ref: "aidream/aidream/services/seo/keyword_agents.py",
       },
     },

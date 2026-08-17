@@ -229,7 +229,7 @@ function MasterFieldRow({
 
         {columns.length === 0 ? (
           <div className="text-[10px] text-muted-foreground italic">
-            Add columns to map this field to specific agent slots.
+            Add columns to map this field to specific Mandates.
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2">

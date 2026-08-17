@@ -1,7 +1,7 @@
 /**
  * CRM constants shared across the feature.
  *
- * The agent slot is the ONLY way this client creates a CRM record from a
+ * The Mandate is the ONLY way this client creates a CRM record from a
  * selection. It resolves (system default → the user's own binding) to an agent
  * carrying the `data_action` tool, which calls the governed `resolve_contact`
  * operation — the party resolver that canonicalizes, dedupes on

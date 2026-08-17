@@ -1,7 +1,7 @@
 /**
  * `seo_package` — the on-page SEO package for one publishable piece, as a Shape.
  *
- * Produced by the `research_client.output_seo` agent slot and rendered in the
+ * Produced by the `research_client.output_seo` Mandate and rendered in the
  * Research Outputs Studio (`/research/topics/[topicId]/outputs`), which runs it
  * live through the floating `LiveRunWindow` and persists the finished payload to
  * an `OutputAsset` (`meta.seo`). Before this kind existed the run was awaited

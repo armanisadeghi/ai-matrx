@@ -930,6 +930,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
           page={page}
           state={analyzer.state}
           run={analyzer.run}
+          rejoining={analyzer.rejoining}
         />
       ) : (
         <PairStub

@@ -7,15 +7,16 @@
  * queries, and site context, then persists seo.site_keyword_value rows +
  * page<->keyword associations server-side. This hook only renders the
  * streamed result; it never re-derives the analysis client-side.
+ *
+ * DURABLE (2026-08-17): the analysis is a `seo.collection_run` claimed before
+ * the agent call, and the stream detaches on disconnect — so navigating away no
+ * longer loses it. `useSeoCommandRun` remembers the run id and rejoins it on
+ * load; this hook is the page's typed face over that primitive.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
-import type { TypedStreamEvent } from "@/lib/api/types";
-
-const PAGE_ANALYZE_PATH = "/seo/pages/analyze";
+import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 
 export interface PageAnalysisKeywordRef {
   phrase: string;
@@ -69,70 +70,36 @@ const STAGE_LABELS: Record<string, string> = {
   "seo.analyze_page_persisted": "Persisting keyword picture",
 };
 
-function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
-  return event.event === "data" ? (event.data as Record<string, unknown>) : null;
-}
-
 export function usePageAnalyzer(pageId: string, organizationId: string) {
-  const dispatch = useAppDispatch();
-  const [state, setState] = useState<PageAnalyzerState>({ status: "idle" });
+  const command = useSeoCommandRun<PageAnalysisResult>({
+    // Per PAGE: rejoining on one page must never attach to another's analysis.
+    key: `page-analyzer:${pageId}`,
+    path: "/seo/pages/analyze",
+    finalKind: "seo.analyze_page_completed",
+    stageLabels: STAGE_LABELS,
+    parseResult: (raw) =>
+      raw && typeof raw === "object" ? (raw as PageAnalysisResult) : null,
+    // The page's owning site is the entity-local authority. Never let a
+    // different active org (or the personal-org fallback) scope this run.
+    scopeOverrides: { organization_id: organizationId },
+  });
 
   const run = useCallback(
     async (forceRefresh: boolean) => {
-      setState({ status: "running", stage: "Connecting" });
-      let completed: PageAnalysisResult | undefined;
-      const result = await dispatch(
-        callApi({
-          path: PAGE_ANALYZE_PATH,
-          method: "POST",
-          body: { page_id: pageId, force_refresh: forceRefresh },
-          // The page's owning site is the entity-local authority. Never let a
-          // different active org (or the personal-org fallback) scope this run.
-          scopeOverrides: { organization_id: organizationId },
-          stream: true,
-          onStreamEvent: (event) => {
-            const data = streamData(event);
-            if (!data) return;
-            const kind = typeof data.kind === "string" ? data.kind : null;
-            if (!kind) return;
-            if (kind === "seo.command_run" && typeof data.run_id === "string") {
-              setState((current) => ({ ...current, runId: data.run_id as string }));
-            }
-            if (kind === "seo.analyze_page_completed") {
-              const analysisResult = data.result as PageAnalysisResult | undefined;
-              if (analysisResult) {
-                completed = analysisResult;
-                setState((current) => ({
-                  ...current,
-                  status: "done",
-                  stage: "Analysis complete",
-                  result: analysisResult,
-                }));
-              }
-              return;
-            }
-            setState((current) => ({ ...current, stage: STAGE_LABELS[kind] ?? kind }));
-          },
-        }),
-      );
-      if (result.error) {
-        setState((current) => ({
-          ...current,
-          status: "error",
-          error: result.error?.message,
-        }));
-        return;
-      }
-      if (!completed) {
-        setState((current) => ({
-          ...current,
-          status: "error",
-          error: "The analysis stream ended without a completed result.",
-        }));
-      }
+      await command.launch({ page_id: pageId, force_refresh: forceRefresh });
     },
-    [dispatch, organizationId, pageId],
+    [command, pageId],
   );
 
-  return { state, run };
+  const state: PageAnalyzerState = {
+    // "rejoining" is a running analysis this tab did not start — the card's
+    // own copy says so; every other consumer treats it as running.
+    status: command.status === "rejoining" ? "running" : command.status,
+    ...(command.stage ? { stage: command.stage } : {}),
+    ...(command.result ? { result: command.result } : {}),
+    ...(command.error ? { error: command.error } : {}),
+    ...(command.runId ? { runId: command.runId } : {}),
+  };
+
+  return { state, run, rejoining: command.status === "rejoining" };
 }

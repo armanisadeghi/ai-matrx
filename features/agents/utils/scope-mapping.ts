@@ -223,7 +223,7 @@ export function mapScopeToInstanceWithSurface(
   ];
 
   // A canonical file_id replaces overlapping full-document payload aliases.
-  // Keep explicitly mapped values and declared agent slots, plus the active
+  // Keep explicitly mapped values and declared Mandates, plus the active
   // slice for non-full scopes; remove only redundant ad-hoc fallthrough.
   const hasFileReference =
     typeof applicationScope.file_id === "string" &&

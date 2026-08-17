@@ -4,7 +4,7 @@
  * THE SERVER'S copy of the three whole-plan Setup runs.
  *
  * The keyword strategist, the entity attacher and the plan reviewer used to
- * run their agent slot FROM THIS BROWSER. They run on aidream now
+ * run their Mandate FROM THIS BROWSER. They run on aidream now
  * (`aidream/services/content_plan/setup_agents.py`), which writes the complete
  * proposal to `web.site.settings.content_plan.*_proposal` the instant the
  * model answers — before anything streams — and records the whole run on a

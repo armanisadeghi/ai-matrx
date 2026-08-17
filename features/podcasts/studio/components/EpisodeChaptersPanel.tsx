@@ -4,7 +4,7 @@
 //
 // Post-run chapter-markers panel on the studio run page: generate ordered
 // player/RSS chapters from the finished episode's script via the DB-managed
-// podcast.chapter_marker agent slot, persist them on the episode row, and
+// podcast.chapter_marker Mandate, persist them on the episode row, and
 // list them. Replaces the Chapter markers ComingSoonCard. Self-contained:
 // fetches the episode by id and drives useEpisodeChapters (the sibling of
 // EpisodeContentStudio / useEpisodeArticles).

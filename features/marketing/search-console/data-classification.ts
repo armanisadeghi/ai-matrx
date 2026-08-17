@@ -373,7 +373,7 @@ const AI_CLASSIFY_CHUNK = 20;
 export const SEO_COMPUTE_CONNECT_TIMEOUT_MS = 95_000;
 
 /**
- * Run the universal AI classifier (`seo.keyword_classifier` agent slot) over
+ * Run the universal AI classifier (`seo.keyword_classifier` Mandate) over
  * a list of keyword ids, one server batch per request. Writes the
  * 13-column universal layer (incl. `intent_class`) — results surface in the
  * review table as "AI intent" provenance, overridable like any machine

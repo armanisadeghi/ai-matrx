@@ -14,7 +14,7 @@
 // (variant="embedded", urlSync=false), and the FULL pipeline stays one click
 // away IN PLACE — never stripped: the pad's own reveal bar opens the clean
 // agent, context items, dictionary + clean-up (the "Controls" drawer), the
-// custom-agent slots ("Custom"), and the tile's recording-SESSION LIST (the
+// custom-Mandates ("Custom"), and the tile's recording-SESSION LIST (the
 // "Sessions" drawer — ThreadAudioSessionList, driven by the war-room association
 // store: list / switch / start a session, scoped to THIS tile). The pad's own
 // PAGE-scoped session list and the GLOBAL ActiveContextButton stay hidden (the

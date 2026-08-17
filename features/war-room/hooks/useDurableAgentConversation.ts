@@ -55,7 +55,7 @@ export interface UseDurableAgentConversationConfig {
   storageKey: string | null;
   /**
    * The tier persona this scope mints with by default — resolved from the
-   * tier's AGENT SLOT by the caller. `null` until it resolves (or when it
+   * tier's AGENT MANDATE by the caller. `null` until it resolves (or when it
    * fails to): the hook stays idle, because minting a conversation under the
    * wrong agent is exactly what the slot system exists to prevent.
    */

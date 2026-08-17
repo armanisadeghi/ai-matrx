@@ -8,8 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
+import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 
 interface PageAuditIssue {
   severity: "error" | "warning" | "info" | string;
@@ -47,53 +46,25 @@ const SEVERITY_ICON: Record<string, typeof AlertTriangle> = {
 };
 
 export function PageAuditTool() {
-  const dispatch = useAppDispatch();
   const [url, setUrl] = useState("");
-  const [running, setRunning] = useState(false);
-  const [stage, setStage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<PageAuditResult | null>(null);
+  // Durable: the audit's `seo.collection_run` row is opened server-side before
+  // the fetch, and this rejoins it on load — a reload lands on the running
+  // audit (or on its finished score), never on an empty form.
+  const command = useSeoCommandRun<PageAuditResult>({
+    key: "page-audit",
+    path: "/seo/public/page-audit",
+    finalKind: "seo.page_audit_result",
+    stageLabels: STAGE_LABELS,
+    parseResult: (raw) =>
+      raw && typeof raw === "object" ? (raw as PageAuditResult) : null,
+  });
+  const { running, stage, error, result, rejoinedTarget, status } = command;
 
-  const run = useCallback(async () => {
+  const run = useCallback(() => {
     const target = url.trim();
     if (!target || running) return;
-    setRunning(true);
-    setError(null);
-    setResult(null);
-    setStage("Connecting");
-    try {
-      const response = await dispatch(
-        callApi({
-          path: "/seo/public/page-audit",
-          method: "POST",
-          body: { url: target },
-          stream: true,
-          onStreamEvent: (evt) => {
-            if (evt.event === "error") {
-              setError(evt.data.user_message ?? evt.data.message);
-              return;
-            }
-            if (evt.event !== "data") return;
-            const data = evt.data as unknown as Record<string, unknown>;
-            const kind = typeof data.kind === "string" ? data.kind : null;
-            if (!kind) return;
-            if (kind === "seo.page_audit_result") {
-              const final = data.result as PageAuditResult | undefined;
-              if (final) setResult(final);
-              return;
-            }
-            setStage(STAGE_LABELS[kind] ?? kind);
-          },
-        }),
-      );
-      if (response.error) throw new Error(response.error.message);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setRunning(false);
-      setStage(null);
-    }
-  }, [url, running, dispatch]);
+    void command.launch({ url: target }, target);
+  }, [url, running, command]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -121,7 +92,11 @@ export function PageAuditTool() {
             </Button>
           </div>
           {running && stage ? (
-            <p className="text-xs text-muted-foreground">{stage}…</p>
+            <p className="text-xs text-muted-foreground">
+              {status === "rejoining" && rejoinedTarget
+                ? `Still auditing ${rejoinedTarget} — ${stage}…`
+                : `${stage}…`}
+            </p>
           ) : null}
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
         </CardContent>

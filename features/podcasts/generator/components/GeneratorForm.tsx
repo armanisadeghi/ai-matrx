@@ -676,7 +676,7 @@ export function GeneratorForm({
 
       {/* ── 2. PROCESSING ─────────────────────────────────────────────── */}
       {/* Pre-script (source → script) is WIRED: one optional transform, sent
-          as post_prep_option and run by its podcast.post_prep_* agent slot.
+          as post_prep_option and run by its podcast.post_prep_* Mandate.
           Post-script (script → audio) is still display-only. */}
       <section className="space-y-2.5">
         <Label className={cn(SECTION_LABEL, "flex items-center gap-2")}>

@@ -323,7 +323,7 @@ export const educationFastfireManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-fastfire",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter shipped for everything the drill state machine holds. Not yet stamped verified: a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, no agent roles are declared (the spoken grader + TTS agents resolve via agent slots, not surface roles), and no Locate anchors are tagged.",
+    "Manifest + emitter shipped for everything the drill state machine holds. Not yet stamped verified: a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, no agent roles are declared (the spoken grader + TTS agents resolve via Mandates, not surface roles), and no Locate anchors are tagged.",
   label: "FastFire",
   urlPattern: "/education/fastfire",
   intro: `<surface_intro>

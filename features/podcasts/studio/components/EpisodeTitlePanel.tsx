@@ -3,7 +3,7 @@
 // features/podcasts/studio/components/EpisodeTitlePanel.tsx
 //
 // Post-run title-optimization panel on the studio run page: run the
-// DB-managed podcast.title_optimizer agent slot against the FINISHED
+// DB-managed podcast.title_optimizer Mandate against the FINISHED
 // episode's script, list ranked title options, and apply one onto
 // pc_episodes.title. Post-episode only by design — the agent always sees the
 // final script, so a chosen title can never drift from the content. Sibling

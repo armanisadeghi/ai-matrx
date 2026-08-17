@@ -28,12 +28,16 @@ export function PageAnalyzerCard({
   page,
   state,
   run,
+  rejoining = false,
 }: {
   page: MarketingPage;
   /** Lifted analyzer state (PageWorkspace owns the hook so the surface scope
    * emits the same artifact this card renders — `page_analyzer`). */
   state: PageAnalyzerState;
   run: (forceRefresh: boolean) => Promise<void>;
+  /** True when this run was already going before the page loaded — say so, so
+   * the user knows their analysis survived the reload rather than restarted. */
+  rejoining?: boolean;
 }) {
   const artifact = state.result?.artifact;
 
@@ -98,7 +102,9 @@ export function PageAnalyzerCard({
         {state.status === "running" ? (
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            {state.stage ?? "Running…"}
+            {rejoining
+              ? `This analysis kept running while the page was away — ${state.stage ?? "following it"}`
+              : (state.stage ?? "Running…")}
           </p>
         ) : null}
         {state.status === "error" ? (

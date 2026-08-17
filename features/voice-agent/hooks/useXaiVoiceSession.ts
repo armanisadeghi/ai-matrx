@@ -904,7 +904,7 @@ export function useXaiVoiceSession(
           error: {
             code: "agent-unresolved",
             message:
-              "This voice agent's instructions could not be loaded, so the session was not started. Reload the page; if it persists, check the agent slot's pinned agent.",
+              "This voice agent's instructions could not be loaded, so the session was not started. Reload the page; if it persists, check the Mandate's pinned agent.",
           },
         }),
       );

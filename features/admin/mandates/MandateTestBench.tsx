@@ -85,6 +85,13 @@ import {
   type MandateVersionInfo,
 } from "./service";
 
+/**
+ * 🚨 WIRE ENUM — `"slot_pinned"` is aidream's literal, not ours. It is NOT a
+ * Mandate-rename straggler: renaming it here sends an enum the server rejects
+ * (422) while the dropdown silently mislabels itself. It flips only when the
+ * server flips it and `pnpm sync-types` regenerates this union. (Broken once by
+ * the rename sweep on 2026-08-17, restored the same day.)
+ */
 type CandidateSelection = NonNullable<MandateTestCandidate["selection"]>;
 
 interface CandidateDraft {

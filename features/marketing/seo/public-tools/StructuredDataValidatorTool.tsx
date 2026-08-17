@@ -8,8 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
+import { useSeoCommandRun } from "@/features/marketing/seo/durable-run/useSeoCommandRun";
 
 interface StructuredDataIssue {
   severity: "error" | "warning" | string;
@@ -47,53 +46,26 @@ const STAGE_LABELS: Record<string, string> = {
 };
 
 export function StructuredDataValidatorTool() {
-  const dispatch = useAppDispatch();
   const [url, setUrl] = useState("");
-  const [running, setRunning] = useState(false);
-  const [stage, setStage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<StructuredDataValidateResult | null>(null);
+  // Durable — see `useSeoCommandRun`: a reload rejoins the run by its
+  // server-side `seo.collection_run` id instead of losing it.
+  const command = useSeoCommandRun<StructuredDataValidateResult>({
+    key: "structured-data",
+    path: "/seo/public/structured-data/validate",
+    finalKind: "seo.structured_data_result",
+    stageLabels: STAGE_LABELS,
+    parseResult: (raw) =>
+      raw && typeof raw === "object"
+        ? (raw as StructuredDataValidateResult)
+        : null,
+  });
+  const { running, stage, error, result, rejoinedTarget, status } = command;
 
-  const run = useCallback(async () => {
+  const run = useCallback(() => {
     const target = url.trim();
     if (!target || running) return;
-    setRunning(true);
-    setError(null);
-    setResult(null);
-    setStage("Connecting");
-    try {
-      const response = await dispatch(
-        callApi({
-          path: "/seo/public/structured-data/validate",
-          method: "POST",
-          body: { url: target },
-          stream: true,
-          onStreamEvent: (evt) => {
-            if (evt.event === "error") {
-              setError(evt.data.user_message ?? evt.data.message);
-              return;
-            }
-            if (evt.event !== "data") return;
-            const data = evt.data as unknown as Record<string, unknown>;
-            const kind = typeof data.kind === "string" ? data.kind : null;
-            if (!kind) return;
-            if (kind === "seo.structured_data_result") {
-              const final = data.result as StructuredDataValidateResult | undefined;
-              if (final) setResult(final);
-              return;
-            }
-            setStage(STAGE_LABELS[kind] ?? kind);
-          },
-        }),
-      );
-      if (response.error) throw new Error(response.error.message);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setRunning(false);
-      setStage(null);
-    }
-  }, [url, running, dispatch]);
+    void command.launch({ url: target }, target);
+  }, [url, running, command]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -121,7 +93,11 @@ export function StructuredDataValidatorTool() {
             </Button>
           </div>
           {running && stage ? (
-            <p className="text-xs text-muted-foreground">{stage}…</p>
+            <p className="text-xs text-muted-foreground">
+              {status === "rejoining" && rejoinedTarget
+                ? `Still checking ${rejoinedTarget} — ${stage}…`
+                : `${stage}…`}
+            </p>
           ) : null}
           {error ? <p className="text-xs text-destructive">{error}</p> : null}
         </CardContent>
