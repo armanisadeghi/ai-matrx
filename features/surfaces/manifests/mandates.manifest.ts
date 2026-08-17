@@ -290,7 +290,7 @@ const writeTargets: SurfaceWriteTarget[] = [
     label: "Selected mandate",
     description:
       "Opens a mandate in the side-panel workbench — the same as the admin clicking its row. Nothing is saved and no mandate is changed; this only moves the view, and it is what puts the pin editor, the test bench and the overrides panel on screen. " +
-      "Value: a STRING, either the mandate's `id` (UUID) or its `slot_key` — both are in `mandates_summary`, so take one from there rather than inventing it. An id or key that no loaded mandate matches is an error, not a no-op. " +
+      "Value: a STRING, either the mandate's `id` (UUID) or its `mandate_key` — both are in `mandates_summary`, so take one from there rather than inventing it. An id or key that no loaded mandate matches is an error, not a no-op. " +
       "Opening a different mandate REMOUNTS the workbench and discards anything the admin has typed into the rebind editor, the override editor or the exemplar composer, which is why this asks. It is refused outright while an unsaved exemplar draft is staged (`mandate_exemplar_draft.label`/`variables`/`user_input`) — save or clear that first.",
     valueType: "string",
     updatesValue: "selected_mandate_id",
@@ -334,7 +334,7 @@ Two laws govern this page: (1) THE SYSTEM-AGENT LAW — a mandate default may on
 
 What you may safely do: read the mandate list, health roll-up, and the selected mandate's pin state and overrides, then help the admin reason about drift, law violations, or draft mandate labels/descriptions. You never rebind, enable, disable, or run a test yourself — those are the admin's own actions.
 
-You can also WRITE here, through apply_surface_write, but only into two places. \`select_mandate\` opens a mandate in the side-panel workbench (its id or slot_key, from mandates_summary) — exactly as clicking the row would. \`mandate_exemplar_draft\` stages a test-bench EXEMPLAR into that open mandate's "+ Exemplar" composer: a stored real input the bench replays against the current binding and every candidate agent, which is the evidence a rebind is safe. Read \`selected_mandate_contract\` first — its required_variables are the keys the exemplar's \`variables\` object must fill — and \`selected_mandate_exemplars\` to match the existing cases rather than duplicate one. Both targets only STAGE or MOVE: the admin still presses "Save exemplar", and separately "Run all", which is the button that actually spends model budget.
+You can also WRITE here, through apply_surface_write, but only into two places. \`select_mandate\` opens a mandate in the side-panel workbench (its id or mandate_key, from mandates_summary) — exactly as clicking the row would. \`mandate_exemplar_draft\` stages a test-bench EXEMPLAR into that open mandate's "+ Exemplar" composer: a stored real input the bench replays against the current binding and every candidate agent, which is the evidence a rebind is safe. Read \`selected_mandate_contract\` first — its required_variables are the keys the exemplar's \`variables\` object must fill — and \`selected_mandate_exemplars\` to match the existing cases rather than duplicate one. Both targets only STAGE or MOVE: the admin still presses "Save exemplar", and separately "Run all", which is the button that actually spends model budget.
 Order matters: the exemplar composer only exists once a mandate workbench is open, so select the mandate in one turn and compose in the next — an exemplar sent alongside the very first select_mandate is refused.
 Nothing else here is writable, and the reasons are worth knowing: health and the roll-ups are MEASURED, not authored, so writing them would fabricate the state of the system; rebinding and per-principal overrides are agent identity by UUID over live production capacity, with no agent catalog on this surface to pick from; enable/disable and Run spend real capacity and budget. The way you move those numbers is by helping the admin decide, then letting them press the button.
 </surface_intro>`,
@@ -349,7 +349,7 @@ Nothing else here is writable, and the reasons are worth knowing: health and the
 /** One mandate as summarized in the console table. */
 export interface MandateSummary {
   id: string;
-  slot_key: string;
+  mandate_key: string;
   label: string | null;
   agent_name: string;
   pin: string;

@@ -84,7 +84,7 @@ import {
 function toMandateSummary(r: MandateRow): MandateSummary {
   return {
     id: r.id,
-    slot_key: r.mandateKey,
+    mandate_key: r.mandateKey,
     label: r.label,
     agent_name: r.agentName,
     pin: r.pinLabel,
@@ -382,7 +382,7 @@ export function MandatesConsole() {
     [AGENT_MANDATES_WRITE_TARGETS.selectMandate]: (value: unknown) => {
       if (typeof value !== "string" || value.trim() === "") {
         throw new Error(
-          "select_mandate takes a non-empty string — a mandate's `id` (UUID) or its `slot_key`, both of which are in `mandates_summary`.",
+          "select_mandate takes a non-empty string — a mandate's `id` (UUID) or its `mandate_key`, both of which are in `mandates_summary`.",
         );
       }
       const key = value.trim();
@@ -394,8 +394,8 @@ export function MandatesConsole() {
       if (!match) {
         const known = liveRows.map((r) => r.mandateKey).join(", ");
         throw new Error(
-          `No loaded mandate matches "${key}". Pass a mandate id (UUID) or slot_key from \`mandates_summary\`.` +
-            (known ? ` Loaded slot_keys: ${known}.` : ""),
+          `No loaded mandate matches "${key}". Pass a mandate id (UUID) or mandate_key from \`mandates_summary\`.` +
+            (known ? ` Loaded mandate_keys: ${known}.` : ""),
         );
       }
       if (match.id === selectedIdRef.current) return;
@@ -739,7 +739,7 @@ export function MandatesConsole() {
               humanRow,
               rowAttributes: (r) => ({
                 id: r.id,
-                slot_key: r.mandateKey,
+                mandate_key: r.mandateKey,
                 feature: r.feature,
                 mandate: r.mandateName,
                 health: r.health,
