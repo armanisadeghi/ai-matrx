@@ -102,11 +102,17 @@ A failed turn is **kept in history** (never deleted) and recovered with a non-de
    - last user message **optimistic** (immediate "Failed to fetch", never persisted) → re-send: drop the optimistic bubble, re-seed input, `executeInstance()` (routes turn-1/turn-2+ correctly).
 4. **Edit a previous message + resubmit** is a separate, existing path (`UserActionBar` "Edit & resubmit" → fork or `overwriteAndResend`); it re-runs with `user_input`, so it is unaffected by the retry contract.
 
-High-severity non-fatal stream warnings are also user-visible.
-`AgentAssistantMessage` reads `selectHighWarnings(requestId)` and renders each
-one as an `AssistantWarning` below the turn, including an optional technical
-details disclosure. A recoverable mirror failure therefore never exists only
-in Redux/devtools while the assistant appears to stop.
+High-severity non-fatal stream warnings are also user-visible, alongside any
+warning code explicitly promoted regardless of severity (today: the
+Configuration Equivalence law's `setting_not_supported` — an unexpected
+setting drop during model/provider translation; see
+`common-docs/systems/configuration-equivalence/FEATURE.md`).
+`AgentAssistantMessage` reads `selectVisibleWarnings(requestId)` and renders
+each one as an `AssistantWarning` below the turn, including an optional
+technical details disclosure. A recoverable mirror failure — or a silently
+dropped setting — therefore never exists only in Redux/devtools while the
+assistant appears to stop or the request appears to have run exactly as
+configured.
 
 > **Backend dependency (as of 2026-05-24):** production aidream does NOT yet accept `retry:true` (it 422s `user_input` required) and persists failed turns without `metadata.error` / with `is_visible_to_model=true`. The FE is built to the guide and degrades gracefully; end-to-end retry needs the aidream deploy. See the `project_retry_backend_gap` memory.
 

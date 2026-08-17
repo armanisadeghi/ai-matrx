@@ -41,7 +41,7 @@ import {
   selectHasInlineError,
   selectProviderRetry,
   selectLiveCitationSources,
-  selectHighWarnings,
+  selectVisibleWarnings,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectBufferStream } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
 import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
@@ -180,11 +180,11 @@ export function AgentAssistantMessage({
   const streamError = useAppSelector(
     requestId ? selectRequestError(requestId) : () => undefined,
   );
-  const highWarningsSelector = useMemo(
-    () => (requestId ? selectHighWarnings(requestId) : () => undefined),
+  const visibleWarningsSelector = useMemo(
+    () => (requestId ? selectVisibleWarnings(requestId) : () => undefined),
     [requestId],
   );
-  const highWarnings = useAppSelector(highWarningsSelector);
+  const visibleWarnings = useAppSelector(visibleWarningsSelector);
   const providerRetry = useAppSelector(
     requestId ? selectProviderRetry(requestId) : () => null,
   );
@@ -547,7 +547,7 @@ export function AgentAssistantMessage({
           mid-turn (`hasInlineError`): then EnhancedChatMarkdown already placed
           it at its chronological spot inline, so the trailing copy is
           suppressed to avoid a duplicate that floats to the bottom. */}
-      {highWarnings?.map((warning, index) => (
+      {visibleWarnings?.map((warning, index) => (
         <AssistantWarning
           key={`${warning.code}-${index}`}
           warning={warning}
