@@ -314,6 +314,16 @@ model overrides.
 
 ## Change Log
 
+- `2026-08-16` — **Linked Agent Sync comparisons now show when both compared
+  versions and every changed section were saved.** The panel reads each agent's
+  complete `agent.definition_version` history through `readAllRows`, derives the
+  start of the current uninterrupted value run (so a reverted value is dated to
+  the reversion), and passes that provenance into the canonical structured diff
+  viewer. Dates render as exact local time with timezone plus relative age and
+  version number in Changes / All / Summary / JSON. Fields not historically
+  versioned and inaccessible/stale histories are disclosed as unavailable—never
+  presented as an exact field date. The existing agent `EntityRef`, Versions
+  doors, comparison verdict, and reviewed sync paths remain canonical.
 - `2026-08-17` — **Configuration Equivalence's `setting_not_supported` warning is now user-visible.**
   The server-side law (`common-docs/systems/configuration-equivalence/FEATURE.md`) began emitting
   a standard `warning` stream event when a requested setting is unexpectedly dropped during

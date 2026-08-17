@@ -1,4 +1,5 @@
-export type ChangeType = "added" | "removed" | "modified" | "unchanged" | "reordered";
+export type ChangeType =
+  "added" | "removed" | "modified" | "unchanged" | "reordered";
 
 export type ViewMode = "all" | "changes-only" | "summary" | "raw-json";
 
@@ -32,6 +33,35 @@ export interface DiffResult {
   root: DiffNode[];
   stats: DiffStats;
   hasChanges: boolean;
+}
+
+/** A saved moment attached to one side of a structured comparison. */
+export interface DiffChangeMoment {
+  /** ISO timestamp rendered in the viewer's local timezone. */
+  timestamp: string | null;
+  /** Human meaning of the timestamp, such as "Saved" or "Last changed". */
+  label: string;
+  /** Optional immutable version number that owns this moment. */
+  version?: number | null;
+}
+
+/** Per-side and per-field dates for a structured comparison. */
+export interface DiffTemporalMetadata {
+  old?: DiffChangeMoment;
+  new?: DiffChangeMoment;
+  fields?: Readonly<
+    Record<
+      string,
+      {
+        old?: DiffChangeMoment;
+        new?: DiffChangeMoment;
+      }
+    >
+  >;
+  /** Present while exact field history is still being resolved. */
+  loading?: boolean;
+  /** Loud, user-facing reason exact field dates could not be resolved. */
+  unavailableMessage?: string;
 }
 
 export type IdentityKeyFn = (item: unknown, index: number) => string;

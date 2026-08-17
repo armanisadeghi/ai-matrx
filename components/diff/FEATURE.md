@@ -212,6 +212,13 @@ compare/merge), agent-emittable `matrx-diff` block, 3-way merge, since-last-seen
 
 ## Change Log
 
+- 2026-08-16 — **Structured comparisons can carry version and field-change
+  dates.** `DiffViewerShell` accepts optional `DiffTemporalMetadata` and renders
+  exact local date/time (with timezone), relative age, and version number in
+  Changes, All, Summary, and JSON views. Per-field provenance is a shared row
+  outside the adapter registry, so entity-specific consumers can supply history
+  without forking any field renderer; loading and unavailable-history states are
+  explicit rather than silently substituting a record-wide timestamp.
 - 2026-07-02 — Solidity audit + shared-surface rollout. **Fixed 8 audit bugs**
   (adversarial workflow): DiffReview wiped resolutions on any parent re-render
   (inline `diffOptions` identity → now depend on primitive fields; same in

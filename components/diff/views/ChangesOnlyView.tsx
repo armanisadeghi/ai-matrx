@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
-import type { DiffResult } from "../engine/types";
+import type { DiffResult, DiffTemporalMetadata } from "../engine/types";
 import type { AdapterRegistry, EnrichmentContext } from "../adapters/types";
 import { DefaultFieldAdapter } from "../adapters/defaults";
+import { DiffFieldTemporalRow, DiffSideMoment } from "./DiffTemporalRow";
 
 interface ChangesOnlyViewProps {
   diffResult: DiffResult;
@@ -14,6 +15,7 @@ interface ChangesOnlyViewProps {
   enrichment?: EnrichmentContext;
   oldLabel: string;
   newLabel: string;
+  temporalMetadata?: DiffTemporalMetadata;
 }
 
 export function ChangesOnlyView({
@@ -22,6 +24,7 @@ export function ChangesOnlyView({
   enrichment,
   oldLabel,
   newLabel,
+  temporalMetadata,
 }: ChangesOnlyViewProps) {
   const changedNodes = diffResult.root.filter(
     (n) => n.changeType !== "unchanged",
@@ -84,11 +87,17 @@ export function ChangesOnlyView({
           <span className="text-sm font-semibold text-foreground">
             {oldLabel}
           </span>
+          {temporalMetadata?.old ? (
+            <DiffSideMoment moment={temporalMetadata.old} />
+          ) : null}
         </div>
         <div className="px-3 py-2.5">
           <span className="text-sm font-semibold text-foreground">
             {newLabel}
           </span>
+          {temporalMetadata?.new ? (
+            <DiffSideMoment moment={temporalMetadata.new} />
+          ) : null}
         </div>
       </div>
 
@@ -122,6 +131,10 @@ export function ChangesOnlyView({
               </button>
               {!isCollapsed && (
                 <div className="border-t border-border/50">
+                  <DiffFieldTemporalRow
+                    fieldKey={node.key}
+                    temporalMetadata={temporalMetadata}
+                  />
                   <adapter.renderDiff
                     node={node}
                     viewMode="changes-only"

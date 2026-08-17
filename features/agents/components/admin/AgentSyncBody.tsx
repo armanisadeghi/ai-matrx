@@ -70,8 +70,17 @@ import { compareAgentDefinitions } from "@/features/agents/components/diff/compa
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
 import { formatText } from "@/utils/text/text-case-converter";
 import { fetchSavedAgentDefinition } from "@/features/agents/services/agent-definition-snapshot.service";
+import type { DiffTemporalMetadata } from "@/components/diff/engine/types";
+import {
+  deriveAgentFieldChangeMoments,
+  findAgentVersionMoment,
+  type AgentVersionFieldSnapshot,
+} from "@/features/agents/sync/field-change-history";
+import { fetchAgentVersionFieldSnapshots } from "@/features/agents/sync/field-change-history.service";
+import { formatAbsoluteDate } from "@/utils/datetime";
 
-const SYSTEM_AGENT_ADMIN_BASE_PATH = "/administration/agents/system-agents/agents";
+const SYSTEM_AGENT_ADMIN_BASE_PATH =
+  "/administration/agents/system-agents/agents";
 const USER_AGENT_BASE_PATH = "/agents";
 
 interface AgentSyncBodyProps {
@@ -90,15 +99,18 @@ interface AgentSyncBodyProps {
 }
 
 function formatTimestamp(iso: string | null | undefined): string {
-  if (!iso) return "never";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "never";
-  return d.toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return formatAbsoluteDate(
+    iso,
+    {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short",
+    },
+    "never",
+  );
 }
 
 function basePathFor(ref: LinkedAgentRef): string {
@@ -220,6 +232,15 @@ export function AgentSyncBody({
     key: string;
     message: string;
   } | null>(null);
+  const [fieldHistoryState, setFieldHistoryState] = useState<{
+    key: string;
+    system: AgentVersionFieldSnapshot[];
+    personal: AgentVersionFieldSnapshot[];
+  } | null>(null);
+  const [fieldHistoryError, setFieldHistoryError] = useState<{
+    key: string;
+    message: string;
+  } | null>(null);
   const [comparisonRetry, setComparisonRetry] = useState(0);
   const [confirmPushOpen, setConfirmPushOpen] = useState(false);
   const [repinBusy, setRepinBusy] = useState(false);
@@ -245,7 +266,9 @@ export function AgentSyncBody({
       setResolveError({
         agentId,
         message:
-          err instanceof Error ? err.message : "Failed to resolve linked agent.",
+          err instanceof Error
+            ? err.message
+            : "Failed to resolve linked agent.",
       });
       return false;
     }
@@ -265,7 +288,9 @@ export function AgentSyncBody({
         setResolveError({
           agentId,
           message:
-            err instanceof Error ? err.message : "Failed to resolve linked agent.",
+            err instanceof Error
+              ? err.message
+              : "Failed to resolve linked agent.",
         });
       });
     return () => {
@@ -306,6 +331,33 @@ export function AgentSyncBody({
     };
   }, [comparisonKey, comparisonRetry, systemSide, userSide]);
 
+  useEffect(() => {
+    if (!comparisonKey || !userSide || !systemSide) return undefined;
+    let cancelled = false;
+    Promise.all([
+      fetchAgentVersionFieldSnapshots(systemSide.id),
+      fetchAgentVersionFieldSnapshots(userSide.id),
+    ])
+      .then(([system, personal]) => {
+        if (cancelled) return;
+        setFieldHistoryError(null);
+        setFieldHistoryState({ key: comparisonKey, system, personal });
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setFieldHistoryError({
+          key: comparisonKey,
+          message:
+            err instanceof Error
+              ? err.message
+              : "Could not load the agents' version histories.",
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [comparisonKey, comparisonRetry, systemSide, userSide]);
+
   const comparisonReady = comparisonState?.key === comparisonKey;
   const systemAgent = comparisonReady ? comparisonState.system : undefined;
   const userAgent = comparisonReady ? comparisonState.personal : undefined;
@@ -315,6 +367,92 @@ export function AgentSyncBody({
       : null;
   const currentComparisonError =
     comparisonError?.key === comparisonKey ? comparisonError.message : null;
+  const currentFieldHistory =
+    fieldHistoryState?.key === comparisonKey ? fieldHistoryState : null;
+  const currentFieldHistoryError =
+    fieldHistoryError?.key === comparisonKey ? fieldHistoryError.message : null;
+
+  let temporalMetadata: DiffTemporalMetadata | undefined;
+  if (systemAgent && userAgent && comparison) {
+    const systemVersionMoment = findAgentVersionMoment(
+      currentFieldHistory?.system ?? [],
+      systemAgent.version,
+    );
+    const personalVersionMoment = findAgentVersionMoment(
+      currentFieldHistory?.personal ?? [],
+      userAgent.version,
+    );
+    const changedFieldKeys = comparison.changedFields.map((field) => field.key);
+    const systemValues: Record<string, unknown> = { ...systemAgent };
+    const personalValues: Record<string, unknown> = { ...userAgent };
+    const systemFieldMoments = currentFieldHistory
+      ? deriveAgentFieldChangeMoments(
+          systemValues,
+          currentFieldHistory.system,
+          changedFieldKeys,
+        )
+      : {};
+    const personalFieldMoments = currentFieldHistory
+      ? deriveAgentFieldChangeMoments(
+          personalValues,
+          currentFieldHistory.personal,
+          changedFieldKeys,
+        )
+      : {};
+    const fields: Record<
+      string,
+      NonNullable<DiffTemporalMetadata["fields"]>[string]
+    > = {};
+
+    if (currentFieldHistory) {
+      for (const fieldKey of changedFieldKeys) {
+        const systemFieldMoment = systemFieldMoments[fieldKey];
+        const personalFieldMoment = personalFieldMoments[fieldKey];
+        fields[fieldKey] = {
+          old: systemFieldMoment
+            ? {
+                label: "System last changed",
+                timestamp: systemFieldMoment.changedAt,
+                version: systemFieldMoment.versionNumber,
+              }
+            : {
+                label: "System record saved; exact field date unavailable",
+                timestamp: systemAgent.updatedAt,
+                version: systemAgent.version,
+              },
+          new: personalFieldMoment
+            ? {
+                label: "Personal last changed",
+                timestamp: personalFieldMoment.changedAt,
+                version: personalFieldMoment.versionNumber,
+              }
+            : {
+                label: "Personal record saved; exact field date unavailable",
+                timestamp: userAgent.updatedAt,
+                version: userAgent.version,
+              },
+        };
+      }
+    }
+
+    temporalMetadata = {
+      old: {
+        label: systemVersionMoment ? "Version saved" : "Record saved",
+        timestamp: systemVersionMoment?.changedAt ?? systemAgent.updatedAt,
+        version: systemAgent.version,
+      },
+      new: {
+        label: personalVersionMoment ? "Version saved" : "Record saved",
+        timestamp: personalVersionMoment?.changedAt ?? userAgent.updatedAt,
+        version: userAgent.version,
+      },
+      fields,
+      loading: !currentFieldHistory && !currentFieldHistoryError,
+      unavailableMessage: currentFieldHistoryError
+        ? "Exact field change dates are unavailable. Current version dates remain visible above."
+        : undefined,
+    };
+  }
 
   // The reconciliation stamp lives on whichever side was derived.
   const derivedRef =
@@ -354,6 +492,8 @@ export function AgentSyncBody({
           expectedToUpdatedAt: userAgent.updatedAt,
         }),
       ).unwrap();
+      setFieldHistoryState(null);
+      setFieldHistoryError(null);
       toast.success(`Pulled latest into "${userSide.name}".`);
       const [relationshipRefreshed, definitionsRefreshed] = await Promise.all([
         load(),
@@ -362,7 +502,9 @@ export function AgentSyncBody({
           .catch(() => false),
       ]);
       if (!relationshipRefreshed || !definitionsRefreshed) {
-        toast.warning("Update saved, but the comparison could not be refreshed.");
+        toast.warning(
+          "Update saved, but the comparison could not be refreshed.",
+        );
       }
     } catch (err) {
       setComparisonState(null);
@@ -386,6 +528,8 @@ export function AgentSyncBody({
           expectedToUpdatedAt: systemAgent.updatedAt,
         }),
       ).unwrap();
+      setFieldHistoryState(null);
+      setFieldHistoryError(null);
       toast.success(`Pushed "${userSide.name}" to the system agent.`);
       const [relationshipRefreshed, definitionsRefreshed] = await Promise.all([
         load(),
@@ -394,7 +538,9 @@ export function AgentSyncBody({
           .catch(() => false),
       ]);
       if (!relationshipRefreshed || !definitionsRefreshed) {
-        toast.warning("Update saved, but the comparison could not be refreshed.");
+        toast.warning(
+          "Update saved, but the comparison could not be refreshed.",
+        );
       }
     } catch (err) {
       setComparisonState(null);
@@ -416,7 +562,9 @@ export function AgentSyncBody({
       );
       const refreshed = await load();
       if (!refreshed) {
-        toast.warning("Copy created, but the linked view could not be refreshed.");
+        toast.warning(
+          "Copy created, but the linked view could not be refreshed.",
+        );
       }
     } catch (err) {
       toast.error(
@@ -531,17 +679,21 @@ export function AgentSyncBody({
         : undefined;
   const relationshipCreatedAt = derivedAgent?.createdAt ?? null;
   const relationshipCreatedLabel =
-    derivedRef?.id === systemSide.id ? "System twin linked" : "Personal copy linked";
+    derivedRef?.id === systemSide.id
+      ? "System twin linked"
+      : "Personal copy linked";
   const behaviorDifferenceCount = comparison?.behaviorFields.length ?? 0;
-  const comparisonAvailable = comparison !== null && currentComparisonError === null;
+  const comparisonAvailable =
+    comparison !== null && currentComparisonError === null;
   const pullHasChanges = Boolean(
     comparison &&
-      (comparison.behaviorFields.length > 0 ||
-        (pullIdentity && comparison.profileFields.length > 0)),
+    (comparison.behaviorFields.length > 0 ||
+      (pullIdentity && comparison.profileFields.length > 0)),
   );
   const pushHasChanges = Boolean(
     comparison &&
-      (comparison.behaviorFields.length > 0 || comparison.profileFields.length > 0),
+    (comparison.behaviorFields.length > 0 ||
+      comparison.profileFields.length > 0),
   );
 
   const slotDisplayName = slotLabel ?? slotKey ?? null;
@@ -603,7 +755,11 @@ export function AgentSyncBody({
             changed before choosing a sync direction.
           </div>
         </div>
-        <div className="flex gap-1" role="tablist" aria-label="Linked agent details">
+        <div
+          className="flex gap-1"
+          role="tablist"
+          aria-label="Linked agent details"
+        >
           {(["overview", "differences"] as const).map((view) => (
             <button
               key={view}
@@ -620,7 +776,10 @@ export function AgentSyncBody({
             >
               {view === "overview" ? "Relationship" : "Configuration diff"}
               {view === "differences" && comparison?.changedFields.length ? (
-                <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[9px]">
+                <Badge
+                  variant="secondary"
+                  className="ml-1.5 h-4 px-1 text-[9px]"
+                >
                   {comparison.changedFields.length}
                 </Badge>
               ) : null}
@@ -671,7 +830,8 @@ export function AgentSyncBody({
                   />
                 </div>
                 <span className="text-[10px] text-muted-foreground">
-                  Operational identity is excluded; local record state is shown but not synced
+                  Operational identity is excluded; local record state is shown
+                  but not synced
                 </span>
               </div>
               <AgentDiffViewer
@@ -679,6 +839,7 @@ export function AgentSyncBody({
                 newAgent={userAgent}
                 oldLabel={`System — ${systemSide.name}${systemAgent.version != null ? ` v${systemAgent.version}` : ""}`}
                 newLabel={`Personal — ${userSide.name}${userAgent.version != null ? ` v${userAgent.version}` : ""}`}
+                temporalMetadata={temporalMetadata}
                 className="h-full min-h-0 flex-1"
               />
             </div>
@@ -695,7 +856,9 @@ export function AgentSyncBody({
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
-                    <span>Comparison unavailable: {currentComparisonError}</span>
+                    <span>
+                      Comparison unavailable: {currentComparisonError}
+                    </span>
                     <Button
                       variant="outline"
                       size="sm"
@@ -761,7 +924,10 @@ export function AgentSyncBody({
 
               <section aria-labelledby="relationship-map-title">
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <h3 id="relationship-map-title" className="text-xs font-semibold">
+                  <h3
+                    id="relationship-map-title"
+                    className="text-xs font-semibold"
+                  >
                     Current relationship
                   </h3>
                   <span className="text-[10px] text-muted-foreground">
@@ -776,7 +942,10 @@ export function AgentSyncBody({
                   />
                   <div className="flex items-center justify-center gap-1 text-muted-foreground sm:flex-col">
                     <div className="h-px flex-1 bg-border sm:h-full sm:min-h-6 sm:w-px" />
-                    <div className="rounded-full border border-border bg-background p-1.5" title="Linked copy">
+                    <div
+                      className="rounded-full border border-border bg-background p-1.5"
+                      title="Linked copy"
+                    >
                       <GitFork className="h-3.5 w-3.5" />
                     </div>
                     <div className="h-px flex-1 bg-border sm:h-full sm:min-h-6 sm:w-px" />
@@ -784,20 +953,32 @@ export function AgentSyncBody({
                   <AgentHeadCard
                     agentRef={userSide}
                     agent={userAgent}
-                    label={userSide.isOwnedByMe ? "My personal copy" : "Personal copy"}
+                    label={
+                      userSide.isOwnedByMe
+                        ? "My personal copy"
+                        : "Personal copy"
+                    }
                   />
                 </div>
               </section>
 
-              <section aria-labelledby="relationship-history-title" className="rounded-lg border border-border bg-muted/20 p-3">
-                <h3 id="relationship-history-title" className="mb-3 text-xs font-semibold">
+              <section
+                aria-labelledby="relationship-history-title"
+                className="rounded-lg border border-border bg-muted/20 p-3"
+              >
+                <h3
+                  id="relationship-history-title"
+                  className="mb-3 text-xs font-semibold"
+                >
                   Relationship history
                 </h3>
                 <ol className="space-y-3 text-xs">
                   <li className="flex gap-3">
                     <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-muted-foreground/50" />
                     <div>
-                      <div className="font-medium">{relationshipCreatedLabel}</div>
+                      <div className="font-medium">
+                        {relationshipCreatedLabel}
+                      </div>
                       <div className="text-muted-foreground">
                         {formatTimestamp(relationshipCreatedAt)}
                       </div>
@@ -836,7 +1017,9 @@ export function AgentSyncBody({
                   </li>
                 </ol>
                 <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground">
-                  This history shows the saved relationship milestones available today. Use each agent&apos;s Versions door for its full edit history.
+                  This history shows the saved relationship milestones available
+                  today. Use each agent&apos;s Versions door for its full edit
+                  history.
                 </p>
               </section>
             </div>
@@ -870,7 +1053,10 @@ export function AgentSyncBody({
               size="sm"
               onClick={runPull}
               disabled={
-                !canPull || busy !== null || !comparisonAvailable || !pullHasChanges
+                !canPull ||
+                busy !== null ||
+                !comparisonAvailable ||
+                !pullHasChanges
               }
               title={
                 canPull
@@ -893,7 +1079,10 @@ export function AgentSyncBody({
               size="sm"
               onClick={() => setConfirmPushOpen(true)}
               disabled={
-                !canPush || busy !== null || !comparisonAvailable || !pushHasChanges
+                !canPush ||
+                busy !== null ||
+                !comparisonAvailable ||
+                !pushHasChanges
               }
               title={
                 canPush
@@ -919,11 +1108,13 @@ export function AgentSyncBody({
       <AlertDialog open={confirmPushOpen} onOpenChange={setConfirmPushOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Update the shared system baseline?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Update the shared system baseline?
+            </AlertDialogTitle>
             <AlertDialogDescription>
               This replaces the system agent&apos;s runtime configuration and
-              profile with the personal copy. It can affect every user and
-              slot that follows this system agent.
+              profile with the personal copy. It can affect every user and slot
+              that follows this system agent.
               {comparison && !comparison.comparedConfigurationMatches
                 ? ` The current comparison contains ${comparison.changedFields.length} changed ${comparison.changedFields.length === 1 ? "section" : "sections"}.`
                 : ""}

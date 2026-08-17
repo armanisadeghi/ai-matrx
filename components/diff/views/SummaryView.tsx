@@ -1,9 +1,14 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { DiffNode, DiffResult } from "../engine/types";
+import type {
+  DiffNode,
+  DiffResult,
+  DiffTemporalMetadata,
+} from "../engine/types";
 import type { AdapterRegistry, EnrichmentContext } from "../adapters/types";
 import { DefaultFieldAdapter } from "../adapters/defaults";
+import { DiffSideMoment } from "./DiffTemporalRow";
 
 const changeColors: Record<DiffNode["changeType"], string> = {
   added: "text-green-600 dark:text-green-400",
@@ -33,12 +38,14 @@ interface SummaryViewProps {
   diffResult: DiffResult;
   adapters: AdapterRegistry;
   enrichment?: EnrichmentContext;
+  temporalMetadata?: DiffTemporalMetadata;
 }
 
 export function SummaryView({
   diffResult,
   adapters,
   enrichment,
+  temporalMetadata,
 }: SummaryViewProps) {
   const changedNodes = diffResult.root.filter(
     (n) => n.changeType !== "unchanged",
@@ -63,7 +70,9 @@ export function SummaryView({
           <tr className="border-b border-border text-muted-foreground">
             <th className="text-left px-4 py-2 font-medium w-[180px]">Field</th>
             <th className="text-left px-4 py-2 font-medium w-[90px]">Status</th>
-            <th className="text-left px-4 py-2 font-medium">Details</th>
+            <th className="text-left px-4 py-2 font-medium">
+              Details and dates
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
@@ -101,7 +110,17 @@ export function SummaryView({
                   {changeLabels[node.changeType]}
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">
-                  {summaryText}
+                  <div>{summaryText}</div>
+                  {temporalMetadata?.fields?.[node.key] ? (
+                    <div className="mt-1 grid gap-0.5">
+                      <DiffSideMoment
+                        moment={temporalMetadata.fields[node.key]?.old}
+                      />
+                      <DiffSideMoment
+                        moment={temporalMetadata.fields[node.key]?.new}
+                      />
+                    </div>
+                  ) : null}
                 </td>
               </tr>
             );

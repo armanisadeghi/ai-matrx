@@ -10,7 +10,10 @@ import {
   JsonObjectAdapter,
   KeyValueAdapter,
 } from "@/components/diff/adapters/defaults";
-import type { ViewMode } from "@/components/diff/engine/types";
+import type {
+  DiffTemporalMetadata,
+  ViewMode,
+} from "@/components/diff/engine/types";
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
 import { useDiffEnrichment } from "@/features/agents/hooks/useDiffEnrichment";
 import { compareAgentDefinitions } from "./compare-agent-definitions";
@@ -30,6 +33,7 @@ interface AgentDiffViewerProps {
   newAgent: Partial<AgentDefinition>;
   oldLabel: string;
   newLabel: string;
+  temporalMetadata?: DiffTemporalMetadata;
   defaultMode?: ViewMode;
   className?: string;
 }
@@ -114,6 +118,7 @@ export function AgentDiffViewer({
   newAgent,
   oldLabel,
   newLabel,
+  temporalMetadata,
   defaultMode = "changes-only",
   className,
 }: AgentDiffViewerProps) {
@@ -134,6 +139,7 @@ export function AgentDiffViewer({
       newLabel={newLabel}
       adapters={adapters}
       enrichment={enrichment}
+      temporalMetadata={temporalMetadata}
       defaultMode={defaultMode}
       className={className}
     />

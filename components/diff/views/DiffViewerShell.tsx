@@ -4,7 +4,11 @@ import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { List, Columns2, FileText, Braces } from "lucide-react";
-import type { DiffResult, ViewMode } from "../engine/types";
+import type {
+  DiffResult,
+  DiffTemporalMetadata,
+  ViewMode,
+} from "../engine/types";
 import type { AdapterRegistry, EnrichmentContext } from "../adapters/types";
 import { AllChangesView } from "./AllChangesView";
 import { ChangesOnlyView } from "./ChangesOnlyView";
@@ -19,6 +23,7 @@ interface DiffViewerShellProps {
   newLabel: string;
   adapters: AdapterRegistry;
   enrichment?: EnrichmentContext;
+  temporalMetadata?: DiffTemporalMetadata;
   defaultMode?: ViewMode;
   className?: string;
 }
@@ -39,6 +44,7 @@ export function DiffViewerShell({
   newLabel,
   adapters,
   enrichment,
+  temporalMetadata,
   defaultMode = "changes-only",
   className,
 }: DiffViewerShellProps) {
@@ -102,6 +108,7 @@ export function DiffViewerShell({
             enrichment={enrichment}
             oldLabel={oldLabel}
             newLabel={newLabel}
+            temporalMetadata={temporalMetadata}
           />
         </TabsContent>
         <TabsContent
@@ -114,6 +121,7 @@ export function DiffViewerShell({
             enrichment={enrichment}
             oldLabel={oldLabel}
             newLabel={newLabel}
+            temporalMetadata={temporalMetadata}
           />
         </TabsContent>
         <TabsContent value="summary" className="flex-1 overflow-y-auto mt-0">
@@ -121,6 +129,7 @@ export function DiffViewerShell({
             diffResult={diffResult}
             adapters={adapters}
             enrichment={enrichment}
+            temporalMetadata={temporalMetadata}
           />
         </TabsContent>
         <TabsContent value="raw-json" className="flex-1 overflow-hidden mt-0">
@@ -130,6 +139,7 @@ export function DiffViewerShell({
               newValue={newValue}
               oldLabel={oldLabel}
               newLabel={newLabel}
+              temporalMetadata={temporalMetadata}
             />
           ) : null}
         </TabsContent>

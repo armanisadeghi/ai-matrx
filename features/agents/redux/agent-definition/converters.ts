@@ -27,6 +27,7 @@ import { stripNullish } from "@/utils/supabase/payload";
 import type { SkillConfig } from "@/features/skills/types";
 import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
 import type { MatrxActionsConfig } from "@/features/agents/types/matrx-actions.types";
+import { isJsonObject } from "@/types/json";
 import type {
   AgentDefinition,
   AgentType,
@@ -109,13 +110,6 @@ export type { AgentInsert, AgentUpdate };
 // used to mask real tools and make Builder saves look like they didn't stick).
 // ---------------------------------------------------------------------------
 
-interface ToolConfigJson {
-  /** @deprecated Never assigns tools. Prefer `agent.definition.tools`. */
-  tools?: Array<Record<string, unknown>>;
-  excluded_tools?: string[];
-  auto_tools_disabled?: boolean;
-}
-
 // ---------------------------------------------------------------------------
 // DB → Frontend
 // ---------------------------------------------------------------------------
@@ -124,7 +118,7 @@ interface ToolConfigJson {
  * empty default when the column is missing / malformed; the DB CHECK from
  * migration 0095 guarantees the shape when present, so this is mainly
  * about old rows + tests. */
-function parseSkillConfigJson(raw: unknown): SkillConfig {
+export function parseSkillConfigJson(raw: unknown): SkillConfig {
   const empty: SkillConfig = {
     included: [],
     listed: [],
@@ -143,6 +137,12 @@ function parseSkillConfigJson(raw: unknown): SkillConfig {
   };
 }
 
+/** Read the one frontend-visible flag stored inside `tool_config`. */
+export function parseAgentAutoToolsDisabled(raw: unknown): boolean {
+  if (!isJsonObject(raw)) return false;
+  return raw.auto_tools_disabled === true;
+}
+
 /**
  * Converts a full agents Row into the frontend AgentDefinition shape.
  * Safe to call with any row — all JSONB fields are cast but not key-converted.
@@ -156,11 +156,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
   // auto_tools_disabled lives only in tool_config (no dedicated column). The
   // server reads it from there (agx_manager.py); round-trip it so the Builder
   // toggle reflects the saved value.
-  const tc = row.tool_config;
-  const autoToolsDisabled =
-    tc && typeof tc === "object" && !Array.isArray(tc)
-      ? Boolean((tc as ToolConfigJson).auto_tools_disabled)
-      : false;
+  const autoToolsDisabled = parseAgentAutoToolsDisabled(row.tool_config);
 
   // skill_config is JSONB matching the SkillConfig shape; see migration 0095
   // for the structural CHECK constraint. The DB CHECK guarantees the keys we

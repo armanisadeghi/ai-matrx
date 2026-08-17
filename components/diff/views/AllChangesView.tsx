@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
-import type { DiffResult } from "../engine/types";
+import type { DiffResult, DiffTemporalMetadata } from "../engine/types";
 import type { AdapterRegistry, EnrichmentContext } from "../adapters/types";
 import { DefaultFieldAdapter } from "../adapters/defaults";
+import { DiffFieldTemporalRow, DiffSideMoment } from "./DiffTemporalRow";
 
 interface AllChangesViewProps {
   diffResult: DiffResult;
@@ -14,6 +15,7 @@ interface AllChangesViewProps {
   enrichment?: EnrichmentContext;
   oldLabel: string;
   newLabel: string;
+  temporalMetadata?: DiffTemporalMetadata;
 }
 
 export function AllChangesView({
@@ -22,6 +24,7 @@ export function AllChangesView({
   enrichment,
   oldLabel,
   newLabel,
+  temporalMetadata,
 }: AllChangesViewProps) {
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     new Set(),
@@ -81,11 +84,17 @@ export function AllChangesView({
           <span className="text-sm font-semibold text-foreground">
             {oldLabel}
           </span>
+          {temporalMetadata?.old ? (
+            <DiffSideMoment moment={temporalMetadata.old} />
+          ) : null}
         </div>
         <div className="px-3 py-2.5">
           <span className="text-sm font-semibold text-foreground">
             {newLabel}
           </span>
+          {temporalMetadata?.new ? (
+            <DiffSideMoment moment={temporalMetadata.new} />
+          ) : null}
         </div>
       </div>
 
@@ -126,6 +135,10 @@ export function AllChangesView({
 
               {!isCollapsed && (
                 <div className="border-t border-border/50">
+                  <DiffFieldTemporalRow
+                    fieldKey={node.key}
+                    temporalMetadata={temporalMetadata}
+                  />
                   <adapter.renderDiff
                     node={node}
                     viewMode="all"
