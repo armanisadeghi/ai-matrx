@@ -93,6 +93,15 @@ export function pickRuntime(opts: PickRuntimeInput): PickRuntimeResult {
           "This is an embedding model — it cannot run as a conversational agent. Use it through an embedding or retrieval surface instead.",
       };
 
+    case "agent":
+      // Provider-managed background agents have their own start/poll API and
+      // lifecycle. Sending one through a conversational stream loses that
+      // lifecycle and is never a valid fallback.
+      return {
+        error:
+          "This is a provider-managed background agent — it cannot run through the conversational runtime. Use its dedicated agent surface instead.",
+      };
+
     case "turn":
     case "single":
       // "single" (one-shot generation — image/video models) deliberately

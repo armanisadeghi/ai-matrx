@@ -4,7 +4,7 @@
 
 **Status:** `stable`
 **Tier:** `2`
-**Last updated:** `2026-08-12`
+**Last updated:** `2026-08-16`
 
 ---
 
@@ -200,6 +200,8 @@ Phase D (2026-07-10) is DONE: the resolution layer (`ai.resolve_model_config` + 
 ---
 
 ## Change log
+
+- `2026-08-16` — **The frontend capability vocabulary again matches the live catalog.** The 2026-08-15 Google catalog update added 13 valid feature values (`file_search`, `mcp`, `background_execution`, `collaborative_planning`, `visualization`, `citations`, `sandboxed_execution`, `live_api`, `url_context`, `grounding_maps`, `multimodal_embedding`, `music_generation`, `real_time_translation`) and the provider-managed `agent` interaction mode without updating `capabilities/types.ts`. `parseCapabilities` correctly screamed once per model/field/value, producing 31 inspector entries, but then discarded all 28 feature occurrences and downgraded all 3 agent models to `turn`. The shared vocabulary now preserves every value; regression coverage uses the complete new set. `agent` is non-conversational and stays on its dedicated start/poll surface.
 
 - `2026-08-12` — **Model/tool foreign keys became named identities everywhere.** Added the shared `AiModelRef` / `AiToolRef`, historical/deactivated lookup caches that stay separate from active picker catalogs, and an admin model deep link (`?model=<id>`) into the existing split-pane editor. Agent version diff + edit history, research/marketing histories, admin/debug tables, bundles/bindings, agent cards/settings, and other explicit model/tool displays now show a human name; audit/history rows retain the complete ID beneath it. Unknown rows say `Unknown AI model` / `Unknown tool` with the ID instead of presenting the UUID as if it were meaningful.
 

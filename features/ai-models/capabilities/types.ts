@@ -27,14 +27,22 @@
 export const CONTENT_TYPES = ["text", "image", "audio", "video", "document", "entities", "embedding"] as const;
 export type ContentType = typeof CONTENT_TYPES[number];
 
-// Full live vocabulary (verified against ai.model_definition 2026-07-17:
-// turn, single, extraction, realtime, embedding).
+// Full live vocabulary (verified against ai.model_definition 2026-08-16:
+// turn, single, extraction, realtime, embedding, agent).
 //   turn       — ordinary multi-turn chat request/response.
 //   single     — one-shot generation (image/video gen); no conversation.
 //   extraction — NER/classification models (GLiNER2 family); NOT chat models.
 //   realtime   — live voice/audio transport.
 //   embedding  — vectorization models; NOT chat models.
-export const INTERACTION_MODES = ["turn", "single", "extraction", "realtime", "embedding"] as const;
+//   agent      — provider-managed background agent; uses its dedicated API.
+export const INTERACTION_MODES = [
+  "turn",
+  "single",
+  "extraction",
+  "realtime",
+  "embedding",
+  "agent",
+] as const;
 export type InteractionMode = typeof INTERACTION_MODES[number];
 
 // The complete feature vocabulary present on live `ai.model_definition` rows
@@ -78,6 +86,21 @@ export const FEATURE_KEYS = [
   "conversational_editing",
   "stateful_editing",
   "dialogue",
+  // Provider-managed agents / hosted tools
+  "file_search",
+  "mcp",
+  "background_execution",
+  "collaborative_planning",
+  "visualization",
+  "citations",
+  "sandboxed_execution",
+  // Google live, grounding, embedding, and music families
+  "live_api",
+  "url_context",
+  "grounding_maps",
+  "multimodal_embedding",
+  "music_generation",
+  "real_time_translation",
 ] as const;
 export type FeatureKey = typeof FEATURE_KEYS[number];
 

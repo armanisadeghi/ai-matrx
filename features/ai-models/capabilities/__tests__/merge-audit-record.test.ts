@@ -60,6 +60,40 @@ describe("mergeAuditRecordIntoCapabilities", () => {
     });
   });
 
+  it("preserves the complete provider-agent capability vocabulary", () => {
+    const features = [
+      "file_search",
+      "mcp",
+      "background_execution",
+      "collaborative_planning",
+      "visualization",
+      "citations",
+      "sandboxed_execution",
+      "live_api",
+      "url_context",
+      "grounding_maps",
+      "multimodal_embedding",
+      "music_generation",
+      "real_time_translation",
+    ] as const;
+
+    expect(
+      parseCapabilities({
+        input: ["text"],
+        output: ["text"],
+        features,
+        interaction: "agent",
+        multilingual: true,
+      }),
+    ).toEqual({
+      input: ["text"],
+      output: ["text"],
+      features,
+      interaction: "agent",
+      multilingual: true,
+    });
+  });
+
   it("untouched Save is lossless on an extraction-model row", () => {
     const edited = toAuditRecord(parseCapabilities(EXTRACTION_ROW));
     const merged = mergeAuditRecordIntoCapabilities(EXTRACTION_ROW, edited);

@@ -147,6 +147,7 @@ const INTERACTION_LABEL: Record<Interaction, string> = {
   extraction: "Extraction",
   realtime: "Realtime",
   embedding: "Embedding",
+  agent: "Background agent",
 };
 
 interface ModelListDropdownProps {

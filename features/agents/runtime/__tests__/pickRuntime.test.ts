@@ -53,6 +53,13 @@ describe("pickRuntime — interaction-mode exhaustiveness (TASK-003)", () => {
     }
   });
 
+  it("a provider-managed agent is refused on every conversational surface", () => {
+    for (const surfaceMode of EXECUTION_MODES) {
+      const result = pickRuntime({ modelInteraction: "agent", surfaceMode });
+      expect("error" in result).toBe(true);
+    }
+  });
+
   it("a single-shot (image/video gen) model routes like a turn-based model", () => {
     expect(
       pickRuntime({ modelInteraction: "single", surfaceMode: "python-stream" }),
