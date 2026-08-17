@@ -43,13 +43,23 @@ function makeWarmSetup(opts: {
         signal: AbortSignal;
         reason: "cold-boot" | "stale-refresh" | "manual";
     }) => Promise<Partial<WarmState> | null>;
+    cacheSatisfies?: (state: WarmState) => boolean;
 }) {
     const policy = definePolicy<WarmState>({
         sliceName: "warm",
         preset: "warm-cache",
         version: 1,
         broadcast: { actions: ["warm/set"] },
-        ...(opts.fetch ? { remote: { fetch: opts.fetch } } : {}),
+        ...(opts.fetch
+            ? {
+                  remote: {
+                      fetch: opts.fetch,
+                      ...(opts.cacheSatisfies
+                          ? { cacheSatisfies: opts.cacheSatisfies }
+                          : {}),
+                  },
+              }
+            : {}),
     });
     const slice = createSlice({
         name: "warm",
@@ -178,6 +188,86 @@ describe("bootSync — IDB hydration + cold-boot fallback", () => {
         await Promise.resolve();
         expect(fetchCalled).toBe(false);
         expect(store.getState().warm.items).toEqual(["from-idb"]);
+    });
+
+    // Regression: a HOLLOW cached record (written by a mutation that landed
+    // before the first fetch) used to count as a hit and suppress the
+    // cold-boot fetch, leaving the slice empty until `staleAfter`. That is the
+    // appContext-org incident of 2026-08-17: every org-scoped write in that
+    // window fell back to the personal-org RPC and screamed.
+    it("still fetches on cold boot when the cached record fails remote.cacheSatisfies", async () => {
+        let fetchCalled = false;
+        await writeSlice("auth:u1", "warm", 1, { items: [] });
+        const fetchFn = async (): Promise<Partial<WarmState> | null> => {
+            fetchCalled = true;
+            return { items: ["reconciled"] };
+        };
+        const { policy, store } = makeWarmSetup({
+            fetch: fetchFn,
+            cacheSatisfies: (state) => state.items.length > 0,
+        });
+        const result = await bootSync({
+            store,
+            identity,
+            policies: [policy],
+            openChannel: () => fakeChannel(),
+        });
+        // The hollow record still hydrates — sufficiency governs the fetch, not
+        // the rehydrate.
+        expect(await result.idbHydration).toEqual(["warm"]);
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(fetchCalled).toBe(true);
+        expect(store.getState().warm.items).toEqual(["reconciled"]);
+    });
+
+    it("does NOT fetch when the cached record satisfies remote.cacheSatisfies", async () => {
+        let fetchCalled = false;
+        await writeSlice("auth:u1", "warm", 1, { items: ["good"] });
+        const { policy, store } = makeWarmSetup({
+            fetch: async () => {
+                fetchCalled = true;
+                return null;
+            },
+            cacheSatisfies: (state) => state.items.length > 0,
+        });
+        const result = await bootSync({
+            store,
+            identity,
+            policies: [policy],
+            openChannel: () => fakeChannel(),
+        });
+        await result.idbHydration;
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(fetchCalled).toBe(false);
+        expect(store.getState().warm.items).toEqual(["good"]);
+    });
+
+    it("treats a throwing cacheSatisfies as insufficient (reconciles, never crashes boot)", async () => {
+        let fetchCalled = false;
+        await writeSlice("auth:u1", "warm", 1, { items: ["cached"] });
+        const { policy, store } = makeWarmSetup({
+            fetch: async () => {
+                fetchCalled = true;
+                return { items: ["reconciled"] };
+            },
+            cacheSatisfies: () => {
+                throw new Error("boom");
+            },
+        });
+        const result = await bootSync({
+            store,
+            identity,
+            policies: [policy],
+            openChannel: () => fakeChannel(),
+        });
+        await result.idbHydration;
+        await Promise.resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(fetchCalled).toBe(true);
     });
 
     it("exposes stale scheduler cancelAll so teardown works", async () => {

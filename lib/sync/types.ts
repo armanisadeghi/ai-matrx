@@ -132,6 +132,28 @@ export interface PolicyConfig<TState = unknown> {
         fetch?: FallbackFn<TState>;
         write?: WriteRemoteFn<TState>;
         debounceMs?: number;
+        /**
+         * "Is this cached record good enough to skip the cold-boot fetch?"
+         *
+         * By default, ANY cache hit (IDB record or its localStorage mirror)
+         * suppresses the cold-boot `remote.fetch` — the slice then carries
+         * whatever the cache held until `staleAfter` elapses. That is wrong for
+         * a slice whose cache can legitimately be written EMPTY: the engine
+         * persists post-reducer state on every mutation, so one mutation made
+         * before the first fetch landed writes a hollow record, and every
+         * later boot reads that hollow record as a hit and waits out
+         * `staleAfter` with missing data (appContext org: real incident,
+         * 2026-08-17 — every org-scoped write in that window fell back to the
+         * personal-org RPC and screamed).
+         *
+         * Declare this to make the cache's SUFFICIENCY, not its mere
+         * existence, decide. Returning false means "hydrate from it, but
+         * reconcile now" — the rehydrate still happens, the fetch fires
+         * immediately instead of at `staleAfter`. Only legal with
+         * `remote.fetch`. Must be pure and must never throw (a throw is
+         * treated as "not sufficient" and logged).
+         */
+        cacheSatisfies?: (state: TState) => boolean;
     };
 
     /**
