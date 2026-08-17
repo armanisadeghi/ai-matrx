@@ -78,7 +78,15 @@ export interface UseContainerLinksReturn {
     resourceId: string,
     label?: string,
     metadata?: Json,
-    options?: { replaceMetadata?: boolean },
+    options?: {
+      replaceMetadata?: boolean;
+      /**
+       * Semantic edge role (`platform.associations.role`) — e.g. the
+       * Masterwork dump surface stamps `distillation_source`. Omitted = the
+       * canonical role-less edge. Detach with the SAME role to remove it.
+       */
+      role?: string;
+    },
   ) => Promise<AssociationWriteResult>;
   /** Detach a resource from this container. */
   detach: (
@@ -233,7 +241,7 @@ export function useContainerLinks(
     resourceId: string,
     label?: string,
     metadata?: Json,
-    options?: { replaceMetadata?: boolean },
+    options?: { replaceMetadata?: boolean; role?: string },
   ): Promise<AssociationWriteResult> => {
     if (!containerId) return { ok: false, error: "Missing container id" };
     const result = await dispatch(
@@ -245,6 +253,7 @@ export function useContainerLinks(
         orgId: orgId ?? undefined,
         label,
         metadata,
+        role: options?.role,
         replaceMetadata: options?.replaceMetadata,
       }),
     );
