@@ -34,7 +34,6 @@ import {
   fetchDistillationApproaches,
   type DistillationApproach,
 } from "../browse/approaches";
-import { NewRulebookDialog } from "../browse/components/NewRulebookDialog";
 import {
   fetchMasterworkHome,
   type MasterworkHomeData,
@@ -160,7 +159,6 @@ export function MasterworkHomePage() {
     null,
   );
   const [error, setError] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -216,9 +214,11 @@ export function MasterworkHomePage() {
           systems that work exactly your way.
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={() => setCreating(true)}>
-            <Plus className="mr-1 h-4 w-4" />
-            New Rulebook
+          <Button asChild size="sm">
+            <Link href="/masterwork/new">
+              <Plus className="mr-1 h-4 w-4" />
+              New Rulebook
+            </Link>
           </Button>
           <Button asChild size="sm" variant="outline">
             <Link href="/masterwork/encore">
@@ -274,9 +274,11 @@ export function MasterworkHomePage() {
               A Rulebook is your judgment, written down as rules you approve —
               one conversation is enough to start.
             </p>
-            <Button size="sm" className="mt-3" onClick={() => setCreating(true)}>
-              <Plus className="mr-1 h-4 w-4" />
-              Start your first Rulebook
+            <Button asChild size="sm" className="mt-3">
+              <Link href="/masterwork/new">
+                <Plus className="mr-1 h-4 w-4" />
+                Start your first Rulebook
+              </Link>
             </Button>
           </div>
         )}
@@ -409,10 +411,9 @@ export function MasterworkHomePage() {
           <SectionHeading title="Start here" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {approaches.map((a) => (
-              <button
+              <Link
                 key={a.key}
-                type="button"
-                onClick={() => setCreating(true)}
+                href={`/masterwork/new?approach=${encodeURIComponent(a.key)}`}
                 className="group rounded-lg border border-border bg-card p-4 text-left transition-colors hover:border-primary/40"
               >
                 <div className="flex items-center justify-between gap-2">
@@ -425,7 +426,7 @@ export function MasterworkHomePage() {
                 <p className="mt-2 text-[11px] text-muted-foreground">
                   {a.costTimeShape}
                 </p>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
@@ -445,8 +446,6 @@ export function MasterworkHomePage() {
           <ArrowUpRight className="h-3 w-3" />
         </Link>
       </p>
-
-      <NewRulebookDialog open={creating} onOpenChange={setCreating} />
     </div>
   );
 }

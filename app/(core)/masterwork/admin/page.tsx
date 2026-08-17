@@ -29,6 +29,14 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/masterwork/new",
+      label: "New Rulebook (guided intake)",
+      description:
+        "The guided Distillation start — full page in the house guided-intake pattern: big default-filled option tiles (goal · who runs it · where the knowledge lives · stakes · benchmark), then the registry-driven Approach picker. Every 'New Rulebook' entry point routes here.",
+      filePath: "app/(core)/masterwork/new/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/masterwork/[id]",
       label: "Rulebook detail (rule editor)",
       description:

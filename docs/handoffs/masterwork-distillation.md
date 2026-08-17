@@ -21,6 +21,14 @@
 
 ## STATUS — live and verified (compressed)
 
+- **THE GUIDED START REBUILT IN THE HOUSE PATTERN (2026-08-17, Arman's "those stupid little small
+  bubbles are horrible").** `NewRulebookDialog` DELETED; `/masterwork/new`
+  (`features/masterwork/intake/NewRulebookFlow.tsx`) is now the one intake — a full page with big
+  default-filled option tiles (every question pre-selected), the Approach picker as large
+  registry-driven cards (suggested one pre-selected), wizard-draft persistence, and all entry
+  points rewired (home buttons, Start-here tiles → `?approach=<key>`, Studio list button). House
+  pattern is now written down: FEATURE.md § Guided intake follows the house pattern + a
+  pattern-patrol nomination.
 - **THE RECORD SHIPPED + interviews are properly associated (2026-08-17, Arman's "that's
   critical").** A Rulebook and its Scout conversations now share a canonical
   `platform.associations` edge (`conversation --interview--> rulebook`, registered pair;

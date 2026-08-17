@@ -24,11 +24,13 @@
   Masterworks + version-drift flags), `/masterwork/admin` (feature map),
   `/masterwork/encore` + `/masterwork/encore/[id]` (the Operator surface — see the
   Encore bullet below).
-- **The guided start (2026-08-15):** "New Rulebook" is the four-question intake from the
-  Distillation vision (goal · who runs it · where the knowledge lives · stakes → stored on
-  `metadata.intake`), then routes by source: knowledge in-head/unsure → `/masterwork/[id]?interview=1`
-  (Scout interview sheet auto-opens); written-down/someone-else's → the Rulebook page with the
-  document Approach.
+- **The guided start (2026-08-15; rebuilt as a full page 2026-08-17):** "New Rulebook" is
+  `/masterwork/new` (`features/masterwork/intake/NewRulebookFlow.tsx`) — the four-question intake
+  from the Distillation vision (goal · who runs it · where the knowledge lives · stakes ·
+  benchmark → stored on `metadata.intake`) rendered in the house guided-intake pattern (big
+  default-filled option tiles, § Guided intake below), then the registry-driven Approach picker;
+  the chosen row's `intake_query` routes into that Approach's surface (interview →
+  `/masterwork/[id]?interview=1`, Scout auto-opens).
 - **THE RECORD — "Your words" (2026-08-17).** `/masterwork/[id]/record` shows everything the Expert
   has contributed to one Rulebook — every interview turn, every uploaded source, every recording —
   oldest first, with a door on every item and copy-everything (`CopyButtons`: human / for-AI / JSON).
@@ -86,7 +88,8 @@ One URL, two audiences (module-landing-pages doctrine, branch-in-page):
   your Rulebooks with review-progress KPIs (`computeKpis`), your built Masterworks
   with release state + quality trend (latest vs. previous
   `platform.masterwork_run.quality_score`), recent runs in Expert words, the
-  Approach registry as "Start here" tiles (each opens `NewRulebookDialog`), and
+  Approach registry as "Start here" tiles (each links to `/masterwork/new?approach=<key>`,
+  pre-selecting that Approach), and
   the "How it's improving" panel. Every named entity is a door; every count links
   to the list behind it. The Rulebook LIST lives at `/masterwork/all`
   (the established `/x/all` pattern).
@@ -145,8 +148,11 @@ rulebook.version` → the Masterworks page flags "rebuild" AND opens the rule-le
   RLS live, THE VIEW LAW respected.
 - `browse/` — entity-list shell wiring: `service.ts` (mine/orgs/public scoped reads, plain
   PostgREST — no per-feature RPC yet at this population), `columns.tsx`, `listConfig.tsx`,
-  `useRulebookRowActions.tsx`, `components/MasterworkStudioPage.tsx`,
-  `components/NewRulebookDialog.tsx`.
+  `useRulebookRowActions.tsx`, `components/MasterworkStudioPage.tsx`, plus the Approach registry
+  read `approaches.ts`.
+- `intake/NewRulebookFlow.tsx` — the guided start at `/masterwork/new` (§ Guided intake below).
+  The old `NewRulebookDialog` was DELETED 2026-08-17 — a cramped dialog with chip-bubble pickers
+  is exactly what the house pattern forbids.
 - `durable-run/useMasterworkRun.ts` — the ONE way a dialog here runs something long. A face over
   `lib/durable-run/useDurableRun.ts` (shared with SEO): remembers the run id, rejoins on load,
   settles from server truth, keeps a finished answer across a refresh. Both ingest lanes share one
@@ -316,7 +322,7 @@ through very quickly and sort of approving or disapproving."_
 ## The Approach Registry — `platform.approach` (2026-08-17)
 
 **"Intake is a registry of Approaches, never a hardcoded flow."** The
-"how do you want to do this?" step of `NewRulebookDialog` renders the ENABLED
+"how do you want to do this?" step of `/masterwork/new` (`intake/NewRulebookFlow.tsx`) renders the ENABLED
 rows of `platform.approach` (canonical system-variant catalog table; family
 `'distillation'`; seeded: `interview` · `source` · `exemplar` · `file`) as
 Expert-language cards — label, blurb, "You bring", time shape — read directly
@@ -336,6 +342,28 @@ keep their shape.
 `intake_query` points at an existing lane surface — it shows in the picker
 with zero code. A genuinely new lane implementation (new surface, new server
 pipeline) is what still takes code. Never hardcode an Approach list again.
+
+## Guided intake follows the house pattern (Arman, 2026-08-17)
+
+> Born from a defect: the first "New Rulebook" intake was a cramped dialog whose questions were
+> answered with tiny chip bubbles. Arman: "those stupid little small bubbles are horrible" — it
+> ignored the guided-intake pattern the platform had already perfected elsewhere.
+
+Any guided creation/intake flow in this feature (and any new one you build) follows the **house
+pattern**, whose exemplars are:
+
+- **`/research/topics/new`** (`features/research/components/init/ResearchInitForm.tsx`) — a full
+  PAGE, not a dialog; big color-coded option cards; URL-driven steps; wizard-draft persistence.
+- **The podcast builder** (`features/podcasts/generator/components/GeneratorForm.tsx`) — big
+  option tiles with icon + label + helper, and **a sensible default pre-selected on every
+  question** so the user never has to click anything they don't want to.
+- **The app builder** (`features/agent-apps/`) — same family.
+
+The rules: a dedicated full page (never a cramped dialog), big tappable option tiles (min 44px,
+icon in a tinted square, label + one-line helper, color-coded per question) — **never small chip
+"bubbles"** — every question defaulted so the Expert can click straight through, zero jargon,
+mobile-first, dark-mode-safe semantic tokens only. `/masterwork/new` is this feature's
+implementation.
 
 ## Registration
 
@@ -368,6 +396,14 @@ pipeline) is what still takes code. Never hardcode an Approach list again.
 
 ## Change log
 
+- 2026-08-17 — **The guided start rebuilt in the house pattern.** `NewRulebookDialog` (chip-bubble
+  intake in a dialog) DELETED; replaced by the full page `/masterwork/new`
+  (`intake/NewRulebookFlow.tsx`): big default-filled option tiles for the four intake questions
+  (every answer pre-selected), the Approach picker as large registry-driven cards with the
+  "Suggested for you" soft hint pre-selected, URL-driven steps, wizard-draft persistence
+  (`wizardId: masterwork-new`). Entry points rewired: home "New Rulebook" + empty state, the
+  "Start here" Approach tiles (now links carrying `?approach=<key>`), and the Studio list button.
+  See § Guided intake follows the house pattern.
 - 2026-08-17 — **The landing shipped + routes settled.** `/masterwork` is the module landing
   (guest marketing page via `ModuleLanding` + directory registration; authed Masterwork HOME —
   `features/masterwork/home/`: Rulebook KPIs, Masterworks with quality trend, recent runs,
