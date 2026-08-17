@@ -54,6 +54,8 @@ export interface VoiceRelayController {
   isAwaitingBrain(): boolean;
   /** Mark that the brain started/kept working without a user utterance (e.g. kickoff turn). */
   markAwaitingBrain(): void;
+  /** Disarm the watchdog when a turn settles with nothing to deliver. */
+  clearAwaitingBrain(): void;
   dispose(): void;
 }
 
@@ -173,6 +175,12 @@ export function createVoiceRelayController(
     },
     markAwaitingBrain(): void {
       awaitingBrain = true;
+    },
+    clearAwaitingBrain(): void {
+      // A turn settled with nothing to deliver (failed / cancelled / empty
+      // answer) — disarm the watchdog so it pairs strictly with a pending
+      // delivery. The user's NEXT utterance re-arms it.
+      awaitingBrain = false;
     },
     dispose(): void {
       disposed = true;

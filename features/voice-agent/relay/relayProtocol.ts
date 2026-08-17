@@ -37,9 +37,12 @@ export function buildDeliveryCueText(
 }
 
 export function buildNarrationCueText(narration: string): string {
+  // Status-neutral preamble: narration covers waiting AND failure/settled-
+  // without-answer states, so it must never assert "still working".
   return (
-    `${NARRATION_CUE_PREFIX} The primary agent is still working. Say ONE short, ` +
-    `truthful line to keep the user comfortable — do not answer their question yourself.\n` +
+    `${NARRATION_CUE_PREFIX} A status update from the system — the user has NOT ` +
+    `received an answer yet. Say ONE short, truthful line reflecting this status; ` +
+    `do not answer their question yourself.\n` +
     `Status: ${narration.trim()}`
   );
 }
