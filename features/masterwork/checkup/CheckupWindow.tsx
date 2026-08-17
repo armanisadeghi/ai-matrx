@@ -479,7 +479,7 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
               onClick={approveWithAi}
             >
               <Sparkles className="mr-1 h-3.5 w-3.5" />
-              Approve the {aiEligibleCount} we&apos;re most sure about
+              {`Approve the ${aiEligibleCount} we're most sure about`}
             </Button>
           ) : null}
           <Button
