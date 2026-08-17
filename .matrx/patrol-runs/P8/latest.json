@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ff48b527-3733-47e8-9f33-1dc4e326cfe2",
-  "state": "certified",
-  "updatedAt": "2026-08-17T19:45:24.042Z",
-  "summary": "CERTIFIED: exact two-file follow-up candidate 78cac960b passes all adversarial checks.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-17T19:45:33.038Z",
+  "summary": "Independently certified follow-up candidate queued for direct main integration.",
   "source": "ff48b527-3733-47e8-9f33-1dc4e326cfe2.json",
-  "eventHash": "e63a93cd7d7369650c326901a17c4f7e7ea58041a5122adf697d55cc07eee9cf"
+  "eventHash": "95bfc2eb0a9754086c6119c7b75aff6ce9c623c801b071a482bee794bb67fdea"
 }

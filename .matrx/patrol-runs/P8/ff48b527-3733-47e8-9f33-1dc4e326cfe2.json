@@ -73,6 +73,22 @@
       },
       "previousEventHash": "7b50e70fb0fe8d7a6dadf0bcdf16c70136410595c32a7c8e0f95f970d540e643",
       "eventHash": "e63a93cd7d7369650c326901a17c4f7e7ea58041a5122adf697d55cc07eee9cf"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-17T19:45:33.038Z",
+      "actor": "/root",
+      "summary": "Independently certified follow-up candidate queued for direct main integration.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P8/ff48b527-3733-47e8-9f33-1dc4e326cfe2"
+      ],
+      "delivery": {
+        "candidateSha": "78cac960bd795942b590b9240449856235818a5e",
+        "preservedRef": "refs/heads/patrol-runs/P8/ff48b527-3733-47e8-9f33-1dc4e326cfe2"
+      },
+      "previousEventHash": "e63a93cd7d7369650c326901a17c4f7e7ea58041a5122adf697d55cc07eee9cf",
+      "eventHash": "95bfc2eb0a9754086c6119c7b75aff6ce9c623c801b071a482bee794bb67fdea"
     }
   ]
 }
