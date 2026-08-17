@@ -53,7 +53,57 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
   ],
+  windowPanels: [
+    {
+      overlayId: "masterworkCheckupWindow",
+      description:
+        "THE FINAL CHECKUP — split down the middle (your Rulebook today | what we suggest). Streams add / modify / remove findings from POST /masterworks/checkup over the durable masterwork_run spine, keyboard disposition (Y / N / arrows), Approve with AI above 80% confidence, and ONE compare-and-swap apply through saveRules. Opened from the Rulebook page header.",
+      status: "Live",
+    },
+  ],
   components: [
+    {
+      name: "Final Checkup — CheckupWindow",
+      filePath: "features/masterwork/checkup/CheckupWindow.tsx",
+      description:
+        "The window itself: composition root, the split, the keyboard model, the footer (progress, Approve with AI, Apply, Undo).",
+      tier: "candidate",
+    },
+    {
+      name: "Final Checkup — CheckupPanes",
+      filePath: "features/masterwork/checkup/CheckupPanes.tsx",
+      description:
+        "The two halves of the split: the Rulebook as it stands vs. the proposal, the reason, the Expert's VERBATIM evidence quote with doors to the conversation / source file, the confidence meter, alternatives, and the ProTextarea rewrite.",
+      tier: "internal",
+    },
+    {
+      name: "Final Checkup — CheckupFindingList",
+      filePath: "features/masterwork/checkup/CheckupFindingList.tsx",
+      description:
+        "The queue: one row per finding with its kind, honest confidence badge, and the Expert's decision (with an AI mark when Approve with AI made the call).",
+      tier: "internal",
+    },
+    {
+      name: "Final Checkup — useCheckup",
+      filePath: "features/masterwork/checkup/useCheckup.ts",
+      description:
+        "The one state hook: decisions (kept per run, restored after a refresh), filters, focus, Approve with AI + its undo, apply and undo-apply.",
+      tier: "internal",
+    },
+    {
+      name: "Final Checkup — useCheckupRun",
+      filePath: "features/masterwork/checkup/useCheckupRun.ts",
+      description:
+        "The durable run (operation `checkup` on platform.masterwork_run) with progressive findings merged by id; the terminal document wins.",
+      tier: "internal",
+    },
+    {
+      name: "Final Checkup — apply service",
+      filePath: "features/masterwork/checkup/service.ts",
+      description:
+        "projectCheckup (pure decisions → rules + checkup memory) and applyCheckup (ONE compare-and-swap through saveRules). remove RETIRES, never deletes.",
+      tier: "internal",
+    },
     {
       name: "rulebookListConfig",
       filePath: "features/masterwork/browse/listConfig.tsx",

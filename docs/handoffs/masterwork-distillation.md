@@ -21,6 +21,22 @@
 
 ## STATUS — live and verified (compressed)
 
+- **The Final Checkup UI is BUILT (2026-08-17)** — `features/masterwork/checkup/`, the
+  `masterworkCheckupWindow` split-pane WindowPanel opened from the Rulebook header: findings streamed
+  one at a time off the durable `checkup` run (`useMasterworkRun` surface `checkup`, final event
+  `masterwork_checkup_complete`, per-finding event `masterwork_checkup_finding`), keyboard
+  disposition (Y / N / arrows / U), an "Approve with AI" that only takes ≥80%-confidence findings and
+  can be undone before anything is saved, and ONE CAS apply through `saveRules` (add appends · modify
+  keeps the rule id · remove RETIRES) with a receipt + Undo. Dismissals are remembered on
+  `platform.rulebook.metadata.checkup.dismissed`, fingerprinted `kind:target_rule_id:proposed_name`
+  — **the checkup service should read that to suppress what the Expert already refused; this surface
+  is its only writer.** Verified end-to-end against the live DB on the Strunk Rulebook (add → new
+  rule, modify → rewritten in place with its id kept, dismiss → memory row, Undo → rules restored).
+  **Waiting on the server lane only:** `POST /masterworks/checkup` does not exist yet, so the launch
+  path is typed through a single documented cast in `useCheckupRun.ts` (`CHECKUP_PATH`) that becomes
+  a plain constant the moment the route ships and `pnpm sync-types` runs. The FE also expects an
+  optional `alternatives: proposed[]` on a finding (Arman: "where we have options they click to
+  select the one that they want") — additive, ignored when absent.
 - **Approaches are a REGISTRY, not an `if` (2026-08-17):** `platform.approach` (canonical
   system-variant catalog via `create_entity_table`; seeded interview/source/exemplar/file with
   mandate_key + intake_query) drives the NewRulebookDialog picker (registry cards, "Suggested
@@ -159,7 +175,6 @@ editing another lane's files.
 |---|---|
 | **The Record** | `platform.associations` edge Rulebook↔conversation (today there is NO link — a conversation is findable only by grepping `tool_trace.args`); resume-or-start-new on "Interview me"; a surface showing **everything the Expert has said** (every message, upload, transcript, and the audio if the ProTextarea mic persists it — that research is part of the lane). Exposes `getExpertCorpus(rulebookId)`. Owns `features/masterwork/record/` + `ScoutInterviewPanel`. |
 | **Cleanup + the audit Mandate** | Reuses the Scribe/War-Room transcript cleanup to make a durable CLEAN version of the Expert's words, then a new Mandate `masterwork.checkup_auditor` (Opus 5, DB-defined) whose only job is *"did we screw up?"* — every finding grounded in a verbatim quote, scored for certainty, an empty result is a legitimate outcome. Owns `aidream/services/masterwork_checkup/`. |
-| **Final Checkup UI** | The finish-line button → a split WindowPanel of add/modify/remove suggestions with the Expert's own quote as evidence, keyboard-fast approve/dismiss, and "Approve with AI" above a confidence bar. Owns `features/masterwork/checkup/`. |
 | **Never lose a payload** | A failed expert-content write becomes a one-click restore for the owner (assists chip replaying through the CAS path, idempotent) + a loud `system_error`; plus the live-rename ordering rule written into the DB doctrine. Owns the tool-failure path. |
 
 **The finding contract all lanes share:**

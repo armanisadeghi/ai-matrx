@@ -26,6 +26,12 @@
   `metadata.intake`), then routes by source: knowledge in-head/unsure → `/masterwork/[id]?interview=1`
   (Scout interview sheet auto-opens); written-down/someone-else's → the Rulebook page with the
   document Approach.
+- **THE RECORD — "Your words" (2026-08-17).** `/masterwork/[id]/record` shows everything the Expert
+  has contributed to one Rulebook — every interview turn, every uploaded source, every recording —
+  oldest first, with a door on every item and copy-everything (`CopyButtons`: human / for-AI / JSON).
+  Reached from a header action on the Rulebook page. Files: `record/service.ts`,
+  `record/ExpertRecordPage.tsx`, `record/InterviewChooser.tsx`, `record/copy.ts`. See § The Record
+  below for the association and the corpus contract.
 - **The Scout interview Approach:** `ScoutInterviewPanel` (AskTutor pattern — useAgentLauncher +
   AgentConversationColumn in a Sheet) talks to the **Scout** agent
   (`4a0b2f8e-18d0-4ade-8b88-7f5610f1d0c8`, Sonnet 5, variable `rulebook_id`), which holds the
@@ -132,6 +138,122 @@ rulebook.version` → the Masterworks page flags "rebuild" AND opens the rule-le
 - `components/masterworks/MasterworkDriftDialog.tsx` — the rule-level drift answer over
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
 
+## The Record — the Expert's own words (2026-08-17)
+
+> Arman, after dictating ~37,455 characters of his SEO method into ONE interview and finding no way
+> back to it: _"There should be a record of it… so I could choose to pick up the one I was having or
+> have a new one. Clearly we're not properly associating these things together. That's critical."_
+> and _"All of the things that I have said… need to be readily available somewhere in the UI."_
+
+**The relationship — a canonical association, never a column.** A Scout interview is an edge in
+`platform.associations`: `conversation --(role 'interview')--> rulebook`, registered in
+`platform.association_types` (`container_side='none'` — the pair conveys nothing; whether a Rulebook
+should convey access to its interviews is a separate human decision at `/administration/relationships`).
+Direction follows the canonical rule — little points to big; many conversations make a Rulebook.
+Written ONLY through `associationsService`. **There is no `rulebook_id` on `chat.conversation` and
+no junction table, and adding one is the defect this replaced.**
+
+**When the edge is written.** NOT at mint time: `assoc_add` requires real access to both endpoints,
+and the server writes `chat.conversation` atomically at stream end, so an early write fails 42501
+(verified live). `associateInterviewWhenPersisted()` is a MODULE-LEVEL job — deliberately not tied to
+the panel's React lifetime, because the Expert closing the sheet mid-turn is exactly the case where
+losing the link hurts most. It waits on the canonical `waitForConversationPersisted`, writes the
+edge, then replaces the auto-generated title ("Auto: expertise_interviewer") with
+`"<Rulebook name> — interview, <date>"`.
+
+**Loud recovery.** `listRulebookInterviews` cross-checks the edges against rule provenance
+(`source_ref.conversation_id`). A conversation named by a rule but missing its edge is HEALED on
+read and screamed about — a recovery firing means the proactive write failed. Historical links were
+backfilled once from rule provenance **and** `chat.tool_trace.args->>'rulebook_id'` (the only way
+Arman's own interview could be found before this existed).
+
+**Resume or start new.** Opening "Interview me" on a Rulebook that already has interviews shows
+`InterviewChooser` — when it happened, how many turns, how much was said, how many rules it
+produced, the first line the Expert wrote — with **Continue** on each and **Start a new interview**
+beside them, plus a new-tab door to the full conversation. Continuing rehydrates the real
+conversation through `useConversationResume`. **Never silently mint a new conversation when prior
+ones exist.** A fresh interview uses `preferFresh` + a bumped `freshSessionKey` so "start new" can
+never revive the surface's last conversation.
+
+**THE CORPUS CONTRACT — `getExpertCorpus(rulebookId, rules)`** (`record/service.ts`) is the ONE way
+any consumer gets everything the Expert ever said about a Rulebook. It returns
+`{ rulebookId, interviews, contributions, totalChars }` where each contribution is
+`{ id, kind: "message"|"upload"|"transcript", text, when, conversationId?, messageId?, fileId?,
+timeRange?, pageExtractionJobId?, rulesProduced? }`, ordered oldest first. Assistant turns are
+excluded on purpose — this is the Expert's record, not a chat log. **The Final Checkup auditor and
+any future Hindsight pass consume this function; a second assembly of the same corpus is a defect.**
+
+**Audio — the honest state.** ProTextarea dictation IS persisted: the shared recorder uploads the
+full recording through the canonical file handler and writes a `transcripts.transcripts` row with
+`audio_file_path` pointing at it (`features/audio/hooks/useChunkedRecordAndTranscribe.ts` →
+`saveAudioToStorage` + `saveDraftTranscript`). **The gap is ATTRIBUTION, not persistence:** that
+transcript row carries no link to the conversation, message, or Rulebook it was dictated into — it
+is titled "Voice Pad Recording" and lands in the Expert's general Recordings folder. So the Record
+today plays audio for a **recording the Expert deliberately uploaded** (`source_ref.file_id`, via
+`InlineMediaRef`), but cannot yet attach the audio of a dictated interview turn to that turn.
+Closing it means threading the recording context (`RecordingContext` already carries
+`{kind:"field", instanceId, label}`) through `MicrophoneIconButton` → `MicrophoneIconButtonCore` →
+`useVoiceCapture` → the engine → the hook, so `saveDraftTranscript` can stamp the origin. That is a
+change across shared audio infrastructure, deliberately not made in this pass — tracked as a
+follow-up, not silently dropped.
+
+## The Final Checkup — `checkup/` (2026-08-17)
+
+**The finish line.** Arman: _"the expert kinda feels like here she is done, and we
+could have a button that they click that's kind of like — maybe call it a final
+checkup… it's probably a window panel, and it should be split down the middle…
+the point is to have it where we can suggest rules that need to be added, rules
+that could be modified, rules that should be removed, and the user is just going
+through very quickly and sort of approving or disapproving."_
+
+- **Entry:** one "Final checkup" action in the Rulebook page header (owner only,
+  once there is something to check). It opens the `masterworkCheckupWindow`
+  overlay — a `WindowPanel`, so the Rulebook stays visible behind it.
+- **The run:** `POST /masterworks/checkup` on the SAME durable spine as Build /
+  ingest / Audition (`platform.masterwork_run`, operation `checkup`). Auditors run
+  in PARALLEL and each finding is streamed the moment it is found
+  (`masterwork_checkup_finding`), so the Expert starts deciding while the rest are
+  still coming; the terminal `masterwork_checkup_complete` document is the truth
+  and is merged by id. A refresh rejoins — `useCheckupRun` is a thin face over
+  `useMasterworkRun`, never a second durability mechanism. *(Progressive results
+  are why `useDurableRun` gained `onDomainEvent`: a run that answers in PIECES
+  must not put a spinner over work the user could already be doing.)*
+- **NOT a word diff.** Both halves render a rule the way a rule is read, so the
+  Expert compares MEANING: left = the Rulebook today (the existing rule for
+  modify/remove; the section it would join for add), right = the proposal, the
+  reason in their own terms, and their **VERBATIM quote as the evidence** with a
+  door to the conversation or source file it came from.
+- **Confidence is honest.** Three bands (`confidenceBand`): a low-confidence
+  suggestion is labelled "We're guessing — check this one" and is never touched by
+  Approve with AI.
+- **Fast disposition.** `Y`/`Enter` approve · `N`/`D` dismiss · `↑↓`/`j k` move ·
+  `U` undo this one, with auto-advance; keys are ignored while the Expert is
+  typing or dictating into a `ProTextarea`. Where a finding carries
+  `alternatives`, the Expert clicks the wording they want; they can also rewrite
+  the proposal in their own words (`ProTextarea`, so they can dictate it).
+- **"Approve with AI" is reviewable, not a black box.** It accepts only findings
+  at ≥80% confidence that the Expert has not already ruled on and that carry no
+  alternatives (a choice is theirs alone), marks each one `byAi`, shows the count
+  in the button ("Approve the 14 we're most sure about"), switches the list to All
+  so they see exactly what it took, and offers **Undo those** — which only takes
+  back the calls the AI made.
+- **Nothing is written until Apply**, and Apply is ONE compare-and-swap through
+  the Rulebook's existing `saveRules` (never a second write path, never a
+  per-finding save storm). `add` appends a live rule (the Expert approving HERE is
+  the human-first act — it is not queued as another draft), `modify` rewrites the
+  target **keeping its id** (audits cite it), `remove` **RETIRES** it. A
+  concurrent save surfaces as the Rulebook's own conflict message and the fresh
+  Rulebook is pulled so the next Apply works. After Apply the Expert reads a
+  receipt of exactly what changed, with a door to the Rulebook and an **Undo**
+  that restores the previous rules as a real new version.
+- **Memory, so we stop asking.** Approved findings need none (they changed the
+  Rulebook). A DISMISSAL is recorded on `metadata.checkup.dismissed`, fingerprinted
+  by kind + target rule id + proposed name (finding ids are run-scoped and never
+  repeat), with the Expert's optional reason. This surface is its only writer;
+  aidream's checkup service reads it to suppress what the Expert already refused.
+- **Decisions survive a refresh** — they are kept per run id in localStorage and
+  restored on rejoin, then cleared on Apply.
+
 ## The Approach Registry — `platform.approach` (2026-08-17)
 
 **"Intake is a registry of Approaches, never a hardcoded flow."** The
@@ -186,6 +308,23 @@ pipeline) is what still takes code. Never hardcode an Approach list again.
    never types, unless they want to.
 
 ## Change log
+
+- 2026-08-17 — **The Final Checkup shipped** (`features/masterwork/checkup/`, section above): the
+  split-down-the-middle `masterworkCheckupWindow`, findings streamed one at a time off the durable
+  `checkup` run, keyboard disposition, a reviewable-and-undoable "Approve with AI", one CAS apply
+  through `saveRules` (add appends · modify keeps the id · remove RETIRES), a receipt with Undo, and
+  dismissal memory on `metadata.checkup`. `saveRules` gained an optional whole-column `metadata`
+  argument so a rule change and the memory that explains it land in ONE compare-and-swap;
+  `useDurableRun` gained `onDomainEvent` for runs that answer in pieces; rule-id minting moved to the
+  one shared `ruleIds.ts` (the rule editor and the checkup mint them identically).
+- 2026-08-17 — **THE RECORD shipped, and interviews are properly associated.** A Rulebook and its
+  Scout conversations now share a canonical `platform.associations` edge (registered pair, backfilled
+  from rule provenance + `chat.tool_trace`); "Interview me" offers every prior interview with
+  Continue / Start a new one instead of silently minting a new conversation; `/masterwork/[id]/record`
+  ("Your words") shows every user message, upload, and recording for one Rulebook with doors and copy
+  affordances; `getExpertCorpus()` is the one corpus contract other agents consume. Also extracted
+  `useConversationResume` (`features/agents/hooks/`) — the canonical resume sequence, previously
+  inline in `ChatRoomClient`, now shared by every surface that continues a conversation.
 
 - 2026-08-17 — The one-by-one rule review is now a wide, calm wizard instead of a narrow wall
   of text: the rule name and statement lead in a dedicated reading column, rationale and
