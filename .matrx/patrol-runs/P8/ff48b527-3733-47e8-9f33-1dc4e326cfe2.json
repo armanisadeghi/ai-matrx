@@ -47,6 +47,32 @@
       ],
       "previousEventHash": "047d3fa7bfaf3c7ee5edd1542e8da8e10b2eaeeba40917ec3db598a0f80248ea",
       "eventHash": "7b50e70fb0fe8d7a6dadf0bcdf16c70136410595c32a7c8e0f95f970d540e643"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-17T19:45:24.042Z",
+      "actor": "/root/p8_exact_certifier",
+      "summary": "CERTIFIED: exact two-file follow-up candidate 78cac960b passes all adversarial checks.",
+      "evidence": [],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "78cac960bd795942b590b9240449856235818a5e",
+        "certifierTaskId": "/root/p8_exact_certifier",
+        "checks": [
+          "Both replacements use canonical SuspenseLoader and preserve predecessor spinner sizes",
+          "Picker lazy-open flow, w-96 popover, and h-80 picker geometry unchanged",
+          "Canvas retains one next/dynamic ssr:false boundary and full-size textured wrapper",
+          "Remaining Loader2 is contextual Checking and saving status",
+          "git diff --check: PASS",
+          "pnpm type-check: PASS",
+          "pnpm check:patrol-contracts: PASS",
+          "Prettier: PASS",
+          "Scoped ESLint: PASS"
+        ]
+      },
+      "previousEventHash": "7b50e70fb0fe8d7a6dadf0bcdf16c70136410595c32a7c8e0f95f970d540e643",
+      "eventHash": "e63a93cd7d7369650c326901a17c4f7e7ea58041a5122adf697d55cc07eee9cf"
     }
   ]
 }
