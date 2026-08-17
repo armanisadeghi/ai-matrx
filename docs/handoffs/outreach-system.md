@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-16
+updated: 2026-08-17
 repos: [matrx-frontend, aidream]
 ---
 
@@ -19,7 +19,7 @@ This document is the work order. Arman named backlink outreach and media outreac
 things to build (2026-08-14), and building them honestly forced out a set of canonical primitives
 the platform was missing and did not know it was missing.
 
-> ## Status 2026-08-16 — G1–G9 ARE ALL BUILT AND LIVE-PROVEN. What remains is HUMAN, not engineering.
+> ## Status 2026-08-17 — G1–G9 ARE ALL BUILT AND LIVE-PROVEN. What remains is HUMAN, not engineering.
 >
 > **Every gap G1 through G9 is closed in code**, each proven against the live database rather than
 > asserted: domain→party (G1) · crawl-backed contact discovery (G2) · templates + personalization
@@ -45,9 +45,13 @@ the platform was missing and did not know it was missing.
 >    `OUTREACH_INBOUND_PUSH_TOKEN` on every server.
 > 3. **Accept the sending rules** for the AI Matrx org (`AcceptSendingRulesDialog` on that page) —
 >    until then every send returns `aup_not_accepted`.
-> 4. **Buy the two vendor accounts** — Hunter Starter $34/mo (approved 2026-08-14, never bought) plus
->    ~$15 of MillionVerifier credit. Without MillionVerifier a newly found contact can never be sent
->    to at all: the send authority refuses it as `address_unverified`. Register: `common-docs/projects/outreach-system/VENDOR-ACCOUNTS.md`.
+> 4. **Create the two vendor accounts and store their API keys** — both integrations can be
+>    unblocked at $0: Hunter Free includes API access and MillionVerifier provides initial credits.
+>    Buy capacity only after measured use requires it (Hunter Starter is $49 month-to-month or
+>    $408/year; MillionVerifier's current paid entry points are a $4.90 signup trial or $39 standard
+>    minimum). Without a verifier, a newly found contact can never be sent to at all: the send
+>    authority refuses it as `address_unverified`. Register and current prices:
+>    `common-docs/projects/outreach-system/VENDOR-ACCOUNTS.md`.
 > 5. **`gmail.readonly`** — RULED 2026-08-15: it lands after the current Google verification round
 >    closes, as its own campaign (queued in `common-docs/projects/google-oauth-verification/PLAN.md`).
 >    Until it does, the cadence **refuses to run un-listened** rather than sending blind. That is the
