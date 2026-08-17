@@ -25,9 +25,39 @@ import {
   formatVariableDisplayName,
   variableValueToDisplay,
 } from "@/features/agents/utils/variable-utils";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import {
+  resolveEntityToken,
+  tryGetEntityInfo,
+} from "@/features/scopes/registry/entityRegistry";
 
 interface FirstTurnVariablesProps {
   conversationId: string;
+}
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A surface WIRES ids on the user's behalf (the Scout panel sends
+ * `rulebook_id`); the Expert never typed one and can do nothing with one.
+ * Printing it read "Rulebook id: 56d96d67-…" to a non-technical Expert mid
+ * interview — the exact developer leakage this product must never show.
+ *
+ * So a bare UUID is never rendered as text. When its key names a known entity
+ * (`rulebook_id` → `rulebook`) it becomes a real door — icon, open, peek (THE
+ * DOOR LAW). When nothing can resolve it, the line is dropped: an id the user
+ * can neither read nor open is noise, not information.
+ */
+function resolveIdVariable(
+  key: string,
+  value: unknown,
+): { token: string; id: string } | null {
+  if (typeof value !== "string" || !UUID_RE.test(value.trim())) return null;
+  const base = key.replace(/_?id$/i, "").replace(/_+$/, "");
+  if (!base) return null;
+  const token = resolveEntityToken(base);
+  return tryGetEntityInfo(token) ? { token, id: value.trim() } : null;
 }
 
 export function FirstTurnVariables({
@@ -51,8 +81,13 @@ export function FirstTurnVariables({
           key,
           label: formatVariableDisplayName(key),
           value: variableValueToDisplay(value),
+          entity: resolveIdVariable(key, value),
+          isBareId:
+            typeof value === "string" && UUID_RE.test(String(value).trim()),
         }))
-        .filter((l) => l.value.trim() !== ""),
+        // A bare id that resolves to nothing openable is dropped entirely —
+        // see resolveIdVariable. Everything else keeps the old rule.
+        .filter((l) => (l.isBareId ? l.entity !== null : l.value.trim() !== "")),
     [userValues],
   );
 
@@ -66,7 +101,11 @@ export function FirstTurnVariables({
           className="text-[11px] leading-snug text-muted-foreground"
         >
           <span className="font-medium text-foreground/70">{l.label}:</span>{" "}
-          {l.value}
+          {l.entity ? (
+            <EntityRef token={l.entity.token} id={l.entity.id} />
+          ) : (
+            l.value
+          )}
         </div>
       ))}
     </div>
