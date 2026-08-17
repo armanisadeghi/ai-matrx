@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P8",
   "runId": "ff48b527-3733-47e8-9f33-1dc4e326cfe2",
-  "state": "certifying",
-  "updatedAt": "2026-08-17T19:43:58.022Z",
-  "summary": "Prepared the two-file follow-up candidate with contextual canonical loaders and unchanged behavior boundaries.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-17T19:45:33.038Z",
+  "summary": "Independently certified follow-up candidate queued for direct main integration.",
   "source": "ff48b527-3733-47e8-9f33-1dc4e326cfe2.json",
-  "eventHash": "7b50e70fb0fe8d7a6dadf0bcdf16c70136410595c32a7c8e0f95f970d540e643"
+  "eventHash": "95bfc2eb0a9754086c6119c7b75aff6ce9c623c801b071a482bee794bb67fdea"
 }
