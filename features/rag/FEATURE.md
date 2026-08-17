@@ -1,3 +1,10 @@
+> 🚨 **THE KNOWLEDGE SYSTEM IS ONE PROJECT, AND IT LIVES IN common-docs:**
+> `/Users/armanisadeghi/code/common-docs/projects/knowledge-system/README.md`. Read it before ANY
+> RAG / NER / knowledge-graph / scope-association work — it holds the canonical vision, the
+> live-verified gap analysis, the 14-package launch plan, and the parallel-agent status board
+> (**claim your package there before writing code**). The vision docs there are read-only; file
+> contradictions in that project's `INCONSISTENCIES.md`.
+
 # RAG Feature
 
 Single home for everything Retrieval-Augmented Generation in this app — the doc library and processing pipeline, data stores, the document viewer, search, plus the typed API clients and React hooks every RAG surface depends on.
