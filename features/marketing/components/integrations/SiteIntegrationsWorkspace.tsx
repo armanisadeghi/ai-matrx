@@ -134,8 +134,14 @@ function hex(bytes: ArrayBuffer): string {
     .join("");
 }
 
-function indexNowKeyLocation(site: MarketingSite): string {
-  const key = site.id.toLowerCase().replace(/[^0-9a-f]/g, "");
+function indexNowKeyForSite(site: MarketingSite): string {
+  return site.id.toLowerCase().replace(/[^0-9a-f]/g, "");
+}
+
+function indexNowKeyLocation(
+  site: MarketingSite,
+  key = indexNowKeyForSite(site),
+): string {
   return `${site.root_url.replace(/\/$/, "")}/${key}.txt`;
 }
 
@@ -1472,7 +1478,8 @@ function UrlChangeIntakeCard({
     : {};
   const configured =
     typeof storedWebhook.token_sha256 === "string" || setup !== null;
-  const keyLocation = indexNowKeyLocation(site);
+  const indexNowKey = indexNowKeyForSite(site);
+  const keyLocation = indexNowKeyLocation(site, indexNowKey);
   const exampleRequest = {
     changes: [
       {
@@ -1493,11 +1500,13 @@ function UrlChangeIntakeCard({
         surface: `Integrations — URL changes — ${site.domain}`,
         data: {
           webhook_url: setup.webhookUrl,
+          indexnow_key: indexNowKey,
           indexnow_key_location: keyLocation,
           request_body: exampleRequest,
         },
         lines: [
           ["Webhook URL", setup.webhookUrl],
+          ["IndexNow key contents", indexNowKey],
           ["IndexNow key file", keyLocation],
           ["POST body", exampleBody],
         ],
@@ -1544,7 +1553,18 @@ function UrlChangeIntakeCard({
             Serve the exact key as plain text at the root file below. Matrx CMS
             sites already do this automatically.
           </p>
-          <Input className="h-8 text-[10px]" readOnly value={keyLocation} />
+          <div className="space-y-1">
+            <Label className="text-[9px] text-muted-foreground">
+              File contents
+            </Label>
+            <Input className="h-8 text-[10px]" readOnly value={indexNowKey} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[9px] text-muted-foreground">
+              Public file location
+            </Label>
+            <Input className="h-8 text-[10px]" readOnly value={keyLocation} />
+          </div>
           <a
             className="inline-flex text-[10px] text-primary underline"
             href={keyLocation}
