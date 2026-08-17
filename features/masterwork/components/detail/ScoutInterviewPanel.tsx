@@ -40,6 +40,7 @@ import {
   type RulebookInterview,
 } from "@/features/masterwork/record/service";
 import { InterviewChooser } from "@/features/masterwork/record/InterviewChooser";
+import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 
 const SOURCE_FEATURE = "masterwork" as const;
 /**
@@ -167,6 +168,8 @@ function InterviewConversation({
       conversationId={conversationId}
       surfaceKey={surfaceKey}
       seedText={seedText}
+      rulebookId={rulebookId}
+      rulebookName={rulebookName}
     />
   );
 }
@@ -179,11 +182,13 @@ function InterviewConversation({
  */
 function ResumedInterviewConversation({
   rulebookId,
+  rulebookName,
   agentId,
   conversationId,
   onBack,
 }: {
   rulebookId: string;
+  rulebookName: string;
   agentId: string;
   conversationId: string;
   onBack: () => void;
@@ -218,7 +223,14 @@ function ResumedInterviewConversation({
     );
   }
   if (isResuming) return <ChatRoomSkeleton />;
-  return <InterviewColumn conversationId={conversationId} surfaceKey={surfaceKey} />;
+  return (
+    <InterviewColumn
+      conversationId={conversationId}
+      surfaceKey={surfaceKey}
+      rulebookId={rulebookId}
+      rulebookName={rulebookName}
+    />
+  );
 }
 
 /**
@@ -230,10 +242,14 @@ function InterviewColumn({
   conversationId,
   surfaceKey,
   seedText,
+  rulebookId,
+  rulebookName,
 }: {
   conversationId: string;
   surfaceKey: string;
   seedText?: string;
+  rulebookId: string;
+  rulebookName: string;
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -266,7 +282,23 @@ function InterviewColumn({
     lastChipRef.current = text;
   };
 
+  // THE AUDIO ORIGIN. The Expert dictates most of an interview through the
+  // composer's mic; the shared recorder already persisted that audio, but the
+  // transcript row had no idea what it belonged to. Declaring the origin here
+  // stamps every recording started anywhere inside this column — no prop
+  // threading through the shared mic chain, and no other ProTextarea in the
+  // platform is affected. See features/audio/recordingOrigin.ts.
   return (
+    <RecordingOriginProvider
+      origin={{
+        surface: "masterwork.interview",
+        conversationId,
+        entityToken: "rulebook",
+        entityId: rulebookId,
+        label: rulebookName,
+        href: `/masterwork/${rulebookId}`,
+      }}
+    >
     <AgentConversationColumn
       conversationId={conversationId}
       surfaceKey={surfaceKey}
@@ -294,6 +326,7 @@ function InterviewColumn({
         </div>
       }
     />
+    </RecordingOriginProvider>
   );
 }
 
@@ -365,6 +398,7 @@ function MandateGatedConversation({
     return (
       <ResumedInterviewConversation
         rulebookId={rulebookId}
+        rulebookName={rulebookName}
         agentId={mandate.agentId}
         conversationId={choice.conversationId}
         onBack={() => setChoice({ mode: "choose" })}

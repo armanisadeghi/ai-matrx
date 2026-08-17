@@ -45,6 +45,10 @@ import {
 import { toAudioFile } from "../utils/audio-mime";
 import { transcribeAudioFile } from "../services/speechApi";
 import { resolveTranscriptionFinalization } from "../services/transcriptionFinalization";
+import {
+  buildDictationDraft,
+  type RecordingOrigin,
+} from "../recordingOrigin";
 
 /**
  * The capture constraints for a recording. Shared by `startRecording` and
@@ -82,6 +86,17 @@ export interface ChunkCompleteInfo {
   safetyId: string;
   text: string;
   accumulatedText: string;
+}
+
+export interface StartRecordingOptions {
+  /**
+   * Where this recording came from — stamped onto the auto-persisted
+   * `transcripts.transcripts` row (title, description, and
+   * `metadata.origin`) so the audio is findable from the thing it belongs to.
+   * Omitted by every surface that declares no origin; the row is then written
+   * exactly as it always was.
+   */
+  origin?: RecordingOrigin | null;
 }
 
 export interface UseChunkedRecordAndTranscribeProps {
@@ -154,6 +169,10 @@ export function useChunkedRecordAndTranscribe({
   const failedIndicesRef = useRef<number[]>([]);
   const allChunkBlobsRef = useRef<Blob[]>([]);
   const userIdRef = useRef<string>("");
+  // Where THIS recording came from, handed in by `startRecording`. Stamped on
+  // the auto-persisted transcript row so a dictation is never a nameless file
+  // in the Recordings folder. Null for every surface that declares no origin.
+  const originRef = useRef<RecordingOrigin | null>(null);
   const transcriptsMapRef = useRef<Map<number, string>>(new Map());
   const chunkTimingsRef = useRef<Map<number, { tStart: number; tEnd: number }>>(
     new Map(),
@@ -369,6 +388,16 @@ export function useChunkedRecordAndTranscribe({
 
     // Auto-persist into transcripts system silently (skip on page unload).
     if (decision.result.success && finalText && !isPageHidingRef.current) {
+      // Captured before the async continuations below, for the same reason as
+      // `journalSafetyId`: a back-to-back start resets the ref.
+      // ONE payload for both the with-audio and the upload-failed path — they
+      // used to be two copies of the same literal, which is how the origin
+      // stamp could silently apply to only one of them.
+      const draftBase = buildDictationDraft({
+        text: finalText,
+        durationSec: duration,
+        origin: originRef.current,
+      });
       import("@/utils/auth/getUserId").then(({ getUserId }) => {
         const userId = getUserId();
         if (userId) {
@@ -388,17 +417,7 @@ export function useChunkedRecordAndTranscribe({
                         void discardChunkJournal(journalSafetyId);
                       }
                       saveDraftTranscript({
-                        title: "Voice Pad Recording",
-                        segments: [
-                          {
-                            id: Date.now().toString(),
-                            text: finalText,
-                            seconds: duration,
-                            timecode: "0:00",
-                          },
-                        ],
-                        source_type: "audio",
-                        folder_name: "Recordings",
+                        ...draftBase,
                         audio_file_path: uploadResult.fileId,
                       }).catch((err) => {
                         console.warn(
@@ -413,19 +432,7 @@ export function useChunkedRecordAndTranscribe({
                         uploadErr,
                       );
                       // Fallback to saving draft transcript without audio
-                      saveDraftTranscript({
-                        title: "Voice Pad Recording",
-                        segments: [
-                          {
-                            id: Date.now().toString(),
-                            text: finalText,
-                            seconds: duration,
-                            timecode: "0:00",
-                          },
-                        ],
-                        source_type: "audio",
-                        folder_name: "Recordings",
-                      }).catch((err) => {
+                      saveDraftTranscript(draftBase).catch((err) => {
                         console.warn(
                           "[chunked-transcription] Failed to auto-persist transcript:",
                           err,
@@ -690,7 +697,8 @@ export function useChunkedRecordAndTranscribe({
     };
   }, [scheduleNextRotation]);
 
-  const startRecording = useCallback(async () => {
+  const startRecording = useCallback(async (opts?: StartRecordingOptions) => {
+    originRef.current = opts?.origin ?? null;
     if (startingRef.current || micHeldRef.current) {
       console.warn(
         "[useChunkedRecordAndTranscribe] startRecording ignored — a start is " +

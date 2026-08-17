@@ -75,6 +75,7 @@ import {
 // presentational viewer uses the read-only wrapper (Copy/AI/Export/Convert).
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { RecordingOriginRef } from "./RecordingOriginRef";
 
 // ── Surface write-target validation ─────────────────────────────────────────
 // Agent-supplied values arrive as `unknown`. Every handler validates its own
@@ -610,6 +611,10 @@ export function TranscriptViewer() {
                     {activeTranscript.description}
                   </p>
                 )}
+                {/* THE DOOR LAW — a recording that knows what it belongs to
+                    must be able to open it. Renders nothing when there is no
+                    origin (every recording made before 2026-08-17). */}
+                <RecordingOriginRef origin={activeTranscript.metadata?.origin} />
                 <div className="flex gap-2 mt-2">
                   {activeTranscript.tags.map((tag) => (
                     <span

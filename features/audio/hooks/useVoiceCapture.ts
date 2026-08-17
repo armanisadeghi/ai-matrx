@@ -28,11 +28,21 @@ import {
 } from "@/providers/GlobalRecordingProvider";
 import type { TranscriptionResult } from "@/features/audio/types";
 import type { ChunkCompleteInfo } from "@/features/audio/recordingTypes";
+import type { RecordingOrigin } from "@/features/audio/recordingOrigin";
+import { useRecordingOrigin } from "@/features/audio/RecordingOriginProvider";
 
 export interface UseVoiceCaptureOptions {
   /** Stable id for this surface. Defaults to a generated id (fine for a single
    *  mic per component). Pass an explicit id when several mics share a key. */
   instanceId?: string;
+  /**
+   * Where this dictation belongs, so the saved recording can say so. Normally
+   * NOT passed here — a surface declares it once by wrapping its subtree in
+   * `RecordingOriginProvider` and every mic inside inherits it. This explicit
+   * option exists for the rare consumer that knows its origin but sits outside
+   * the declaring subtree; it wins over the inherited one.
+   */
+  origin?: RecordingOrigin | null;
   /** Human label for the global awareness indicator ("Recording — Agent message"). */
   label?: string;
   /** Final accumulated transcript when this recording stops + finishes. */
@@ -83,11 +93,24 @@ export function useVoiceCapture(
 
   const provider = useGlobalRecordingOptional();
 
+  // The origin declared by the surrounding surface (null on every surface that
+  // declares none — i.e. today's behaviour, unchanged). An explicit option
+  // wins; `undefined` means "not specified", `null` means "deliberately none".
+  const inheritedOrigin = useRecordingOrigin();
+  const origin =
+    options.origin !== undefined ? options.origin : inheritedOrigin;
+
   // Latest callbacks/label without re-creating `start` every render.
   const optsRef = useRef(options);
   useEffect(() => {
     optsRef.current = options;
   }, [options]);
+
+  // Read inside `start` (a stable callback) without re-creating it per render.
+  const originRef = useRef(origin);
+  useEffect(() => {
+    originRef.current = origin;
+  }, [origin]);
 
   // Ownership-gated reads. Each selector returns an inert value for non-owners
   // so a recording in surface A never re-renders surface B on level/duration
@@ -133,7 +156,12 @@ export function useVoiceCapture(
       return;
     }
     await provider.start({
-      context: { kind: "field", instanceId, label: optsRef.current.label },
+      context: {
+        kind: "field",
+        instanceId,
+        label: optsRef.current.label,
+        ...(originRef.current ? { origin: originRef.current } : {}),
+      },
       onChunkComplete: (info) => {
         optsRef.current.onChunk?.(info.text, info);
       },

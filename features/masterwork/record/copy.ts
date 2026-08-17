@@ -25,7 +25,15 @@ export function contributionHuman(c: ExpertContribution): string {
     c.kind === "message"
       ? `[${stamp(c.when)}]`
       : `[${stamp(c.when)} — ${c.kind === "transcript" ? "recording" : "uploaded source"}]`;
-  return `${head}\n${c.text}`.trim();
+  // Say out loud that the words were SPOKEN and that the audio still exists —
+  // a reader (human or agent) that only sees prose has no idea the voice is
+  // one click away.
+  const voice = c.dictations?.length
+    ? `\n[spoken aloud — ${c.dictations.length} recording${
+        c.dictations.length === 1 ? "" : "s"
+      }: ${c.dictations.map((d) => d.title).join("; ")}]`
+    : "";
+  return `${head}${voice}\n${c.text}`.trim();
 }
 
 /** The whole Record as plain text, oldest first. */
@@ -74,6 +82,10 @@ export function corpusAgentPayload(
       contributions: corpus.contributions.length,
       interviews: corpus.interviews.length,
       total_chars: corpus.totalChars,
+      recordings: corpus.contributions.reduce(
+        (n, c) => n + (c.dictations?.length ?? 0),
+        0,
+      ),
     },
   };
 }

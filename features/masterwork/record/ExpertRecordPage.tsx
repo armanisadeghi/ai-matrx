@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
 import { getExpertCorpus, type ExpertContribution, type ExpertCorpus } from "./service";
@@ -64,6 +65,13 @@ function when(iso: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+/** "12m 30s" — how long the Expert actually spoke. */
+function spokenFor(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
 function KindIcon({ kind }: { kind: ExpertContribution["kind"] }) {
@@ -121,6 +129,41 @@ function ContributionCard({
       {c.text ? (
         <div className="mt-2 text-sm text-foreground">
           <MarkdownStream content={c.text} hideCopyButton />
+        </div>
+      ) : null}
+
+      {/* YOUR ACTUAL VOICE. Arman: "If any of it was audio… we should even have
+          the audio." One player per dictation — a single turn is often several
+          recordings — each openable in the Transcripts surface it lives in. */}
+      {c.dictations?.length ? (
+        <div className="mt-3 space-y-2 rounded-md border border-border/70 bg-muted/30 p-2.5">
+          <p className="text-xs font-medium text-foreground">
+            {c.dictations.length === 1
+              ? "You said this out loud — here it is"
+              : `You said this out loud in ${c.dictations.length} recordings`}
+          </p>
+          {c.dictations.map((d) => (
+            <div key={d.transcriptId} className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                <Mic className="h-3 w-3 shrink-0 text-primary" aria-hidden />
+                {/* The canonical door to the recording's own record — the
+                    registry owns the route; this surface never invents one.
+                    New tab: the Record is a place the Expert is reading. */}
+                <EntityRef
+                  token="transcript"
+                  id={d.transcriptId}
+                  name={d.title}
+                  showIcon={false}
+                  openInNewTab
+                />
+                <span>· {when(d.when)}</span>
+                {d.durationSec ? (
+                  <span>· {spokenFor(d.durationSec)}</span>
+                ) : null}
+              </div>
+              <InlineMediaRef ref={d.fileId} size="fill" />
+            </div>
+          ))}
         </div>
       ) : null}
 

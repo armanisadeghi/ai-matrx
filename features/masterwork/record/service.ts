@@ -32,6 +32,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { parseRecordingOrigin } from "@/features/audio/recordingOrigin";
 import type { RulebookRule } from "../types";
 
 // =============================================================================
@@ -54,6 +55,34 @@ export interface RulebookInterview {
   firstExpertLine: string | null;
   /** Rules in the Rulebook whose provenance points at this conversation. */
   rulesProduced: number;
+}
+
+/**
+ * A dictation the Expert spoke — the AUDIO behind (part of) a contribution.
+ *
+ * Found through the recording origin the shared recorder stamps on
+ * `transcripts.transcripts.metadata.origin` (`features/audio/recordingOrigin.ts`).
+ * A single message can carry several: Arman's 20,007-character turn was five
+ * separate dictations pasted end to end, and each has its own audio file.
+ */
+export interface ExpertDictation {
+  /** `transcripts.transcripts` row id. */
+  transcriptId: string;
+  /** The audio itself — a file id, rendered with `InlineMediaRef`. */
+  fileId: string;
+  /** The recording's own title (the topic label the auto-labeler gave it). */
+  title: string;
+  /** When it was spoken — earlier than the message, which was sent later. */
+  when: string;
+  /** Length of the recording in seconds, when the row recorded one. */
+  durationSec?: number | null;
+  /**
+   * Character offset inside the contribution's text where this dictation's
+   * words begin, when the transcript was found verbatim in the message. This
+   * is the EVIDENCE for the match, not a guess: an offset means the spoken
+   * words are literally present at that position.
+   */
+  charOffset?: number;
 }
 
 /**
@@ -80,6 +109,12 @@ export interface ExpertContribution {
   pageExtractionJobId?: string;
   /** For an upload: how many rules it produced. */
   rulesProduced?: number;
+  /**
+   * The Expert's actual VOICE behind this contribution, oldest first. Present
+   * on a message that was dictated (one entry per recording); absent when it
+   * was typed, or when the dictation predates the origin stamp.
+   */
+  dictations?: ExpertDictation[];
 }
 
 export interface ExpertCorpus {
@@ -402,6 +437,156 @@ export async function listRulebookInterviewsWithAccess(
   };
 }
 
+// =============================================================================
+// The audio behind the words
+// =============================================================================
+
+interface TranscriptRow {
+  id: string;
+  title: string | null;
+  created_at: string;
+  audio_file_path: string | null;
+  segments: unknown;
+  metadata: unknown;
+}
+
+/** `transcripts.transcripts.segments` is a jsonb array of `{ text }` parts. */
+function transcriptText(segments: unknown): string {
+  if (!Array.isArray(segments)) return "";
+  return segments
+    .map((s) =>
+      s && typeof s === "object" && typeof (s as { text?: unknown }).text === "string"
+        ? ((s as { text: string }).text ?? "")
+        : "",
+    )
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
+/**
+ * How many leading characters of a transcript must appear verbatim in a
+ * message for the match to count. Long enough that a coincidental hit is not
+ * a real possibility, short enough to survive a trailing-word difference
+ * between the streamed chunks and what the Expert actually sent.
+ */
+const DICTATION_MATCH_CHARS = 120;
+
+/**
+ * Every dictation stamped with an origin pointing at one of these
+ * conversations. Rows written before the origin stamp existed (2026-08-17) are
+ * invisible here by design — an unstamped recording cannot be attributed
+ * without guessing, and a wrong attribution is worse than none.
+ */
+async function readDictations(
+  conversationIds: string[],
+): Promise<TranscriptRow[]> {
+  if (conversationIds.length === 0) return [];
+  const { data, error } = await supabase
+    .schema("transcripts")
+    .from("transcripts")
+    .select("id, title, created_at, audio_file_path, segments, metadata")
+    .filter(
+      "metadata->origin->>conversationId",
+      "in",
+      `(${conversationIds.join(",")})`,
+    )
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true });
+  if (error) {
+    console.error(
+      "[masterwork/record] failed to read the audio behind the Expert's words " +
+        "— the Record will show the text without the voice.",
+      { conversationIds, error },
+    );
+    return [];
+  }
+  return (data ?? []) as unknown as TranscriptRow[];
+}
+
+/**
+ * Attach each dictation to the message that contains its words.
+ *
+ * THE MATCH IS EVIDENCE, NOT INFERENCE. A dictation belongs to a message only
+ * when the transcript's opening words appear VERBATIM inside that message's
+ * text; the position where they appear is kept as `charOffset`. A dictation
+ * that matches nothing (the Expert re-recorded, or edited heavily before
+ * sending) is NOT force-fitted onto the nearest message — it becomes its own
+ * `transcript` contribution, so the audio is still in the Record and the
+ * Record still tells the truth about where it came from.
+ */
+function attachDictations(
+  contributions: ExpertContribution[],
+  rows: TranscriptRow[],
+): ExpertContribution[] {
+  const byMessage = new Map<string, ExpertContribution>();
+  for (const c of contributions) {
+    if (c.kind === "message" && c.messageId) byMessage.set(c.messageId, c);
+  }
+
+  const unmatched: ExpertContribution[] = [];
+  for (const row of rows) {
+    if (!row.audio_file_path) continue;
+    const origin = parseRecordingOrigin(
+      (row.metadata as { origin?: unknown } | null)?.origin,
+    );
+    const text = transcriptText(row.segments);
+    const needle = text.slice(0, DICTATION_MATCH_CHARS);
+
+    let host: ExpertContribution | undefined;
+    let offset = -1;
+    if (needle.length >= 20) {
+      for (const c of byMessage.values()) {
+        if (c.conversationId !== origin?.conversationId) continue;
+        const at = c.text.indexOf(needle);
+        if (at >= 0) {
+          host = c;
+          offset = at;
+          break;
+        }
+      }
+    }
+
+    const dictation: ExpertDictation = {
+      transcriptId: row.id,
+      fileId: row.audio_file_path,
+      title: row.title ?? "Recording",
+      when: row.created_at,
+      durationSec:
+        typeof (row.metadata as { duration?: unknown } | null)?.duration ===
+        "number"
+          ? ((row.metadata as { duration: number }).duration ?? null)
+          : null,
+      ...(offset >= 0 ? { charOffset: offset } : {}),
+    };
+
+    if (host) {
+      host.dictations = [...(host.dictations ?? []), dictation];
+    } else {
+      unmatched.push({
+        id: `transcript:${row.id}`,
+        kind: "transcript",
+        text,
+        when: row.created_at,
+        conversationId: origin?.conversationId,
+        fileId: row.audio_file_path,
+        dictations: [dictation],
+      });
+    }
+  }
+
+  for (const c of byMessage.values()) {
+    if (c.dictations) {
+      c.dictations.sort(
+        (a, b) => (a.charOffset ?? 0) - (b.charOffset ?? 0) ||
+          a.when.localeCompare(b.when),
+      );
+    }
+  }
+
+  return [...contributions, ...unmatched];
+}
+
 /**
  * THE CANONICAL CORPUS — everything the Expert has contributed to one
  * Rulebook, ordered oldest first, across every conversation and every
@@ -412,7 +597,9 @@ export async function listRulebookInterviewsWithAccess(
  *   1. every USER message in every associated interview conversation;
  *   2. every uploaded source / recording that produced rules
  *      (`source_ref.file_id`), each with the extraction that read it and the
- *      time anchor when it came from a recording.
+ *      time anchor when it came from a recording;
+ *   3. every DICTATION — the audio of a spoken turn, found through the
+ *      recording origin and attached to the message whose words it contains.
  *
  * Assistant turns are deliberately EXCLUDED — this is the Expert's record, not
  * a chat log. The conversation itself is one click away on every message.
@@ -426,9 +613,12 @@ export async function getExpertCorpus(
     rules,
   );
   const ids = interviews.map((i) => i.conversationId);
-  const messages = await readExpertMessages(ids);
+  const [messages, dictationRows] = await Promise.all([
+    readExpertMessages(ids),
+    readDictations(ids),
+  ]);
 
-  const contributions: ExpertContribution[] = messages
+  let contributions: ExpertContribution[] = messages
     .map((m) => {
       const text = messageContentToText(m.content);
       return {
@@ -441,6 +631,11 @@ export async function getExpertCorpus(
       };
     })
     .filter((c) => c.text.length > 0);
+
+  // 3. the AUDIO behind those words. Attached to the message that contains the
+  //    spoken words verbatim; anything that matches no message is kept as its
+  //    own contribution rather than guessed onto the nearest one.
+  contributions = attachDictations(contributions, dictationRows);
 
   // Uploaded sources: one contribution per distinct file that produced rules.
   const byFile = new Map<string, ExpertContribution>();

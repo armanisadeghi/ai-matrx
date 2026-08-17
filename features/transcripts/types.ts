@@ -1,5 +1,7 @@
 // features/transcripts/types.ts
 
+import type { RecordingOrigin } from "@/features/audio/recordingOrigin";
+
 export interface TranscriptSegment {
     id: string;
     timecode: string;
@@ -20,6 +22,14 @@ export interface Transcript {
         segmentCount?: number;
         recordingDate?: string;
         speakers?: string[];
+        /**
+         * Where this recording was dictated — surface, conversation, and the
+         * record it belongs to. Written by the shared recorder
+         * (`features/audio/recordingOrigin.ts`); absent on a recording made
+         * from a surface that declares no origin, and on every row written
+         * before 2026-08-17.
+         */
+        origin?: RecordingOrigin;
         [key: string]: any;
     };
     audio_file_path?: string | null; // cld_files UUID (universal file handler)

@@ -19,17 +19,30 @@
  */
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { RecordingOrigin } from "@/features/audio/recordingOrigin";
 
-export type RecordingContext =
-  | { kind: "studio"; sessionId: string }
-  | { kind: "voice-pad"; instanceId: string }
-  | { kind: "standalone"; label?: string }
-  // A text-field surface (ProTextarea, ProInput, prompt/agent/notes inputs…)
-  // driving the one shared recorder via `useVoiceCapture`. `instanceId`
-  // identifies WHICH field currently owns the recorder so each field knows
-  // whether the live transcript belongs to it; `label` is for the global
-  // awareness indicator ("Recording — Agent message").
-  | { kind: "field"; instanceId: string; label?: string };
+/**
+ * Carried by EVERY recording kind, always optional: where the recording came
+ * from, so the saved `transcripts.transcripts` row can say what it belongs to
+ * instead of landing nameless in the Recordings folder. Declared by a surface
+ * through `RecordingOriginProvider`; see `features/audio/recordingOrigin.ts`.
+ */
+interface RecordingContextOrigin {
+  origin?: RecordingOrigin;
+}
+
+export type RecordingContext = RecordingContextOrigin &
+  (
+    | { kind: "studio"; sessionId: string }
+    | { kind: "voice-pad"; instanceId: string }
+    | { kind: "standalone"; label?: string }
+    // A text-field surface (ProTextarea, ProInput, prompt/agent/notes inputs…)
+    // driving the one shared recorder via `useVoiceCapture`. `instanceId`
+    // identifies WHICH field currently owns the recorder so each field knows
+    // whether the live transcript belongs to it; `label` is for the global
+    // awareness indicator ("Recording — Agent message").
+    | { kind: "field"; instanceId: string; label?: string }
+  );
 
 export interface RecordingsState {
   isRecording: boolean;

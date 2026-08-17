@@ -246,7 +246,10 @@ export function GlobalRecordingEngine() {
         label: recordingSessionLabel(args.context),
         controls: { stop: () => stopRef.current() },
       });
-      await recorder.startRecording();
+      // Hand the surface's origin (if any) to the recorder so the transcript
+      // row it auto-persists knows what it belongs to. Undefined for every
+      // surface that declares none — the pre-existing behaviour.
+      await recorder.startRecording({ origin: args.context.origin });
     },
     [dispatch, recorder],
   );
