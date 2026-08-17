@@ -28,7 +28,15 @@ import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
+// Cycle-free leaf (same constraint as activeOrg.ts) — never `@/lib/redux/store`.
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+
+/** Narrow appContext shape read here — declared inline for the same cycle-free reason. */
+interface AppContextOrgShape {
+  organization_id: string | null;
+  personal_organization_id: string | null;
+}
 
 let cachedId: string | null = null;
 let inflight: Promise<string> | null = null;
@@ -132,7 +140,39 @@ export async function ensureOrgId(
     /* capture must never break the write path */
   }
 
-  return resolvePersonalOrgId();
+  const resolved = await resolvePersonalOrgId();
+  await repairMissingPersonalOrgInRedux(resolved);
+  return resolved;
+}
+
+/**
+ * Put the recovered personal org back into Redux so the hole heals instead of
+ * being re-discovered (and re-screamed, and re-RPC'd) by every later write in
+ * the session — a recovery that does not repair is a recovery that fires
+ * forever. Writes ONLY `personal_organization_id`, which is exactly what the
+ * canonical resolver would have written; the explicitly-selected
+ * `organization_id` is never touched, so a later REHYDRATE or a user org
+ * switch still wins (`getActiveOrgId` prefers the selected org).
+ *
+ * Imported lazily: this module is pulled into service chunks, and a static
+ * import of the slice would drag the sync-policy graph in with it.
+ */
+async function repairMissingPersonalOrgInRedux(orgId: string): Promise<void> {
+  try {
+    const store = getStoreSingleton();
+    if (!store) return;
+    const appContext = (store.getState() as { appContext?: AppContextOrgShape })
+      .appContext;
+    if (!appContext || appContext.personal_organization_id) return;
+    // Surface A write, by contract: this repairs the canonical personal-org
+    // field with the value the canonical resolver itself would have written.
+    const { setPersonalOrganization } = await import(
+      "@/lib/redux/slices/appContextSlice"
+    );
+    store.dispatch(setPersonalOrganization(orgId));
+  } catch {
+    /* repair is best-effort — it must never break the write path */
+  }
 }
 
 /**

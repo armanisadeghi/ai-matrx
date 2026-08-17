@@ -138,7 +138,23 @@ export function definePolicy<TState>(config: PolicyConfig<TState>): Policy<TStat
         fail(`"${sliceName}": preset "${preset}" does not allow remote.fetch / remote.write`);
     }
     if (config.remote !== undefined) {
-        const { fetch: rFetch, write: rWrite, debounceMs } = config.remote;
+        const {
+            fetch: rFetch,
+            write: rWrite,
+            debounceMs,
+            cacheSatisfies,
+        } = config.remote;
+        if (cacheSatisfies !== undefined) {
+            if (typeof cacheSatisfies !== "function") {
+                fail(`"${sliceName}": remote.cacheSatisfies must be a function`);
+            }
+            if (rFetch === undefined) {
+                // A sufficiency test with no fetch has no recovery path — the
+                // engine would classify the cache as insufficient and have
+                // nothing to do about it.
+                fail(`"${sliceName}": remote.cacheSatisfies requires remote.fetch`);
+            }
+        }
         if (rFetch !== undefined && typeof rFetch !== "function") {
             fail(`"${sliceName}": remote.fetch must be a function`);
         }

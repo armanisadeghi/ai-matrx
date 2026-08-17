@@ -467,5 +467,15 @@ export const appContextPolicy = definePolicy<AppContextState>({
       if (signal.aborted || !resolved) return null;
       return resolved as Partial<AppContextState>;
     },
+    // A cached appContext record with NO org in it is not an answer — it is
+    // the absence of one, and `ensureOrgId` screams (and pays a personal-org
+    // RPC) on every org-scoped write until it is filled. The engine persists
+    // post-reducer state on every mutation, so any appContext change made
+    // before the first fetch landed writes exactly such a hollow record; left
+    // to the default "a cache hit suppresses the cold-boot fetch" rule, that
+    // record then poisons every subsequent boot until `staleAfter` (5 min).
+    // Declaring sufficiency makes the boot reconcile instead.
+    cacheSatisfies: (state) =>
+      Boolean(state?.organization_id ?? state?.personal_organization_id),
   },
 });

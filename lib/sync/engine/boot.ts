@@ -282,9 +282,37 @@ async function hydrateFromIdb(
 }
 
 /**
- * For every warm-cache policy that ended boot with no cached data (IDB miss
- * AND fallback miss) and declares `remote.fetch`, fire a single cold-boot
- * fetch. Fire-and-forget — `invokeRemoteFetch` never rejects.
+ * Decide whether a policy that DID hydrate from cache still needs the
+ * cold-boot fetch. Default (no `cacheSatisfies` declared) is the historical
+ * behavior: a cache hit suppresses the fetch. A policy that declares
+ * `remote.cacheSatisfies` gets asked about the post-rehydrate slice state, so
+ * a hollow cached record reconciles at boot instead of at `staleAfter`.
+ *
+ * A throwing predicate is treated as "not sufficient" and logged loudly — an
+ * extra reconcile is always cheaper than a session running on missing data.
+ */
+function cachedStateIsSufficient(policy: Policy<any>, store: Store): boolean {
+    const satisfies = policy.config.remote?.cacheSatisfies;
+    if (typeof satisfies !== "function") return true;
+    const sliceState = (store.getState() as Record<string, unknown>)[
+        policy.config.sliceName
+    ];
+    try {
+        return satisfies(sliceState) === true;
+    } catch (err) {
+        logger.error("boot.cacheSatisfies.threw", {
+            sliceName: policy.config.sliceName,
+            meta: { error: extractErrorMessage(err) },
+        });
+        return false;
+    }
+}
+
+/**
+ * For every warm-cache policy that ended boot with no USABLE cached data and
+ * declares `remote.fetch`, fire a single cold-boot fetch. "Usable" means an
+ * IDB/fallback hit that also passes the policy's `remote.cacheSatisfies` test
+ * (default: any hit counts). Fire-and-forget — `invokeRemoteFetch` never rejects.
  */
 function scheduleColdBootFallbacks(
     policies: readonly Policy<any>[],
@@ -295,8 +323,22 @@ function scheduleColdBootFallbacks(
     for (const policy of policies) {
         const caps = getPreset(policy.config.preset);
         if (caps.storageTier !== "idb") continue;
-        if (hydrated.has(policy.config.sliceName)) continue;
         if (!policy.config.remote?.fetch) continue;
+        if (
+            hydrated.has(policy.config.sliceName) &&
+            cachedStateIsSufficient(policy, store)
+        ) {
+            continue;
+        }
+        if (hydrated.has(policy.config.sliceName)) {
+            logger.warn("boot.cache.insufficient", {
+                sliceName: policy.config.sliceName,
+                meta: {
+                    detail:
+                        "cached record hydrated but failed remote.cacheSatisfies — reconciling now instead of waiting for staleAfter",
+                },
+            });
+        }
         void invokeRemoteFetch({
             policy,
             store,
