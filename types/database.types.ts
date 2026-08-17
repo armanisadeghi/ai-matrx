@@ -33390,12 +33390,15 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           error: Json | null
+          expert_score: number | null
+          expert_verdict: string | null
           heartbeat_at: string
           id: string
           label: string | null
           metadata: Json
           operation: string
           organization_id: string
+          quality_score: number | null
           result: Json | null
           rulebook_id: string
           settings: Json
@@ -33411,12 +33414,15 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           error?: Json | null
+          expert_score?: number | null
+          expert_verdict?: string | null
           heartbeat_at?: string
           id?: string
           label?: string | null
           metadata?: Json
           operation: string
           organization_id: string
+          quality_score?: number | null
           result?: Json | null
           rulebook_id: string
           settings?: Json
@@ -33432,12 +33438,15 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           error?: Json | null
+          expert_score?: number | null
+          expert_verdict?: string | null
           heartbeat_at?: string
           id?: string
           label?: string | null
           metadata?: Json
           operation?: string
           organization_id?: string
+          quality_score?: number | null
           result?: Json | null
           rulebook_id?: string
           settings?: Json

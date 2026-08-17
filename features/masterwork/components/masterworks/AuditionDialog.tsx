@@ -4,20 +4,29 @@
 //
 // "Compare to the original" — the Audition in the UI. The Expert puts the
 // Masterwork's output next to the real published work produced from the same
-// inputs (the news-writer play: same newswire, our brief vs the Times'), and
-// the judge scores both against the Rulebook's own rules. Gaps the reference
-// exposes land as DRAFT rules — the Audition feeds the Rulebook, closing the
-// loop: run → audition → new rules → rebuild → run again.
+// inputs, and the judge scores both against the Rulebook's own rules. Gaps the
+// reference exposes land as DRAFT rules — the Audition feeds the Rulebook.
 //
-// Server half: aidream POST /masterworks/audition (streaming; verdict event
-// `masterwork_audition_verdict`). Owner-only mount: gap capture writes draft
-// rules through the Rulebook's one write path.
+// Quality gets a NUMBER (2026-08-17): every audition lands a derived 0-100
+// `quality_score` on its `platform.masterwork_run` row (50 = parity with the
+// reference), the dialog shows the trend of past scores, and the opt-in
+// THREE-WAY harness also runs a raw vanilla model (same tier as the
+// Masterwork's primary agent, no Rulebook) against the same reference — the
+// verdict then says plainly whether the Masterwork beat vanilla AI, or not.
+//
+// After a verdict, "Your call" records the Expert's OWN rating
+// (expert_score / expert_verdict, direct Supabase write) — the ground truth
+// the judge's platform.judge_verdict accuracy record is calibrated against.
+//
+// Server half: aidream POST /masterworks/audition (durable streaming run via
+// useMasterworkRun; verdict event `masterwork_audition_verdict`). Owner-only.
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -28,9 +37,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { useAppDispatch } from "@/lib/redux/hooks";
-import { callApi } from "@/lib/api/call-api";
+import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
+import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import {
+  EXPERT_CALLS,
+  listAuditionRuns,
+  saveExpertCall,
+  type AuditionRunSummary,
+} from "../../audition/auditionRuns";
 
 const AUDITION_PATH = "/masterworks/audition" satisfies keyof paths;
 
@@ -46,6 +61,14 @@ interface AuditionVerdict {
   findings: RuleFinding[];
   gaps: string[];
   gaps_captured: number;
+  quality_score: number | null;
+  vanilla_compared: boolean;
+  vanilla_score: number | null;
+  vanilla_text: string | null;
+  vanilla_error: string | null;
+  beat_vanilla_rules: number | null;
+  vanilla_rules_compared: number | null;
+  verdict_sentence: string | null;
 }
 
 const VERDICT_COPY: Record<string, { label: string; cls: string }> = {
@@ -59,6 +82,73 @@ const VERDICT_COPY: Record<string, { label: string; cls: string }> = {
     cls: "border-destructive/50 text-destructive",
   },
 };
+
+function parseVerdict(raw: unknown): AuditionVerdict | null {
+  if (!raw || typeof raw !== "object") return null;
+  const data = raw as Record<string, unknown>;
+  if (data.type !== "masterwork_audition_verdict") return null;
+  const num = (v: unknown): number | null => (typeof v === "number" ? v : null);
+  return {
+    verdict: String(data.verdict ?? "parity"),
+    summary: String(data.summary ?? ""),
+    findings: Array.isArray(data.findings) ? (data.findings as RuleFinding[]) : [],
+    gaps: Array.isArray(data.gaps) ? (data.gaps as string[]) : [],
+    gaps_captured: Number(data.gaps_captured ?? 0),
+    quality_score: num(data.quality_score),
+    vanilla_compared: data.vanilla_compared === true,
+    vanilla_score: num(data.vanilla_score),
+    vanilla_text: typeof data.vanilla_text === "string" ? data.vanilla_text : null,
+    vanilla_error: typeof data.vanilla_error === "string" ? data.vanilla_error : null,
+    beat_vanilla_rules: num(data.beat_vanilla_rules),
+    vanilla_rules_compared: num(data.vanilla_rules_compared),
+    verdict_sentence:
+      typeof data.verdict_sentence === "string" ? data.verdict_sentence : null,
+  };
+}
+
+function scoreTone(score: number | null): string {
+  if (score === null) return "text-muted-foreground";
+  if (score >= 50) return "text-primary";
+  if (score >= 35) return "text-foreground";
+  return "text-destructive";
+}
+
+/** Compact past-scores strip: the Expert sees the line move. */
+function HistoryStrip({ runs }: { runs: AuditionRunSummary[] }) {
+  if (runs.length === 0) return null;
+  return (
+    <div className="rounded-md border border-border bg-muted/30 p-2">
+      <p className="text-xs font-medium text-foreground">Past auditions</p>
+      <ul className="mt-1 space-y-0.5">
+        {runs.slice(0, 8).map((run) => (
+          <li
+            key={run.id}
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+          >
+            <span className="w-20 shrink-0">
+              {new Date(run.startedAt).toLocaleDateString()}
+            </span>
+            <span className={cn("w-14 shrink-0 font-medium", scoreTone(run.qualityScore))}>
+              {run.qualityScore !== null ? `${run.qualityScore}/100` : "—"}
+            </span>
+            {run.beatVanilla !== null ? (
+              <span className={run.beatVanilla ? "text-primary" : "text-destructive"}>
+                {run.beatVanilla ? "beat vanilla AI" : "lost to vanilla AI"}
+              </span>
+            ) : null}
+            {run.expertScore !== null ? (
+              <span className="ml-auto shrink-0">
+                your call:{" "}
+                {EXPERT_CALLS.find((c) => c.score === run.expertScore)?.label ??
+                  `${run.expertScore}/100`}
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function AuditionDialog({
   open,
@@ -75,68 +165,98 @@ export function AuditionDialog({
   /** Fired when gap drafts landed on the Rulebook (refresh rule counts). */
   onGapsCaptured?: () => void;
 }) {
-  const dispatch = useAppDispatch();
   const [candidate, setCandidate] = useState(initialCandidate ?? "");
   const [reference, setReference] = useState("");
   const [contextNote, setContextNote] = useState("");
-  const [running, setRunning] = useState(false);
-  const [verdict, setVerdict] = useState<AuditionVerdict | null>(null);
+  const [compareVanilla, setCompareVanilla] = useState(false);
+  const [vanillaInput, setVanillaInput] = useState("");
+  const [showVanillaText, setShowVanillaText] = useState(false);
+  const [history, setHistory] = useState<AuditionRunSummary[]>([]);
+  const [expertWhy, setExpertWhy] = useState("");
+  const [expertSaved, setExpertSaved] = useState<number | null>(null);
+  const [savingExpert, setSavingExpert] = useState(false);
 
-  // Opened from a finished run: the Masterwork's own output IS the candidate,
-  // so adopt it each time the dialog opens with one. Opening with no prefill
-  // (the plain "Compare" entry) leaves whatever the Expert already typed —
-  // and a prefill never silently overwrites a verdict from a prior Audition.
+  const run = useMasterworkRun<AuditionVerdict>({
+    surface: "audition",
+    rulebookId,
+    path: AUDITION_PATH,
+    parseResult: parseVerdict,
+  });
+  const verdict = run.result;
+
+  const refreshHistory = useCallback(() => {
+    listAuditionRuns(rulebookId)
+      .then(setHistory)
+      .catch(() => {
+        // History is a garnish — the verdict panel never blocks on it.
+      });
+  }, [rulebookId]);
+
+  useEffect(() => {
+    if (open) refreshHistory();
+  }, [open, refreshHistory]);
+
+  // Opened from a finished run: the Masterwork's own output IS the candidate.
   useEffect(() => {
     if (!open || !initialCandidate) return;
     setCandidate(initialCandidate);
-    setVerdict(null);
   }, [open, initialCandidate]);
 
-  const audition = async () => {
+  // A verdict just landed: gaps may have hit the Rulebook, history has a new
+  // point, and the Expert's rating starts fresh. Keyed by run id so it fires
+  // once per finished run, not on every re-render of a done run.
+  const [handledRunId, setHandledRunId] = useState<string | null>(null);
+  useEffect(() => {
+    if (run.status !== "done" || !verdict || !run.runId) return;
+    if (run.runId === handledRunId) return;
+    setHandledRunId(run.runId);
+    if (verdict.gaps_captured > 0) onGapsCaptured?.();
+    setExpertSaved(null);
+    setExpertWhy("");
+    refreshHistory();
+  }, [run.status, run.runId, verdict, handledRunId, onGapsCaptured, refreshHistory]);
+
+  const audition = () => {
     if (candidate.trim().length < 50 || reference.trim().length < 50) {
       toast.error("Paste both texts first — ours and the original.");
       return;
     }
-    setRunning(true);
-    setVerdict(null);
-    try {
-      const result = await dispatch(
-        callApi({
-          path: AUDITION_PATH,
-          method: "POST",
-          body: {
-            rulebook_id: rulebookId,
-            candidate_text: candidate,
-            reference_text: reference,
-            context_note: contextNote.trim() || undefined,
-          } as never,
-          stream: true,
-          onStreamEvent: (event) => {
-            if (event.event !== "data") return;
-            const data = event.data as Record<string, unknown>;
-            if (data.type === "masterwork_audition_verdict") {
-              setVerdict({
-                verdict: String(data.verdict ?? "parity"),
-                summary: String(data.summary ?? ""),
-                findings: Array.isArray(data.findings)
-                  ? (data.findings as RuleFinding[])
-                  : [],
-                gaps: Array.isArray(data.gaps) ? (data.gaps as string[]) : [],
-                gaps_captured: Number(data.gaps_captured ?? 0),
-              });
-              if (Number(data.gaps_captured ?? 0) > 0) onGapsCaptured?.();
-            }
-          },
-        }),
-      );
-      const error = (result as { error?: { message?: string } }).error;
-      if (error) toast.error(error.message ?? "The comparison failed.");
-    } catch (err) {
+    if (compareVanilla && vanillaInput.trim().length < 20) {
       toast.error(
-        err instanceof Error ? err.message : "The comparison failed.",
+        "To compare against vanilla AI, paste the same input you gave your Masterwork.",
       );
+      return;
+    }
+    run.reset();
+    setShowVanillaText(false);
+    void run.launch(
+      {
+        rulebook_id: rulebookId,
+        candidate_text: candidate,
+        reference_text: reference,
+        context_note: contextNote.trim() || undefined,
+        compare_vanilla: compareVanilla,
+        vanilla_input: compareVanilla ? vanillaInput : undefined,
+      },
+      contextNote.trim() || "audition",
+    );
+  };
+
+  const recordExpertCall = async (score: number) => {
+    if (!run.runId) {
+      toast.error("This verdict has no saved run to rate — run the Audition again.");
+      return;
+    }
+    setSavingExpert(true);
+    try {
+      await saveExpertCall(run.runId, score, expertWhy);
+      setExpertSaved(score);
+      toast.success("Your call is saved — it is the ground truth the judge learns from.");
+      refreshHistory();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save your rating.");
     } finally {
-      setRunning(false);
+      setSavingExpert(false);
     }
   };
 
@@ -159,6 +279,7 @@ export function AuditionDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
+          <HistoryStrip runs={history} />
           <div className="space-y-1.5">
             <Label htmlFor="audition-candidate">
               Your Masterwork&apos;s output
@@ -196,16 +317,97 @@ export function AuditionDialog({
               maxLength={500}
             />
           </div>
-          <Button onClick={() => void audition()} disabled={running}>
-            {running ? "Judging rule by rule…" : "Compare"}
+          <div className="flex items-start gap-2 rounded-md border border-border p-2">
+            <Checkbox
+              id="audition-vanilla"
+              checked={compareVanilla}
+              onCheckedChange={(v) => setCompareVanilla(v === true)}
+              className="mt-0.5"
+            />
+            <div className="space-y-1.5">
+              <Label htmlFor="audition-vanilla" className="cursor-pointer">
+                Also test against vanilla AI
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                The same model your Masterwork runs on does the same job with no
+                Rulebook, and both are judged against your original. One extra AI
+                call — this is how you know your rules are earning their keep.
+              </p>
+              {compareVanilla ? (
+                <ProTextarea
+                  id="audition-vanilla-input"
+                  value={vanillaInput}
+                  onChange={(e) => setVanillaInput(e.target.value)}
+                  rows={4}
+                  placeholder="Paste the SAME input you gave your Masterwork (the text to edit, or the job brief)…"
+                />
+              ) : null}
+            </div>
+          </div>
+          <Button onClick={audition} disabled={run.running}>
+            {run.running ? (run.stage ?? "Judging rule by rule…") : "Compare"}
           </Button>
+          {run.running && run.stages.length > 0 ? (
+            <p className="text-xs text-muted-foreground">{run.stage}</p>
+          ) : null}
+          {run.error ? (
+            <p className="text-sm text-destructive">{run.error}</p>
+          ) : null}
 
           {verdict && verdictCopy ? (
             <div className="space-y-3 border-t border-border pt-3">
-              <Badge variant="outline" className={verdictCopy.cls}>
-                {verdictCopy.label}
-              </Badge>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className={verdictCopy.cls}>
+                  {verdictCopy.label}
+                </Badge>
+                {verdict.quality_score !== null ? (
+                  <span
+                    className={cn(
+                      "text-sm font-semibold",
+                      scoreTone(verdict.quality_score),
+                    )}
+                  >
+                    Masterwork {verdict.quality_score}/100
+                  </span>
+                ) : null}
+                {verdict.vanilla_compared && verdict.vanilla_score !== null ? (
+                  <span
+                    className={cn("text-sm", scoreTone(verdict.vanilla_score))}
+                  >
+                    Vanilla AI {verdict.vanilla_score}/100
+                  </span>
+                ) : null}
+              </div>
+              {verdict.verdict_sentence ? (
+                <p className="rounded-md border border-primary/30 bg-primary/5 p-2 text-sm font-medium text-foreground">
+                  {verdict.verdict_sentence}
+                </p>
+              ) : null}
+              {verdict.vanilla_error ? (
+                <p className="text-xs text-muted-foreground">
+                  The vanilla comparison could not finish this time; the verdict
+                  above is your Masterwork against the original only.
+                </p>
+              ) : null}
               <p className="text-sm text-foreground">{verdict.summary}</p>
+              {verdict.vanilla_text ? (
+                <div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowVanillaText((s) => !s)}
+                  >
+                    {showVanillaText
+                      ? "Hide vanilla AI's attempt"
+                      : "See what vanilla AI wrote"}
+                  </Button>
+                  {showVanillaText ? (
+                    <p className="mt-1 max-h-48 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-2 text-xs text-muted-foreground">
+                      {verdict.vanilla_text}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               {verdict.findings.length > 0 ? (
                 <ul className="space-y-1">
                   {verdict.findings.map((f) => (
@@ -238,6 +440,43 @@ export function AuditionDialog({
                   </ul>
                 </div>
               ) : null}
+
+              <div className="space-y-2 rounded-md border border-border p-2">
+                <p className="text-xs font-medium text-foreground">
+                  Your call — is the Masterwork&apos;s output there yet?
+                </p>
+                {expertSaved !== null ? (
+                  <p className="text-sm text-primary">
+                    Saved:{" "}
+                    {EXPERT_CALLS.find((c) => c.score === expertSaved)?.label ??
+                      expertSaved}
+                    . Thank you — your judgment is what the judge is measured
+                    against.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {EXPERT_CALLS.map((call) => (
+                        <Button
+                          key={call.score}
+                          variant="outline"
+                          size="sm"
+                          disabled={savingExpert}
+                          onClick={() => void recordExpertCall(call.score)}
+                        >
+                          {call.label}
+                        </Button>
+                      ))}
+                    </div>
+                    <ProTextarea
+                      value={expertWhy}
+                      onChange={(e) => setExpertWhy(e.target.value)}
+                      rows={2}
+                      placeholder="Why? (optional — one sentence helps the system learn your taste)"
+                    />
+                  </>
+                )}
+              </div>
             </div>
           ) : null}
         </div>

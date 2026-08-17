@@ -7449,6 +7449,18 @@
         "default": 0,
         "title": "Quotes Unverified",
         "type": "integer"
+      },
+      "followup_seed": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Followup Seed"
       }
     },
     "required": [
@@ -7456,6 +7468,32 @@
       "rulebook_version"
     ],
     "title": "MasterworkIngestCompleteData",
+    "type": "object"
+  },
+  "MasterworkAuditionProgressData": {
+    "additionalProperties": false,
+    "description": "One stage of an Audition (vanilla arm generation, per-arm judging).",
+    "properties": {
+      "type": {
+        "const": "masterwork_audition_progress",
+        "default": "masterwork_audition_progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "step": {
+        "title": "Step",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      }
+    },
+    "required": [
+      "step",
+      "message"
+    ],
+    "title": "MasterworkAuditionProgressData",
     "type": "object"
   },
   "MasterworkAuditionVerdictData": {
@@ -7486,7 +7524,7 @@
       }
     },
     "additionalProperties": false,
-    "description": "Terminal result of POST /masterworks/audition — the R2 outcome\nsignal: Masterwork output vs the real published exemplar, judged rule-by-rule\nagainst the Rulebook.",
+    "description": "Terminal result of POST /masterworks/audition — the R2 outcome\nsignal: Masterwork output vs the real published exemplar, judged rule-by-rule\nagainst the Rulebook.\n\n``quality_score`` is DERIVED 0-100 (win 1 / tie 0.5 / loss 0 over the\njudged rules) — the judge's verdicts stay enumerated. The ``vanilla_*``\nfields exist only for three-way runs (``compare_vanilla``): the same judge\nscored a raw no-Rulebook model of the Masterwork's own tier against the\nsame reference, and ``verdict_sentence`` states the result plainly.",
     "properties": {
       "type": {
         "const": "masterwork_audition_verdict",
@@ -7538,6 +7576,151 @@
         ],
         "default": null,
         "title": "Rulebook Version"
+      },
+      "quality_score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Quality Score"
+      },
+      "judge_confidence": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Judge Confidence"
+      },
+      "vanilla_compared": {
+        "default": false,
+        "title": "Vanilla Compared",
+        "type": "boolean"
+      },
+      "vanilla_score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Score"
+      },
+      "vanilla_verdict": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Verdict"
+      },
+      "vanilla_findings": {
+        "default": [],
+        "items": {
+          "$ref": "#/$defs/AuditionRuleFinding"
+        },
+        "title": "Vanilla Findings",
+        "type": "array"
+      },
+      "vanilla_text": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Text"
+      },
+      "vanilla_model": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Model"
+      },
+      "vanilla_error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Error"
+      },
+      "beat_vanilla_rules": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Beat Vanilla Rules"
+      },
+      "lost_to_vanilla_rules": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Lost To Vanilla Rules"
+      },
+      "vanilla_rules_compared": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Vanilla Rules Compared"
+      },
+      "verdict_sentence": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Verdict Sentence"
       }
     },
     "required": [

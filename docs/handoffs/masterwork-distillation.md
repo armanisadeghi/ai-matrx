@@ -95,6 +95,16 @@
   descriptions carried retired vocabulary + raw UUIDs (rows cleaned, build.py no longer embeds
   the id). NOTE: an Encore run start 422s / errors until production aidream picks up the
   mandate-aware runtime commits already on main — the FE surfaces both honestly.
+- **Audition = the benchmark harness (2026-08-17):** judge routed through the platform Judge
+  primitive (contract `masterwork.audition_judge` v2, agent v12, payload_json shape) writing
+  `platform.judge_verdict` per arm; derived `quality_score` + Expert's own
+  `expert_score`/`expert_verdict` land on `platform.masterwork_run`; opt-in three-way
+  (`compare_vanilla` + `vanilla_input`, vanilla arm on the Masterwork's own primary-agent
+  model) states "The Masterwork beat vanilla AI on N of M rules" — or the honest opposite.
+  AuditionDialog now durable (`useMasterworkRun`), with history strip + "Your call" rating
+  (100/50/0 = better-than-me / as-good / not-there, the judge's future calibration signal).
+  Proven live on Strunk (run `244bdc6f`: quality 25.0, vanilla 0.0, beat 2 of 4 rules).
+  Details: aidream `aidream/services/masterworks/FEATURE.md` § Audition.
 - Fixed along the way: word-boundary name truncation (was defect 3), duplicate Audition judge
   soft-deleted (mandate pins `c55b52c9-…`), test residue removed (was defect 4), two
   unmirrored shareable-registry rows (`interview_session`, `workflow_runtime_surface`) added

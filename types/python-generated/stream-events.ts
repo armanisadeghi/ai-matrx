@@ -808,6 +808,12 @@ export interface LegalSyncEventData {
   error?: string | null;
 }
 
+export interface MasterworkAuditionProgressData {
+  type?: "masterwork_audition_progress";
+  step: string;
+  message: string;
+}
+
 export interface AuditionRuleFinding {
   rule_id: string;
   winner: string;
@@ -823,6 +829,19 @@ export interface MasterworkAuditionVerdictData {
   gaps?: string[];
   gaps_captured?: number;
   rulebook_version?: number | null;
+  quality_score?: number | null;
+  judge_confidence?: number | null;
+  vanilla_compared?: boolean;
+  vanilla_score?: number | null;
+  vanilla_verdict?: string | null;
+  vanilla_findings?: AuditionRuleFinding[];
+  vanilla_text?: string | null;
+  vanilla_model?: string | null;
+  vanilla_error?: string | null;
+  beat_vanilla_rules?: number | null;
+  lost_to_vanilla_rules?: number | null;
+  vanilla_rules_compared?: number | null;
+  verdict_sentence?: string | null;
 }
 
 export interface MasterworkBuildCompleteData {
@@ -852,6 +871,7 @@ export interface MasterworkIngestCompleteData {
   duplicates_skipped?: number;
   quotes_verified?: number;
   quotes_unverified?: number;
+  followup_seed?: string | null;
 }
 
 export interface MasterworkIngestProgressData {
@@ -1599,6 +1619,7 @@ export type TypedDataPayload =
   | ImageStudioProcessCompleteData
   | ImageStudioVariantData
   | LegalSyncEventData
+  | MasterworkAuditionProgressData
   | MasterworkAuditionVerdictData
   | MasterworkBuildCompleteData
   | MasterworkBuildProgressData
