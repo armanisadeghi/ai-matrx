@@ -29,6 +29,11 @@ import {
 } from "../transport/clientEvents";
 import type { XaiServerEvent } from "../transport/serverEvents";
 import { buildDeliveryCueText, buildNarrationCueText } from "./relayProtocol";
+import {
+  createVoiceExchangeLog,
+  formatVoiceExchange,
+  type VoiceExchangeTurn,
+} from "./sideChannel";
 import type { DeliveryCueOptions, RelaySessionHandle } from "./types";
 
 /** How many injected cue items the realtime session keeps before pruning. */
@@ -39,6 +44,13 @@ export interface VoiceRelayControllerOptions {
   onUserUtterance: (transcript: string) => void;
   /** Loud-recovery callback (in addition to the console scream). */
   onUnsolicitedResponse?: () => void;
+  /**
+   * Fires whenever the voice-exchange log changes, with the CURRENT
+   * serialized `<voice_exchange>` block (empty string when the log is
+   * empty). The hook publishes it into the brain conversation's deferred
+   * context so every send — typed or spoken — carries it.
+   */
+  onExchangeUpdated?: (serializedBlock: string) => void;
   windowItems?: number;
   log?: (kind: "info" | "warn", code: string, detail: string) => void;
 }
@@ -56,6 +68,15 @@ export interface VoiceRelayController {
   markAwaitingBrain(): void;
   /** Disarm the watchdog when a turn settles with nothing to deliver. */
   clearAwaitingBrain(): void;
+  /**
+   * THE SIDE CHANNEL: everything spoken in the voice layer since the brain's
+   * last turn (the Communicator's spoken transcripts + any user utterances the
+   * caller routed back here). Drained by the hook when composing the next
+   * brain message — see sideChannel.composeBrainMessage.
+   */
+  drainVoiceExchange(): VoiceExchangeTurn[];
+  /** Record a user utterance that was HANDLED in the voice layer (side path). */
+  recordSideChannelUserTurn(text: string): void;
   dispose(): void;
 }
 
@@ -74,6 +95,12 @@ export function createVoiceRelayController(
   let detachEvents: (() => void) | null = null;
   let disposed = false;
 
+  // THE SIDE CHANNEL — spoken turns since the brain's last message.
+  const exchangeLog = createVoiceExchangeLog();
+  function notifyExchangeChanged(): void {
+    options.onExchangeUpdated?.(formatVoiceExchange(exchangeLog.peek()));
+  }
+
   let awaitingBrain = false;
   /** Responses this controller requested and has not yet seen created. */
   let expectedResponses = 0;
@@ -90,6 +117,17 @@ export function createVoiceRelayController(
         awaitingBrain = true;
         log("info", "utterance.captured", transcript.slice(0, 120));
         options.onUserUtterance(transcript);
+        return;
+      }
+      // The Communicator's own spoken words — recorded so the brain sees
+      // exactly what was said aloud on its behalf (ruling 6). Both wire
+      // spellings of the transcript-done event are aliases.
+      case "response.output_audio_transcript.done":
+      case "response.audio_transcript.done": {
+        if (event.transcript?.trim()) {
+          exchangeLog.record("communicator", event.transcript);
+          notifyExchangeChanged();
+        }
         return;
       }
       case "response.created": {
@@ -181,6 +219,15 @@ export function createVoiceRelayController(
       // answer) — disarm the watchdog so it pairs strictly with a pending
       // delivery. The user's NEXT utterance re-arms it.
       awaitingBrain = false;
+    },
+    drainVoiceExchange(): VoiceExchangeTurn[] {
+      const drained = exchangeLog.drain();
+      if (drained.length > 0) notifyExchangeChanged();
+      return drained;
+    },
+    recordSideChannelUserTurn(text: string): void {
+      exchangeLog.record("user", text);
+      notifyExchangeChanged();
     },
     dispose(): void {
       disposed = true;

@@ -26,6 +26,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import { VoiceRelayBar } from "@/features/voice-agent/relay/VoiceRelayBar";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -170,6 +171,7 @@ function InterviewConversation({
       seedText={seedText}
       rulebookId={rulebookId}
       rulebookName={rulebookName}
+      agentId={agentId}
     />
   );
 }
@@ -229,6 +231,7 @@ function ResumedInterviewConversation({
       surfaceKey={surfaceKey}
       rulebookId={rulebookId}
       rulebookName={rulebookName}
+      agentId={agentId}
     />
   );
 }
@@ -244,12 +247,15 @@ function InterviewColumn({
   seedText,
   rulebookId,
   rulebookName,
+  agentId,
 }: {
   conversationId: string;
   surfaceKey: string;
   seedText?: string;
   rulebookId: string;
   rulebookName: string;
+  /** The Scout (mandate-resolved) — the voice layer's primary agent. */
+  agentId: string;
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -299,6 +305,17 @@ function InterviewColumn({
         href: `/masterwork/${rulebookId}`,
       }}
     >
+    {/* The Voice Communication Layer — spoken interview over the SAME
+        conversation (same surfaceKey → shared turns). The Scout asks big,
+        one-at-a-time vision questions, so that pacing is this surface's
+        default (Arman, 2026-08-17). */}
+    <VoiceRelayBar
+      primaryAgentId={agentId}
+      conversationId={conversationId}
+      surfaceKey={surfaceKey}
+      sourceFeature={SOURCE_FEATURE}
+      questionPacing="one_at_a_time"
+    />
     <AgentConversationColumn
       conversationId={conversationId}
       surfaceKey={surfaceKey}

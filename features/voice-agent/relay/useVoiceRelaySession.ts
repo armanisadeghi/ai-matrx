@@ -42,6 +42,11 @@ import {
   getOrCreateLedger,
   registerCommunicationLedgerTool,
 } from "./questionLedger";
+import {
+  removeContextEntry,
+  setContextEntry,
+} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import type { QuestionPacing } from "./types";
 
 /** The Communicator's Mandate — resolve it (and refuse loudly) in the surface. */
 export const VOICE_COMMUNICATOR_MANDATE_KEY = "voice.communicator";
@@ -58,11 +63,24 @@ export interface UseVoiceRelaySessionOpts {
   communicatorAgentId: string;
   /** The brain — the primary agent whose conversation this session voices. */
   primaryAgentId: string;
+  /**
+   * Pin the brain to the surface's LIVE conversation. Pass it whenever the
+   * surface already owns a conversation (the Scout panel does) — surface
+   * focus can briefly point at a retained prior conversation, and speech
+   * must never route to the wrong brain while focus catches up.
+   */
+  conversationId?: string;
   /** Execution-system surface key for the primary conversation. */
   surfaceKey: string;
   sourceFeature: SourceFeature;
   /** DB surface for realtime tool resolution. Defaults to chat-voice. */
   surface?: string;
+  /**
+   * Question pacing (ruling 3 — configuration, never dogma). The surface sets
+   * this default; user-visible control layers on top. Named in every delivery
+   * cue so the Communicator knows the active mode.
+   */
+  questionPacing?: QuestionPacing;
 }
 
 export interface VoiceRelaySessionApi extends VoiceSessionApi {
@@ -79,9 +97,20 @@ export interface VoiceRelaySessionApi extends VoiceSessionApi {
 export function useVoiceRelaySession(
   opts: UseVoiceRelaySessionOpts,
 ): VoiceRelaySessionApi {
-  const { communicatorAgentId, primaryAgentId, surfaceKey, sourceFeature, surface } =
-    opts;
+  const {
+    communicatorAgentId,
+    primaryAgentId,
+    conversationId: pinnedConversationId,
+    surfaceKey,
+    sourceFeature,
+    surface,
+    questionPacing,
+  } = opts;
   const effectiveSurface = surface ?? "matrx-user/chat-voice";
+  const pacingRef = useRef<QuestionPacing>(questionPacing ?? "one_at_a_time");
+  useEffect(() => {
+    pacingRef.current = questionPacing ?? "one_at_a_time";
+  }, [questionPacing]);
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
@@ -97,13 +126,20 @@ export function useVoiceRelaySession(
   });
 
   // ── The brain: an ordinary execution-system conversation ────────────────
-  const { conversationId } = useAgentLauncher(primaryAgentId, {
-    surfaceKey,
-    sourceFeature,
-    config: { responseDensity: "compact" },
-    // A voice session outliving a remount must keep its brain conversation.
-    retainOnUnmount: true,
-  });
+  const { conversationId: launcherConversationId } = useAgentLauncher(
+    primaryAgentId,
+    {
+      surfaceKey,
+      sourceFeature,
+      config: { responseDensity: "compact" },
+      // A voice session outliving a remount must keep its brain conversation.
+      retainOnUnmount: true,
+    },
+  );
+  // A surface-pinned id ALWAYS wins over the launcher's focus-derived one —
+  // surface focus can briefly point at a retained prior conversation, and
+  // speech must never route to the wrong brain (Bugbot, PR #177).
+  const conversationId = pinnedConversationId ?? launcherConversationId;
   const conversationIdRef = useRef<string | null>(null);
   useEffect(() => {
     conversationIdRef.current = conversationId ?? null;
@@ -124,8 +160,48 @@ export function useVoiceRelaySession(
           );
           return;
         }
+        // The brain gets the user's VERBATIM words. The voice-layer exchange
+        // travels separately, through the deferred context channel (below) —
+        // inlining it here would show the scaffolding in the user's own chat
+        // bubble and persist it.
         dispatch(setUserInputText({ conversationId: targetConversationId, text: transcript }));
         void dispatch(smartExecute({ conversationId: targetConversationId }));
+      },
+      // THE SIDE CHANNEL (ruling 6): everything spoken in the voice layer is
+      // published into the brain conversation's context, so EVERY send —
+      // typed or spoken — carries it without polluting the user's message
+      // bubble. The rich value raises max_inline_chars to the 5000 ceiling
+      // and the block is budgeted under it (sideChannel), so it is INLINED
+      // into the prompt — model-visible with no ctx_get round-trip. It also
+      // renders as a labeled context chip on the user's message: deliberate
+      // (ruling 1 — the text is never hidden; the chip is the receipt of
+      // exactly what the brain was told).
+      onExchangeUpdated: (serializedBlock) => {
+        const targetConversationId = conversationIdRef.current;
+        if (!targetConversationId) return;
+        if (serializedBlock) {
+          dispatch(
+            setContextEntry({
+              conversationId: targetConversationId,
+              key: "voice_exchange",
+              value: {
+                content: serializedBlock,
+                type: "text",
+                label: "Spoken conversation (voice layer)",
+                max_inline_chars: 5000,
+              },
+              type: "text",
+              label: "Spoken conversation (voice layer)",
+            }),
+          );
+        } else {
+          dispatch(
+            removeContextEntry({
+              conversationId: targetConversationId,
+              key: "voice_exchange",
+            }),
+          );
+        }
       },
     });
     setController(created);
@@ -192,7 +268,11 @@ export function useVoiceRelaySession(
       prev === "running" || prev === "streaming" || prev === "paused";
 
     if ((brainStatus === "running" || brainStatus === "streaming") && !wasActive) {
-      // Turn started — rule 2b: one truthful narration cue if it takes a while.
+      // Turn started — the send carried the current voice_exchange context,
+      // so the log resets for the next turn (drain fires onExchangeUpdated("")
+      // which clears the context entry).
+      controller.drainVoiceExchange();
+      // Rule 2b: one truthful narration cue if the turn takes a while.
       clearNarrationTimer();
       narrationTimerRef.current = setTimeout(() => {
         controller.speakNarration("Passing that along — one moment.");
@@ -228,6 +308,7 @@ export function useVoiceRelaySession(
         if (answer.trim().length > 0) {
           controller.speakDelivery(answer, {
             ledgerSummary: getOrCreateLedger(instanceId).serialize(),
+            pacing: pacingRef.current,
           });
         } else {
           // Settled with nothing to say — disarm rather than leave the
@@ -251,6 +332,7 @@ export function useVoiceRelaySession(
     const targetConversationId = conversationIdRef.current;
     if (!targetConversationId || !text.trim()) return;
     controller?.markAwaitingBrain();
+    // Verbatim text — the voice exchange rides the deferred context channel.
     dispatch(setUserInputText({ conversationId: targetConversationId, text }));
     void dispatch(smartExecute({ conversationId: targetConversationId }));
   };

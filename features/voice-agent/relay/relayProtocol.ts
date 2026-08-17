@@ -23,8 +23,10 @@ export function buildDeliveryCueText(
   primaryAgentResponse: string,
   opts: DeliveryCueOptions = {},
 ): string {
+  const pacing = opts.pacing ?? "one_at_a_time";
   const lines: string[] = [
-    `${DELIVERY_CUE_PREFIX} The primary agent has replied. Deliver this to the user now, conversationally — ask at most ONE question.`,
+    `${DELIVERY_CUE_PREFIX} The primary agent has replied. Deliver this to the user now, conversationally.`,
+    `Pacing mode: ${pacing}`,
   ];
   if (opts.speakerRole) {
     lines.push(`Speaking role: ${opts.speakerRole}`);

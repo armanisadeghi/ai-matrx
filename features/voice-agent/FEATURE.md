@@ -214,10 +214,27 @@ carrying that agent's answer.
   `selectLatestAnswerText`, one narration cue after `NARRATION_DELAY_MS`.
 - `useXaiVoiceSession` gained the opt-in `relay?: VoiceRelayBinding` — attach rides
   the session-subscription teardown; non-relay surfaces are untouched.
-- Tests: `relay/relay.test.ts` (protocol, ledger, controller invariants).
-- Surfaces still to wire (handoff `docs/handoffs/voice-communication-layer.md`):
-  Masterwork Scout interview, Vision Interview (multi-role, `/runs/{id}/resume`),
-  broker cutover of `/api/voice-agent/token` to the `xai_realtime` audience.
+- `relay/sideChannel.ts` — THE SIDE CHANNEL (Arman ruling 6, 2026-08-17): the
+  Communicator's spoken transcripts (captured from `response.*_transcript.done`)
+  + side-path user turns accumulate per brain-turn and are prepended to every
+  brain send as one `<voice_exchange>` XML block (`composeBrainMessage`) — the
+  brain always sees everything said aloud on its behalf.
+- `relay/types.ts` `QuestionPacing` — ruling 3: pacing is configuration
+  (`one_at_a_time` | `grouped`), surface-defaulted via
+  `useVoiceRelaySession({ questionPacing })`, named in every delivery cue; the
+  DB persona pairs it with a "here's what else is coming" preview and
+  reflective mirroring while the brain works (ruling 4).
+- `relay/VoiceRelayBar.tsx` — the generic drop-in voice control for ANY
+  conversation surface (ruling 2): enable → mandate-gated session → mic/mute/
+  status in one compact row; mount with the surface's own `surfaceKey` so
+  spoken and typed turns share the conversation. First consumer: the Masterwork
+  Scout interview (`ScoutInterviewPanel` → `InterviewColumn`, pacing
+  `one_at_a_time`).
+- Tests: `relay/relay.test.ts` (protocol, pacing, ledger, side channel,
+  controller invariants).
+- **The durable rollout checklist lives in
+  `docs/handoffs/voice-communication-layer.md` — every surface that needs
+  voice is listed there; never trim it without shipping the row.**
 
 ## Related features
 
@@ -263,6 +280,14 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-08-17` (2) — **Arman's rulings wired in.** `QuestionPacing` config +
+  cue naming, THE SIDE CHANNEL (`sideChannel.ts`, `<voice_exchange>` block on
+  every brain send, Communicator transcripts captured), generic
+  `VoiceRelayBar`, and the first real surface: voice on the Masterwork Scout
+  interview (shared conversation via the panel's surfaceKey). DB persona
+  updated to v2 (pacing modes, coming-up preview, reflective mirroring,
+  side-path interrupt handling). Rulings SoR:
+  `common-docs/systems/voice-communication-layer/FEATURE.md`.
 - `2026-08-17` — **Voice Communication Layer v1 (`relay/`).** The Communicator
   (Mandate `voice.communicator`) speaks FOR a primary text agent: relay
   controller + question ledger client tool + `useVoiceRelaySession` +
