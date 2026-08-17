@@ -145,11 +145,14 @@ describe("mandate owner bench service", () => {
   });
 
   it("loads the live code-truth report through the typed client", async () => {
-    // `slots` is aidream's wire field name and stays until the server half of
-    // the Mandate rename lands — renaming it here would silently make the
-    // guard accept a shape the server never sends.
+    // `mandates` is aidream's wire field name. It used to be `slots`, and this
+    // fixture deliberately kept the old name until the server half of the
+    // Mandate rename landed — it has (verified against the live OpenAPI on
+    // 2026-08-17: `MandateCodeTruthReport.mandates`), so the fixture moved with
+    // it. Renaming this ahead of the server would have made the guard accept a
+    // shape nothing sends; leaving it behind makes the guard reject the real one.
     const response = {
-      slots: [],
+      mandates: [],
       import_failures: [],
       counts: { total: 0 },
     };
