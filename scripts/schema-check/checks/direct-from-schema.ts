@@ -22,11 +22,13 @@
  * variable table name + `db = supabase as any` receiver, neither of which the
  * old literal-only / known-receiver-only checker could see through.
  *
- * Still conservative: an unresolved receiver (unknown function call, destructured
- * param, etc.) or an unresolved table-name variable is skipped, not flagged — no
- * false positives. Relations registered in dead-relations.json are deferred to
- * that check (which shares this same chain-schema resolution — see ../chain-schema.ts —
- * so a fix recognized here is recognized there too).
+ * Still conservative about call identity: an unresolved receiver (unknown function
+ * call, destructured param, etc.) or an unresolved table-name variable is skipped,
+ * not flagged. Once the receiver is proven to be Supabase, however, a missing
+ * relation is always an ERROR — PostgREST returns PGRST205 whether the name moved
+ * elsewhere or disappeared entirely. Relations registered in dead-relations.json
+ * are deferred to that check (which shares this same chain-schema resolution — see
+ * ../chain-schema.ts — so a fix recognized here is recognized there too).
  *
  * Escape hatch: a `// schema-check-ignore` comment on the line silences it.
  */
@@ -39,7 +41,7 @@ import type { Context, Finding } from "../types";
 // JS built-ins with a `.from(` that is not a supabase call.
 const NOT_SUPABASE = /\b(Array|Object|Buffer|Date|(?:Ui|I)nt(?:8|16|32)Array|Uint8ClampedArray|Float(?:32|64)Array|BigInt64Array|BigUint64Array)$/;
 
-function check(ctx: Context): Finding[] {
+export function checkDirectFromSchema(ctx: Context): Finding[] {
   const { snapshot: snap, schemaBinders } = ctx;
   if (snap.provenance === "none" || snap.tables.size === 0) return [];
   const findings: Finding[] = [];
@@ -72,11 +74,11 @@ function check(ctx: Context): Finding[] {
               location: loc(file, i),
               fix: `Use .schema("${livesIn[0]}").from("${rel}").`,
             });
-          } else if (ctx.warn) {
+          } else {
             findings.push({
               check: "direct-from-schema",
-              severity: "warn",
-              message: `.schema("${schema}").from("${rel}") — "${rel}" is not a known relation in any live schema (typo? dropped table? RPC?).`,
+              severity: "error",
+              message: `.schema("${schema}").from("${rel}") — "${rel}" is not a live table/view in any schema. PostgREST will return PGRST205.`,
               location: loc(file, i),
             });
           }
@@ -93,11 +95,11 @@ function check(ctx: Context): Finding[] {
             location: loc(file, i),
             fix: `Add the schema: .schema("${livesIn[0]}").from("${rel}").`,
           });
-        } else if (ctx.warn) {
+        } else {
           findings.push({
             check: "direct-from-schema",
-            severity: "warn",
-            message: `bare .from("${rel}") on the public client, but "${rel}" is not a live public table/view (typo? dropped? view added since the snapshot?).`,
+            severity: "error",
+            message: `bare .from("${rel}") on the public client, but "${rel}" is not a live table/view in any schema. PostgREST will return PGRST205.`,
             location: loc(file, i),
           });
         }
@@ -107,4 +109,4 @@ function check(ctx: Context): Finding[] {
   return findings;
 }
 
-registerCheck("direct-from-schema", check);
+registerCheck("direct-from-schema", checkDirectFromSchema);
