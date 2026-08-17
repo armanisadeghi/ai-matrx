@@ -19,6 +19,8 @@ export interface VoiceExchangeLog {
   record(speaker: VoiceExchangeTurn["speaker"], text: string): void;
   /** Returns everything recorded since the last drain, and clears the log. */
   drain(): VoiceExchangeTurn[];
+  /** Read without clearing — for live context publication. */
+  peek(): VoiceExchangeTurn[];
   size(): number;
 }
 
@@ -52,6 +54,9 @@ export function createVoiceExchangeLog(): VoiceExchangeLog {
     drain() {
       return turns.splice(0, turns.length);
     },
+    peek() {
+      return turns.map((t) => ({ ...t }));
+    },
     size() {
       return turns.length;
     },
@@ -80,9 +85,13 @@ export function formatVoiceExchange(turns: VoiceExchangeTurn[]): string {
 }
 
 /**
- * Compose the message the brain receives: the voice_exchange block (when any
- * turns exist) followed by the user's verbatim words. The user's words are
- * NEVER altered — the block is framing, the utterance is the message.
+ * Compose an INLINE brain message: the voice_exchange block followed by the
+ * user's verbatim words. NOT used on the live send path today — inlining the
+ * block into the user message makes the scaffolding visible in the user's own
+ * chat bubble and persists it (Bugbot, PR #177). Live delivery goes through
+ * the deferred context channel instead (`voice_exchange` context entry in
+ * useVoiceRelaySession); this composer is kept for the future server-side
+ * hidden-message-part primitive (rollout checklist row 7).
  */
 export function composeBrainMessage(
   exchangeTurns: VoiceExchangeTurn[],

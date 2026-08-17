@@ -13,8 +13,9 @@
 // that the voice layer is an OPTION layered on top of a normal conversation.
 
 import { useState } from "react";
-import { Mic, MicOff, Square } from "lucide-react";
+import { Mic, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { VoiceMuteButton } from "@/features/voice-agent/components/VoiceMuteButton";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMandate } from "@/features/agents/mandates/useMandate";
@@ -61,17 +62,17 @@ function RelayRoom({
           )}
         </Button>
         {live ? (
-          <Button variant="outline" onClick={relay.toggleMute}>
-            {relay.micMuted ? (
-              <>
-                <Mic className="mr-2 h-4 w-4" /> Unmute mic
-              </>
-            ) : (
-              <>
-                <MicOff className="mr-2 h-4 w-4" /> Mute mic
-              </>
-            )}
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* Canonical mute control — state-correct icon + aria-label. */}
+            <VoiceMuteButton
+              muted={relay.micMuted}
+              onToggle={relay.toggleMute}
+              size={40}
+            />
+            <span className="text-sm text-muted-foreground">
+              {relay.micMuted ? "Mic muted" : "Mic live"}
+            </span>
+          </div>
         ) : null}
         <div className="rounded-md border border-border bg-card p-3 text-sm">
           <div className="flex justify-between">

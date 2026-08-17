@@ -310,6 +310,27 @@ describe("relayController", () => {
     expect(controller.drainVoiceExchange()).toEqual([]);
   });
 
+  it("publishes the serialized exchange on every change, and empty on drain", () => {
+    const blocks: string[] = [];
+    const controller = createVoiceRelayController({
+      onUserUtterance: () => {},
+      onExchangeUpdated: (b) => blocks.push(b),
+      log: () => {},
+    });
+    const { handle, emit } = makeHandle();
+    controller.binding.attach(handle);
+
+    emit({
+      type: "response.output_audio_transcript.done",
+      transcript: "What's the timeline?",
+    });
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toContain("<communicator>");
+
+    controller.drainVoiceExchange();
+    expect(blocks[blocks.length - 1]).toBe("");
+  });
+
   it("drops cues after detach instead of throwing", () => {
     const controller = createVoiceRelayController({
       onUserUtterance: () => {},

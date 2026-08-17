@@ -14,9 +14,10 @@
 // common-docs/systems/voice-communication-layer/FEATURE.md
 
 import { useState } from "react";
-import { Mic, MicOff, Square, AudioLines } from "lucide-react";
+import { Mic, Square, AudioLines } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMandate } from "@/features/agents/mandates/useMandate";
+import { VoiceMuteButton } from "../components/VoiceMuteButton";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import type { QuestionPacing } from "./types";
 import {
@@ -27,6 +28,11 @@ import {
 export interface VoiceRelayBarProps {
   /** The brain — the surface's primary agent. */
   primaryAgentId: string;
+  /**
+   * The surface's LIVE conversation. Pass it whenever the surface owns one
+   * (pins the relay to the right brain even while surface focus catches up).
+   */
+  conversationId?: string;
   /** MUST match the surface's conversation column so turns are shared. */
   surfaceKey: string;
   sourceFeature: SourceFeature;
@@ -37,6 +43,7 @@ export interface VoiceRelayBarProps {
 function ActiveVoiceRelay({
   communicatorAgentId,
   primaryAgentId,
+  conversationId,
   surfaceKey,
   sourceFeature,
   questionPacing,
@@ -44,6 +51,7 @@ function ActiveVoiceRelay({
   const relay = useVoiceRelaySession({
     communicatorAgentId,
     primaryAgentId,
+    conversationId,
     surfaceKey,
     sourceFeature,
     questionPacing,
@@ -68,13 +76,12 @@ function ActiveVoiceRelay({
         )}
       </Button>
       {live ? (
-        <Button size="sm" variant="outline" onClick={relay.toggleMute}>
-          {relay.micMuted ? (
-            <Mic className="h-3.5 w-3.5" />
-          ) : (
-            <MicOff className="h-3.5 w-3.5" />
-          )}
-        </Button>
+        // The canonical mute control — state-correct icon + aria-label.
+        <VoiceMuteButton
+          muted={relay.micMuted}
+          onToggle={relay.toggleMute}
+          size={30}
+        />
       ) : null}
       <span className="text-xs text-muted-foreground">
         {relay.error

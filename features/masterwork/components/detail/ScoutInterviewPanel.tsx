@@ -311,6 +311,7 @@ function InterviewColumn({
         default (Arman, 2026-08-17). */}
     <VoiceRelayBar
       primaryAgentId={agentId}
+      conversationId={conversationId}
       surfaceKey={surfaceKey}
       sourceFeature={SOURCE_FEATURE}
       questionPacing="one_at_a_time"

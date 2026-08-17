@@ -31,6 +31,7 @@ import type { XaiServerEvent } from "../transport/serverEvents";
 import { buildDeliveryCueText, buildNarrationCueText } from "./relayProtocol";
 import {
   createVoiceExchangeLog,
+  formatVoiceExchange,
   type VoiceExchangeTurn,
 } from "./sideChannel";
 import type { DeliveryCueOptions, RelaySessionHandle } from "./types";
@@ -43,6 +44,13 @@ export interface VoiceRelayControllerOptions {
   onUserUtterance: (transcript: string) => void;
   /** Loud-recovery callback (in addition to the console scream). */
   onUnsolicitedResponse?: () => void;
+  /**
+   * Fires whenever the voice-exchange log changes, with the CURRENT
+   * serialized `<voice_exchange>` block (empty string when the log is
+   * empty). The hook publishes it into the brain conversation's deferred
+   * context so every send — typed or spoken — carries it.
+   */
+  onExchangeUpdated?: (serializedBlock: string) => void;
   windowItems?: number;
   log?: (kind: "info" | "warn", code: string, detail: string) => void;
 }
@@ -89,6 +97,9 @@ export function createVoiceRelayController(
 
   // THE SIDE CHANNEL — spoken turns since the brain's last message.
   const exchangeLog = createVoiceExchangeLog();
+  function notifyExchangeChanged(): void {
+    options.onExchangeUpdated?.(formatVoiceExchange(exchangeLog.peek()));
+  }
 
   let awaitingBrain = false;
   /** Responses this controller requested and has not yet seen created. */
@@ -115,6 +126,7 @@ export function createVoiceRelayController(
       case "response.audio_transcript.done": {
         if (event.transcript?.trim()) {
           exchangeLog.record("communicator", event.transcript);
+          notifyExchangeChanged();
         }
         return;
       }
@@ -209,10 +221,13 @@ export function createVoiceRelayController(
       awaitingBrain = false;
     },
     drainVoiceExchange(): VoiceExchangeTurn[] {
-      return exchangeLog.drain();
+      const drained = exchangeLog.drain();
+      if (drained.length > 0) notifyExchangeChanged();
+      return drained;
     },
     recordSideChannelUserTurn(text: string): void {
       exchangeLog.record("user", text);
+      notifyExchangeChanged();
     },
     dispose(): void {
       disposed = true;
