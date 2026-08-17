@@ -4,7 +4,7 @@
 - **Run id:** `2026-08-17T131440Z`
 - **Base:** `244042ddc314ba7995e3d8e8a3ed79aae9e5baca` (`v0.4.762`)
 - **Run kind:** structural-novelty scope + open-sighting verification + periodic full viewport/fixed-bottom pass
-- **Current state:** certified exact candidate queued for fast integration
+- **Current state:** certified exact candidate integrated to `origin/main`; delivery remains queued for the serialized release lane
 - **Findings:** 16 verified occurrences in 14 files
 - **Fixed in candidate:** 16
 - **Approvals needed:** 0
@@ -135,8 +135,10 @@ record now carries an appended clarification without rewriting history.
 Independent adversarial review then **CERTIFIED** exact candidate
 `e8a5e84287f0d68962bcbcd067419432d706fcc2`: product files remained
 byte-identical to the tested batch, the hash chain and finding arithmetic were
-correct, and no concrete batch-caused defect remained. Delivery is queued with
-that candidate preserved as the required ancestor.
+correct, and no concrete batch-caused defect remained. The certified candidate
+is an ancestor of integrated main commit
+`2cd1c2b1e3c97c4e4d47a1e4b11182dca1da652f`; the permanent record remains
+`delivery_queued` for the serialized release lane.
 
 ## Recursive learning
 
