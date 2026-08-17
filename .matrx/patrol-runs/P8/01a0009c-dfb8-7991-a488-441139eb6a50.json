@@ -81,6 +81,25 @@
       },
       "previousEventHash": "83e11e7493c17ac88cdb71119a163752f41cf3f9df21ef6901a3da3fb163fdec",
       "eventHash": "dcb28e5c05a1a278549dda65318978d437e6ab368ca11b35c8f6254a5afd7ede"
+    },
+    {
+      "sequence": 6,
+      "state": "delivered",
+      "at": "2026-08-17T19:19:55.690Z",
+      "actor": "p8-delivery-reconciler",
+      "summary": "DELIVERED: the independently certified contextual-loader candidate is on origin/main and included in v0.4.702.",
+      "evidence": [
+        "Candidate e67fb5fd9b is preserved as an ancestor of integration commit fe22be554 and current origin/main.",
+        "v0.4.702 is the first version tag whose release commit contains the candidate."
+      ],
+      "delivery": {
+        "candidateSha": "e67fb5fd9b3820fc76962879ce1f43ab5b75b97a",
+        "preservedRef": "refs/heads/patrol-runs/P8/01a0009c-dfb8-7991-a488-441139eb6a50",
+        "integratedSha": "fe22be55481e9ffb29318261a888444aabd6c08a",
+        "release": "v0.4.702"
+      },
+      "previousEventHash": "dcb28e5c05a1a278549dda65318978d437e6ab368ca11b35c8f6254a5afd7ede",
+      "eventHash": "4f37ffe6a2b184489c4cab5f334859ce33de6778f8027c327fcca4892ca21564"
     }
   ]
 }
