@@ -1,4 +1,29 @@
-# Expertise System productization — the full end-to-end work order
+> # 🔶 NAMING IS UNSETTLED IN THIS FILE — READ BEFORE YOU WRITE A WORD
+>
+> **The canonical lexicon is the ONLY authority on names:** `/Users/armanisadeghi/code/common-docs/systems/vocabulary/FEATURE.md`
+>
+> This document's vocabulary conflicts with it. Specifically:
+>
+> - **🚨 Arman's ruling, 2026-08-16 — THE MOST IMPORTANT LINE IN THIS FILE: everything described here is part of the CORE MASTERWORK SYSTEM.** It is not a separate product, a sibling system, or an adjacent feature. It drifted out and got built *completely outside* the system it belongs to **for one reason: vocabulary.** It was misnamed, therefore misplaced, therefore lost. **These systems only work when all the parts of them are there** — treat every future decision here as a Masterwork decision.
+> - Masterwork's own design docs are `/Users/armanisadeghi/code/common-docs/projects/advanced-expert-capture-system/` (folder name also superseded). **Read `initial-plan-docs/32-distillation-methods.md` first** — this lane is one of Masterwork's **Distillation Methods**, exactly as the shipped `vision-interview` system is (that one is **Vision Extraction**).
+> - **pack** → recommendation **Rulebook** (this app's own UI already says *"a pack is one expert's rulebook"* in three places). UNSETTLED.
+> - **desk** → recommendation **Masterwork** (a desk is precisely "an Expert's judgment as a running AI system"; one Rulebook can yield several). Running one is an **Encore**. UNSETTLED.
+> - **compile / compiler** (leaks to users as "Starting the compiler…") → recommendation **Build**. UNSETTLED.
+> - **backtest** → recommendation is this UI's own honest words, **"Compare to the original"**. **Replay** is reserved for Hindsight and means something different (re-running a past request under a change). UNSETTLED.
+> - **"Expertise System" / "expertise capture" / "expert distillation" as the name of the program is SETTLED — it is Masterwork.** Fix that on sight. Route `/expertise`, table `platform.expertise_pack`, services `expertise_desks` / `expertise_ingest`, the `expertise` source-feature slug and entity token all still carry the drifted name; under Law 4 a rename goes all the way, so this is planned work with a data migration — **not** something to half-do.
+> - **SME** is fine in internal prose, but is **Expert** in every product surface.
+>
+> **Law 1 — agents never coin, rename, or "improve" a name.** **Law 5 — an Unsettled term is
+> not authority; do not treat the recommendations as decided.** If you are working on this
+> file, or on any part of the feature it describes, then **settling the nomenclature with
+> Arman is one of your most important tasks** — not a footnote and not someone else's job.
+> Bring him the specific choices above, get a ruling, record it in the lexicon, and only then
+> sweep it everywhere in one campaign (**Law 4 — a rename goes ALL the way:** docs, code,
+> routes, components, services, DB tables, entity tokens, slot keys). Never split the
+> difference. Never invent a third word. Never adopt the drifted term because it is already
+> in the code.
+
+# Masterwork — the shipped Distillation lane ("Expertise System") — the full end-to-end work order
 
 > **Read this first, execute top to bottom.** This is the complete handoff for turning the
 > SME proof-of-concept (2026-08-09, "the Hopkins/Strunk desks") into the real, UI-first
