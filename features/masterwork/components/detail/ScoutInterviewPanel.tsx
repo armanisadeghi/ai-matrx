@@ -33,7 +33,7 @@ import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
 import { SCOUT_AGENT_ID } from "../../agents";
 
-const SOURCE_FEATURE = "expertise" as const;
+const SOURCE_FEATURE = "masterwork" as const;
 /** How often (ms) to check whether the Scout landed new draft rules. */
 const RULEBOOK_WATCH_INTERVAL_MS = 5000;
 

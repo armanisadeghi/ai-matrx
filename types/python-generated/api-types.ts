@@ -728,6 +728,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/mandates/{mandate_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Mandated Agent
+         * @description Resolve a Mandate for this principal and run its Holder.
+         */
+        post: operations["start_mandated_agent_ai_mandates__mandate_key__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/agents/{agent_id}/invalidate-cache": {
         parameters: {
             query?: never;
@@ -1718,6 +1738,26 @@ export interface paths {
          * @description Start an agent on the spine — identical pipeline to `/api/ai/agents/{agent_id}`.
          */
         post: operations["start_agent_v2_v2_ai_agents__agent_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v2/ai/mandates/{mandate_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Mandated Agent V2
+         * @description Resolve a Mandate for this principal and run its Holder on the spine.
+         */
+        post: operations["start_mandated_agent_v2_v2_ai_mandates__mandate_key__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8496,6 +8536,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/hindsight/crystallization/subjects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Crystallization Subjects
+         * @description Every Orchestra crystallization can look at, richest history first.
+         */
+        get: operations["list_crystallization_subjects_hindsight_crystallization_subjects_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/crystallization/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Crystallization Pass
+         * @description Detect a repeated path, propose a workflow, and prove it on held-out runs.
+         *
+         *     Never raises for the ordinary outcomes: a pass that finds nothing returns
+         *     `status='refused'` with the refusal's reason and every number it turned on.
+         */
+        post: operations["run_crystallization_pass_hindsight_crystallization_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/hindsight/crystallization/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trigger Crystallization Sweep
+         * @description The FREE detection pass over every Orchestra — zero tokens, no proposals.
+         *
+         *     The same sweep the 15-minute drain runs. It reports every refusal by name,
+         *     so "no candidates" is readable rather than merely quiet.
+         */
+        post: operations["trigger_crystallization_sweep_hindsight_crystallization_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hindsight/drain": {
         parameters: {
             query?: never;
@@ -8584,7 +8690,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/expertise-desks/compile": {
+    "/masterworks/build": {
         parameters: {
             query?: never;
             header?: never;
@@ -8593,15 +8699,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Compile Desk */
-        post: operations["compile_desk_expertise_desks_compile_post"];
+        /** Build Masterwork Endpoint */
+        post: operations["build_masterwork_endpoint_masterworks_build_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/expertise-desks/ingest": {
+    "/masterworks/ingest": {
         parameters: {
             query?: never;
             header?: never;
@@ -8610,15 +8716,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ingest Pack Source */
-        post: operations["ingest_pack_source_expertise_desks_ingest_post"];
+        /** Ingest Rulebook Source */
+        post: operations["ingest_rulebook_source_masterworks_ingest_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/expertise-desks/ingest-file": {
+    "/masterworks/ingest-file": {
         parameters: {
             query?: never;
             header?: never;
@@ -8628,19 +8734,19 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Ingest Pack File
+         * Ingest Rulebook File
          * @description Distill an uploaded document (through content_processing + a page
          *     extraction job, so rules carry page anchors) or a recording (transcribed
          *     first, then the text lane) into DRAFT rules.
          */
-        post: operations["ingest_pack_file_expertise_desks_ingest_file_post"];
+        post: operations["ingest_rulebook_file_masterworks_ingest_file_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/expertise-desks/backtest": {
+    "/masterworks/audition": {
         parameters: {
             query?: never;
             header?: never;
@@ -8649,15 +8755,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Backtest Desk Output */
-        post: operations["backtest_desk_output_expertise_desks_backtest_post"];
+        /** Audition Masterwork Endpoint */
+        post: operations["audition_masterwork_endpoint_masterworks_audition_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/expertise-desks/runs/{run_id}/rejoin": {
+    "/masterworks/runs/{run_id}/rejoin": {
         parameters: {
             query?: never;
             header?: never;
@@ -8667,19 +8773,19 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rejoin Expertise Run
-         * @description Rejoin one expertise run by id — THE FLOATING LAW's durable half.
+         * Rejoin Masterwork Run
+         * @description Rejoin one Masterwork run by id — THE FLOATING LAW's durable half.
          *
          *     Live in this process → the buffered progress replays and the connection
          *     follows the run to its end. Otherwise the durable row is emitted as one
-         *     ``expertise_run_snapshot``, carrying the same result document the live
+         *     ``masterwork_run_snapshot``, carrying the same result document the live
          *     terminal event carried.
          *
-         *     Access is the PACK's access (a run is a component of its pack), so this
+         *     Access is the PACK's access (a run is a component of its rulebook), so this
          *     reuses the same reader the pipelines use rather than inventing a second
          *     rule. An unreachable run is a 404 — never a leak that it exists.
          */
-        post: operations["rejoin_expertise_run_expertise_desks_runs__run_id__rejoin_post"];
+        post: operations["rejoin_masterwork_run_masterworks_runs__run_id__rejoin_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -20870,6 +20976,83 @@ export interface components {
             /** Top Endpoints */
             top_endpoints?: components["schemas"]["JsonValue"][];
         };
+        /**
+         * AdmissionVerdict
+         * @description The floor math, in full, with its inputs.
+         *
+         *     Every field that can be unknown is `None`, never `0.0` — an unmeasured cost
+         *     ratio that read as 1.0 would silently pass the cost gate.
+         */
+        AdmissionVerdict: {
+            /**
+             * Admitted
+             * @default false
+             */
+            admitted?: boolean;
+            /** Quality Score */
+            quality_score?: number | null;
+            /**
+             * Baseline Score
+             * @default 0.5
+             */
+            baseline_score?: number;
+            /** Improvement */
+            improvement?: number | null;
+            /**
+             * Required Improvement
+             * @default 0.05
+             */
+            required_improvement?: number;
+            /** Cost Ratio */
+            cost_ratio?: number | null;
+            /**
+             * Max Cost Ratio
+             * @default 1.1
+             */
+            max_cost_ratio?: number;
+            /**
+             * Judged
+             * @default 0
+             */
+            judged?: number;
+            /**
+             * Wins
+             * @default 0
+             */
+            wins?: number;
+            /**
+             * Ties
+             * @default 0
+             */
+            ties?: number;
+            /**
+             * Losses
+             * @default 0
+             */
+            losses?: number;
+            /**
+             * Errored
+             * @default 0
+             */
+            errored?: number;
+            /**
+             * Skipped For Budget
+             * @default 0
+             */
+            skipped_for_budget?: number;
+            /**
+             * Spend Usd
+             * @default 0
+             */
+            spend_usd?: number;
+            /**
+             * Statement
+             * @default
+             */
+            statement?: string;
+            /** Outcomes */
+            outcomes?: components["schemas"]["HeldOutOutcome"][];
+        };
         /** AdoptIntentRequest */
         AdoptIntentRequest: {
             /**
@@ -23580,6 +23763,52 @@ export interface components {
             /** Leaks By Rule */
             leaks_by_rule: components["schemas"]["RuleCount"][];
         };
+        /**
+         * AuditionCompareRequest
+         * @description Judge a Masterwork's output against the real published exemplar (the R2
+         *     outcome signal). Comparison verdict cites rulebook rule ids; gaps the
+         *     reference exposes optionally land as DRAFT rules (never auto-activated).
+         */
+        AuditionCompareRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Candidate Text
+             * @description Our Masterwork's output for the shared inputs.
+             */
+            candidate_text: string;
+            /**
+             * Reference Text
+             * @description The real published work for the same inputs.
+             */
+            reference_text: string;
+            /**
+             * Context Note
+             * @description What the shared inputs were ('the Aug 14 newswire').
+             */
+            context_note?: string | null;
+            /**
+             * Capture Gaps
+             * @description Land reference-only strengths as draft rules on the rulebook.
+             * @default true
+             */
+            capture_gaps?: boolean;
+        };
         /** AuthorityCandidate */
         AuthorityCandidate: {
             /** Candidate Key */
@@ -24041,52 +24270,6 @@ export interface components {
              * @default 25
              */
             enrichment_limit?: number;
-        };
-        /**
-         * BacktestCompareRequest
-         * @description Judge a desk's output against the real published exemplar (the R2
-         *     outcome signal). Comparison verdict cites pack rule ids; gaps the
-         *     reference exposes optionally land as DRAFT rules (never auto-activated).
-         */
-        BacktestCompareRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Pack Id */
-            pack_id: string;
-            /**
-             * Candidate Text
-             * @description Our desk's output for the shared inputs.
-             */
-            candidate_text: string;
-            /**
-             * Reference Text
-             * @description The real published work for the same inputs.
-             */
-            reference_text: string;
-            /**
-             * Context Note
-             * @description What the shared inputs were ('the Aug 14 newswire').
-             */
-            context_note?: string | null;
-            /**
-             * Capture Gaps
-             * @description Land reference-only strengths as draft rules on the pack.
-             * @default true
-             */
-            capture_gaps?: boolean;
         };
         /** BatchDeleteRequest */
         BatchDeleteRequest: {
@@ -25557,6 +25740,58 @@ export interface components {
             spent_usd?: string | null;
             /** Projected Usd */
             projected_usd?: string | null;
+        };
+        /**
+         * BuildMasterworkRequest
+         * @description Build one Rulebook into a working Masterwork (agents + workflow).
+         *
+         *     The ONE button a non-technical expert presses on /masterwork/[id]. The
+         *     builder reuses the generic Rulebook Auditor for every section, authors the
+         *     Masterwork-specific agents (persona from the rulebook's source.author), and creates
+         *     a workflow stamped with the rulebook id + version it was built from.
+         */
+        BuildMasterworkRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Rulebook Id
+             * @description platform.rulebook id
+             */
+            rulebook_id: string;
+            /**
+             * Masterwork Kind
+             * @description edit: audit + correct + persona ruling on a submitted text. generate: draft N variants, audit each, persona verdict.
+             * @enum {string}
+             */
+            masterwork_kind: "edit" | "generate";
+            /**
+             * Name
+             * @description Masterwork name; defaults to '<Rulebook name> Masterwork'.
+             */
+            name?: string | null;
+            /**
+             * Deliverable
+             * @description generate Masterworks only: what the Masterwork produces (e.g. 'advertising copy', 'a keyword research plan'). Defaults from the rulebook.
+             */
+            deliverable?: string | null;
+            /**
+             * Variant Count
+             * @default 5
+             */
+            variant_count?: number;
         };
         /** BuildOnceResponse */
         BuildOnceResponse: {
@@ -29110,58 +29345,6 @@ export interface components {
             /** Error */
             error: string | null;
         };
-        /**
-         * CompileDeskRequest
-         * @description Compile one Expertise Pack into a working desk (agents + workflow).
-         *
-         *     The ONE button a non-technical expert presses on /expertise/[id]. The
-         *     compiler reuses the generic Pack Auditor for every section, authors the
-         *     desk-specific agents (persona from the pack's source.author), and creates
-         *     a workflow stamped with the pack id + version it was compiled from.
-         */
-        CompileDeskRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /**
-             * Pack Id
-             * @description platform.expertise_pack id
-             */
-            pack_id: string;
-            /**
-             * Desk Kind
-             * @description edit: audit + correct + persona ruling on a submitted text. generate: draft N variants, audit each, persona verdict.
-             * @enum {string}
-             */
-            desk_kind: "edit" | "generate";
-            /**
-             * Name
-             * @description Desk name; defaults to '<Pack name> Desk'.
-             */
-            name?: string | null;
-            /**
-             * Deliverable
-             * @description generate desks only: what the desk produces (e.g. 'advertising copy', 'a keyword research plan'). Defaults from the pack.
-             */
-            deliverable?: string | null;
-            /**
-             * Variant Count
-             * @default 5
-             */
-            variant_count?: number;
-        };
         /** CompleteStageRequest */
         CompleteStageRequest: {
             /**
@@ -30823,6 +31006,182 @@ export interface components {
         CrossTopicSourceMatchResponse: {
             /** Matches */
             matches?: components["schemas"]["CrossTopicSourceMatch"][];
+        };
+        /**
+         * CrystallizationRefusal
+         * @description A pass that produced no proposal, and exactly why.
+         *
+         *     This is a RESULT, not an error. "Insufficient diverse trajectories" is the
+         *     correct answer for a platform whose post-capture history is days old, and
+         *     the numbers travel with it so nobody has to re-derive them.
+         */
+        CrystallizationRefusal: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "no_trajectories" | "insufficient_argument_coverage" | "trajectories_too_short" | "too_few_trajectories" | "too_few_conversations" | "not_diverse" | "ambiguous_boundary" | "incoherent_cluster" | "insufficient_holdout" | "reviewer_declined" | "reviewer_unavailable" | "plan_rejected_by_gate";
+            /** Detail */
+            detail: string;
+            /** Measured */
+            measured?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Ambiguous */
+            ambiguous?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+        };
+        /**
+         * CrystallizationResult
+         * @description The outcome of one crystallization pass over one orchestra.
+         */
+        CrystallizationResult: {
+            /**
+             * Status
+             * @default refused
+             * @enum {string}
+             */
+            status?: "proposed" | "refused" | "not_admitted" | "error";
+            /**
+             * Subject Id
+             * @default
+             */
+            subject_id?: string;
+            /**
+             * Subject Label
+             * @default
+             */
+            subject_label?: string;
+            /** Enrollment Id */
+            enrollment_id?: string | null;
+            /** Review Id */
+            review_id?: string | null;
+            /** Finding Id */
+            finding_id?: string | null;
+            /** Assist Id */
+            assist_id?: string | null;
+            /** Definition Id */
+            definition_id?: string | null;
+            /**
+             * Turns Scanned
+             * @default 0
+             */
+            turns_scanned?: number;
+            /**
+             * Turns Usable
+             * @default 0
+             */
+            turns_usable?: number;
+            /** Scan Truncated */
+            scan_truncated?: string[];
+            cluster?: components["schemas"]["TrajectoryCluster"] | null;
+            refusal?: components["schemas"]["CrystallizationRefusal"] | null;
+            /** Plan */
+            plan?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            verdict?: components["schemas"]["AdmissionVerdict"] | null;
+            /**
+             * Reviewer Cost Usd
+             * @default 0
+             */
+            reviewer_cost_usd?: number;
+            /** Error */
+            error?: string | null;
+        };
+        /**
+         * CrystallizationRunIn
+         * @description Run one crystallization pass over one Orchestra.
+         *
+         *     🚨 `execute=true` SPENDS: a frontier review over several long transcripts,
+         *     then up to `CRYSTALLIZE_MAX_HELDOUT_RUNS` REAL workflow runs (every member
+         *     agent paid in full — D-17/D-23, there is no sandbox). `execute=false` stops
+         *     after the plan compiles and says plainly that nothing was proven.
+         */
+        CrystallizationRunIn: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Orchestrator Agent Id */
+            orchestrator_agent_id: string;
+            /**
+             * Execute
+             * @default true
+             */
+            execute?: boolean;
+        };
+        /**
+         * CrystallizationSubjectOut
+         * @description One Orchestra and how much recorded history it has.
+         */
+        CrystallizationSubjectOut: {
+            /** Agent Id */
+            agent_id: string;
+            /** Name */
+            name: string;
+            /** Mode */
+            mode?: string | null;
+            /**
+             * Conversations
+             * @default 0
+             */
+            conversations?: number;
+        };
+        /**
+         * CrystallizationSweepResult
+         * @description Outcome of one free detection pass.
+         *
+         *     ``status`` splits the two zero cases the same way every other detector in
+         *     this service does: ``ok`` with ``candidates=0`` means it RAN and no
+         *     Orchestra repeats a path yet; ``no_addressee`` means it could not run.
+         */
+        CrystallizationSweepResult: {
+            /**
+             * Status
+             * @default ok
+             */
+            status?: string;
+            /** Addressee User Id */
+            addressee_user_id?: string | null;
+            /**
+             * Subjects Examined
+             * @default 0
+             */
+            subjects_examined?: number;
+            /**
+             * Subjects Skipped No History
+             * @default 0
+             */
+            subjects_skipped_no_history?: number;
+            /**
+             * Candidates
+             * @default 0
+             */
+            candidates?: number;
+            /**
+             * Assists Created
+             * @default 0
+             */
+            assists_created?: number;
+            /** Refusals */
+            refusals?: {
+                [key: string]: string;
+            };
+            /** Errors */
+            errors?: string[];
         };
         /** CustomTool */
         CustomTool: {
@@ -37304,6 +37663,36 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * HeldOutOutcome
+         * @description One held-out turn, re-executed for real and ranked against its own record.
+         */
+        HeldOutOutcome: {
+            /** Turn Key */
+            turn_key: string;
+            /**
+             * Status
+             * @default ran
+             * @enum {string}
+             */
+            status?: "ran" | "errored" | "skipped_for_budget";
+            /** Run Id */
+            run_id?: string | null;
+            /** Definition Id */
+            definition_id?: string | null;
+            /** Verdict */
+            verdict?: string | null;
+            /** Judge Confidence */
+            judge_confidence?: number | null;
+            /** Judge Ledger Id */
+            judge_ledger_id?: string | null;
+            /** Baseline Cost Usd */
+            baseline_cost_usd?: number | null;
+            /** Candidate Cost Usd */
+            candidate_cost_usd?: number | null;
+            /** Error */
+            error?: string | null;
+        };
         /** HideRequest */
         HideRequest: {
             /**
@@ -38042,7 +38431,7 @@ export interface components {
         };
         /**
          * IngestFileRequest
-         * @description Distill an UPLOADED FILE into DRAFT rules on an existing pack.
+         * @description Distill an UPLOADED FILE into DRAFT rules on an existing rulebook.
          *
          *     The same two modes as the text lane, but the source is a real file the
          *     user uploaded through the canonical file handler:
@@ -38073,8 +38462,8 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-            /** Pack Id */
-            pack_id: string;
+            /** Rulebook Id */
+            rulebook_id: string;
             /**
              * File Id
              * @description cld_files id from the canonical file handler upload.
@@ -38160,7 +38549,7 @@ export interface components {
         };
         /**
          * IngestSourceRequest
-         * @description Distill source material into DRAFT rules on an existing pack.
+         * @description Distill source material into DRAFT rules on an existing rulebook.
          *
          *     Two source shapes, one pipeline:
          *     - mode="instructional" — the source TEACHES (a chapter, a playbook, a
@@ -38170,7 +38559,7 @@ export interface components {
          *       reverse-engineered, quotes anchor as illustrations.
          *
          *     Either way: chunk, distill per chunk, dedupe, verify quotes verbatim, then
-         *     append as `draft: true` principles the expert approves one by one.
+         *     append as `draft: true` rules the expert approves one by one.
          *     Human-first invariant: never auto-activated, never non-draft.
          */
         IngestSourceRequest: {
@@ -38189,8 +38578,8 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-            /** Pack Id */
-            pack_id: string;
+            /** Rulebook Id */
+            rulebook_id: string;
             /**
              * Text
              * @description The source material, verbatim.
@@ -38909,7 +39298,7 @@ export interface components {
          */
         JsonSchemaProperty: {
             /** Type */
-            type?: ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null") | ("string" | "number" | "integer" | "boolean" | "array" | "object" | "null")[] | null;
+            type?: ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string") | ("array" | "boolean" | "integer" | "null" | "number" | "object" | "string")[] | null;
             /** Description */
             description?: string | null;
             /** Enum */
@@ -56395,6 +56784,110 @@ export interface components {
              */
             mention_count?: number;
         };
+        /**
+         * Trajectory
+         * @description One turn of one orchestra, as an ORDERED path.
+         *
+         *     🚨 The turn key is ``(conversation_id, user_request_id)`` — measured live
+         *     2026-08-16, a single ``user_request_id`` spans up to 125 conversations
+         *     (the batch fan-out shape), so it is not a turn on its own.
+         */
+        Trajectory: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** User Request Id */
+            user_request_id: string;
+            /** Steps */
+            steps?: components["schemas"]["TrajectoryStep"][];
+            /**
+             * Request Text
+             * @default
+             */
+            request_text?: string;
+            /**
+             * Started At
+             * @default
+             */
+            started_at?: string;
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /**
+             * Final Text
+             * @default
+             */
+            final_text?: string;
+        };
+        /**
+         * TrajectoryCluster
+         * @description A clean set of DIVERSE turns that share one ordered structure.
+         */
+        TrajectoryCluster: {
+            /** Seed Key */
+            seed_key: string;
+            /** Shared Sequence */
+            shared_sequence?: string[];
+            /** Members */
+            members?: components["schemas"]["Trajectory"][];
+            /** Fit Keys */
+            fit_keys?: string[];
+            /** Holdout Keys */
+            holdout_keys?: string[];
+            /**
+             * Min Internal Similarity
+             * @default 0
+             */
+            min_internal_similarity?: number;
+            /**
+             * Max Instance Similarity
+             * @default 0
+             */
+            max_instance_similarity?: number;
+            /**
+             * Distinct Conversations
+             * @default 0
+             */
+            distinct_conversations?: number;
+            /**
+             * Mean Arg Coverage
+             * @default 0
+             */
+            mean_arg_coverage?: number;
+        };
+        /**
+         * TrajectoryStep
+         * @description One delegation inside a turn — what was called and with WHICH ARGUMENT
+         *     SHAPE, never with which values.
+         *
+         *     The split is the whole idea. ``token`` (name + sorted argument KEYS) is what
+         *     two runs of one task class share; ``instance`` (the argument VALUES) is what
+         *     makes them two runs rather than one run counted twice.
+         */
+        TrajectoryStep: {
+            /** Tool Name */
+            tool_name: string;
+            /**
+             * Arg Keys
+             * @default []
+             */
+            arg_keys?: string[];
+            /**
+             * Instance
+             * @default
+             */
+            instance?: string;
+            /**
+             * Args Recovered
+             * @default false
+             */
+            args_recovered?: boolean;
+            /**
+             * Call Id
+             * @default
+             */
+            call_id?: string;
+        };
         /** TranscriptInputPart */
         TranscriptInputPart: {
             /** Metadata */
@@ -59607,6 +60100,8 @@ export interface components {
             is_admin: boolean;
             /** Email */
             email: string | null;
+            /** Organization Id */
+            organization_id: string | null;
         };
         /** WireReplayArmIn */
         WireReplayArmIn: {
@@ -61895,6 +62390,41 @@ export interface operations {
             };
         };
     };
+    start_mandated_agent_ai_mandates__mandate_key__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     invalidate_agent_cache_ai_agents__agent_id__invalidate_cache_post: {
         parameters: {
             query?: {
@@ -63595,6 +64125,41 @@ export interface operations {
             header?: never;
             path: {
                 agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_mandated_agent_v2_v2_ai_mandates__mandate_key__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mandate_key: string;
             };
             cookie?: never;
         };
@@ -75367,6 +75932,79 @@ export interface operations {
             };
         };
     };
+    list_crystallization_subjects_hindsight_crystallization_subjects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrystallizationSubjectOut"][];
+                };
+            };
+        };
+    };
+    run_crystallization_pass_hindsight_crystallization_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrystallizationRunIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrystallizationResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_crystallization_sweep_hindsight_crystallization_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrystallizationSweepResult"];
+                };
+            };
+        };
+    };
     trigger_drain_hindsight_drain_post: {
         parameters: {
             query?: never;
@@ -75520,7 +76158,7 @@ export interface operations {
             };
         };
     };
-    compile_desk_expertise_desks_compile_post: {
+    build_masterwork_endpoint_masterworks_build_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -75529,7 +76167,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CompileDeskRequest"];
+                "application/json": components["schemas"]["BuildMasterworkRequest"];
             };
         };
         responses: {
@@ -75553,7 +76191,7 @@ export interface operations {
             };
         };
     };
-    ingest_pack_source_expertise_desks_ingest_post: {
+    ingest_rulebook_source_masterworks_ingest_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -75586,7 +76224,7 @@ export interface operations {
             };
         };
     };
-    ingest_pack_file_expertise_desks_ingest_file_post: {
+    ingest_rulebook_file_masterworks_ingest_file_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -75619,7 +76257,7 @@ export interface operations {
             };
         };
     };
-    backtest_desk_output_expertise_desks_backtest_post: {
+    audition_masterwork_endpoint_masterworks_audition_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -75628,7 +76266,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["BacktestCompareRequest"];
+                "application/json": components["schemas"]["AuditionCompareRequest"];
             };
         };
         responses: {
@@ -75652,7 +76290,7 @@ export interface operations {
             };
         };
     };
-    rejoin_expertise_run_expertise_desks_runs__run_id__rejoin_post: {
+    rejoin_masterwork_run_masterworks_runs__run_id__rejoin_post: {
         parameters: {
             query?: never;
             header?: never;

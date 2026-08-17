@@ -3098,8 +3098,8 @@
    "identity_fields": [
     "id"
    ],
-   "label": "Expertise Pack",
-   "noun": "expertise_pack",
+   "label": "Rulebook",
+   "noun": "rulebook",
    "reference": "yes",
    "schemas": {
     "create": {
@@ -3115,9 +3115,9 @@
       "name": {
        "title": "Name"
       },
-      "principles": {
+      "rules": {
        "default": [],
-       "title": "Principles"
+       "title": "Rules"
       },
       "sections": {
        "default": {},
@@ -3140,7 +3140,7 @@
       "slug",
       "description"
      ],
-     "title": "CreateExpertisePackItem",
+     "title": "CreateRulebookItem",
      "type": "object"
     },
     "delete": {
@@ -3154,7 +3154,7 @@
      "required": [
       "id"
      ],
-     "title": "DeleteExpertisePackItem",
+     "title": "DeleteRulebookItem",
      "type": "object"
     },
     "update": {
@@ -3176,9 +3176,9 @@
        "default": null,
        "title": "Name"
       },
-      "principles": {
+      "rules": {
        "default": null,
-       "title": "Principles"
+       "title": "Rules"
       },
       "sections": {
        "default": null,
@@ -3200,14 +3200,28 @@
      "required": [
       "id"
      ],
-     "title": "UpdateExpertisePackItem",
+     "title": "UpdateRulebookItem",
      "type": "object"
     }
    },
-   "table": "platform.expertise_pack",
+   "table": "platform.rulebook",
    "title_column": "name",
    "update": "planned",
    "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Masterwork",
+   "identity_fields": [],
+   "label": "Masterwork Run",
+   "noun": "masterwork_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "platform.masterwork_run",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
   },
   {
    "create": "planned",
@@ -20235,6 +20249,10 @@
     "create": {
      "additionalProperties": true,
      "properties": {
+      "auto_context_disabled": {
+       "default": false,
+       "title": "Auto Context Disabled"
+      },
       "contract": {
        "default": {},
        "title": "Contract"
@@ -20302,6 +20320,10 @@
     "update": {
      "additionalProperties": true,
      "properties": {
+      "auto_context_disabled": {
+       "default": null,
+       "title": "Auto Context Disabled"
+      },
       "contract": {
        "default": null,
        "title": "Contract"

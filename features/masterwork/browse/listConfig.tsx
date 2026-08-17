@@ -27,10 +27,7 @@ export const rulebookListConfig: EntityListConfig<RulebookListRow> = {
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
   door: { token: "rulebook" },
-  // TODO(masterwork, phase 2): switch to the dedicated "masterwork" slug once
-  // it is registered in aidream source_attribution.SOURCE_FEATURES and
-  // regenerated.
-  sourceFeature: "expertise",
+  sourceFeature: "masterwork",
   getRowEntity: (row) => ({
     type: "rulebook",
     id: row.id,

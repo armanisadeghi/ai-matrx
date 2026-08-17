@@ -33081,140 +33081,6 @@ export type Database = {
           },
         ]
       }
-      expertise_pack: {
-        Row: {
-          created_at: string
-          created_by: string
-          deleted_at: string | null
-          description: string
-          id: string
-          metadata: Json
-          name: string
-          organization_id: string
-          principles: Json
-          sections: Json
-          slug: string
-          source: Json
-          status: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string
-          deleted_at?: string | null
-          description?: string
-          id?: string
-          metadata?: Json
-          name: string
-          organization_id: string
-          principles?: Json
-          sections?: Json
-          slug: string
-          source?: Json
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          deleted_at?: string | null
-          description?: string
-          id?: string
-          metadata?: Json
-          name?: string
-          organization_id?: string
-          principles?: Json
-          sections?: Json
-          slug?: string
-          source?: Json
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
-        }
-        Relationships: []
-      }
-      expertise_run: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          error: Json | null
-          heartbeat_at: string
-          id: string
-          label: string | null
-          metadata: Json
-          operation: string
-          organization_id: string
-          pack_id: string
-          result: Json | null
-          settings: Json
-          started_at: string
-          status: string
-          updated_at: string
-          updated_by: string | null
-          version: number
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          error?: Json | null
-          heartbeat_at?: string
-          id?: string
-          label?: string | null
-          metadata?: Json
-          operation: string
-          organization_id: string
-          pack_id: string
-          result?: Json | null
-          settings?: Json
-          started_at?: string
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          error?: Json | null
-          heartbeat_at?: string
-          id?: string
-          label?: string | null
-          metadata?: Json
-          operation?: string
-          organization_id?: string
-          pack_id?: string
-          result?: Json | null
-          settings?: Json
-          started_at?: string
-          status?: string
-          updated_at?: string
-          updated_by?: string | null
-          version?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "expertise_run_pack_id_fkey"
-            columns: ["pack_id"]
-            isOneToOne: false
-            referencedRelation: "expertise_pack"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       flexible_data: {
         Row: {
           category_id: string | null
@@ -33444,6 +33310,80 @@ export type Database = {
           version?: number
         }
         Relationships: []
+      }
+      masterwork_run: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: Json | null
+          heartbeat_at: string
+          id: string
+          label: string | null
+          metadata: Json
+          operation: string
+          organization_id: string
+          result: Json | null
+          rulebook_id: string
+          settings: Json
+          started_at: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          heartbeat_at?: string
+          id?: string
+          label?: string | null
+          metadata?: Json
+          operation: string
+          organization_id: string
+          result?: Json | null
+          rulebook_id: string
+          settings?: Json
+          started_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          heartbeat_at?: string
+          id?: string
+          label?: string | null
+          metadata?: Json
+          operation?: string
+          organization_id?: string
+          result?: Json | null
+          rulebook_id?: string
+          settings?: Json
+          started_at?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "masterwork_run_rulebook_id_fkey"
+            columns: ["rulebook_id"]
+            isOneToOne: false
+            referencedRelation: "rulebook"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       matrx_action_ledger: {
         Row: {
@@ -33885,6 +33825,66 @@ export type Database = {
           label?: string
           slug?: string
           sort_order?: number
+        }
+        Relationships: []
+      }
+      rulebook: {
+        Row: {
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          description: string
+          id: string
+          metadata: Json
+          name: string
+          organization_id: string
+          rules: Json
+          sections: Json
+          slug: string
+          source: Json
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          rules?: Json
+          sections?: Json
+          slug: string
+          source?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          rules?: Json
+          sections?: Json
+          slug?: string
+          source?: Json
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
       }
@@ -40352,21 +40352,6 @@ export type Database = {
         Args: { p_archetype: string; p_choices?: Json }
         Returns: Json
       }
-      expertise_pack_snapshot: {
-        Args: { p_pack_id: string; p_version: number }
-        Returns: Json
-      }
-      expertise_pack_versions: {
-        Args: { p_pack_id: string }
-        Returns: {
-          actor_id: string
-          actor_tier: string
-          occurred_at: string
-          operation: string
-          rule_count: number
-          version: number
-        }[]
-      }
       expire_stale_tunnels: { Args: never; Returns: undefined }
       export_user_table_as_csv:
         | { Args: { p_table_id: string }; Returns: string }
@@ -42840,6 +42825,21 @@ export type Database = {
       rs_topic_append_output: {
         Args: { p_asset: Json; p_kind: string; p_topic_id: string }
         Returns: Json
+      }
+      rulebook_snapshot: {
+        Args: { p_rulebook_id: string; p_version: number }
+        Returns: Json
+      }
+      rulebook_versions: {
+        Args: { p_rulebook_id: string }
+        Returns: {
+          actor_id: string
+          actor_tier: string
+          occurred_at: string
+          operation: string
+          rule_count: number
+          version: number
+        }[]
       }
       sch_enqueue_manual_run: { Args: { p_task_id: string }; Returns: string }
       sch_recompute_task_next_due_at: {

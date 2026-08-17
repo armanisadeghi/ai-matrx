@@ -148,8 +148,6 @@ export type EntityTypeToken =
   | "dm_message"
   | "dm_participant"
   | "domain_classification"
-  | "expertise_pack"
-  | "expertise_run"
   | "fc_card"
   | "fc_detail"
   | "fc_set"
@@ -208,6 +206,7 @@ export type EntityTypeToken =
   | "mandate_binding"
   | "mandate_exemplar"
   | "marketing_initiative"
+  | "masterwork_run"
   | "membership"
   | "message"
   | "message_template"
@@ -252,6 +251,7 @@ export type EntityTypeToken =
   | "research_tag"
   | "research_template"
   | "research_topic"
+  | "rulebook"
   | "sandbox_instance"
   | "sch_agent_task"
   | "sch_run"
@@ -460,7 +460,6 @@ export type ReferencePickableEntityToken =
   | "cx_agent_memory"
   | "data_store"
   | "dataset"
-  | "expertise_pack"
   | "fc_set"
   | "feature_doc"
   | "file"
@@ -487,6 +486,7 @@ export type ReferencePickableEntityToken =
   | "quiz_session"
   | "research_template"
   | "research_topic"
+  | "rulebook"
   | "sch_task"
   | "scope_type"
   | "seo_topic"
@@ -568,7 +568,6 @@ export type ComponentEntityToken =
   | "cx_user_todo"
   | "dm_message"
   | "dm_participant"
-  | "expertise_run"
   | "fc_detail"
   | "file_analysis"
   | "file_entities"
@@ -589,6 +588,7 @@ export type ComponentEntityToken =
   | "interview_hole"
   | "interview_question"
   | "interview_turn"
+  | "masterwork_run"
   | "message"
   | "party_contact_point"
   | "pc_studio_run_asset"
@@ -795,8 +795,6 @@ export type ScopeableEntityToken =
   | "dm_message"
   | "dm_participant"
   | "domain_classification"
-  | "expertise_pack"
-  | "expertise_run"
   | "fc_card"
   | "fc_detail"
   | "fc_set"
@@ -854,6 +852,7 @@ export type ScopeableEntityToken =
   | "mandate_binding"
   | "mandate_exemplar"
   | "marketing_initiative"
+  | "masterwork_run"
   | "membership"
   | "message"
   | "message_template"
@@ -898,6 +897,7 @@ export type ScopeableEntityToken =
   | "research_tag"
   | "research_template"
   | "research_topic"
+  | "rulebook"
   | "sandbox_instance"
   | "sch_agent_task"
   | "sch_run"
@@ -1087,7 +1087,6 @@ export type ListedEntityToken =
   | "crm_saved_view"
   | "crm_sending_identity"
   | "dataset"
-  | "expertise_pack"
   | "growth_loop_run"
   | "hindsight_regression_case"
   | "hindsight_replay_step"
@@ -1103,6 +1102,7 @@ export type ListedEntityToken =
   | "platform_outcome_event"
   | "purpose"
   | "research_context_bundle"
+  | "rulebook"
   | "structured_list"
   | "surface"
   | "workbook"
@@ -1224,8 +1224,6 @@ export const ENTITY_TYPE_METADATA = {
   "dm_message": { token: "dm_message", schema: "communication", table: "dm_messages", label: "Direct Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "dm_participant": { token: "dm_participant", schema: "communication", table: "dm_conversation_participants", label: "DM Conversation Participant", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "domain_classification": { token: "domain_classification", schema: "platform", table: "domain_classification", label: "Domain Classification", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
-  "expertise_pack": { token: "expertise_pack", schema: "platform", table: "expertise_pack", label: "Expertise Pack", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: "Knowledge", referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
-  "expertise_run": { token: "expertise_run", schema: "platform", table: "expertise_run", label: "Expertise Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Expertise", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_card": { token: "fc_card", schema: "education", table: "fc_card", label: "Flashcard", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_detail": { token: "fc_detail", schema: "education", table: "fc_detail", label: "Flashcard Detail", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "fc_set": { token: "fc_set", schema: "education", table: "fc_set", label: "Flashcard Set", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1284,6 +1282,7 @@ export const ENTITY_TYPE_METADATA = {
   "mandate_binding": { token: "mandate_binding", schema: "agent", table: "mandate_binding", label: "Mandate Binding", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "mandate_exemplar": { token: "mandate_exemplar", schema: "agent", table: "mandate_exemplar", label: "Mandate Exemplar", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "marketing_initiative": { token: "marketing_initiative", schema: "marketing", table: "initiative", label: "Initiative", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
+  "masterwork_run": { token: "masterwork_run", schema: "platform", table: "masterwork_run", label: "Masterwork Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Masterwork", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "membership": { token: "membership", schema: "iam", table: "memberships", label: "Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "message": { token: "message", schema: "chat", table: "message", label: "Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "message_template": { token: "message_template", schema: "agent", table: "message_template", label: "Message Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "label", contentRole: "utility", referenceCategory: null },
@@ -1328,6 +1327,7 @@ export const ENTITY_TYPE_METADATA = {
   "research_tag": { token: "research_tag", schema: "research", table: "rs_tag", label: "Research Tag", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "research_template": { token: "research_template", schema: "research", table: "rs_template", label: "Research Template", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "research_topic": { token: "research_topic", schema: "research", table: "rs_topic", label: "Research Topic", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
+  "rulebook": { token: "rulebook", schema: "platform", table: "rulebook", label: "Rulebook", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: "Knowledge", referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "sandbox_instance": { token: "sandbox_instance", schema: "public", table: "sandbox_instances", label: "Sandbox Instance", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "sch_agent_task": { token: "sch_agent_task", schema: "scheduler", table: "sch_agent_task", label: "Agent Task Config", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "sch_run": { token: "sch_run", schema: "scheduler", table: "sch_run", label: "Task Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1612,8 +1612,6 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "dm_message",
   "dm_participant",
   "domain_classification",
-  "expertise_pack",
-  "expertise_run",
   "fc_card",
   "fc_detail",
   "fc_set",
@@ -1672,6 +1670,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "mandate_binding",
   "mandate_exemplar",
   "marketing_initiative",
+  "masterwork_run",
   "membership",
   "message",
   "message_template",
@@ -1716,6 +1715,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "research_tag",
   "research_template",
   "research_topic",
+  "rulebook",
   "sandbox_instance",
   "sch_agent_task",
   "sch_run",

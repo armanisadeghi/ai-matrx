@@ -235,7 +235,7 @@ export function IngestSourceDialog({
         {
           folderPath: "Masterwork/Sources",
           fileName: file.name,
-          metadata: { sourceFeature: "expertise", rulebook_id: rulebook.id },
+          metadata: { sourceFeature: "masterwork", rulebook_id: rulebook.id },
         },
       );
       fileId = uploaded.fileId;

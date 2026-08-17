@@ -1036,7 +1036,7 @@
                 "type": "null"
               }
             ],
-            "default": 0,
+            "default": 0.0,
             "title": "Cost"
           }
         },
@@ -1226,7 +1226,7 @@
             "title": "Total Cost"
           },
           "known_cost_subtotal": {
-            "default": 0,
+            "default": 0.0,
             "title": "Known Cost Subtotal",
             "type": "number"
           },
@@ -1394,7 +1394,7 @@
             "type": "null"
           }
         ],
-        "default": 0,
+        "default": 0.0,
         "title": "Cost"
       }
     },
@@ -1584,7 +1584,7 @@
         "title": "Total Cost"
       },
       "known_cost_subtotal": {
-        "default": 0,
+        "default": 0.0,
         "title": "Known Cost Subtotal",
         "type": "number"
       },
@@ -2030,7 +2030,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0,
+        "default": 0.0,
         "title": "Progress",
         "type": "number"
       },
@@ -4355,7 +4355,7 @@
         "type": "string"
       },
       "elapsed_seconds": {
-        "default": 0,
+        "default": 0.0,
         "title": "Elapsed Seconds",
         "type": "number"
       },
@@ -5467,7 +5467,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -5527,7 +5527,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0,
+        "default": 0.0,
         "title": "Cost",
         "type": "number"
       },
@@ -6495,7 +6495,7 @@
         "title": "Bottom Left"
       },
       "confidence": {
-        "default": 0,
+        "default": 0.0,
         "title": "Confidence",
         "type": "number"
       },
@@ -7079,13 +7079,13 @@
     "title": "DictionaryPublishCompleteData",
     "type": "object"
   },
-  "ExpertiseRunData": {
+  "MasterworkRunData": {
     "additionalProperties": false,
-    "description": "The FIRST event of every durable expertise run — its receipt number.\n\nThe browser stores nothing but this id and rejoins by it through\n``POST /expertise-desks/runs/{run_id}/rejoin``; the run's state itself lives\nin ``platform.expertise_run``. Announced before any work begins, so losing\nthe connection one second in still leaves something to come back to.",
+    "description": "The FIRST event of every durable Masterwork run — its receipt number.\n\nThe browser stores nothing but this id and rejoins by it through\n``POST /masterworks/runs/{run_id}/rejoin``; the run's state itself lives\nin ``platform.masterwork_run``. Announced before any work begins, so losing\nthe connection one second in still leaves something to come back to.",
     "properties": {
       "type": {
-        "const": "expertise_run",
-        "default": "expertise_run",
+        "const": "masterwork_run",
+        "default": "masterwork_run",
         "title": "Type",
         "type": "string"
       },
@@ -7093,8 +7093,8 @@
         "title": "Run Id",
         "type": "string"
       },
-      "pack_id": {
-        "title": "Pack Id",
+      "rulebook_id": {
+        "title": "Rulebook Id",
         "type": "string"
       },
       "operation": {
@@ -7116,19 +7116,19 @@
     },
     "required": [
       "run_id",
-      "pack_id",
+      "rulebook_id",
       "operation"
     ],
-    "title": "ExpertiseRunData",
+    "title": "MasterworkRunData",
     "type": "object"
   },
-  "ExpertiseRunSnapshotData": {
+  "MasterworkRunSnapshotData": {
     "additionalProperties": false,
     "description": "What a rejoin gets once the run is no longer executing in this process:\nthe durable row, once. It carries the SAME result document the live terminal\nevent carried, so a reloaded page lands on the finished answer rather than an\nempty dialog.",
     "properties": {
       "type": {
-        "const": "expertise_run_snapshot",
-        "default": "expertise_run_snapshot",
+        "const": "masterwork_run_snapshot",
+        "default": "masterwork_run_snapshot",
         "title": "Type",
         "type": "string"
       },
@@ -7136,8 +7136,8 @@
         "title": "Run Id",
         "type": "string"
       },
-      "pack_id": {
-        "title": "Pack Id",
+      "rulebook_id": {
+        "title": "Rulebook Id",
         "type": "string"
       },
       "operation": {
@@ -7206,20 +7206,20 @@
     },
     "required": [
       "run_id",
-      "pack_id",
+      "rulebook_id",
       "operation",
       "status"
     ],
-    "title": "ExpertiseRunSnapshotData",
+    "title": "MasterworkRunSnapshotData",
     "type": "object"
   },
-  "ExpertiseRunFailedData": {
+  "MasterworkRunFailedData": {
     "additionalProperties": false,
     "description": "A live run died. Mirrored into the replay channel so a connection that is\nalready following gets the failure, not silence.",
     "properties": {
       "type": {
-        "const": "expertise_run_failed",
-        "default": "expertise_run_failed",
+        "const": "masterwork_run_failed",
+        "default": "masterwork_run_failed",
         "title": "Type",
         "type": "string"
       },
@@ -7244,16 +7244,16 @@
     "required": [
       "run_id"
     ],
-    "title": "ExpertiseRunFailedData",
+    "title": "MasterworkRunFailedData",
     "type": "object"
   },
-  "DeskCompileProgressData": {
+  "MasterworkBuildProgressData": {
     "additionalProperties": false,
-    "description": "One step of compiling an Expertise Pack into a desk (agents + workflow).",
+    "description": "One step of Building a Rulebook into a Masterwork (agents + workflow).",
     "properties": {
       "type": {
-        "const": "desk_compile_progress",
-        "default": "desk_compile_progress",
+        "const": "masterwork_build_progress",
+        "default": "masterwork_build_progress",
         "title": "Type",
         "type": "string"
       },
@@ -7294,16 +7294,16 @@
       "step",
       "message"
     ],
-    "title": "DeskCompileProgressData",
+    "title": "MasterworkBuildProgressData",
     "type": "object"
   },
-  "DeskCompileCompleteData": {
+  "MasterworkBuildCompleteData": {
     "additionalProperties": false,
-    "description": "Terminal result of POST /expertise-desks/compile.",
+    "description": "Terminal result of POST /masterworks/build.",
     "properties": {
       "type": {
-        "const": "desk_compile_complete",
-        "default": "desk_compile_complete",
+        "const": "masterwork_build_complete",
+        "default": "masterwork_build_complete",
         "title": "Type",
         "type": "string"
       },
@@ -7315,20 +7315,20 @@
         "title": "Name",
         "type": "string"
       },
-      "desk_kind": {
-        "title": "Desk Kind",
+      "masterwork_kind": {
+        "title": "Masterwork Kind",
         "type": "string"
       },
-      "pack_id": {
-        "title": "Pack Id",
+      "rulebook_id": {
+        "title": "Rulebook Id",
         "type": "string"
       },
-      "pack_slug": {
-        "title": "Pack Slug",
+      "rulebook_slug": {
+        "title": "Rulebook Slug",
         "type": "string"
       },
-      "pack_version": {
-        "title": "Pack Version",
+      "rulebook_version": {
+        "title": "Rulebook Version",
         "type": "integer"
       },
       "agent_ids": {
@@ -7342,21 +7342,21 @@
     "required": [
       "workflow_id",
       "name",
-      "desk_kind",
-      "pack_id",
-      "pack_slug",
-      "pack_version"
+      "masterwork_kind",
+      "rulebook_id",
+      "rulebook_slug",
+      "rulebook_version"
     ],
-    "title": "DeskCompileCompleteData",
+    "title": "MasterworkBuildCompleteData",
     "type": "object"
   },
-  "ExpertiseIngestProgressData": {
+  "MasterworkIngestProgressData": {
     "additionalProperties": false,
-    "description": "One step of distilling a source into draft pack rules.",
+    "description": "One step of distilling a source into draft Rulebook rules.",
     "properties": {
       "type": {
-        "const": "expertise_ingest_progress",
-        "default": "expertise_ingest_progress",
+        "const": "masterwork_ingest_progress",
+        "default": "masterwork_ingest_progress",
         "title": "Type",
         "type": "string"
       },
@@ -7409,25 +7409,25 @@
       "step",
       "message"
     ],
-    "title": "ExpertiseIngestProgressData",
+    "title": "MasterworkIngestProgressData",
     "type": "object"
   },
-  "ExpertiseIngestCompleteData": {
+  "MasterworkIngestCompleteData": {
     "additionalProperties": false,
-    "description": "Terminal result of POST /expertise-desks/ingest.",
+    "description": "Terminal result of POST /masterworks/ingest.",
     "properties": {
       "type": {
-        "const": "expertise_ingest_complete",
-        "default": "expertise_ingest_complete",
+        "const": "masterwork_ingest_complete",
+        "default": "masterwork_ingest_complete",
         "title": "Type",
         "type": "string"
       },
-      "pack_id": {
-        "title": "Pack Id",
+      "rulebook_id": {
+        "title": "Rulebook Id",
         "type": "string"
       },
-      "pack_version": {
-        "title": "Pack Version",
+      "rulebook_version": {
+        "title": "Rulebook Version",
         "type": "integer"
       },
       "added": {
@@ -7452,16 +7452,16 @@
       }
     },
     "required": [
-      "pack_id",
-      "pack_version"
+      "rulebook_id",
+      "rulebook_version"
     ],
-    "title": "ExpertiseIngestCompleteData",
+    "title": "MasterworkIngestCompleteData",
     "type": "object"
   },
-  "ExpertiseBacktestVerdictData": {
+  "MasterworkAuditionVerdictData": {
     "$defs": {
-      "BacktestRuleFinding": {
-        "description": "One rule's comparison verdict inside a backtest.",
+      "AuditionRuleFinding": {
+        "description": "One rule's comparison verdict inside an Audition.",
         "properties": {
           "rule_id": {
             "title": "Rule Id",
@@ -7481,21 +7481,21 @@
           "rule_id",
           "winner"
         ],
-        "title": "BacktestRuleFinding",
+        "title": "AuditionRuleFinding",
         "type": "object"
       }
     },
     "additionalProperties": false,
-    "description": "Terminal result of POST /expertise-desks/backtest — the R2 outcome\nsignal: desk output vs the real published exemplar, judged rule-by-rule\nagainst the pack.",
+    "description": "Terminal result of POST /masterworks/audition — the R2 outcome\nsignal: Masterwork output vs the real published exemplar, judged rule-by-rule\nagainst the Rulebook.",
     "properties": {
       "type": {
-        "const": "expertise_backtest_verdict",
-        "default": "expertise_backtest_verdict",
+        "const": "masterwork_audition_verdict",
+        "default": "masterwork_audition_verdict",
         "title": "Type",
         "type": "string"
       },
-      "pack_id": {
-        "title": "Pack Id",
+      "rulebook_id": {
+        "title": "Rulebook Id",
         "type": "string"
       },
       "verdict": {
@@ -7509,7 +7509,7 @@
       "findings": {
         "default": [],
         "items": {
-          "$ref": "#/$defs/BacktestRuleFinding"
+          "$ref": "#/$defs/AuditionRuleFinding"
         },
         "title": "Findings",
         "type": "array"
@@ -7527,7 +7527,7 @@
         "title": "Gaps Captured",
         "type": "integer"
       },
-      "pack_version": {
+      "rulebook_version": {
         "anyOf": [
           {
             "type": "integer"
@@ -7537,15 +7537,15 @@
           }
         ],
         "default": null,
-        "title": "Pack Version"
+        "title": "Rulebook Version"
       }
     },
     "required": [
-      "pack_id",
+      "rulebook_id",
       "verdict",
       "summary"
     ],
-    "title": "ExpertiseBacktestVerdictData",
+    "title": "MasterworkAuditionVerdictData",
     "type": "object"
   },
   "PdfExtractStartedData": {

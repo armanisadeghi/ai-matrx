@@ -519,25 +519,6 @@ export interface ConversationLabeledData {
   keywords?: string[];
 }
 
-export interface DeskCompileCompleteData {
-  type?: "desk_compile_complete";
-  workflow_id: string;
-  name: string;
-  desk_kind: string;
-  pack_id: string;
-  pack_slug: string;
-  pack_version: number;
-  agent_ids?: string[];
-}
-
-export interface DeskCompileProgressData {
-  type?: "desk_compile_progress";
-  step: string;
-  message: string;
-  agent_id?: string | null;
-  agent_name?: string | null;
-}
-
 export interface DictionaryPublishCompleteData {
   type?: "dictionary_publish_complete";
   status: string;
@@ -565,69 +546,6 @@ export interface QuestionnaireDisplayData {
   type?: "display_questionnaire";
   introduction: string;
   questions?: QuestionnaireQuestion[];
-}
-
-export interface BacktestRuleFinding {
-  rule_id: string;
-  winner: string;
-  note?: string;
-}
-
-export interface ExpertiseBacktestVerdictData {
-  type?: "expertise_backtest_verdict";
-  pack_id: string;
-  verdict: string;
-  summary: string;
-  findings?: BacktestRuleFinding[];
-  gaps?: string[];
-  gaps_captured?: number;
-  pack_version?: number | null;
-}
-
-export interface ExpertiseIngestCompleteData {
-  type?: "expertise_ingest_complete";
-  pack_id: string;
-  pack_version: number;
-  added?: number;
-  duplicates_skipped?: number;
-  quotes_verified?: number;
-  quotes_unverified?: number;
-}
-
-export interface ExpertiseIngestProgressData {
-  type?: "expertise_ingest_progress";
-  step: string;
-  message: string;
-  chunk_index?: number | null;
-  total_chunks?: number | null;
-  rules_found?: number | null;
-}
-
-export interface ExpertiseRunData {
-  type?: "expertise_run";
-  run_id: string;
-  pack_id: string;
-  operation: string;
-  label?: string | null;
-}
-
-export interface ExpertiseRunFailedData {
-  type?: "expertise_run_failed";
-  run_id: string;
-  error?: Record<string, unknown> | null;
-}
-
-export interface ExpertiseRunSnapshotData {
-  type?: "expertise_run_snapshot";
-  run_id: string;
-  pack_id: string;
-  operation: string;
-  label?: string | null;
-  status: string;
-  live?: boolean;
-  error?: Record<string, unknown> | null;
-  result?: Record<string, unknown> | null;
-  completed_at?: string | null;
 }
 
 export interface ExtractionIndexCompleteData {
@@ -888,6 +806,88 @@ export interface LegalSyncEventData {
   per_resource_rows?: Record<string, number> | null;
   per_resource_errors?: Record<string, string> | null;
   error?: string | null;
+}
+
+export interface AuditionRuleFinding {
+  rule_id: string;
+  winner: string;
+  note?: string;
+}
+
+export interface MasterworkAuditionVerdictData {
+  type?: "masterwork_audition_verdict";
+  rulebook_id: string;
+  verdict: string;
+  summary: string;
+  findings?: AuditionRuleFinding[];
+  gaps?: string[];
+  gaps_captured?: number;
+  rulebook_version?: number | null;
+}
+
+export interface MasterworkBuildCompleteData {
+  type?: "masterwork_build_complete";
+  workflow_id: string;
+  name: string;
+  masterwork_kind: string;
+  rulebook_id: string;
+  rulebook_slug: string;
+  rulebook_version: number;
+  agent_ids?: string[];
+}
+
+export interface MasterworkBuildProgressData {
+  type?: "masterwork_build_progress";
+  step: string;
+  message: string;
+  agent_id?: string | null;
+  agent_name?: string | null;
+}
+
+export interface MasterworkIngestCompleteData {
+  type?: "masterwork_ingest_complete";
+  rulebook_id: string;
+  rulebook_version: number;
+  added?: number;
+  duplicates_skipped?: number;
+  quotes_verified?: number;
+  quotes_unverified?: number;
+}
+
+export interface MasterworkIngestProgressData {
+  type?: "masterwork_ingest_progress";
+  step: string;
+  message: string;
+  chunk_index?: number | null;
+  total_chunks?: number | null;
+  rules_found?: number | null;
+}
+
+export interface MasterworkRunData {
+  type?: "masterwork_run";
+  run_id: string;
+  rulebook_id: string;
+  operation: string;
+  label?: string | null;
+}
+
+export interface MasterworkRunFailedData {
+  type?: "masterwork_run_failed";
+  run_id: string;
+  error?: Record<string, unknown> | null;
+}
+
+export interface MasterworkRunSnapshotData {
+  type?: "masterwork_run_snapshot";
+  run_id: string;
+  rulebook_id: string;
+  operation: string;
+  label?: string | null;
+  status: string;
+  live?: boolean;
+  error?: Record<string, unknown> | null;
+  result?: Record<string, unknown> | null;
+  completed_at?: string | null;
 }
 
 export interface AudioBlock {
@@ -1578,15 +1578,7 @@ export type TypedDataPayload =
   | ContextPersistedData
   | ConversationIdData
   | ConversationLabeledData
-  | DeskCompileCompleteData
-  | DeskCompileProgressData
   | DictionaryPublishCompleteData
-  | ExpertiseBacktestVerdictData
-  | ExpertiseIngestCompleteData
-  | ExpertiseIngestProgressData
-  | ExpertiseRunData
-  | ExpertiseRunFailedData
-  | ExpertiseRunSnapshotData
   | ExtractionIndexCompleteData
   | ExtractionIndexProgressData
   | FetchResultsData
@@ -1607,6 +1599,14 @@ export type TypedDataPayload =
   | ImageStudioProcessCompleteData
   | ImageStudioVariantData
   | LegalSyncEventData
+  | MasterworkAuditionVerdictData
+  | MasterworkBuildCompleteData
+  | MasterworkBuildProgressData
+  | MasterworkIngestCompleteData
+  | MasterworkIngestProgressData
+  | MasterworkRunData
+  | MasterworkRunFailedData
+  | MasterworkRunSnapshotData
   | MediaBlockData
   | MediaNoticeData
   | MemoryBufferSpawnedData
