@@ -18,7 +18,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
@@ -172,6 +172,21 @@ export function useFlashcardStudy(
   const [originalCount, setOriginalCount] = useState(0);
   const [masteredIds, setMasteredIds] = useState<Set<string>>(new Set());
 
+  // Render-synced mirrors for `refreshCards`, whose queue rebuild runs AFTER
+  // an awaited fetch: reading the closure state there would resurrect
+  // anything graded/mastered while the request was in flight (the keyboard
+  // still grades while the Enhance dialog is open). The refs are read
+  // synchronously after the await, so the rebuild always sees the latest
+  // committed session state.
+  const cardsRef = useRef(cards);
+  const currentIndexRef = useRef(currentIndex);
+  const masteredIdsRef = useRef(masteredIds);
+  useEffect(() => {
+    cardsRef.current = cards;
+    currentIndexRef.current = currentIndex;
+    masteredIdsRef.current = masteredIds;
+  }, [cards, currentIndex, masteredIds]);
+
   // Load the set, its cards, and the current user's existing mastery per card.
   // All state writes happen inside the async body so none fire synchronously in
   // the effect (which would trigger cascading renders).
@@ -293,12 +308,18 @@ export function useFlashcardStudy(
     if (!res.data) return;
     const freshAll = res.data.cards;
     const freshById = new Map(freshAll.map((c) => [c.id, c]));
-    const knownIds = new Set(cards.map((c) => c.id));
-    for (const id of masteredIds) knownIds.add(id);
+    // Read the render-synced refs, NOT the closure state — a grade or
+    // navigation during the fetch has already committed by the time the
+    // await resumes, and everything below runs in one synchronous block so
+    // nothing can interleave between the read and the writes.
+    const prevQueue = cardsRef.current;
+    const mastered = masteredIdsRef.current;
+    const currentId = prevQueue[currentIndexRef.current]?.id ?? null;
+    const knownIds = new Set(prevQueue.map((c) => c.id));
+    for (const id of mastered) knownIds.add(id);
     const added = freshAll.filter((c) => !knownIds.has(c.id));
-    const currentId = cards[currentIndex]?.id ?? null;
     const nextQueue = [
-      ...cards.flatMap((c) => {
+      ...prevQueue.flatMap((c) => {
         const fresh = freshById.get(c.id);
         return fresh ? [fresh] : [];
       }),
