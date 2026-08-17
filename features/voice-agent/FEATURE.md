@@ -27,10 +27,13 @@ Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/commu
 
 **Routes**
 
-- `app/(a)/chat/voice/page.tsx` — locked Intro Agent (voice=ara, hardcoded
-  intro prompt, tools=web_search+x_search, no settings UI).
-- `app/(a)/chat/voice/playground/page.tsx` — fully configurable: voice picker,
+- `app/(core)/chat/voice/page.tsx` — locked Intro Agent (mandate `voice.intro`,
+  tools=web_search+x_search, no settings UI).
+- `app/(core)/chat/voice/playground/page.tsx` — fully configurable: voice picker,
   tool toggles, instructions editor in a right-side `<Sheet>`.
+- `app/(dev)/demos/voice-relay/page.dev.tsx` — Voice Communication Layer test
+  surface (the Communicator speaks for a primary text agent — see the relay
+  section below).
 - `app/(core)/chat/voice/gemini/page.tsx` — Google Live microphone/audio/text
   surface with catalog model selection, thinking level, turn coverage,
   transcript, and visible lifecycle state.
@@ -185,6 +188,37 @@ xAI's realtime agent **supports custom client-side `function` tools** (and `file
 
 ---
 
+## Voice Communication Layer — `relay/` (the voice model as MOUTH, not brain)
+
+Cross-repo SoR: `common-docs/systems/voice-communication-layer/FEATURE.md` — read it first.
+The relay inverts this feature's default architecture: the realtime model (the
+**Communicator**, Mandate `voice.communicator`, realtime waiver) never answers the
+user — the user's transcript routes to a **primary text agent** (an ordinary
+execution-system conversation), and the Communicator speaks only on explicit cues
+carrying that agent's answer.
+
+- `relay/relayController.ts` — React-free core. Owns THE ROUTING LAW: session runs
+  with `turn_detection.create_response: false` (via the `createResponseOnTurn`
+  field on `SessionUpdatePayload`); transcripts → `onUserUtterance`; speech only on
+  `speakDelivery`/`speakNarration`; an unsolicited `response.created` while awaiting
+  the brain is cancelled AND screams; cue items pruned beyond
+  `RELAY_CONTEXT_WINDOW_ITEMS` (client-minted item ids + `conversation.item.delete`).
+- `relay/questionLedger.ts` — rule 4 (one question at a time, none ever lost): the
+  `communication_ledger` client tool + per-instance ledger; serialized state is
+  re-injected into EVERY delivery cue. The primary agent is the independent backstop.
+- `relay/relayProtocol.ts` — pure cue-text builders (`[cue:deliver]` / `[cue:narrate]`),
+  matched by the Communicator's DB persona.
+- `relay/useVoiceRelaySession.ts` — the composing hook: communicator session
+  (`useXaiVoiceSession({ relay })`) + primary conversation (`useAgentLauncher` +
+  `smartExecute`), delivery on the `selectIsExecuting` falling edge via
+  `selectLatestAnswerText`, one narration cue after `NARRATION_DELAY_MS`.
+- `useXaiVoiceSession` gained the opt-in `relay?: VoiceRelayBinding` — attach rides
+  the session-subscription teardown; non-relay surfaces are untouched.
+- Tests: `relay/relay.test.ts` (protocol, ledger, controller invariants).
+- Surfaces still to wire (handoff `docs/handoffs/voice-communication-layer.md`):
+  Masterwork Scout interview, Vision Interview (multi-role, `/runs/{id}/resume`),
+  broker cutover of `/api/voice-agent/token` to the `xai_realtime` audience.
+
 ## Related features
 
 - **Depends on**: `@/utils/supabase/{client,server,resolveUser}`, `@/lib/redux/hooks`, `@/components/ui/{sheet,confirm-dialog}`, `sonner`.
@@ -229,6 +263,13 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-08-17` — **Voice Communication Layer v1 (`relay/`).** The Communicator
+  (Mandate `voice.communicator`) speaks FOR a primary text agent: relay
+  controller + question ledger client tool + `useVoiceRelaySession` +
+  `/demos/voice-relay`; `SessionUpdatePayload.createResponseOnTurn` and the
+  `relay` binding on `useXaiVoiceSession`. SoR:
+  `common-docs/systems/voice-communication-layer/FEATURE.md`. Also corrected the
+  stale `app/(a)/...` route paths in Entry points to `(core)`.
 - `2026-08-15` — Clarified the browser-voice boundary and linked the cross-repo communications system record; PSTN/telephony is a separate transport over shared agent, conversation, tool, and transcript primitives, not an implemented part of this feature.
 - `2026-08-15` — **Gemini Live became a first-class realtime surface.** Added
   `/chat/voice/gemini`, a dedicated catalog model/settings surface,
