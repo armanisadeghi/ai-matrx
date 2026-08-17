@@ -413,6 +413,13 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "List",
         exact: true,
       },
+      {
+        // Encore — the Operator door: run a released Masterwork.
+        label: "Encore",
+        href: "/encore",
+        iconName: "Zap",
+        description: "Run a released Masterwork — expert judgment on demand",
+      },
     ],
   },
   {

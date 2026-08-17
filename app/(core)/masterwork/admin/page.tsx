@@ -32,8 +32,24 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       url: "/masterwork/[id]/masterworks",
       label: "Masterworks for a Rulebook",
       description:
-        "workflow.definition rows stamped built_from_rulebook, with version drift flags and run links.",
+        "workflow.definition rows stamped built_from_rulebook, with version drift flags, release lifecycle (draft → released), and run links.",
       filePath: "app/(core)/masterwork/[id]/masterworks/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/encore",
+      label: "Encore (Operator home)",
+      description:
+        "Every RELEASED Masterwork the viewer can reach (mine / orgs / public shelves), one primary action: Run.",
+      filePath: "app/(core)/encore/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/encore/[id]",
+      label: "Encore run page",
+      description:
+        "Run one released Masterwork: input form, live streamed run (TryMasterworkBox machinery), result, the Operator's own run history.",
+      filePath: "app/(core)/encore/[id]/page.tsx",
       status: "Live",
     },
   ],
@@ -69,6 +85,20 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/masterwork/components/detail/RuleEditorDialog.tsx",
       description: "Plain-language add/edit rule form.",
       tier: "candidate",
+    },
+    {
+      name: "encore service",
+      filePath: "features/masterwork/encore/service.ts",
+      description:
+        "Released-Masterwork reads for Operators (VIEW LAW scoped shelves, per-Operator run history) + the rulebook join for the Expert doors.",
+      tier: "internal",
+    },
+    {
+      name: "EncoreHomePage / EncoreRunPage",
+      filePath: "features/masterwork/encore/EncoreHomePage.tsx",
+      description:
+        "The Operator surface — jargon-free cards + the run experience (reuses TryMasterworkBox).",
+      tier: "internal",
     },
   ],
   relatedFeatures: [

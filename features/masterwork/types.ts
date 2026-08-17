@@ -137,6 +137,10 @@ export interface RulebookListRow {
 /**
  * A Masterwork (the workflow projection) built from a Rulebook — read from
  * workflow.definition metadata stamps.
+ *
+ * Lifecycle: every Build lands as a DRAFT. The Expert releases it from the
+ * Studio (`metadata.released_at` gets stamped); only a released Masterwork
+ * appears on /encore, where an Operator runs it. Un-release clears the stamp.
  */
 export interface Masterwork {
   id: string;
@@ -145,6 +149,10 @@ export interface Masterwork {
   masterwork_kind: string | null;
   built_from_rulebook: string | null;
   rulebook_version: number | null;
+  /** When the Expert released it to Operators; null = draft (Studio-only). */
+  released_at: string | null;
+  /** workflow.definition row version — the CAS token for release writes. */
+  version: number;
   created_at: string;
   updated_at: string;
   visibility: string;

@@ -6,6 +6,7 @@ import {
   AlertTriangle,
   ExternalLink,
   MessageCircleQuestion,
+  Play,
   Workflow,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -24,6 +25,7 @@ import {
   getRulebook,
   listMasterworksForRulebook,
   listRecentRunsForMasterworks,
+  setMasterworkReleased,
   type MasterworkRun,
 } from "../../service";
 import type { Masterwork, Rulebook } from "../../types";
@@ -132,6 +134,34 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
   );
   const isOwner =
     rulebook !== null && userId !== null && rulebook.created_by === userId;
+  // Release / un-release in flight for one Masterwork (the Studio's lifecycle
+  // action — released Masterworks appear on /encore for Operators).
+  const [releaseBusy, setReleaseBusy] = useState<string | null>(null);
+
+  const toggleReleased = async (masterwork: Masterwork) => {
+    setReleaseBusy(masterwork.id);
+    try {
+      const updated = await setMasterworkReleased({
+        masterworkId: masterwork.id,
+        expectedVersion: masterwork.version,
+        released: masterwork.released_at === null,
+      });
+      setMasterworks((prev) =>
+        prev.map((m) => (m.id === updated.id ? updated : m)),
+      );
+      toast.success(
+        updated.released_at !== null
+          ? "Released — Operators can now run it on Encore."
+          : "Un-released — it no longer appears on Encore.",
+      );
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not change the release.",
+      );
+    } finally {
+      setReleaseBusy(null);
+    }
+  };
 
   const refreshRuns = useCallback(async () => {
     if (masterworks.length === 0) return;
@@ -258,6 +288,18 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
                           built from v{masterwork.rulebook_version}
                         </Badge>
                       ) : null}
+                      {masterwork.released_at !== null ? (
+                        <Badge className="px-1.5 py-0 text-[10px]">
+                          Released
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                        >
+                          Draft
+                        </Badge>
+                      )}
                     </div>
                     {masterwork.description ? (
                       <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
@@ -280,7 +322,36 @@ export function MasterworksPage({ rulebookId }: { rulebookId: string }) {
                       </p>
                     ) : null}
                   </div>
-                  <div className="flex shrink-0 gap-2">
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    {isOwner ? (
+                      <Button
+                        size="sm"
+                        variant={
+                          masterwork.released_at === null ? "default" : "outline"
+                        }
+                        disabled={releaseBusy === masterwork.id}
+                        onClick={() => void toggleReleased(masterwork)}
+                        title={
+                          masterwork.released_at === null
+                            ? "Make it runnable by Operators on Encore"
+                            : "Take it off Encore — Operators can no longer run it"
+                        }
+                      >
+                        {releaseBusy === masterwork.id
+                          ? "Working…"
+                          : masterwork.released_at === null
+                            ? "Release"
+                            : "Un-release"}
+                      </Button>
+                    ) : null}
+                    {masterwork.released_at !== null ? (
+                      <Button asChild size="sm" variant="outline">
+                        <Link href={`/encore/${masterwork.id}`}>
+                          <Play className="mr-1 h-4 w-4" />
+                          View in Encore
+                        </Link>
+                      </Button>
+                    ) : null}
                     <Button asChild size="sm" variant="outline">
                       <a
                         href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}

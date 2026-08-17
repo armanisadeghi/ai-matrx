@@ -1,4 +1,5 @@
 import { supabase } from "@/utils/supabase/client";
+import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
 import {
   parseRulebook,
   type Masterwork,
@@ -355,6 +356,45 @@ export async function getMasterworkRunVerdict(
   };
 }
 
+/** The projection the Masterwork reads select (workflow.definition subset). */
+export interface MasterworkDefinitionRow {
+  id: string;
+  name: string;
+  description: string | null;
+  metadata: unknown;
+  version: number;
+  created_at: string;
+  updated_at: string;
+  visibility: string;
+}
+
+/** The one metadata→Masterwork projection — every read path goes through it. */
+export function parseMasterworkRow(row: MasterworkDefinitionRow): Masterwork {
+  const meta = (row.metadata ?? {}) as Record<string, unknown>;
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    masterwork_kind:
+      typeof meta.masterwork_kind === "string" ? meta.masterwork_kind : null,
+    built_from_rulebook:
+      typeof meta.built_from_rulebook === "string"
+        ? meta.built_from_rulebook
+        : null,
+    rulebook_version:
+      typeof meta.rulebook_version === "number" ? meta.rulebook_version : null,
+    released_at:
+      typeof meta.released_at === "string" ? meta.released_at : null,
+    version: row.version,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    visibility: String(row.visibility),
+  };
+}
+
+export const MASTERWORK_SELECT_COLUMNS =
+  "id,name,description,metadata,version,created_at,updated_at,visibility";
+
 /**
  * Masterworks built from a Rulebook — workflow.definition rows whose metadata
  * is stamped `built_from_rulebook` by the Build.
@@ -365,30 +405,60 @@ export async function listMasterworksForRulebook(
   const { data, error } = await supabase
     .schema("workflow")
     .from("definition")
-    .select("id,name,description,metadata,created_at,updated_at,visibility")
+    .select(MASTERWORK_SELECT_COLUMNS)
     .eq("metadata->>built_from_rulebook", rulebookId)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((row) => {
-    const meta = (row.metadata ?? {}) as Record<string, unknown>;
-    return {
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      masterwork_kind:
-        typeof meta.masterwork_kind === "string" ? meta.masterwork_kind : null,
-      built_from_rulebook:
-        typeof meta.built_from_rulebook === "string"
-          ? meta.built_from_rulebook
-          : null,
-      rulebook_version:
-        typeof meta.rulebook_version === "number"
-          ? meta.rulebook_version
-          : null,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      visibility: String(row.visibility),
-    };
+  return (data ?? []).map(parseMasterworkRow);
+}
+
+/**
+ * Release / un-release a Masterwork (the Studio action). Released = an
+ * Operator can find and run it on /encore; draft = Studio-only. The stamp is
+ * `metadata.released_at`, written with a guarded compare-and-swap on the
+ * definition's `version` so a concurrent Studio save surfaces as a conflict
+ * instead of silently losing either write (metadata is read-modify-write).
+ */
+export async function setMasterworkReleased(opts: {
+  masterworkId: string;
+  expectedVersion: number;
+  released: boolean;
+}): Promise<Masterwork> {
+  const definitionTable = () => supabase.schema("workflow").from("definition");
+  const { data: current, error: readError } = await definitionTable()
+    .select("metadata")
+    .eq("id", opts.masterworkId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (readError) throw readError;
+  if (!current) throw new Error("This Masterwork no longer exists.");
+  const meta = {
+    ...((current.metadata ?? {}) as Record<string, unknown>),
+  };
+  if (opts.released) meta.released_at = new Date().toISOString();
+  else delete meta.released_at;
+
+  const result = await guardedUpdate<MasterworkDefinitionRow>({
+    expectedVersion: opts.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      definitionTable()
+        .update({ metadata: meta as never, version: nextVersion })
+        .eq("id", opts.masterworkId)
+        .eq("version", expectedVersion)
+        .select(MASTERWORK_SELECT_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      definitionTable()
+        .select(MASTERWORK_SELECT_COLUMNS)
+        .eq("id", opts.masterworkId)
+        .maybeSingle(),
   });
+  if (result.status === "saved") return parseMasterworkRow(result.row);
+  if (result.status === "conflict") {
+    throw new Error(
+      "This Masterwork changed while you were looking at it (someone saved a newer version). Reload the page and try again.",
+    );
+  }
+  throw new Error("This Masterwork no longer exists.");
 }
