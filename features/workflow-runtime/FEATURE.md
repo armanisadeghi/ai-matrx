@@ -138,3 +138,13 @@ that is the exit-test surface.
   added `ProgressRailReadout` / `ReadoutView` / `RunSurfaceView`; slice gained
   `childRunsByNode` (subgraph_run_linked node→child map) + selectors
   `selectChildRunIdForNode` and `selectNodeAggregatePhases`.
+- 2026-08-18 — the dead-run defect class closed after Arman's morning test: `RunErrorCard`
+  (readout-parts) renders a failed/errored run's structured error + failing-step names on the
+  Surface AND the Board (it used to sit at "Not started" forever); the progress rail shows the
+  definition's human step labels via `definitionNodeLabels` (RunSurfaceView export); the board
+  hides the transport chip on terminal runs; `fetchRunDefinitionId` (surface/service) lets a
+  `?run=` deep link / refresh restore the workflow it was started from. Server halves in the
+  same push: Study Pack v1 gained its `materials` io.user_input node (the run form now exists
+  for it), and aidream's run-start routes accept callApi's body-injected `organization_id`
+  (AcceptsInjectedScope + resolve_effective_organization_id — org-less runs made every agent
+  step refuse).
