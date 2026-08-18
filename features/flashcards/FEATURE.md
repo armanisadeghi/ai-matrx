@@ -71,7 +71,7 @@ lives in `features/flashcards/fast-fire/`. Don't look for it under `/education/f
 `app/(core)/education/flashcards/admin/page.tsx` → `admin/flashcardsAdminMap.ts` (426 lines),
 rendered by `<FeatureAdminPage>`. **Its header comment and `description` are stale** — they say
 creation/AI flows are "out of scope until the fc_* agents are built" and that the feature is "a
-list-first browser + set detail + a classic-flip study surface". Seven study modes and three
+list-first browser + set detail + a classic-flip study surface". All nine study methods and three
 creation flows are live. Fix these when you next touch that file.
 
 ---
@@ -165,19 +165,17 @@ Verified 2026-08-17 by the education program's WP12 (truth) against live code.
   `features/education/media/mindmap/components/MindMapView.tsx:128,129`. Mobile (`FlashcardMobileView`) renders faces through
   `ConfigurableMarkdownContent` but carries a **second** face-style pipeline
   (`makeMobileCardStyle:143`, `stripInlineMarkdown:205`) and its scrubber at `:609` renders raw.
-- **"Anki export" is not `.apkg` — and this is platform-wide, not a fork's fault.** Both export
-  modules emit a headed TSV: `utils/exportDeck.ts:48` writes the `#separator:tab` / `#html:true`
-  header, and `deckFormats.ts:101` maps `anki: "txt"` with the comment "Anki imports .txt TSV
-  natively". The `.anki.txt` filename is minted at
-  `components/set-detail/SetDetailView.tsx:362`. Anki **import** *is* a real `.apkg` reader
-  (`education/onboard/import/importAnki.ts`), so the asymmetry surprises people. One stale comment
-  line at `exportDeck.ts:10` still says `#html:false`; L44 and L48 agree on `true`.
+- **"Anki export" is a TSV text file, not an `.apkg`** — platform-wide, in both export modules
+  (`utils/exportDeck.ts` and `education/onboard/export/deckFormats.ts` both map `anki` to a `.txt`
+  TSV that Anki imports natively). Anki **import** *is* a real `.apkg` reader
+  (`education/onboard/import/importAnki.ts`), so the asymmetry surprises people. The UI labels are
+  honest about it ("Anki (text import)" / "Anki (.txt)"); a true `.apkg` writer would need a zip +
+  SQLite collection and does not exist.
 - **Two export entry points still exist**, though they no longer diverge on fidelity:
-  `utils/exportDeck.ts#buildDeckJson` now delegates to `deckFormats.ts#toPortableDeck`, so trust IS
-  preserved. The remaining gap is narrow: `buildDeckJson` does not pass export *extras*, so the
-  **SetDetailView** export path omits `scheduling` and `media` that `/education/data` includes
-  (`useDataOwnership.ts:82,110-111` passes `fetchDeckExportExtras`). Converge the two rather than
-  extending either.
+  `utils/exportDeck.ts` now delegates to `deckFormats.ts#toPortableDeck`, so `metadata.trust` IS
+  preserved. The remaining gap is narrow: the deck-detail path does not pass export *extras*, so it
+  omits the `scheduling` and `media` that `/education/data` includes (`useDataOwnership.ts` passes
+  `fetchDeckExportExtras`). Converge the two rather than extending either.
 - **`.apkg` is unreachable from the flashcards import route.** `ImportSetView` accepts
   `.csv,.tsv,.txt,.json` (`:201`) and does use `importPortableJson` (`:80`) and the RFC-4180
   `parseCsvRecords` (`:93`) — but it never routes to `importAnkiFile`, which only
@@ -281,10 +279,17 @@ acquisition, **WP8** owns the legacy-table bleed. Check `STATUS_BOARD.md` before
   `data/agents.ts` → `data/mandates.ts` (`FC_MANDATES`), `fast-fire/config.ts` +
   `education/tutor/lanes/config.ts` localStorage agent overrides retired (bindings at
   `/agents/mandates` replace them), dead `writeHelper`/`spokenQuestion` lanes dropped.
+- `2026-08-17` — WP12: **corrected 13 false or stale claims in the first version, found by an
+  adversarial review of this file.** 🚨 **Read this before writing any doc in this repo.** The
+  first version was written from a subsystem map built ~20 minutes earlier in the same session,
+  and the tree moved underneath it: a file it described as a live trap
+  (`hooks/useFlashcardStudy.ts`) had been deleted four minutes before the commit, and five
+  *Known limits* rows were closed by other packages within six minutes after it. It also
+  under-credited real work — images have a writer, deck JSON round-trips, and the library export
+  has an importer. **A map is evidence only at the moment it is taken; re-verify against `HEAD`
+  at write time, and re-run every "known limit" immediately before committing.**
 - `2026-08-17` — WP12 (truth & docs): **file created.** The largest education subsystem had no
-  `FEATURE.md` at all. Written from a verified map of all 91 files plus an adversarial spot-check
-  of the four gaps reported closed that day; every *Known limits* row is a measured finding, not a
-  guess.
+  `FEATURE.md` at all.
 
 ---
 
