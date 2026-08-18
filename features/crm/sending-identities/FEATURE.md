@@ -91,22 +91,33 @@ contract via `@/lib/api/typed-client` so a backend rename is a compile error.
   address the OAuth account actually authenticated as, so a text input would
   only manufacture refusals.
 
-## The org-level production bring-up checklist (2026-08-15)
+## The org-level bring-up checklists — SPLIT BY AUDIENCE (2026-08-17)
 
-`outreach.production_bring_up` ([bringUpChecklist.tsx](./bringUpChecklist.tsx),
-mounted by `features/crm/components/sending-identities/OutreachBringUpSection.tsx`
-on `/crm/sending-identities`) answers the question ABOVE the per-mailbox
-checklist: what still stands between this ORGANIZATION and its first real
-outreach message. Six steps: named mailbox on a proven domain (verified) ·
-the Google Cloud reply pipe (confirmed, exact copy-paste values) · server
-listening for replies (verified against `GET
-/sending-identities/bring-up-readiness`, hand-typed shape in types.ts until the
-generated spec carries it) · sending rules accepted (verified against
-`crm.outreach_acceptance`; the fix opens `AcceptSendingRulesDialog` — the FIRST
-caller of `acceptOutreachPolicy`, full text on screen, exact words recorded) ·
-vendor keys present (verified, booleans only) · gmail.readonly (verified +
-OPTIONAL — queued behind Google's review; no user action can hurry it, so it
-must not block the done verdict).
+The original single checklist put Pub/Sub topics, service accounts and server
+env-var names in front of a normal organization (Arman, first real bring-up,
+2026-08-16: "Why the fuck would you have server settings and who may publish
+service accounts?"). [bringUpChecklist.tsx](./bringUpChecklist.tsx) now
+registers TWO checklists, both mounted by
+`features/crm/components/sending-identities/OutreachBringUpSection.tsx`:
+
+- **`outreach.production_bring_up` — the CUSTOMER's steps, rendered for every
+  org.** Named mailbox on a proven domain (verified) · sending rules accepted
+  (verified against `crm.outreach_acceptance`; fix opens
+  `AcceptSendingRulesDialog`) · vendor keys present (verified, booleans only).
+  Vendor keys are a CUSTOMER step because `bring-up-readiness` checks them in
+  the personal→org secrets vault — per-org facts the org supplies itself.
+  **A normal org must see zero DevOps vocabulary anywhere on this page.**
+- **`outreach.platform_bring_up` — AI MATRX OPERATOR steps, rendered ONLY for
+  super-admins (`selectIsSuperAdmin`)** under an explicit "Platform setup — AI
+  Matrx operators" section: the Google Cloud reply pipe (confirmed, exact
+  copy-paste values) · server listening for replies (verified — deployment env
+  config, same for every org) · gmail.readonly (verified + OPTIONAL — queued
+  behind Google's review of OUR OAuth app; platform work, no org can act on it).
+  The reply-pipe confirmation moved persistence keys in the split, so an
+  operator re-ticks it once.
+
+Both read `GET /sending-identities/bring-up-readiness` (hand-typed shape in
+types.ts until the generated spec carries it).
 
 Traps: the readiness endpoint on a server that predates it falls into
 `/{identity_id}` and answers 400 — the checks map ANY readiness failure to
@@ -118,4 +129,19 @@ bare `/outreach/inbound` prefix. Dialog fixes resolve their promise on CLOSE
 (accepted or not) so the re-check fires either way and reads the truth from the
 DB.
 
+- 2026-08-17 — Four first-real-bring-up UX fixes (Arman's session, 2026-08-16):
+  (1) checklist split by audience — see the section above; (2) connecting a
+  mailbox is now unmistakable: `ConnectMailboxDialog.onConnected` receives the
+  created identity and both mount sites toast + `router.push` straight to its
+  setup steps (list stays newest-first from the server); (3) refusal copy is
+  next-step voice — the server's `domain_not_verified` message and the
+  checklist's unmet-gate reasons say "One step left: …" with the fix beside
+  them, and `IdentityRow` renders a draft/verifying mailbox's first unmet gate
+  as an amber "Next step: …" (red is reserved for genuinely-failed states —
+  `SETUP_STAGE_FIXES` + status in SendingIdentitiesPage.tsx); (4) the TXT step
+  is dead simple — `DnsRecordCard` explains the record in one plain sentence,
+  links the five common registrars' own how-tos plus a generic search, and
+  states the honest tri-state ("haven't checked yet" vs "looked and didn't
+  find it yet" vs verified). Live-verified as super-admin AND as the non-admin
+  `test@test.com` against a seeded draft probe (deleted after).
 - 2026-08-16 — ConnectMailboxDialog dead end fixed: "Connect a different Google account" is now ALWAYS offered (inline GIS popup via LazyGoogleAPIProvider + gmail.send scopes, exchange, list reload) — previously the door existed only in the empty state, so a user with existing connections could never add a third account.

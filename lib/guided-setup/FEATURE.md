@@ -208,6 +208,15 @@ you believe it.
 
 ## Change log
 
+- 2026-08-17 — `outreach.production_bring_up` split by AUDIENCE into itself
+  (customer steps only) + `outreach.platform_bring_up` (operator steps, super-
+  admin-only mount). New law learned: **a checklist has ONE audience** — steps
+  that only a platform operator can act on (deployment env config, our OAuth
+  app's review) never share a definition with steps a customer performs,
+  because the customer reads the operator rows as their own homework. The
+  split moved the reply-pipe confirmation to a new persistence key (re-tick
+  once, accepted cost).
+
 - 2026-08-15 — Fifth consumer: `outreach.production_bring_up` on
   `/crm/sending-identities` (org-level, singleton per org — no `targetKey`),
   the five outreach production gates as one guided flow beside the per-mailbox
