@@ -27,11 +27,25 @@ submission brief; stop and rescout if the live portal materially disagrees.
 
 If a precondition fails, update the exact blocker and stop before changing provider state.
 
+## Autonomy and confirmation
+
+- Treat confirmation as permission for the agent to act, never as a handoff. When browser/tool
+  policy requires action-time confirmation, ask one narrow yes/no question, preserve the exact page,
+  and perform the click or submission yourself immediately after confirmation.
+- Never ask Arman to click a button, choose an already-settled account, complete ordinary login or
+  SSO, approve an OAuth consent screen, copy a code the agent can read, or finish any other step the
+  agent can operate.
+- Do not set `Phase: blocked_owner` merely because confirmation is required. Use it only when the
+  remaining action is technically or legally impossible for the agent.
+
 ## Account and secret handling
 
 - Exhaust existing CLI/API credentials, Vault entries, service identities, and authenticated browser
   sessions before asking Arman to log in.
 - Use the dedicated `info@aimatrx.com` Chrome profile and Google SSO where supported.
+- Continue through ordinary login, account choosers, existing-session SSO, OAuth consent, and
+  email-link flows the agent can access. If policy requires confirmation before identity disclosure
+  or a persistent grant, obtain permission and then complete the step yourself.
 - Never guess publisher/legal/compliance facts. Read them from the approved Vault profile.
 - Never store a password in the browser or paste a credential value into tasks, docs, CRM, shell
   arguments, logs, screenshots, or Git.
@@ -89,8 +103,10 @@ the development access is independently useful and ongoing.
 - Rejection: set `Phase: rejected`, preserve the exact reason, prepare the smallest compliant repair,
   and set the next decision/check.
 - New material requirement: return to scouting; do not improvise an attestation.
-- CAPTCHA, hardware key, signature, payment, identity verification, or regulated commitment: set
-  `Phase: blocked_owner` with the exact one-step owner action.
+- A provider-enforced human-only challenge, physical hardware key, biometric/identity ceremony,
+  signature, regulated commitment, or payment decision that the agent cannot perform: set
+  `Phase: blocked_owner` with the exact one-step owner action. An ordinary login, account choice,
+  OAuth approval button, or required confirmation is not an owner blocker.
 
 ## Example requests
 
