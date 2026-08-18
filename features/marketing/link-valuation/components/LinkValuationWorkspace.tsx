@@ -1,0 +1,291 @@
+"use client";
+
+/**
+ * The workspace. Inputs on the left, the answer and its reasoning on the right,
+ * every knob one tab away, and the whole thing recomputing on keystroke.
+ *
+ * The engine is pure, so there is no loading state and nothing to wait for —
+ * which is the point of keeping the algorithm free of IO.
+ */
+
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/lib/toast";
+import { Download, RotateCcw, Save, Upload } from "lucide-react";
+
+import { evaluateLink } from "../engine";
+import {
+  BUILT_IN_CONFIGS,
+  hasLocalEdits,
+  isBuiltIn,
+  listConfigs,
+  parseConfig,
+  readActiveConfigId,
+  resetConfig,
+  saveConfig,
+  writeActiveConfigId,
+} from "../storage";
+import type { EvaluationInput, LinkValuationConfig } from "../types";
+import { CandidateForm } from "./CandidateForm";
+import { ResultPanel } from "./ResultPanel";
+import { TuningPanel } from "./TuningPanel";
+
+/**
+ * Appendix B of the source PRD, preloaded. It is the one candidate whose
+ * correct answer is independently known, so the page opens on a case the user
+ * can immediately check the engine against.
+ */
+const SEED_INPUT: EvaluationInput = {
+  domain: "example.com",
+  target: { keyword: "", page: "", campaign: "" },
+  values: {
+    domain_authority: { value: 36, provenance: "api", confidence: 1 },
+    url_rating: { value: 40, provenance: "api", confidence: 1 },
+    domain_rating: { value: 37, provenance: "api", confidence: 1 },
+    global_rank: { value: 2_017_142, provenance: "api", confidence: 1 },
+    spam_score: { value: 0, provenance: "api", confidence: 1 },
+    trust_links: { value: 23, provenance: "api", confidence: 1 },
+    volume_links: { value: 29, provenance: "api", confidence: 1 },
+    organic_traffic: { value: 12_200, provenance: "api", confidence: 1 },
+    url_length: { value: 9, provenance: "derived", confidence: 1 },
+    spam_keywords: { value: "No Spam", provenance: "manual", confidence: 1 },
+    is_us_site: { value: "No", provenance: "manual", confidence: 1 },
+    tld: { value: ".com", provenance: "derived", confidence: 1 },
+    topical_trust: { value: 2, provenance: "manual", confidence: 1 },
+    keyword_relevance: {
+      value: "No Relevance",
+      provenance: "manual",
+      confidence: 1,
+    },
+    page_topic_relevance: {
+      value: "No Relevance",
+      provenance: "manual",
+      confidence: 1,
+    },
+    promote_social: { value: "No", provenance: "manual", confidence: 1 },
+    feature_placement: {
+      value: "Yes: Moderate Placement",
+      provenance: "manual",
+      confidence: 1,
+    },
+    page_authority: { value: 24, provenance: "api", confidence: 1 },
+  },
+};
+
+export function LinkValuationWorkspace() {
+  const [configs, setConfigs] = useState<LinkValuationConfig[]>([
+    ...BUILT_IN_CONFIGS,
+  ]);
+  const [activeId, setActiveId] = useState<string>(
+    BUILT_IN_CONFIGS[0]?.id ?? "matrx-v1",
+  );
+  const [input, setInput] = useState<EvaluationInput>(SEED_INPUT);
+  const [importText, setImportText] = useState("");
+  const [dirty, setDirty] = useState(false);
+
+  // Hydrate from storage after mount — server and client must agree on the
+  // first paint, so the stored config is applied in an effect, not during render.
+  useEffect(() => {
+    setConfigs(listConfigs());
+    setActiveId(readActiveConfigId());
+  }, []);
+
+  const config =
+    configs.find((entry) => entry.id === activeId) ?? BUILT_IN_CONFIGS[0];
+  if (!config) return null;
+
+  const result = evaluateLink(config, input);
+
+  const updateConfig = (next: LinkValuationConfig) => {
+    setConfigs(configs.map((entry) => (entry.id === next.id ? next : entry)));
+    setDirty(true);
+  };
+
+  const selectConfig = (id: string) => {
+    setActiveId(id);
+    writeActiveConfigId(id);
+    setDirty(false);
+  };
+
+  const persist = () => {
+    saveConfig(config);
+    setDirty(false);
+    toast.success(`Saved "${config.name}"`, {
+      description:
+        "Kept in this browser. Export the JSON to share or commit it.",
+    });
+  };
+
+  const restore = () => {
+    const restored = resetConfig(config.id);
+    if (!restored) return;
+    setConfigs(
+      configs.map((entry) => (entry.id === restored.id ? restored : entry)),
+    );
+    setDirty(false);
+    toast.success(`Reset "${restored.name}" to the shipped version`);
+  };
+
+  const exportJson = async () => {
+    await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+    toast.success("Config JSON copied to the clipboard");
+  };
+
+  const importJson = () => {
+    const parsed = parseConfig(importText);
+    if ("error" in parsed) {
+      toast.error("Could not import that config", {
+        description: parsed.error,
+      });
+      return;
+    }
+    const next = parsed.config;
+    setConfigs([...configs.filter((entry) => entry.id !== next.id), next]);
+    saveConfig(next);
+    selectConfig(next.id);
+    setImportText("");
+    toast.success(`Imported "${next.name}"`);
+  };
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
+        <Select value={activeId} onValueChange={selectConfig}>
+          <SelectTrigger className="h-8 w-64 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {configs.map((entry) => (
+              <SelectItem key={entry.id} value={entry.id} className="text-xs">
+                {entry.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {dirty ? (
+          <Badge variant="outline" className="text-[11px] font-normal">
+            Unsaved changes
+          </Badge>
+        ) : hasLocalEdits(config.id) ? (
+          <Badge variant="secondary" className="text-[11px] font-normal">
+            Locally tuned
+          </Badge>
+        ) : null}
+
+        <div className="ml-auto flex items-center gap-1.5">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={persist}
+          >
+            <Save className="mr-1 h-3.5 w-3.5" />
+            Save
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={exportJson}
+          >
+            <Download className="mr-1 h-3.5 w-3.5" />
+            Export
+          </Button>
+          {isBuiltIn(config.id) ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 text-xs"
+              onClick={restore}
+            >
+              <RotateCcw className="mr-1 h-3.5 w-3.5" />
+              Reset
+            </Button>
+          ) : null}
+        </div>
+      </div>
+
+      <p className="border-b border-border bg-muted/40 px-3 py-1.5 text-[11px] text-muted-foreground">
+        {config.description}
+      </p>
+
+      <Tabs defaultValue="evaluate" className="flex min-h-0 flex-1 flex-col">
+        <TabsList className="mx-3 mt-2 w-fit">
+          <TabsTrigger value="evaluate" className="text-xs">
+            Evaluate
+          </TabsTrigger>
+          <TabsTrigger value="tune" className="text-xs">
+            Tune the algorithm
+          </TabsTrigger>
+          <TabsTrigger value="json" className="text-xs">
+            Config JSON
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent
+          value="evaluate"
+          className="min-h-0 flex-1 overflow-auto p-3"
+        >
+          <div className="grid gap-4 lg:grid-cols-2">
+            <CandidateForm config={config} input={input} onChange={setInput} />
+            <ResultPanel config={config} result={result} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tune" className="min-h-0 flex-1 overflow-auto p-3">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <TuningPanel config={config} onChange={updateConfig} />
+            <div className="lg:sticky lg:top-0 lg:h-fit">
+              <ResultPanel config={config} result={result} />
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="json" className="min-h-0 flex-1 overflow-auto p-3">
+          <div className="grid gap-4 lg:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-foreground">
+                Current config
+              </p>
+              <Textarea
+                readOnly
+                value={JSON.stringify(config, null, 2)}
+                className="h-[60vh] font-mono text-[11px]"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-foreground">
+                Import a config
+              </p>
+              <Textarea
+                value={importText}
+                onChange={(event) => setImportText(event.target.value)}
+                placeholder="Paste a config JSON here"
+                className="h-[60vh] font-mono text-[11px]"
+              />
+              <Button
+                size="sm"
+                className="h-8 w-fit text-xs"
+                onClick={importJson}
+              >
+                <Upload className="mr-1 h-3.5 w-3.5" />
+                Import
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

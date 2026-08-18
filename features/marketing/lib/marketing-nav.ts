@@ -484,7 +484,7 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
       "Content studio",
       "Social publishing",
       "Email marketing",
-      "Paid ads + outreach",
+      "Backlink valuation + outreach",
     ],
     entries: [
       {
@@ -522,6 +522,13 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         iconName: "BadgeDollarSign",
         status: "coming-soon",
         comingSoonId: "marketing.ads",
+      },
+      {
+        label: "Backlink Valuation",
+        href: marketingRoutes.backlinkValuation(),
+        description:
+          "Score a candidate backlink on quality, relevance and placement, and price what it is worth paying.",
+        iconName: "Link2",
       },
       {
         label: "Outreach",
