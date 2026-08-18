@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-16
+updated: 2026-08-17
 repos: [matrx-frontend, aidream, my-matrx]
 vision: [this doc §Vision — Arman's words, 2026-07-30 chat]
 ---
@@ -210,23 +210,76 @@ the page (plan, keywords, research) and everything the live page produces (GSC, 
 findings) is associated and reachable as tabs that REUSE the existing canonical components;
 before/during/after all captured. Work order: [cms-page-hub.md](./cms-page-hub.md).
 
+## Where this stands (2026-08-17) — read this first
+
+**The factory works end to end, small.** One button (`cms_fill_start`) takes a planned site
+through four AI steps per page — family territory (p3) → structured write (p4) → review/fact-check
+(p5) → HTML build (p6) — on one durable queue, one item per (page, step), pages overlapping,
+crash-resumable, cost stated before the run and measured after. All four page agents are DATABASE
+agents behind mandates (`content_plan.p3_family|p4_write|p5_review|p6_build`; rebind from
+`/agents/mandates`, no deploy). A human edits any page's words without HTML (`PageDraftEditor`),
+and a human revision supersedes the agent's. Live proof 2026-08-16: 24/24 steps on a 6-page
+throwaway for $0.33; kill-resume and single-page-failure isolation both demonstrated.
+
+**What it is NOT yet:** proven at 25-page scale, deep (p1 keyword research and a rich p2 content
+research have no producer — today's ~4 calls/page vs the 200–300-call vision), specialized (one
+builder, not an expert location/blog/service-page builder), or tiered (the effort setting that
+merges steps at the cheap end).
+
 ## Remaining work (priority order)
 
-1. **Prove the loop at SCALE.** The small loop is proven (2026-08-14 live: 2 fill jobs, 8 items succeeded, publish verified on mymatrx.com) — what has never been run is a real site end-to-end: starter kit → fill ~25 nodes → review → bulk publish → verify every URL. Do it on a throwaway or `cosmeticinjectables`, never `iopbm`/`prp-injection-md`, and surface every failure.
-2. ~~Fix `theme_config` → CSS in my-matrx~~ **DONE** (WF-1: renderer was already wired; the starter kit's token bake — which shadowed later theme edits — was removed and 4 baked sites migrated + prod-verified).
-3. ~~Design + build the per-node content record (P4)~~ **DONE 2026-08-12** (see the P4 section — tables, writer, producers, FE rail all live; review the shape).
-4. ~~**Decompose `cms_fill` into explicit pipeline steps, then fan out per step**~~ **DONE — steps 2026-08-15, fan-out 2026-08-16.** A whole-site fill now seeds **one queue item per (page, step)** on the SAME durable queue (`plan.cms_fill_item.step` + `seq`, migration `0370`): 25 pages = 100 items = ~100 AI calls, and `cms_fill_start` is still the one button. Ordering is per PAGE (a step is seeded `blocked`, released by `advance_chain` when its own page's previous step is terminal) so pages overlap — deliberately NOT a global barrier, which would serialize a 25-page build into four waves. `skipped` is a terminal non-failure, so re-running RESUMES instead of redoing (`overwrite` / `overwrite_steps` opt back in); `include_review` makes p5 a choice, defaulting ON. Cost is stated before the run from the agents' own recorded costs and measured after, per step — and there is deliberately **no spend cap** (a cap that truncates a build silently is worse than the bill). Live proof on a throwaway site, 2026-08-16: 24/24 steps for $0.33, 0 same-page ordering violations, 80 concurrent cross-page step pairs, a killed coordinator resumed to completion, and one sabotaged page failing alone while the other five built. Contract: `aidream/services/content_plan/FEATURE.md` § ONE BUTTON, FOUR AI STEPS PER PAGE. **What remains here is DEPTH, not wiring:** p1/p2 (per-page keyword + content research) still have no producer, so the 200–300-call target needs those steps, not more fan-out.
-5. **Site design system (S3) — the reusable block library.** Curated section/blocks (hero, cards, CTA, FAQ, pricing) the starter kit installs as site CSS + reference markup, which the build step may reach for. **Offered, never imposed** — same rule as templates (§ S4): a site that uses none of them is a correct site. There is NO "templates required vs theme-only" setting to build; that idea came from the retracted quote and is deleted.
-6. **Plan UI shows the pipeline**: linked CMS pages DONE (2026-08-07, WF-11); NodePanel rail DONE (2026-08-12); tree/table progress badges DONE (2026-08-13); per-node run-step actions DONE (2026-08-15). Remaining: a whole-page "run the rest of the pipeline" action, and bulk run-step across a selection (the tree already has multi-select).
-7. ~~**First specialist agents on the rails.**~~ **DONE 2026-08-16 — all four page agents are DATABASE agents.** Family analyst, writer, reviewer/fact-checker and page-builder are real `agent.definition` rows bound to mandates `content_plan.p3_family` / `p4_write` / `p5_review` / `p6_build`; `page_pipeline.py` and `cms_fill.py` hold **zero** prompt text and may never hold any again (Arman, 2026-08-16: *"the code base is nothing more than the connection, but not the definition and the details and can never be those things"*). An org or user can rebind any mandate from `/agents/mandates` with no deploy, and each artifact records `slot_key` / `agent_id` / `model` / `bound_by`. **What remains is the SPECIALIZATION Arman actually wants:** one builder is not an expert location-page builder plus a blog builder plus a service-page builder. Route the mandate by page type — that is a binding decision plus more agents, not a code change to the pipeline.
-8. Wire per-node keyword research (P1) to store an artifact; connect `features/research/` as a richer P2 engine (Deepen already writes the `research` artifact p4 reads).
-9. ~~**A human EDIT surface over the `draft` artifact.**~~ **DONE 2026-08-16 — the retired-S4 promise is kept.** `PageDraftEditor` (matrx-frontend `features/marketing/content-plan/components/`) renders the current draft/review as a PAGE — heading, opening, sections (heading, subdued purpose note, prose, bullets, reorder/add/remove), the ask, and search title+description against the one SEO limit source — mounted as NodePanel's "Page content" section and behind "Edit these words" in the rail's artifact dialog. Saving POSTs `/content-plan/nodes/{id}/draft` → aidream `page_pipeline.save_human_draft`: the same supersession INSERT the agents use, inside the service's RLS scope, stamped `produced_by.authored_by="human"` with no `chat.agent_run` row. "Build the page" reuses `useNodeReality.write`; the guided AI actions re-run p5_review with guidance and save unsaved edits first. `lib/page-draft.ts` mirrors `approved_content` (recency wins) and is pinned by tests, so what the editor shows is what the builder renders — verified live: a human revision supersedes the writer's draft, `approved_content` returns the human's words, and `step_already_done` reports the review stale. **Left open on purpose:** the guided AI actions are buttons rather than assist chips, because an assist action can POST but cannot adopt a stream (a chip would spin silently through a minute-long call); a streaming-capable assist capability is the platform-level fix.
+1. **Prove the loop at SCALE.** Never yet run: a real ~25-page site end to end — starter kit →
+   fill every node (all four steps) → human review → bulk publish → verify every URL live. Use a
+   throwaway or `cosmeticinjectables` (`baa61391…`, already CMS-linked), never `iopbm` /
+   `prp-injection-md`. Surface every failure; the queue's per-page isolation should make each one
+   attributable.
+2. **Per-page research depth — p1 and p2 producers.** This is where the call count grows toward
+   the vision, not more fan-out. p1: per-node keyword research storing a `research`-kind artifact
+   against the node (the FK edges exist; the ARTIFACT doesn't). p2: connect `features/research/`
+   as a richer content-research engine (Deepen already writes the `research` artifact p4 reads —
+   extend, don't fork).
+3. **Specialist builders routed by page type.** Arman's vision is an expert location-page
+   builder, blog builder, service-page builder — "over 200 agents". The pipeline needs NO code
+   change: this is more DB agents plus mandate routing by `page_type`. Decide the routing seam
+   (per-page-type binding on the mandate vs. a dispatcher agent) before authoring the fleet.
+4. **The effort TIER** (§ Effort tiers below). The knobs exist (`steps` / `include_review` on the
+   fill request); a tier is a named per-site + per-page preset over them, with the cheap end
+   merging steps into fewer calls (the one-shot author call IS the cheapest tier and still works).
+5. **Site design system (S3) — the reusable block library.** Curated sections (hero, cards, CTA,
+   FAQ, pricing) the starter kit installs; the build step MAY reach for them. Offered, never
+   imposed — same law as templates.
+6. **Plan-UI remainder:** whole-page "run the rest of the pipeline" action; bulk run-step across a
+   tree multi-selection.
+7. **Streaming-capable assists** (platform gap parked from the editor work): the editor's guided
+   AI actions are buttons, not assist chips, because an assist action cannot adopt a stream — a
+   chip would spin silently through a minute-long call. Fix belongs in the assists capability,
+   not this feature.
 
-## Done
+## Done (compressed — details live in the FEATURE.md files and git history)
 
-- Content plan feature built (5 views, generator, deepen, reconciler, signals) — see `features/marketing/content-plan/` + `aidream/services/content_plan/`
-- CMS authoring stack built (sites/pages/components/collections, drafts/versions/publish, agent tools + write policy + activity feed) — see `features/cms/` + `aidream/services/cms/`
-- Plan↔CMS bridge + durable fill queue built (unexercised) — see `cms_fill.py`, `cms_reconciler.py`, `setup/bridge.ts`
+- Content plan feature (5 views, generator, deepen, reconciler, signals) + CMS authoring stack +
+  plan↔CMS bridge — `features/marketing/content-plan/`, `features/cms/`, aidream
+  `services/content_plan/` + `services/cms/`.
+- **P4 record** (`plan.node_artifact` supersession + `plan.node_step`) built 2026-08-12, carrying
+  real production traffic.
+- **Pipeline steps p3/p5 built, p4/p6 decomposed** 2026-08-15; **per-(page,step) fan-out on the
+  one durable queue** 2026-08-16 (migration `0370`; contract: aidream
+  `services/content_plan/FEATURE.md` § ONE BUTTON, FOUR AI STEPS PER PAGE).
+- **All four page agents are DB agents on mandates** (2026-08-16); zero prompt text in
+  `page_pipeline.py` / `cms_fill.py`, guarded in both repos (aidream guard + FE
+  `pnpm check:hardcoded-prompts`), counts only go down.
+- **Human page-text editor** over the draft artifact (2026-08-16) — the kept promise behind
+  retired S4; human revision beats stale agent output; `lib/page-draft.ts` mirrors
+  `approved_content` under test.
+- **Template library seeded as an OPTION** (migration `0371`, 17 templates, 30 tests); free-form
+  sites untouched.
+- **All five artifact kinds registered** with kind components + rail staleness derivation
+  (2026-08-16) — no JSON dumps, one component per shape.
+- **Mobile + headings class fix** across the whole feature (2026-08-16): `.matrx-touch-targets`
+  floor + `MatrxColumnDef.mobileHidden`; 0 controls under 44px at 390px; all 12 rejected review
+  rows re-submitted.
+- Theme wiring (WF-1), CMS linkage UI (WF-11), NodePanel rail, progress badges, per-node
+  run-step actions — all live.
 
 ## Effort tiers + pre-estimation — the shape of the cost controls (Arman, 2026-08-16)
 
@@ -260,9 +313,19 @@ p5_review / p6_build → Gemini 3.7 Flash** (each produces one artifact for one 
 `common-docs/systems/agent-design/MODEL-AND-TASK-PLAYBOOKS.md` § THE MATRX DEFAULT BINDING.
 Rebinding is a database edit — never a code change.
 
-## Decisions needed (Arman)
+## Decisions needed (Arman) — and the routing rule
 
-*Nothing is waiting on Arman. Both former items are ruled.*
+🚨 **THE ROUTING RULE (Arman, 2026-08-17): developer tasks NEVER go to Arman.** On review he found
+that almost nothing queued for him was actually his — they were engineering decisions parked in
+his lists. Before adding anything to a "Decisions needed" section, an assists chip addressed to
+him, or `.matrx/ARMAN_TASKS.md`, apply the test: **does this need Arman PERSONALLY — a product
+ruling, a naming ruling, money, an account only he holds, or his own review/test?** If a competent
+engineer could decide it by reading the code and the doctrine, it is a developer task: decide it,
+or hand it to another session — never to him. Both prior decisions on this doc dissolved exactly
+that way (P4 shape: ruled and built; template strictness: the question itself was the mistake —
+templates are an OPTION, never required, per
+`common-docs/systems/content-planning/FEATURE.md` § TEMPLATES ARE AN OPTION).
 
-1. ~~Where does per-page content live?~~ **Ruled 2026-08-07, BUILT 2026-08-12** — the P4 section's exact shape (`plan.node_artifact` / `plan.node_step`), now carrying real traffic.
-2. ~~Templates: how strict?~~ **RULED 2026-08-16: they are an OPTION and are never required — the question itself was the mistake.** It came from one sentence of Arman's taken out of context; he meant a *themed* page (shared global CSS, header, menu, footer/sidebar, optionally reusable components), not a template entity. Do not build a required-flag, an opt-out, or a per-site strictness setting — there is nothing to opt out of. Canonical, in his own words: `common-docs/systems/content-planning/FEATURE.md` § TEMPLATES ARE AN OPTION, NEVER A REQUIREMENT.
+**Currently waiting on Arman: nothing on this handoff.** The one standing ask that IS his:
+**21 content-plan rows sit `pending` in `agent.review_queue`** (`/administration/users/
+agent-review`) — his review, nobody else's.
