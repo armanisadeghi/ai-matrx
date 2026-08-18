@@ -59,6 +59,11 @@ export interface UseAiComplianceGateResult {
    * does a not-signed-in visitor (not the gate's subject). Always loud.
    */
   ensureAllowed: () => Promise<boolean>;
+  /**
+   * Proactively open the age prompt for an undeclared signed-in learner, without
+   * blocking. Call once on entering education so declaration happens up front.
+   */
+  promptDeclarationIfNeeded: () => void;
   /** Render once near the action; self-controls its own visibility. */
   Gate: () => React.ReactElement | null;
   reload: () => void;
@@ -210,6 +215,21 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
     return false;
   }, []);
 
+  /**
+   * PROACTIVE prompt — identify before submit, not after. Opens the age dialog
+   * for a signed-in learner who has never declared, WITHOUT blocking anything.
+   * Mount this once on entering the education area so an undeclared learner is
+   * asked up front, instead of hitting a refusal deep inside an AI action.
+   * No-op for a declared account, an anonymous visitor, or while still loading.
+   */
+  const promptDeclarationIfNeeded = useCallback(() => {
+    const g = gateRef.current;
+    // Only when we have a loaded verdict that says the account is undeclared.
+    if (g && !g.isAnonymous && g.ageBand === null && g.reason === "age_undeclared") {
+      setAskAge(true);
+    }
+  }, []);
+
   const Gate = useCallback(
     () => (
       <>
@@ -236,6 +256,7 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
     loading,
     blocked: gate ? !gate.aiAllowed : false,
     ensureAllowed,
+    promptDeclarationIfNeeded,
     Gate,
     reload: () => setNonce((n) => n + 1),
   };

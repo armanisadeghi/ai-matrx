@@ -1,4 +1,4 @@
-import { BadgeCheck, Sparkles } from "lucide-react";
+import { BadgeCheck, BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -35,7 +35,7 @@ export function CertifiedBadge({
   size?: "sm" | "md";
   className?: string;
 }) {
-  const Icon = humanVerified ? BadgeCheck : Sparkles;
+  const Icon = humanVerified ? BadgeCheck : BrainCircuit;
   const label = humanVerified ? "Certified" : "AI-built starter";
   const title =
     note ??

@@ -4,6 +4,7 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { EducationHeader } from "@/features/education/components/EducationHeader";
 import { OfflineStudySyncMount } from "@/features/education/study/offline/OfflineStudySyncMount";
+import { EducationAgeGateMount } from "@/features/education/compliance/EducationAgeGateMount";
 
 export const metadata = {
   ...createRouteMetadata("/education", {
@@ -30,6 +31,10 @@ export default function EducationLayout({
       {/* Render-free: drains the offline study outbox on every education
           route, on `online`, and on tab refocus. */}
       <OfflineStudySyncMount />
+      {/* Render-free: asks an undeclared signed-in learner for their age band
+          ONCE, up front, so COPPA is settled before any AI action — never
+          discovered via a refusal. */}
+      <EducationAgeGateMount />
       {children}
     </>
   );
