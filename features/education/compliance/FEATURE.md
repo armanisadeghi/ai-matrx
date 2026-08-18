@@ -152,9 +152,16 @@ no entry point to gate there.
   `_prepare_continue_run`), scoped to education runs by `source_feature` (`education-*`),
   failing CLOSED — so a client bypass (devtools / direct API) is now refused server-side.
   A refusal arrives as a stream `fatal_error` with
-  **`error_type === "education_coppa_consent_required"`** (+ a safe `user_message`); surface
-  it as the consent-required state (same as the client gate), routing to `/education/family`.
-  Contract + wire shape: aidream `services/education_compliance/FEATURE.md`.
+  **`error_type === "education_coppa_consent_required"`** (+ a safe `user_message`). The
+  canonical stream-error path (`process-stream.ts`) already prefers `user_message` over the
+  diagnostic `message`, so a streaming surface shows the safe text. 🚨 **No education surface
+  yet maps this `error_type` to the consent DIALOG** — an earlier version of this doc claimed it
+  did, which was false (2026-08-17 incident: a non-streaming path surfaced the raw diagnostic
+  `message`). The primary defence is now the **proactive prompt** (`EducationAgeGateMount`, in the
+  education layout) plus the per-action gate, both of which settle COPPA *before* an action runs.
+  Wiring the `error_type` → dialog handler as belt-and-suspenders defense-in-depth for headless
+  paths is a tracked follow-up. Contract + wire shape: aidream
+  `services/education_compliance/FEATURE.md`.
   **Verifiable consent is now BUILT** — an under-13 is unblocked only by a VERIFIED
   guardian link, and `edu_coppa_gate.ai_allowed` already encodes it, so aidream's
   gate-reading enforcement inherits verification for free. If aidream ever reads
@@ -168,6 +175,25 @@ no entry point to gate there.
   require + the gov-ID vendor + legal sign-off — see `../family/FEATURE.md` §Verifiable
   parental consent + the runbook
   `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`.
+
+## How a learner is identified — up front, never via an error
+
+Three layers, in the order they fire:
+
+1. **`EducationAgeGateMount`** (education layout) — the moment a signed-in learner enters the
+   education area, an **undeclared** account is asked for its age band **once, up front**, with
+   `AgeDeclarationDialog`. This is "identify before submit". It never blocks browsing.
+2. **`useAiComplianceGate.ensureAllowed()`** (per AI action) — the last line before a generation.
+   A still-undeclared learner is prompted here too and the action resumes on answer; a declared
+   under-13 without a verified guardian gets the consent dialog.
+3. **The server gate** (aidream) — refuses a declared under-13 without verified consent even if
+   the client is bypassed.
+
+Undeclared is **allowed** at the generation boundary (it only nudges), because declaration is
+enforced by layers 1–2, not by failing a request — see the incident note in the change log.
+Signup itself does not collect age (OAuth / guest-conversion paths would bypass a form field, and
+a global age screen would mis-scope a study-age question onto every platform signup); the
+education-entry prompt is the universal, correctly-scoped collection point.
 
 ## Known limits — read before claiming a surface is school-safe
 
@@ -186,6 +212,16 @@ no entry point to gate there.
 
 ## Change log
 
+- `2026-08-17` — **INCIDENT + corrective flow.** The same-day "undeclared age hard-blocks
+  generation" change (task #2) broke every existing account: 276 of 277 profiles had a NULL age
+  band and nothing collected it, so ~232 real accounts were refused ALL education AI with a raw
+  server error and no built path to declare. Root cause: a server-enforced hard block keyed on a
+  field NULL for 100% of accounts, with no signup collection, no proactive prompt, and no graceful
+  error handling — and a FEATURE.md that CLAIMED the FE mapped `education_coppa_consent_required`
+  to the consent dialog when no code did. **Corrected:** undeclared now ALLOWS at the generation
+  boundary (only a KNOWN unconsented under-13 is refused); declaration is collected up front by the
+  new **`EducationAgeGateMount`** proactive prompt (education layout) — identify before submit, not
+  after; the false doc claim is fixed. `migrations/edu_undeclared_age_allows_at_gate.sql`.
 - `2026-08-17` — **Adversarial review of the same day's work found four real holes;
   all closed and re-verified live (7/7).** **(1)** The realtime voice tutor had
   **no gate at all** — `/api/voice-agent/token` mints an ephemeral xAI secret the
