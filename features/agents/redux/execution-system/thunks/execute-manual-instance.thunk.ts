@@ -81,6 +81,7 @@ import type {
   SystemInstruction,
 } from "@/features/agents/types/agent-api-types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
+import type { Json } from "@/types/database.types";
 import type { UserInputPart } from "@/features/agents/types/request.types";
 import type { RequestInitiation } from "@/features/agents/types/instance.types";
 import type { MessageRecord } from "../messages/messages.slice";
@@ -99,7 +100,10 @@ import {
 } from "../instance-variable-values/instance-variable-values.selectors";
 import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
-import { selectContextPayload } from "../instance-context/instance-context.selectors";
+import {
+  selectContextPayload,
+  selectInstanceContextEntries,
+} from "../instance-context/instance-context.selectors";
 import {
   messagePartToUserInputPart,
   selectResourcePayloads,
@@ -126,7 +130,10 @@ import {
   setRequestStatus,
   setRequestRouting,
 } from "../active-requests/active-requests.slice";
-import { addOptimisticUserMessage } from "../messages/messages.slice";
+import {
+  addOptimisticUserMessage,
+  shouldCreateOptimisticUserMessage,
+} from "../messages/messages.slice";
 import { processStream } from "./process-stream";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import {
@@ -594,16 +601,19 @@ export const executeManualInstance = createAsyncThunk<
       // reads `userValues`, not definition defaults. Mirror executeInstance:
       // stamp the exact resolved payload we're about to send so the live
       // bubble matches a reload from `cx_conversation.variables`.
-      if (isFirstTurn(state, conversationId)) {
-        const variables = selectVariablesForRequest(conversationId)(state);
-        if (variables && Object.keys(variables).length > 0) {
-          dispatch(
-            setUserVariableValues({
-              conversationId,
-              values: variables,
-            }),
-          );
-        }
+      const firstTurnVariables = isFirstTurn(state, conversationId)
+        ? selectVariablesForRequest(conversationId)(state)
+        : null;
+      const hasFirstTurnVariables = Boolean(
+        firstTurnVariables && Object.keys(firstTurnVariables).length > 0,
+      );
+      if (hasFirstTurnVariables && firstTurnVariables) {
+        dispatch(
+          setUserVariableValues({
+            conversationId,
+            values: firstTurnVariables,
+          }),
+        );
       }
 
       // ─────────────────────────────────────────────────────────────────────
@@ -634,8 +644,17 @@ export const executeManualInstance = createAsyncThunk<
       ]
         .filter(Boolean)
         .join("\n\n");
+      const contextSnapshot =
+        selectInstanceContextEntries(conversationId)(state);
       let userMessageClientTempId: string | undefined;
-      if (displayContent || resourceBlocks.length > 0) {
+      if (
+        shouldCreateOptimisticUserMessage({
+          hasText: Boolean(displayContent),
+          hasAttachments: resourceBlocks.length > 0,
+          hasVariables: hasFirstTurnVariables,
+          hasContext: contextSnapshot.length > 0,
+        })
+      ) {
         const content: MessagePart[] = [];
         if (displayContent) {
           content.push({ type: "text", text: displayContent });
@@ -645,12 +664,17 @@ export const executeManualInstance = createAsyncThunk<
         const nextPosition = selectMessageCount(conversationId)(
           getState() as RootState,
         );
+        const userMessageMetadata: Json | undefined =
+          contextSnapshot.length > 0
+            ? { context_snapshot: contextSnapshot }
+            : undefined;
         dispatch(
           addOptimisticUserMessage({
             conversationId,
             clientTempId: userMessageClientTempId,
             content,
             position: nextPosition,
+            metadata: userMessageMetadata,
           }),
         );
       }

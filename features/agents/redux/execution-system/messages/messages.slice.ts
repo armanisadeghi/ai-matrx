@@ -228,6 +228,27 @@ const initialState: MessagesState = {
   byConversationId: {},
 };
 
+/**
+ * A submitted turn needs an optimistic transcript row when any user-visible
+ * request facet exists. Keeping this gate beside the canonical message store
+ * prevents text-only assumptions from diverging across execution paths.
+ */
+export function shouldCreateOptimisticUserMessage(args: {
+  isRetry?: boolean;
+  hasText: boolean;
+  hasAttachments: boolean;
+  hasVariables: boolean;
+  hasContext: boolean;
+}): boolean {
+  return (
+    !args.isRetry &&
+    (args.hasText ||
+      args.hasAttachments ||
+      args.hasVariables ||
+      args.hasContext)
+  );
+}
+
 function getOrCreate(
   state: MessagesState,
   conversationId: string,

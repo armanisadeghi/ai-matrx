@@ -36,6 +36,7 @@ import { isAttachmentMessagePart } from "@/features/agents/components/context-it
 import MarkdownStream from "@/components/MarkdownStream";
 import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 import type { RootState } from "@/lib/redux/store";
+import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 
 /**
  * User-attached resource block types (`input_notes`, `input_task`, media, …).
@@ -124,7 +125,6 @@ export function AgentUserMessage({
   );
 
   const trimmedText = content.trim();
-  const hasContent = trimmedText || attachmentParts.length > 0;
   const metadata =
     record?.metadata && typeof record.metadata === "object"
       ? (record.metadata as Record<string, unknown>)
@@ -181,6 +181,15 @@ export function AgentUserMessage({
   // text and was previously excluded from collapse measurement entirely.
   const userVariableValues = useAppSelector(
     selectUserVariableValues(conversationId),
+  );
+  const hasVisibleVariables =
+    isFirstTurnMessage &&
+    buildVariableDisplayLines(userVariableValues).length > 0;
+  const hasContent = Boolean(
+    trimmedText ||
+    attachmentParts.length > 0 ||
+    hasVisibleVariables ||
+    (contextSnapshot && contextSnapshot.length > 0),
   );
 
   // Collapse signature — a fingerprint of EVERYTHING that renders inside the

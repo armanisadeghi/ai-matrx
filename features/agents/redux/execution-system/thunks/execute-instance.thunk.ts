@@ -81,7 +81,10 @@ import {
   createRequest,
   setRequestStatus,
 } from "../active-requests/active-requests.slice";
-import { addOptimisticUserMessage } from "../messages/messages.slice";
+import {
+  addOptimisticUserMessage,
+  shouldCreateOptimisticUserMessage,
+} from "../messages/messages.slice";
 import { selectMessageCount } from "../messages/messages.selectors";
 import { selectWireTranscript } from "../utils/wire-transcript";
 import { v4 as uuidv4 } from "uuid";
@@ -614,11 +617,10 @@ export const executeInstance = createAsyncThunk<
       // variables we're sending into `userValues` here — which is precisely
       // what `loadConversation` does with the persisted `cx_conversation.variables`.
       // ─────────────────────────────────────────────────────────────────────
-      if (
+      const hasFirstTurnVariables =
         isFirstTurn(state, conversationId) &&
-        payload.variables &&
-        Object.keys(payload.variables).length > 0
-      ) {
+        Boolean(payload.variables && Object.keys(payload.variables).length > 0);
+      if (hasFirstTurnVariables && payload.variables) {
         dispatch(
           setUserVariableValues({
             conversationId,
@@ -641,24 +643,35 @@ export const executeInstance = createAsyncThunk<
           ? payload.user_input
           : "";
       const displayContent = assembledUserText;
+      const stateAtSubmit = getState() as RootState;
+      // Context is part of the submitted user turn even when there is no text,
+      // attachment, or variable. Snapshot it before deciding whether the live
+      // transcript needs an optimistic row.
+      const contextSnapshot =
+        selectInstanceContextEntries(conversationId)(stateAtSubmit);
 
       let userMessageClientTempId: string | undefined;
-      if (!retry && (displayContent || resourceBlocks.length > 0)) {
+      if (
+        shouldCreateOptimisticUserMessage({
+          isRetry: retry,
+          hasText: Boolean(displayContent),
+          hasAttachments: resourceBlocks.length > 0,
+          hasVariables: hasFirstTurnVariables,
+          hasContext: contextSnapshot.length > 0,
+        })
+      ) {
         const content: MessagePart[] = [];
         if (displayContent) {
           content.push({ type: "text", text: displayContent });
         }
         content.push(...resourceBlocks);
         userMessageClientTempId = uuidv4();
-        const stateAtSubmit = getState() as RootState;
         const nextPosition = selectMessageCount(conversationId)(stateAtSubmit);
         // Capture the TRUE per-turn context this message carried, frozen at
         // submit time. The user bubble reads this snapshot — never the live
         // conversation-level context, which keeps mutating as the user changes
         // scope / working document. Without this freeze, every historical turn
         // would falsely display the current context. See AgentUserMessage.
-        const contextSnapshot =
-          selectInstanceContextEntries(conversationId)(stateAtSubmit);
         const userMessageMetadata: Json | undefined =
           contextSnapshot.length > 0
             ? { context_snapshot: contextSnapshot }
