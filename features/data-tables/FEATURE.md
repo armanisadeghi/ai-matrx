@@ -118,14 +118,13 @@ become 5 linked datasets under one workbook.
 
 ## Entry points
 
-**Univer mixed-editor invariant:** `DocumentEditor` registers
-`UniverSheetsCorePreset` before `UniverDocsCorePreset`, then calls
-`activateUniverSheetServices()` before creating the visible document. Univer
-Facade observers are process-global, while sheet plugin hooks are lazy by unit
-type; registration alone does not provide `HoverManagerService` until a workbook
-unit exists. The inert activation unit starts those hooks, and the document
-created next remains active. The docs preset stays last so its shared UI
-configuration wins.
+**Univer mixed-editor invariant:** `DocumentEditor` stays document-only, but
+registers `HoverManagerService` and `DragManagerService` through
+`registerUniverFacadeDependencies()` before creating the document. Univer Facade
+observers are process-global, while sheet plugins are lazy by unit type; a
+document-only injector otherwise receives the sheets observer at `Rendered`
+without its dependencies. **Never start `UniverSheetsCorePreset` here** — it
+creates workbook UI and duplicate internal editor documents.
 
 **Routes**
 - `app/(core)/data/page.tsx` — list all of the user's datasets (`/data`)
@@ -551,13 +550,13 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
-- 2026-08-18 — **Document editor activates registered sheet services before Rendered.**
-  Univer's sheets Facade observer is process-global, but `UniverSheetsUIPlugin`
-  is sheet-typed and does not run `onStarting` merely because its preset is
-  registered. `DocumentEditor` now creates one inert workbook unit through
-  `activateUniverSheetServices()` before the visible document, which starts
-  `HoverManagerService` and the other sheet hooks before the observer fires.
-  Focused contracts guard preset order, activation order, and activation shape.
+- 2026-08-18 — **Document editor satisfies global sheets Facade dependencies without starting sheets UI.**
+  Univer's sheets Facade observer attaches to every later FUniver instance, but
+  sheet-typed plugins do not run for a document unit. `DocumentEditor` now
+  registers only `HoverManagerService` and `DragManagerService` before document
+  creation. Starting the full sheets preset is forbidden here: verification
+  proved it replaces the document with a sheet surface and creates a duplicate
+  `__INTERNAL_EDITOR__DOCS_NORMAL` unit. Focused contracts guard both halves.
 
 - 2026-08-18 — codex: **Document and workbook snapshot RLS now uses canonical parent tokens.**
   The four legacy snapshot policies still called `has_permission` with physical table names after

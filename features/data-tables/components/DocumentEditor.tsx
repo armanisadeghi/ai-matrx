@@ -29,10 +29,11 @@ import {
 import type { IDocumentData, Univer } from "@univerjs/core";
 import { UniverDocsCorePreset } from "@univerjs/preset-docs-core";
 import docsCoreEnUS from "@univerjs/preset-docs-core/locales/en-US";
-import { UniverSheetsCorePreset } from "@univerjs/preset-sheets-core";
-import sheetsCoreEnUS from "@univerjs/preset-sheets-core/locales/en-US";
+import {
+  DragManagerService,
+  HoverManagerService,
+} from "@univerjs/preset-sheets-core";
 import "@univerjs/preset-docs-core/lib/index.css";
-import "@univerjs/preset-sheets-core/lib/index.css";
 
 import { supabase } from "@/utils/supabase/client";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
@@ -46,7 +47,7 @@ import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
 import { sanitizeUniverDocSnapshot } from "../utils/sanitizeUniverDocSnapshot";
 import { isSnapshotMutation } from "../utils/isSnapshotMutation";
 import { disposeUniverInstance } from "../utils/disposeUniverInstance";
-import { activateUniverSheetServices } from "../utils/activateUniverSheetServices";
+import { registerUniverFacadeDependencies } from "../utils/registerUniverFacadeDependencies";
 import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import {
   getLatestDocumentSnapshot,
@@ -191,21 +192,10 @@ export default function DocumentEditor({
       try {
         const { univer, univerAPI } = createUniver({
           locale: LocaleType.EN_US,
-          locales: {
-            [LocaleType.EN_US]: merge({}, sheetsCoreEnUS, docsCoreEnUS),
-          },
+          locales: { [LocaleType.EN_US]: merge({}, docsCoreEnUS) },
           theme: defaultTheme,
           darkMode: darkModeRef.current,
           presets: [
-            // Univer's facade mixins are process-global. Once WorkbookEditor
-            // has loaded in this SPA, its sheets facade observes every later
-            // Univer instance and resolves sheets services at Rendered. Keep
-            // those services registered here; put the docs preset last so its
-            // shared UI configuration remains authoritative for this editor.
-            UniverSheetsCorePreset({
-              container: containerRef.current as HTMLElement,
-              ribbonType: "simple",
-            }),
             UniverDocsCorePreset({
               container: containerRef.current as HTMLElement,
               ribbonType: "simple",
@@ -219,13 +209,17 @@ export default function DocumentEditor({
         univerRef.current = univer;
         apiRef.current = univerAPI;
 
-        // `preset-sheets-core` registers sheet plugins, but Univer starts
-        // plugins by unit type: their onStarting hooks do not run until the
-        // first workbook unit exists. The sheets Facade observer is global and
-        // still reacts when this document reaches Rendered, so activate those
-        // services before creating the visible document unit. Without this,
-        // the observer throws while resolving HoverManagerService.
-        activateUniverSheetServices(univerAPI, LocaleType.EN_US);
+        // Sheets Facade mixins are process-global. Once their module exists in
+        // this SPA, FUniver attaches the observer to every later instance and
+        // resolves these two services when *any* unit reaches Rendered. Sheet
+        // plugins are lazy by unit type, so a document-only injector never
+        // receives them from UniverSheetsUIPlugin. Register exactly what that
+        // observer requires; starting the full sheets plugin creates workbook
+        // UI and duplicate internal editor documents on this surface.
+        registerUniverFacadeDependencies(univer.__getInjector(), [
+          HoverManagerService,
+          DragManagerService,
+        ]);
 
         const res = await getLatestDocumentSnapshot(documentId);
         if (cancelled) return;
