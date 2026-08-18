@@ -87,6 +87,19 @@
       },
       "previousEventHash": "9cdbdce6a31920755524e5ae547cc679e52ca77f41112907abeeacf9e7d7c183",
       "eventHash": "05ba22bd3bd4c457874b6dfd519b41a4c76f1ed4a084fe9cbf67361ce521a5ce"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-18T19:16:12.843Z",
+      "actor": "codex-p10-worker",
+      "summary": "Resumed escaped-delivery candidate for exact-source certification.",
+      "evidence": [
+        "Candidate a4a7c03e remains an ancestor of origin/main and the changed microphone component has no later commits.",
+        "The exact-worktree preview lease is still occupied; retry uses the constitution-approved focused component proof path."
+      ],
+      "previousEventHash": "05ba22bd3bd4c457874b6dfd519b41a4c76f1ed4a084fe9cbf67361ce521a5ce",
+      "eventHash": "757e1fc4007ab362fd71ce2a625eaadf2726510bef18dc20861a5128b5572151"
     }
   ]
 }

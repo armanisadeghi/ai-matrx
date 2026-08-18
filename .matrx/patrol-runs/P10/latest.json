@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-15T191639Z",
-  "state": "escaped_delivery",
-  "updatedAt": "2026-08-15T20:16:22.246Z",
-  "summary": "Recorded the uncertified P10 candidate that entered main before the delivery controller; v0.4.703 will be its first release.",
+  "state": "certifying",
+  "updatedAt": "2026-08-18T19:16:12.843Z",
+  "summary": "Resumed escaped-delivery candidate for exact-source certification.",
   "source": "2026-08-15T191639Z.json",
-  "eventHash": "05ba22bd3bd4c457874b6dfd519b41a4c76f1ed4a084fe9cbf67361ce521a5ce"
+  "eventHash": "757e1fc4007ab362fd71ce2a625eaadf2726510bef18dc20861a5128b5572151"
 }
