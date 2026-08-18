@@ -56,6 +56,8 @@ export const marketingRoutes = {
     `/marketing/content-plan/${siteId}${view && view !== "tree" ? `?view=${view}` : ""}`,
   /** Keyword research workbench (was `/seo/keyword-research`, moved 2026-07-25). */
   keywordResearch: () => "/marketing/keyword-research",
+  /** Score and price a candidate backlink. Every weight and dollar point tunable. */
+  backlinkValuation: () => "/marketing/backlink-valuation",
   /** Public-video discovery and expertise comparison through YouTube Data API v3. */
   youtubeDiscovery: () => "/marketing/discovery/youtube",
   youtubeVideo: (videoId: string) =>
