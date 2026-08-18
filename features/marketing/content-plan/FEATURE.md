@@ -304,9 +304,24 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
      (`plan-assists-producer.ts`), the mirror of aidream's
      `assert_brief_preconditions`: it reads the page's SEO plan from the ONE
      store (`web.page.desired_values.keyword_plan` via `SitePlanIndex`) — a
-     primary keyword **or** a page role. **Change one predicate and you must
-     change the other** — if they disagree, the UI offers a fix for a gap the
-     server does not see, or blocks a page the server would happily brief.
+     primary keyword **or any strategist record** (role, supported routes,
+     secondary keywords, reason, planned links), i.e. exactly `hasRoutePlan`,
+     which is the server's `has_keyword_assignment` (aligned 2026-08-17 — it
+     previously checked only keyword+role and chipped gaps the server would
+     pass). **Change one predicate and you must change the other** — if they
+     disagree, the UI offers a fix for a gap the server does not see, or
+     blocks a page the server would happily brief.
+
+   The same predicate now also gates the rail (2026-08-17): `NodeStepRail`
+     takes `writeBlockedReason` (computed in `NodePanel` — no brief first,
+     then the keyword gap) and derives Review's own block (no current draft
+     artifact) from the artifacts it already reads, so a run arrow the server
+     would refuse is visibly blocked with the reason AND the fix in its
+     tooltip before the click (`aria-disabled` + a click guard, not
+     `disabled`, so the tooltip still shows). Mirrors aidream's
+     `assert_step_preconditions(STEP_WRITE)`, which refuses a keyword-less
+     page with the same predicate since the same date; the bulk fill records
+     that refusal as a readable SKIP.
 
 3. **Pillar map** (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
    behind the view switch with `ssr:false`): three user-switchable pure
@@ -731,6 +746,13 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-17 — **Keyword→brief enforcement tail (FE half).**
+  `hasKeywordAssignment` aligned to the server predicate (`hasRoutePlan` — any
+  strategist record counts, not just keyword+role); `NodeStepRail` run arrows
+  are precondition-aware (`writeBlockedReason` from NodePanel + a local
+  no-draft block on Review) with the reason and fix in the tooltip before the
+  click. Server twins landed the same day (aidream `page_pipeline.py` write
+  gate, warn-loud bulk floor, keyword-containment check).
 - 2026-08-17 — **The legacy plan-node SEO writer is gone.** NodePanel's
   unlinked state offers only `ensurePlannedPages`; once the `web.page` row
   exists it mounts the canonical `SeoPlanEditor`. Deleted the fallback editor
