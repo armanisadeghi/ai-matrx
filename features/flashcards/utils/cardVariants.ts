@@ -243,20 +243,13 @@ export function formulaBack(
  * the flip path.
  */
 export function studyFaces(
-  card: Pick<FcCardRow, "front" | "back" | "card_kind" | "dynamic_content">,
+  card: Pick<FcCardRow, "front" | "back" | "card_kind">,
 ): { front: string; back: string } {
   const kind = asCardKind(card.card_kind);
   if (kind === CARD_KIND.cloze) {
     const faces = clozeFaces(card.front);
     const extra = card.back?.trim() ? `\n\n${card.back.trim()}` : "";
     return { front: faces.front, back: `${faces.back}${extra}` };
-  }
-  if (kind === CARD_KIND.formula) {
-    const formula = formulaContent(card);
-    // A mistagged formula card with no payload still renders as basic.
-    if (formula) {
-      return { front: card.front, back: formulaBack(formula, card.back) };
-    }
   }
   return { front: card.front, back: card.back ?? "" };
 }
