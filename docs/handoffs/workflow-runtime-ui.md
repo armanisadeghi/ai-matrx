@@ -38,6 +38,15 @@ parity proofs pinned by tests: Study Pack (surface `c797a1c1-…`) and Podcast (
    carry `node_id` only — server contract addition, tracked in the aidream handoff).
 5. **Mobile patrol row**: `.matrx/patrol-reports/mobile-friendly-ui.md` flags the feature +
    demo — verify/remediate.
+6. **Agent readouts after completion show the raw agent envelope** (usage/cost JSON) — during
+   the run they stream via lanes and completion auto-advances to the deliverable page, so it
+   only shows when revisiting the Writing page post-run. Real fix: a curated `agent_result`
+   kind + renderer (its parts are tracked in the kinds handoff); never hand-render.
+7. **`study_pack_set`'s web component is `generic_structured`** — the deliverable page now
+   renders the REAL `flashcard_set`/`quiz_set` components instead (Study Pack surface config
+   v4, 2026-08-18: pack page = Flashcards + Practice quiz readouts; the generic full-pack
+   readout was removed because it rendered an "Unverified shape" banner). A real study-pack
+   composite component remains open.
 
 ## Dispatched as chips (2026-08-17 — do not duplicate)
 
