@@ -85,6 +85,12 @@ export function FinishInterviewDialog({
   const interrupt = useAppSelector(selectPendingInterrupt);
   const speaker = useAppSelector(selectActiveSpeaker);
   const [busy, setBusy] = useState(false);
+  // Did WE already tell this run the interview is done? The gate answers the
+  // first done with what is still open and runs another round, so coming back
+  // to `waiting_human` after a done IS the refusal — that, not the presence of
+  // a prompt (every interrupt carries one), is what makes the next click
+  // "Finish anyway".
+  const [doneSent, setDoneSent] = useState(false);
 
   const waiting = runPhase === "waiting_human";
   const working = runPhase === "starting" || runPhase === "running";
@@ -128,9 +134,9 @@ export function FinishInterviewDialog({
           : "Finish this interview";
 
   const description = waiting
-    ? interrupt?.prompt
-      ? "The room handed the interview back to you before closing — here is what it says is still open. Finishing anyway is your call, and the room will honour it."
-      : "The room has handed the interview back to you. Finish now and it closes the interview and writes the documents."
+    ? doneSent
+      ? "You said you were finished and the room came back with what it still wants to cover. Saying it again is your call, and the room will honour it."
+      : "The room has handed the interview back to you — this is what it just said. Finish now and it closes the interview and writes the documents."
     : working
       ? `${speaker ? `${ROLES[speaker].name} is speaking. ` : ""}You can close this window — the run continues on the server, and the Finish control will be waiting when the room hands back.`
       : failed
@@ -140,7 +146,7 @@ export function FinishInterviewDialog({
           : "Everything you have told your experts is already saved. Finishing hands the interview to the guided run: your experts take one round together, and then the room writes the documents from the whole record.";
 
   const confirmLabel = waiting
-    ? interrupt?.prompt
+    ? doneSent
       ? "Finish anyway"
       : "Write the documents"
     : working
@@ -157,8 +163,12 @@ export function FinishInterviewDialog({
     try {
       // Waiting on the human → the `done` directive rides the resume payload
       // (invariant 5). Otherwise there is no run to answer — start one.
-      if (waiting) await onFinish();
-      else await onStart();
+      if (waiting) {
+        if (await onFinish()) setDoneSent(true);
+      } else {
+        await onStart();
+        setDoneSent(false);
+      }
     } finally {
       setBusy(false);
     }

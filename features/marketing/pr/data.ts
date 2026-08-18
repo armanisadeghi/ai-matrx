@@ -25,7 +25,7 @@
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { isJsonRecord } from "@/features/marketing/types";
@@ -34,9 +34,11 @@ import {
   type PressRoomFixture,
 } from "@/features/marketing/pr/fixtures";
 import type { PressRoomScenario } from "@/features/marketing/pr/routes";
+import { ladderPercent, readLadder } from "@/features/marketing/pr/ladder";
 import {
   readEvidenceRefs,
   readMissingEvidence,
+  readProofRequired,
   type CoverageMention,
   type SourceRequest,
   type StoryAngle,
@@ -315,16 +317,84 @@ export interface RulingController {
   ruleRequest: (requestId: string, status: string) => void;
   holdEvidence: (angleId: string, proofKey: string) => void;
   discard: () => void;
+  /** Ruling id → why its write failed. Empty when everything persisted. */
+  failures: Record<string, string>;
+}
+
+/**
+ * Persist a ruling. This is a DB write, so it goes DIRECT to Supabase on the
+ * canonical client path — NOT through the Python `/press/angles/{id}/ruling`
+ * endpoint, which exists for server-side callers. Routing a row update through
+ * aidream would be the extra hop the platform rules forbid.
+ *
+ * Optimistic: state moves immediately and the row is written behind it. A
+ * failed write surfaces on the ruling itself rather than silently reverting.
+ */
+async function persistAngleRuling(
+  angleId: string,
+  status: string,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const stamp: Record<string, string> = {
+    accepted: "accepted_at",
+    pitched: "pitched_at",
+    landed: "landed_at",
+    dismissed: "dismissed_at",
+  };
+  const patch: Database["seo"]["Tables"]["story_angle"]["Update"] = {
+    status,
+    human_reviewed_at: now,
+    requires_human_review: false,
+    ...(stamp[status] ? { [stamp[status]]: now } : {}),
+  };
+
+  const { error } = await supabase
+    .schema("seo")
+    .from("story_angle")
+    .update(patch)
+    .eq("id", angleId);
+  if (error) throw new Error(error.message);
+}
+
+async function persistRequestRuling(
+  requestId: string,
+  status: string,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const patch: Database["seo"]["Tables"]["source_request"]["Update"] = {
+    status,
+    ...(status === "submitted" ? { submitted_at: now } : {}),
+    ...(status === "won" ? { won_at: now } : {}),
+  };
+
+  const { error } = await supabase
+    .schema("seo")
+    .from("source_request")
+    .update(patch)
+    .eq("id", requestId);
+  if (error) throw new Error(error.message);
 }
 
 export function usePressRoomRulings(): RulingController {
   const [rulings, setRulings] = useState<PressRoomRulings>(EMPTY_RULINGS);
+  const [failures, setFailures] = useState<Record<string, string>>({});
 
   const ruleAngle = useCallback((angleId: string, status: string) => {
     setRulings((current) => ({
       ...current,
       angleStatus: { ...current.angleStatus, [angleId]: status },
     }));
+    void persistAngleRuling(angleId, status).then(
+      () =>
+        setFailures((f) => {
+          if (!(angleId in f)) return f;
+          const next = { ...f };
+          delete next[angleId];
+          return next;
+        }),
+      (err: Error) =>
+        setFailures((f) => ({ ...f, [angleId]: err.message })),
+    );
   }, []);
 
   const ruleRequest = useCallback((requestId: string, status: string) => {
@@ -332,6 +402,9 @@ export function usePressRoomRulings(): RulingController {
       ...current,
       requestStatus: { ...current.requestStatus, [requestId]: status },
     }));
+    void persistRequestRuling(requestId, status).catch((err: Error) =>
+      setFailures((f) => ({ ...f, [requestId]: err.message })),
+    );
   }, []);
 
   const holdEvidence = useCallback((angleId: string, proofKey: string) => {
@@ -358,8 +431,9 @@ export function usePressRoomRulings(): RulingController {
       ruleRequest,
       holdEvidence,
       discard,
+      failures,
     }),
-    [rulings, ruleAngle, ruleRequest, holdEvidence, discard],
+    [rulings, ruleAngle, ruleRequest, holdEvidence, discard, failures],
   );
 }
 
@@ -387,6 +461,7 @@ export function applyAngleRulings(
     if (held && held.length > 0) {
       const missing = readMissingEvidence(next.missing_evidence).items;
       const refs = readEvidenceRefs(next.evidence_refs).items;
+      const proof = readProofRequired(next.proof_required).items;
       const moved = missing.filter((item) => held.includes(item.key));
       const remaining = missing.filter((item) => !held.includes(item.key));
       const nextRefs = [
@@ -401,16 +476,46 @@ export function applyAngleRulings(
             captured_at: new Date().toISOString(),
           })),
       ];
-      // evidence_quality is a real column and it genuinely improves when a
-      // required proof lands. Recomputed from the ladder, never invented.
-      const total = Math.max(1, refs.length + missing.length);
-      const inHand = total - remaining.length;
+      // A rung can be a gap because `proof_required` declared `satisfied: false`
+      // while `missing_evidence` never named it. Holding that key has to clear
+      // the declaration too, or "I have this" is a no-op that reports success.
+      const nextProof = proof.map((item) =>
+        held.includes(item.key) && item.satisfied === false
+          ? { ...item, satisfied: true }
+          : item,
+      );
+
       next = {
         ...next,
         missing_evidence: remaining as unknown as Json,
         evidence_refs: nextRefs as unknown as Json,
-        evidence_quality: Math.round((inHand / total) * 100),
+        proof_required: nextProof as unknown as Json,
       };
+
+      // Recomputed from the LADDER, so the number here and the bar the user is
+      // looking at can never disagree. Deriving it from the raw columns counted
+      // a different set of rungs and produced two percentages on one screen.
+      const ladder = readLadder(next);
+      next = { ...next, evidence_quality: ladderPercent(ladder) };
+
+      // The payoff the whole surface promises: prove the last thing and the
+      // angle becomes pitchable. Mirrors the backend gate in
+      // `story_engine.gate_angle` — no outstanding rung, no contradiction, and
+      // evidence quality at or above the floor.
+      const contradictions = Array.isArray(next.contradictions)
+        ? next.contradictions.length
+        : 0;
+      const stillBuilding =
+        next.recommended_action === "develop_evidence" ||
+        next.recommended_action === "needs_expert_input";
+      if (
+        stillBuilding &&
+        ladder.held === ladder.total &&
+        contradictions === 0 &&
+        (next.evidence_quality ?? 0) >= 50
+      ) {
+        next = { ...next, recommended_action: "pitch_now" };
+      }
     }
     return next;
   });
