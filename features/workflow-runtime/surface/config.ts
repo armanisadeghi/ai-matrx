@@ -172,6 +172,66 @@ export function describeSource(source: ReadoutSource): string {
   }
 }
 
+// ── The zero-authoring default (read path) ─────────────────────────────────
+
+/**
+ * A Run Surface for a workflow whose author never built one.
+ *
+ * Every workflow deserves a real live surface on its first run, not a wall of
+ * status rows — so the definition itself is read as the authoring intent: the
+ * steps that THINK or produce a declared shape become full-width readouts in
+ * graph order, and the last output step becomes the deliverable trigger.
+ * Purely derived, never persisted — the builder still writes the real document
+ * when a person (or an AI author) shapes one.
+ */
+export function deriveDefaultSurfaceConfig(definition: {
+  nodes: { id: string; data?: Record<string, unknown> }[];
+}): RunSurfaceConfig {
+  const readouts: Readout[] = [];
+  let deliverableNodeId: string | undefined;
+  let row = 0;
+
+  for (const node of definition.nodes) {
+    const data = node.data ?? {};
+    const specType =
+      typeof data.spec_type === "string" ? data.spec_type : null;
+    const category = typeof data.category === "string" ? data.category : null;
+    const outputKind =
+      typeof data.output_kind === "string" && data.output_kind
+        ? data.output_kind
+        : null;
+
+    if (specType && specType.startsWith("output.")) deliverableNodeId = node.id;
+
+    // A step is worth its own readout when it WRITES something a person reads:
+    // an agent, an LLM step, or anything declaring an output shape. Plumbing
+    // (transforms, parsers, stringifiers) is narrated by the journey rail
+    // instead of given a box that would only ever hold a blob.
+    const worthShowing =
+      category === "agent" || category === "llm" || outputKind !== null;
+    if (!worthShowing) continue;
+
+    const label = typeof data.label === "string" && data.label ? data.label : null;
+    const readout: Readout = {
+      id: `auto-${node.id}`,
+      source: { kind: "node", nodeId: node.id },
+      pos: { x: 0, y: row, w: GRID_COLUMNS, h: 10 },
+      prefer: outputKind ? "persisted" : "live",
+      visibility: { appearOn: `node:${node.id}:started` },
+    };
+    if (label) readout.title = label;
+    readouts.push(readout);
+    row += 10;
+  }
+
+  return {
+    schemaVersion: SURFACE_SCHEMA_VERSION,
+    ...(deliverableNodeId ? { deliverableNodeId } : {}),
+    pages: [],
+    readouts,
+  };
+}
+
 // ── Tolerant parse (read path) ──────────────────────────────────────────────
 
 function isRecord(v: unknown): v is Record<string, unknown> {

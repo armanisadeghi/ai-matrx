@@ -254,6 +254,7 @@ export function TryMasterworkBox({
               "Nothing was lost — open it under Past runs to read what it produced, or reload this page.",
             technical: null,
             unrecognized: false,
+            action: null,
           });
         } finally {
           onRunFinished();

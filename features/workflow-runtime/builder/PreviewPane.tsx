@@ -28,23 +28,36 @@ import type { RunSurfaceConfig } from "../surface/config";
 import { listRecentRuns, type RecentRunSummary } from "../surface/service";
 import type { WorkflowDefinitionLike } from "../trigger-points";
 import { momentFromTrigger } from "./vocabulary";
-import type { ScreenId } from "./layout-model";
-import { momentAfterStep, sampleMoments } from "./sample-run";
+import { panelsOfScreen, type ScreenId } from "./layout-model";
+import { momentAfterStep, runOrder, sampleMoments } from "./sample-run";
 import { useSamplePreviewRun } from "./useSamplePreviewRun";
 import { FieldLabel, Segmented, SelectField } from "./parts";
 
 type PreviewSource = "sample" | "real";
 
-/** Where the scrubber has to stand for a given screen to be the live one. */
-function momentForScreen(
-  config: RunSurfaceConfig,
+/** Every step a screen has an eye on, in any of its panels. */
+function stepsWatchedBy(config: RunSurfaceConfig, screenId: ScreenId): string[] {
+  const watched: string[] = [];
+  for (const panel of panelsOfScreen(config, screenId)) {
+    const source = panel.source;
+    if (source.kind === "node" || source.kind === "childRun" || source.kind === "action") {
+      watched.push(source.nodeId);
+    } else if (source.kind === "group") {
+      watched.push(...source.nodeIds);
+    } else if (source.kind === "progressRail" && source.nodeIds) {
+      watched.push(...source.nodeIds);
+    }
+  }
+  return watched;
+}
+
+/** The moment the screen first takes over, from its own cue. */
+function activationMoment(
+  activateOn: string | undefined,
   definition: WorkflowDefinitionLike,
-  screenId: ScreenId,
   lastMoment: number,
 ): number | null {
-  const page = config.pages.find((p) => p.id === screenId);
-  if (!page) return null;
-  const moment = momentFromTrigger(page.activateOn);
+  const moment = momentFromTrigger(activateOn);
   switch (moment.kind) {
     case "always":
       return 1;
@@ -58,6 +71,32 @@ function momentForScreen(
     case "custom":
       return null;
   }
+}
+
+/**
+ * Where the scrubber stands when a screen is picked: late enough that the
+ * screen is genuinely live, and late enough that the things IT watches are
+ * doing something. Landing on a screen full of "Not started" would say
+ * nothing about the layout being edited.
+ */
+function momentForScreen(
+  config: RunSurfaceConfig,
+  definition: WorkflowDefinitionLike,
+  screenId: ScreenId,
+  lastMoment: number,
+): number | null {
+  const page = config.pages.find((p) => p.id === screenId);
+  const activation = page
+    ? activationMoment(page.activateOn, definition, lastMoment)
+    : 1;
+  const order = runOrder(definition);
+  const deepest = stepsWatchedBy(config, screenId).reduce(
+    (max, id) => Math.max(max, order.indexOf(id)),
+    -1,
+  );
+  const busy = deepest >= 0 ? deepest + 1 : null;
+  if (activation === null && busy === null) return null;
+  return Math.min(lastMoment, Math.max(activation ?? 0, busy ?? 0));
 }
 
 function runOptionLabel(run: RecentRunSummary): string {
@@ -91,15 +130,22 @@ export function PreviewPane({
 
   useEffect(() => {
     let cancelled = false;
-    void listRecentRuns(definitionId)
+    // Deep enough that a workflow with a rough patch still surfaces the last
+    // run that actually finished — that is the one worth previewing against.
+    void listRecentRuns(definitionId, 20)
       .then((rows) => {
         if (cancelled) return;
         setRuns(rows);
-        // Ruling: bind to real data when it exists. The sample is the
-        // fallback AND the time machine — one click away either way.
-        if (rows.length > 0) {
-          setRealRunId(rows[0].id);
+        // Bind to real data when there IS real data: a run that finished is
+        // the only one that fills the page. A failed or half-started run
+        // teaches an author nothing about their layout, so it is offered in
+        // the list but never chosen for them — the sample run opens instead.
+        const finished = rows.find((run) => run.status === "completed");
+        if (finished) {
+          setRealRunId(finished.id);
           setSource("real");
+        } else if (rows.length > 0) {
+          setRealRunId(rows[0].id);
         }
       })
       .catch(() => {

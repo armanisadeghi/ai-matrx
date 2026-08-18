@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
+import MarkdownStream from "@/components/MarkdownStream";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
@@ -57,6 +58,32 @@ export function PhaseIcon({ phase }: { phase: string }) {
     default:
       return <CircleDashed className="h-3.5 w-3.5 text-muted-foreground" />;
   }
+}
+
+/** Beyond this, a raw JSON output is too big to hand the canonical viewer. */
+const JSON_VIEWER_MAX_CHARS = 60_000;
+
+/**
+ * The honest "working, nothing to show yet" state. NOT a bare spinner: it
+ * names the step's own live progress message when the engine sent one, and
+ * otherwise shows a calm shimmer that reads as "content is on its way" rather
+ * than "the app is stuck". A step that renders nothing at all is the defect
+ * this replaces — it is what made a four-minute run look dead.
+ */
+function WorkingBody({ message }: { message: string | null }) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+        <span className="truncate">{message ?? "Working on this now"}</span>
+      </div>
+      <div aria-hidden className="space-y-1.5">
+        <div className="h-2 w-[92%] animate-pulse rounded-full bg-muted" />
+        <div className="h-2 w-[78%] animate-pulse rounded-full bg-muted [animation-delay:150ms]" />
+        <div className="h-2 w-[85%] animate-pulse rounded-full bg-muted [animation-delay:300ms]" />
+      </div>
+    </div>
+  );
 }
 
 export function InvocationBody({
@@ -102,9 +129,17 @@ export function InvocationBody({
     );
   }
   if (invocation.phase === "settled" && invocation.output) {
+    // No registered kind — the output still deserves the platform's real JSON
+    // viewer (fold, copy, table view), which it gets by riding the canonical
+    // markdown pipeline as a fenced block. A raw <pre> was a wall of text on
+    // the one screen where the reader most wants to SEE what was produced.
+    const json = JSON.stringify(invocation.output, null, 2);
+    if (json.length <= JSON_VIEWER_MAX_CHARS) {
+      return <MarkdownStream content={`\`\`\`json\n${json}\n\`\`\``} />;
+    }
     return (
-      <pre className="max-h-48 overflow-auto rounded-md bg-muted p-2 text-[11px]">
-        {JSON.stringify(invocation.output, null, 2)}
+      <pre className="max-h-96 overflow-auto rounded-md bg-muted p-2 text-[11px]">
+        {json}
       </pre>
     );
   }
@@ -114,6 +149,9 @@ export function InvocationBody({
         {invocation.error.message ?? "This step failed."}
       </p>
     );
+  }
+  if (invocation.phase === "running" || invocation.phase === "retrying") {
+    return <WorkingBody message={invocation.progress?.message ?? null} />;
   }
   return null;
 }

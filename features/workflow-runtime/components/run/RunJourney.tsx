@@ -125,7 +125,10 @@ function JourneyRow({
   const style = FAMILY_STYLE[step.family];
 
   return (
-    <li className="relative flex gap-2.5 pb-2.5 last:pb-0">
+    <li
+      data-step-id={step.nodeId}
+      className="relative flex gap-2.5 pb-2.5 last:pb-0"
+    >
       {/* Spine — the run reads as one continuous journey, not loose rows. */}
       {!isLast ? (
         <span

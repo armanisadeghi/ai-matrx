@@ -46,7 +46,7 @@ export const WIDTH_CHOICES: readonly { value: PanelWidth; label: string }[] = [
   { value: "third", label: "Narrow" },
   { value: "half", label: "Half" },
   { value: "twoThirds", label: "Wide" },
-  { value: "full", label: "Full width" },
+  { value: "full", label: "Full" },
 ];
 
 export const HEIGHT_CHOICES: readonly { value: PanelHeight; label: string }[] = [

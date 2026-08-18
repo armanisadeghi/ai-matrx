@@ -2,11 +2,19 @@
 
 /**
  * RunSurfaceView — renders an authored Run Surface config (THE SHOW, R1)
- * over a live workflow run: the 24-column Grafana-model grid of readouts,
- * trigger-point-driven pages with auto-advance (R2), placeholder empty
- * states (R3), and the interrupt card above the grid.
+ * over a live workflow run: the readouts, trigger-point-driven pages with
+ * auto-advance (R2), empty states (R3), and the interrupt card above them.
  *
- * Zero page shift: the grid only ever GROWS. A readout that has rendered is
+ * LAYOUT (rebuilt 2026-08-18). The authored `pos {x, y, w, h}` is still the
+ * contract the builder writes and this component still honours it — but as a
+ * FLOW, not as an absolutely-positioned dashboard grid. The literal Grafana
+ * model produced fixed 30px rows, which forced every readout into a short box
+ * with its own scrollbar: streamed writing arrived into a ~240px porthole and
+ * the whole run read as a wall of tiny panels. Now `w` picks a column span in
+ * a 12-column flow, `(y, x)` is the order, and `h` is a MINIMUM height — the
+ * content decides the rest, so a step that is writing gets room to be read.
+ *
+ * Zero page shift: the flow only ever GROWS. A readout that has rendered is
  * never unmounted because data arrived — visibility depends ONLY on trigger
  * points (which fire monotonically within a run) and author config.
  *
@@ -18,6 +26,7 @@ import { useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 import {
   GRID_COLUMNS,
@@ -95,6 +104,17 @@ type ReadoutRender =
   | { readout: Readout; mode: "content" }
   | { readout: Readout; mode: "placeholder" };
 
+/** The flow grid the authored 24-column `pos.w` maps onto. */
+const FLOW_COLUMNS = 12;
+/** A tall readout still scrolls internally rather than running off forever. */
+const READOUT_MAX_HEIGHT_PX = 560;
+
+/** 24-col author span → 12-col flow span, never narrower than a readable third. */
+function flowSpan(w: number): number {
+  const span = Math.round((w / GRID_COLUMNS) * FLOW_COLUMNS);
+  return Math.min(FLOW_COLUMNS, Math.max(4, span));
+}
+
 function ReadoutCell({
   runId,
   item,
@@ -110,31 +130,48 @@ function ReadoutCell({
 }) {
   const { readout, mode } = item;
   const title = deriveTitle(readout);
+  // `h` is the author's intent for how much room this deserves — honoured as a
+  // floor so a short readout keeps its shape, never as a ceiling that clips
+  // live writing.
+  const minHeight = Math.min(
+    READOUT_MAX_HEIGHT_PX,
+    Math.max(64, readout.pos.h * GRID_ROW_HEIGHT_PX),
+  );
   const style = mobile
-    ? undefined
-    : {
-        gridColumn: `${readout.pos.x + 1} / span ${readout.pos.w}`,
-        gridRow: `${readout.pos.y + 1} / span ${readout.pos.h}`,
-      };
+    ? { minHeight }
+    : { gridColumn: `span ${flowSpan(readout.pos.w)}`, minHeight };
+
   return (
     <div
       style={style}
-      className="flex min-h-0 flex-col rounded-xl border border-border bg-card"
+      className={cn(
+        "flex min-w-0 flex-col overflow-hidden rounded-xl border bg-card",
+        mode === "placeholder"
+          ? "border-dashed border-border/70 bg-card/40"
+          : "border-border",
+      )}
     >
       {title ? (
-        <div className="shrink-0 truncate px-2 pt-1.5 text-[11px] font-medium text-muted-foreground">
-          {title}
+        <div className="flex shrink-0 items-center gap-2 border-b border-border/60 px-3 py-2">
+          <h3 className="min-w-0 flex-1 truncate text-xs font-semibold text-foreground">
+            {title}
+          </h3>
+          {mode === "placeholder" ? (
+            <span className="shrink-0 text-[11px] text-muted-foreground">
+              Coming up
+            </span>
+          ) : null}
         </div>
       ) : null}
       <div
-        className={
-          mobile
-            ? "max-h-96 min-h-0 overflow-auto p-2"
-            : "min-h-0 flex-1 overflow-auto p-2"
-        }
+        className="min-h-0 flex-1 overflow-y-auto p-3"
+        style={{ maxHeight: READOUT_MAX_HEIGHT_PX }}
       >
         {mode === "placeholder" ? (
-          <div className="h-full min-h-6 w-full animate-pulse rounded-md bg-muted" />
+          <div aria-hidden className="space-y-1.5 pt-0.5">
+            <div className="h-2 w-2/3 rounded-full bg-muted/70" />
+            <div className="h-2 w-1/2 rounded-full bg-muted/50" />
+          </div>
         ) : (
           <ReadoutView
             runId={runId}
@@ -153,12 +190,21 @@ export function RunSurfaceView({
   definition,
   config,
   adopt = true,
+  hideRunStatusCards = false,
 }: {
   runId: string;
   definition: WorkflowDefinitionLike;
   config: RunSurfaceConfig;
   /** A parent adapter already following this run passes false. */
   adopt?: boolean;
+  /**
+   * The hosting surface already renders the run's failure/interrupt state
+   * (RunStage does, with the full explanation card), so this view must not
+   * render a second copy of it. Standalone and nested consumers leave it off
+   * and keep the built-in cards — a run surface must never be silent about a
+   * stopped run.
+   */
+  hideRunStatusCards?: boolean;
 }) {
   const { ensureLane } = useWorkflowRun(adopt !== false ? runId : null);
   // Bound to THIS surface's run for the readouts below. A non-adopting
@@ -241,23 +287,27 @@ export function RunSurfaceView({
     : rendered;
 
   return (
-    <div className="space-y-2">
-      {pages.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-1">
+    <div className="space-y-3">
+      {pages.length > 1 ? (
+        // A segmented control, not a row of loose outlines: the pages are one
+        // choice, and the run moves through them on its own.
+        <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5">
           {pages.map((page) => {
             const active = page.id === activePageId;
             return (
               <button
                 key={page.id}
                 type="button"
+                aria-current={active ? "page" : undefined}
                 onClick={() =>
                   setManual({ pageId: page.id, atFiredIdx: firedIdx })
                 }
-                className={
+                className={cn(
+                  "min-h-8 rounded-md px-3 text-xs font-medium transition-colors",
                   active
-                    ? "rounded-md border border-primary/50 bg-primary/10 px-2 py-1 text-xs font-medium text-foreground"
-                    : "rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
-                }
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
               >
                 {page.title}
               </button>
@@ -266,11 +316,18 @@ export function RunSurfaceView({
         </div>
       ) : null}
 
-      <RunErrorCard runId={runId} nodeLabels={definitionNodeLabels(definition)} />
-      <InterruptCard runId={runId} />
+      {hideRunStatusCards ? null : (
+        <>
+          <RunErrorCard
+            runId={runId}
+            nodeLabels={definitionNodeLabels(definition)}
+          />
+          <InterruptCard runId={runId} />
+        </>
+      )}
 
       {isMobile ? (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {ordered.map((item) => (
             <ReadoutCell
               key={item.readout.id}
@@ -284,10 +341,9 @@ export function RunSurfaceView({
         </div>
       ) : (
         <div
-          className="grid gap-2"
+          className="grid items-start gap-3"
           style={{
-            gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
-            gridAutoRows: `${GRID_ROW_HEIGHT_PX}px`,
+            gridTemplateColumns: `repeat(${FLOW_COLUMNS}, minmax(0, 1fr))`,
           }}
         >
           {ordered.map((item) => (
