@@ -72,6 +72,11 @@ Do not complete the task because a portal says “created” or “approved.” 
 5. Record revoke/disconnect/reconnect instructions and evidence.
 6. Set `Phase: verified` and `status=completed` only after the proof succeeds.
 
+For an official remote MCP, connection approval and tool-operation safety are separate. Use the
+scout's recorded read-only, test, sandbox, or project-scoped proof. A successful easy connection
+does not authorize destructive, financial, production-data, permission-changing, or external-
+communication tools; those retain their normal user-confirmation boundaries.
+
 If immediate developer/sandbox access works but production activation remains, record and verify the
 developer milestone without falsely completing the production campaign. Split the campaign only if
 the development access is independently useful and ongoing.

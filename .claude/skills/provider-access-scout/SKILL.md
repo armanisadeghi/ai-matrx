@@ -1,6 +1,6 @@
 ---
 name: provider-access-scout
-description: "Produce decision-ready scouting records for third-party OAuth, API, API-key, remote MCP, publisher, marketplace, and partner-access campaigns. Use for assigned Provider Access Launch tasks when current official requirements, minimum scopes, cost, account needs, evidence, approval path, implementation consumer, and an easy-execution verdict must be established before submission."
+description: "Produce decision-ready scouting records for user-connected OAuth, API, API-key, remote MCP, integration-marketplace, and partner-access campaigns. Use for assigned Provider Access Launch tasks when the easiest official route, minimum scopes, cost, account needs, evidence, approval path, implementation consumer, and an easy-connection verdict must be established before execution. Excludes client Local Listings distribution."
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -53,12 +53,40 @@ Answer all of these:
    status visible, and what is the escalation/support route?
 10. How is access revoked and reconnected?
 
+## Easiest-route rule
+
+**Find the shortest official path before researching a custom developer application.** Check in
+this order and stop when an implemented outcome is satisfied:
+
+1. an existing verified AI Matrx connection;
+2. an official hosted remote MCP with browser OAuth/dynamic registration;
+3. an official no-auth or self-service API;
+4. an official API key or self-service OAuth connection;
+5. a provider-reviewed OAuth application or marketplace submission;
+6. a partner, enterprise, customer-sponsored, or publisher program.
+
+An official MCP may eliminate app registration, scope review, screenshots, and reviewer approval.
+Do not climb the harder route merely because it exposes more capabilities. Record why the easier
+route does or does not satisfy the implemented AI Matrx outcome.
+
 ## Scope rule
 
 Choose the least privilege that completes the implemented outcome: read before write, resource-
 specific before account-wide, and incremental consent at the moment of use. Separate unrelated scope
 families or reviewer stories. If a scope cannot be tied to an implemented action, code consumer,
 visible UI, and real verification, recommend that it not be requested.
+
+## Connection ease and operation risk
+
+Score two independent axes:
+
+- `access_effort`: `existing` | `instant_mcp` | `self_service` | `provider_review` | `partner`
+- `operation_risk`: `read_only` | `bounded_write` | `sensitive_write` | `regulated`
+
+**Do not make connection difficulty inherit operation risk.** A database or payment MCP can be an
+easy self-service connection even though destructive or financial tools require separate user
+confirmation. Prove the connection with the safest useful operation—prefer a read-only, test,
+sandbox, or project-scoped operation—and record stronger tool controls separately.
 
 ## Easy-execution verdict
 
@@ -68,9 +96,15 @@ Classify `easy_execute` only if every answer is yes:
 - AI Matrx-owned account and approved publisher facts;
 - no legal, compliance, regulated-data, customer, or identity attestation;
 - no production DNS, customer-facing publication, customer data, or live-traffic mutation;
-- only minimum documented non-sensitive access for an implemented capability;
+- no provider review, manually registered production app, or unpublished scope request;
+- only the minimum documented connection for an implemented capability;
 - private/development mode remains possible when offered;
 - immediate verification and revocation are known.
+
+An official remote MCP using browser OAuth may pass this gate even when it advertises high-impact
+tools, provided connection is free/reversible and verification uses a safe read-only or test
+operation. `easy_execute` authorizes connecting and performing that recorded proof; it never
+authorizes arbitrary write/destructive tools.
 
 If any answer is no or uncertain, set `easy_execute: false`, leave `Phase: ready_to_submit` only when
 the recommendation is complete, and name the exact decision or prerequisite. “Free signup” alone
@@ -88,6 +122,8 @@ Update the task case card and append a dated scouting section containing:
 Verdict: easy_execute | ready_for_owner | do_not_request_yet | no_auth_needed
 Implemented outcome:
 Access route:
+Access effort: existing | instant_mcp | self_service | provider_review | partner
+Operation risk: read_only | bounded_write | sensitive_write | regulated
 Minimum scopes/capabilities:
 Explicitly excluded:
 Developer vs production:
