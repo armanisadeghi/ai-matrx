@@ -14783,6 +14783,8 @@ export type Database = {
         Row: {
           certified_at: string
           certified_by: string
+          human_verified_at: string | null
+          human_verified_by: string | null
           id: string
           note: string | null
           resource_id: string
@@ -14791,6 +14793,8 @@ export type Database = {
         Insert: {
           certified_at?: string
           certified_by: string
+          human_verified_at?: string | null
+          human_verified_by?: string | null
           id?: string
           note?: string | null
           resource_id: string
@@ -14799,6 +14803,8 @@ export type Database = {
         Update: {
           certified_at?: string
           certified_by?: string
+          human_verified_at?: string | null
+          human_verified_by?: string | null
           id?: string
           note?: string | null
           resource_id?: string
@@ -34994,6 +35000,75 @@ export type Database = {
           },
         ]
       }
+      pc_race: {
+        Row: {
+          arms: Json
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: Json | null
+          id: string
+          metadata: Json
+          organization_id: string
+          request: Json
+          status: string
+          topic: string
+          updated_at: string
+          updated_by: string | null
+          verdict_at: string | null
+          verdict_by: string | null
+          verdict_notes: string | null
+          verdict_winner: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          arms?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          request?: Json
+          status?: string
+          topic: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict_at?: string | null
+          verdict_by?: string | null
+          verdict_notes?: string | null
+          verdict_winner?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          arms?: Json
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: Json | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          request?: Json
+          status?: string
+          topic?: string
+          updated_at?: string
+          updated_by?: string | null
+          verdict_at?: string | null
+          verdict_by?: string | null
+          verdict_notes?: string | null
+          verdict_winner?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       pc_shows: {
         Row: {
           author: string | null
@@ -40470,6 +40545,7 @@ export type Database = {
         Args: { p_band: string; p_student_user_id: string }
         Returns: Json
       }
+      edu_import_deck: { Args: { p_deck: Json }; Returns: Json }
       edu_import_review_history: { Args: { p_items: Json }; Returns: Json }
       edu_learn_doc_admin_list: {
         Args: never
@@ -40528,6 +40604,7 @@ export type Database = {
           certified_note: string
           description: string
           difficulty: string
+          human_verified: boolean
           id: string
           name: string
           topic: string
@@ -40563,6 +40640,21 @@ export type Database = {
       edu_uncertify_content: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: undefined
+      }
+      edu_verify_content: {
+        Args: {
+          p_note?: string
+          p_resource_id: string
+          p_resource_type: string
+          p_verified?: boolean
+        }
+        Returns: Database["education"]["Tables"]["content_certification"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "content_certification"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       ensure_folder_chain: {
         Args: { p_folder_path: string; p_owner_id: string }
@@ -59454,6 +59546,116 @@ export type Database = {
           },
         ]
       }
+      business_location: {
+        Row: {
+          address_line2: string | null
+          attributes: Json
+          brand_id: string
+          business_type: string | null
+          categories: string[]
+          country_code: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          email: string | null
+          id: string
+          identifiers: Json
+          is_primary: boolean
+          latitude: number | null
+          locality: string | null
+          longitude: number | null
+          metadata: Json
+          name: string
+          opening_hours: Json
+          organization_id: string
+          phone: string | null
+          postal_code: string | null
+          region: string | null
+          special_hours: Json
+          status: string
+          street_address: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          website_url: string | null
+        }
+        Insert: {
+          address_line2?: string | null
+          attributes?: Json
+          brand_id: string
+          business_type?: string | null
+          categories?: string[]
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          identifiers?: Json
+          is_primary?: boolean
+          latitude?: number | null
+          locality?: string | null
+          longitude?: number | null
+          metadata?: Json
+          name: string
+          opening_hours?: Json
+          organization_id: string
+          phone?: string | null
+          postal_code?: string | null
+          region?: string | null
+          special_hours?: Json
+          status?: string
+          street_address?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          website_url?: string | null
+        }
+        Update: {
+          address_line2?: string | null
+          attributes?: Json
+          brand_id?: string
+          business_type?: string | null
+          categories?: string[]
+          country_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          email?: string | null
+          id?: string
+          identifiers?: Json
+          is_primary?: boolean
+          latitude?: number | null
+          locality?: string | null
+          longitude?: number | null
+          metadata?: Json
+          name?: string
+          opening_hours?: Json
+          organization_id?: string
+          phone?: string | null
+          postal_code?: string | null
+          region?: string | null
+          special_hours?: Json
+          status?: string
+          street_address?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_location_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brand"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crawl_event: {
         Row: {
           crawl_url_id: string | null
@@ -60508,6 +60710,159 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_page_list"
             referencedColumns: ["page_id"]
+          },
+        ]
+      }
+      listing_publisher: {
+        Row: {
+          api_access: string
+          api_notes: string | null
+          categories: string[]
+          citation_weight: number
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          domain: string | null
+          id: string
+          is_aggregator: boolean
+          manage_url: string | null
+          metadata: Json
+          name: string
+          organization_id: string
+          slug: string
+          sort_rank: number
+          tier: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          api_access?: string
+          api_notes?: string | null
+          categories?: string[]
+          citation_weight?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          domain?: string | null
+          id?: string
+          is_aggregator?: boolean
+          manage_url?: string | null
+          metadata?: Json
+          name: string
+          organization_id: string
+          slug: string
+          sort_rank?: number
+          tier: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          api_access?: string
+          api_notes?: string | null
+          categories?: string[]
+          citation_weight?: number
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          domain?: string | null
+          id?: string
+          is_aggregator?: boolean
+          manage_url?: string | null
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          slug?: string
+          sort_rank?: number
+          tier?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      location_listing: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          last_checked_at: string | null
+          listing_url: string | null
+          location_id: string
+          match_score: number | null
+          metadata: Json
+          nap_match: Json | null
+          notes: string | null
+          observed: Json
+          organization_id: string
+          publisher_id: string
+          source: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          last_checked_at?: string | null
+          listing_url?: string | null
+          location_id: string
+          match_score?: number | null
+          metadata?: Json
+          nap_match?: Json | null
+          notes?: string | null
+          observed?: Json
+          organization_id: string
+          publisher_id: string
+          source?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          last_checked_at?: string | null
+          listing_url?: string | null
+          location_id?: string
+          match_score?: number | null
+          metadata?: Json
+          nap_match?: Json | null
+          notes?: string | null
+          observed?: Json
+          organization_id?: string
+          publisher_id?: string
+          source?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "location_listing_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "business_location"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "location_listing_publisher_id_fkey"
+            columns: ["publisher_id"]
+            isOneToOne: false
+            referencedRelation: "listing_publisher"
+            referencedColumns: ["id"]
           },
         ]
       }
