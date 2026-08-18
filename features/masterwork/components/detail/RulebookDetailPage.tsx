@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
@@ -1102,13 +1103,20 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     );
   }
   if (error || !rulebook) {
+    // NEVER hand-write "couldn't load it" copy. Under RLS an empty read means
+    // four different things (denied · deleted · never existed · signed out),
+    // and asserting one is wrong most of the time. AccessGate resolves the
+    // TRUE state and gives a blocked Expert a way to ask the owner for access
+    // — the alternative is telling someone their own work does not exist.
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-muted-foreground">{error}</p>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/masterwork/all">Back to Masterwork Studio</Link>
-        </Button>
-      </div>
+      <AccessGate
+        token="rulebook"
+        id={rulebookId}
+        error={error}
+        onRetry={() => void reloadRulebook()}
+        fallbackHref="/masterwork/all"
+        fallbackLabel="Back to Masterwork Studio"
+      />
     );
   }
 
