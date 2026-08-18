@@ -12,9 +12,14 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { toast } from "@/lib/toast";
 import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
 import {
   bringUpChecklist,
+  platformBringUpChecklist,
   type BringUpContext,
 } from "@/features/crm/sending-identities/bringUpChecklist";
 import {
@@ -65,6 +70,8 @@ export function OutreachBringUpSection({
   /** The page's own list needs a reload after a connect made here. */
   onIdentitiesChanged?: () => void;
 }) {
+  const router = useRouter();
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const [connectOpen, setConnectOpen] = useState(false);
   const [rulesOpen, setRulesOpen] = useState(false);
   const dialogWaiters = useRef<(() => void)[]>([]);
@@ -111,6 +118,19 @@ export function OutreachBringUpSection({
         context={context}
         scope={{ organizationId }}
       />
+      {/*
+        Operator-only platform steps (Pub/Sub, server settings, OAuth review).
+        A normal org must see zero DevOps vocabulary on this page — the split
+        is the point, not a styling choice (Arman, 2026-08-17).
+      */}
+      {isSuperAdmin ? (
+        <GuidedChecklist
+          definition={platformBringUpChecklist}
+          context={context}
+          scope={{ organizationId }}
+          className="border-dashed"
+        />
+      ) : null}
       <ConnectMailboxDialog
         open={connectOpen}
         onOpenChange={(open) => {
@@ -120,9 +140,13 @@ export function OutreachBringUpSection({
             settleDialogWaiters();
           }
         }}
-        onConnected={() => {
+        onConnected={(identity) => {
           identityFetch.clear();
           onIdentitiesChanged?.();
+          // Success must be unmistakable: land the user on the new mailbox's
+          // own setup steps rather than leaving them to find it in a list.
+          toast.success(`${identity.from_address} is connected — let's finish its setup.`);
+          router.push(`/crm/sending-identities/${identity.id}`);
         }}
       />
       <AcceptSendingRulesDialog

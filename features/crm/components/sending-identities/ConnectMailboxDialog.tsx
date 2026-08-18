@@ -42,11 +42,18 @@ import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 import { connectGoogle } from "@/features/marketing/google/service";
 import { useConnectableMailboxes } from "@/features/crm/sending-identities/hooks";
 import { createSendingIdentity } from "@/features/crm/sending-identities/service";
+import type { SendingIdentityDetail } from "@/features/crm/sending-identities/types";
 
 interface ConnectMailboxDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConnected: () => void;
+  /**
+   * Receives the identity the server just created, so the mount site can make
+   * success unmistakable — navigate to its setup steps, highlight it, toast it.
+   * A connect that lands silently at the bottom of a list reads as a failure
+   * to the person who just did it (Arman, 2026-08-16).
+   */
+  onConnected: (identity: SendingIdentityDetail) => void;
 }
 
 export function ConnectMailboxDialog(props: ConnectMailboxDialogProps) {
@@ -76,11 +83,11 @@ function ConnectMailboxDialogBody({
     setConnecting(connectionId);
     setFailure(null);
     try {
-      await createSendingIdentity({
+      const identity = await createSendingIdentity({
         connection_id: connectionId,
         from_address: address,
       });
-      onConnected();
+      onConnected(identity);
       onOpenChange(false);
     } catch (err) {
       setFailure(err instanceof Error ? err.message : String(err));

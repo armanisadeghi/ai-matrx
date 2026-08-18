@@ -15,6 +15,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CircleCheck,
@@ -30,6 +31,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CapabilityGate } from "@/features/entitlements/components/CapabilityGate";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { useSendingIdentities } from "@/features/crm/sending-identities/hooks";
 import { setSendingPolicy } from "@/features/crm/sending-identities/service";
 import { STATUS_COPY } from "@/features/crm/sending-identities/types";
@@ -56,10 +58,30 @@ function StatusBadge({ status }: { status: SendingIdentityView["status"] }) {
   );
 }
 
+/**
+ * A mailbox mid-setup is NOT broken. Red is reserved for something that
+ * genuinely failed (a pause, a dead connection, the org switch); a gate the
+ * user simply hasn't finished yet reads as the calm next step it is — in
+ * neutral color, in next-step voice (Arman, 2026-08-16: the red "hasn't
+ * proven that it owns" line read as an accusation).
+ */
+const SETUP_STAGE_FIXES = new Set([
+  "publish_dns_record",
+  "check_domain",
+  "check_authentication",
+  "start_warmup",
+  "wait_for_warmup",
+  "upgrade_plan",
+  "connect_mailbox",
+]);
+
 function IdentityRow({ identity }: { identity: SendingIdentityView }) {
   const issues = identity.issues ?? [];
   const blocking = issues.filter((issue) => !issue.transient);
   const warming = identity.warmup;
+  const firstBlocking = blocking[0];
+  const setupStage =
+    firstBlocking != null && SETUP_STAGE_FIXES.has(firstBlocking.fix_action);
 
   return (
     <Link
@@ -105,10 +127,22 @@ function IdentityRow({ identity }: { identity: SendingIdentityView }) {
           Ready for campaigns
         </p>
       ) : blocking.length > 0 ? (
-        <p className="mt-2.5 flex items-start gap-1.5 text-xs text-destructive">
-          <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        <p
+          className={cn(
+            "mt-2.5 flex items-start gap-1.5 text-xs",
+            setupStage
+              ? "text-amber-700 dark:text-amber-400"
+              : "text-destructive",
+          )}
+        >
+          {setupStage ? (
+            <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          ) : (
+            <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          )}
           <span className="min-w-0">
-            {blocking[0].message}
+            {setupStage ? "Next step: " : ""}
+            {firstBlocking.message}
             {blocking.length > 1
               ? ` (+${blocking.length - 1} more to fix)`
               : ""}
@@ -120,6 +154,7 @@ function IdentityRow({ identity }: { identity: SendingIdentityView }) {
 }
 
 export function SendingIdentitiesPage() {
+  const router = useRouter();
   const { identities, policy, loading, error, reload } = useSendingIdentities();
   const [connectOpen, setConnectOpen] = useState(false);
   const [togglingPolicy, setTogglingPolicy] = useState(false);
@@ -300,7 +335,13 @@ export function SendingIdentitiesPage() {
       <ConnectMailboxDialog
         open={connectOpen}
         onOpenChange={setConnectOpen}
-        onConnected={reload}
+        onConnected={(identity) => {
+          reload();
+          // Success must be unmistakable: go straight to the new mailbox's
+          // setup steps instead of leaving the user to spot it in the list.
+          toast.success(`${identity.from_address} is connected — let's finish its setup.`);
+          router.push(`/crm/sending-identities/${identity.id}`);
+        }}
       />
     </div>
   );

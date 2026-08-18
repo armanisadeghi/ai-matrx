@@ -44,7 +44,7 @@ import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { isTransportFailure } from "@/lib/net/errors";
 import { toast } from "@/lib/toast";
 import { appendVisionStatement } from "../service";
-import { roleFromNodeId, type RoleKey } from "../types";
+import { roleFromNodeId, type InterviewStage, type RoleKey } from "../types";
 import {
   nodeCompleted,
   nodeStarted,
@@ -66,10 +66,14 @@ import {
 export interface ResumeInput {
   /** The human's message for this turn. May be empty for pure controls. */
   message: string;
-  /** "Bring in the Adversary" — design-doc open Q3. */
+  /** "Bring in the Adversary" — the summoned role leads the NEXT round as
+   *  its primary (v2: one primary speaks per round). */
   summonRole?: RoleKey;
   /** Human-controlled stage advancement — design-doc open Q4. */
   advanceStage?: boolean;
+  /** Jump to ANY stage, forward or back (v2 HumanDirectives.goto_stage) —
+   *  the stage rail's click-to-jump. */
+  gotoStage?: InterviewStage;
 }
 
 export function useInterviewRun(sessionId: string) {
@@ -397,6 +401,7 @@ export function useInterviewRun(sessionId: string) {
             message: input.message,
             ...(input.summonRole ? { summon_role: input.summonRole } : {}),
             ...(input.advanceStage ? { advance_stage: true } : {}),
+            ...(input.gotoStage ? { goto_stage: input.gotoStage } : {}),
           },
           mode: "inline",
         },

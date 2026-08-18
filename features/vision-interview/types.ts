@@ -1,6 +1,6 @@
 // features/vision-interview/types.ts
 //
-// Row types for the five `interview.*` tables + role/stage metadata.
+// Row types for the five `interview.*` tables + role/stage/category metadata.
 //
 // NOTE — hand-declared row types: the `interview` schema is not yet in
 // `types/database.types.ts` (this container cannot run `pnpm db-types`).
@@ -10,7 +10,9 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
+  CircleHelp,
   DraftingCompass,
+  Ear,
   Landmark,
   Map as MapIcon,
   Megaphone,
@@ -20,9 +22,38 @@ import {
 
 // ── Enums (mirror the live DB CHECK constraints) ────────────────────────────
 
-export type InterviewStage = "expand" | "test" | "shape" | "loop" | "done";
+/** v2 stage arc (backend contract, 2026-08-17). */
+export type InterviewStage =
+  | "capture"
+  | "ground"
+  | "enhance"
+  | "articulate"
+  | "stress"
+  | "shape"
+  | "revisit"
+  | "done";
+
+/** v1 stage values that may still sit on old session rows until the server
+ *  heals them. Display-only mapping — the FE never writes stage. */
+export type LegacyInterviewStage = "expand" | "test" | "loop";
+
+/** What `interview.session.stage` can actually carry on the wire. */
+export type InterviewStageWire = InterviewStage | LegacyInterviewStage;
+
+const LEGACY_STAGE_MAP: Record<LegacyInterviewStage, InterviewStage> = {
+  expand: "enhance",
+  test: "stress",
+  loop: "revisit",
+};
+
+/** Map a wire stage (possibly legacy) to the canonical v2 stage key. */
+export function normalizeStage(stage: InterviewStageWire): InterviewStage {
+  return (LEGACY_STAGE_MAP as Record<string, InterviewStage | undefined>)[stage] ??
+    (stage as InterviewStage);
+}
 
 export type RoleKey =
+  | "sounding_board"
   | "amplifier"
   | "cartographer"
   | "archaeologist"
@@ -30,7 +61,7 @@ export type RoleKey =
   | "architect"
   | "scribe";
 
-/** `interview.turn.speaker` — the human or one of the six role keys. */
+/** `interview.turn.speaker` — the human or one of the seven role keys. */
 export type Speaker = "human" | RoleKey;
 
 export type QuestionState =
@@ -39,6 +70,17 @@ export type QuestionState =
   | "partially_answered"
   | "dodged"
   | "deferred";
+
+/** `interview.question.category` — which kind of asking produced it. May be
+ *  null on pre-v2 rows; a null category reads as `gap`. */
+export type QuestionCategory =
+  | "core"
+  | "grounding"
+  | "enhancement"
+  | "articulation"
+  | "risk"
+  | "architectural"
+  | "gap";
 
 export type HoleClassification = "fatal" | "unknown" | "undecided";
 
@@ -57,7 +99,7 @@ export interface InterviewSessionRow {
   vision_statement: string | null;
   /** The living document — section-keyed markdown, written ONLY by scribe_apply. */
   document: string | null;
-  stage: InterviewStage;
+  stage: InterviewStageWire;
   current_round: number;
   run_id: string | null;
   role_bindings: Record<string, unknown> | null;
@@ -95,6 +137,8 @@ export interface InterviewQuestionRow {
   session_id: string;
   question: string;
   state: QuestionState;
+  /** Null on pre-v2 rows — read through `questionCategory()`. */
+  category: QuestionCategory | null;
   missing_part: string | null;
   raised_by: Speaker | null;
   round_raised: number;
@@ -106,6 +150,13 @@ export interface InterviewQuestionRow {
   position: number;
   created_at: string;
   updated_at: string;
+}
+
+/** The question's effective category — null (pre-v2 rows) reads as `gap`. */
+export function questionCategory(
+  question: Pick<InterviewQuestionRow, "category">,
+): QuestionCategory {
+  return question.category ?? "gap";
 }
 
 /** `interview.hole` — Adversary findings, the loop's routing signal. */
@@ -178,16 +229,33 @@ export interface RoleMeta {
   accent: { avatar: string; text: string; ring: string };
 }
 
+/** Presence/summon order — the stage arc's primaries in order, Scribe last. */
 export const ROLE_ORDER: RoleKey[] = [
+  "sounding_board",
+  "archaeologist",
   "amplifier",
   "cartographer",
-  "archaeologist",
   "adversary",
   "architect",
   "scribe",
 ];
 
 export const ROLES: Record<RoleKey, RoleMeta> = {
+  sounding_board: {
+    key: "sounding_board",
+    // "Sounding Board" is a PROVISIONAL name (proposed with backend v2,
+    // 2026-08-17) — render it normally; if the lexicon settles on another
+    // name, this display string is the one place to change.
+    name: "Sounding Board",
+    description:
+      "Listens first — reflects your vision back so you hear what you actually said.",
+    icon: Ear,
+    accent: {
+      avatar: "bg-chart-6/15 text-chart-6",
+      text: "text-chart-6",
+      ring: "ring-chart-6/60",
+    },
+  },
   amplifier: {
     key: "amplifier",
     name: "Amplifier",
@@ -271,8 +339,8 @@ export const STRUCTURED_ROLES: ReadonlySet<RoleKey> = new Set<RoleKey>([
 
 /**
  * Resolve a workflow node id to the role speaking through it. Node ids carry
- * the role key (e.g. `role_amplifier`, `role_adversary_2`) per the backend
- * contract.
+ * the role key (e.g. `role_sounding_board`, `role_adversary_2`) per the
+ * backend contract.
  */
 export function roleFromNodeId(nodeId: string | null | undefined): RoleKey | null {
   if (!nodeId) return null;
@@ -284,60 +352,88 @@ export function roleFromNodeId(nodeId: string | null | undefined): RoleKey | nul
 }
 
 // ── Stage metadata ──────────────────────────────────────────────────────────
+// ONE frontend mirror of the backend's stage table (aidream v2 contract):
+// each working stage has a label, the primary role that speaks in it (one
+// primary per round now — observers run silently and only their EFFECTS
+// land), and the question category its rounds raise.
 
 export interface StageMeta {
   key: InterviewStage;
   label: string;
-  /** Which roles the router activates in this stage (Scribe runs every round). */
-  activeRoles: RoleKey[];
+  /** The role that leads this stage's rounds. Null = dynamic (revisit picks
+   *  the most eager voice; done has no rounds). */
+  primaryRole: RoleKey | null;
+  /** Question category this stage's asking produces (null for done). */
+  questionCategory: QuestionCategory | null;
   next: InterviewStage | null;
 }
 
 export const STAGE_ORDER: InterviewStage[] = [
-  "expand",
-  "test",
+  "capture",
+  "ground",
+  "enhance",
+  "articulate",
+  "stress",
   "shape",
-  "loop",
+  "revisit",
   "done",
 ];
 
 export const STAGES: Record<InterviewStage, StageMeta> = {
-  expand: {
-    key: "expand",
-    label: "Expand",
-    activeRoles: ["amplifier", "cartographer", "scribe"],
-    next: "test",
+  capture: {
+    key: "capture",
+    label: "Capture",
+    primaryRole: "sounding_board",
+    questionCategory: "core",
+    next: "ground",
   },
-  test: {
-    key: "test",
-    label: "Test",
-    activeRoles: ["archaeologist", "adversary", "scribe"],
+  ground: {
+    key: "ground",
+    label: "Ground",
+    primaryRole: "archaeologist",
+    questionCategory: "grounding",
+    next: "enhance",
+  },
+  enhance: {
+    key: "enhance",
+    label: "Enhance",
+    primaryRole: "amplifier",
+    questionCategory: "enhancement",
+    next: "articulate",
+  },
+  articulate: {
+    key: "articulate",
+    label: "Articulate",
+    primaryRole: "cartographer",
+    questionCategory: "articulation",
+    next: "stress",
+  },
+  stress: {
+    key: "stress",
+    label: "Stress",
+    primaryRole: "adversary",
+    questionCategory: "risk",
     next: "shape",
   },
   shape: {
     key: "shape",
     label: "Shape",
-    activeRoles: ["architect", "scribe"],
-    next: "loop",
+    primaryRole: "architect",
+    questionCategory: "architectural",
+    next: "revisit",
   },
-  loop: {
-    key: "loop",
-    label: "Loop",
-    // In loop, activation is hole-driven (fatal→Amplifier, unknown→Cartographer,
-    // undecided→Architect); all are candidates.
-    activeRoles: [
-      "amplifier",
-      "cartographer",
-      "architect",
-      "adversary",
-      "scribe",
-    ],
+  revisit: {
+    key: "revisit",
+    label: "Revisit",
+    primaryRole: null, // dynamic — the most eager voice leads
+    questionCategory: "gap",
     next: "done",
   },
   done: {
     key: "done",
     label: "Done",
-    activeRoles: [],
+    primaryRole: null,
+    questionCategory: null,
     next: null,
   },
 };
@@ -350,6 +446,60 @@ export const QUESTION_STATE_LABELS: Record<QuestionState, string> = {
   partially_answered: "Partial",
   dodged: "Dodged",
   deferred: "Deferred",
+};
+
+export interface QuestionCategoryMeta {
+  key: QuestionCategory;
+  label: string;
+  icon: LucideIcon;
+  /** Chip classes — semantic/chart tokens only, tied to the accent of the
+   *  stage primary that raises this category. */
+  chip: string;
+}
+
+export const QUESTION_CATEGORIES: Record<QuestionCategory, QuestionCategoryMeta> = {
+  core: {
+    key: "core",
+    label: "Core",
+    icon: Ear,
+    chip: "border-chart-6/40 bg-chart-6/10 text-chart-6",
+  },
+  grounding: {
+    key: "grounding",
+    label: "Grounding",
+    icon: Landmark,
+    chip: "border-chart-3/40 bg-chart-3/10 text-chart-3",
+  },
+  enhancement: {
+    key: "enhancement",
+    label: "Enhancement",
+    icon: Megaphone,
+    chip: "border-chart-1/40 bg-chart-1/10 text-chart-1",
+  },
+  articulation: {
+    key: "articulation",
+    label: "Articulation",
+    icon: MapIcon,
+    chip: "border-chart-2/40 bg-chart-2/10 text-chart-2",
+  },
+  risk: {
+    key: "risk",
+    label: "Risk",
+    icon: Swords,
+    chip: "border-chart-5/40 bg-chart-5/10 text-chart-5",
+  },
+  architectural: {
+    key: "architectural",
+    label: "Architectural",
+    icon: DraftingCompass,
+    chip: "border-chart-4/40 bg-chart-4/10 text-chart-4",
+  },
+  gap: {
+    key: "gap",
+    label: "Gap",
+    icon: CircleHelp,
+    chip: "border-border bg-muted text-muted-foreground",
+  },
 };
 
 export const HOLE_CLASSIFICATION_LABELS: Record<HoleClassification, string> = {

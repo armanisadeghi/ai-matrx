@@ -29,6 +29,19 @@ interface DnsRecordCardProps {
   onCheck: () => void;
 }
 
+/**
+ * Where the user most likely bought their domain, each pointing at that
+ * provider's own "add a TXT record" how-to. We cannot know which one they
+ * use, so we list the common ones plus a search that works for any other.
+ */
+const REGISTRAR_GUIDES: { name: string; href: string }[] = [
+  { name: "GoDaddy", href: "https://www.godaddy.com/help/add-a-txt-record-19232" },
+  { name: "Namecheap", href: "https://www.namecheap.com/support/knowledgebase/article.aspx/317/2237/how-do-i-add-txtspfdkimdmarc-records-for-my-domain/" },
+  { name: "Cloudflare", href: "https://developers.cloudflare.com/dns/manage-dns-records/how-to/create-dns-records/" },
+  { name: "Squarespace", href: "https://support.squarespace.com/hc/en-us/articles/360002101888" },
+  { name: "Wix", href: "https://support.wix.com/en/article/adding-or-updating-txt-records-in-your-wix-account" },
+];
+
 function CopyField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -77,7 +90,7 @@ export function DnsRecordCard({
         <p className="text-xs text-muted-foreground">
           {verified
             ? "Leave this record in place. We re-check it regularly, and sending stops if it disappears."
-            : "Add this record wherever your domain's DNS is managed, then press Check again."}
+            : `This is a small note you add to your domain that shows it's yours — like writing your name inside a jacket. It doesn't change your website or your email. Copy the three values below into your domain provider, then press "Check again".`}
         </p>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -91,6 +104,33 @@ export function DnsRecordCard({
           <code className="font-mono">{record.host}</code>. Either works. DNS
           changes can take up to an hour to appear.
         </p>
+        {!verified ? (
+          <p className="text-xs text-muted-foreground">
+            How to add it where you bought your domain:{" "}
+            {REGISTRAR_GUIDES.map((guide, index) => (
+              <span key={guide.name}>
+                {index > 0 ? " · " : ""}
+                <a
+                  href={guide.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-foreground"
+                >
+                  {guide.name}
+                </a>
+              </span>
+            ))}
+            {" · "}
+            <a
+              href={`https://www.google.com/search?q=${encodeURIComponent("how to add a TXT record to my domain")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              somewhere else
+            </a>
+          </p>
+        ) : null}
         <div className="flex items-center gap-3">
           <Button size="sm" onClick={onCheck} disabled={checking}>
             {checking ? (
@@ -105,9 +145,19 @@ export function DnsRecordCard({
               </>
             )}
           </Button>
-          {lastCheckedAt ? (
+          {verified && lastCheckedAt ? (
             <span className="text-xs text-muted-foreground">
               Last checked {new Date(lastCheckedAt).toLocaleString()}
+            </span>
+          ) : !verified && lastCheckedAt ? (
+            <span className="text-xs text-amber-700 dark:text-amber-400">
+              We looked at {new Date(lastCheckedAt).toLocaleString()} and
+              didn&apos;t find it yet — if you just added it, give it up to an
+              hour.
+            </span>
+          ) : !verified ? (
+            <span className="text-xs text-muted-foreground">
+              We haven&apos;t checked your domain yet.
             </span>
           ) : null}
         </div>

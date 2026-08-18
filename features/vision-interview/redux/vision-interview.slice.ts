@@ -15,12 +15,16 @@
 import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { RevisionSummary } from "../service";
-import type {
-  InterviewHoleRow,
-  InterviewQuestionRow,
-  InterviewSessionRow,
-  InterviewTurnRow,
-  RoleKey,
+import {
+  normalizeStage,
+  questionCategory,
+  STAGES,
+  type InterviewHoleRow,
+  type InterviewQuestionRow,
+  type InterviewSessionRow,
+  type InterviewTurnRow,
+  type QuestionCategory,
+  type RoleKey,
 } from "../types";
 
 export type RunPhase =
@@ -344,15 +348,57 @@ export const selectTurnsOrdered = createSelector([selectTurnsMap], (turns) =>
   ),
 );
 
-/** Ledger order: position, then id. Terminal states sink below live ones. */
-export const selectQuestionsOrdered = createSelector(
-  [selectQuestionsMap],
-  (questions) => {
-    const rank = (state: InterviewQuestionRow["state"]): number =>
-      state === "answered" ? 1 : 0;
+/** The current stage's question category (legacy stage values normalized). */
+export const selectStageCategory = createSelector(
+  [selectRoomSession],
+  (session): QuestionCategory | null =>
+    session ? STAGES[normalizeStage(session.stage)].questionCategory : null,
+);
+
+const isLiveQuestion = (q: InterviewQuestionRow): boolean =>
+  q.state !== "answered" && q.state !== "deferred";
+
+/**
+ * The composer's "next questions" strip: open questions whose category
+ * matches the current stage's category (oldest first) — topped up with the
+ * oldest OTHER open questions when fewer than 3 match. Null category on old
+ * rows reads as `gap` (questionCategory).
+ */
+export const selectNextQuestions = createSelector(
+  [selectQuestionsMap, selectStageCategory],
+  (questions, category) => {
+    const byAge = (a: InterviewQuestionRow, b: InterviewQuestionRow) =>
+      a.round_raised - b.round_raised ||
+      a.position - b.position ||
+      a.id.localeCompare(b.id);
+    const open = Object.values(questions).filter(isLiveQuestion);
+    const matching = open
+      .filter((q) => category !== null && questionCategory(q) === category)
+      .sort(byAge);
+    if (matching.length >= 3) return matching;
+    const others = open
+      .filter((q) => category === null || questionCategory(q) !== category)
+      .sort(byAge);
+    return [...matching, ...others.slice(0, 3 - matching.length)];
+  },
+);
+
+/**
+ * The full-panel ordering: current stage's category first (so the Expert can
+ * answer ahead of schedule below), live before settled, then ledger position.
+ */
+export const selectQuestionsGroupedForStage = createSelector(
+  [selectQuestionsMap, selectStageCategory],
+  (questions, category) => {
+    const rank = (q: InterviewQuestionRow): number => {
+      const settled = q.state === "answered" ? 2 : 0;
+      const offCategory =
+        category !== null && questionCategory(q) !== category ? 1 : 0;
+      return settled + offCategory;
+    };
     return Object.values(questions).sort(
       (a, b) =>
-        rank(a.state) - rank(b.state) ||
+        rank(a) - rank(b) ||
         a.position - b.position ||
         a.id.localeCompare(b.id),
     );

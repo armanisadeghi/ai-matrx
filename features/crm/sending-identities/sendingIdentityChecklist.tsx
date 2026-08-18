@@ -85,7 +85,7 @@ export const sendingIdentityChecklist = registerChecklist<SendingIdentityContext
       id: "publish_dns",
       title: "Add our record to your domain",
       description:
-        "This is how your domain host tells us you really own it. You add it once, wherever you bought your domain.",
+        "A small note on your domain that shows it's yours — like writing your name inside a jacket. It changes nothing about your website or email, and you add it once, wherever you bought your domain.",
       confirmLabel: "I've added it",
       // NO `values()` here on purpose — see the note on `extra` below.
       howTo: ({ identity }) => [

@@ -46,6 +46,7 @@
   --color-chart-3: hsl(var(--chart-3));
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
+  --color-chart-6: hsl(var(--chart-6));
   --color-accent-2: hsl(var(--accent-2));
   --color-accent-3: hsl(var(--accent-3));
 
@@ -806,6 +807,7 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    --chart-6: 262 52% 47%;
 
     /* Enhanced accent colors */
     --accent-2: 280 70% 50%; /* More saturated */
@@ -963,6 +965,7 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --chart-6: 190 80% 55%;
 
     /* New colors */
     --accent-2: 280 65% 60%;
