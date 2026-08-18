@@ -36,6 +36,7 @@ that is the exit-test surface.
 | **Activity truth-feed** | `components/run/RunActivityFeed.tsx` + `components/run/activity-copy.ts` | The workflow twin of the podcast's `ResearchActivityFeed`: the actual tools called, the engine's own phases, `node_progress` sentences, per-step durations. `activity-copy` is the ONE place wire markers become sentences. Tool and warning markers are parseable JSON summaries; bare tool names and mid-string warning JSON remain legacy fallbacks. Renders nothing when the backend said nothing. |
 | Deliverables | `components/run/RunDeliverables.tsx` | Every step declaring an `output_kind`, ghosted as "coming up" then becoming a real panel rendering its canonical kind component. Skips nodes the authored surface already renders — one shape, one component, once per screen. Lives at the BOTTOM so the surface only grows. |
 | Step presentation | `components/run/node-presentation.ts` | Pure derivation of label / family / lucide icon / declared `output_kind` from the definition. This is what makes "what to look forward to" possible before a single node starts. |
+| Agent output reader | `agent-run-output.ts` | THE reader for an `ai.agent.start` node's settled output — `final_text` / `structured_output` ONLY. The rest of that envelope (`messages`, `usage`, `metadata`, ids) is plumbing and must never reach a reader. |
 | Failure card | `components/run/RunFailureCard.tsx` + `run-failure-explanation.ts` | Failure as a first-class state: plain-language headline, the failing step by its author's name, the one next action, and the technical cause one tap away. `explainRunFailure` owns the copy (add a pattern there, never a bespoke string here) and carries an optional one-click `action` — the education COPPA gate routes to the page that clears it. |
 | Zero-config board | `components/WorkflowRunBoard.tsx` | Tier 0 presentation: status rows for every node, lanes via `LiveRunDisplay variant="bare"`, settled kind-checked output via `KindInstanceRender`, interrupt answer card, recursive child boards (`adopt={false}` on children — the parent adapter already follows them). |
 | Shared readout parts | `components/readout-parts.tsx` | THE one per-invocation body (`InvocationBody`) + `PhaseIcon` / `PHASE_LABEL` / `InterruptCard` — consumed by the board AND every readout; never fork a second copy. Resolution order: a lane **that has carried something** → `LiveRunDisplay`; settled kind → `KindInstanceRender`; textTail; settled JSON → the canonical viewer via `MarkdownStream`; error; still working → the honest working state with its live progress line. **An empty lane never wins** — the adapter opens one for every non-fan-out node including nodes that never stream a token, and treating it as truth rendered an empty pane over the output the step had actually produced. |
@@ -155,6 +156,14 @@ that is the exit-test surface.
     printed twice; `quiz_set` read as "Quizs".
   - `ElapsedTime` promoted to `components/official-candidate/elapsed-time/` — one clock, shared
     with the podcast generator.
+  - **An agent step showed what it cost us, not what it produced.** `output_kind` on an
+    `ai.agent.start` node is `agent_result` — a registered, ACTIVE kind with NO `kind_component` —
+    so the generic viewer printed the run ENVELOPE: the verbatim system prompt, the model id and
+    the token bill, in the box a learner was waiting on. `KindInstanceRender` gained an optional
+    `unroutableFallback` (rendered only once routing SETTLES on "no component exists", so it stays
+    the ONE place that decides whether a kind has a component), and `agent-run-output.ts` is now
+    THE reader for an agent node's result. Building the real `agent_result` component is spun off,
+    not swallowed — the fallback stops firing by itself the moment that lands.
 
 - 2026-08-18 — **the builder was rebuilt from scratch** at `/workflows/[id]/design` after
   Arman tested the old one and rejected it outright ("no alignment, no consideration of how a
