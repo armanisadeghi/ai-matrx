@@ -73,7 +73,10 @@ plan CRUD through it.
   entrances use a 95-second response-header budget: a full-concurrency burst
   can queue beyond `callApi`'s 15-second default after the durable server work
   has already been accepted. The client never retries that ambiguous timeout,
-  because retrying can duplicate paid work.
+  because retrying can duplicate paid work. Each underlying API or stream
+  failure enters the Error Inspector at its canonical capture seam; the final
+  bulk summary remains a visible error toast but never creates a duplicate,
+  detail-free `user-toast` row.
 - **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
   grounded in the RESEARCH system's final report (the "Document",
   `research.rs_document.content`, picked by topic in the `SetupAiBar` strip).
@@ -768,6 +771,9 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-18 — **Bulk-deepen failure summaries stopped duplicating their
+  causes.** API and stream failures remain captured individually; the aggregate
+  error toast is display-only and cannot create a second detail-free queue row.
 - 2026-08-18 — **Content-plan streams survive a full-concurrency handshake
   burst.** Generate, single deepen, and bulk deepen now use a 95-second
   response-header budget below Cloudflare's edge ceiling; no automatic retry

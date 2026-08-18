@@ -34,7 +34,7 @@ import {
 } from "@/lib/api/errors";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
 
 import { planKeys } from "../data/hooks";
@@ -615,7 +615,10 @@ export function usePlanBulkDeepen(siteId: string | null) {
       if (cancelled) {
         toast.info(`Bulk deepen stopped — ${done} of ${targets.length} done.`);
       } else if (failures.length > 0) {
-        toast.error(
+        // callApi/parseNdjsonStream already captured every underlying failure
+        // at the request/stream boundary. This aggregate stays visible without
+        // manufacturing a second system_error detached from its causal detail.
+        toastErrorAlreadyCaptured(
           `Bulk deepen finished with ${failures.length} failure(s) of ${targets.length}.`,
         );
       } else {

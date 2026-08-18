@@ -58,6 +58,18 @@ const warning: SonnerToast["warning"] = (message, data) => {
   return sonnerToast.warning(message, data);
 };
 
+/**
+ * Render an error toast when the originating failure was already captured at
+ * its canonical boundary. This is only for aggregate/derived UI notices; the
+ * caller must be able to name the upstream capture seam.
+ */
+export function toastErrorAlreadyCaptured(
+  message: ToastMessage,
+  data?: ToastData,
+): ReturnType<SonnerToast["error"]> {
+  return sonnerToast.error(message, data);
+}
+
 /** Drop-in replacement for sonner's `toast` with error/warning capture. */
 export const toast: SonnerToast = Object.assign(
   ((...args: Parameters<SonnerToast>) => sonnerToast(...args)) as SonnerToast,
