@@ -24,7 +24,7 @@ import {
     PenLine,
     RefreshCw,
     Rocket,
-    Sparkles,
+    BrainCircuit,
     Unlock,
 } from "lucide-react";
 
@@ -63,7 +63,7 @@ const STATE_TONE: Record<RealityState, string> = {
 const ACTION_ICON = {
     "link-site": Hammer,
     "create-page": Hammer,
-    "write-content": Sparkles,
+    "write-content": BrainCircuit,
     publish: Rocket,
     "edit-in-cms": PenLine,
 } as const;

@@ -498,6 +498,7 @@ Cross-project issue tracker.
 ## UI / UX Standards
 
 - **Icons:** Lucide only. **No emojis** anywhere a user can see — UI, chips, titles, seed data. Matrx is enterprise.
+- **🚨 NO SPARKLE ICONS FOR AI (Arman, 2026-08-17: "AIs aren't fairies").** `Sparkles`/`Sparkle` on any AI action, button, or chip is banned. Until Arman names the one canonical AI icon, use `BrainCircuit`. Existing Sparkles usages (incl. `SurfaceRoleAgentButton`) are defects to fix on sight in files you touch; a page-wide inventory is in flight via the content-plan button audit.
 - **Backgrounds:** `bg-textured` for main backgrounds.
 - **Colors:** semantic classes only (`bg-card`, `bg-muted`, `bg-accent`, `text-foreground`, `text-muted-foreground`, `text-primary`, `border-border`). Tokens, elevations (`--elevation-1/2/3`), and gradients (`--gradient-1/2/3`) defined in `app/globals.css`. Token-only color rules + old→semantic mapping: `.claude/skills/ui-dense/data-dense-rules.md` §1.
 - **Loading:** component-library loading states. Never plain "Loading…" text.

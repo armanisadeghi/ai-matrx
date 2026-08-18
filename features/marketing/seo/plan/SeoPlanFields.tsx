@@ -210,7 +210,7 @@ export function SeoPlanRoleFields({
           onValueChange={(next) => onPageRoleChange(next)}
         >
           <SelectTrigger className="h-9 text-sm">
-            <SelectValue placeholder="What job does this page do?" />
+            <SelectValue placeholder="Select role" />
           </SelectTrigger>
           <SelectContent>
             {PAGE_ROLES.map((role: PageRole) => (

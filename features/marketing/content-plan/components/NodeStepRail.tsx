@@ -229,12 +229,70 @@ function ArtifactDialog({
   );
 }
 
+/**
+ * One step's artifact, INLINE — the body of that step's tab in the NodePanel.
+ * Same cached `useNodeArtifacts` read the rail uses (no extra fetch), same
+ * canonical kind-component render path as the dialog. Empty state is short:
+ * the run arrow in the rail above is the action, not a paragraph down here.
+ */
+export function StepArtifactView({
+  nodeId,
+  step,
+  stepLabel,
+}: {
+  nodeId: string;
+  step: string;
+  stepLabel: string;
+}) {
+  const artifacts = useNodeArtifacts(nodeId);
+  const rows = (artifacts.data ?? []).filter((row) => row.step === step);
+  const current = rows.find((row) => row.valid_to === null) ?? rows[0] ?? null;
+  if (artifacts.isLoading) {
+    return (
+      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
+      </p>
+    );
+  }
+  if (!current) {
+    return (
+      <p className="rounded-md border border-dashed border-border px-2.5 py-2 text-xs text-muted-foreground">
+        {stepLabel} has not run yet.
+      </p>
+    );
+  }
+  const kind = artifactKind(current);
+  return (
+    <div className="space-y-2">
+      {current.summary ? (
+        <p className="text-xs text-muted-foreground">{current.summary}</p>
+      ) : null}
+      {kind ? (
+        <KindInstanceRender kind={kind} value={current.content} />
+      ) : (
+        <div className="rounded-md border border-border bg-muted/40 p-2">
+          <pre className="max-h-[55dvh] overflow-auto whitespace-pre-wrap break-words font-mono text-[11px]">
+            {JSON.stringify(current.content, null, 2)}
+          </pre>
+        </div>
+      )}
+      <p className="text-[11px] text-muted-foreground">
+        {new Date(current.created_at).toLocaleString()}
+        {rows.length > 1 ? ` · ${rows.length} versions` : ""}
+      </p>
+    </div>
+  );
+}
+
 export function NodeStepRail({
   nodeId,
   siteId = null,
   pageLabel,
   progress,
   writeBlockedReason = null,
+  activeStep,
+  onSelectStep,
+  stepRun: stepRunProp,
 }: {
   nodeId: string;
   /** Needed to refresh the site-wide step query after a run. */
@@ -250,12 +308,27 @@ export function NodeStepRail({
    * a disabled control with no explanation is a dead end).
    */
   writeBlockedReason?: string | null;
+  /**
+   * TAB MODE (Arman ruling 2026-08-17: the pipeline IS the page's structure).
+   * When `onSelectStep` is provided, every chip is a TAB — always enabled,
+   * click selects the step, the active one is highlighted — and the panel
+   * renders that step's content below. Without it the rail keeps its
+   * standalone behavior (chip opens the artifact dialog), which is what the
+   * measured-page workspace's BEFORE card uses.
+   */
+  activeStep?: string | null;
+  onSelectStep?: (step: string) => void;
+  /** Share the panel's run state so tabs and arrows report one truth. */
+  stepRun?: ReturnType<typeof usePageStepRun>;
 }) {
   const artifacts = useNodeArtifacts(nodeId);
   const [openArtifact, setOpenArtifact] = useState<PlanNodeArtifactRow | null>(
     null,
   );
-  const stepRun = usePageStepRun({ nodeId, siteId, pageLabel });
+  // Cheap local state — safe to create even when the panel supplies its own.
+  const ownStepRun = usePageStepRun({ nodeId, siteId, pageLabel });
+  const stepRun = stepRunProp ?? ownStepRun;
+  const tabMode = onSelectStep !== undefined;
 
   const byStep = progress?.byStep ?? EMPTY_STEPS;
 
@@ -321,14 +394,19 @@ export function NodeStepRail({
                 : null;
           const busyHere =
             stepRun.isRunning && stepRun.run.step === runnable && runnable;
+          const isActive = tabMode && activeStep === step;
           return (
             <div key={step} className="flex items-center gap-0.5">
               <Button
                 type="button"
-                variant="outline"
+                variant={isActive ? "secondary" : "outline"}
                 size="sm"
-                disabled={!opens}
-                onClick={() => opens && setOpenArtifact(opens)}
+                disabled={tabMode ? false : !opens}
+                onClick={() =>
+                  tabMode
+                    ? onSelectStep?.(step)
+                    : opens && setOpenArtifact(opens)
+                }
                 title={title}
                 className={cn(
                   "h-7 gap-1 rounded-full px-2 text-[11px] md:h-6",
@@ -336,7 +414,10 @@ export function NodeStepRail({
                   staleness &&
                     status !== "failed" &&
                     "border-amber-500/50 text-amber-700 dark:text-amber-400",
-                  !status && "opacity-60",
+                  // Tab mode: an un-run step is a place to GO (that's where
+                  // you run it), never a dimmed dead control.
+                  !status && !tabMode && "opacity-60",
+                  isActive && "ring-1 ring-primary/60",
                 )}
               >
                 <StatusIcon
@@ -349,7 +430,7 @@ export function NodeStepRail({
                     ×{stepArtifacts.length}
                   </span>
                 ) : null}
-                {opens ? (
+                {!tabMode && opens ? (
                   <FileText className="h-3 w-3 opacity-60" aria-hidden />
                 ) : null}
               </Button>
@@ -420,22 +501,23 @@ export function NodeStepRail({
       {stepRun.run.status === "error" && stepRun.run.error ? (
         <p className="text-[11px] text-destructive">{stepRun.run.error}</p>
       ) : null}
-      {!anyRun ? (
+      {!anyRun && !tabMode ? (
         <p className="text-[11px] text-muted-foreground">
-          No pipeline steps have run for this page yet. Run Family, Write and
-          Review here; Deepen writes the research record and a CMS fill builds
-          the page.
+          No steps have run yet. Family, Write and Review run here.
         </p>
       ) : null}
       {/* Live model output renders in a FLOATING window, never as a block in
         this rail — a block would shift every field below it the moment a run
-        starts, and put the output above the thing the user is reading. */}
-      <RunSetWindowController
-        setKey={stepRun.runSetKey}
-        instanceId={`page-step:${nodeId}`}
-        label="Page pipeline step"
-        active={stepRun.isRunning}
-      />
+        starts, and put the output above the thing the user is reading. Only
+        the OWNER of the run state mounts the controller (one per key). */}
+      {stepRunProp === undefined ? (
+        <RunSetWindowController
+          setKey={stepRun.runSetKey}
+          instanceId={`page-step:${nodeId}`}
+          label="Page pipeline step"
+          active={stepRun.isRunning}
+        />
+      ) : null}
       <ArtifactDialog
         artifact={openArtifact}
         nodeId={nodeId}

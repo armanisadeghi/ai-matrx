@@ -8,7 +8,8 @@
  * site…) — shown verbatim inside a friendly toast, never masked.
  */
 import { useMemo, useState } from "react";
-import { BookOpenCheck, Loader2, PenLine, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { BookOpenCheck, BrainCircuit, Loader2, PenLine, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -78,7 +79,8 @@ import {
 } from "../hooks/useNodeMeasurement";
 import { NodeRealityCard } from "./NodeRealityCard";
 import { NodeMeasureCard } from "./NodeMeasureCard";
-import { NodeStepRail } from "./NodeStepRail";
+import { NodeStepRail, StepArtifactView } from "./NodeStepRail";
+import { usePageStepRun } from "../hooks/usePageStepRun";
 import { PageDraftEditor } from "./PageDraftEditor";
 import { SeoPlanEditor } from "@/features/marketing/seo/plan/SeoPlanEditor";
 import { useNodeSeoPlan } from "@/features/marketing/seo/plan/useNodeSeoPlan";
@@ -153,6 +155,26 @@ export function NodePanel({
   const [draft, setDraft] = useState<PlanNodeUpdate>({});
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // THE PIPELINE IS THE PAGE'S STRUCTURE (Arman ruling, 2026-08-17): the rail
+  // chips are TABS and each step's content lives inside its step, in flow
+  // order. "page" is the one non-step tab (identity/placement). The default
+  // tab is the first thing the page still NEEDS — keyword, then brief, then
+  // words — so opening a node lands you on the work, not on a form.
+  const defaultTabFor = (row: PlanNodeRow): string => {
+    if (!hasKeywordAssignment(row, sitePlans.data ?? null)) return "p1_keywords";
+    if ((row.brief?.length ?? 0) === 0) return "p2_research";
+    return "p4_write";
+  };
+  const [activeTab, setActiveTab] = useState<string>(() => defaultTabFor(node));
+
+  // One run state for the whole panel: the rail's arrows and the Write tab's
+  // "Write with AI" report and drive the SAME run.
+  const stepRun = usePageStepRun({
+    nodeId: node.id,
+    siteId,
+    pageLabel: node.route ?? node.label,
+  });
+
   // Reset the draft only when a DIFFERENT node is shown (the panel is also
   // keyed by node.id at its call sites). Background refetches of the same
   // node must NOT clear in-progress edits — the draft is a per-field patch
@@ -161,6 +183,7 @@ export function NodePanel({
   if (prevNodeId !== node.id) {
     setPrevNodeId(node.id);
     setDraft({});
+    setActiveTab(defaultTabFor(node));
   }
 
   const current = useMemo(
@@ -821,18 +844,33 @@ export function NodePanel({
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-4">
-            {/* The Website Factory production axis (plan.node_step /
-          node_artifact) — distinct from the editorial plan_status. FIRST, by
-          Arman's ruling (2026-08-16): where the page is in production is the
-          orientation everything below hangs off, never a footnote. Pending
-          steps are deliberately visible: the pipeline exists in data even
-          where today's fill still skips it. */}
-            <PanelSection title="Pipeline">
+            {/* THE PIPELINE IS THE PAGE (Arman, 2026-08-17): the production
+          axis is the panel's TAB STRIP. Each chip is a live tab — status +
+          run arrow + destination — and the content below is THAT step's
+          content, so the page flows keyword → research → write → review →
+          build → publish instead of a pile of sections. "Page" holds the
+          non-step identity fields. */}
+            <div className="flex flex-wrap items-center gap-1">
+              <Button
+                type="button"
+                variant={activeTab === "page" ? "secondary" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab("page")}
+                className={cn(
+                  "h-7 gap-1 rounded-full px-2 text-[11px] md:h-6",
+                  activeTab === "page" && "ring-1 ring-primary/60",
+                )}
+              >
+                Page
+              </Button>
               <NodeStepRail
                 nodeId={node.id}
                 siteId={siteId}
                 pageLabel={node.route ?? node.label}
                 progress={pipelineProgress ?? null}
+                activeStep={activeTab}
+                onSelectStep={setActiveTab}
+                stepRun={stepRun}
                 // Mirrors aidream's `assert_step_preconditions(STEP_WRITE)` —
                 // same order (brief first), same predicate for the keyword
                 // half (`hasKeywordAssignment` ≡ the server's
@@ -840,40 +878,73 @@ export function NodePanel({
                 // click instead of the server saying it after.
                 writeBlockedReason={
                   (node.brief?.length ?? 0) === 0
-                    ? "Can't write this page yet — it has no brief. Use “Draft brief” or “Deepen” first, so the writer knows what the page should say."
+                    ? "No brief yet — draft one on the Research tab first."
                     : keywordGap
-                      ? "Can't write this page yet — it has no target keyword or page role, so the writer has no query to aim at. Use “Plan keywords” in Setup, or “Deepen” this page."
+                      ? "No target keyword yet — set one on the Keywords tab first."
                       : null
                 }
               />
-            </PanelSection>
+            </div>
+            <RunSetWindowController
+              setKey={stepRun.runSetKey}
+              instanceId={`page-step:${node.id}`}
+              label="Page pipeline step"
+              active={stepRun.isRunning}
+            />
 
-            {/* The page's WORDS, editable without HTML — the promise the P4
-          record was built to keep (docs/handoffs/website-factory-vision.md
-          § S4). Directly under the pipeline, because the step that produced
-          these words is the thing above it, and "Build the page" turns them
-          into the website page through the SAME seam the reality card uses
-          (`useNodeReality.write`) — never a second build path. */}
-            <PanelSection title="Page content">
-              <PageDraftEditor
-                nodeId={node.id}
-                siteId={siteId}
-                pageLabel={node.route ?? node.label}
-                // Always offered, never hidden: a missing website is a state to
-                // explain, not a button to remove (NO DEAD ENDS). The reason
-                // below disables it and says what to do instead.
-                onBuild={() => reality.write()}
-                buildBusy={reality.busy === "write"}
-                buildDisabledReason={
-                  cmsSiteId
-                    ? cmsPage
-                      ? null
-                      : "This page does not exist on the website yet — create it from the page card below, then build it."
-                    : "This plan has no website linked yet. Link one in Setup and this button will build the page."
-                }
-              />
-            </PanelSection>
+            {activeTab === "p4_write" ? (
+              <PanelSection title="Write">
+                {/* An AI app writes with AI FIRST; "myself" lives inside the
+                  editor's empty state as the peer option. Same run the rail's
+                  arrow fires — one seam. */}
+                <div className="mb-2 flex flex-wrap items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 gap-1.5 px-2 text-xs"
+                    disabled={
+                      stepRun.isRunning ||
+                      (node.brief?.length ?? 0) === 0 ||
+                      keywordGap
+                    }
+                    title={
+                      (node.brief?.length ?? 0) === 0
+                        ? "No brief yet — draft one on the Research tab first."
+                        : keywordGap
+                          ? "No target keyword yet — set one on the Keywords tab first."
+                          : "Write this page's content from its brief and keyword."
+                    }
+                    onClick={() => void stepRun.start("p4_write")}
+                  >
+                    {stepRun.isRunning && stepRun.run.step === "p4_write" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <BrainCircuit className="h-3.5 w-3.5" />
+                    )}
+                    Write with AI
+                  </Button>
+                </div>
+                <PageDraftEditor
+                  nodeId={node.id}
+                  siteId={siteId}
+                  pageLabel={node.route ?? node.label}
+                  // Always offered, never hidden: a missing website is a state
+                  // to explain, not a button to remove (NO DEAD ENDS).
+                  onBuild={() => reality.write()}
+                  buildBusy={reality.busy === "write"}
+                  buildDisabledReason={
+                    cmsSiteId
+                      ? cmsPage
+                        ? null
+                        : "Not on the website yet — create it on the Build tab first."
+                      : "No website linked yet — link one in Setup first."
+                  }
+                />
+              </PanelSection>
+            ) : null}
 
+            {activeTab === "page" ? (
+            <>
             <PanelSection title="Page">
               <div className="grid grid-cols-2 gap-x-3 gap-y-3">
                 <div className="col-span-2">
@@ -1046,32 +1117,76 @@ export function NodePanel({
               <MoveNodeControl node={node} siteId={siteId} />
             </PanelSection>
 
-            {/* ALWAYS rendered — "this page does not exist yet" is the state that
-          most needs an answer, and the old conditional card showed nothing at
-          all for it. See NodeRealityCard. */}
-            <PanelSection title="The real page">
-              <NodeRealityCard
-                node={node}
-                cmsPage={cmsPage ?? null}
-                cmsSiteId={cmsSiteId ?? null}
-                reality={reality}
-              />
-            </PanelSection>
+            <AttributesEditor
+              value={current.attributes}
+              profiles={profiles}
+              onChange={(attributes) => setDraft((d) => ({ ...d, attributes }))}
+            />
 
-            {/* THE AFTER (cms-page-hub doctrine): a plan node whose page is
-          live has results — Search Console, analysis, findings. It renders in
-          every state, because "this page is live and nothing measures it" is
-          exactly the state a planner must not have to discover elsewhere. */}
-            <PanelSection title="What the live page is doing">
-              <NodeMeasureCard
-                measurement={measurement}
-                cmsPage={cmsPage ?? null}
-                cmsSiteId={cmsSiteId ?? null}
-                nodeLabel={node.label}
-              />
-            </PanelSection>
+            <NodeAssociations
+              nodeId={node.id}
+              entities={entities}
+              parties={parties}
+            />
+            </>
+            ) : null}
 
-            <PanelSection title="Targeting">
+            {activeTab === "p3_family" ? (
+              <PanelSection title="Family comparison">
+                <StepArtifactView
+                  nodeId={node.id}
+                  step="p3_family"
+                  stepLabel="Family comparison"
+                />
+              </PanelSection>
+            ) : null}
+
+            {activeTab === "p5_review" ? (
+              <PanelSection title="Review">
+                <StepArtifactView
+                  nodeId={node.id}
+                  step="p5_review"
+                  stepLabel="Review"
+                />
+              </PanelSection>
+            ) : null}
+
+            {activeTab === "p6_build" ? (
+              /* "This page does not exist yet" is the state that most needs an
+                answer — the card renders every state. */
+              <PanelSection title="Build — the real page">
+                <NodeRealityCard
+                  node={node}
+                  cmsPage={cmsPage ?? null}
+                  cmsSiteId={cmsSiteId ?? null}
+                  reality={reality}
+                />
+              </PanelSection>
+            ) : null}
+
+            {activeTab === "p7_publish" ? (
+              /* THE AFTER (cms-page-hub doctrine): live results — Search
+                Console, analysis, findings — in every state. */
+              <PanelSection title="Publish — the live page">
+                <NodeRealityCard
+                  node={node}
+                  cmsPage={cmsPage ?? null}
+                  cmsSiteId={cmsSiteId ?? null}
+                  reality={reality}
+                />
+                <div className="mt-4">
+                  <NodeMeasureCard
+                    measurement={measurement}
+                    cmsPage={cmsPage ?? null}
+                    cmsSiteId={cmsSiteId ?? null}
+                    nodeLabel={node.label}
+                  />
+                </div>
+              </PanelSection>
+            ) : null}
+
+            {activeTab === "p1_keywords" ? (
+            <PanelSection title="Keywords & search appearance">
               {/* 🚨 ONE SEO PLAN PER PAGE, ON `web.page` (content-planning
                   invariant 9). A node without that record gets one honest
                   state and the ONE planned-page writer. Once it exists, every
@@ -1139,54 +1254,46 @@ export function NodePanel({
                 </div>
               )}
             </PanelSection>
+            ) : null}
 
-            <PanelSection title="Research lineage">
-              <AssociationList
-                container={{
-                  type: "plan_node",
-                  id: node.id,
-                  orgId: node.organization_id,
-                  label: current.label,
-                }}
-                tokens={[...RESEARCH_LINEAGE_TOKENS]}
-                variant="compact"
-              />
-            </PanelSection>
-
-            <PanelSection title="Brief">
-              <BriefEditor
-                lines={current.brief ?? []}
-                savedLines={node.brief ?? []}
-                node={{
-                  id: node.id,
-                  label: node.label,
-                  route: node.route,
-                }}
-                planKpiLine={pageKpis ? contentPlanKpiLine(pageKpis) : null}
-                onChange={(next) => stage({ brief: next })}
-                draft={briefDraft}
-                draftPending={draftPending}
-                onAccept={() => void briefWriter.accept()}
-                accepting={briefWriter.accepting}
-                runs={briefWriter.runs}
-                runsLoading={briefWriter.runsLoading}
-                runsError={briefWriter.runsError}
-                onRestore={(runId) => void briefWriter.restore(runId)}
-                restoringRunId={briefWriter.restoringRunId}
-              />
-            </PanelSection>
-
-            <AttributesEditor
-              value={current.attributes}
-              profiles={profiles}
-              onChange={(attributes) => setDraft((d) => ({ ...d, attributes }))}
-            />
-
-            <NodeAssociations
-              nodeId={node.id}
-              entities={entities}
-              parties={parties}
-            />
+            {activeTab === "p2_research" ? (
+              <>
+                <PanelSection title="Brief">
+                  <BriefEditor
+                    lines={current.brief ?? []}
+                    savedLines={node.brief ?? []}
+                    node={{
+                      id: node.id,
+                      label: node.label,
+                      route: node.route,
+                    }}
+                    planKpiLine={pageKpis ? contentPlanKpiLine(pageKpis) : null}
+                    onChange={(next) => stage({ brief: next })}
+                    draft={briefDraft}
+                    draftPending={draftPending}
+                    onAccept={() => void briefWriter.accept()}
+                    accepting={briefWriter.accepting}
+                    runs={briefWriter.runs}
+                    runsLoading={briefWriter.runsLoading}
+                    runsError={briefWriter.runsError}
+                    onRestore={(runId) => void briefWriter.restore(runId)}
+                    restoringRunId={briefWriter.restoringRunId}
+                  />
+                </PanelSection>
+                <PanelSection title="Research lineage">
+                  <AssociationList
+                    container={{
+                      type: "plan_node",
+                      id: node.id,
+                      orgId: node.organization_id,
+                      label: current.label,
+                    }}
+                    tokens={[...RESEARCH_LINEAGE_TOKENS]}
+                    variant="compact"
+                  />
+                </PanelSection>
+              </>
+            ) : null}
           </div>
         </div>
 
