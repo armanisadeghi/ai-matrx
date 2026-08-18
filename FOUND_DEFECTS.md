@@ -17,6 +17,14 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D211 — org/project invitation email templates interpolate unescaped user text into HTML (2026-08-18)
+
+`lib/email/client.ts` — `organizationInvitation` and `projectInvitation` interpolate the org/project name and inviter name (user-controlled: `user_metadata.full_name`, org/project `name`) straight into the email HTML. A user can set a name containing markup/links and produce attacker-crafted HTML in real email sent from the aimatrx.com domain (branded-phishing vector). Found by the WP6 adversarial review; the NEW `classInvitation` template escapes via `escapeEmailHtml` (same file) and is the model — the fix is wrapping the same helper around each interpolated name in the two older templates plus any template that takes user text (`welcome`, sharing/feedback templates worth an audit). Not fixed in the WP6 session because those templates belong to the org/project invite flows (out of scope); the helper is exported and ready.
+
+### D212 — class join-code lookup RPCs have no rate limit (2026-08-18)
+
+`edu_class_by_code` / `edu_class_join_by_code` (migrations/edu_class_join_code_empty_match_fix.sql) give distinguishable valid/invalid outcomes with no throttle. The 6-char/32-symbol space (~1.07e9) makes targeting a specific class infeasible, but an attacker can grind for *random* live codes and preview/auto-join whatever surfaces. Acceptable pre-launch (Google Classroom's model is comparable); revisit when there are enough live classes for the hit rate to matter — options: per-user attempt throttle in the RPC (count recent failures in a small table), or an 8-char code. Flagged by the WP6 adversarial review.
+
 ### D210 — `/notes` React #418 hydration mismatch has no attributable source (2026-08-18)
 
 `system_error` class `sec_41d9f15fe69070ec3a7e4f36acffc342e2ff6a03d8ffa39a98a3f7c23bd021e9`
