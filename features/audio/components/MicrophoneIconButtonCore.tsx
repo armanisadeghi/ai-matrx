@@ -28,7 +28,7 @@ import { TranscriptionLoader } from "./TranscriptionLoader";
 import { VoiceTroubleshootingModal } from "./VoiceTroubleshootingModal";
 import { MicrophoneRecordingModal } from "./MicrophoneRecordingModal";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
+import { showVoiceInputErrorToast } from "@/features/audio/services/voiceInputErrorToast";
 
 export type MicVariant = "icon-only" | "inline-expand" | "modal-controls";
 
@@ -131,13 +131,10 @@ const MicrophoneIconButtonCore = forwardRef<
       const code = errorCode ?? "UNKNOWN_ERROR";
       setLastError({ message: error, code });
 
-      toast.error("Voice input failed", {
-        description: error,
-        duration: 10000,
-        action: {
-          label: "Get Help",
-          onClick: () => setShowTroubleshooting(true),
-        },
+      showVoiceInputErrorToast({
+        message: error,
+        code,
+        onHelp: () => setShowTroubleshooting(true),
       });
 
       onError?.(error, code);

@@ -200,7 +200,7 @@ All in-app Cartesia text-to-speech routes through **`lib/cartesia/config.ts`** �
 
 Batch STT and durable TTS use `features/audio/services/speechApi.ts`, which calls the authenticated aidream routes `/audio/transcribe`, `/audio/transcribe-url`, and `/audio/text-to-speech`. Aidream resolves the `stt-default` and `tts-default` catalog aliases, owns provider retries and metering, filters likely Whisper silence hallucinations, and returns typed durable media references. Components and hooks must never import provider SDKs or pin STT/TTS model IDs for these flows. Old persisted PlayAI voice values are dropped at this boundary so the current catalog default can take over.
 
-**A live-chunk transport loss or bounded request deadline is recovery state, not a repair-queue error.** The chunk remains in the durable safety store and stop-time full-recording fallback decides the outcome. The chunk request disables generic transport capture, and `transcriptionErrorPolicy.ts` keeps its expected `CHUNK_FAILED` network/timeout result local at both the client producer and server logger; an actionable chunk rejection or final `FALLBACK_FAILED` still persists.
+**A live-chunk transport loss or bounded request deadline is recovery state, not a repair-queue error.** The chunk remains in the durable safety store and stop-time full-recording fallback decides the outcome. The chunk request disables generic transport capture, and `transcriptionErrorPolicy.ts` keeps its expected `CHUNK_FAILED` network/timeout result local at both the client producer and server logger. An actionable chunk rejection or final `FALLBACK_FAILED` still persists exactly once; `showVoiceInputErrorToast` renders the derived UI notice through `toastErrorAlreadyCaptured` for `TRANSCRIPTION_FAILED` instead of creating a duplicate `user-toast` row.
 
 The retired Next middle-tier routes under `app/api/audio/*` and `app/api/voice*` no longer exist. Legacy development voice-assistant URLs redirect to `/voice/playground`; their compatibility actions fail closed and contain no provider credentials or calls. Browser-realtime Cartesia and xAI voice-agent transports remain separate low-latency systems and follow their own documented config/token seams.
 
@@ -231,6 +231,7 @@ Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and 
 
 ## Change log
 
+- `2026-08-18` — Final fallback transcription failures remain user-visible while their derived voice-input toast no longer duplicates the canonical `audio_transcription` queue row.
 - `2026-08-18` — Kept the live-chunk 30-second deadline out of both generic API diagnostics and `audio_transcription`; the durable full-recording fallback remains the single final-outcome reporter.
 
 - `2026-08-17` — Recoverable live-chunk transport failures no longer create duplicate `audio_transcription` repair-queue rows. The client producer and server logger share the typed policy; actionable chunk failures and final fallback failures remain loud.

@@ -19,7 +19,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { isTransportFailure } from "@/lib/net/errors";
-import { toast } from "@/lib/toast";
+import { showVoiceInputErrorToast } from "@/features/audio/services/voiceInputErrorToast";
 import {
   useVoiceCapture,
   type UseVoiceCaptureResult,
@@ -158,13 +158,10 @@ export function useMicField(options: UseMicFieldOptions): UseMicFieldResult {
         ? "The transcription server could not be reached — it may be restarting for an update. Wait a moment and try again."
         : message;
       setLastError({ message: friendly, code: code || "UNKNOWN_ERROR" });
-      toast.error("Voice input failed", {
-        description: friendly,
-        duration: 10000,
-        action: {
-          label: "Get Help",
-          onClick: () => setShowTroubleshooting(true),
-        },
+      showVoiceInputErrorToast({
+        message: friendly,
+        code: code || "UNKNOWN_ERROR",
+        onHelp: () => setShowTroubleshooting(true),
       });
       cbRef.current.onTranscriptionError?.(friendly);
     },
