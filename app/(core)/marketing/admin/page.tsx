@@ -87,9 +87,9 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       url: "/marketing/local",
       label: "Local & Listings",
       description:
-        "RESERVED — renders <MarketingComingSoon>. Declared in features/marketing/lib/marketing-nav.ts and tracked in lib/coming-soon/registry.ts. The URL is permanent; it will not move when the feature ships.",
+        "Location profiles (canonical NAP), the publisher listings matrix with weighted citation coverage, and LocalBusiness JSON-LD. Workspace: features/marketing/local/LocalListingsWorkspace.tsx.",
       filePath: "app/(core)/marketing/local/page.tsx",
-      status: "Coming soon",
+      status: "Live",
     },
     {
       url: "/marketing/ranks",
