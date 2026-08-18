@@ -9099,8 +9099,6 @@ export type Database = {
           phone_number: string | null
           preferred_agent_id: string | null
           preferred_agent_version_id: string | null
-          preferred_ai_agent_id: string | null
-          preferred_ai_agent_version_id: string | null
           quiet_hours_enabled: boolean
           quiet_hours_end: string
           quiet_hours_start: string
@@ -9132,8 +9130,6 @@ export type Database = {
           phone_number?: string | null
           preferred_agent_id?: string | null
           preferred_agent_version_id?: string | null
-          preferred_ai_agent_id?: string | null
-          preferred_ai_agent_version_id?: string | null
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
@@ -9165,8 +9161,6 @@ export type Database = {
           phone_number?: string | null
           preferred_agent_id?: string | null
           preferred_agent_version_id?: string | null
-          preferred_ai_agent_id?: string | null
-          preferred_ai_agent_version_id?: string | null
           quiet_hours_enabled?: boolean
           quiet_hours_end?: string
           quiet_hours_start?: string
@@ -9442,15 +9436,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      _configure_my_sms_assistant: {
-        Args: {
-          p_agent_id: string
-          p_agent_version_id: string
-          p_enabled: boolean
-          p_program_key: string
-        }
-        Returns: undefined
-      }
       admit_pending_sms_command_turn: {
         Args: { p_inbound_message_id: string }
         Returns: string
@@ -9633,53 +9618,6 @@ export type Database = {
           interaction_id: string
         }[]
       }
-      configure_my_sms_assistant: {
-        Args: { p_agent_id: string; p_enabled: boolean; p_program_key: string }
-        Returns: {
-          blocked_reasons: string[]
-          chat_conversation_id: string
-          consent_status: string
-          destination_id: string
-          global_assistant_enabled: boolean
-          identity_status: string
-          masked_phone: string
-          number_active: boolean
-          preferred_agent_id: string
-          preferred_agent_version_id: string
-          program_key: string
-          ready: boolean
-          sms_conversation_id: string
-          sms_enabled: boolean
-          user_assistant_enabled: boolean
-          verified_user_phone: string
-        }[]
-      }
-      configure_my_sms_assistant_version: {
-        Args: {
-          p_agent_id: string
-          p_agent_version_id: string
-          p_enabled: boolean
-          p_program_key: string
-        }
-        Returns: {
-          blocked_reasons: string[]
-          chat_conversation_id: string
-          consent_status: string
-          destination_id: string
-          global_assistant_enabled: boolean
-          identity_status: string
-          masked_phone: string
-          number_active: boolean
-          preferred_agent_id: string
-          preferred_agent_version_id: string
-          program_key: string
-          ready: boolean
-          sms_conversation_id: string
-          sms_enabled: boolean
-          user_assistant_enabled: boolean
-          verified_user_phone: string
-        }[]
-      }
       configure_my_sms_task_notifications: {
         Args: { p_enabled: boolean; p_program_key?: string }
         Returns: {
@@ -9704,27 +9642,6 @@ export type Database = {
         Returns: {
           binding: Json
           launch_facts: Json
-        }[]
-      }
-      disconnect_my_sms_assistant: {
-        Args: { p_program_key: string }
-        Returns: {
-          blocked_reasons: string[]
-          chat_conversation_id: string
-          consent_status: string
-          destination_id: string
-          global_assistant_enabled: boolean
-          identity_status: string
-          masked_phone: string
-          number_active: boolean
-          preferred_agent_id: string
-          preferred_agent_version_id: string
-          program_key: string
-          ready: boolean
-          sms_conversation_id: string
-          sms_enabled: boolean
-          user_assistant_enabled: boolean
-          verified_user_phone: string
         }[]
       }
       enqueue_my_sms_assistant_test: {
