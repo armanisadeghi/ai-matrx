@@ -285,6 +285,7 @@ function ClassHubBody({
       {/* Members / roster */}
       <ClassRosterPanel
         classId={cls.id}
+        className={cls.name}
         isOwner={isOwner}
         onChanged={access.refresh}
       />

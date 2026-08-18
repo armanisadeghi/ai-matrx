@@ -154,6 +154,28 @@ export const emailTemplates = {
     `,
   }),
 
+  classInvitation: (
+    className: string,
+    inviterName: string,
+    invitationUrl: string,
+    expiresAt: Date
+  ) => ({
+    subject: `${inviterName} invited you to join ${className}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h1 style="color: #3b82f6;">You're invited to a class</h1>
+        <p><strong>${inviterName}</strong> has invited you to join <strong>${className}</strong> on AI Matrx Education.</p>
+        <p>Accepting adds you to the class roster and gives you access to everything your teacher assigns — decks, quizzes, and study material.</p>
+        <div style="margin: 24px 0;">
+          <a href="${invitationUrl}" style="display: inline-block; background: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px;">Join the class</a>
+        </div>
+        <p style="color: #666; font-size: 14px;">New to AI Matrx? The same link lets you create your account first — you'll land in the class right after.</p>
+        <p style="color: #666; font-size: 14px;">This invitation will expire on ${expiresAt.toLocaleDateString()}.</p>
+        <p style="color: #666; font-size: 14px;">If you didn't expect this invitation, you can safely ignore this email.</p>
+      </div>
+    `,
+  }),
+
   projectInvitation: (
     projectName: string,
     organizationName: string,

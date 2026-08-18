@@ -200,3 +200,19 @@ export interface ClassContentItem {
   /** Display group label ("Decks", "Quizzes & Tests", …). */
   group: string;
 }
+
+// ─── Invites + join codes (WP6 — "a teacher gets students in under a minute") ──
+//
+// Email/CSV invites ride the canonical iam.invitations system (inv_* RPCs via
+// invitationsService — scope targets, member role). Join codes live in
+// scope.settings.join_code, managed by edu_class_join_code and consumed by
+// edu_class_join_by_code / edu_class_by_code.
+
+/** What the join page shows before the student commits (edu_class_by_code). */
+export interface ClassCodePreview {
+  classId: string;
+  name: string;
+  description: string;
+  accessMode: AccessMode;
+  memberCount: number;
+}

@@ -8,11 +8,13 @@
 // mutation is a role-gated edu_class_* RPC (the owner check is the SERVER's, via
 // the RPC — a bypassed client `isOwner` cannot escalate).
 
-import { Users, Check, X, UserMinus, Crown } from "lucide-react";
+import { useState } from "react";
+import { Users, Check, X, UserMinus, Crown, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useClassRoster } from "../hooks/useClassRoster";
+import { InviteStudentsSheet } from "./InviteStudentsSheet";
 import type { ClassRosterMember } from "../types";
 
 // Owner sees the email; a co-member sees the display name (peer emails are
@@ -53,15 +55,19 @@ function StatusChip({ member }: { member: ClassRosterMember }) {
 
 export function ClassRosterPanel({
   classId,
+  className = "this class",
   isOwner,
   onChanged,
 }: {
   classId: string;
+  /** The class display name, for the invite sheet's title. */
+  className?: string;
   isOwner: boolean;
   /** Called after a roster mutation so the header member count can refresh. */
   onChanged?: () => void;
 }) {
   const roster = useClassRoster(classId);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   async function approve(m: ClassRosterMember) {
     await roster.approve(m.userId);
@@ -90,13 +96,25 @@ export function ClassRosterPanel({
 
   return (
     <section className="space-y-3">
-      <h2 className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-        <Users className="h-4 w-4 text-muted-foreground" />
-        Members
-        {roster.members.length > 0 && (
-          <span className="text-muted-foreground">({active.length})</span>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          Members
+          {roster.members.length > 0 && (
+            <span className="text-muted-foreground">({active.length})</span>
+          )}
+        </h2>
+        {isOwner && (
+          <Button
+            size="sm"
+            className="h-7 gap-1.5 text-xs"
+            onClick={() => setInviteOpen(true)}
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            Invite students
+          </Button>
         )}
-      </h2>
+      </div>
 
       {roster.loading ? (
         <div className="space-y-2">
@@ -180,10 +198,25 @@ export function ClassRosterPanel({
 
           {active.length === 0 && (!isOwner || pending.length === 0) && (
             <p className="text-xs text-muted-foreground">
-              No members yet.
+              {isOwner
+                ? "No students yet — invite them with a join code, email, or a roster import."
+                : "No members yet."}
             </p>
           )}
         </div>
+      )}
+
+      {isOwner && (
+        <InviteStudentsSheet
+          open={inviteOpen}
+          onOpenChange={setInviteOpen}
+          classId={classId}
+          className={className}
+          onRosterChanged={() => {
+            void roster.refresh();
+            onChanged?.();
+          }}
+        />
       )}
     </section>
   );

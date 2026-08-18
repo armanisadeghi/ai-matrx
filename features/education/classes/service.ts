@@ -415,3 +415,116 @@ export async function startClassCheckout(
   }
   return json;
 }
+
+// ─── Invites + join codes (WP6) ────────────────────────────────────────────────
+//
+// JOIN CODES: settings.join_code, owner-managed via edu_class_join_code
+// (get/rotate/disable) and consumed via edu_class_by_code (signed-in preview) +
+// edu_class_join_by_code (a code admits open AND closed classes directly —
+// distributing it IS the teacher's approval; it never bypasses payment on a
+// paid class). EMAIL INVITES are NOT here — they ride the canonical
+// iam.invitations system through features/organizations/service/
+// invitationsService (scope targets); this file only holds the email-send
+// trigger, which posts to the class-invite email route (fire-and-forget — an
+// email failure never fails the invitation row).
+
+import type { ClassCodePreview } from "./types";
+
+/** The class join-code page URL a teacher pastes anywhere. */
+export function classJoinUrl(code: string): string {
+  const base =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
+  return `${base}/education/classes/join?code=${encodeURIComponent(code)}`;
+}
+
+/** The accept-page URL inside a class invitation email. */
+export function classInviteAcceptUrl(token: string): string {
+  const base =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_SITE_URL || "https://www.aimatrx.com";
+  return `${base}/invitations/class/accept/${token}`;
+}
+
+/** Owner: the class's current join code (creates one on first call). */
+export async function getJoinCode(classId: string): Promise<string | null> {
+  const { data, error } = await createClient().rpc("edu_class_join_code", {
+    p_class: classId,
+    p_action: "get",
+  });
+  if (error) throw operationFailed("load this class's join code", error);
+  return str(rec(data).code);
+}
+
+/** Owner: rotate to a fresh code (the old one stops working immediately). */
+export async function rotateJoinCode(classId: string): Promise<string | null> {
+  const { data, error } = await createClient().rpc("edu_class_join_code", {
+    p_class: classId,
+    p_action: "rotate",
+  });
+  if (error) throw operationFailed("rotate this class's join code", error);
+  return str(rec(data).code);
+}
+
+/** Owner: disable code joining entirely. */
+export async function disableJoinCode(classId: string): Promise<void> {
+  const { error } = await createClient().rpc("edu_class_join_code", {
+    p_class: classId,
+    p_action: "disable",
+  });
+  if (error) throw operationFailed("turn off this class's join code", error);
+}
+
+/** Signed-in: preview the class behind a code (null → no such code). */
+export async function getClassByCode(
+  code: string,
+): Promise<ClassCodePreview | null> {
+  const { data, error } = await createClient().rpc("edu_class_by_code", {
+    p_code: code,
+  });
+  if (error) throw operationFailed("look up this class code", error);
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return null;
+  const o = rec(row);
+  return {
+    classId: str(o.class_id) ?? "",
+    name: str(o.name) ?? "",
+    description: str(o.description) ?? "",
+    accessMode: parseAccessMode(o.access_mode),
+    memberCount: typeof o.member_count === "number" ? o.member_count : 0,
+  };
+}
+
+/**
+ * Signed-in: join via a code. Open/closed → joined (the code is the teacher's
+ * admission); paid → needs_purchase unless already entitled. The result carries
+ * the resolved class id for the redirect.
+ */
+export async function joinClassByCode(
+  code: string,
+): Promise<ClassJoinResult & { classId: string | null }> {
+  const { data, error } = await createClient().rpc("edu_class_join_by_code", {
+    p_code: code,
+  });
+  if (error) throw operationFailed("join with this code", error);
+  return { ...coerceJoin(data), classId: str(rec(data).class_id) };
+}
+
+/**
+ * Fire the invitation email for an already-created invitation row. Errors are
+ * logged, never thrown — the invitation exists regardless (its link can still
+ * be copied), matching the org-invite contract.
+ */
+export async function sendClassInviteEmail(invitationId: string): Promise<void> {
+  try {
+    await fetch("/api/education/class-invite", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invitationId }),
+    });
+  } catch (e) {
+    console.warn("Class invite email failed (invitation row still exists):", e);
+  }
+}
