@@ -95,6 +95,18 @@ state, never a silent failure.
 - `components/AgeDeclarationDialog.tsx` — the one-tap mandatory age prompt shown
   at any AI entry point when the account has no declared band. A step, not a
   wall: picking a band resumes the original action.
+- **`utils/education/serverCoppaGate.ts` — THE server-side verdict for a Next.js
+  API route.** 🚨 **Any route that hands a client the means to reach a model MUST
+  call `resolveServerCoppaVerdict(userId)` and refuse when `aiAllowed` is false.**
+  aidream's `enforce_education_coppa` sits in the agent-run funnel, so a route
+  that mints a credential the BROWSER then uses to talk to a provider directly
+  never reaches it — aidream never sees the generation and cannot refuse it.
+  `/api/voice-agent/token` was exactly that shape and had **no gate at all**: an
+  unconsented under-13 could hold a live voice conversation with a model, with
+  neither enforcement layer present (adversarial review, 2026-08-17). It reads
+  the same `edu_coppa_gate_for` the other two layers read, **fails closed**, and
+  is deliberately **account-scoped, not education-scoped** — COPPA is a fact
+  about the account, not about which page the child is on.
 - `components/AgeBandPrivacyCard.tsx` — declare age band + see live COPPA status;
   rendered on the "Your data & privacy" surface (`/education/data`).
 
@@ -157,8 +169,45 @@ no entry point to gate there.
   parental consent + the runbook
   `docs/proposals/education-projects/COPPA_VERIFIABLE_CONSENT_RUNBOOK.md`.
 
+## Known limits — read before claiming a surface is school-safe
+
+- **The gate is education-scoped.** An unconsented under-13 is refused on education
+  AI and can still reach `/ai/chat`, podcasts and transcription, because the
+  scoping is by `source_feature`, not by account. Two education surfaces (Audio
+  Study, ingest transcription) route through those ungated pipelines. Raised as
+  ARMAN_DECISIONS **D-4b** with a recommendation to enforce platform-wide.
+- **Anonymous/guest sessions are not gated at all** — a blocked child can sign out
+  and continue as a guest. A known open hole, scoped to WP5's guest funnel.
+- **The age band is still self-attested at FIRST declaration.** The hard block
+  stops the *escape* (`under_13 → adult`), not the initial lie. A verifiable-age
+  step is Arman/legal (A-2).
+- **The 30-day hard purge is not scheduled** — delete is soft and reversible, but
+  nothing permanently purges yet.
+
 ## Change log
 
+- `2026-08-17` — **Adversarial review of the same day's work found four real holes;
+  all closed and re-verified live (7/7).** **(1)** The realtime voice tutor had
+  **no gate at all** — `/api/voice-agent/token` mints an ephemeral xAI secret the
+  browser uses to open a websocket straight to the provider, so aidream never sees
+  the generation; new `utils/education/serverCoppaGate.ts` gates it, failing
+  closed. **(2)** **Delete-and-reinsert defeated the entire age hard block**: the
+  write guard was `BEFORE UPDATE` only and RLS let a user delete their own
+  profile, so delete → reinsert with `age_band='adult'` walked out unaudited (76
+  of 269 profiles exploitable). Closed in three layers — the guard now fires on
+  INSERT and DELETE, `DELETE` is revoked from `authenticated`, and
+  `edu_set_age_band` consults the **audit ledger** so a user who was ever
+  `under_13` cannot declare upward even with no profile row. **(3)** A **withdrawn
+  consent came back VERIFIED** on re-link (`guardian_unlink` left `verified_at`;
+  `guardian_request_student` never reset it). **(4)** Nothing required a guardian
+  to be an **adult**, so a child could self-consent from a second account. Also
+  fixed: `SELECT INTO` sets every target NULL on no match, so the no-profile
+  branch was dead code and the RPC returned `ok` plus a falsified audit row;
+  `ensureAllowed`'s single resolver slot hung the first caller forever when two
+  actions raced the prompt; a `blocked` result was read as success; and the cached
+  allow verdict is now bounded to 60s. In aidream, the gate moved **above the
+  compiled-Orchestra divert** — a console rebind could otherwise have un-gated
+  every education surface with no code change.
 - `2026-08-17` — **THE GATE NOW APPLIES (WP9).** It protected nobody until today:
   269 profiles, zero with an `age_band`, so `edu_coppa_gate()` answered
   `ai_allowed=true` for every user. Four changes, all live-verified:
