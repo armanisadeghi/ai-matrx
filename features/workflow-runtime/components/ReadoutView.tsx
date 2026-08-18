@@ -217,10 +217,15 @@ function NodeReadout({
   const hostRef = useViewportLanePromotion(invocations, canPromote);
 
   if (invocations.length === 0) {
-    // No invocations → nothing to promote, so no observer host needed.
+    // No invocations → nothing to promote, so no observer host needed. The
+    // copy is forward-looking, not a status stamp: on the first frame of a
+    // run every box said "Not started", which reads as a failure report
+    // rather than as the queue it actually is.
     return (
-      <p className="text-[11px] text-muted-foreground">
-        {PHASE_LABEL[phase] ?? phase}
+      <p className="text-xs text-muted-foreground">
+        {phase === "idle" || phase === "waiting"
+          ? "This fills in when the run reaches this step."
+          : (PHASE_LABEL[phase] ?? phase)}
       </p>
     );
   }

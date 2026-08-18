@@ -103,19 +103,23 @@ export function InvocationBody({
 }) {
   const settledOutput =
     invocation.phase === "settled" && invocation.output !== null;
-  if (invocation.laneRequestId && !(prefer === "persisted" && settledOutput)) {
-    // An OPEN lane that has received nothing yet renders as an empty pane —
-    // which is exactly the blank box that made a working run look dead. The
-    // lane is attached and will take over the instant the first token lands;
-    // until then the reader gets the honest working state.
-    //
-    // Only while the invocation is genuinely WORKING: a settled step whose
-    // lane simply hasn't been released yet must fall through to its output, or
-    // a finished step reads "Working on this now" forever beside its own
-    // green tick in the rail.
-    const working =
-      invocation.phase === "running" || invocation.phase === "retrying";
-    if (working && invocation.chunksReceived === 0 && invocation.textTail === "") {
+  const working =
+    invocation.phase === "running" || invocation.phase === "retrying";
+  // A lane is only the truth once it has actually carried something. The
+  // adapter opens one on `node_started` for every non-fan-out node, including
+  // nodes that never stream a token (a transform, an ingest) — so an attached
+  // EMPTY lane used to render an empty pane that shadowed the step's real
+  // output, which is the blank box a finished step showed beside its own green
+  // tick. Empty lane + still working → the honest working state; empty lane +
+  // settled → fall through to the output it actually produced.
+  const laneHasContent =
+    invocation.chunksReceived > 0 || invocation.textTail !== "";
+  if (
+    invocation.laneRequestId &&
+    (laneHasContent || working) &&
+    !(prefer === "persisted" && settledOutput)
+  ) {
+    if (!laneHasContent) {
       return <WorkingBody message={invocation.progress?.message ?? null} />;
     }
     return (
@@ -164,7 +168,7 @@ export function InvocationBody({
       </p>
     );
   }
-  if (invocation.phase === "running" || invocation.phase === "retrying") {
+  if (working) {
     return <WorkingBody message={invocation.progress?.message ?? null} />;
   }
   return null;
