@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 386 active entity tokens. A token here is FK-valid for
+// 390 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -236,6 +236,7 @@ export type EntityTypeToken =
   | "plan_node_step"
   | "plan_profile"
   | "platform_outcome_event"
+  | "podcast_race"
   | "processed_document"
   | "processed_document_page"
   | "project"
@@ -387,6 +388,7 @@ export type EntityTypeToken =
   | "web_brand"
   | "web_brand_asset"
   | "web_business_fact"
+  | "web_business_location"
   | "web_crawl_event"
   | "web_crawl_preset"
   | "web_crawl_schedule"
@@ -396,6 +398,8 @@ export type EntityTypeToken =
   | "web_finding"
   | "web_gsc_page_stat"
   | "web_link_edge"
+  | "web_listing_publisher"
+  | "web_location_listing"
   | "web_page"
   | "web_page_content"
   | "web_page_evidence"
@@ -674,6 +678,7 @@ export type ComponentEntityToken =
   | "wc_report"
   | "web_brand_asset"
   | "web_business_fact"
+  | "web_business_location"
   | "web_crawl_event"
   | "web_crawl_preset"
   | "web_crawl_schedule"
@@ -683,6 +688,7 @@ export type ComponentEntityToken =
   | "web_finding"
   | "web_gsc_page_stat"
   | "web_link_edge"
+  | "web_location_listing"
   | "web_page"
   | "web_page_content"
   | "web_page_evidence"
@@ -885,6 +891,7 @@ export type ScopeableEntityToken =
   | "plan_node_step"
   | "plan_profile"
   | "platform_outcome_event"
+  | "podcast_race"
   | "processed_document"
   | "processed_document_page"
   | "project"
@@ -1036,6 +1043,7 @@ export type ScopeableEntityToken =
   | "web_brand"
   | "web_brand_asset"
   | "web_business_fact"
+  | "web_business_location"
   | "web_crawl_event"
   | "web_crawl_preset"
   | "web_crawl_schedule"
@@ -1045,6 +1053,8 @@ export type ScopeableEntityToken =
   | "web_finding"
   | "web_gsc_page_stat"
   | "web_link_edge"
+  | "web_listing_publisher"
+  | "web_location_listing"
   | "web_page"
   | "web_page_content"
   | "web_page_evidence"
@@ -1317,6 +1327,7 @@ export const ENTITY_TYPE_METADATA = {
   "plan_node_step": { token: "plan_node_step", schema: "plan", table: "node_step", label: "Plan Node Step", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "plan_profile": { token: "plan_profile", schema: "plan", table: "profile", label: "Plan Vertical Profile", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "vertical", contentRole: null, referenceCategory: null },
   "platform_outcome_event": { token: "platform_outcome_event", schema: "platform", table: "outcome_event", label: "Outcome Event", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "podcast_race": { token: "podcast_race", schema: "podcast", table: "pc_race", label: "Podcast Race Episode", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "processed_document": { token: "processed_document", schema: "docproc", table: "processed_documents", label: "Processed document", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "source", referenceCategory: null },
   "processed_document_page": { token: "processed_document_page", schema: "docproc", table: "processed_document_pages", label: "Processed document page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "project": { token: "project", schema: "workspace", table: "projects", label: "Project", baseTier: 1, isComponent: false, isModule: true, isListed: false, scopeable: true, category: "Workspaces", referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
@@ -1468,6 +1479,7 @@ export const ENTITY_TYPE_METADATA = {
   "web_brand": { token: "web_brand", schema: "web", table: "brand", label: "Brand", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: null, referenceCategory: null },
   "web_brand_asset": { token: "web_brand_asset", schema: "web", table: "brand_asset", label: "Brand Asset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "title", contentRole: null, referenceCategory: null },
   "web_business_fact": { token: "web_business_fact", schema: "web", table: "business_fact", label: "Business Fact", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "label", contentRole: null, referenceCategory: null },
+  "web_business_location": { token: "web_business_location", schema: "web", table: "business_location", label: "Business Location", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_crawl_event": { token: "web_crawl_event", schema: "web", table: "crawl_event", label: "Web Crawl Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_crawl_preset": { token: "web_crawl_preset", schema: "web", table: "crawl_preset", label: "Web Crawl Preset", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
   "web_crawl_schedule": { token: "web_crawl_schedule", schema: "web", table: "crawl_schedule", label: "Web Crawl Schedule", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "name", contentRole: null, referenceCategory: null },
@@ -1477,6 +1489,8 @@ export const ENTITY_TYPE_METADATA = {
   "web_finding": { token: "web_finding", schema: "web", table: "finding", label: "Finding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_gsc_page_stat": { token: "web_gsc_page_stat", schema: "web", table: "gsc_page_stat", label: "GSC Page Stat", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_link_edge": { token: "web_link_edge", schema: "web", table: "link_edge", label: "Link Edge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_listing_publisher": { token: "web_listing_publisher", schema: "web", table: "listing_publisher", label: "Listing Publisher", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "web_location_listing": { token: "web_location_listing", schema: "web", table: "location_listing", label: "Location Listing", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_page": { token: "web_page", schema: "web", table: "page", label: "Canonical Page", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "url", contentRole: "source", referenceCategory: null },
   "web_page_content": { token: "web_page_content", schema: "web", table: "page_content", label: "Page Draft Content", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "web_page_evidence": { token: "web_page_evidence", schema: "web", table: "page_evidence", label: "Web Page Evidence", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1707,6 +1721,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "plan_node_step",
   "plan_profile",
   "platform_outcome_event",
+  "podcast_race",
   "processed_document",
   "processed_document_page",
   "project",
@@ -1858,6 +1873,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_brand",
   "web_brand_asset",
   "web_business_fact",
+  "web_business_location",
   "web_crawl_event",
   "web_crawl_preset",
   "web_crawl_schedule",
@@ -1867,6 +1883,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "web_finding",
   "web_gsc_page_stat",
   "web_link_edge",
+  "web_listing_publisher",
+  "web_location_listing",
   "web_page",
   "web_page_content",
   "web_page_evidence",
