@@ -938,7 +938,7 @@
                 },
                 "matrx_actions": {
                   "default": {},
-                  "title": "Matrx Actions"
+                  "title": "Matrx Directives"
                 },
                 "mcp_servers": {
                   "default": [],
@@ -4375,7 +4375,7 @@
                 },
                 "matrx_actions": {
                   "default": null,
-                  "title": "Matrx Actions"
+                  "title": "Matrx Directives"
                 },
                 "mcp_servers": {
                   "default": null,
