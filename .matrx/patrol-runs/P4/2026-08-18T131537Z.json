@@ -48,6 +48,47 @@
       ],
       "previousEventHash": "79176c7641e87b1b1f7dfc275331f5fbb56430aca534bdc21b8f7fed18e9cd76",
       "eventHash": "863d56cb879a253336b0996a8645d5af71c6bc593d1accb9e8f9f32c33b6b9b9"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-18T13:24:34.672Z",
+      "actor": "p4-adversarial-certifier",
+      "summary": "CERTIFIED: detector-scope repair introduces no detected regression",
+      "evidence": [
+        "exact-candidate:86fe855c6465c53464fe77ef8875fc25dff3010c",
+        "no-product-runtime-files-changed"
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "86fe855c6465c53464fe77ef8875fc25dff3010c",
+        "certifierTaskId": "/root/p4_certifier",
+        "checks": [
+          "detector-tests:5/5-pass",
+          "default-scan:6949/674/538/136/0-approved/0-invalid/0-parked",
+          "structural-scan:1230/85/68/17",
+          "exception-artifact:48-active/102-lines/0-mismatches",
+          "type-check:31-baseline-errors/0-candidate-caused"
+        ]
+      },
+      "previousEventHash": "863d56cb879a253336b0996a8645d5af71c6bc593d1accb9e8f9f32c33b6b9b9",
+      "eventHash": "3313b6892ffdd24c122dea31a954626a9007d63fc08c51ed99ebde89454fd4d9"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-18T13:24:38.274Z",
+      "actor": "codex-p4-worker",
+      "summary": "Certified P4 detector repair queued for normal integration; 48 exception decisions remain open",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P4/2026-08-18T131537Z"
+      ],
+      "delivery": {
+        "candidateSha": "86fe855c6465c53464fe77ef8875fc25dff3010c",
+        "preservedRef": "refs/heads/patrol-runs/P4/2026-08-18T131537Z"
+      },
+      "previousEventHash": "3313b6892ffdd24c122dea31a954626a9007d63fc08c51ed99ebde89454fd4d9",
+      "eventHash": "0aa7333885e27f9d78928c9d2d85e9762801d9ac47d2a86fe5b0d8fc1b674184"
     }
   ]
 }
