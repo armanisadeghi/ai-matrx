@@ -22,6 +22,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlarmClock,
@@ -195,6 +196,7 @@ export default function PressRoomWorkspace() {
     };
   }, [angles, requests, now]);
 
+  const hasNoBrands = !brands.isLoading && (brands.data?.length ?? 0) === 0;
   const selectedBrand = brands.data?.find((brand) => brand.id === brandId);
   const selectedSite = sites.data?.find((site) => site.id === siteId);
 
@@ -340,7 +342,21 @@ export default function PressRoomWorkspace() {
                 title={
                   siteId
                     ? "Sample press room — nothing has been analysed for this site yet"
-                    : "Sample press room — pick a business and site above to load your own"
+                    : hasNoBrands
+                      ? "Sample press room — you have no businesses set up yet"
+                      : "Sample press room — pick a business and site above to load your own"
+                }
+                action={
+                  hasNoBrands ? (
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-[11px]"
+                    >
+                      <Link href="/marketing/brands">Add a business</Link>
+                    </Button>
+                  ) : null
                 }
               >
                 Every angle, request and piece of coverage below belongs to{" "}

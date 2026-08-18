@@ -15,8 +15,8 @@
  * number instead of five, the evidence gap is a to-do list instead of an error,
  * and the only red on the page is a clock that is actually running out.
  *
- * Layout: rail (conditional) → toolbar → list | detail. Below `lg` the detail
- * becomes a sheet, so the list is never squeezed into an unusable column.
+ * Layout: rail (conditional) → toolbar → list | detail. On mobile the detail
+ * becomes a bottom sheet, so the list is never squeezed into an unusable column.
  */
 
 import * as React from "react";
@@ -36,7 +36,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import FloatingSheet from "@/components/official/FloatingSheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 
 import { AngleDetail, AngleRow, rankAngles } from "./AngleViews";
 import { CoverageList, PitchPipeline, coverageAngleId } from "./PipelineAndCoverage";
@@ -514,11 +513,13 @@ export function PressRoom({ scenario }: { scenario: PressRoomScenario }) {
           </div>
 
           {!isMobile ? (
+            // Width steps with the viewport but the panel is ALWAYS present
+            // above the mobile breakpoint. A `hidden lg:block` here would have
+            // left 768–1023px with neither panel nor sheet — a selected row
+            // that opens nothing, which is a dead end at one screen size.
             <aside
               ref={detailRef}
-              className={cn(
-                "hidden w-[26rem] shrink-0 border-l border-border/60 bg-card/40 lg:block xl:w-[28rem]",
-              )}
+              className="w-[22rem] shrink-0 border-l border-border/60 bg-card/40 lg:w-[26rem] xl:w-[28rem]"
             >
               {detail}
             </aside>

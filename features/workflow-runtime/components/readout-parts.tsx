@@ -98,7 +98,7 @@ function fenceJson(text: string): string {
  * markdown pipeline as a fenced block — a raw <pre> was a wall of text on the
  * one screen where the reader most wants to SEE what was produced.
  */
-function JsonBody({ value }: { value: Record<string, unknown> }) {
+function JsonBody({ value }: { value: Record<string, unknown> | unknown[] }) {
   const json = JSON.stringify(value, null, 2);
   if (json.length <= JSON_VIEWER_MAX_CHARS) {
     return <MarkdownStream content={fenceJson(json)} />;

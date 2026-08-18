@@ -10,7 +10,7 @@
  * is passed down as a number so every derivation is pure and testable.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import type { PressRoomBundle } from "./fixtures";
@@ -33,21 +33,22 @@ export function useNow(intervalMs = 30_000): number {
  * "still working", not as a spinner the user starts to distrust.
  */
 export function useStallWatch(active: boolean, afterMs = 8_000): boolean {
-  // Deliberately token-based rather than a `setStalled(false)` reset: clearing
-  // the flag synchronously inside the effect is a cascading render, and the
-  // reset is expressible as data — a stale token simply stops matching.
-  const [stalledToken, setStalledToken] = useState(0);
-  const tokenRef = useRef(0);
+  const [stalled, setStalled] = useState(false);
 
+  // The flag is only ever RAISED asynchronously (the timer) and only ever
+  // LOWERED in cleanup — never synchronously in the effect body, which is a
+  // cascading render. `active &&` is the second guard, so a read that ends
+  // before cleanup runs cannot leave the notice on screen for a frame.
   useEffect(() => {
     if (!active) return;
-    tokenRef.current += 1;
-    const token = tokenRef.current;
-    const id = window.setTimeout(() => setStalledToken(token), afterMs);
-    return () => window.clearTimeout(id);
+    const id = window.setTimeout(() => setStalled(true), afterMs);
+    return () => {
+      window.clearTimeout(id);
+      setStalled(false);
+    };
   }, [active, afterMs]);
 
-  return active && stalledToken > 0 && stalledToken === tokenRef.current;
+  return active && stalled;
 }
 
 export interface PressRoomQuery {
