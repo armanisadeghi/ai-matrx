@@ -789,7 +789,14 @@ export function SetDetailView({ setId }: { setId: string }) {
                         card={card}
                         index={i}
                         mastery={masteryByCard[card.id]}
-                        selectable={selecting}
+                        // F3 — only TEXT-mergeable kinds: a matching/formula
+                        // card's structure lives in dynamic_content, which a
+                        // front/back merge would silently destroy.
+                        selectable={
+                          selecting &&
+                          (asCardKind(card.card_kind) === CARD_KIND.basic ||
+                            asCardKind(card.card_kind) === CARD_KIND.cloze)
+                        }
                         selected={selectedIds.has(card.id)}
                         onToggleSelected={() =>
                           setSelectedIds((prev) => {

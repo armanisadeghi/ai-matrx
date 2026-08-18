@@ -265,9 +265,14 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
         return `\n\n$$${mathContent}$$\n\n`;
       },
     );
-    // \(...\) → $$...$$ (display math — single-dollar inline disabled to prevent false positives)
+    // \(...\) is INLINE math and must stay inline (same fix as
+    // ConfigurableMarkdownContent, 2026-08-18): with single-$ disabled,
+    // remark-math's inline form is `$$…$$` inside running text — NO paragraph
+    // breaks. The old block promotion exploded list items and sentences
+    // ("- \(x\) — the roots" became a giant centered block splitting the
+    // bullet) in every chat message.
     processed = processed.replace(/\\\((.*?)\\\)/g, (match, mathContent) => {
-      return `\n\n$$${mathContent}$$\n\n`;
+      return `$$${mathContent}$$`;
     });
 
     // Support non-standard [...] format for display math (some smaller models use this)

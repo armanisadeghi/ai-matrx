@@ -155,8 +155,14 @@ export function FastFireLiveCard({
             </span>
             {/* VISION §3 — the adaptation is EXPLAINED, never a silent
                 shuffle: when resolving grades tilt the unseen queue toward a
-                struggling topic, the learner sees why the order shifted. */}
-            {adaptation && adaptation.count > 0 && (
+                struggling topic, the learner sees why the order shifted.
+                The receipt is honest about TIME (F5): it shows only while the
+                reordered cards are actually coming up (a few cards past the
+                reorder point), never on the final card. */}
+            {adaptation &&
+              adaptation.count > 0 &&
+              index < cards.length - 1 &&
+              index < adaptation.atIndex + 3 && (
               <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
                 <Zap className="h-2.5 w-2.5 shrink-0" />
                 <span className="truncate">

@@ -15,20 +15,36 @@ import type { CardWithDetails, FcSetRow } from "../data/types";
 import {
   buildDeckExport,
   toPortableDeck,
+  EXPORT_EXT,
+  EXPORT_LABEL,
+  EXPORT_MIME,
   type DeckExportFormat,
 } from "@/features/education/onboard/export/deckFormats";
 
 export type { DeckExportFormat };
 
-/** Filename + mime for one deck export, so every caller names files alike. */
+/**
+ * Filename + mime + label for one deck export — re-exposed FROM the canonical
+ * maps in `deckFormats.ts` so both export surfaces name files identically.
+ * (An earlier hardcoded copy here had already drifted from them — adversarial
+ * finding F4. Never define these values twice.)
+ */
 export const DECK_EXPORT_FILE: Record<
   DeckExportFormat,
   { ext: string; mime: string; label: string }
 > = {
-  csv: { ext: "csv", mime: "text/csv", label: "CSV" },
-  anki: { ext: "anki.txt", mime: "text/plain", label: "Anki (text import)" },
-  md: { ext: "md", mime: "text/markdown", label: "Markdown" },
-  json: { ext: "json", mime: "application/json", label: "JSON" },
+  csv: { ext: EXPORT_EXT.csv, mime: EXPORT_MIME.csv, label: EXPORT_LABEL.csv },
+  anki: {
+    ext: EXPORT_EXT.anki,
+    mime: EXPORT_MIME.anki,
+    label: EXPORT_LABEL.anki,
+  },
+  md: { ext: EXPORT_EXT.md, mime: EXPORT_MIME.md, label: EXPORT_LABEL.md },
+  json: {
+    ext: EXPORT_EXT.json,
+    mime: EXPORT_MIME.json,
+    label: EXPORT_LABEL.json,
+  },
 };
 
 /** One deck, one format — delegates every byte to the canonical writer. */
@@ -70,7 +86,11 @@ export function downloadTextFile(
   mime: string,
   content: string,
 ): void {
-  const blob = new Blob([content], { type: `${mime};charset=utf-8;` });
+  // Canonical EXPORT_MIME values already carry the charset — never append a
+  // second one.
+  const blob = new Blob([content], {
+    type: mime.includes("charset") ? mime : `${mime};charset=utf-8;`,
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

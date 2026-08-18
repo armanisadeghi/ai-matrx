@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { fcService } from "../../data/fcService";
+import { studyFaces } from "../../utils/cardVariants";
 import type { CardWithDetails } from "../../data/types";
 
 /** Join distinct face texts; identical faces collapse to one. */
@@ -132,8 +133,10 @@ export function MergeCardsDialog({
                       : "border-border bg-background hover:bg-accent",
                   )}
                 >
+                  {/* F3 — composed face, never raw markup: a cloze picker row
+                      shows its blanked front, not literal {{c1::…}}. */}
                   <CardFaceContent
-                    content={c.front}
+                    content={studyFaces(c).front}
                     variant="inline"
                     className="line-clamp-2"
                   />

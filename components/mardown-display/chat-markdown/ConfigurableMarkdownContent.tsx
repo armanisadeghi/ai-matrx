@@ -371,7 +371,11 @@ export const ConfigurableMarkdownContent: React.FC<
   }, [componentOverrides?.a]);
 
   // ---------------------------------------------------------------------------
-  // preprocessContent — identical regex logic, untouched
+  // preprocessContent — mirrors BasicMarkdownContent's preprocess. The two
+  // copies MUST stay in lockstep (the `\(…\)` inline-math fix, 2026-08-18,
+  // briefly landed in only one and split rendering between chat and
+  // flashcards — adversarial finding F2). Consolidating them into one shared
+  // preprocess function is the real fix; until then, change BOTH.
   // ---------------------------------------------------------------------------
   const preprocessContent = (rawContent: string): string => {
     let processed = rawContent;

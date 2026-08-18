@@ -11,7 +11,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
@@ -51,6 +51,13 @@ export function WriteSurface({ setId }: { setId: string }) {
   const study = useFlashcardStudy({ setId, withSession: true, mode: "write" });
   const title = study.set?.name ?? "Write";
   const current = study.cards[study.currentIndex];
+  // The LIVE current-card id, for the async verdict guard below. A closure
+  // capture is useless there — it would compare the captured id to itself
+  // (adversarial finding F1): the ref is what the component sees NOW.
+  const currentIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    currentIdRef.current = current?.id ?? null;
+  }, [current?.id]);
 
   const dispatch = useAppDispatch();
   const [typed, setTyped] = useState("");
@@ -86,11 +93,15 @@ export function WriteSurface({ setId }: { setId: string }) {
     if (!current || submitted) return;
     setAutoGrade(gradeTypedAnswer(typed, current.back));
     setSubmitted(true);
+    // A previous card's late verdict must never survive into this submit
+    // (F1): clear before dispatching, and gate the arrival on the LIVE card
+    // id via the ref — a closure capture would compare the id to itself.
+    setVerdict(null);
 
     // Grade on MEANING (gap 14): the mandate-bound grader judges the typed
     // answer semantically; when it lands (1-3s) it replaces the string-distance
-    // suggestion. Fire-and-forget — the learner is never blocked, and the card
-    // guard drops a verdict that arrives after they moved on.
+    // suggestion. Fire-and-forget — the learner is never blocked, and the
+    // live-id guard drops a verdict that arrives after they moved on.
     const cardId = current.id;
     if (typed.trim().length > 0) {
       setVerdictLoading(true);
@@ -102,7 +113,7 @@ export function WriteSurface({ setId }: { setId: string }) {
         }),
       ).then((v) => {
         setVerdictLoading(false);
-        if (v && cardId === current.id) setVerdict(v);
+        if (v && cardId === currentIdRef.current) setVerdict(v);
       });
     }
   };

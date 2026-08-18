@@ -172,7 +172,8 @@ export function CardFaceContent({
   variant = "prompt",
   className,
 }: {
-  /** The face text — markdown + LaTeX ($…$ / $$…$$) supported. */
+  /** The face text — markdown + LaTeX (inline `\(…\)`, display `$$…$$`).
+   *  Single-`$` inline math is deliberately OFF engine-wide (currency safety). */
   content: string;
   variant?: CardFaceVariant;
   /** Extra wrapper classes — e.g. "line-clamp-2" for clamped rows. */
