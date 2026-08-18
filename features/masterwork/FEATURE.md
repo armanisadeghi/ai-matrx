@@ -176,6 +176,36 @@ see Invariant 6). The editor offers the feedback path from within edit
 ("Have the AI apply my notes instead"). It is THE ONE rule-rewrite Mandate —
 the duplicate `masterwork.rule_cleanup` was retired into it 2026-08-17.
 
+### 🚨 THE FOUR VERBS ARE ONE PRIMITIVE — `features/masterwork/review/`
+
+Arman, 2026-08-18: *"whenever a change is made or an enhancement is made, that enhancement or
+change needs to be made **every single place that that code or logic exists**."* He found the
+Final Checkup missing the Improve/Edit verbs the rule-review loop already had. The fix is
+structural, not a sweep:
+
+- **`review/RuleDecisionActions.tsx`** — the ONE verb row (Approve · Improve · Reject · Edit, in
+  that order, with those icons). **All four handlers are REQUIRED props**, so a new surface
+  physically cannot render a partial verb set. Labels are overridable per surface (the Add-rule
+  panel says "Add as a draft" / "Start over" / "Edit before adding"); the VERBS are not.
+- **`review/useRuleImproveRun.ts`** — the ONE runner of the `masterwork.rule_improver` Mandate.
+  It owns the Mandate key, the variable names, `expect: "json"`, the timeout, the context anchor
+  and the section validation; callers pass only their context and an `apply` that merges the
+  validated result onto whatever they hold. The three shapes are still selected by which input is
+  empty (improve / draft-new / tidy). **Never construct a second improve run.**
+
+Consumers: the rule rows on `RulebookDetailPage`, `RuleReviewWizard`, `ImproveRuleDialog`'s own
+before/after (its Improve verb keeps pushing on the *rewrite*), `AddRulePanel`'s "With AI" tab
+(Improve reveals a feedback box and re-runs the same Mandate on the unsaved draft),
+`RuleEditorDialog`'s "Clean up with AI", and the Final Checkup. A surface that genuinely cannot
+offer one of the four must say why in a code comment beside the component.
+
+🚨 **A structured-output Mandate must never be offered the page's write tool.** The Improve run
+from the Add-rule window paused forever because the Rulebook page's `rule_draft` write target put
+`apply_surface_write` in the injection, and the improver called it instead of returning JSON
+(conversation `14786e08-…`, 2026-08-18). Fixed on the agent: `Masterwork Rule Improver`
+(`c09465cb-…`) now carries `tool_config.auto_tools_disabled = true`. Any new structured-output
+Mandate launched from a page with write targets needs the same flag.
+
 **"Add rule" is a WindowPanel, never a blocking modal** (Arman: the
 project-new window panel is "how everything in our system should run"):
 overlay `masterworkAddRuleWindow` → `features/window-panels/windows/
@@ -597,6 +627,18 @@ deliberately never produced.
 
 ## Change log
 
+- 2026-08-18 — **The four review verbs became ONE primitive** (Arman's standing law: an
+  enhancement lands in every place the logic exists). New `features/masterwork/review/`:
+  `RuleDecisionActions` (Approve · Improve · Reject · Edit, all four handlers REQUIRED) and
+  `useRuleImproveRun` (the single `masterwork.rule_improver` runner — the three improve/draft/tidy
+  call sites no longer build their own run). Consumed by the rule rows (which gained **Edit**),
+  `RuleReviewWizard`, `ImproveRuleDialog` (which gained **Improve again** on the rewrite), and
+  `AddRulePanel`'s "With AI" tab (which gained **Improve** — a feedback box that re-runs the same
+  Mandate on the unsaved draft); `RuleEditorDialog`'s tidy moved onto the shared runner. Also
+  fixed: the improver was being offered the page's `apply_surface_write` tool and would sometimes
+  call it instead of returning JSON, pausing the run forever — agent `c09465cb-…` now carries
+  `tool_config.auto_tools_disabled = true`. Browser-verified on Strunk (v25→v27): 71 draft rows ×
+  4 verbs, Edit opens the editor, two live Improve runs landed as drafts keeping their id.
 - 2026-08-18 — Interview association waiting now begins with the first real request, not when the
   launcher mints an untouched client-only draft; unused “New interview” openings no longer report
   false persistence failures, while the module-level waiter still survives closing the panel.
