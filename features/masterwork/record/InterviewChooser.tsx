@@ -17,30 +17,8 @@
 import Link from "next/link";
 import { ArrowRight, ExternalLink, MessagesSquare, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { relativeWhen, wordCount } from "./format";
 import type { RulebookInterview } from "./service";
-
-function relativeWhen(iso: string): string {
-  const then = new Date(iso).getTime();
-  const mins = Math.round((Date.now() - then) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
-  const days = Math.round(hours / 24);
-  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`;
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function wordCount(chars: number): string {
-  // Characters mean nothing to an Expert; roughly-spoken words do.
-  const words = Math.round(chars / 5.5);
-  if (words < 1000) return `${words} words`;
-  return `${(words / 1000).toFixed(1)}k words`;
-}
 
 export interface InterviewChooserProps {
   interviews: RulebookInterview[];

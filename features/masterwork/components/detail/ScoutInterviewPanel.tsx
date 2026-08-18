@@ -83,6 +83,17 @@ export interface ScoutInterviewPanelProps {
    * wrong?" from a Masterwork run). The Expert finishes the sentence and sends.
    */
   seedText?: string;
+  /**
+   * Resume THIS conversation immediately (the Conversations section's
+   * Continue) instead of showing the chooser.
+   */
+  initialConversationId?: string;
+  /**
+   * Bump to skip the chooser straight into a fresh interview ("New
+   * interview"). Each distinct value remounts the content, so a second "New
+   * interview" can never revive the first one's conversation.
+   */
+  startNewNonce?: number;
 }
 
 // The five elicitation moves (doc 15), phrased as things the EXPERT says.
@@ -374,22 +385,53 @@ function InterviewColumn({
  * Resolve the Scout through its Mandate, then decide WHICH interview the
  * Expert is in: a prior one they continue, or a new one. Never silently mints
  * a new conversation when prior ones exist — that was the defect.
+ *
+ * THE ONE IMPLEMENTATION of the interview experience — the "Interview me"
+ * sheet on the Rulebook page AND the full-page route
+ * `/masterwork/[id]/interview` both render exactly this component, so the two
+ * entry points can never drift apart.
+ *
+ * `initialConversationId` deep-links straight into resuming one conversation
+ * (the Conversations section's Continue, or ?conversation= on the route);
+ * `startNew` skips the chooser into a fresh interview.
  */
-function MandateGatedConversation({
+export function ScoutInterviewContent({
   rulebookId,
   rulebookName,
   seedText,
+  initialConversationId,
+  startNew: startNewProp,
 }: {
   rulebookId: string;
   rulebookName: string;
   seedText?: string;
+  /** Resume this conversation immediately, skipping the chooser. */
+  initialConversationId?: string;
+  /** Skip the chooser straight into a fresh interview. */
+  startNew?: boolean;
 }) {
   const { mandate, loading, error } = useMandate(SCOUT_MANDATE_KEY);
   const [interviews, setInterviews] = useState<RulebookInterview[] | null>(null);
   const [choice, setChoice] = useState<
     { mode: "choose" } | { mode: "new"; key: number } | { mode: "resume"; conversationId: string }
-  >({ mode: "choose" });
+  >(
+    initialConversationId
+      ? { mode: "resume", conversationId: initialConversationId }
+      : startNewProp
+        ? { mode: "new", key: 0 }
+        : { mode: "choose" },
+  );
   const [freshKey, setFreshKey] = useState(0);
+
+  // A NEW deep-link target while already open (the Expert clicked Continue on
+  // a different conversation) must actually switch conversations.
+  const lastTargetRef = useRef(initialConversationId);
+  useEffect(() => {
+    if (!initialConversationId) return;
+    if (lastTargetRef.current === initialConversationId) return;
+    lastTargetRef.current = initialConversationId;
+    setChoice({ mode: "resume", conversationId: initialConversationId });
+  }, [initialConversationId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -398,7 +440,9 @@ function MandateGatedConversation({
       if (cancelled) return;
       setInterviews(rows);
       // No history → straight into a new interview, exactly as before.
-      if (rows.length === 0) setChoice({ mode: "new", key: 0 });
+      if (rows.length === 0) {
+        setChoice((prev) => (prev.mode === "choose" ? { mode: "new", key: 0 } : prev));
+      }
     })();
     return () => {
       cancelled = true;
@@ -464,6 +508,8 @@ export function ScoutInterviewPanel({
   onOpenChange,
   onRulebookChanged,
   seedText,
+  initialConversationId,
+  startNewNonce,
 }: ScoutInterviewPanelProps) {
   // Watch the Rulebook's version while the panel is open: the Scout writes
   // drafts server-side (through its tool), so the page has no local signal.
@@ -509,6 +555,19 @@ export function ScoutInterviewPanel({
           <SheetTitle className="flex items-center gap-2 text-base">
             <MessagesSquare className="h-4 w-4 text-primary" aria-hidden />
             Interview
+            {/* THE DOOR LAW — the interview has its own URL. */}
+            <Link
+              href={`/masterwork/${rulebookId}/interview${
+                initialConversationId
+                  ? `?conversation=${initialConversationId}`
+                  : ""
+              }`}
+              className="ml-auto mr-6 inline-flex items-center gap-1 text-xs font-normal text-muted-foreground hover:text-foreground"
+              title="Open the interview as its own page"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Full page
+            </Link>
           </SheetTitle>
           <SheetDescription className="text-xs">
             Talk through how you work — rules you mention are drafted into your
@@ -517,10 +576,15 @@ export function ScoutInterviewPanel({
         </SheetHeader>
         <div className="min-h-0 flex-1 overflow-hidden">
           {open ? (
-            <MandateGatedConversation
+            <ScoutInterviewContent
+              // Remount when the target changes so Continue-on-another-row and
+              // repeated "New interview" both actually switch conversations.
+              key={`${initialConversationId ?? "-"}:${startNewNonce ?? 0}`}
               rulebookId={rulebookId}
               rulebookName={rulebookName}
               seedText={seedText}
+              initialConversationId={initialConversationId}
+              startNew={(startNewNonce ?? 0) > 0}
             />
           ) : null}
         </div>

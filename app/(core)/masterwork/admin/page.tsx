@@ -45,6 +45,22 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/masterwork/[id]/interview",
+      label: "Scout interview (full page)",
+      description:
+        "The interview as its own URL — the same ScoutInterviewContent the 'Interview me' sheet renders (chooser included). Deep links: ?conversation=<id> resumes one; ?new=1 starts fresh.",
+      filePath: "app/(core)/masterwork/[id]/interview/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/masterwork/[id]/record",
+      label: "The Record ('Your words')",
+      description:
+        "Everything the Expert contributed to one Rulebook — every interview turn, upload, and recording, oldest first, with doors and copy affordances.",
+      filePath: "app/(core)/masterwork/[id]/record/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/masterwork/[id]/masterworks",
       label: "Masterworks for a Rulebook",
       description:

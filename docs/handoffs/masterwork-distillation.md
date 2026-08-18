@@ -21,6 +21,18 @@
 
 ## STATUS — live and verified (compressed)
 
+- **CONVERSATIONS MADE FIRST-CLASS + THE INTERVIEW GOT A URL (2026-08-17, from Arman's live
+  feedback: "I still can't seem to get the conversation chain back… if it's in the UI, it's
+  hidden").** Diagnosis: NOT a data bug — his interview `4706f9c0-…` ↔ rulebook `8d1d4f08-…`
+  edge exists, `assoc_for_entity` returns it under his uid, the conversation row is his and
+  titled honestly; the chooser simply only ever rendered INSIDE the "Interview me" sheet. Fixes:
+  `ConversationsSection` (features/masterwork/record/) now on `/masterwork/[id]` — every
+  interview with Continue (in-panel resume), open-in-/chat, full-screen door, New interview,
+  empty state; new route `/masterwork/[id]/interview` (`?conversation=` resume · `?new=1`
+  fresh) rendering the SAME exported `ScoutInterviewContent` as the sheet ("Full page" door in
+  the sheet header); admin map gained the interview + record routes. Verified in-browser on the
+  Strunk Rulebook (2 interviews): section renders, Continue rehydrates history, route +
+  deep-link resume load by URL, empty state on Hopkins, mobile 375 clean.
 - **THE IMPROVEMENT BRAIN SHIPPED (2026-08-17, Arman GO on all recommendations).** The Approach
   selector + elicitation-move producer: `aidream/services/masterwork_assists/` (system of record:
   its FEATURE.md) raises `platform.assists` chips on `/masterwork/[id]` (AssistStrip under the KPI
@@ -405,6 +417,10 @@ ritual (delivery vehicle for 9/12 and the failure lever, not a lane).
 - **Never:** hand-render a stream; re-roll the CAS write path (`rulebook_writes.py`);
   auto-activate an AI-written rule; put a prompt/model constant in a distillation module
   (Mandates only); let an agent touch a clean approved rule (feedback is the only key).
+- **TRANSFERABLE LESSON (2026-08-17, Arman's ruling):** every creation/working mode gets a real
+  URL route (`/x/[id]/<mode>`), and conversations tied to an entity are FIRST-CLASS visible on
+  the entity page — never buried inside a sheet or dialog. Building the machinery (edges, resume,
+  chooser) without a page-level surface is how a shipped feature reads as missing to its user.
 
 ## Definition of done (Arman's bar)
 

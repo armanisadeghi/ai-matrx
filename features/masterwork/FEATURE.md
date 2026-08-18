@@ -33,11 +33,16 @@
 - **Live:** `/masterwork` (the module landing — guests get the marketing page,
   signed-in Experts get the Masterwork HOME; see § The landing below),
   `/masterwork/all` (Masterwork Studio — entity-list shell over platform.rulebook),
-  `/masterwork/[id]` (rule editor + "Build a Masterwork" dialog + "From a source"
-  ingest dialog + "Interview me" side sheet), `/masterwork/[id]/masterworks` (built
-  Masterworks + version-drift flags), `/masterwork/admin` (feature map),
+  `/masterwork/[id]` (rule editor + Conversations section + "Build a Masterwork"
+  dialog + "From a source" ingest dialog + "Interview me" side sheet),
+  `/masterwork/[id]/interview` (the Scout interview as a full page — see § The
+  Record), `/masterwork/[id]/record` ("Your words"), `/masterwork/[id]/masterworks`
+  (built Masterworks + version-drift flags), `/masterwork/admin` (feature map),
   `/masterwork/encore` + `/masterwork/encore/[id]` (the Operator surface — see the
-  Encore bullet below).
+  Encore bullet below). **Every creation/working mode gets a real URL under
+  `/masterwork/[id]/` (Arman's ruling, 2026-08-17)** — the remaining dialog lanes
+  (ingest, body-of-work) keep their deep-linkable query params (`?dump=1`,
+  `?body_of_work=1`, `?interview=1`) on the detail page.
 - **The guided start (2026-08-15; rebuilt as a full page 2026-08-17):** "New Rulebook" is
   `/masterwork/new` (`features/masterwork/intake/NewRulebookFlow.tsx`) — the four-question intake
   from the Distillation vision (goal · who runs it · where the knowledge lives · stakes ·
@@ -226,6 +231,26 @@ edge, then replaces the auto-generated title ("Auto: expertise_interviewer") wit
 read and screamed about — a recovery firing means the proactive write failed. Historical links were
 backfilled once from rule provenance **and** `chat.tool_trace.args->>'rulebook_id'` (the only way
 Arman's own interview could be found before this existed).
+
+**Conversations are FIRST-CLASS on the Rulebook page (2026-08-17, round 2).** Arman, testing live:
+_"we are not tracking the conversations for a particular masterwork being produced. I can't see it.
+So if it's in the UI, it's hidden… I want to be able to see all of those conversations, click one,
+pick up right where I left off, and be able to then create a new one."_ The machinery above was all
+built — but the ONLY place it surfaced was inside the "Interview me" sheet, so he never saw it (the
+data half was verified intact for his account: edge, RPC read, and conversation row all correct —
+this was pure discoverability). Two fixes, both consuming `listRulebookInterviews` (never a second
+query path):
+
+- **`ConversationsSection`** (`record/ConversationsSection.tsx`) renders on `/masterwork/[id]`
+  between the summary card and the Understudy: every interview (title, when, turns, words, rules
+  produced, first line) with **Continue** (resumes in the panel via the shared content), a new-tab
+  door to `/chat/{id}`, a full-screen door to the interview route, a prominent **New interview**,
+  an honest hidden-count line, and an empty state that invites the first interview.
+- **`/masterwork/[id]/interview`** — the interview as a REAL URL. `ScoutInterviewContent`
+  (exported from `ScoutInterviewPanel.tsx`) is THE ONE implementation: the sheet and the route
+  render exactly it, chooser included. Deep links: `?conversation=<id>` resumes that conversation,
+  `?new=1` starts fresh. The sheet header carries a "Full page" door to the route. Interview
+  formatting helpers (`relativeWhen`, `wordCount`) live once in `record/format.ts`.
 
 **Resume or start new.** Opening "Interview me" on a Rulebook that already has interviews shows
 `InterviewChooser` — when it happened, how many turns, how much was said, how many rules it
@@ -468,6 +493,15 @@ deliberately never produced.
 
 ## Change log
 
+- 2026-08-17 — **Conversations made first-class + the interview got its URL** (Arman could not
+  find his own interviews — pure discoverability; the data half was verified intact for his
+  account). `ConversationsSection` on `/masterwork/[id]` (Continue / open in /chat / full-screen
+  door / New interview / empty state), new route `/masterwork/[id]/interview`
+  (`?conversation=` resume · `?new=1` fresh) sharing the ONE `ScoutInterviewContent` with the
+  sheet, "Full page" door in the sheet header, shared `record/format.ts`, admin map gained the
+  interview + record routes. Lesson recorded in the handoff: every creation mode gets a URL
+  route; conversations tied to an entity are first-class visible on the entity page, never
+  buried in a sheet.
 - 2026-08-17 — **The Rule Editor now offers reviewable AI cleanup.** Its four
   `ProTextarea` fields default to six rows in a wider dialog. `Clean up with AI`
   sends the current rule and complete Rulebook surface scope through the new
