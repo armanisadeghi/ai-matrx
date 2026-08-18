@@ -21,11 +21,14 @@ export const CARD_KIND = {
   basic: "basic",
   cloze: "cloze",
   matching: "matching",
+  formula: "formula",
 } as const;
 export type CardKind = (typeof CARD_KIND)[keyof typeof CARD_KIND];
 
 export function asCardKind(value: string | null | undefined): CardKind {
-  return value === CARD_KIND.cloze || value === CARD_KIND.matching
+  return value === CARD_KIND.cloze ||
+    value === CARD_KIND.matching ||
+    value === CARD_KIND.formula
     ? value
     : CARD_KIND.basic;
 }
@@ -137,6 +140,98 @@ export function matchingDynamicContent(pairs: MatchingPair[]): MatchingContent {
       .map((p) => ({ left: p.left.trim(), right: p.right.trim() }))
       .filter((p) => p.left && p.right),
   };
+}
+
+// ─── Formula (VISION §17) ────────────────────────────────────────────────────
+//
+//   • formula — a STEM formula with its variable definitions and a worked
+//     example (VISION §17). Same no-parallel-table rule: `front` is the
+//     question/name ("What is the quadratic formula?"), the structure lives in
+//     `fc_card.dynamic_content.formula`, `back` holds optional extra notes.
+//     Studied as a flip: the back face is COMPOSED as markdown+LaTeX, so it
+//     renders through the same pipeline as every other face (CardFaceContent /
+//     ConfigurableMarkdownContent — display math via $$…$$).
+
+/** One variable in the formula, with what it means. */
+export interface FormulaVariable {
+  symbol: string;
+  meaning: string;
+}
+
+/** The formula payload, stored on `fc_card.dynamic_content.formula`. */
+export interface FormulaContent {
+  /** LaTeX body WITHOUT delimiters (e.g. `x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}`). */
+  latex: string;
+  variables: FormulaVariable[];
+  /** A worked example, markdown+LaTeX. */
+  example: string | null;
+}
+
+/**
+ * Read the formula payload off a card's `dynamic_content` jsonb (never throws).
+ * Returns null when the card isn't a well-formed formula card.
+ */
+export function formulaContent(
+  card: Pick<FcCardRow, "dynamic_content">,
+): FormulaContent | null {
+  const dc = card.dynamic_content;
+  if (!dc || typeof dc !== "object" || Array.isArray(dc)) return null;
+  const raw = (dc as Record<string, unknown>).formula;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  const latex = asString(r.latex);
+  if (!latex) return null;
+  const variables: FormulaVariable[] = [];
+  if (Array.isArray(r.variables)) {
+    for (const entry of r.variables) {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const v = entry as Record<string, unknown>;
+      const symbol = asString(v.symbol);
+      const meaning = asString(v.meaning);
+      if (symbol && meaning) variables.push({ symbol, meaning });
+    }
+  }
+  const example = asString(r.example);
+  return { latex, variables, example: example || null };
+}
+
+/** Build the `dynamic_content` jsonb payload for a formula card. */
+export function formulaDynamicContent(content: FormulaContent): {
+  formula: FormulaContent;
+} {
+  return {
+    formula: {
+      latex: content.latex.trim(),
+      variables: content.variables
+        .map((v) => ({ symbol: v.symbol.trim(), meaning: v.meaning.trim() }))
+        .filter((v) => v.symbol && v.meaning),
+      example: content.example?.trim() || null,
+    },
+  };
+}
+
+/**
+ * Compose a formula card's back face as markdown+LaTeX: the formula as display
+ * math, the variable definitions, the worked example, then any extra notes.
+ * Pure text-in/text-out so every renderer (desktop, mobile, peek) gets it free.
+ */
+export function formulaBack(
+  content: FormulaContent,
+  extraNotes?: string | null,
+): string {
+  const parts: string[] = [`$$${content.latex}$$`];
+  if (content.variables.length > 0) {
+    parts.push(
+      content.variables
+        .map((v) => `- $${v.symbol}$ — ${v.meaning}`)
+        .join("\n"),
+    );
+  }
+  if (content.example) {
+    parts.push(`**Worked example**\n\n${content.example}`);
+  }
+  if (extraNotes?.trim()) parts.push(extraNotes.trim());
+  return parts.join("\n\n");
 }
 
 // ─── Faces bridge (what the study deck renders) ───────────────────────────────
