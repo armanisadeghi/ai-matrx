@@ -328,7 +328,7 @@ export const fetchAgentExecutionMinimal = createAsyncThunk<
       mergePartialAgent({
         id: row.id,
         variableDefinitions: row.variable_definitions,
-        contextPolicies: row.context_slots ?? [],
+        contextPolicies: row.context_policies ?? [],
       }),
     );
     dispatch(setAgentFetchStatus({ id: row.id, status: "execution" }));
@@ -367,7 +367,7 @@ export const fetchAgentExecutionFull = createAsyncThunk<void, string, ThunkApi>(
       mergePartialAgent({
         id: row.id,
         variableDefinitions: row.variable_definitions,
-        contextPolicies: row.context_slots ?? [],
+        contextPolicies: row.context_policies ?? [],
         settings: row.settings,
         tools: row.tools,
         customTools: row.custom_tools,

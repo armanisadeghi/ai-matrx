@@ -207,7 +207,7 @@ export interface AgentShortcutInitialRow {
   // Agent data from the RESOLVED version (ready for execution — no second fetch needed)
   agent_name: string;
   agent_variable_definitions: VariableDefinition[] | null;
-  agent_context_slots: ContextPolicy[] | null;
+  agent_context_policies: ContextPolicy[] | null;
 }
 type _CheckAgentShortcutInitialRow =
   AgentShortcutInitialRow extends Database["public"]["Functions"]["agx_get_shortcuts_initial"]["Returns"][number]
@@ -300,7 +300,7 @@ export interface AgentShortcutMenuItem {
   agent: {
     name: string;
     variable_definitions: VariableDefinition[] | null;
-    context_slots: ContextPolicy[] | null;
+    context_policies: ContextPolicy[] | null;
   } | null;
 }
 

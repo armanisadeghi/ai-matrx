@@ -4,7 +4,7 @@
  * Rules:
  *  - Outer column names convert between snake_case (DB) and camelCase (frontend).
  *  - The CONTENTS of all JSONB fields (messages, settings, variable_definitions,
- *    context_slots, model_tiers, output_schema, custom_tools) are NEVER case-converted.
+ *    context_policies, model_tiers, output_schema, custom_tools) are NEVER case-converted.
  *    They are stored and returned exactly as the DB/API provides them.
  *
  * DB-managed fields — excluded from ALL write payloads (Insert + Update):
@@ -187,7 +187,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     tools,
 
     contextPolicies:
-      (row.context_slots as unknown as AgentDefinition["contextPolicies"]) ?? [],
+      (row.context_policies as unknown as AgentDefinition["contextPolicies"]) ?? [],
     autoContextDisabled: row.auto_context_disabled === true,
 
     modelTiers:
@@ -241,7 +241,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
  * removes any key whose value is null/undefined so the DB's defaults apply.
  *
  * This last step is critical: `agent.definition` has many NOT NULL columns with
- * defaults (custom_tools, context_slots, messages, settings, tools, tags,
+ * defaults (custom_tools, context_policies, messages, settings, tools, tags,
  * mcp_servers, is_*, agent_type, version). Sending `null` for any of them
  * bypasses the default and triggers a 23502 violation. See
  * utils/supabase/payload.ts for the full rationale.
@@ -272,8 +272,8 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     matrx_actions:
       agent.matrxDirectives as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["matrx_actions"],
 
-    context_slots:
-      agent.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["context_slots"],
+    context_policies:
+      agent.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["context_policies"],
     auto_context_disabled: agent.autoContextDisabled,
 
     model_tiers:
@@ -350,8 +350,8 @@ export function agentDefinitionToUpdate(
       partial.matrxDirectives as unknown as Database["agent"]["Tables"]["definition"]["Update"]["matrx_actions"];
 
   if (partial.contextPolicies !== undefined)
-    update.context_slots =
-      partial.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Update"]["context_slots"];
+    update.context_policies =
+      partial.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Update"]["context_policies"];
 
   if (partial.autoContextDisabled !== undefined)
     update.auto_context_disabled = partial.autoContextDisabled;
@@ -448,7 +448,7 @@ export function versionSnapshotRowToAgentDefinition(
     variableDefinitions: row.variable_definitions,
     settings: row.settings,
     tools: row.tools ?? [],
-    contextPolicies: row.context_slots ?? [],
+    contextPolicies: row.context_policies ?? [],
     autoContextDisabled: row.auto_context_disabled === true,
     modelTiers: row.model_tiers,
     outputSchema: row.output_schema,

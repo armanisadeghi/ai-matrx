@@ -311,7 +311,7 @@ const surfaceSpecific: SurfaceValue[] = [
 
   // ── Inputs: variables + context policies (365-374) ───────────────────────
   {
-    name: "agent_context_slots",
+    name: "agent_context_policies",
     label: "Agent context policies",
     description:
       "Array of context policy definitions the agent expects at runtime. Each slot has a name, type, and source binding. Empty array when none or no agent is open.",
@@ -747,7 +747,7 @@ export function createAgentBuilderScope(values: {
   agent_mcp_servers?: string[];
   agent_skill_config?: Record<string, unknown>;
   agent_matrx_actions?: Record<string, unknown>;
-  agent_context_slots?: unknown[];
+  agent_context_policies?: unknown[];
   agent_variable_definitions?: unknown[];
   agent_version?: number;
   agent_is_version?: boolean;

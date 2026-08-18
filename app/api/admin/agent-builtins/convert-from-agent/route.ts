@@ -93,7 +93,7 @@ export async function POST(request: Request) {
       // carries the consolidated shape if backend stops syncing legacy
       // columns. Backend keeps both in sync today.
       tool_config: src.tool_config ?? null,
-      context_slots: src.context_slots ?? [],
+      context_policies: src.context_policies ?? [],
       mcp_servers: (src.mcp_servers as string[] | null) ?? [],
     };
 

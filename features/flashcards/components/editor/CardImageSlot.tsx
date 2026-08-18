@@ -83,13 +83,14 @@ function FaceRow({
         );
         return;
       }
-      if (payload?.refused) {
+      const lanePayload = payload as LaneEventPayload | null;
+      if (lanePayload?.refused) {
         // Cap/tier refusal decided server-side — show the paywall via a fresh
         // client-side check (same verdict source of truth).
         toast.info("Your plan's image limit was reached for now.");
         return;
       }
-      const result = payload?.result;
+      const result = lanePayload?.result;
       if (result?.attached) {
         (lane === "find" ? source : generate).commit();
         toast.success(lane === "find" ? "Expert image attached" : "Verified image attached");

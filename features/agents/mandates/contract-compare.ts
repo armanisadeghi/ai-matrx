@@ -11,7 +11,7 @@
  *   `variableDefinitions` / `contextPolicies` vs the candidate's (rows carry
  *   type/helpText for rich display).
  * - `compareStoredContract` — stored-contract form: a mandate's persisted
- *   `{required_variables, required_context_slots}` (names only) vs the
+ *   `{required_variables, required_context_policies}` (names only) vs the
  *   candidate's declared names. Same result shape, same rule.
  *
  * The server's bind-time check (aidream PUT /mandates/{mandate_key}/binding)

@@ -475,7 +475,7 @@ export interface PromoteVersionResult {
 export interface AgentExecutionMinimal {
   id: string;
   variable_definitions: VariableDefinition[] | null;
-  context_slots: ContextPolicy[] | null;
+  context_policies: ContextPolicy[] | null;
   auto_context_disabled: boolean;
 }
 
@@ -487,7 +487,7 @@ export interface AgentExecutionFull {
   settings: LLMParams;
   tools: string[];
   custom_tools: CustomToolDefinition[];
-  context_slots: ContextPolicy[] | null;
+  context_policies: ContextPolicy[] | null;
   auto_context_disabled: boolean;
   // FE-only model-gated UI flags — projected so the chat/execution path can gate
   // attachment inputs (previously read from settings before the 2026-06 move).
@@ -566,7 +566,7 @@ export interface AgentVersionSnapshot {
   output_schema: AgentDefinition["outputSchema"];
   tools: string[];
   custom_tools: AgentDefinition["customTools"];
-  context_slots: AgentDefinition["contextPolicies"];
+  context_policies: AgentDefinition["contextPolicies"];
   auto_context_disabled: boolean;
   category: string;
   tags: string[];

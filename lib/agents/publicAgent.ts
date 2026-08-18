@@ -54,7 +54,7 @@ export async function getAgentPublic(
     name: row.name,
     description: row.description ?? null,
     variableDefinitions: row.variable_definitions,
-    contextPolicies: row.context_slots,
+    contextPolicies: row.context_policies,
     agentType: row.agent_type,
     category: row.category ?? null,
     tags: row.tags ?? [],

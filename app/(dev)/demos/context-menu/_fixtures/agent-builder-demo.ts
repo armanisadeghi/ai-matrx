@@ -14,7 +14,7 @@ export const DEMO_AGENT_BUILDER_SCOPE: AgentBuilderScopeInput = {
   agent_tools: ["web_search"],
   agent_custom_tools: [],
   agent_mcp_servers: [],
-  agent_context_slots: [],
+  agent_context_policies: [],
   agent_variable_definitions: [],
   agent_output_schema: { type: "object", properties: {} },
   agent_settings: { temperature: 0.7 },

@@ -111,7 +111,7 @@ export default async function PublicAppPage({
   }
 
   // The public RPC intentionally omits internal/admin-only fields
-  // (app_kind, shared_context_slots, search_tsv, usage/cost aggregates)
+  // (app_kind, shared_context_policies, search_tsv, usage/cost aggregates)
   // that PublicAgentApp declares but the public renderer never reads.
   const app: PublicAgentApp = {
     id: rpcRow.id,
@@ -125,7 +125,7 @@ export default async function PublicAppPage({
     agent_version_id: rpcRow.agent_version_id,
     use_latest: rpcRow.use_latest,
     app_kind: "custom",
-    shared_context_slots: null,
+    shared_context_policies: null,
     search_tsv: null,
     component_code: rpcRow.component_code,
     component_language: rpcRow.component_language as PublicAgentApp["component_language"],

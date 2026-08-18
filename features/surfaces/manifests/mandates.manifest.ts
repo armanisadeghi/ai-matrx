@@ -200,7 +200,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "selected_mandate_contract",
     label: "Selected mandate contract",
     description:
-      "The open mandate's stored contract: { required_variables, required_context_slots } — the input names ANY agent pinned to this mandate must declare, seeded from the default agent. This is the vocabulary an exemplar's `variables` object has to fill: write one key per entry in required_variables. Both arrays empty means the mandate declares no required inputs and any agent qualifies. Absent when no row is selected.",
+      "The open mandate's stored contract: { required_variables, required_context_policies } — the input names ANY agent pinned to this mandate must declare, seeded from the default agent. This is the vocabulary an exemplar's `variables` object has to fill: write one key per entry in required_variables. Both arrays empty means the mandate declares no required inputs and any agent qualifies. Absent when no row is selected.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 200,
@@ -394,7 +394,7 @@ export interface MandateDetail extends MandateSummary {
 /** The selected mandate's stored contract — what any pinned agent must declare. */
 export interface MandateContract {
   required_variables: string[];
-  required_context_slots: string[];
+  required_context_policies: string[];
   /** The mandate's output promise beyond a registered kind — structured keys
    * any bound agent's output must produce. */
   required_output_keys: string[];

@@ -87,7 +87,7 @@ function productionRow(
     output_schema: null,
     tools: RESEARCH_TOOL_IDS,
     custom_tools: [],
-    context_slots: [],
+    context_policies: [],
     mcp_servers: [],
     tool_config: { excluded_tools: [], auto_tools_disabled: false },
     skill_config: {},
@@ -315,8 +315,8 @@ describe("compareAgentSyncSnapshots — per-field detection", () => {
     // Two context policies keyed "a" vs one: nothing in the schema forbids the
     // duplicate, and key-based matching used to collapse them to equal.
     const result = compareAgentSyncSnapshots(
-      snapshot({ context_slots: [{ key: "a", v: 1 }, { key: "a", v: 2 }] }),
-      snapshot({ context_slots: [{ key: "a", v: 2 }] }),
+      snapshot({ context_policies: [{ key: "a", v: 1 }, { key: "a", v: 2 }] }),
+      snapshot({ context_policies: [{ key: "a", v: 2 }] }),
     );
     expect(result.verdict).toBe("differs");
     expect(result.changed.map((c) => c.field)).toEqual(["contextPolicies"]);
@@ -422,9 +422,9 @@ describe("compareAgentSyncSnapshots — never throws on a real jsonb shape", () 
       { variable_definitions: [{ name: "b" }, "junk"] },
     ],
     [
-      "context_slots with a non-object entry",
-      { context_slots: [{ key: "a" }, { key: "b" }] },
-      { context_slots: [{ key: "b" }, "junk"] },
+      "context_policies with a non-object entry",
+      { context_policies: [{ key: "a" }, { key: "b" }] },
+      { context_policies: [{ key: "b" }, "junk"] },
     ],
     [
       "messages holding an object then a string",

@@ -72,7 +72,7 @@ export async function POST(
         // legacy columns. Backend keeps the legacy + tool_config columns
         // in sync today; we send both for symmetry.
         tool_config: agent.tool_config ?? null,
-        context_slots: agent.context_slots ?? [],
+        context_policies: agent.context_policies ?? [],
         mcp_servers: agent.mcp_servers ?? [],
         // visibility intentionally omitted → DB default 'internal' (non-public,
         // same posture as the retired is_public=false)

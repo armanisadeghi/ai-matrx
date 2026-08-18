@@ -54,7 +54,7 @@ export function toAgentVersionFieldSnapshot(
         agentId: row.agent_id,
         relation: "agent.definition_version",
       }),
-      contextPolicies: row.context_slots ?? [],
+      contextPolicies: row.context_policies ?? [],
       mcpServers: row.mcp_servers ?? [],
       autoToolsDisabled: parseAgentAutoToolsDisabled(row.tool_config),
       skillConfig: parseSkillConfigJson(row.skill_config),

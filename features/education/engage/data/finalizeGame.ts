@@ -72,7 +72,7 @@ function readAwardedBadges(metadata: Json): BadgeKey[] {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return [];
   }
-  const value = metadata.new_badges;
+  const value = "new_badges" in metadata ? metadata.new_badges : undefined;
   if (!Array.isArray(value)) return [];
   return value.filter(
     (key): key is BadgeKey => typeof key === "string" && key in BADGES,

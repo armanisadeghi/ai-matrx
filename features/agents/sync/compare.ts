@@ -81,7 +81,7 @@ export interface AgentSyncComparison {
  *    position is exactly the "make different values look equal" move: it
  *    reported a reordered `variable_definitions` as IDENTICAL (a different
  *    jsonb value the sync would write), it silently DROPPED items whose
- *    identity key collided (two `context_slots` with the same `key` compared
+ *    identity key collided (two `context_policies` with the same `key` compared
  *    equal to one), and because the engine keys it off the last path segment
  *    it leaked to any nested array that merely happened to be spelled
  *    `variableDefinitions`. Positional comparison is the only one faithful to

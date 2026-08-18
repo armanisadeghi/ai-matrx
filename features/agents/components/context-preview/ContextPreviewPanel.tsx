@@ -415,7 +415,7 @@ export function ContextPreviewPanel({
       variables_tool_accessible: asRecord(data?.variables?.tool_accessible),
       variables_searchable: asRecord(data?.variables?.searchable),
       binding_variables: asRecord(data?.bindings?.variables),
-      binding_context_slots: asRecord(data?.bindings?.context),
+      binding_context_policies: asRecord(data?.bindings?.context),
       attached_entries: entries.map((e): AttachedContextEntrySummary => {
         const docKind = docKindForContextKey(e.key);
         return {

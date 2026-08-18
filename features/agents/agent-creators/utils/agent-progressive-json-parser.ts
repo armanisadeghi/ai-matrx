@@ -7,7 +7,7 @@
  *   - `variable_definitions` (snake case) instead of `variableDefaults`
  *   - `messages[].content` arrives as `[{"type": "text", "text": "…"}]`,
  *     not a plain string
- *   - `agent_type`, `model_id`, `tools`, `custom_tools`, `context_slots`,
+ *   - `agent_type`, `model_id`, `tools`, `custom_tools`, `context_policies`,
  *     `mcp_servers`, `model_tiers`, `output_schema`, `tags`, `category`
  *
  * Tries JSON.parse first (the full parse). If the block isn't complete yet,
@@ -36,7 +36,7 @@ export interface PartialAgentData {
     required?: boolean;
     customComponent?: unknown;
   }>;
-  context_slots?: Array<{
+  context_policies?: Array<{
     key: string;
     type?: string;
     label?: string;
@@ -182,7 +182,7 @@ export function parsePartialAgentJson(text: string): PartialAgentData {
 
   out.messages = readMessages(block);
   out.variable_definitions = readVariableDefinitions(block);
-  out.context_slots = readContextPolicies(block);
+  out.context_policies = readContextPolicies(block);
 
   out.settings = readJsonObject(block, "settings");
   out.output_schema = readJsonObject(block, "output_schema");
@@ -229,7 +229,7 @@ function normalizeAgentJson(
   const variable_definitions = normalizeVariableDefinitions(
     raw.variable_definitions ?? raw.variableDefaults ?? raw.variables,
   );
-  const context_slots = normalizeContextPolicies(raw.context_slots);
+  const context_policies = normalizeContextPolicies(raw.context_policies);
   const settings = isPlainObject(raw.settings) ? raw.settings : undefined;
   const output_schema = isPlainObject(raw.output_schema)
     ? raw.output_schema
@@ -257,7 +257,7 @@ function normalizeAgentJson(
     category,
     messages,
     variable_definitions,
-    context_slots,
+    context_policies,
     settings,
     output_schema,
     model_tiers,
@@ -336,9 +336,9 @@ function normalizeVariableDefinitions(
 
 function normalizeContextPolicies(
   raw: unknown,
-): PartialAgentData["context_slots"] | undefined {
+): PartialAgentData["context_policies"] | undefined {
   if (!Array.isArray(raw)) return undefined;
-  const out: NonNullable<PartialAgentData["context_slots"]> = [];
+  const out: NonNullable<PartialAgentData["context_policies"]> = [];
   for (const item of raw) {
     if (!item || typeof item !== "object") continue;
     const r = item as Record<string, unknown>;
@@ -488,8 +488,8 @@ function readVariableDefinitions(
 
 function readContextPolicies(
   jsonText: string,
-): PartialAgentData["context_slots"] | undefined {
-  const array = sliceArray(jsonText, "context_slots");
+): PartialAgentData["context_policies"] | undefined {
+  const array = sliceArray(jsonText, "context_policies");
   if (!array) return undefined;
   try {
     const parsed = JSON.parse("[" + array + "]");

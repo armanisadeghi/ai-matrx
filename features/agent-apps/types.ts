@@ -204,7 +204,7 @@ export interface AgentAppRecord {
   use_latest: boolean;
 
   app_kind: string;
-  shared_context_slots: Json | null;
+  shared_context_policies: Json | null;
   search_tsv: unknown;
 
   component_code: string;

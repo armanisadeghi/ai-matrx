@@ -37,7 +37,7 @@ function toPublicSubset(app: AgentApp): PublicAgentApp {
     agent_version_id: app.agent_version_id,
     use_latest: app.use_latest,
     app_kind: app.app_kind ?? "single",
-    shared_context_slots: app.shared_context_slots ?? [],
+    shared_context_policies: app.shared_context_policies ?? [],
     status: app.status,
     visibility: app.visibility,
     is_featured: app.is_featured,

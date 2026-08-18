@@ -5032,6 +5032,1451 @@ export type Database = {
       [_ in never]: never
     }
   }
+  browser: {
+    Tables: {
+      account_binding: {
+        Row: {
+          account_key: string
+          account_label: string | null
+          adapter_version: string | null
+          consecutive_failures: number
+          created_at: string
+          created_by: string | null
+          credential_item_id: string | null
+          deleted_at: string | null
+          health_state: string
+          id: string
+          last_challenge_at: string | null
+          last_challenge_class: string | null
+          last_checked_at: string | null
+          last_success_at: string | null
+          metadata: Json
+          next_check_at: string | null
+          normalized_origin: string
+          organization_id: string
+          profile_id: string
+          sensitive_actions_require_human: boolean
+          session_health_enabled: boolean
+          site_policy_id: string | null
+          totp_delegation_enabled: boolean
+          unattended_login_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          account_key: string
+          account_label?: string | null
+          adapter_version?: string | null
+          consecutive_failures?: number
+          created_at?: string
+          created_by?: string | null
+          credential_item_id?: string | null
+          deleted_at?: string | null
+          health_state?: string
+          id?: string
+          last_challenge_at?: string | null
+          last_challenge_class?: string | null
+          last_checked_at?: string | null
+          last_success_at?: string | null
+          metadata?: Json
+          next_check_at?: string | null
+          normalized_origin: string
+          organization_id: string
+          profile_id: string
+          sensitive_actions_require_human?: boolean
+          session_health_enabled?: boolean
+          site_policy_id?: string | null
+          totp_delegation_enabled?: boolean
+          unattended_login_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          account_key?: string
+          account_label?: string | null
+          adapter_version?: string | null
+          consecutive_failures?: number
+          created_at?: string
+          created_by?: string | null
+          credential_item_id?: string | null
+          deleted_at?: string | null
+          health_state?: string
+          id?: string
+          last_challenge_at?: string | null
+          last_challenge_class?: string | null
+          last_checked_at?: string | null
+          last_success_at?: string | null
+          metadata?: Json
+          next_check_at?: string | null
+          normalized_origin?: string
+          organization_id?: string
+          profile_id?: string
+          sensitive_actions_require_human?: boolean
+          session_health_enabled?: boolean
+          site_policy_id?: string | null
+          totp_delegation_enabled?: boolean
+          unattended_login_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_binding_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_binding_site_policy_id_fkey"
+            columns: ["site_policy_id"]
+            isOneToOne: false
+            referencedRelation: "site_policy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_event: {
+        Row: {
+          action: string
+          actor: string
+          actor_user_id: string | null
+          adapter_version: string | null
+          capture_id: string | null
+          capture_suppressed_reason: string | null
+          chromium_version: string | null
+          code_version: string | null
+          controller_revision: number | null
+          created_at: string
+          created_by: string | null
+          duration_ms: number | null
+          ended_at: string | null
+          error_code: string | null
+          fencing_token: number | null
+          id: string
+          metadata: Json
+          occurred_at: string
+          organization_id: string
+          origin: string | null
+          profile_id: string
+          properties: Json
+          result_class: string
+          run_id: string
+          runtime_execution_id: string | null
+          runtime_tool_call_id: string | null
+          sequence: number
+          target_description: string | null
+          updated_at: string
+          updated_by: string | null
+          url_safe: string | null
+          version: number
+        }
+        Insert: {
+          action: string
+          actor: string
+          actor_user_id?: string | null
+          adapter_version?: string | null
+          capture_id?: string | null
+          capture_suppressed_reason?: string | null
+          chromium_version?: string | null
+          code_version?: string | null
+          controller_revision?: number | null
+          created_at?: string
+          created_by?: string | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          error_code?: string | null
+          fencing_token?: number | null
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id: string
+          origin?: string | null
+          profile_id: string
+          properties?: Json
+          result_class: string
+          run_id: string
+          runtime_execution_id?: string | null
+          runtime_tool_call_id?: string | null
+          sequence: number
+          target_description?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url_safe?: string | null
+          version?: number
+        }
+        Update: {
+          action?: string
+          actor?: string
+          actor_user_id?: string | null
+          adapter_version?: string | null
+          capture_id?: string | null
+          capture_suppressed_reason?: string | null
+          chromium_version?: string | null
+          code_version?: string | null
+          controller_revision?: number | null
+          created_at?: string
+          created_by?: string | null
+          duration_ms?: number | null
+          ended_at?: string | null
+          error_code?: string | null
+          fencing_token?: number | null
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          organization_id?: string
+          origin?: string | null
+          profile_id?: string
+          properties?: Json
+          result_class?: string
+          run_id?: string
+          runtime_execution_id?: string | null
+          runtime_tool_call_id?: string | null
+          sequence?: number
+          target_description?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          url_safe?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_event_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_event_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capture: {
+        Row: {
+          action_event_id: string | null
+          byte_count: number | null
+          captured_at: string
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          file_id: string
+          id: string
+          kind: string
+          metadata: Json
+          organization_id: string
+          privacy_class: string
+          profile_id: string
+          redaction_policy: string | null
+          redaction_version: number | null
+          retention_expires_at: string | null
+          run_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          action_event_id?: string | null
+          byte_count?: number | null
+          captured_at?: string
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_id: string
+          id?: string
+          kind: string
+          metadata?: Json
+          organization_id: string
+          privacy_class?: string
+          profile_id: string
+          redaction_policy?: string | null
+          redaction_version?: number | null
+          retention_expires_at?: string | null
+          run_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          action_event_id?: string | null
+          byte_count?: number | null
+          captured_at?: string
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          file_id?: string
+          id?: string
+          kind?: string
+          metadata?: Json
+          organization_id?: string
+          privacy_class?: string
+          profile_id?: string
+          redaction_policy?: string | null
+          redaction_version?: number | null
+          retention_expires_at?: string | null
+          run_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capture_action_event_id_fkey"
+            columns: ["action_event_id"]
+            isOneToOne: false
+            referencedRelation: "action_event"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capture_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capture_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      control_request: {
+        Row: {
+          controller_revision_granted: number | null
+          created_at: string
+          created_by: string | null
+          decided_at: string | null
+          decided_by_user_id: string | null
+          expires_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          profile_id: string
+          reason_safe: string | null
+          requested_at: string
+          requested_by_execution_id: string | null
+          requested_by_user_id: string | null
+          requested_controller_kind: string
+          run_id: string
+          runtime_execution_id: string | null
+          state: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          controller_revision_granted?: number | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          expires_at: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          profile_id: string
+          reason_safe?: string | null
+          requested_at?: string
+          requested_by_execution_id?: string | null
+          requested_by_user_id?: string | null
+          requested_controller_kind: string
+          run_id: string
+          runtime_execution_id?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          controller_revision_granted?: number | null
+          created_at?: string
+          created_by?: string | null
+          decided_at?: string | null
+          decided_by_user_id?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          profile_id?: string
+          reason_safe?: string | null
+          requested_at?: string
+          requested_by_execution_id?: string | null
+          requested_by_user_id?: string | null
+          requested_controller_kind?: string
+          run_id?: string
+          runtime_execution_id?: string | null
+          state?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "control_request_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "control_request_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      handoff: {
+        Row: {
+          account_binding_id: string | null
+          boundary_capture_id: string | null
+          cancelled_at: string | null
+          claimed_at: string | null
+          claimed_by_user_id: string | null
+          controller_revision: number | null
+          conversation_id: string | null
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          instructions_safe: string | null
+          metadata: Json
+          organization_id: string
+          origin: string | null
+          outcome: string | null
+          pending_call_id: string | null
+          pending_execution_id: string | null
+          profile_id: string
+          reason: string
+          reconcile_lease_expires_at: string | null
+          reconnect_deadline_at: string | null
+          requested_at: string
+          requested_by_actor: string
+          requested_by_execution_id: string | null
+          resolution_key: string | null
+          resume_capture_id: string | null
+          resume_dispatched_at: string | null
+          returned_at: string | null
+          returning_at: string | null
+          run_id: string
+          state: string
+          tool_resolved_at: string | null
+          updated_at: string
+          updated_by: string | null
+          verified_confidence: number | null
+          verified_result: string | null
+          verified_signals: Json | null
+          version: number
+        }
+        Insert: {
+          account_binding_id?: string | null
+          boundary_capture_id?: string | null
+          cancelled_at?: string | null
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          controller_revision?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          instructions_safe?: string | null
+          metadata?: Json
+          organization_id: string
+          origin?: string | null
+          outcome?: string | null
+          pending_call_id?: string | null
+          pending_execution_id?: string | null
+          profile_id: string
+          reason: string
+          reconcile_lease_expires_at?: string | null
+          reconnect_deadline_at?: string | null
+          requested_at?: string
+          requested_by_actor?: string
+          requested_by_execution_id?: string | null
+          resolution_key?: string | null
+          resume_capture_id?: string | null
+          resume_dispatched_at?: string | null
+          returned_at?: string | null
+          returning_at?: string | null
+          run_id: string
+          state?: string
+          tool_resolved_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verified_confidence?: number | null
+          verified_result?: string | null
+          verified_signals?: Json | null
+          version?: number
+        }
+        Update: {
+          account_binding_id?: string | null
+          boundary_capture_id?: string | null
+          cancelled_at?: string | null
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          controller_revision?: number | null
+          conversation_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          instructions_safe?: string | null
+          metadata?: Json
+          organization_id?: string
+          origin?: string | null
+          outcome?: string | null
+          pending_call_id?: string | null
+          pending_execution_id?: string | null
+          profile_id?: string
+          reason?: string
+          reconcile_lease_expires_at?: string | null
+          reconnect_deadline_at?: string | null
+          requested_at?: string
+          requested_by_actor?: string
+          requested_by_execution_id?: string | null
+          resolution_key?: string | null
+          resume_capture_id?: string | null
+          resume_dispatched_at?: string | null
+          returned_at?: string | null
+          returning_at?: string | null
+          run_id?: string
+          state?: string
+          tool_resolved_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verified_confidence?: number | null
+          verified_result?: string | null
+          verified_signals?: Json | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "handoff_account_binding_id_fkey"
+            columns: ["account_binding_id"]
+            isOneToOne: false
+            referencedRelation: "account_binding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handoff_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "handoff_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      login_attempt: {
+        Row: {
+          account_binding_id: string | null
+          adapter_version: string | null
+          after_capture_id: string | null
+          attempt_spec: Json
+          before_capture_id: string | null
+          challenge_class: string | null
+          created_at: string
+          created_by: string | null
+          credential_item_id: string | null
+          field_keys: string[]
+          handoff_id: string | null
+          id: string
+          metadata: Json
+          normalized_origin: string
+          organization_id: string
+          profile_id: string
+          recipe_id: string | null
+          recipe_overrode_agent_spec: boolean
+          recipe_version: number | null
+          run_id: string
+          settled_at: string | null
+          started_at: string
+          tool_invocation_id: string | null
+          updated_at: string
+          updated_by: string | null
+          verdict: string | null
+          verdict_confidence: number | null
+          verdict_signals: Json | null
+          version: number
+        }
+        Insert: {
+          account_binding_id?: string | null
+          adapter_version?: string | null
+          after_capture_id?: string | null
+          attempt_spec: Json
+          before_capture_id?: string | null
+          challenge_class?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_item_id?: string | null
+          field_keys?: string[]
+          handoff_id?: string | null
+          id?: string
+          metadata?: Json
+          normalized_origin: string
+          organization_id: string
+          profile_id: string
+          recipe_id?: string | null
+          recipe_overrode_agent_spec?: boolean
+          recipe_version?: number | null
+          run_id: string
+          settled_at?: string | null
+          started_at?: string
+          tool_invocation_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          verdict_confidence?: number | null
+          verdict_signals?: Json | null
+          version?: number
+        }
+        Update: {
+          account_binding_id?: string | null
+          adapter_version?: string | null
+          after_capture_id?: string | null
+          attempt_spec?: Json
+          before_capture_id?: string | null
+          challenge_class?: string | null
+          created_at?: string
+          created_by?: string | null
+          credential_item_id?: string | null
+          field_keys?: string[]
+          handoff_id?: string | null
+          id?: string
+          metadata?: Json
+          normalized_origin?: string
+          organization_id?: string
+          profile_id?: string
+          recipe_id?: string | null
+          recipe_overrode_agent_spec?: boolean
+          recipe_version?: number | null
+          run_id?: string
+          settled_at?: string | null
+          started_at?: string
+          tool_invocation_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          verdict?: string | null
+          verdict_confidence?: number | null
+          verdict_signals?: Json | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_attempt_account_binding_id_fkey"
+            columns: ["account_binding_id"]
+            isOneToOne: false
+            referencedRelation: "account_binding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "login_attempt_after_capture_id_fkey"
+            columns: ["after_capture_id"]
+            isOneToOne: false
+            referencedRelation: "capture"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "login_attempt_before_capture_id_fkey"
+            columns: ["before_capture_id"]
+            isOneToOne: false
+            referencedRelation: "capture"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "login_attempt_handoff_id_fkey"
+            columns: ["handoff_id"]
+            isOneToOne: false
+            referencedRelation: "handoff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "login_attempt_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "login_attempt_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "login_recipe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "login_attempt_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      login_recipe: {
+        Row: {
+          challenge_signals: Json
+          confidence_floor: number | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          failure_signals: Json
+          field_map: Json
+          id: string
+          match_pattern: string | null
+          metadata: Json
+          normalized_origin: string
+          notes: string | null
+          organization_id: string
+          provenance: string
+          provider_key: string | null
+          recipe_version: number
+          source_finding_id: string | null
+          status: string
+          submit: Json
+          success_signals: Json
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          challenge_signals?: Json
+          confidence_floor?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          failure_signals?: Json
+          field_map: Json
+          id?: string
+          match_pattern?: string | null
+          metadata?: Json
+          normalized_origin: string
+          notes?: string | null
+          organization_id: string
+          provenance?: string
+          provider_key?: string | null
+          recipe_version?: number
+          source_finding_id?: string | null
+          status?: string
+          submit: Json
+          success_signals?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          challenge_signals?: Json
+          confidence_floor?: number | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          failure_signals?: Json
+          field_map?: Json
+          id?: string
+          match_pattern?: string | null
+          metadata?: Json
+          normalized_origin?: string
+          notes?: string | null
+          organization_id?: string
+          provenance?: string
+          provider_key?: string | null
+          recipe_version?: number
+          source_finding_id?: string | null
+          status?: string
+          submit?: Json
+          success_signals?: Json
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      profile: {
+        Row: {
+          capture_retention_days: number | null
+          checkpoint_status: string
+          chromium_version: string | null
+          created_at: string
+          created_by: string | null
+          current_checkpoint_at: string | null
+          current_checkpoint_bytes: number | null
+          current_checkpoint_id: string | null
+          current_checkpoint_revision: number
+          current_manifest_hash: string | null
+          deleted_at: string | null
+          display_name: string
+          egress_class: string
+          event_retention_days: number | null
+          expires_at: string | null
+          home_region: string
+          id: string
+          is_default: boolean
+          last_started_at: string | null
+          last_stopped_at: string | null
+          metadata: Json
+          org_access_mode: string
+          organization_id: string
+          owner_type: string
+          owner_user_id: string | null
+          profile_format_version: number | null
+          status: string
+          trace_retention_days: number | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          video_retention_days: number | null
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          capture_retention_days?: number | null
+          checkpoint_status?: string
+          chromium_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_checkpoint_at?: string | null
+          current_checkpoint_bytes?: number | null
+          current_checkpoint_id?: string | null
+          current_checkpoint_revision?: number
+          current_manifest_hash?: string | null
+          deleted_at?: string | null
+          display_name: string
+          egress_class: string
+          event_retention_days?: number | null
+          expires_at?: string | null
+          home_region: string
+          id?: string
+          is_default?: boolean
+          last_started_at?: string | null
+          last_stopped_at?: string | null
+          metadata?: Json
+          org_access_mode?: string
+          organization_id: string
+          owner_type?: string
+          owner_user_id?: string | null
+          profile_format_version?: number | null
+          status?: string
+          trace_retention_days?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          video_retention_days?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          capture_retention_days?: number | null
+          checkpoint_status?: string
+          chromium_version?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_checkpoint_at?: string | null
+          current_checkpoint_bytes?: number | null
+          current_checkpoint_id?: string | null
+          current_checkpoint_revision?: number
+          current_manifest_hash?: string | null
+          deleted_at?: string | null
+          display_name?: string
+          egress_class?: string
+          event_retention_days?: number | null
+          expires_at?: string | null
+          home_region?: string
+          id?: string
+          is_default?: boolean
+          last_started_at?: string | null
+          last_stopped_at?: string | null
+          metadata?: Json
+          org_access_mode?: string
+          organization_id?: string
+          owner_type?: string
+          owner_user_id?: string | null
+          profile_format_version?: number | null
+          status?: string
+          trace_retention_days?: number | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          video_retention_days?: number | null
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      profile_checkpoint: {
+        Row: {
+          archive_format_version: number
+          byte_count: number
+          chromium_version: string
+          content_hash: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deletion_proof: string | null
+          id: string
+          is_current: boolean
+          kms_key_version: string
+          metadata: Json
+          nonce: string
+          object_bucket: string
+          object_key: string
+          organization_id: string
+          profile_format_version: number
+          profile_id: string
+          retention_expires_at: string | null
+          revision: number
+          state: string
+          superseded_at: string | null
+          updated_at: string
+          updated_by: string | null
+          uploaded_at: string | null
+          verified_at: string | null
+          verify_failure_code: string | null
+          verify_failure_detail: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          wrapped_dek: string
+        }
+        Insert: {
+          archive_format_version: number
+          byte_count: number
+          chromium_version: string
+          content_hash: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deletion_proof?: string | null
+          id?: string
+          is_current?: boolean
+          kms_key_version: string
+          metadata?: Json
+          nonce: string
+          object_bucket: string
+          object_key: string
+          organization_id: string
+          profile_format_version: number
+          profile_id: string
+          retention_expires_at?: string | null
+          revision: number
+          state?: string
+          superseded_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          uploaded_at?: string | null
+          verified_at?: string | null
+          verify_failure_code?: string | null
+          verify_failure_detail?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wrapped_dek: string
+        }
+        Update: {
+          archive_format_version?: number
+          byte_count?: number
+          chromium_version?: string
+          content_hash?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          deletion_proof?: string | null
+          id?: string
+          is_current?: boolean
+          kms_key_version?: string
+          metadata?: Json
+          nonce?: string
+          object_bucket?: string
+          object_key?: string
+          organization_id?: string
+          profile_format_version?: number
+          profile_id?: string
+          retention_expires_at?: string | null
+          revision?: number
+          state?: string
+          superseded_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          uploaded_at?: string | null
+          verified_at?: string | null
+          verify_failure_code?: string | null
+          verify_failure_detail?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          wrapped_dek?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_checkpoint_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run: {
+        Row: {
+          acting_user_id: string | null
+          activation_key: string
+          active_page_key: string | null
+          chromium_version: string | null
+          code_version: string | null
+          controller_execution_id: string | null
+          controller_kind: string
+          controller_lease_expires_at: string | null
+          controller_revision: number
+          controller_user_id: string | null
+          created_at: string
+          created_by: string | null
+          current_origin: string | null
+          current_title: string | null
+          current_url: string | null
+          deleted_at: string | null
+          error_code: string | null
+          error_detail_safe: string | null
+          execution_target: string
+          heartbeat_at: string | null
+          id: string
+          lease_expires_at: string | null
+          lease_fencing_token: number
+          lease_holder: string | null
+          metadata: Json
+          mode: string
+          organization_id: string
+          page_count: number
+          profile_id: string
+          runtime_execution_id: string | null
+          runtime_request_id: string | null
+          runtime_tool_call_id: string | null
+          sandbox_id: string | null
+          sandbox_tier: string | null
+          started_at: string | null
+          state: string
+          stopped_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          worker_image_version: string | null
+          worker_key: string | null
+        }
+        Insert: {
+          acting_user_id?: string | null
+          activation_key: string
+          active_page_key?: string | null
+          chromium_version?: string | null
+          code_version?: string | null
+          controller_execution_id?: string | null
+          controller_kind?: string
+          controller_lease_expires_at?: string | null
+          controller_revision?: number
+          controller_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_origin?: string | null
+          current_title?: string | null
+          current_url?: string | null
+          deleted_at?: string | null
+          error_code?: string | null
+          error_detail_safe?: string | null
+          execution_target?: string
+          heartbeat_at?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          lease_fencing_token?: number
+          lease_holder?: string | null
+          metadata?: Json
+          mode?: string
+          organization_id: string
+          page_count?: number
+          profile_id: string
+          runtime_execution_id?: string | null
+          runtime_request_id?: string | null
+          runtime_tool_call_id?: string | null
+          sandbox_id?: string | null
+          sandbox_tier?: string | null
+          started_at?: string | null
+          state?: string
+          stopped_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          worker_image_version?: string | null
+          worker_key?: string | null
+        }
+        Update: {
+          acting_user_id?: string | null
+          activation_key?: string
+          active_page_key?: string | null
+          chromium_version?: string | null
+          code_version?: string | null
+          controller_execution_id?: string | null
+          controller_kind?: string
+          controller_lease_expires_at?: string | null
+          controller_revision?: number
+          controller_user_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          current_origin?: string | null
+          current_title?: string | null
+          current_url?: string | null
+          deleted_at?: string | null
+          error_code?: string | null
+          error_detail_safe?: string | null
+          execution_target?: string
+          heartbeat_at?: string | null
+          id?: string
+          lease_expires_at?: string | null
+          lease_fencing_token?: number
+          lease_holder?: string | null
+          metadata?: Json
+          mode?: string
+          organization_id?: string
+          page_count?: number
+          profile_id?: string
+          runtime_execution_id?: string | null
+          runtime_request_id?: string | null
+          runtime_tool_call_id?: string | null
+          sandbox_id?: string | null
+          sandbox_tier?: string | null
+          started_at?: string | null
+          state?: string
+          stopped_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          worker_image_version?: string | null
+          worker_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_observation: {
+        Row: {
+          account_binding_id: string
+          adapter_version: string | null
+          authenticated_marker_kind: string | null
+          challenge_class: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          inferred_lower_bound_seconds: number | null
+          inferred_upper_bound_seconds: number | null
+          metadata: Json
+          observation_kind: string
+          observed_at: string
+          organization_id: string
+          profile_id: string
+          run_id: string | null
+          sample_count: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          account_binding_id: string
+          adapter_version?: string | null
+          authenticated_marker_kind?: string | null
+          challenge_class?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inferred_lower_bound_seconds?: number | null
+          inferred_upper_bound_seconds?: number | null
+          metadata?: Json
+          observation_kind: string
+          observed_at?: string
+          organization_id: string
+          profile_id: string
+          run_id?: string | null
+          sample_count?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          account_binding_id?: string
+          adapter_version?: string | null
+          authenticated_marker_kind?: string | null
+          challenge_class?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inferred_lower_bound_seconds?: number | null
+          inferred_upper_bound_seconds?: number | null
+          metadata?: Json
+          observation_kind?: string
+          observed_at?: string
+          organization_id?: string
+          profile_id?: string
+          run_id?: string | null
+          sample_count?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "site_observation_account_binding_id_fkey"
+            columns: ["account_binding_id"]
+            isOneToOne: false
+            referencedRelation: "account_binding"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_observation_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "site_observation_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      site_policy: {
+        Row: {
+          adapter_version: string | null
+          applies_to_edition: string | null
+          automation_policy_note: string | null
+          background_access_allowed: boolean | null
+          claim: string
+          created_at: string
+          created_by: string | null
+          default_seconds: number | null
+          deleted_at: string | null
+          domain: string
+          evidence_confidence: string
+          id: string
+          is_active: boolean
+          last_verified_at: string | null
+          long_lived_mechanism: string | null
+          maximum_seconds: number | null
+          metadata: Json
+          minimum_seconds: number | null
+          organization_id: string
+          provider_key: string
+          refresh_due_at: string | null
+          resets_on: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source_url: string | null
+          timeout_type: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          adapter_version?: string | null
+          applies_to_edition?: string | null
+          automation_policy_note?: string | null
+          background_access_allowed?: boolean | null
+          claim: string
+          created_at?: string
+          created_by?: string | null
+          default_seconds?: number | null
+          deleted_at?: string | null
+          domain: string
+          evidence_confidence?: string
+          id?: string
+          is_active?: boolean
+          last_verified_at?: string | null
+          long_lived_mechanism?: string | null
+          maximum_seconds?: number | null
+          metadata?: Json
+          minimum_seconds?: number | null
+          organization_id: string
+          provider_key: string
+          refresh_due_at?: string | null
+          resets_on?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_url?: string | null
+          timeout_type?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          adapter_version?: string | null
+          applies_to_edition?: string | null
+          automation_policy_note?: string | null
+          background_access_allowed?: boolean | null
+          claim?: string
+          created_at?: string
+          created_by?: string | null
+          default_seconds?: number | null
+          deleted_at?: string | null
+          domain?: string
+          evidence_confidence?: string
+          id?: string
+          is_active?: boolean
+          last_verified_at?: string | null
+          long_lived_mechanism?: string | null
+          maximum_seconds?: number | null
+          metadata?: Json
+          minimum_seconds?: number | null
+          organization_id?: string
+          provider_key?: string
+          refresh_due_at?: string | null
+          resets_on?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source_url?: string | null
+          timeout_type?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      stream_ticket: {
+        Row: {
+          claimed_at: string | null
+          control_revision: number | null
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          grant_revision: number | null
+          handoff_id: string | null
+          id: string
+          metadata: Json
+          minted_at: string
+          mode: string
+          organization_id: string
+          profile_id: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          run_id: string
+          stream_session_id: string | null
+          ticket_hash: string
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          claimed_at?: string | null
+          control_revision?: number | null
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          grant_revision?: number | null
+          handoff_id?: string | null
+          id?: string
+          metadata?: Json
+          minted_at?: string
+          mode: string
+          organization_id: string
+          profile_id: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          run_id: string
+          stream_session_id?: string | null
+          ticket_hash: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          claimed_at?: string | null
+          control_revision?: number | null
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          grant_revision?: number | null
+          handoff_id?: string | null
+          id?: string
+          metadata?: Json
+          minted_at?: string
+          mode?: string
+          organization_id?: string
+          profile_id?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          run_id?: string
+          stream_session_id?: string | null
+          ticket_hash?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stream_ticket_handoff_id_fkey"
+            columns: ["handoff_id"]
+            isOneToOne: false
+            referencedRelation: "handoff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stream_ticket_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stream_ticket_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   canvas: {
     Tables: {
       canvas_comment_likes: {
@@ -65700,6 +67145,9 @@ export const Constants = {
       ],
       tier: ["free", "trial", "premium"],
     },
+  },
+  browser: {
+    Enums: {},
   },
   canvas: {
     Enums: {},

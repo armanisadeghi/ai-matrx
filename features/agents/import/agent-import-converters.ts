@@ -34,7 +34,7 @@ export { parsePasted } from "./agent-import-parse";
 const SNAKE_TO_CAMEL: Record<string, keyof AgentDefinition> = {
   variable_definitions: "variableDefinitions",
   model_id: "modelId",
-  context_slots: "contextPolicies",
+  context_policies: "contextPolicies",
   agent_type: "agentType",
   model_tiers: "modelTiers",
   output_schema: "outputSchema",

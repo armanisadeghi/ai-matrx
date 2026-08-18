@@ -59,7 +59,7 @@ export function UsageRowDetail({ row }: { row: AgentUsageRow }) {
   const effective = (row.config?.effective ?? null) as {
     variables?: string[];
     required_variables?: string[];
-    context_slots?: string[];
+    context_policies?: string[];
   } | null;
 
   return (
@@ -77,7 +77,7 @@ export function UsageRowDetail({ row }: { row: AgentUsageRow }) {
       {effective && (
         <div className="grid gap-2 sm:grid-cols-2 text-[11px]">
           <ContractColumn label="Declared variables" items={effective.variables ?? []} required={effective.required_variables ?? []} />
-          <ContractColumn label="Declared context policies" items={effective.context_slots ?? []} />
+          <ContractColumn label="Declared context policies" items={effective.context_policies ?? []} />
         </div>
       )}
 

@@ -299,7 +299,7 @@ export const buildAgentShortcutMenu = createAsyncThunk<
         const parsedVariableDefinitions = parseVariableDefinitions(
           item.agent?.variable_definitions,
         );
-        const parsedContextPolicies = parseContextPolicies(item.agent?.context_slots);
+        const parsedContextPolicies = parseContextPolicies(item.agent?.context_policies);
 
         const shortcut: AgentShortcut = {
           id: item.id,
@@ -437,7 +437,7 @@ export const fetchShortcutsForContext = createAsyncThunk<
         variableDefinitions: parseVariableDefinitions(
           row.agent_variable_definitions,
         ),
-        contextPolicies: parseContextPolicies(row.agent_context_slots),
+        contextPolicies: parseContextPolicies(row.agent_context_policies),
 
         enabledFeatures: row.enabled_features as ShortcutContext[],
         surfaceName:
@@ -1498,7 +1498,7 @@ export const ensureShortcutLoaded = createAsyncThunk<void, string, ThunkApi>(
 /**
  * Build an AgentShortcut from a unified-menu item. The unified-menu view
  * writes each item as jsonb, so agent_variable_definitions /
- * agent_context_slots live alongside the usual shortcut columns when the
+ * agent_context_policies live alongside the usual shortcut columns when the
  * view includes them in the jsonb. Read defensively via loose lookup so
  * we don't silently drop them if the server sends them under a slightly
  * different shape.
@@ -1513,8 +1513,8 @@ function unifiedMenuItemToShortcut(
         ?.variable_definitions,
   );
   const contextPolicies = parseContextPolicies(
-    loose.agent_context_slots ??
-      (loose.agent as { context_slots?: unknown } | undefined)?.context_slots,
+    loose.agent_context_policies ??
+      (loose.agent as { context_policies?: unknown } | undefined)?.context_policies,
   );
   const agentName =
     (loose.agent_name as string | undefined) ??

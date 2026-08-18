@@ -306,7 +306,7 @@ export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
 // ---------------------------------------------------------------------------
 
 const COMPOSITION_NOT_IMPLEMENTED =
-  "Embedded-shortcut composition lands in Phase 10; the shared_context_slots column on aga_apps is the persistence target but no UI/RPC exists yet.";
+  "Embedded-shortcut composition lands in Phase 10; the shared_context_policies column on aga_apps is the persistence target but no UI/RPC exists yet.";
 
 export const addEmbeddedShortcut = createAsyncThunk<
   void,

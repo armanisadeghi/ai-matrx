@@ -80,7 +80,7 @@ export function SystemAgentSurfaceEmitter({
       agent_model_tiers: agent.modelTiers ?? undefined,
       agent_messages: agent.messages ?? undefined,
       agent_variable_definitions: agent.variableDefinitions ?? undefined,
-      agent_context_slots: agent.contextPolicies ?? undefined,
+      agent_context_policies: agent.contextPolicies ?? undefined,
       agent_tools: agent.tools ?? undefined,
       agent_custom_tools: agent.customTools ?? undefined,
       agent_mcp_servers: agent.mcpServers ?? undefined,

@@ -126,7 +126,7 @@ export function useAgentBuilderSurfaceScope(
       >,
 
       // ── Inputs ─────────────────────────────────────────────────────────
-      agent_context_slots: selectAgentContextPolicies(state, agentId) ?? undefined,
+      agent_context_policies: selectAgentContextPolicies(state, agentId) ?? undefined,
       agent_variable_definitions:
         selectAgentVariableDefinitions(state, agentId) ?? undefined,
 

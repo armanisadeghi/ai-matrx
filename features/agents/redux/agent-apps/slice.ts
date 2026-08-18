@@ -39,7 +39,7 @@ function makeEmptyRecord(id: string): AgentAppRecord {
     use_latest: true,
 
     app_kind: "single",
-    shared_context_slots: null,
+    shared_context_policies: null,
     search_tsv: null,
 
     component_code: "",

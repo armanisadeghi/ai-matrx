@@ -163,7 +163,7 @@ export function useAiPostProcess() {
       setError(null);
       setLaunching(true);
       try {
-        // 1. Load the agent's variable_definitions + context_slots into redux
+        // 1. Load the agent's variable_definitions + context_policies into redux
         //    (createManualInstance snapshots them onto the instance).
         await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
         const payload = selectAgentExecutionPayload(store.getState(), agentId);

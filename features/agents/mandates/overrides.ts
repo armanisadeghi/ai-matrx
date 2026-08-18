@@ -30,7 +30,7 @@ import { invalidateMandateCache } from "./service";
 export type MandateDefinitionRow = Database["agent"]["Tables"]["mandate"]["Row"];
 export type MandateBindingRow = Database["agent"]["Tables"]["mandate_binding"]["Row"];
 
-/** The mandate's stored contract — `{required_variables, required_context_slots,
+/** The mandate's stored contract — `{required_variables, required_context_policies,
  * required_output_keys}`, seeded from the default agent's declarations.
  * `requiredOutputKeys` is the mandate's OUTPUT promise: the keys any bound
  * agent's structured output must produce (contract-checked server-side at
@@ -52,7 +52,7 @@ export function parseMandateContract(contract: Json): MandateContract {
   if (Array.isArray(vars)) {
     out.requiredVariables = vars.filter((v): v is string => typeof v === "string");
   }
-  const slots = contract.required_context_slots;
+  const slots = contract.required_context_policies;
   if (Array.isArray(slots)) {
     out.requiredContextPolicyKeys = slots.filter((v): v is string => typeof v === "string");
   }

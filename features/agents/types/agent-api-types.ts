@@ -299,8 +299,8 @@ export type CustomToolDefinition = components["schemas"]["CustomTool"];
 /**
  * Agent-defined context policy.
  *
- * Stored in prompts.context_slots / agent.definition.context_slots JSONB column.
- * Loaded as part of the agent definition and carried on Agent.context_slots,
+ * Stored in prompts.context_policies / agent.definition.context_policies JSONB column.
+ * Loaded as part of the agent definition and carried on Agent.context_policies,
  * so sub-agents and tools have access without a second DB lookup.
  *
  * Clients do NOT send slots. Clients send content in the `context` dict.

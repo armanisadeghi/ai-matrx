@@ -2,7 +2,7 @@
  * Agent-shaped progressive JSON display.
  *
  * Sibling of the legacy PromptJsonDisplay but built around the agent.definition
- * row shape: `variable_definitions`, `context_slots`, `messages[].content`
+ * row shape: `variable_definitions`, `context_policies`, `messages[].content`
  * as a text-part array, `agent_type`, `model_id`, etc.
  *
  * Uses `parsePartialAgentJson` so the card renders as soon as ANY field
@@ -200,7 +200,7 @@ function AgentJsonDisplayInner({
     !!agentData.description ||
     !!agentData.messages?.length ||
     !!agentData.variable_definitions?.length ||
-    !!agentData.context_slots?.length ||
+    !!agentData.context_policies?.length ||
     !!(agentData.settings && Object.keys(agentData.settings).length > 0);
 
   if (!hasAnyField && !jsonBlock) {
@@ -355,13 +355,13 @@ function PrettyView({
       )}
 
       {/* Context policies */}
-      {data.context_slots && data.context_slots.length > 0 && (
+      {data.context_policies && data.context_policies.length > 0 && (
         <section className="border-t pt-2">
           <SectionHeader
             icon={Puzzle}
-            label={`Context Policies (${data.context_slots.length})`}
+            label={`Context Policies (${data.context_policies.length})`}
           />
-          <ContextPoliciesTable slots={data.context_slots} />
+          <ContextPoliciesTable slots={data.context_policies} />
         </section>
       )}
 
@@ -580,7 +580,7 @@ function VariablesTable({
 function ContextPoliciesTable({
   slots,
 }: {
-  slots: NonNullable<PartialAgentData["context_slots"]>;
+  slots: NonNullable<PartialAgentData["context_policies"]>;
 }) {
   return (
     <div className="border rounded-md overflow-hidden bg-background/40">

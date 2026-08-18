@@ -20,7 +20,7 @@ type AgentInsert = Omit<
  * seed actually provides — every omitted key falls back to the DB default.
  *
  * NEVER replace this with `?? null` fallbacks: most columns on agx_agent are
- * NOT NULL with defaults (custom_tools, context_slots, messages, settings,
+ * NOT NULL with defaults (custom_tools, context_policies, messages, settings,
  * tools, tags, mcp_servers, is_*, agent_type, version), and sending `null`
  * for any of them triggers a 23502 violation. See utils/supabase/payload.ts.
  */
@@ -44,7 +44,7 @@ function seedToInsertPayload(
       seed.tools === undefined
         ? undefined
         : sanitizeAgentToolIds(seed.tools, "createAgentFromSeed"),
-    context_slots: seed.contextPolicies,
+    context_policies: seed.contextPolicies,
     model_tiers: seed.modelTiers,
     output_schema: seed.outputSchema,
     custom_tools: seed.customTools,

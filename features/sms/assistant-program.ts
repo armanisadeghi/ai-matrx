@@ -3,7 +3,11 @@ import type { Database } from "@/types/database.types";
 type SmsAssistantProgramRpcRow =
   Database["communication"]["Functions"]["get_my_sms_assistant_program"]["Returns"][number];
 type NullableSmsAssistantProgramRpcKey =
-  "verified_user_phone" | "sms_conversation_id" | "chat_conversation_id";
+  | "verified_user_phone"
+  | "sms_conversation_id"
+  | "chat_conversation_id"
+  | "preferred_agent_id"
+  | "preferred_agent_version_id";
 type SmsAssistantProgramRpcBoundary = Omit<
   SmsAssistantProgramRpcRow,
   NullableSmsAssistantProgramRpcKey

@@ -314,7 +314,7 @@ const surfaceSpecific: SurfaceValue[] = [
     group: "agent_config",
   },
   {
-    name: "agent_context_slots",
+    name: "agent_context_policies",
     label: "Context policies",
     description:
       "Declared context policies the open agent fills at invocation time. Absent when no agent is open or it declares none.",
@@ -482,7 +482,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * DELIBERATELY NOT DECLARED, and each for its own reason:
  *
  *  - CAPABILITY AND BEHAVIOUR WIRING — `agent_messages`,
- *    `agent_variable_definitions`, `agent_context_slots`, `agent_tools`,
+ *    `agent_variable_definitions`, `agent_context_policies`, `agent_tools`,
  *    `agent_custom_tools`, `agent_mcp_servers`, `agent_output_schema`,
  *    `agent_skill_config`, `agent_model_id`, `agent_model_tiers`,
  *    `agent_settings`, `agent_ui_gates`. Changing any of these changes how a
@@ -657,7 +657,7 @@ export function createAdminSystemAgentsScope(values: {
   agent_model_tiers?: unknown;
   agent_messages?: unknown[];
   agent_variable_definitions?: unknown[];
-  agent_context_slots?: unknown[];
+  agent_context_policies?: unknown[];
   agent_tools?: unknown[];
   agent_custom_tools?: unknown[];
   agent_mcp_servers?: unknown[];

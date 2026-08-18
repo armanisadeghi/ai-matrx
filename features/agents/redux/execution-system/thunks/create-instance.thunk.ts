@@ -490,7 +490,7 @@ export const createInstanceFromShortcut = createAsyncThunk<
   }
 
   // ── Context resolution precedence (low → high) ──
-  //   1. Agent context_slots[].default              (already seeded by initInstanceContext)
+  //   1. Agent context_policies[].default              (already seeded by initInstanceContext)
   //   2. Shortcut.contextOverrides                  (this dispatch)
   //   3. Runtime context entries from scope-mapping (next dispatch — overrides 2)
   if (

@@ -451,7 +451,7 @@ export function LiveBuilder({
         total_executions: 0,
         success_rate: 0,
         app_kind: "single",
-        shared_context_slots: null,
+        shared_context_policies: null,
         search_tsv: null,
       }) as unknown as PublicAgentApp,
     [

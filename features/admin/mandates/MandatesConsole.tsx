@@ -320,7 +320,7 @@ export function MandatesConsole() {
       const parsed = parseMandateContract(selectedRow.mandate.contract);
       contract = {
         required_variables: parsed.requiredVariables,
-        required_context_slots: parsed.requiredContextPolicyKeys,
+        required_context_policies: parsed.requiredContextPolicyKeys,
         required_output_keys: parsed.requiredOutputKeys,
       };
     }

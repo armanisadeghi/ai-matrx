@@ -132,7 +132,7 @@ export async function POST(
         shell_config: original.shell_config,
         slot_overrides: original.slot_overrides,
         slot_code: original.slot_code,
-        shared_context_slots: original.shared_context_slots,
+        shared_context_policies: original.shared_context_policies,
         metadata: original.metadata,
         preview_image_url: original.preview_image_url,
         favicon_url: original.favicon_url,
