@@ -10,11 +10,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  ArrowLeft,
   ArrowRight,
   CheckCircle2,
+  MessageSquareText,
   PartyPopper,
   Pencil,
-  Wand2,
   XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -70,7 +71,7 @@ export function RuleReviewWizard({
   const [rejecting, setRejecting] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [busy, setBusy] = useState(false);
-  const [decided, setDecided] = useState(0);
+  const [decidedIds, setDecidedIds] = useState<Set<string>>(() => new Set());
   const [previousOpen, setPreviousOpen] = useState(open);
 
   // Reset synchronously when a new review sitting begins. This is a deliberate
@@ -84,7 +85,7 @@ export function RuleReviewWizard({
         .map((rule) => rule.id);
       setQueueIds(ids);
       setIndex(0);
-      setDecided(0);
+      setDecidedIds(new Set());
       setRejecting(false);
       setFeedback("");
     }
@@ -95,7 +96,9 @@ export function RuleReviewWizard({
   // left alone when it is still ahead of the Expert. (The "request changes
   // and keep going" flow — Arman, 2026-08-17.)
   const indexRef = useRef(index);
-  indexRef.current = index;
+  useEffect(() => {
+    indexRef.current = index;
+  }, [index]);
   useEffect(() => {
     if (!requeue || !open) return;
     setQueueIds((prev) => {
@@ -112,10 +115,23 @@ export function RuleReviewWizard({
   const rule = currentId ? byId.get(currentId) : undefined;
   const finished = index >= queueIds.length;
 
-  const advance = () => {
+  const moveTo = (nextIndex: number) => {
     setRejecting(false);
     setFeedback("");
-    setIndex((i) => i + 1);
+    setIndex(nextIndex);
+  };
+
+  const advance = () => {
+    moveTo(index + 1);
+  };
+
+  const markDecided = (ruleId: string) => {
+    setDecidedIds((current) => {
+      if (current.has(ruleId)) return current;
+      const next = new Set(current);
+      next.add(ruleId);
+      return next;
+    });
   };
 
   const approve = async () => {
@@ -127,7 +143,7 @@ export function RuleReviewWizard({
       // card and the page-level toast says what happened.
       const landed = await onApprove(rule);
       if (!landed) return;
-      setDecided((d) => d + 1);
+      markDecided(rule.id);
       advance();
     } finally {
       setBusy(false);
@@ -139,7 +155,7 @@ export function RuleReviewWizard({
     setBusy(true);
     try {
       await onReject(rule, feedback.trim());
-      setDecided((d) => d + 1);
+      markDecided(rule.id);
       advance();
     } catch (err) {
       // Stay on the card — the feedback the Expert just wrote is not lost.
@@ -184,8 +200,8 @@ export function RuleReviewWizard({
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
             <PartyPopper className="h-8 w-8 text-primary" />
             <p className="text-sm font-medium text-foreground">
-              {decided > 0
-                ? `That's the queue — ${decided} ${decided === 1 ? "rule" : "rules"} reviewed in one sitting.`
+              {decidedIds.size > 0
+                ? `That's the queue — ${decidedIds.size} ${decidedIds.size === 1 ? "rule" : "rules"} reviewed in one sitting.`
                 : "Nothing is waiting on you right now."}
             </p>
             <p className="text-xs text-muted-foreground">
@@ -310,7 +326,7 @@ export function RuleReviewWizard({
                     disabled={busy}
                     title="Say what should change — the AI rewrites it and it comes back to this queue."
                   >
-                    <Wand2 className="h-4 w-4" />
+                    <MessageSquareText className="h-4 w-4" />
                     Improve
                   </Button>
                   <Button
@@ -330,10 +346,24 @@ export function RuleReviewWizard({
                     Edit
                   </Button>
                 </div>
-                <Button variant="ghost" onClick={advance} disabled={busy}>
-                  Skip
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    onClick={() => moveTo(index - 1)}
+                    disabled={busy || index === 0}
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => moveTo(index + 1)}
+                    disabled={busy || index >= queueIds.length - 1}
+                  >
+                    Next
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             ) : null}
           </>

@@ -691,6 +691,9 @@ deliberately never produced.
   of text: the rule name and statement lead in a dedicated reading column, rationale and
   violation guidance have clearly separated labeled panels, the intrusive severity chip is
   gone, and the progress count has its own space away from the close control.
+- 2026-08-17 — The one-by-one rule review footer now has explicit Back and Next navigation
+  with disabled first/last boundaries instead of the one-way Skip action. Revisiting an
+  already handled rule does not inflate the sitting's reviewed count.
 - 2026-08-17 — Added permanent compatibility redirects for every shipped Expertise URL:
   `/expertise` → `/masterwork`, `/expertise/[id]` → `/masterwork/[id]`,
   `/expertise/[id]/desks` → `/masterwork/[id]/masterworks`, and `/expertise/admin` →
