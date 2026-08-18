@@ -425,10 +425,13 @@ built** — Arman floated it and was explicitly unsure it earns its cost.
 Every Approach below gets BUILT. The goal: so many ways of distilling that it is impossible
 to get it wrong. Status moves here as lanes land.
 
-**Pitched, awaiting Arman's per-lane answers (agents parked, briefs self-contained):**
-1. Understudy (runs from minute one) · 2. Corpus / "Everything you've published" ·
-3. Resource dump (+ company SOPs framing) · 4. Approach selector + move ledger + bad-draft
-critique lane · 5. AI-transcript import (provider gallery + guides + zero-upload AI Matrx card)
+**BUILT (2026-08-17/18) — the first five, all live:**
+1. ✅ Understudy (free running Masterwork from minute one, rebuilt on every save) ·
+2. ✅ Body of Work (product-proven: durable per-piece frontier, synthesis, run-linked) ·
+3. ✅ Resource dump (`/masterwork/[id]/sources`) · 4. ✅ Approach selector + improvement-brain
+assists + bad-draft critique · 5. ✅ Chat import (`/masterwork/[id]/import` + `/import/ai-chats`
+gallery; 16 provider screenshots need Arman's accounts — work orders groomed). Plus #12
+✅ Exception Hunter (checkup producer; 3 real findings on the SEO Rulebook first run).
 
 **The creative ten (all approved to build; sequence after the five above):**
 6. Meeting Scavenger — distill judgment moments from meetings the expert already records
