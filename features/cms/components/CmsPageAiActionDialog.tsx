@@ -274,8 +274,12 @@ export function CmsPageAiActionDialog({
       />
     );
 
+  // The readiness gate deliberately remains mounted while its adopted AI run
+  // streams. Non-modal is the platform contract for a dialog that can launch
+  // a WindowPanel: the page stays available and the focused live-run window
+  // renders above this surface without changing WindowPanel itself.
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
       <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-xl">
         <SurfaceRuntimeProvider
           surfaceName={CMS_PAGE_CONTEXT_MENU_PROPS.surfaceName}

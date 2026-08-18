@@ -79,6 +79,7 @@ const DialogOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
+    data-slot="dialog-overlay"
     className={cn(
       // Preserve readable page context behind the modal; separation comes from a light scrim, not blur.
       "fixed inset-0 z-[10000] bg-black/20 dark:bg-black/30 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -137,6 +138,7 @@ const DialogContent = React.forwardRef<
   }
 >(({ className, children, mobileSheet = true, ...props }, ref) => {
   const isMobile = useIsMobile();
+  const isModal = useRadixDialogModal();
   const asSheet = mobileSheet && isMobile;
   const containerRef = React.useRef<HTMLDivElement | null>(null);
   const [containerEl, setContainerEl] = React.useState<HTMLElement | null>(
@@ -163,13 +165,19 @@ const DialogContent = React.forwardRef<
 
   return (
     <DialogPortal>
-      <DialogOverlay />
+      {isModal ? <DialogOverlay /> : null}
       <DialogContentPrimitive
         ref={mergedRef}
         className={cn(
           asSheet ? DIALOG_MOBILE_SHEET_CLASSES : DIALOG_DESKTOP_CLASSES,
           className,
           asSheet && DIALOG_MOBILE_SHEET_OVERRIDE,
+          // A non-modal Dialog is the shared coexistence contract for content
+          // that can launch or remain open beside a WindowPanel. WindowPanel's
+          // manager starts at z=1000; keeping this surface below that boundary
+          // makes the newly focused window usable without coupling either
+          // system or permanently raising every window above true modals.
+          !isModal && "z-[900]",
         )}
         {...(hasDescription ? {} : { "aria-describedby": undefined })}
         {...props}

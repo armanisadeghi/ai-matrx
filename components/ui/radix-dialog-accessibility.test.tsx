@@ -77,6 +77,9 @@ describe("Radix dialog accessibility semantics", () => {
     expect(dialog?.getAttribute("aria-modal")).toBe("true");
     expect(background.getAttribute("aria-hidden")).toBe("true");
     expect(dialog?.closest('[aria-hidden="true"]')).toBeNull();
+    expect(
+      document.querySelector('[data-slot="dialog-overlay"]'),
+    ).not.toBeNull();
   });
 
   it("does not claim modality or hide the background for a non-modal dialog", () => {
@@ -94,6 +97,8 @@ describe("Radix dialog accessibility semantics", () => {
     const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
     expect(dialog?.hasAttribute("aria-modal")).toBe(false);
     expect(background.hasAttribute("aria-hidden")).toBe(false);
+    expect(dialog?.classList.contains("z-[900]")).toBe(true);
+    expect(document.querySelector('[data-slot="dialog-overlay"]')).toBeNull();
   });
 
   it("keeps Sheet semantics aligned with its Root modality", () => {

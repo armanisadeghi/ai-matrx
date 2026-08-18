@@ -12,6 +12,21 @@ The overlay system is a **transport layer**: it renders any component at the top
 
 It is deliberately **decoupled** from the WindowPanel component primitive. A window may participate in the overlay system, but it doesn't have to — and a non-window overlay (a dialog, a sheet) participates in the overlay system without ever touching window-panel code. This separation was the architectural goal of the May 2026 overhaul; see [`docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md`](../../docs/archive/2026/OVERLAY_WINDOW_OVERHAUL.md) for the history of why.
 
+### Dialogs that coexist with WindowPanel
+
+A dialog that launches a WindowPanel and must remain mounted uses the shared
+`<Dialog modal={false}>` contract. The shared dialog primitive omits its scrim,
+does not make the application inert, and renders below the window-manager's
+`z=1000` base, so the focused window is visible and interactive. True modal
+dialogs keep their blocking scrim at `z=10000`. Never solve this by raising
+`WindowPanel` above modal UI: that would permanently put every app-level window
+above confirmations and other intentionally blocking decisions.
+
+If the dialog does not own in-flight state, closing it before opening the
+window is also valid. Do not close a dialog whose unmount cleanup aborts or
+reaps the run merely to clear the screen; use the non-modal coexistence contract
+or move durable run ownership above the dialog first.
+
 ---
 
 ## Mental model
@@ -323,6 +338,12 @@ If you find yourself adding window-specific concepts to the overlay system (or o
 
 ## Change log
 
+- **2026-08-18** — **Dialogs can coexist safely with floating windows without changing WindowPanel.**
+  The shared `Dialog modal={false}` path now omits the scrim and fixes its layer at `z=900`, below
+  the window manager's `z=1000` base; true modals remain inert and scrimmed at `z=10000`. Audited
+  current dialog-to-window launchers and adopted the contract in CMS page AI readiness, CRM contact
+  saving, message edit-history comparison, system-prompt comparison, and marketing capture
+  observations. Focused accessibility/layering tests cover both modal paths.
 - **2026-08-15** — **`liveRunWindow` can bind a stable multi-run set.** Its typed opener and
   explicit controller data path now carry `runSetKey`; `LiveRunWindow` renders the canonical
   `RunSetDisplay` for that set, allowing remounted launch surfaces to recover every lane from

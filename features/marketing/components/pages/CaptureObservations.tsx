@@ -230,7 +230,7 @@ function CaptureObservationsDialog({
   const rows: Note[] = notes.data ?? [];
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
+    <Dialog open onOpenChange={onOpenChange} modal={false}>
       <DialogContent className="flex max-h-[90dvh] flex-col gap-3 overflow-hidden sm:max-w-6xl">
         <DialogHeader>
           <div className="flex items-center justify-between gap-2 pr-8">

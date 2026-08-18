@@ -188,7 +188,11 @@ export function SaveContactFromSelectionDialog({
   const isPerson = draft.kind === "person";
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      modal={false}
+    >
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Save as contact</DialogTitle>
