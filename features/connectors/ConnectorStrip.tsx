@@ -14,7 +14,7 @@
 //    near-invisible door (or disappears entirely with `hideWhenAllConnected`).
 
 import Link from "next/link";
-import { Check, Plug } from "lucide-react";
+import { Check } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -110,13 +110,6 @@ export function ConnectorStrip({
           className,
         )}
       >
-        {!compact && (
-          <Plug
-            className="h-3 w-3 shrink-0 text-muted-foreground/50"
-            aria-hidden
-          />
-        )}
-
         {rows.map(({ connector, status }) => {
           const Logo = connector.logo;
           const connected = status === "connected";
