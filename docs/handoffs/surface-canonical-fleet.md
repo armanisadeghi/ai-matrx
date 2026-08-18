@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-15
+updated: 2026-08-17
 repos: [matrx-frontend, aidream]
 vision: []
 ---
@@ -41,9 +41,19 @@ vision: []
 
 ## Live board and current line
 
-Live count after the `matrx-public/p` promotion on 2026-08-15: **75 verified / 90 partial / 1 stub / 7 unregistered-active = 173 active**. The seven unregistered-active rows are deliberate non-web contracts: `matrx-default/{default,basic-content-display,basic-editor}`, `chrome-extension/{assistant,pilot}`, and `matrx-local/desktop`.
+Live count after the `matrx-public/p` promotion on 2026-08-15: **75 verified / 90 partial / 1 stub / 7 unregistered-active = 173 active**. The seven unregistered-active rows are deliberate non-web contracts: `matrx-default/{default,basic-content-display,basic-editor}`, `chrome-extension/{assistant,pilot}`, and `matrx-local/desktop`. Twelve stubs were added on 2026-08-17 (below), so the board now reads 184 manifests.
 
-Registration is complete. Promotion is the main remaining line.
+🚨 **"Registration is complete" was WRONG, and this doc said it for two days.** Arman's 2026-08-17 ruling — the Masterwork Rulebook had never been declared, "but that also makes me think that other surfaces in the system have not been properly declared" — was correct. A resolver-driven inventory of all 549 `(core)` routes found **60 unmapped routes and one phantom**:
+
+- `matrx-user/agent-shortcuts` was mapped by TEN live routes with **no manifest and no `ui_surface` row anywhere** — those routes resolved to a surface that could not bind, emit, or be audited.
+- `/work/**` — the whole Tier-1 AI Work family — had no declaration, and `/work/new` **launches real agent runs** through `useAgentLauncher` with only an ad-hoc `surfaceKey`, never a registered `runtime.surfaceName`.
+- A dozen `/images/**` tab routes resolved to nothing because a comment in the mapping called ~550-line tab components "static explainers/stubs".
+
+Twelve surfaces were declared to close this: `agent-shortcuts`, `ai-work`, `ai-work-composer`, `ai-work-conversations`, `image-manager`, `vision-interview`, `artifacts`, `assists`, `reports`, `camera`, `vault`, `legal-ca-wc`. All are `readiness: "stub"` with honest notes — vocabulary + DB rows only, **no emitters wired**, and no `agentRoles` (a role needs a Mandate behind it, not a raw agent id).
+
+**The blindness is now guarded: `pnpm check:surface-routes`** (`scripts/check-surface-routes.ts`) walks every `(core)` route through the real resolver. A mapping pointing at a surface with no manifest **fails** (the phantom class); a route resolving to nothing is **reported** unless it carries a written reason in that script's `DELIBERATELY_UNMAPPED` list. It currently reads 528 resolved / 21 deliberately unmapped / **0 undeclared**. Run it beside `check:surface-drift` — drift only validates manifests against themselves and is blind to both failure modes.
+
+Registration is complete **as measured by that script**, which is the only claim this doc should ever make again. Promotion is the main remaining line, and the twelve new stubs are now the largest block of it: each needs a completeness audit against its page plus an emitter before it can leave `stub`. `/work/new` is the highest-value one — it is the only surface in that set that already launches agents.
 
 1. **Continue the admin browser fleet.** Start with the unfinished `matrx-admin/scheduling` pass, then `official-components`, `agent-review`, `kind-registry`, `growth-loop`, `documentation`, `knowledge`, `skills`, `reporting`, and `utilities`. `server-logs`, `sandbox`, and `email` are done. Feedback stays partial for a real selected-record/detail-form emitter gap.
 2. **Scheduling is honestly partial.** All seven emitters are wired, mirrors are synchronized, and Locate anchors now cover every declared page value. Observed in browser: Overview Surface Context opened with `contract honored`; Tasks loaded real rows and emitted `active_tab` + `task_row_count`; Runs loaded the real empty result. Still observe the Runs Context window and Orphan leases, Cron tester, Scanner health, and Templates before promotion. The Cron tester's two write targets were already live-agent verified.

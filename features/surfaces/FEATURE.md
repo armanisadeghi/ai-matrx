@@ -1759,6 +1759,7 @@ After the user-requested "go all in" pass, the page picks up:
 
 - **`SurfaceManifest.readiness`** (`verified | partial | stub`, REQUIRED) + `readinessNote` — the campaign tracker for "verified correct and complete". Mirrored to `ui_surface.readiness`; NULL = unregistered (no manifest). Code-owned; the admin board at `/administration/ui/surfaces` rolls up the four states. `verified` is earned via the full surface-authoring checklist, never aspirational.
 - **Overlay surfaces**: every window-panel overlay gets its own surface, identified by `SurfaceManifest.overlayId` → `ui_surface.overlay_id` (the overlay twin of `url_pattern`). Emitters mount `SurfaceRuntimeProvider` inside the window component — nested providers out-depth the page, so the window's scope wins while open.
+- 🚨 **Registration coverage is its own check — `pnpm check:surface-routes`** ([scripts/check-surface-routes.ts](../../scripts/check-surface-routes.ts), 2026-08-17). `check:surface-drift` validates manifests AGAINST THEMSELVES and is structurally blind to two failure modes: a **phantom** (route-to-surface points live routes at a surface name with no manifest — this hid `matrx-user/agent-shortcuts`, ten live routes with no manifest and no DB row) and an **undeclared route** (a `(core)` route resolving to no surface at all — 60 of them, including the agent-LAUNCHING `/work/new`). The new check walks every `(core)` route through the real resolver: phantoms FAIL, undeclared routes are REPORTED unless listed with a written reason in `DELIBERATELY_UNMAPPED`. Adding a route to that list without a real reason re-creates the blindness.
 - 11 zero-reference stale `ui_surface` rows hard-deleted 2026-07-24 (ai-voice, browser-workbench, code-workspace, multi-file-smart-editor, news, notes-beta, prompt-apps, applets, voice-pad-advanced, voice-pad-ai, custom-apps — all had 0 values/roles/bindings/tool-defaults).
 
 ## Surface writeback — read/WRITE manifests (v1, 2026-07-29)
@@ -1899,6 +1900,25 @@ regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
 ## Change Log
+
+- **2026-08-17 — Registration-coverage audit: 12 undeclared surfaces declared, one phantom closed.**
+  Arman's ruling ("the Masterwork Rulebook surface had never been declared… that also makes me think
+  that other surfaces in the system have not been properly declared") checked by walking all 549
+  `(core)` routes through the resolver: **60 unmapped routes and one phantom**. The phantom —
+  `matrx-user/agent-shortcuts`, mapped by ten live routes with no manifest and no `ui_surface` row —
+  meant those routes resolved to a surface that could not bind, emit, or be audited. Worst of the
+  rest: the whole `/work/**` Tier-1 family was undeclared while `/work/new` LAUNCHES agent runs
+  through `useAgentLauncher` with only an ad-hoc `surfaceKey`. A dozen `/images/**` tab routes
+  resolved to nothing because a mapping comment called ~550-line tab components "static explainers".
+  Declared (all `readiness: "stub"`, vocabulary + DB rows only, no emitters, no `agentRoles`):
+  `agent-shortcuts`, `ai-work`, `ai-work-composer`, `ai-work-conversations`, `image-manager`,
+  `vision-interview`, `artifacts`, `assists`, `reports`, `camera`, `vault`, `legal-ca-wc` — 159
+  values across 12 `ui_surface` rows, synced and verified live (labels, intros, groups, zero
+  ungrouped). `vault` declares only NON-SECRET vocabulary by design; `legal-ca-wc` keeps
+  `date_of_birth` bindable-only so PII is never swept into context. Route mappings added (specific
+  above general), and `route-to-surface.test.ts` updated — its `/images` case asserted the old
+  "maps to nothing" behaviour. New guard `pnpm check:surface-routes` (see Readiness tracking) makes
+  this class visible: 528 resolved / 21 deliberately unmapped / 0 undeclared.
 
 - **2026-08-17 — Mandate-backed agent-role defaults (`SurfaceAgentRole.mandateKey`).** A role may
   now name an agent Mandate instead of hardcoding `defaultAgentId` — resolution fetches the

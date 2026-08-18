@@ -287,11 +287,12 @@ The registry **injects the full baseline set into every manifest** (`withInjecte
    ];
    ```
    `ALL_MANIFESTS` is derived from `RAW_MANIFESTS` (inheritance + baseline injection + provenance/group resolution) — never edit it directly.
-3. **Run the drift check locally** before pushing:
+3. **Run BOTH checks locally** before pushing:
    ```bash
-   pnpm check:surface-drift
+   pnpm check:surface-drift && pnpm check:surface-routes
    ```
-   It validates manifest invariants (unique names, regex, valueType, surface-name shape, **label presence + per-client uniqueness, group key/band/label rules**) and reports drift before the DB ever sees the change. Fix any issues immediately.
+   `check:surface-drift` validates manifest invariants (unique names, regex, valueType, surface-name shape, **label presence + per-client uniqueness, group key/band/label rules**). It validates manifests *against themselves* and is blind to route coverage — which is how ten live `/agents/shortcuts` routes pointed at a surface with **no manifest and no DB row** until 2026-08-17.
+   `check:surface-routes` closes that: it walks every `(core)` route through the real resolver. A mapping pointing at a surface with no manifest **fails** (a PHANTOM); a route resolving to nothing is **reported** unless it carries a written reason in that script's `DELIBERATELY_UNMAPPED` list. Never silence a route by adding it there without a real reason — that re-creates the blindness.
 4. **Sync the DB**:
    - From the Surfaces admin page (`/administration/ui/surfaces`) → "Sync Manifests" button.
    - Or via API: `POST /api/admin/surfaces/sync-manifests` (super-admin gated).
@@ -402,6 +403,7 @@ Chrome reads ancestry/children from the REGISTRY — `getSurfaceAncestry` / `get
 | Admin UI | `app/(authenticated)/(admin-auth)/administration/ui/surfaces/` |
 | Agent-side binding UI | `app/(a)/agents/[id]/surfaces/page.tsx` + `features/surfaces/components/AgentSurfacesPanel.tsx` |
 | Drift check (manual — in `pnpm check:release-gates`, NOT commit/CI-run) | `scripts/check-surface-drift.ts` (`pnpm check:surface-drift`) |
+| **Route-coverage check** — phantom mappings fail, undeclared routes report | `scripts/check-surface-routes.ts` (`pnpm check:surface-routes`) |
 | Candidate catalog (for the admin "add" dialog) | `features/surfaces/data/surface-candidates.ts` |
 
 ## Pre-flight checklist
@@ -419,6 +421,7 @@ Before you say a surface is added:
 - [ ] On-page section/field chrome renders via `surfaceValueLabels` / `surfaceGroupLabels` — no hand-typed label strings
 - [ ] Page elements tagged `data-surface-value` anchors for Locate
 - [ ] `pnpm check:surface-drift` passes
+- [ ] `pnpm check:surface-routes` passes — no phantom mapping, and this route is not silently undeclared
 - [ ] DB sync applied (admin UI or `POST /api/admin/surfaces/sync-manifests`)
 - [ ] Surface code launches agents via `runtime.surfaceName` + `applicationScope: create<LocalSlug>Scope(...)`
 
@@ -438,7 +441,7 @@ Registering a surface is a LAYERED recipe — each layer is independently shippa
 
 ## Layer 3 — Registry + drift gate
 
-- Import + add to `RAW_MANIFESTS` in `manifests/registry.ts`, then **`pnpm check:surface-drift`** must pass before anything ships.
+- Import + add to `RAW_MANIFESTS` in `manifests/registry.ts`, then **`pnpm check:surface-drift` and `pnpm check:surface-routes`** must both pass before anything ships.
 
 ## Layer 4 — DB sync (a manifest not synced is not registered)
 
@@ -469,7 +472,7 @@ Verify like the owner does:
 - [ ] `readiness` stamped honestly (verified only after the full checklist; note required otherwise); overlay surfaces carry `overlayId`
 - [ ] Manifest + scope builder; required `label`; groups declared + every value grouped; completeness sweep clean; honest values; baselines not duplicated
 - [ ] Roles/namespaces declared where the surface plugs in agents/config
-- [ ] Registered in `registry.ts`; `pnpm check:surface-drift` green
+- [ ] Registered in `registry.ts`; `pnpm check:surface-drift` AND `pnpm check:surface-routes` green
 - [ ] DB synced AND live row counts verified
 - [ ] Route prefix in `utils/route-to-surface.ts` (more-specific prefixes ABOVE their parent)
 - [ ] Emitter wired (or explicitly deferred in the manifest header comment)
