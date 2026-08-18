@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "2026-08-18-weekly",
-  "state": "certifying",
-  "updatedAt": "2026-08-18T07:17:09.883Z",
-  "summary": "Two-file EntityRef batch ready for exact-SHA adversarial certification.",
+  "state": "certified",
+  "updatedAt": "2026-08-18T07:20:07.701Z",
+  "summary": "CERTIFIED exact two-file EntityRef candidate; no batch-caused defect found.",
   "source": "2026-08-18-weekly.json",
-  "eventHash": "4e105a556b5b982833ec8351c2efd20836e3149f962cd08f1cfc249b48b051fe"
+  "eventHash": "51dcc3b00a1bce309ddc6511ccc29618af7e126545049636f8ebdc9f0af2dc61"
 }
