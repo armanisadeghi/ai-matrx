@@ -184,7 +184,9 @@ enforces it in code, not copy:
 - Competitive mastery badge progress counts distinct correct server-graded
   game items. Browser-authored FSRS transitions are bounded and must match the
   server-derived answer/lapse direction; they do not feed official score,
-  league gain, or badge eligibility.
+  league gain, or badge eligibility. The visible catalog calls these
+  “Ten/Fifty Confirmed,” matching the evidence instead of claiming all-study
+  mastery.
 - Live migrations:
   `20260818_education_game_result_session_unique.sql` and
   `20260818_education_game_server_authority.sql`; generated DB types were

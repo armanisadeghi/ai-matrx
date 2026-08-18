@@ -41,14 +41,14 @@ export const BADGES: Record<BadgeKey, BadgeDef> = {
   },
   mastery_10: {
     key: "mastery_10",
-    label: "Ten Mastered",
-    description: "Reached 10 items mastered across all study.",
+    label: "Ten Confirmed",
+    description: "Answered 10 distinct game cards correctly in verified play.",
     icon: Target,
   },
   mastery_50: {
     key: "mastery_50",
-    label: "Fifty Mastered",
-    description: "Reached 50 items mastered — real, durable learning.",
+    label: "Fifty Confirmed",
+    description: "Answered 50 distinct game cards correctly in verified play.",
     icon: TrendingUp,
   },
   comeback: {
