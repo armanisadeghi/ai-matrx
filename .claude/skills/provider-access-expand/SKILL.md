@@ -1,6 +1,6 @@
 ---
 name: provider-access-expand
-description: "Expand the AI Matrx provider-access launch queue for a named industry, capability, provider family, MCP/plugin catalog, or competitive gap. Use when asked to find more OAuth, API, API-key, remote MCP, publisher, marketplace, or partner-access campaigns and add them without duplicating existing tasks, integrations, MCP servers, provider parties, or detailed approval dossiers."
+description: "Expand the AI Matrx product-integration access queue for a named capability, provider family, MCP/plugin catalog, or competitive gap. Use when asked to find more user-connected OAuth, API, API-key, remote MCP, integration-marketplace, or partner-access campaigns and add them without duplicating existing tasks, integrations, MCP servers, provider parties, or detailed approval dossiers. Excludes client Local Listings distribution."
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -14,6 +14,13 @@ description: "Expand the AI Matrx provider-access launch queue for a named indus
 Add a researched, deduplicated batch to the normal AI Matrx `Provider Access Launch` Project. This
 skill discovers work; it does not create a parallel spreadsheet, register external accounts, request
 permissions, or claim that a provider is easy before scouting.
+
+**Keep Local Listings separate.** This queue is for integrations a user connects to AI Matrx.
+Listing claims, location publishers, and data aggregators belong to
+`common-docs/systems/local-listings/PLAN.md` and its own project. Never add Data Axle, Localeze,
+Foursquare listing distribution, Yelp Listing Management, Apple business listings, or Google
+Business Profile here. If a listings-only seed already exists, mark it `superseded` and point to the
+Local Listings work; preserve its history.
 
 ## Defaults
 
