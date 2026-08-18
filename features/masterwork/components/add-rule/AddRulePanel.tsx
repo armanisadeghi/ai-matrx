@@ -20,19 +20,16 @@
 // saveRules) — never a second write path.
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Keyboard, Plus, RotateCcw, Sparkles, Wand2 } from "lucide-react";
+import { Keyboard, Plus, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
-import {
-  coerceRuleImproveResult,
-  MASTERWORK_RULE_IMPROVER_MANDATE,
-  type RuleImproveResult,
-} from "../../agent-context/ruleImprove";
+import type { RuleImproveResult } from "../../agent-context/ruleImprove";
+import { RuleDecisionActions } from "../../review/RuleDecisionActions";
+import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import { nextRuleId } from "../../ruleIds";
 import { getRulebook, upsertRuleWithRetry } from "../../service";
 import type { Rulebook, RulebookRule } from "../../types";
@@ -74,7 +71,15 @@ export function AddRulePanel({
     EMPTY_FIELDS(defaultSection ?? "G"),
   );
   const [saving, setSaving] = useState(false);
-  const draftRun = useLiveAgentRun();
+  // The IMPROVE verb on the AI draft: the Expert says what should change and
+  // the SAME Mandate rewrites it — never a second improve path.
+  const [refining, setRefining] = useState(false);
+  const [refineInput, setRefineInput] = useState("");
+  const draftRun = useRuleImproveRun({
+    rulebookId,
+    organizationId: rulebook?.organization_id ?? "",
+    sections: rulebook?.sections ?? {},
+  });
 
   useEffect(() => {
     let cancelled = false;
