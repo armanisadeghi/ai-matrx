@@ -9,7 +9,7 @@ updated: 2026-08-18
 **Vision:** a listings-management product better than the incumbents (Yext / BrightLocal / Moz Local
 for management breadth; Yoast Local SEO for on-page structured data — we already exceed Yoast:
 they generate LocalBusiness schema, we generate it AND track/audit real directory presence).
-Research SoR: `common-docs/systems/local-listings/RESEARCH.md` (publisher tiers, API accessibility,
+Program plan (four automation classes, six workstreams, Codex access briefs): `common-docs/systems/local-listings/PLAN.md`. Research SoR: `common-docs/systems/local-listings/RESEARCH.md` (publisher tiers, API accessibility,
 the practical sequencing path). Naming: "Location / Listing / Publisher" are working labels —
 lexicon ruling reserved for Arman.
 
