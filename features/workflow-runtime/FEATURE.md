@@ -20,7 +20,7 @@ that is the exit-test surface.
 
 | Part | File | Contract |
 |---|---|---|
-| Event vocabulary mirror | `types.ts` | Hand-maintained TS mirror of `matrx_graph/types/events.py` (19 durable events) + aidream's ephemeral `node_stream` frame. `invocationKeyOf(nodeId, dispatchId, itemIndex)` is THE lane identity — `node_id` alone is never a completion key. Generated shared types are the tracked follow-up (aidream handoff). |
+| Event vocabulary | `types.ts` → `@/types/python-generated/workflow-events` | GENERATED from `matrx_graph/types/events.py` (the durable events) + aidream's `services/runtime/workflow_events.py` (ephemeral `node_stream`, router handshake, `run_announce`). `types.ts` re-exports them and adds the FE-only pieces: the REST projections (`RunEventRecord`, `RunRow`) and the helpers. **Never hand-edit an event shape** — this file and workflow-studio's were two hand mirrors that drifted; both now consume ONE artifact, refreshed by `pnpm sync-types` (bundle `workflow-events-ts`) and guarded by aidream's `generate_types.py --check` in `release.sh`. `invocationKeyOf(nodeId, dispatchId, itemIndex)` is THE lane identity — `node_id` alone is never a completion key. |
 | SSE client | `transport/sse.ts` | Fetch-based (EventSource can't set Authorization). Handles CRLF, partial frames, comment heartbeats. |
 | Run event source | `transport/run-event-source.ts` | SSE preferred + poller fallback on ONE `after_seq` cursor; claim-on-first-frame; 20s stall detector; ported from workflow-studio's proven pair. `node_stream` frames carry no seq and never advance the cursor. |
 | **The slice** | `redux/workflow-runs.slice.ts` | Tree-aware (`byRunId`, children auto-attach on `subgraph_run_linked`). Every node TRACKED: invocation states with fan-out aggregation, costs, progress, emissions, work sets, interrupt, capped text tails. |
@@ -73,7 +73,7 @@ that is the exit-test surface.
 - **Reuse-first:** consumed, not rebuilt: `activeRequests` + `StreamBlockAccumulator` +
   `MarkdownStream`/`LiveRunDisplay`/`KindInstanceRender` (rendering), `callApi` (HTTP), the
   studio's transport logic (ported — the studio is Vite/Zustand in another repo, so a port, not
-  an import; the generated-types package is the tracked de-duplication).
+  an import; the generated event types landed 2026-08-17 — see the row above).
 - **Not internal-only:** this IS the product surface users get for workflow runs; the demo page
   is the exit test, not the product.
 - **StreamProfiler** (`utils/stream-profiler.ts`) is gated off by CAPS constant — the global
