@@ -79,8 +79,8 @@ export interface RoleView {
   role: ResolvedRole["role"];
   /** The agent currently filling position 0 (single roles), or null. */
   effectiveAgentId: string | null;
-  /** Where the effective agent came from. */
-  sourceTier: "manifest" | "global" | "org" | "user" | "scope" | null;
+  /** Where the effective agent came from ("mandate" = agent-mandate default). */
+  sourceTier: "manifest" | "mandate" | "global" | "org" | "user" | "scope" | null;
   effective: ResolvedRole["effective"];
   /** User-tier default pref — survives even when org/platform wins effective. */
   userSelection: TierSelectionPref | null;

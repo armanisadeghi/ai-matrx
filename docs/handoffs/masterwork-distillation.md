@@ -21,6 +21,23 @@
 
 ## STATUS — live and verified (compressed)
 
+- **SURFACE ROLES BEHIND MANDATES + HEADER AGENT MENU (2026-08-17, from Arman's "this surface
+  hadn't even been declared" feedback).** The manifest was already declared/synced by a sibling
+  session; this pass added the surface's system agents as mandate-backed roles and proved the
+  header menu. New platform primitive `SurfaceAgentRole.mandateKey` (types → sync mirror
+  `ui_surface_agent_role.mandate_key` → `fetchMandatePins` live resolution, sourceTier
+  `"mandate"`; drift check refuses mandateKey+defaultAgentId together) — no agent UUID in code.
+  Four roles on `matrx-user/masterwork-rulebook`: `scout`, `rule_improver`, `checkup_auditor`,
+  `corpus_cleaner`; `masterwork.rule_improver` was seeded by a parallel session mid-task and
+  bound itself with zero further work (the designed property). NO bespoke menu was built: the
+  pre-existing `SurfaceAgentsHeaderButton` in the shell header lists them ("Surface roles") and
+  launches through `launchAgentExecution` with the live rulebook scope — verified in-browser on
+  `/masterwork/[id]` (all four render with resolved agent names; Checkup auditor launch staged
+  `rulebook_id`/`rulebook_name`/`content` in the run panel).
+- **TRANSFERABLE LESSON:** every topic surface is DECLARED, its agent jobs are ROLES behind
+  Mandates (`mandateKey`, never a UUID), and the header Agents menu exposes them — check all
+  three BEFORE building any bespoke AI affordance on a page.
+
 - **CONVERSATIONS MADE FIRST-CLASS + THE INTERVIEW GOT A URL (2026-08-17, from Arman's live
   feedback: "I still can't seem to get the conversation chain back… if it's in the UI, it's
   hidden").** Diagnosis: NOT a data bug — his interview `4706f9c0-…` ↔ rulebook `8d1d4f08-…`

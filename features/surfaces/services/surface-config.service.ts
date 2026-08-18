@@ -22,6 +22,7 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { fetchMandatePins } from "@/features/agents/mandates/service";
 import type { SurfaceAgentRole } from "@/features/surfaces/types";
 import {
   getNamespaceHandler,
@@ -49,7 +50,8 @@ export interface SurfaceAgentPrefRow {
 export interface ResolvedRoleEntry {
   agentId: string;
   settings: Record<string, unknown>;
-  sourceTier: "manifest" | PrefTier;
+  /** "mandate" = the role's `mandateKey` supplied the default (agent.mandate). */
+  sourceTier: "manifest" | "mandate" | PrefTier;
   /** Pref row id — null when the manifest/DB default supplied the entry. */
   prefId: string | null;
 }
@@ -130,6 +132,13 @@ export interface SurfaceConfigBundle {
     description: string;
     kind: "single" | "multi";
     defaultAgentId: string | null;
+    mandateKey: string | null;
+    /**
+     * Agent currently holding `mandateKey` (agent.mandate.default_agent_id),
+     * resolved at fetch time. Null when the role has no mandateKey or the
+     * mandate is not seeded yet (fetchMandatePins already screamed).
+     */
+    mandateAgentId: string | null;
     maxAgents: number;
     allowCustom: boolean;
     autoRun: "always" | "never" | "user-choice";
@@ -148,7 +157,7 @@ export async function fetchSurfaceConfigBundle(
     client
       .schema("ui").from("ui_surface_agent_role")
       .select(
-        "name, label, description, kind, default_agent_id, max_agents, allow_custom, auto_run, sort_order",
+        "name, label, description, kind, default_agent_id, mandate_key, max_agents, allow_custom, auto_run, sort_order",
       )
       .eq("surface_name", surfaceName)
       .order("sort_order"),
@@ -171,6 +180,16 @@ export async function fetchSurfaceConfigBundle(
   if (prefsRes.error) throw prefsRes.error;
   if (configRes.error) throw configRes.error;
 
+  // Mandate-backed roles: resolve each declared mandateKey to its current
+  // holder (agent.mandate, public-visible). A missing/unseeded mandate leaves
+  // the role unfilled — fetchMandatePins console.errors it; never a silent
+  // hardcoded fallback.
+  const mandateKeys = (rolesRes.data ?? [])
+    .map((r) => r.mandate_key)
+    .filter((k): k is string => !!k);
+  const mandatePins =
+    mandateKeys.length > 0 ? await fetchMandatePins(mandateKeys) : {};
+
   return {
     surfaceName,
     dbRoles: (rolesRes.data ?? []).map((r) => ({
@@ -179,6 +198,10 @@ export async function fetchSurfaceConfigBundle(
       description: r.description,
       kind: r.kind as "single" | "multi",
       defaultAgentId: r.default_agent_id,
+      mandateKey: r.mandate_key,
+      mandateAgentId: r.mandate_key
+        ? (mandatePins[r.mandate_key]?.agentId ?? null)
+        : null,
       maxAgents: r.max_agents,
       allowCustom: r.allow_custom,
       autoRun: r.auto_run as "always" | "never" | "user-choice",
@@ -227,6 +250,7 @@ export function resolveSurfaceConfig(
       description: dbRole.description,
       kind: dbRole.kind,
       defaultAgentId: dbRole.defaultAgentId,
+      mandateKey: dbRole.mandateKey,
       maxAgents: dbRole.maxAgents,
       allowCustom: dbRole.allowCustom,
       autoRun: dbRole.autoRun,
@@ -267,6 +291,15 @@ export function resolveSurfaceConfig(
           agentId: dbRole.defaultAgentId,
           settings: {},
           sourceTier: "manifest",
+          prefId: null,
+        });
+      } else if (pos === 0 && dbRole.mandateAgentId) {
+        // Mandate-backed platform default: the DB (agent.mandate) decided the
+        // Holder — code only named the Mandate.
+        effective.push({
+          agentId: dbRole.mandateAgentId,
+          settings: {},
+          sourceTier: "mandate",
           prefId: null,
         });
       }

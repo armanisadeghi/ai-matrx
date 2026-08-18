@@ -101,7 +101,9 @@ function main() {
           r.label,
         )}, ${sqlString(r.description)}, ${sqlString(r.kind)}, ${
           r.defaultAgentId ? sqlString(r.defaultAgentId) : "NULL"
-        }, ${r.maxAgents ?? 1}, ${r.allowCustom ?? true}, ${sqlString(
+        }, ${r.mandateKey ? sqlString(r.mandateKey) : "NULL"}, ${
+          r.maxAgents ?? 1
+        }, ${r.allowCustom ?? true}, ${sqlString(
           r.autoRun ?? "user-choice",
         )}, ${r.sortOrder ?? 1000})`,
       );
@@ -174,11 +176,11 @@ function main() {
     console.log("");
     console.log("-- Upsert all manifest agent roles");
     console.log(
-      `INSERT INTO ui.ui_surface_agent_role (surface_name, name, label, description, kind, default_agent_id, max_agents, allow_custom, auto_run, sort_order) VALUES`,
+      `INSERT INTO ui.ui_surface_agent_role (surface_name, name, label, description, kind, default_agent_id, mandate_key, max_agents, allow_custom, auto_run, sort_order) VALUES`,
     );
     console.log(roleRows.join(",\n"));
     console.log(
-      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, kind = EXCLUDED.kind, default_agent_id = EXCLUDED.default_agent_id, max_agents = EXCLUDED.max_agents, allow_custom = EXCLUDED.allow_custom, auto_run = EXCLUDED.auto_run, sort_order = EXCLUDED.sort_order, updated_at = now();`,
+      `ON CONFLICT (surface_name, name) DO UPDATE SET label = EXCLUDED.label, description = EXCLUDED.description, kind = EXCLUDED.kind, default_agent_id = EXCLUDED.default_agent_id, mandate_key = EXCLUDED.mandate_key, max_agents = EXCLUDED.max_agents, allow_custom = EXCLUDED.allow_custom, auto_run = EXCLUDED.auto_run, sort_order = EXCLUDED.sort_order, updated_at = now();`,
     );
   }
   if (writeTargetRows.length > 0) {

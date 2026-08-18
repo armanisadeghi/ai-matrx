@@ -191,6 +191,7 @@ function manifestRoleRowFor(
     description: r.description,
     kind: r.kind,
     default_agent_id: r.defaultAgentId,
+    mandate_key: r.mandateKey ?? null,
     max_agents: r.maxAgents ?? 1,
     allow_custom: r.allowCustom ?? true,
     auto_run: r.autoRun ?? "user-choice",
@@ -267,6 +268,7 @@ function dbRowToSurfaceAgentRole(row: UiSurfaceAgentRoleRow): SurfaceAgentRole {
       ? (row.kind as DbRoleKind)
       : "single") as SurfaceAgentRole["kind"],
     defaultAgentId: row.default_agent_id,
+    mandateKey: row.mandate_key,
     maxAgents: row.max_agents,
     allowCustom: row.allow_custom,
     autoRun: (AUTO_RUN_MODES.includes(row.auto_run as DbAutoRun)
@@ -288,6 +290,12 @@ function diffSurfaceAgentRole(
     "kind",
     "defaultAgentId",
   ];
+  // mandateKey is optional in the manifest (undefined) but NULL in the DB —
+  // normalize before comparing so absence never reads as drift.
+  const mMandate = manifest.mandateKey ?? null;
+  const dMandate = db.mandateKey ?? null;
+  if (mMandate !== dMandate)
+    diff.mandateKey = { manifest: mMandate, db: dMandate };
   for (const k of direct) {
     const m = manifest[k];
     const d = db[k];

@@ -30,7 +30,8 @@ function activeTierLabel(
 ): "Platform" | "Organization" | "You" | "—" {
   if (tier === "user") return "You";
   if (tier === "org") return "Organization";
-  if (tier === "manifest" || tier === "global") return "Platform";
+  if (tier === "manifest" || tier === "mandate" || tier === "global")
+    return "Platform";
   return "—";
 }
 

@@ -289,6 +289,7 @@ function ScopePill({
 
 const TIER_LABEL: Record<string, string> = {
   manifest: "Platform default",
+  mandate: "Mandate default",
   global: "Platform",
   org: "Organization",
   user: "You",

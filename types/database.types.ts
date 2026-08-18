@@ -9823,6 +9823,28 @@ export type Database = {
           session_id: string
         }[]
       }
+      issue_voice_agent_session_reference_unfenced: {
+        Args: {
+          p_agent_version_id: string
+          p_chat_conversation_id: string
+          p_consent_event_id: number
+          p_definition_agent_id: string
+          p_expires_at: string
+          p_interaction_id: string
+          p_mandate_config_overrides?: Json
+          p_mandate_id: string
+          p_mandate_key: string
+          p_mandate_provenance: string
+          p_reference_sha256: string
+          p_session_id: string
+          p_transport?: string
+        }
+        Returns: {
+          event_id: number
+          expires_at: string
+          session_id: string
+        }[]
+      }
       register_voice_call_interaction: {
         Args: {
           p_contact_point_id: string
@@ -57045,6 +57067,7 @@ export type Database = {
           description: string
           kind: string
           label: string
+          mandate_key: string | null
           max_agents: number
           name: string
           sort_order: number
@@ -57059,6 +57082,7 @@ export type Database = {
           description?: string
           kind?: string
           label?: string
+          mandate_key?: string | null
           max_agents?: number
           name: string
           sort_order?: number
@@ -57073,6 +57097,7 @@ export type Database = {
           description?: string
           kind?: string
           label?: string
+          mandate_key?: string | null
           max_agents?: number
           name?: string
           sort_order?: number

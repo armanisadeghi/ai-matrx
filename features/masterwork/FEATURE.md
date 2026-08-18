@@ -502,6 +502,23 @@ deliberately never produced.
   interview + record routes. Lesson recorded in the handoff: every creation mode gets a URL
   route; conversations tied to an entity are first-class visible on the entity page, never
   buried in a sheet.
+- 2026-08-17 — **The surface's system agents are now roles behind Mandates, visible in the header
+  Agents menu.** `masterwork-rulebook.manifest.ts` declares four mandate-backed agent roles —
+  `scout` (Interviewer, `masterwork.scout`), `rule_improver` (`masterwork.rule_improver`),
+  `checkup_auditor` (`masterwork.checkup_auditor`), `corpus_cleaner` (`masterwork.corpus_cleaner`) —
+  using the new `SurfaceAgentRole.mandateKey` primitive (built for this task in
+  `features/surfaces/`: manifest field → `ui.ui_surface_agent_role.mandate_key` mirror →
+  `surface-config.service.ts` resolves the Holder live from `agent.mandate` via
+  `fetchMandatePins`, sourceTier `"mandate"`). No agent UUID entered code; a not-yet-seeded
+  mandate renders the role unfilled with a loud console error and binds automatically the moment
+  the `agent.mandate` row lands (observed live: `masterwork.rule_improver` was created by a
+  parallel session mid-task and appeared in the menu with zero further work). The header
+  top-right Agents menu (`SurfaceAgentsHeaderButton` — the pre-existing shell primitive; nothing
+  bespoke was built) lists them under "Surface roles" on `/masterwork/[id]` and launches each
+  through `launchAgentExecution` with the live `buildRulebookSurfaceScope` payload. Verified in
+  the browser: all four roles render with their mandate-resolved agents; running Checkup auditor
+  opened the flexible panel with `rulebook_id` / `rulebook_name` / `content` staged from the live
+  page scope.
 - 2026-08-17 — **The Rule Editor now offers reviewable AI cleanup.** Its four
   `ProTextarea` fields default to six rows in a wider dialog. `Clean up with AI`
   sends the current rule and complete Rulebook surface scope through the new

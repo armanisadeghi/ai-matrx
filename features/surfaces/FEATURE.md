@@ -103,7 +103,7 @@ Both hang off the same `ui.ui_surface` spine and resolve server-side in aidream 
 
 Two per-surface settings primitives, both resolved `manifest/DB default → global → org-by-membership → [ctx scope, reserved] → user` (newest `updated_at` wins ties, with a console.warn):
 
-- **Agent roles** — where a surface PLUGS IN agents (`SurfaceManifest.agentRoles`, mirrored to `ui.ui_surface_agent_role`; user/org selections in `ui_surface_agent_pref`, kinds `selection`/`roster_item`, `single`/`multi`). Reader/writer: [`services/surface-config.service.ts`](./services/surface-config.service.ts); Redux `redux/surfaceConfigSlice.ts`; hook `hooks/useSurfaceConfig.ts`. Stale roles deleted by sync CASCADE their pref rows (reported).
+- **Agent roles** — where a surface PLUGS IN agents (`SurfaceManifest.agentRoles`, mirrored to `ui.ui_surface_agent_role`; user/org selections in `ui_surface_agent_pref`, kinds `selection`/`roster_item`, `single`/`multi`). Reader/writer: [`services/surface-config.service.ts`](./services/surface-config.service.ts); Redux `redux/surfaceConfigSlice.ts`; hook `hooks/useSurfaceConfig.ts`. Stale roles deleted by sync CASCADE their pref rows (reported). **Mandate-backed defaults (2026-08-17):** a role may declare `mandateKey` (e.g. `"masterwork.scout"`) INSTEAD of `defaultAgentId` — the platform default then resolves live from `agent.mandate` at bundle-fetch time (`fetchMandatePins`; sourceTier `"mandate"`), so code names the Mandate and never an agent UUID (the NO HARDCODED AGENTS law applied to surface roles). Mutually exclusive with a non-null `defaultAgentId` (`pnpm check:surface-drift` enforces); an unseeded mandate leaves the role unfilled with a loud console error and auto-binds when the mandate row lands. Mirror column `ui_surface_agent_role.mandate_key`; reference consumer: `masterwork-rulebook.manifest.ts` (roles `scout`/`rule_improver`/`checkup_auditor`/`corpus_cleaner`).
 - **Config namespaces** — typed JSONB buckets in `ui.ui_surface_config` (dictionary, session_defaults, …). Each namespace registers a PURE handler (validate / layered merge / empty) in [`config/namespace-registry.ts`](./config/namespace-registry.ts); adding one = handler + a manifest `configNamespaces` line, zero SQL. A malformed row is rejected loudly, never merged.
 - Per-session choices are feature-owned and applied ON TOP of the resolved `effective` — never stored in these tables. Per-user surface UI state is the separate `user_surface_state` primitive (`user-state/`).
 - **A per-surface agent choice never lives in `userPreferences` / `useSetting`.** The last one (`transcription.scribeAssistantAgentId`) was deleted 2026-07-12 — the Scribe assistant is now the `assistant` role on `matrx-user/transcript-scribe` (`resolveDefaultAssistantAgentId` reads the resolved role; `useStudioAssistant` hydrates it).
@@ -1900,6 +1900,18 @@ on the first.
 
 ## Change Log
 
+- **2026-08-17 — Mandate-backed agent-role defaults (`SurfaceAgentRole.mandateKey`).** A role may
+  now name an agent Mandate instead of hardcoding `defaultAgentId` — resolution fetches the
+  Holder live from `agent.mandate` (`fetchMandatePins`) in `fetchSurfaceConfigBundle` and fills
+  position 0 with sourceTier `"mandate"` when no pref/default wins. New mirror column
+  `ui_surface_agent_role.mandate_key` (migration `ui_surface_agent_role_mandate_key.sql`, applied +
+  types regenerated); mirrored by `manifest-sync.service.ts` and `emit-surface-sync-sql.ts`;
+  `check-surface-drift` validates the dotted key shape and refuses a role that sets BOTH
+  `mandateKey` and `defaultAgentId`. Tier labels updated (`SurfaceRolesSection`,
+  `SurfaceHubDetailPage`). First consumer: `masterwork-rulebook` (`scout` / `rule_improver` /
+  `checkup_auditor` / `corpus_cleaner`), where the `masterwork.rule_improver` mandate was seeded
+  by a parallel session AFTER the role shipped and bound itself with zero code changes — the
+  designed behavior.
 - **2026-08-17 — `matrx-user/masterwork-rulebook` completed the 360 loop.** The formerly
   undeclared route now has a verified manifest and live emitter covering identity, source,
   every rule/review projection, outputs, and workspace state; v3 context menus and Locate

@@ -158,6 +158,16 @@ export interface SurfaceAgentRole {
   kind: "single" | "multi";
   /** Platform default agent id (system-owned UUID). Null = starts empty. */
   defaultAgentId: string | null;
+  /**
+   * Agent-mandate key (`agent.mandate.mandate_key`) supplying the role's
+   * platform default INSTEAD of `defaultAgentId` — code names the Mandate,
+   * the DB decides the Holder (the NO HARDCODED AGENTS law applied to
+   * surface roles). Mutually exclusive with a non-null `defaultAgentId`
+   * (drift check enforces). A mandate key not yet seeded resolves to an
+   * unfilled role with a loud console error — never a silent fallback —
+   * and binds automatically once the `agent.mandate` row lands.
+   */
+  mandateKey?: string | null;
   /** kind="multi" only — max concurrent positions. Defaults to 1. */
   maxAgents?: number;
   /** User may slot ANY agent (true, default) vs roster/system agents only. */

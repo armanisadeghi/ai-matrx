@@ -423,5 +423,62 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
       autoRun: "never",
       sortOrder: 200,
     },
+    // System jobs — each behind its Mandate (`agent.mandate` decides the
+    // Holder; code never names an agent UUID). These are the same jobs the
+    // page's own panels run; declaring them as roles makes them visible and
+    // ad-hoc runnable from the header Agents menu.
+    {
+      name: "scout",
+      label: "Interviewer",
+      description:
+        "Conducts the guided interview that draws the Expert's method out of them in conversation and drafts rules from it (the Scout).",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "masterwork.scout",
+      allowCustom: true,
+      autoRun: "never",
+      sortOrder: 300,
+    },
+    {
+      name: "rule_improver",
+      label: "Rule improver",
+      // NOTE: the `masterwork.rule_improver` mandate row is being created by a
+      // concurrent session (verified absent from agent.mandate 2026-08-17).
+      // Resolution is live from the DB, so this role binds automatically the
+      // moment the mandate lands; until then it renders unfilled with a loud
+      // console error from fetchMandatePins — never a silent fallback.
+      description:
+        "Rewrites a rejected or weak rule from the Expert's review feedback and stages the improved version for approval.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "masterwork.rule_improver",
+      allowCustom: true,
+      autoRun: "never",
+      sortOrder: 400,
+    },
+    {
+      name: "checkup_auditor",
+      label: "Checkup auditor",
+      description:
+        "Checks work against the Rulebook's approved rules — every verdict cites the exact rule it applied.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "masterwork.checkup_auditor",
+      allowCustom: true,
+      autoRun: "never",
+      sortOrder: 500,
+    },
+    {
+      name: "corpus_cleaner",
+      label: "Corpus cleaner",
+      description:
+        "Cleans raw captured expertise (dictations, dumps, transcripts) into reviewable source material before distillation.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "masterwork.corpus_cleaner",
+      allowCustom: true,
+      autoRun: "never",
+      sortOrder: 600,
+    },
   ],
 };

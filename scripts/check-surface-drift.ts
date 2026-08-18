@@ -99,6 +99,7 @@ async function main() {
       description: string;
       kind: string;
       defaultAgentId: string | null;
+      mandateKey?: string | null;
       maxAgents?: number;
       allowCustom?: boolean;
       autoRun?: string;
@@ -265,6 +266,19 @@ async function main() {
       ) {
         errors.push(
           `Surface "${m.surfaceName}" agent role "${r.name}" has invalid defaultAgentId (must be a UUID or null).`,
+        );
+      }
+      if (
+        r.mandateKey != null &&
+        !/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/.test(r.mandateKey)
+      ) {
+        errors.push(
+          `Surface "${m.surfaceName}" agent role "${r.name}" has invalid mandateKey "${r.mandateKey}" (expected dotted lower_snake, e.g. "masterwork.scout").`,
+        );
+      }
+      if (r.mandateKey != null && r.defaultAgentId !== null) {
+        errors.push(
+          `Surface "${m.surfaceName}" agent role "${r.name}" sets BOTH mandateKey and defaultAgentId — a mandate-backed role must not also hardcode an agent UUID (NO HARDCODED AGENTS).`,
         );
       }
       if (r.autoRun !== undefined && !ALLOWED_AUTO_RUN.has(r.autoRun)) {
