@@ -264,3 +264,43 @@ describe("LocalBusiness JSON-LD", () => {
     expect(script.endsWith("</script>")).toBe(true);
   });
 });
+
+describe("findLocalBusinessJsonLd", () => {
+  const { findLocalBusinessJsonLd } = jest.requireActual<
+    typeof import("@/features/marketing/lib/local-business-jsonld")
+  >("@/features/marketing/lib/local-business-jsonld");
+
+  it("finds a LocalBusiness node inside an @graph and extracts flat NAP", () => {
+    const found = findLocalBusinessJsonLd([
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          { "@type": "WebSite", name: "Site" },
+          {
+            "@type": "MedicalClinic",
+            name: "Clinic",
+            telephone: "+1 714 555 0134",
+            address: { "@type": "PostalAddress", streetAddress: "3151 Airway Ave", addressLocality: "Costa Mesa" },
+          },
+        ],
+      },
+    ]);
+    expect(found?.types).toEqual(["MedicalClinic"]);
+    expect(found?.observed).toMatchObject({
+      name: "Clinic",
+      phone: "+1 714 555 0134",
+      street_address: "3151 Airway Ave",
+      locality: "Costa Mesa",
+    });
+  });
+
+  it("returns null when only non-business types are declared", () => {
+    expect(findLocalBusinessJsonLd([{ "@type": "Article", name: "Post" }])).toBeNull();
+  });
+
+  it("counts any *Business subtype", () => {
+    expect(findLocalBusinessJsonLd([{ "@type": "DryCleaningBusiness", name: "X" }])?.types).toEqual([
+      "DryCleaningBusiness",
+    ]);
+  });
+});

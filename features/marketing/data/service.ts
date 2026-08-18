@@ -3992,3 +3992,39 @@ export async function upsertLocationListing(
     .single();
   return assertData(response.data, response.error);
 }
+
+/**
+ * Latest crawled structured-data evidence for a site's root page — the input to
+ * the on-site LocalBusiness check. Null = homepage never crawled.
+ */
+export async function getSiteRootStructuredData(
+  siteId: string,
+  rootUrl: string,
+  signal?: AbortSignal,
+): Promise<{ capturedAt: string | null; structuredData: Json } | null> {
+  const db = await authenticatedWebDb(supabase);
+  const abortSignal = signal ?? new AbortController().signal;
+  const pageResponse = await db
+    .from("page")
+    .select("latest_snapshot_id")
+    .eq("site_id", siteId)
+    .eq("url", rootUrl)
+    .is("deleted_at", null)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (pageResponse.error) throw pageResponse.error;
+  if (!pageResponse.data?.latest_snapshot_id) return null;
+  const snapshotResponse = await db
+    .from("snapshot")
+    .select("structured_data, captured_at")
+    .eq("site_id", siteId)
+    .eq("id", pageResponse.data.latest_snapshot_id)
+    .abortSignal(abortSignal)
+    .maybeSingle();
+  if (snapshotResponse.error) throw snapshotResponse.error;
+  if (!snapshotResponse.data) return null;
+  return {
+    capturedAt: snapshotResponse.data.captured_at,
+    structuredData: snapshotResponse.data.structured_data,
+  };
+}
