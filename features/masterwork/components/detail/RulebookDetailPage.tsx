@@ -13,7 +13,6 @@ import {
   ExternalLink,
   ListTodo,
   MessageCircleQuestion,
-  MessagesSquare,
   MessageSquareWarning,
   Pencil,
   Stethoscope,
@@ -23,7 +22,6 @@ import {
   Quote,
   Wand2,
   Workflow,
-  XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
@@ -851,7 +849,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 {
                   kind: "item" as const,
                   id: "interview-me",
-                  label: "Interview me",
+                  label: "New interview",
                   icon: MessageCircleQuestion,
                   onSelect: () => setInterviewOpen(true),
                 },
@@ -882,7 +880,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           {
             kind: "link",
             id: "open-masterworks",
-            label: "Masterworks",
+            label: "Systems",
             icon: Workflow,
             href: `/masterwork/${rulebookId}/masterworks`,
           },
@@ -1234,8 +1232,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                       Explanations belong on the destination, never as
                       paragraph subtext inside a menu item. */}
                   <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/masterwork/${rulebook.id}/masterworks`}>
+                    <DropdownMenuItem asChild className="gap-2">
+                      <Link href={`/masterwork/${rulebook.id}/masterworks`} className="flex items-center gap-2">
                         <Workflow className="h-4 w-4" />
                         <span className="flex-1">Systems</span>
                         {builtCount > 0 ? (
@@ -1251,6 +1249,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                         point. */}
                     {canEdit && approvedCount > 0 ? (
                       <DropdownMenuItem
+                        className="gap-2"
                         onSelect={() => openCheckup({ rulebookId: rulebook.id })}
                       >
                         <Stethoscope className="h-4 w-4" />
@@ -1262,6 +1261,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                         in either state. The confirm dialog says exactly that. */}
                     {canEdit && rulebook.status === "draft" ? (
                       <DropdownMenuItem
+                        className="gap-2"
                         onSelect={() => setConfirmActivate(true)}
                       >
                         <CheckCircle2 className="h-4 w-4" />

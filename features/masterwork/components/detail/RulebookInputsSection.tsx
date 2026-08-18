@@ -131,15 +131,15 @@ export function RulebookInputsSection({
               </Tooltip>
               {/* Icon + one to three words, every row the same shape. */}
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onSelect={() => onAddDocument()}>
+                <DropdownMenuItem className="gap-2" onSelect={() => onAddDocument()}>
                   <FileUp className="h-4 w-4" />
                   A document
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onAddPublishedWork()}>
+                <DropdownMenuItem className="gap-2" onSelect={() => onAddPublishedWork()}>
                   <BookOpen className="h-4 w-4" />
                   Published work
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => onAddChats()}>
+                <DropdownMenuItem className="gap-2" onSelect={() => onAddChats()}>
                   <MessagesSquare className="h-4 w-4" />
                   AI chats
                 </DropdownMenuItem>
