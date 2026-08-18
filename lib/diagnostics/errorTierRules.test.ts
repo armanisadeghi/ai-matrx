@@ -151,6 +151,41 @@ describe("classifyTier", () => {
     expect(c.tier).toBe("red");
   });
 
+  it("keeps content-plan reconcile transport loss local while reconnect recovery runs", () => {
+    const c = classifyTier(
+      captured({
+        source: "api-network",
+        route: "/marketing/content-plan/8cc4ba7b-2817-47f4-aef6-8b6b2028dd7d",
+        relation:
+          "POST /content-plan/sites/8cc4ba7b-2817-47f4-aef6-8b6b2028dd7d/reconcile",
+        code: "network_error",
+        name: "TypeError",
+        message: "Failed to fetch",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("content-plan-reconcile-transport-loss");
+  });
+
+  it.each([
+    "POST /content-plan/sites/8cc4ba7b-2817-47f4-aef6-8b6b2028dd7d/generate",
+    "POST /content-plan/nodes/92ba1b20-767c-4324-8fb1-77eff7f97dbf/deepen",
+  ])("keeps unrelated content-plan transport loss red for %s", (relation) => {
+    const c = classifyTier(
+      captured({
+        source: "api-network",
+        route: "/marketing/content-plan/8cc4ba7b-2817-47f4-aef6-8b6b2028dd7d",
+        relation,
+        code: "network_error",
+        name: "TypeError",
+        message: "Failed to fetch",
+      }),
+    );
+
+    expect(c.tier).toBe("red");
+  });
+
   it("keeps an intentional CMS write-policy denial local and silent", () => {
     const c = classifyTier(
       captured({

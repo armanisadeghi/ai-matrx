@@ -172,7 +172,10 @@ Resolved+handled AccessGate denials → yellow; the original unknown capture and
 all other resolved record states stay red. Vision Interview's exact Safari
 `Load failed` transport class is yellow because its drafts are durable, its room
 rehydrates, and retry after a server swap is expected; the route-scoped rule
-does not quiet the same wording elsewhere. CMS `cms_write_policy_denied` 403s
+does not quiet the same wording elsewhere. The content-plan reconcile endpoint's
+exact `Failed to fetch` class is yellow because the cached read-only check retries
+and refetches after reconnect; parameterized relations use `relationPattern` so
+other content-plan work stays red. CMS `cms_write_policy_denied` 403s
 and their explicit `site policy ... forbids ...` toasts are yellow: the policy
 is working and the toast remains visible, while neither expected signal enters
 the repair queue. Everything else stays red until tuned. Promote a specific
@@ -266,6 +269,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-18 — **Recoverable content-plan reconcile transport loss stays local.** The exact parameterized `POST /content-plan/sites/{id}/reconcile` `Failed to fetch` class is yellow because the cached read-only check retries and refetches after reconnect; unrelated content-plan AI and write endpoints remain red. `relationPattern` gives tier rules a reusable, narrowly scoped matcher for parameterized endpoints.
 - 2026-08-17 — **Provisional access questions settle before persistence.**
   `record-unavailable (...unknown)` waits up to 10 seconds for AccessGate;
   handled denials stay local, while unresolved and genuinely broken reads still

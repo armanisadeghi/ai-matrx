@@ -54,6 +54,8 @@ export interface ErrorMatch {
   code?: OneOrMany<string>;
   /** Table / RPC function name, or (for API errors) "METHOD /path". */
   relation?: OneOrMany<string>;
+  /** Case-insensitive regular expression over relation for parameterized endpoints. */
+  relationPattern?: string;
   /** Supabase verb. */
   operation?: OneOrMany<CapturedOperation>;
   /** Postgres schema. */
@@ -145,6 +147,22 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
       code: "network_error",
       routeIncludes: "/vision-interview/",
       messageIncludes: "Load failed",
+    },
+  },
+  {
+    id: "content-plan-reconcile-transport-loss",
+    tier: "yellow",
+    reason:
+      "The plan-vs-live reconcile is a read-only cached check that retries and refetches after reconnect. A browser transport loss is locally visible and recoverable, not a server defect, so it must not enter the repair queue.",
+    addedAt: "2026-08-18",
+    match: {
+      source: "api-network",
+      code: "network_error",
+      relationPattern:
+        "^POST /content-plan/sites/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/reconcile$",
+      routeIncludes: "/marketing/content-plan/",
+      name: "TypeError",
+      messageIncludes: "Failed to fetch",
     },
   },
   {
@@ -343,6 +361,18 @@ export function errorMatchesRule(e: CapturedError, match: ErrorMatch): boolean {
   }
   if (!ciIncludes(e.route, match.routeIncludes)) return false;
   if (!ciIncludes(e.message, match.messageIncludes)) return false;
+  if (match.relationPattern !== undefined) {
+    try {
+      if (
+        !e.relation ||
+        !new RegExp(match.relationPattern, "i").test(e.relation)
+      ) {
+        return false;
+      }
+    } catch {
+      return false; // a malformed pattern never matches (and never throws on the hot path)
+    }
+  }
   if (match.messagePattern !== undefined) {
     try {
       if (!new RegExp(match.messagePattern, "i").test(e.message)) return false;
