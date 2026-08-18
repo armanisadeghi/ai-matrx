@@ -35,7 +35,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Plus, Wand2, Workflow } from "lucide-react";
+import { ExternalLink, Hammer, Plus, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
@@ -108,7 +108,7 @@ export function ConductorButton({
 }) {
   return (
     <Button size="sm" className={className} onClick={onClick}>
-      <Wand2 className="mr-1 h-4 w-4" />
+      <Hammer className="mr-1 h-4 w-4" />
       Make a Masterwork
     </Button>
   );
@@ -557,7 +557,7 @@ export function ConductorPanel({
       initialFocus
       title={
         <span className="inline-flex min-w-0 items-center gap-2">
-          <Wand2 className="h-4 w-4 text-primary" aria-hidden />
+          <Hammer className="h-4 w-4 text-primary" aria-hidden />
           <span className="truncate">Make a Masterwork</span>
         </span>
       }
