@@ -79,7 +79,7 @@ function CellEditShell({
         <Link
           href={href}
           onClick={(e) => e.stopPropagation()}
-          className="min-w-0 flex-1 overflow-hidden truncate rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+          className="min-w-0 flex-1 overflow-hidden truncate rounded outline-none  focus-visible:ring-2 focus-visible:ring-ring"
         >
           {display}
         </Link>

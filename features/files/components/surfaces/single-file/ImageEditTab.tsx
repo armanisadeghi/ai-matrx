@@ -149,7 +149,7 @@ export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
         {lastSave ? (
           <Link
             href={`/files/f/${lastSave.fileId}`}
-            className="ml-2 truncate text-[11px] text-primary hover:underline"
+            className="ml-2 truncate text-[11px] text-primary "
             title={`Open ${lastSave.filename}`}
           >
             Saved: {lastSave.filename}

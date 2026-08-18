@@ -787,7 +787,7 @@ export default function TasksTableView() {
                           // the completed-state signal, and whether a wrapper
                           // decoration reaches an inline-flex child's link is
                           // not something to leave to inheritance — especially
-                          // when that link carries its own `hover:underline`.
+                          // when that link carries its own ``.
                           labelClassName={
                             task.completed
                               ? "line-through text-muted-foreground"

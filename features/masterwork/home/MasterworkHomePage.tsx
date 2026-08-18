@@ -84,7 +84,7 @@ function SectionHeading({
       {door ? (
         <Link
           href={door.href}
-          className="inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
+          className="inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-foreground"
         >
           {door.label}
           <ChevronRight className="h-3 w-3" />
@@ -250,7 +250,7 @@ export function MasterworkHomePage() {
                   className="group rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary/40"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-medium text-foreground group-hover:underline">
+                    <span className="font-medium text-foreground">
                       {rb.name}
                     </span>
                     <span className="shrink-0 text-[11px] text-muted-foreground">
@@ -301,7 +301,7 @@ export function MasterworkHomePage() {
                         ? `/masterwork/${m.built_from_rulebook}/masterworks`
                         : "/masterwork/all"
                     }
-                    className="font-medium text-foreground hover:underline"
+                    className="font-medium text-foreground hover:text-primary"
                   >
                     {m.name}
                   </Link>
@@ -319,7 +319,7 @@ export function MasterworkHomePage() {
                 {m.rulebookName && m.built_from_rulebook ? (
                   <Link
                     href={`/masterwork/${m.built_from_rulebook}`}
-                    className="mt-0.5 w-fit text-xs text-muted-foreground hover:text-foreground hover:underline"
+                    className="mt-0.5 w-fit text-xs text-muted-foreground hover:text-foreground"
                   >
                     From {m.rulebookName}
                   </Link>
@@ -348,7 +348,7 @@ export function MasterworkHomePage() {
                 : `${released.length} Masterworks are released — anyone you share them with can run them on `}
               <Link
                 href="/masterwork/encore"
-                className="text-foreground underline-offset-2 hover:underline"
+                className="text-foreground hover:text-primary"
               >
                 Encore
               </Link>

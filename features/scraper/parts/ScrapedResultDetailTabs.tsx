@@ -145,7 +145,7 @@ function ScrapedOverviewPanel({ selected }: { selected: ScraperResult }) {
           href={selected.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[10px] text-primary hover:underline flex items-center gap-1 mt-1 max-w-full"
+          className="text-[10px] text-primary  flex items-center gap-1 mt-1 max-w-full"
         >
           <span className="truncate">{selected.url}</span>
           <ExternalLink className="w-2.5 h-2.5 shrink-0" />

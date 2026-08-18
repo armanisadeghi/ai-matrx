@@ -259,7 +259,7 @@ export default function KindAssetsTab({
                   target="_blank"
                   rel="noopener noreferrer"
                   title={`Open the skill ${s.skillId}`}
-                  className="min-w-0 break-all rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground underline-offset-2 hover:text-primary hover:underline"
+                  className="min-w-0 break-all rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground underline-offset-2 hover:text-primary "
                 >
                   {s.skillId}
                 </Link>
@@ -316,7 +316,7 @@ export default function KindAssetsTab({
                     target="_blank"
                     rel="noopener noreferrer"
                     title={`Open the content block ${b.label}`}
-                    className="text-foreground underline-offset-2 hover:text-primary hover:underline"
+                    className="text-foreground underline-offset-2 hover:text-primary "
                   >
                     {b.label}
                   </Link>
@@ -328,7 +328,7 @@ export default function KindAssetsTab({
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`Edit the content block ${b.label}`}
-                    className="inline-flex min-h-10 min-w-10 items-center justify-center gap-1 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline sm:ml-auto"
+                    className="inline-flex min-h-10 min-w-10 items-center justify-center gap-1 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground  sm:ml-auto"
                   >
                     <ExternalLink className="h-3 w-3" /> Edit
                   </Link>

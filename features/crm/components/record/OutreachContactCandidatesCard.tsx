@@ -233,7 +233,7 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
                     href={evidence.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex max-w-full items-center gap-1 text-xs text-primary hover:underline"
+                    className="inline-flex max-w-full items-center gap-1 text-xs text-primary "
                     title={evidence.detail}
                   >
                     <span className="truncate">
@@ -288,7 +288,7 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
                             href={email.source_url}
                             target="_blank"
                             rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                            className="inline-flex items-center gap-1 text-primary "
                           >
                             See the page where this address was observed
                             <ExternalLink className="h-3 w-3" />

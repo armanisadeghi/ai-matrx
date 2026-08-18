@@ -306,7 +306,7 @@ function PageLink({
   return (
     <Link
       href={href}
-      className="inline-flex min-h-11 items-center font-mono text-[11px] text-primary hover:underline sm:min-h-8"
+      className="inline-flex min-h-11 items-center font-mono text-[11px] text-primary  sm:min-h-8"
     >
       {children}
     </Link>

@@ -325,7 +325,7 @@ export function KgSuggestionRowItem({
                     href={linkScopeHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-0.5 text-primary hover:underline"
+                    className="inline-flex items-center gap-0.5 text-primary "
                   >
                     View {scopeTypeLabel?.toLowerCase() ?? "scope"}
                     <ExternalLink className="h-2.5 w-2.5" />
@@ -670,7 +670,7 @@ export function KgSuggestionRowItem({
                   href={scopeViewHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-0.5 text-primary hover:underline ml-1"
+                  className="inline-flex items-center gap-0.5 text-primary  ml-1"
                 >
                   View
                   <ExternalLink className="h-2.5 w-2.5" />
@@ -774,7 +774,7 @@ export function KgSuggestionRowItem({
                   href={itemViewHref}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline text-xs inline-flex items-center gap-0.5 mt-1"
+                  className="text-primary  text-xs inline-flex items-center gap-0.5 mt-1"
                 >
                   Inspect this field first
                   <ExternalLink className="h-3 w-3" />

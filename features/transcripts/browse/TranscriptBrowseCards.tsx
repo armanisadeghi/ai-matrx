@@ -75,7 +75,7 @@ export function TranscriptBrowseCards({
                     <Link
                       href={titleHref}
                       onClick={(e) => e.stopPropagation()}
-                      className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="rounded-sm  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {row.title}
                     </Link>

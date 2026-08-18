@@ -133,7 +133,7 @@ function StrategyResults({ sample }: { sample: PagePerformanceSample }) {
             href={sample.final_url}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary "
           >
             Tested page <ExternalLink className="h-3 w-3" />
           </a>
@@ -602,7 +602,7 @@ export function PagePerformanceCard({ page }: { page: MarketingPage }) {
                 </p>
                 <Link
                   href={marketingSiteSettingsHref(sitePath, "integrations")}
-                  className="mt-2 inline-flex text-xs font-medium text-primary hover:underline"
+                  className="mt-2 inline-flex text-xs font-medium text-primary "
                 >
                   Open site integration settings
                 </Link>

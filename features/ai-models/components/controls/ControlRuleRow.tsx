@@ -416,7 +416,7 @@ export default function ControlRuleRow({
           <div>
             <button
               type="button"
-              className="text-[10px] text-primary hover:underline"
+              className="text-[10px] text-primary "
               onClick={() => setShowRawRule((v) => !v)}
             >
               {showRawRule ? "Hide" : "Edit"} raw rule (

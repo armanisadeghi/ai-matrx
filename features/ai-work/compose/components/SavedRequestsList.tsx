@@ -134,7 +134,7 @@ export function SavedRequestsList() {
                 onClick={() => router.push(`/work/new?request=${request.id}`)}
                 className="min-w-0 flex-1 text-left"
               >
-                <span className="block truncate text-sm font-medium text-foreground hover:underline">
+                <span className="block truncate text-sm font-medium text-foreground ">
                   {request.label}
                 </span>
                 <span className="block truncate text-xs text-muted-foreground">

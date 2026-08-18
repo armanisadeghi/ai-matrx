@@ -122,7 +122,7 @@ const KeyPointsNestedListDisplay = ({ data }: KeyPointsDisplayProps) => {
                                                                         e.stopPropagation();
                                                                         toggleExpand(item.id);
                                                                     }}
-                                                                    className="flex items-center gap-1 text-sm font-medium text-indigo-500 dark:text-indigo-400 hover:underline"
+                                                                    className="flex items-center gap-1 text-sm font-medium text-indigo-500 dark:text-indigo-400 "
                                                                 >
                                                                     {isExpanded ? (
                                                                         <>

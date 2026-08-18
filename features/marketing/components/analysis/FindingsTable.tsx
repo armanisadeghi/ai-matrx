@@ -192,7 +192,7 @@ export function FindingsTable() {
           <div className="flex min-w-48 max-w-lg items-center gap-1">
             <button
               type="button"
-              className="min-w-0 flex-1 cursor-pointer text-left hover:underline"
+              className="min-w-0 flex-1 cursor-pointer text-left "
               title="Open the page workspace"
               onClick={(event) => {
                 event.stopPropagation();

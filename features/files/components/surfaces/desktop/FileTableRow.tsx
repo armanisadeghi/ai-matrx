@@ -555,7 +555,7 @@ function FolderCell({
                   e.stopPropagation();
                   onActivate();
                 }}
-                className="truncate text-left font-medium text-foreground hover:underline"
+                className="truncate text-left font-medium text-foreground "
               >
                 {folder.folderName}
               </button>

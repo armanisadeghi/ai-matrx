@@ -329,7 +329,7 @@ export function UnifiedListLayout<T extends BaseListItem>({
                     {config.page.emptyAction && (
                         <button
                             onClick={config.page.emptyAction.onClick}
-                            className="mt-4 text-primary hover:underline"
+                            className="mt-4 text-primary "
                         >
                             {config.page.emptyAction.label}
                         </button>

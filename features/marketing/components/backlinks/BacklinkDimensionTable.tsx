@@ -155,7 +155,7 @@ function nameCell(
             href={ourPageHref(sitePath, fullUrl)}
             title={`Open ${fullUrl} in AI Matrx`}
             onClick={(event) => event.stopPropagation()}
-            className="truncate font-mono text-[11px] text-primary hover:underline"
+            className="truncate font-mono text-[11px] text-primary "
           >
             {urlPath(fullUrl)}
           </Link>
@@ -190,7 +190,7 @@ function nameCell(
       rel="noopener noreferrer"
       title={href}
       onClick={(event) => event.stopPropagation()}
-      className="flex min-w-40 max-w-72 items-center gap-1 truncate text-xs font-medium text-foreground hover:text-primary hover:underline"
+      className="flex min-w-40 max-w-72 items-center gap-1 truncate text-xs font-medium text-foreground hover:text-primary "
     >
       <span className="truncate">{label}</span>
       <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
@@ -245,7 +245,7 @@ function DimensionDetail({
         {kind === "target_page" ? (
           <Link
             href={ourPageHref(sitePath, row.url ?? row.dimension_key)}
-            className="text-xs font-medium text-primary hover:underline"
+            className="text-xs font-medium text-primary "
           >
             Open this page in AI Matrx
           </Link>
@@ -253,7 +253,7 @@ function DimensionDetail({
         {isDomain ? (
           <Link
             href={domainLinksHref(sitePath, label)}
-            className="text-xs font-medium text-primary hover:underline"
+            className="text-xs font-medium text-primary "
           >
             View this domain&apos;s links
           </Link>
@@ -263,7 +263,7 @@ function DimensionDetail({
             href={row.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary "
           >
             Open live URL <ExternalLink className="h-3 w-3" />
           </a>
@@ -287,7 +287,7 @@ function DimensionDetail({
             extras.brokenBacklinks && extras.brokenBacklinks > 0 && isDomain ? (
               <Link
                 href={domainBrokenHref(sitePath, label)}
-                className="font-medium text-destructive hover:underline"
+                className="font-medium text-destructive "
               >
                 {formatCount(extras.brokenBacklinks)}
               </Link>
@@ -446,7 +446,7 @@ export function BacklinkDimensionTable({
                 <Link
                   href={domainBrokenHref(sitePath, label)}
                   onClick={(event) => event.stopPropagation()}
-                  className="text-xs font-medium tabular-nums text-destructive hover:underline"
+                  className="text-xs font-medium tabular-nums text-destructive "
                   title={`Open the ${formatCount(broken)} broken backlinks from ${label}`}
                 >
                   {formatCount(broken)}

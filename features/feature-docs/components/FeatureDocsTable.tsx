@@ -451,7 +451,7 @@ export default function FeatureDocsTable({
                   <Link
                     href={featureDocViewHref(row.path)}
                     target="_blank"
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                    className="inline-flex items-center gap-1 text-xs text-primary "
                   >
                     <FileText className="h-3 w-3" />
                     Open

@@ -476,7 +476,7 @@ function ToolCard({
             href={tool.action.href}
             target={tool.action.external ? "_blank" : undefined}
             rel={tool.action.external ? "noreferrer" : undefined}
-            className="inline-flex min-h-[36px] items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+            className="inline-flex min-h-[36px] items-center gap-1.5 text-xs font-medium text-primary "
           >
             {tool.action.label}
             {tool.action.external ? (
@@ -534,7 +534,7 @@ function InlineCropTool() {
           Upload tab and drop the data URL — or wire this tool to{" "}
           <Link
             href="/images/from-base64"
-            className="text-primary hover:underline"
+            className="text-primary "
             target="_blank"
           >
             from-base64

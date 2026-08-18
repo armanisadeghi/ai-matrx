@@ -176,7 +176,7 @@ export default function SqlFunctionsList({
                         onViewDetails(func);
                       }}
                       title={`Open ${func.schema}.${func.name}`}
-                      className="rounded text-left underline-offset-2 hover:text-primary hover:underline"
+                      className="rounded text-left underline-offset-2 hover:text-primary "
                     >
                       {func.name}
                     </button>

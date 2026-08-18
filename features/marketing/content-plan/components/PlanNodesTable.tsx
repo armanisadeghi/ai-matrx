@@ -340,7 +340,7 @@ export function PlanNodesTable({
                 page.isPublished
                   ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
                   : "bg-sky-500/15 text-sky-600 dark:text-sky-400",
-                cmsSiteId && "hover:underline",
+                cmsSiteId && "",
               )}
               title={page.route ?? undefined}
             >

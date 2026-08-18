@@ -98,7 +98,7 @@ function ShowAllToggle({
   return (
     <button
       type="button"
-      className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+      className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground "
       onClick={onToggle}
     >
       {showingAll ? `top ${preview}` : `all ${total.toLocaleString()}`}

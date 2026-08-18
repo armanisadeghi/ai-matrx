@@ -256,7 +256,7 @@ export function StudyTodayCard() {
             </Link>
             <Link
               href="/education/planner"
-              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              className="inline-flex items-center gap-1 text-xs text-primary "
             >
               {hasPlan ? "Open plan" : "Make a plan"}
               <ArrowRight className="h-3 w-3" />

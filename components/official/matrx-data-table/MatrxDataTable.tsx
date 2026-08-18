@@ -1245,7 +1245,7 @@ function MatrxDataTableCore<T>({
                               <Link
                                 href={cellHref}
                                 onClick={(e) => e.stopPropagation()}
-                                className="block w-full min-w-0 rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
+                                className="block w-full min-w-0 rounded outline-none  focus-visible:ring-2 focus-visible:ring-ring"
                               >
                                 {display}
                               </Link>

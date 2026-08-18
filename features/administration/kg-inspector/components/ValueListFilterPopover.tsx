@@ -123,14 +123,14 @@ export function ValueListFilterPopover({
         <div className="flex items-center justify-between text-[11px]">
           <button
             type="button"
-            className="text-primary hover:underline"
+            className="text-primary "
             onClick={() => setStaged(new Set(visibleOptions))}
           >
             Select all{q ? " (shown)" : ""}
           </button>
           <button
             type="button"
-            className="text-primary hover:underline"
+            className="text-primary "
             onClick={() =>
               setStaged((prev) => {
                 if (!q) return new Set();

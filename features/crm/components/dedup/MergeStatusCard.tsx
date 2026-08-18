@@ -98,7 +98,7 @@ export function MergeStatusCard({
             This record was merged into{" "}
             <Link
               href={`/crm/${party.canonical_id}`}
-              className="font-medium text-foreground hover:underline"
+              className="font-medium text-foreground "
             >
               {activeAsLoser?.winner?.display_name ?? "the surviving record"}
             </Link>
@@ -133,7 +133,7 @@ export function MergeStatusCard({
                   Looks like the same {other.party_kind === "organization" ? "company" : "person"} as{" "}
                   <Link
                     href={`/crm/${other.id}`}
-                    className="font-medium text-foreground hover:underline"
+                    className="font-medium text-foreground "
                   >
                     {other.display_name}
                   </Link>{" "}
@@ -164,7 +164,7 @@ export function MergeStatusCard({
                   {m.loser ? (
                     <Link
                       href={`/crm/${m.loser.id}`}
-                      className="font-medium text-foreground hover:underline"
+                      className="font-medium text-foreground "
                     >
                       {m.loser.display_name}
                     </Link>

@@ -347,7 +347,7 @@ function BrokenLinkList({ mention }: { mention: SerpMentionRow }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={(event) => event.stopPropagation()}
-              className="min-w-0 truncate text-[11px] text-muted-foreground hover:text-primary hover:underline"
+              className="min-w-0 truncate text-[11px] text-muted-foreground hover:text-primary "
               title={link.dead_url}
             >
               {link.anchor_text ? `“${link.anchor_text}” → ` : ""}
@@ -587,7 +587,7 @@ function MentionEvidence({
                 href={mention.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block truncate text-[11px] text-muted-foreground hover:text-primary hover:underline"
+                className="block truncate text-[11px] text-muted-foreground hover:text-primary "
                 title={mention.url}
               >
                 {mention.title ?? mention.url}
@@ -636,7 +636,7 @@ function OpportunityDetail({
           href={`https://${row.normalized_domain}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary "
         >
           Open {row.display_domain}
           <ExternalLink className="h-3 w-3" />
@@ -970,7 +970,7 @@ export function SerpProspectsTab({
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(event) => event.stopPropagation()}
-                className="inline-flex min-w-0 items-center gap-1 truncate text-xs font-medium text-primary hover:underline"
+                className="inline-flex min-w-0 items-center gap-1 truncate text-xs font-medium text-primary "
                 title={`Open ${row.display_domain}`}
               >
                 <span className="truncate">{row.display_domain}</span>

@@ -98,7 +98,7 @@ export function AgentBrowseRows({
                 href={agentHref}
                 title={row.name}
                 onClick={(e) => e.stopPropagation()}
-                className={cn(className, "hover:underline")}
+                className={cn(className, "")}
               >
                 {row.name}
               </Link>

@@ -79,7 +79,7 @@ export function LoopBlockerCard({
           {door && door.href && (
             <Link
               href={door.href}
-              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+              className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-primary "
             >
               Open the {door.label.toLowerCase()} this step is working on
               <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />

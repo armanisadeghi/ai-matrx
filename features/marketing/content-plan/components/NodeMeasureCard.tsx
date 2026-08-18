@@ -175,7 +175,7 @@ export function NodeMeasureCard({
             href={workspaceHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary "
           >
             Page workspace
             <ExternalLink className="h-3 w-3" />
@@ -186,7 +186,7 @@ export function NodeMeasureCard({
             href={cmsMeasureHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary "
           >
             Measure in CMS
             <ExternalLink className="h-3 w-3" />
@@ -237,7 +237,7 @@ function DoorRow({ measureHref }: { measureHref: string }) {
         href={measureHref}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+        className="inline-flex items-center gap-1 text-xs font-medium text-primary "
       >
         Measure tab in the CMS
         <ExternalLink className="h-3 w-3" />

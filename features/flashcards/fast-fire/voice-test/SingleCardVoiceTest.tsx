@@ -558,7 +558,7 @@ function ResultView({
             <button
               type="button"
               onClick={onToggleTranscript}
-              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+              className="text-xs text-muted-foreground underline-offset-2 "
             >
               {showTranscript ? "Hide" : "Show"} what I heard
             </button>

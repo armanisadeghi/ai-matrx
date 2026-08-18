@@ -279,7 +279,7 @@ export function PartyProvenanceCard({
                   href={party.source_detail}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-primary hover:underline"
+                  className="text-primary "
                 >
                   {party.source_detail}
                 </a>
@@ -346,7 +346,7 @@ export function PartyProvenanceCard({
                   href={item.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-primary "
                 >
                   Open the source <ArrowUpRight className="h-3 w-3" />
                 </a>
@@ -354,7 +354,7 @@ export function PartyProvenanceCard({
               {item.href && (
                 <Link
                   href={item.href}
-                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-primary "
                 >
                   {item.hrefLabel} <ArrowUpRight className="h-3 w-3" />
                 </Link>

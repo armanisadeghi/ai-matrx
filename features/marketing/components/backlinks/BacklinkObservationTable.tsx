@@ -193,7 +193,7 @@ export function BacklinkObservationTable({
               onClick={(event) => event.stopPropagation()}
               className="group block"
             >
-              <span className="flex items-center gap-1 truncate text-xs font-medium text-foreground group-hover:text-primary group-hover:underline">
+              <span className="flex items-center gap-1 truncate text-xs font-medium text-foreground group-hover:text-primary ">
                 <span className="truncate">
                   {row.source_domain ?? urlPath(row.source_url)}
                 </span>
@@ -208,7 +208,7 @@ export function BacklinkObservationTable({
             {screenshotFileId ? (
               <button
                 type="button"
-                className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
+                className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-primary "
                 onClick={(event) => {
                   event.stopPropagation();
                   openFilePreview({ fileId: screenshotFileId });
@@ -280,7 +280,7 @@ export function BacklinkObservationTable({
             rel={row.page_id ? undefined : "noopener noreferrer"}
             title={row.target_url}
             onClick={(event) => event.stopPropagation()}
-            className="block min-w-40 max-w-72 truncate font-mono text-[11px] text-primary hover:underline"
+            className="block min-w-40 max-w-72 truncate font-mono text-[11px] text-primary "
           >
             {urlPath(row.target_url)}
           </a>

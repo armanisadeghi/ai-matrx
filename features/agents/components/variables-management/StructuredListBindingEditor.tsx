@@ -137,7 +137,7 @@ export function StructuredListBindingEditor({
                   href={`/lists/${binding.listId}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary "
                 >
                   Edit picklist
                   <ExternalLink className="h-3 w-3" />

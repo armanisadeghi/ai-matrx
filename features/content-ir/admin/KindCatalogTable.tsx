@@ -56,7 +56,7 @@ function CountDoor({
       href={href}
       onClick={(e) => e.stopPropagation()}
       title={title}
-      className="text-[10px] text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+      className="text-[10px] text-muted-foreground underline-offset-2 hover:text-primary "
     >
       {children}
     </Link>

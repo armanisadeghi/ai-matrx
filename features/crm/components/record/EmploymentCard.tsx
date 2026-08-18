@@ -294,7 +294,7 @@ export function EmploymentCard(props: Props) {
                     <Link
                       href={`/crm/${a.employer.id}`}
                       className={cn(
-                        "min-w-0 truncate text-sm hover:underline",
+                        "min-w-0 truncate text-sm ",
                         a.is_current
                           ? "font-medium text-foreground"
                           : "text-muted-foreground",
@@ -345,7 +345,7 @@ export function EmploymentCard(props: Props) {
                     <Link
                       href={`/crm/${a.person.id}`}
                       className={cn(
-                        "min-w-0 truncate text-sm hover:underline",
+                        "min-w-0 truncate text-sm ",
                         a.is_current
                           ? "font-medium text-foreground"
                           : "text-muted-foreground",

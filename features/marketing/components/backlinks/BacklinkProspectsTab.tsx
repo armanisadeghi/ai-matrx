@@ -137,7 +137,7 @@ function ProspectEvidence({
                   href={`https://${match.competitor_domain}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary "
                 >
                   {match.competitor_domain}
                   <ExternalLink className="h-3 w-3" />
@@ -153,7 +153,7 @@ function ProspectEvidence({
                   href={match.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block truncate text-[11px] text-muted-foreground hover:text-primary hover:underline"
+                  className="block truncate text-[11px] text-muted-foreground hover:text-primary "
                   title={match.source_url}
                 >
                   From: {match.source_url}
@@ -164,7 +164,7 @@ function ProspectEvidence({
                   href={match.target_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block truncate text-[11px] text-muted-foreground hover:text-primary hover:underline"
+                  className="block truncate text-[11px] text-muted-foreground hover:text-primary "
                   title={match.target_url}
                 >
                   To: {match.target_url}
@@ -173,7 +173,7 @@ function ProspectEvidence({
               {match.page_id ? (
                 <Link
                   href={`${sitePath}/pages/${match.page_id}`}
-                  className="text-[11px] text-primary hover:underline"
+                  className="text-[11px] text-primary "
                 >
                   Open the page of yours this competes with
                 </Link>
@@ -209,7 +209,7 @@ function ProspectDetail({
           href={`https://${row.normalized_domain}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary "
         >
           Open {row.display_domain}
           <ExternalLink className="h-3 w-3" />
@@ -356,7 +356,7 @@ export function BacklinkProspectsTab({
               target="_blank"
               rel="noopener noreferrer"
               onClick={(event) => event.stopPropagation()}
-              className="inline-flex min-w-0 items-center gap-1 truncate text-xs font-medium text-primary hover:underline"
+              className="inline-flex min-w-0 items-center gap-1 truncate text-xs font-medium text-primary "
               title={`Open ${row.display_domain}`}
             >
               <span className="truncate">{row.display_domain}</span>
@@ -488,7 +488,7 @@ export function BacklinkProspectsTab({
                 {run.runId ? (
                   <Link
                     href={`${sitePath}/backlinks?view=prospects&runId=${run.runId}`}
-                    className="text-[11px] text-primary hover:underline"
+                    className="text-[11px] text-primary "
                     title="This run's id"
                   >
                     run {run.runId.slice(0, 8)}

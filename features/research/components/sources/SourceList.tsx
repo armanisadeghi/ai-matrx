@@ -586,7 +586,7 @@ function SourceRow({
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               title={`Open ${source.url} in a new tab`}
-              className="mt-0.5 block text-xs text-muted-foreground break-all line-clamp-1 hover:text-foreground hover:underline"
+              className="mt-0.5 block text-xs text-muted-foreground break-all line-clamp-1 hover:text-foreground "
             >
               {source.url}
             </a>

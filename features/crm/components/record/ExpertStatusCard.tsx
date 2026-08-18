@@ -203,7 +203,7 @@ export function ExpertStatusCard({ party, onChanged }: Props) {
                   href={`/research/topics/${topic.id}`}
                   className={cn(
                     "flex items-center gap-1.5 rounded px-1 py-0.5 text-xs",
-                    "text-foreground hover:bg-accent hover:underline",
+                    "text-foreground hover:bg-accent ",
                   )}
                 >
                   <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />

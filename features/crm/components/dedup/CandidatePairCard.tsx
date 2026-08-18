@@ -72,7 +72,7 @@ function PartyName({ party }: { party: MergePartyRef }) {
       )}
       <Link
         href={`/crm/${party.id}`}
-        className="min-w-0 truncate font-medium text-foreground hover:underline"
+        className="min-w-0 truncate font-medium text-foreground "
       >
         {party.display_name}
       </Link>

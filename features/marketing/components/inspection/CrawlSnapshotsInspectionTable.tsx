@@ -130,7 +130,7 @@ export function CrawlSnapshotsInspectionTable({
             onClick={() =>
               openFilePreview({ fileId: row.body_file_id })
             }
-            className="block max-w-48 truncate text-left font-mono text-[11px] text-primary hover:underline"
+            className="block max-w-48 truncate text-left font-mono text-[11px] text-primary "
             title="Open captured HTML in the file viewer"
           >
             {row.body_file_id}

@@ -173,7 +173,7 @@ export default function LocalListingsWorkspace() {
           <SectionCard title="No brands yet">
             <p className="text-sm text-muted-foreground">
               Locations belong to a brand. Create one under{" "}
-              <Link className="text-primary underline-offset-2 hover:underline" href="/marketing/brands">
+              <Link className="text-primary underline-offset-2 " href="/marketing/brands">
                 Brands &amp; Websites
               </Link>{" "}
               first, then manage its locations and listings here.
@@ -832,7 +832,7 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
       {!site ? (
         <p className="text-sm text-muted-foreground">
           This brand has no website in the platform yet, so there is nothing to check. Add one under{" "}
-          <Link className="text-primary underline-offset-2 hover:underline" href="/marketing/sites">
+          <Link className="text-primary underline-offset-2 " href="/marketing/sites">
             Websites
           </Link>
           .
@@ -845,7 +845,7 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
         <p className="text-sm text-muted-foreground">
           {site.root_url ?? site.name} has never had its homepage crawled, so there is no evidence to
           check yet. Run a crawl from{" "}
-          <Link className="text-primary underline-offset-2 hover:underline" href={`/marketing/sites/${site.id}`}>
+          <Link className="text-primary underline-offset-2 " href={`/marketing/sites/${site.id}`}>
             the site workspace
           </Link>
           .

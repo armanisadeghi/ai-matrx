@@ -181,13 +181,13 @@ function DomainDetail({
           href={`https://${row.normalized_domain}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary "
         >
           Open site <ExternalLink className="h-3.5 w-3.5" />
         </a>
         <Link
           href={`${sitePath}/reputation?tab=publications`}
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary "
         >
           See press opportunities <Newspaper className="h-3.5 w-3.5" />
         </Link>
@@ -284,7 +284,7 @@ export function ReferringDomainIntelligenceTable({
           target="_blank"
           rel="noopener noreferrer"
           onClick={(event) => event.stopPropagation()}
-          className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1 font-medium text-primary "
         >
           {row.display_domain} <ExternalLink className="h-3 w-3" />
         </a>
@@ -313,7 +313,7 @@ export function ReferringDomainIntelligenceTable({
         <Link
           href={`${sitePath}/backlinks?view=links&q=${encodeURIComponent(row.display_domain)}`}
           onClick={(event) => event.stopPropagation()}
-          className="tabular-nums text-primary hover:underline"
+          className="tabular-nums text-primary "
           title={`Open the stored links from ${row.display_domain}`}
         >
           {row.current_backlinks}

@@ -118,7 +118,7 @@ const SectionGroupTab: React.FC<SectionGroupTabProps> = ({ data }) => {
                                                 <div className="font-mono text-xs break-words text-gray-800 dark:text-gray-300 whitespace-pre-wrap pr-3">
                                                     {item.line}
                                                 </div>
-                                                <button className="ml-2 text-xs text-blue-600 dark:text-blue-400 hover:underline focus:outline-none whitespace-nowrap">
+                                                <button className="ml-2 text-xs text-blue-600 dark:text-blue-400  focus:outline-none whitespace-nowrap">
                                                     {expandedRows[rowKey] ? "Collapse" : "Expand"}
                                                 </button>
                                             </div>

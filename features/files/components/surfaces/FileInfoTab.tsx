@@ -340,7 +340,7 @@ export function FileInfoTab({ fileId, className }: FileInfoTabProps) {
                       href={`/rag/viewer/${docState.state.doc.processed_document_id}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[11px] font-medium text-primary hover:underline"
+                      className="text-[11px] font-medium text-primary "
                     >
                       Open in document viewer →
                     </Link>

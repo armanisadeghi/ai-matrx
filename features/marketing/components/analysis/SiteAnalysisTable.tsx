@@ -167,7 +167,7 @@ export function SiteAnalysisTable() {
             {row.page_id ? (
               <button
                 type="button"
-                className="block w-full cursor-pointer truncate text-left font-mono text-[11px] hover:underline"
+                className="block w-full cursor-pointer truncate text-left font-mono text-[11px] "
                 title="Open the page workspace"
                 onClick={(event) => {
                   event.stopPropagation();

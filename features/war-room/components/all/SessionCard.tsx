@@ -144,7 +144,7 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
             href={`/war-room/${session.id}`}
             onClick={(e) => e.stopPropagation()}
             title={`Open ${session.title}`}
-            className="rounded outline-none hover:underline focus-visible:ring-2 focus-visible:ring-primary/50"
+            className="rounded outline-none  focus-visible:ring-2 focus-visible:ring-primary/50"
           >
             {session.title}
           </Link>

@@ -196,7 +196,7 @@ export function OutreachListPickerFields({
           {lists !== null && lists.length > 0 && (
             <button
               type="button"
-              className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground "
               onClick={() => setCreating(false)}
             >
               Pick an existing outreach list instead
@@ -206,7 +206,7 @@ export function OutreachListPickerFields({
       ) : (
         <button
           type="button"
-          className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground "
           onClick={() => setCreating(true)}
         >
           <Plus className="h-3.5 w-3.5" />

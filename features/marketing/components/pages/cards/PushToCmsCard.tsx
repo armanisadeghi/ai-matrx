@@ -343,7 +343,7 @@ export function PushToCmsCard({
                   {cmsEditorHref(target.page.id) ? (
                     <Link
                       href={cmsEditorHref(target.page.id) as string}
-                      className="inline-flex items-center gap-0.5 text-primary hover:underline"
+                      className="inline-flex items-center gap-0.5 text-primary "
                     >
                       Open in CMS
                       <ArrowUpRight className="h-3 w-3" />
@@ -416,7 +416,7 @@ export function PushToCmsCard({
                 {cmsEditorHref(result.page.id) ? (
                   <Link
                     href={cmsEditorHref(result.page.id) as string}
-                    className="inline-flex items-center gap-0.5 text-primary hover:underline"
+                    className="inline-flex items-center gap-0.5 text-primary "
                   >
                     Review in CMS
                     <ArrowUpRight className="h-3 w-3" />

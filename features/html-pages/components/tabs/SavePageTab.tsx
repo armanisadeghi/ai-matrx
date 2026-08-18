@@ -68,7 +68,7 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
                 href={previewUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 text-sm text-blue-600 dark:text-blue-400 hover:underline truncate"
+                className="flex-1 text-sm text-blue-600 dark:text-blue-400  truncate"
               >
                 {previewUrl}
               </a>

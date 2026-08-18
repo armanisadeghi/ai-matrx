@@ -194,7 +194,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
         collection in the{" "}
         <Link
           href={pageBacklinksHref}
-          className="font-medium text-primary hover:underline"
+          className="font-medium text-primary "
         >
           site Backlinks workspace
         </Link>
@@ -248,7 +248,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
               </p>
               <Link
                 href={pageBacklinksHref}
-                className="text-[11px] font-medium text-primary hover:underline"
+                className="text-[11px] font-medium text-primary "
               >
                 View all in Backlinks
               </Link>
@@ -348,7 +348,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                           href={row.source_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-1 text-[10px] text-primary hover:underline"
+                          className="inline-flex items-center justify-center gap-1 text-[10px] text-primary "
                         >
                           Source <ExternalLink className="h-3 w-3" />
                         </a>
@@ -380,7 +380,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                   {backlinks.data?.truncated ? (
                     <Link
                       href={pageBacklinksHref}
-                      className="font-medium text-primary hover:underline"
+                      className="font-medium text-primary "
                     >
                       Open the complete filtered table
                     </Link>
@@ -396,7 +396,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
             the{" "}
             <Link
               href={pageBacklinksHref}
-              className="font-medium text-primary hover:underline"
+              className="font-medium text-primary "
             >
               site Backlinks workspace
             </Link>
@@ -463,7 +463,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                   href={candidate.competitorUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="min-w-0 truncate font-medium text-primary hover:underline"
+                  className="min-w-0 truncate font-medium text-primary "
                 >
                   {candidate.competitorName}: {candidate.competitorUrl}
                 </a>
@@ -484,7 +484,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                       href={match.sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block truncate font-medium text-primary hover:underline"
+                      className="block truncate font-medium text-primary "
                     >
                       {match.sourceUrl}
                     </a>
@@ -492,7 +492,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                       href={match.targetUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-0.5 block truncate text-[11px] text-muted-foreground hover:underline"
+                      className="mt-0.5 block truncate text-[11px] text-muted-foreground "
                     >
                       Links to {match.targetUrl}
                     </a>

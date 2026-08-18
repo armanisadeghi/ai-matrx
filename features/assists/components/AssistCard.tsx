@@ -90,7 +90,7 @@ function EvidenceBlock({
             href={evidence.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="ml-auto inline-flex items-center gap-1 text-primary hover:underline"
+            className="ml-auto inline-flex items-center gap-1 text-primary "
           >
             Open
             <ExternalLink className="h-3 w-3" />

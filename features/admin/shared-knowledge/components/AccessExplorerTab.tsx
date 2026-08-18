@@ -308,7 +308,7 @@ export function AccessExplorerTab({
                   href={`/administration/users/organizations?org=${encodeURIComponent(orgId)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline-offset-2 hover:text-foreground hover:underline"
+                  className="underline-offset-2 hover:text-foreground "
                   title="Open this organization's members"
                 >
                   Members:{" "}

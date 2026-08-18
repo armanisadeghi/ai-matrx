@@ -54,7 +54,7 @@ export function GitHubConnectionCard({
             ) : connected ? (
               <p className="mt-1 text-xs text-muted-foreground">
                 <a
-                  className="text-foreground hover:underline"
+                  className="text-foreground "
                   href={accountUrl}
                   target="_blank"
                   rel="noreferrer"

@@ -188,14 +188,14 @@ function ChangeDetail({
           href={row.source_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary "
         >
           Open the page that links to you
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
         <Link
           href={linkRecordHref}
-          className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+          className="inline-flex items-center gap-1 text-sm font-medium text-primary "
         >
           Open the link record <Link2 className="h-3.5 w-3.5" />
         </Link>
@@ -204,7 +204,7 @@ function ChangeDetail({
             href={row.target_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-sm font-medium text-primary "
           >
             Open your page <ExternalLink className="h-3.5 w-3.5" />
           </a>
@@ -439,7 +439,7 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
             onClick={(event) => event.stopPropagation()}
             className="group block"
           >
-            <span className="flex items-center gap-1 truncate text-xs font-medium text-foreground group-hover:text-primary group-hover:underline">
+            <span className="flex items-center gap-1 truncate text-xs font-medium text-foreground group-hover:text-primary ">
               <span className="truncate">{row.source_domain}</span>
               <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
             </span>
@@ -448,7 +448,7 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
           <Link
             href={linkRecordHref(row)}
             onClick={(event) => event.stopPropagation()}
-            className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium text-primary hover:underline"
+            className="mt-0.5 inline-flex items-center gap-1 text-[10px] font-medium text-primary "
             title="Open this link's record in the Backlinks table"
           >
             <Link2 className="h-3 w-3" />
@@ -471,7 +471,7 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
             rel="noopener noreferrer"
             title={row.target_url}
             onClick={(event) => event.stopPropagation()}
-            className="block min-w-32 max-w-56 truncate font-mono text-[11px] text-primary hover:underline"
+            className="block min-w-32 max-w-56 truncate font-mono text-[11px] text-primary "
           >
             {urlPath(row.target_url)}
           </a>

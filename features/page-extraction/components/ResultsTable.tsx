@@ -455,7 +455,7 @@ function SchemaResultsBody({
               <TableCell
                 className={
                   "text-xs tabular-nums" +
-                  (canJump ? " cursor-pointer hover:underline" : "")
+                  (canJump ? " cursor-pointer " : "")
                 }
                 onClick={() => {
                   if (canJump && onJumpToPage)
@@ -784,7 +784,7 @@ function TextResultCell({ value }: { value: unknown }) {
       {long && (
         <button
           type="button"
-          className="mt-0.5 text-[10px] text-primary hover:underline"
+          className="mt-0.5 text-[10px] text-primary "
           onClick={() => setExpanded((v) => !v)}
         >
           {expanded ? "Show less" : "Show more"}

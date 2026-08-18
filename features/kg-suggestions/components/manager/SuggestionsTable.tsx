@@ -325,7 +325,7 @@ function SuggestionTableRow({
             <span
               className={cn(
                 "min-w-0 flex-1 truncate font-medium text-foreground",
-                canPreviewSource && "group-hover:underline",
+                canPreviewSource && "",
               )}
             >
               {sourceLabel}

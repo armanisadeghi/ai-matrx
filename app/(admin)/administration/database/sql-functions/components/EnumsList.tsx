@@ -172,7 +172,7 @@ export default function EnumsList({
                         onViewDetails(enumType);
                       }}
                       title={`Open ${enumType.schema}.${enumType.name}`}
-                      className="flex items-center gap-2 rounded text-left underline-offset-2 hover:text-primary hover:underline"
+                      className="flex items-center gap-2 rounded text-left underline-offset-2 hover:text-primary "
                     >
                       <List className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                       {enumType.name}
@@ -216,8 +216,8 @@ export default function EnumsList({
                           variant={enumType.usage_count > 0 ? "default" : "secondary"}
                           className={
                             enumType.usage_count > 0
-                              ? "cursor-pointer bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800 hover:underline"
-                              : "cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700 hover:underline"
+                              ? "cursor-pointer bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800 "
+                              : "cursor-pointer bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-300 dark:border-slate-700 "
                           }
                         >
                           {enumType.usage_count} tables

@@ -552,7 +552,7 @@ function BundlesSection({ toolId }: { toolId: string }) {
                   <TableCell className="text-xs">
                     <a
                       href={`/administration/agents/bundles?b=${bundle.id}`}
-                      className="font-mono text-foreground hover:text-primary hover:underline"
+                      className="font-mono text-foreground hover:text-primary "
                     >
                       {bundle.name}
                     </a>

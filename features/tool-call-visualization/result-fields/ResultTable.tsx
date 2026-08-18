@@ -345,7 +345,7 @@ export const ResultTable: React.FC<ResultTableProps> = ({
                         e.stopPropagation();
                         setShowAll(true);
                     }}
-                    className="text-xs font-medium text-primary hover:underline"
+                    className="text-xs font-medium text-primary "
                 >
                     +{remaining} more {remaining === 1 ? "row" : "rows"}
                 </button>

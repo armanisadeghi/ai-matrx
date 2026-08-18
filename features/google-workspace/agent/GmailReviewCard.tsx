@@ -211,7 +211,7 @@ export function GmailReviewCard({ ask }: GmailReviewCardProps) {
           href="/user-settings/integrations/google-workspace"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          className="inline-flex w-fit items-center gap-1 text-xs text-muted-foreground underline-offset-2 hover:text-foreground "
         >
           Manage or disconnect this Google account
           <ExternalLink className="h-3 w-3" />

@@ -896,7 +896,7 @@ function GroupRows({
                 <div className="min-w-0">
                   <Link
                     href={`/research/topics/${topicId}/sources/${s.id}`}
-                    className="text-xs font-medium truncate max-w-[22rem] block hover:text-primary hover:underline"
+                    className="text-xs font-medium truncate max-w-[22rem] block hover:text-primary "
                   >
                     {s.title || s.hostname || s.url}
                   </Link>

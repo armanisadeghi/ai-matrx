@@ -92,7 +92,7 @@ export function WorkflowBrowseRows({
                 href={href}
                 title={row.name}
                 onClick={(e) => e.stopPropagation()}
-                className={cn(nameClass, "hover:underline")}
+                className={cn(nameClass, "")}
               >
                 {row.name}
               </Link>
