@@ -12,9 +12,16 @@
 // keys must be) — a few differ from the first-draft spec, so wire to THESE.
 
 export const FC_AGENTS = {
-  /** topic, count, difficulty, grade_level, user_request → { title, cards[] } (OLD set_title tolerated) */
+  /** topic, count, difficulty, grade_level, user_request → { __kind, title, cards[] } (OLD set_title tolerated) */
   generateCards: "1fd0cb1f-5b95-49f0-a7f8-79308dc50f58",
-  /** source_content, document_id, count, difficulty → { title, cards[] (with source) } (OLD set_title tolerated) */
+  /**
+   * source_content, document_id, count, difficulty → { __kind, title, cards[] (with source + trust) }.
+   * Schema corrected 2026-08-18 (agent v9/v10): it had NO `__kind` and still emitted the legacy
+   * `set_title`, so this surface could never produce a `flashcard_set` envelope. `__kind` is declared
+   * FIRST at the root and first on every card — a discriminator that arrives late is a live window
+   * that cannot route until the run is over (see the schema-order rule in aidream's
+   * `matrx_ai/schema/rules.py::hoist_discriminator_first`).
+   */
   generateFromSource: "f728ac6b-8504-4b8c-83fc-5f9df947d6a9",
   /** front, back, topic, difficulty, kinds, existing_details → { details[] } */
   enrichCard: "9f8eab67-96e4-4a08-9563-7a982f920527",

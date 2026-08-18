@@ -7,11 +7,14 @@ vision: [features/window-panels/FEATURE.md]
 
 # THE FLOATING LAW — ranked offender inventory
 
-> **State, 2026-08-18.** Every ranked section (§1–§8) is DONE, and **D170 is
-> CLOSED — both halves.** What is left is TWO chipped items and nothing else:
-> (a) the flashcard run emits no chunks at all, which needs aidream; (b)
-> `useResearchStream` still hand-renders its stream and must move onto
-> `adoptForeignStream`. Delete this doc when those two land.
+> **State, 2026-08-18.** Every ranked section (§1–§8) is DONE, **D170 is CLOSED
+> — both halves**, and **the flashcard live preview is FIXED and verified live on
+> both surfaces** (§3). That last one was never "the run emits no chunks": it
+> always streamed — its `__kind` discriminator arrived LAST, because a jsonb
+> column reorders a schema's `properties` and a constrained model emits keys in
+> that order, so nothing could route until the run ended. ONE chipped item is
+> left: `useResearchStream` still hand-renders its stream and must move onto
+> `adoptForeignStream`. Delete this doc when that lands.
 
 The companion worklist to [`live-stream-everywhere.md`](./live-stream-everywhere.md).
 That doc holds the vision, the primitives, and the migration recipe. **This doc is
@@ -243,22 +246,23 @@ not a dead spinner. Do not "fix" it.
 `features/flashcards/data/quiz/makeQuizItems.ts` stays out of scope (headless
 fallback distractor source, never rendered — see Class E below).
 
-**Two things found while verifying live, both chipped, both still open:**
+**Two things were found while verifying live. (1) is now FIXED and re-verified
+live; (2) is still open.**
 
-1. 🚨 **The card-by-card live preview does not work on EITHER generation
-   surface — including `CreateFromTopic`, which this doc called the working
-   exemplar.** Sampling page text every 1.5s across full real runs on
+1. ✅ **FIXED 2026-08-18 — the card-by-card live preview now works on BOTH
+   generation surfaces.** It took three independent defects, diagnosed in
+   order; the history is kept because two of the three diagnoses were wrong
+   the first time.
+
+   **The original symptom (2026-08-11):** Sampling page text every 1.5s across full real runs on
    `/education/flashcards/new` and `…/new/from-source`, the text sat flat at the
    "Generating N cards…" box for the whole ~15s run, then jumped to the finished
    set. `LiveGenerationPreview` never rendered. The runs succeed and persist
    correct cards, so the agents work — the `flashcard_set` envelope simply never
-   reaches `selectKindEnvelope`. `CreateFromSource` is now wired identically to
-   the exemplar and will light up the moment that path does, but **as of today
-   both screens still show a spinner.** Do not re-cite `CreateFromTopic` as
-   proof until this is fixed.
+   reached `selectKindEnvelope`. `CreateFromSource` is wired identically to the
+   exemplar, so it lit up the moment that path did.
 
-   **Diagnosed 2026-08-18 — it was TWO independent defects, and the first is
-   FIXED.** Re-measured live on `/education/flashcards/new`, both halves
+   **Diagnosed 2026-08-18 — THREE independent defects, all now fixed**, each
    proven with instrumentation rather than inference:
 
    - ✅ **THE WRAPPED-PAYLOAD CLASS (fixed, `abad51c24`).** The generator is a
@@ -279,19 +283,63 @@ fallback distractor source, never rendered — see Class E below).
      real production bytes: `__tests__/artifact-wrapped-payload-live-stream.test.ts`
      (envelope present mid-stream WITH CARDS, complete at the end, block still
      `type: "artifact"`).
-   - ❌ **Nothing streams at all — still open, chipped.** With the envelope
-     fixed the preview is *still* blank, because the run emits no chunks:
-     logging the component's Redux read across a full run showed the request row
-     present and `activeRequestId` correct throughout, but
-     `renderBlockOrder.length === 0` for the entire ~15s run, jumping to 1 only
-     at the end. No `upsertRenderBlock` fires mid-run. That is upstream of the
-     envelope — agent/provider config or a post-hoc artifact wrap — and needs
-     aidream. **The accumulator test proves the FE half produces mid-stream
-     envelopes the moment chunks actually arrive.**
-   - Also found: `generateFromSource`'s bound `output_schema` has **no `__kind`
-     at all** and still uses the legacy `set_title` key, so `CreateFromSource`
-     cannot produce a `flashcard_set` envelope even once streaming works.
-     Folded into the same chip.
+   - ✅ **THE DISCRIMINATOR-ORDER CLASS (fixed 2026-08-18, aidream).** The
+     earlier read that "the run emits no chunks at all" was WRONG — measured on
+     the wire, aidream streams this run token-by-token the whole way. What was
+     missing was the *kind*. Tee'ing the response body of a real run showed the
+     first text chunk arriving as `{"cards":` and `"__kind":"flashcard_set"` as
+     the LAST key of the payload, so `selectKindEnvelope(…, "flashcard_set")`
+     could not resolve until the run was over — a blank preview with a healthy
+     stream underneath it.
+
+     **Root cause, proven end to end:** a grammar-constrained model emits an
+     object's keys in the order the schema's `properties` map declares them
+     (gemini-3.7-flash: swap `properties` and the wire order swaps; swapping
+     `required` changes nothing). The agent's authored schema declares
+     `["__kind","title","cards"]` and `agent.definition.output_schema` is a
+     `json` column that keeps it — but the run binds through the Content IR
+     kind (`response_format_for_kind`), and
+     `content_ir.kind_definition.emitted_json_schema` is **jsonb**, which sorts
+     object keys by (length, bytewise). The registry handed back
+     `["cards","title","__kind"]` and the card object as
+     `["back","tags","front","topic","__kind","card_kind","difficulty"]` —
+     byte-for-byte the order the live run emitted.
+
+     **Fix (aidream):** `hoist_discriminator_first` in
+     `packages/matrx-ai/matrx_ai/schema/rules.py`, applied in the lint gate's
+     `_make_portable` (so every `portable_schema` / `response_format_for_kind`
+     binding is `__kind`-first) and in
+     `BaseTranslator.sanitize_structured_output_schema` (THE seam all four
+     provider boundaries call, now applied even for providers that strip
+     nothing — the exact path this run took). It is a request-boundary
+     normalization like `rewrite_const_as_enum`: the stored schema is
+     untouched, no data migration is needed, and **every kind-routed
+     structured agent on the platform is repaired at once** — any jsonb
+     round-trip anywhere is undone on the way to the provider. Pinned:
+     `packages/matrx-ai/tests/test_schema_rules_kind_first.py`.
+
+     **Verified live 2026-08-18** against a local aidream carrying the fix,
+     sampling Redux + the DOM every 400 ms through real runs:
+
+     | | `/education/flashcards/new` | `…/new/from-source` |
+     |---|---|---|
+     | envelope cards mid-run | 2 → 6 → 10 | 5 → 7 → 9 → 10 |
+     | page text mid-run | 237 → 1356 → 2110 → 2364 | 249 → 1238 → 1733 → 2338 |
+
+     Cards appear one by one on BOTH surfaces. Note the visible window is
+     short (~3 s of a ~15 s run): gemini-3.7-flash at `reasoning_effort:
+     medium` thinks for most of the run and then emits fast. That is a
+     model-config question, not this defect.
+   - ✅ **`generateFromSource`'s schema is fixed too** (agent
+     `f728ac6b-8504-4b8c-83fc-5f9df947d6a9`, v9 + v10 via the canonical
+     `agent_author` path). It had **no `__kind` at all** and still used the
+     legacy `set_title`, so `CreateFromSource` could never produce a
+     `flashcard_set` envelope. It now declares `__kind` FIRST at the root
+     (`flashcard_set`) and first on every card (`flashcard`), and `title`
+     replaces `set_title` to match the registered `flashcard_set` kind; the
+     system prompt's output block was rewritten to teach the same thing
+     (including why `__kind` goes first).
+
 2. **The enrich / expand / spoken-grader agents emit kind-less JSON**, so their
    (now live) runs render a raw JSON code block — the exact developer artifact
    our non-technical user must never see. `EnhanceSetDialog` binds its display
