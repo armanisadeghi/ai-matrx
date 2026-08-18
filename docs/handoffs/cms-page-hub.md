@@ -73,14 +73,10 @@ plan, tracking against plan (observed vs desired verdicts, not timestamps). Benc
 content briefs / Clearscope / SurferSEO's plan-vs-page scoring — but wired into our own
 crawl + GSC data we already have.
 
-**3. Fix `useCmsPagePlanContext` — live invariant-9 violation (drift bomb).**
-`features/cms/hooks/useCmsPagePlanContext.ts` feeds agent `plan_context` (PageEditor scope +
-`CmsPageAiActionDialog`) from the RETIRED plan.node copies (`primary_keyword_id`, `meta_title`,
-`meta_description`, `attributes`). Identical data today; goes stale the moment anyone edits the
-SEO plan in `SeoPlanEditor`. Fix: keep plan.node for label/route/brief/status (still canonical),
-source keyword + desired meta + role from the page plan (`useCmsPageSeoPlan` /
-`readSeoPlan`-shaped read over `web_page_id`), update `features/cms/FEATURE.md` § Page
-completion gate in the same change.
+~~**3. Fix `useCmsPagePlanContext`.**~~ DONE 2026-08-17 — the hook now reads plan content from
+`plan.node` and ALL SEO intent (keyword, role, secondaries, desired meta, planned links) from
+the one store via `useSitePlanIndex`/`planForRoute`; raw `attributes` dropped from agent
+context in favour of the structured `seo_plan` block; `features/cms/FEATURE.md` updated.
 
 **4. Annihilate `NodeSeoIntentEditor` (chipped).** The legacy fallback editor
 (`content-plan/components/NodeSeoIntentEditor.tsx`) still WRITES retired plan.node fields for

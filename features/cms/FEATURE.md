@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-08-17` (Plan/SEO-tab prose corrected to the shipped invariant-9 state; `useCmsPagePlanContext` re-pointed at the one SEO-plan store)
 
 ---
 
@@ -142,9 +142,12 @@ header Agents chrome is the overflow, never the only door. History + remaining s
 `docs/handoffs/website-factory-vision.md` § AI-everywhere.
 
 **Page completion gate (2026-08-14):** the page editor and every page-list `…` menu share
-`CmsPageAiActionDialog`. An empty page says **Build with AI**, not Edit, and reads the linked
-`plan.node` through `useCmsPagePlanContext` so the writer receives the actual brief, resolved target
-keyword, planned metadata, and attributes in the `plan_context` Surface Value. The dialog reports
+`CmsPageAiActionDialog`. An empty page says **Build with AI**, not Edit, and reads through
+`useCmsPagePlanContext` so the writer receives the actual plan in the `plan_context` Surface
+Value: plan content (label/route/brief/status) from the linked `plan.node`, and the SEO intent
+(keyword, role, desired meta, planned links) from the ONE store —
+`web.page.desired_values.keyword_plan` via the site plan index (invariant 9; the node's retired
+SEO copies are never read). The dialog reports
 plan / keyword / brief / research readiness, offers the existing plan Deepen agent for each missing
 input, and keeps a direct skippable AI door. Generation reuses `useNodeReality.write` — the same
 content-plan → CMS writer — including the one-click write-policy repair. The list menu is the one
