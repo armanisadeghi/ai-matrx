@@ -63665,6 +63665,13 @@ export type Database = {
             referencedRelation: "definition"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wf_definition_version_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
+            referencedColumns: ["id"]
+          },
         ]
       }
       extract_sweep_state: {
@@ -63930,6 +63937,13 @@ export type Database = {
             columns: ["definition_id"]
             isOneToOne: false
             referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "node_data_slot_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
             referencedColumns: ["id"]
           },
         ]
@@ -64251,6 +64265,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "plan_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "plan_merged_into_plan_id_fkey"
             columns: ["merged_into_plan_id"]
             isOneToOne: false
@@ -64269,6 +64290,13 @@ export type Database = {
             columns: ["promoted_definition_id"]
             isOneToOne: false
             referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_promoted_definition_id_fkey"
+            columns: ["promoted_definition_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
             referencedColumns: ["id"]
           },
         ]
@@ -64468,6 +64496,13 @@ export type Database = {
             referencedRelation: "definition"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "wf_recovery_audit_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
+            referencedColumns: ["id"]
+          },
         ]
       }
       run: {
@@ -64585,6 +64620,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "wf_run_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "wf_run_definition_version_id_fkey"
             columns: ["definition_version_id"]
             isOneToOne: false
@@ -64671,6 +64713,13 @@ export type Database = {
             columns: ["definition_id"]
             isOneToOne: false
             referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "runtime_surface_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
             referencedColumns: ["id"]
           },
         ]
@@ -64832,6 +64881,13 @@ export type Database = {
             columns: ["definition_id"]
             isOneToOne: false
             referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_trigger_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
             referencedColumns: ["id"]
           },
           {
@@ -65035,6 +65091,30 @@ export type Database = {
       }
     }
     Views: {
+      v_definition_catalog: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          engram_state: string | null
+          id: string | null
+          is_active: boolean | null
+          is_archived: boolean | null
+          is_favorite: boolean | null
+          last_run_at: string | null
+          last_run_id: string | null
+          last_run_status: string | null
+          name: string | null
+          organization_id: string | null
+          run_count: number | null
+          step_count: number | null
+          tags: string[] | null
+          updated_at: string | null
+          visibility: Database["platform"]["Enums"]["visibility"] | null
+        }
+        Relationships: []
+      }
       v_engram_confirmed_run: {
         Row: {
           completed_at: string | null
@@ -65063,6 +65143,13 @@ export type Database = {
             columns: ["definition_id"]
             isOneToOne: false
             referencedRelation: "definition"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wf_run_definition_id_fkey"
+            columns: ["definition_id"]
+            isOneToOne: false
+            referencedRelation: "v_definition_catalog"
             referencedColumns: ["id"]
           },
         ]

@@ -826,6 +826,16 @@ export const primaryNavItems: ShellNavItem[] = [
     color: "emerald",
   },
   {
+    label: "Workflows",
+    href: "/workflows",
+    iconName: "Workflow",
+    section: "primary",
+    profileMenu: true,
+    dashboard: true,
+    description: "Run multi-step workflows and watch every step live",
+    color: "cyan",
+  },
+  {
     // User-facing Shape System studio (features/content-ir/studio/).
     label: "Shapes",
     href: SHAPES_ROUTE_BASE,
