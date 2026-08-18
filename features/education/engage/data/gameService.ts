@@ -19,9 +19,7 @@ import type {
   GameBadgeRow,
   LeagueMembershipRow,
   GameRoomConfig,
-  GameOutcome,
 } from "../types";
-import type { BadgeKey } from "../engine/badges";
 
 const EDU = () => supabase.schema("education");
 
@@ -172,41 +170,23 @@ export const gameService = {
   },
 
   // ─── RESULTS ───────────────────────────────────────────────────────────
-  /** Persist ONE player's finalized outcome (their own row; RLS-owned). */
-  async saveResult(
-    outcome: GameOutcome,
-    userId: string,
+  /**
+   * Finalize one owned game session. IC-14 deliberately accepts no score-like
+   * inputs: Postgres derives the durable result from the unedited attempt ledger.
+   */
+  async finalizeResult(
+    sessionId: string,
     displayName: string,
   ): Promise<EngageResult<GameResultRow>> {
     try {
-      const orgId = await ensureOrgId(null);
-      const payload = {
-        organization_id: orgId,
-        room_id: outcome.roomId,
-        session_id: outcome.sessionId,
-        created_by: userId,
-        display_name: displayName,
-        mode: outcome.mode,
-        score: outcome.score,
-        correct_count: outcome.correctCount,
-        answered_count: outcome.answeredCount,
-        best_streak: outcome.bestStreak,
-        mastery_gain: outcome.masteryGain,
-        currency_earned: outcome.currencyEarned,
-        duration_ms: outcome.durationMs,
-        source_kind: outcome.sourceKind,
-        source_set_id: outcome.sourceSetId,
-        source_title: outcome.sourceTitle,
-      } as never;
-      const { data, error } = await EDU()
-        .from("game_result")
-        .insert(payload)
-        .select("*")
-        .single();
-      if (error) return fail("saveResult", error);
-      return { data: data as GameResultRow, error: null };
+      const { data, error } = await supabase.rpc("game_finalize_result", {
+        p_session_id: sessionId,
+        p_display_name: displayName,
+      });
+      if (error) return fail("finalizeResult", error);
+      return { data, error: null };
     } catch (e) {
-      return fail("saveResult", e);
+      return fail("finalizeResult", e);
     }
   },
 
@@ -257,62 +237,6 @@ export const gameService = {
     }
   },
 
-  /**
-   * Award badges idempotently. Inserts only keys not already earned. The unique
-   * `(created_by, badge_key)` index is PARTIAL (`WHERE deleted_at IS NULL`), so it
-   * cannot be an `ON CONFLICT` target (PostgREST/`.upsert` can't attach the
-   * predicate) — we filter out already-earned keys ourselves, then insert the
-   * remainder. A concurrent double-award still hits the partial unique index and
-   * fails with 23505, which we treat as "already earned" (idempotent). Returns
-   * the keys actually newly inserted (for a celebratory toast).
-   */
-  async awardBadges(
-    keys: BadgeKey[],
-    userId: string,
-    context: Record<string, unknown> = {},
-  ): Promise<EngageResult<BadgeKey[]>> {
-    if (keys.length === 0) return { data: [], error: null };
-    try {
-      const orgId = await ensureOrgId(null);
-      // Which of these keys does the user already hold? (partial-unique-safe)
-      const { data: existing, error: exErr } = await EDU()
-        .from("game_badge")
-        .select("badge_key")
-        .eq("created_by", userId)
-        .in("badge_key", keys)
-        .is("deleted_at", null);
-      if (exErr) return fail("awardBadges", exErr);
-      const held = new Set(
-        (existing ?? []).map((r) => (r as { badge_key: string }).badge_key),
-      );
-      const newKeys = keys.filter((k) => !held.has(k));
-      if (newKeys.length === 0) return { data: [], error: null };
-      const rows = newKeys.map((key) => ({
-        organization_id: orgId,
-        created_by: userId,
-        badge_key: key,
-        context: context as never,
-      })) as never;
-      const { data, error } = await EDU()
-        .from("game_badge")
-        .insert(rows)
-        .select("badge_key");
-      if (error) {
-        // 23505 = concurrent award raced us to the same key(s): idempotent no-op.
-        if ((error as { code?: string }).code === "23505") {
-          return { data: [], error: null };
-        }
-        return fail("awardBadges", error);
-      }
-      const inserted = (data ?? []).map(
-        (r) => (r as { badge_key: string }).badge_key as BadgeKey,
-      );
-      return { data: inserted, error: null };
-    } catch (e) {
-      return fail("awardBadges", e);
-    }
-  },
-
   // ─── LEAGUES (opt-in, weekly, mastery-gain-scored) ─────────────────────
   /** Monday (UTC) of the current league week, as a YYYY-MM-DD date string. */
   currentWeekStart(): string {
@@ -346,79 +270,22 @@ export const gameService = {
   },
 
   /**
-   * Opt in (or out) of the current week's league — the caller's own row (RLS-
-   * owned). The unique `(created_by, week_start)` index is PARTIAL
-   * (`WHERE deleted_at IS NULL`), so `.upsert({ onConflict })` cannot target it
-   * (PostgREST can't attach the predicate → "no unique or exclusion constraint
-   * matching"). We do the conflict resolution ourselves: update the live row if
-   * one exists, else insert. `league_add_result` only UPDATEs an opted-in row,
-   * so this membership row MUST exist before mastery gain can land — a broken
-   * upsert here silently blocked the entire league flow.
+   * Opt in (or out) through IC-14. The RPC assigns a private weekly cohort from
+   * recent eligible study activity; clients cannot write league totals.
    */
   async setLeagueOptIn(
     optedIn: boolean,
     displayName: string,
   ): Promise<EngageResult<LeagueMembershipRow>> {
     try {
-      const orgId = await ensureOrgId(null);
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user?.id;
-      if (!uid) return fail("setLeagueOptIn", "not authenticated");
-      const weekStart = this.currentWeekStart();
-
-      const { data: existing, error: exErr } = await EDU()
-        .from("league_membership")
-        .select("id")
-        .eq("created_by", uid)
-        .eq("week_start", weekStart)
-        .is("deleted_at", null)
-        .maybeSingle();
-      if (exErr) return fail("setLeagueOptIn", exErr);
-
-      if (existing) {
-        const { data, error } = await EDU()
-          .from("league_membership")
-          .update({ opted_in: optedIn, display_name: displayName } as never)
-          .eq("id", (existing as { id: string }).id)
-          .select("*")
-          .single();
-        if (error) return fail("setLeagueOptIn", error);
-        return { data: data as LeagueMembershipRow, error: null };
-      }
-
-      const payload = {
-        organization_id: orgId,
-        created_by: uid,
-        week_start: weekStart,
-        display_name: displayName,
-        opted_in: optedIn,
-      } as never;
-      const { data, error } = await EDU()
-        .from("league_membership")
-        .insert(payload)
-        .select("*")
-        .single();
-      if (error) return fail("setLeagueOptIn", error);
-      return { data: data as LeagueMembershipRow, error: null };
-    } catch (e) {
-      return fail("setLeagueOptIn", e);
-    }
-  },
-
-  /** Add a game's mastery gain to the caller's league standing (RPC). */
-  async addLeagueResult(
-    masteryGain: number,
-    displayName: string,
-  ): Promise<EngageResult<null>> {
-    try {
-      const { error } = await supabase.rpc("league_add_result", {
-        p_mastery_gain: masteryGain,
+      const { data, error } = await supabase.rpc("league_set_opt_in", {
+        p_opted_in: optedIn,
         p_display_name: displayName,
       });
-      if (error) return fail("addLeagueResult", error);
-      return { data: null, error: null };
+      if (error) return fail("setLeagueOptIn", error);
+      return { data, error: null };
     } catch (e) {
-      return fail("addLeagueResult", e);
+      return fail("setLeagueOptIn", e);
     }
   },
 

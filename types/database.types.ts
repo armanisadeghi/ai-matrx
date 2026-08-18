@@ -399,7 +399,7 @@ export type Database = {
           auto_context_disabled: boolean
           card_visibility: Database["platform"]["Enums"]["visibility"]
           category: string | null
-          context_slots: Json
+          context_policies: Json
           created_at: string
           created_by: string | null
           custom_tools: Json
@@ -444,7 +444,7 @@ export type Database = {
           auto_context_disabled?: boolean
           card_visibility?: Database["platform"]["Enums"]["visibility"]
           category?: string | null
-          context_slots?: Json
+          context_policies?: Json
           created_at?: string
           created_by?: string | null
           custom_tools?: Json
@@ -489,7 +489,7 @@ export type Database = {
           auto_context_disabled?: boolean
           card_visibility?: Database["platform"]["Enums"]["visibility"]
           category?: string | null
-          context_slots?: Json
+          context_policies?: Json
           created_at?: string
           created_by?: string | null
           custom_tools?: Json
@@ -554,7 +554,7 @@ export type Database = {
           category: string | null
           change_note: string | null
           changed_at: string
-          context_slots: Json | null
+          context_policies: Json | null
           created_at: string
           created_by: string | null
           created_by_system: string | null
@@ -592,7 +592,7 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          context_slots?: Json | null
+          context_policies?: Json | null
           created_at?: string
           created_by?: string | null
           created_by_system?: string | null
@@ -630,7 +630,7 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          context_slots?: Json | null
+          context_policies?: Json | null
           created_at?: string
           created_by?: string | null
           created_by_system?: string | null
@@ -1324,7 +1324,7 @@ export type Database = {
         Row: {
           auto_context_disabled: boolean
           category: string | null
-          context_slots: Json
+          context_policies: Json
           created_at: string
           created_by: string | null
           custom_tools: Json
@@ -1356,7 +1356,7 @@ export type Database = {
         Insert: {
           auto_context_disabled?: boolean
           category?: string | null
-          context_slots?: Json
+          context_policies?: Json
           created_at?: string
           created_by?: string | null
           custom_tools?: Json
@@ -1388,7 +1388,7 @@ export type Database = {
         Update: {
           auto_context_disabled?: boolean
           category?: string | null
-          context_slots?: Json
+          context_policies?: Json
           created_at?: string
           created_by?: string | null
           custom_tools?: Json
@@ -2924,7 +2924,7 @@ export type Database = {
           rate_limit_per_ip: number | null
           rate_limit_window_hours: number | null
           search_tsv: unknown
-          shared_context_slots: Json | null
+          shared_context_policies: Json | null
           shell_config: Json
           shell_kind: string
           slot_code: Json
@@ -2977,7 +2977,7 @@ export type Database = {
           rate_limit_per_ip?: number | null
           rate_limit_window_hours?: number | null
           search_tsv?: unknown
-          shared_context_slots?: Json | null
+          shared_context_policies?: Json | null
           shell_config?: Json
           shell_kind?: string
           slot_code?: Json
@@ -3030,7 +3030,7 @@ export type Database = {
           rate_limit_per_ip?: number | null
           rate_limit_window_hours?: number | null
           search_tsv?: unknown
-          shared_context_slots?: Json | null
+          shared_context_policies?: Json | null
           shell_config?: Json
           shell_kind?: string
           slot_code?: Json
@@ -15407,6 +15407,7 @@ export type Database = {
       }
       league_membership: {
         Row: {
+          cohort_key: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -15424,6 +15425,7 @@ export type Database = {
           week_start: string
         }
         Insert: {
+          cohort_key?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -15441,6 +15443,7 @@ export type Database = {
           week_start: string
         }
         Update: {
+          cohort_key?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -18439,7 +18442,7 @@ export type Database = {
           category: string | null
           change_note: string | null
           changed_at: string | null
-          context_slots: Json | null
+          context_policies: Json | null
           custom_tools: Json | null
           description: string | null
           id: string
@@ -18463,7 +18466,7 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string | null
-          context_slots?: Json | null
+          context_policies?: Json | null
           custom_tools?: Json | null
           description?: string | null
           id: string
@@ -18487,7 +18490,7 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string | null
-          context_slots?: Json | null
+          context_policies?: Json | null
           custom_tools?: Json | null
           description?: string | null
           id?: string
@@ -23372,7 +23375,7 @@ export type Database = {
           category: string | null
           change_note: string | null
           changed_at: string
-          context_slots: Json | null
+          context_policies: Json | null
           description: string | null
           dynamic_model: boolean | null
           id: string
@@ -23393,7 +23396,7 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          context_slots?: Json | null
+          context_policies?: Json | null
           description?: string | null
           dynamic_model?: boolean | null
           id?: string
@@ -23414,7 +23417,7 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          context_slots?: Json | null
+          context_policies?: Json | null
           description?: string | null
           dynamic_model?: boolean | null
           id?: string
@@ -23443,7 +23446,7 @@ export type Database = {
       prompt_builtins: {
         Row: {
           category: string | null
-          context_slots: Json
+          context_policies: Json
           created_at: string
           created_by: string | null
           created_by_user_id: string | null
@@ -23471,7 +23474,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
-          context_slots?: Json
+          context_policies?: Json
           created_at?: string
           created_by?: string | null
           created_by_user_id?: string | null
@@ -23499,7 +23502,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
-          context_slots?: Json
+          context_policies?: Json
           created_at?: string
           created_by?: string | null
           created_by_user_id?: string | null
@@ -23696,7 +23699,7 @@ export type Database = {
           category: string | null
           change_note: string | null
           changed_at: string
-          context_slots: Json | null
+          context_policies: Json | null
           description: string | null
           dynamic_model: boolean | null
           id: string
@@ -23716,7 +23719,7 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          context_slots?: Json | null
+          context_policies?: Json | null
           description?: string | null
           dynamic_model?: boolean | null
           id?: string
@@ -23736,7 +23739,7 @@ export type Database = {
           category?: string | null
           change_note?: string | null
           changed_at?: string
-          context_slots?: Json | null
+          context_policies?: Json | null
           description?: string | null
           dynamic_model?: boolean | null
           id?: string
@@ -23765,7 +23768,7 @@ export type Database = {
       prompts: {
         Row: {
           category: string | null
-          context_slots: Json
+          context_policies: Json
           created_at: string
           description: string | null
           dynamic_model: boolean | null
@@ -23791,7 +23794,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
-          context_slots?: Json
+          context_policies?: Json
           created_at?: string
           description?: string | null
           dynamic_model?: boolean | null
@@ -23817,7 +23820,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
-          context_slots?: Json
+          context_policies?: Json
           created_at?: string
           description?: string | null
           dynamic_model?: boolean | null
@@ -30255,7 +30258,7 @@ export type Database = {
       runnable_agent_fields: {
         Args: { p_agent_id: string }
         Returns: {
-          context_slots: Json
+          context_policies: Json
           name: string
           variable_definitions: Json
           version: number
@@ -30264,7 +30267,7 @@ export type Database = {
       runnable_version_fields: {
         Args: { p_version_id: string }
         Returns: {
-          context_slots: Json
+          context_policies: Json
           name: string
           variable_definitions: Json
           version_number: number
@@ -38498,7 +38501,7 @@ export type Database = {
         Args: { p_agent_id: string }
         Returns: {
           auto_context_disabled: boolean
-          context_slots: Json
+          context_policies: Json
           custom_tools: Json
           id: string
           model_id: string
@@ -38512,7 +38515,7 @@ export type Database = {
         Args: { p_agent_id: string }
         Returns: {
           auto_context_disabled: boolean
-          context_slots: Json
+          context_policies: Json
           id: string
           variable_definitions: Json
         }[]
@@ -38593,7 +38596,7 @@ export type Database = {
       agx_get_shortcuts_for_context: {
         Args: { p_project_id?: string; p_task_id?: string }
         Returns: {
-          agent_context_slots: Json
+          agent_context_policies: Json
           agent_id: string
           agent_name: string
           agent_variable_definitions: Json
@@ -38638,7 +38641,7 @@ export type Database = {
       agx_get_shortcuts_initial: {
         Args: never
         Returns: {
-          agent_context_slots: Json
+          agent_context_policies: Json
           agent_id: string
           agent_name: string
           agent_variable_definitions: Json
@@ -38741,7 +38744,7 @@ export type Database = {
           category: string
           change_note: string
           changed_at: string
-          context_slots: Json
+          context_policies: Json
           custom_tools: Json
           description: string
           is_active: boolean
@@ -40879,6 +40882,16 @@ export type Database = {
         Args: { p_quiz_id: string; p_token?: string }
         Returns: Json
       }
+      game_finalize_result: {
+        Args: { p_display_name?: string; p_session_id: string }
+        Returns: Database["education"]["Tables"]["game_result"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "game_result"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       game_room_by_code: {
         Args: { p_code: string }
         Returns: {
@@ -41006,7 +41019,7 @@ export type Database = {
         Returns: {
           agent_type: string
           category: string
-          context_slots: Json
+          context_policies: Json
           description: string
           id: string
           name: string
@@ -42189,6 +42202,16 @@ export type Database = {
           is_me: boolean
           mastery_gain: number
         }[]
+      }
+      league_set_opt_in: {
+        Args: { p_display_name?: string; p_opted_in: boolean }
+        Returns: Database["education"]["Tables"]["league_membership"]["Row"]
+        SetofOptions: {
+          from: "*"
+          to: "league_membership"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       library_grant_provenance: {
         Args: { p_store: string }

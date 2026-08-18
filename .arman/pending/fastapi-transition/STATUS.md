@@ -34,7 +34,7 @@ These files call `submitChatFastAPI` which transforms and forwards correctly, bu
 | `components/admin/GeneratePromptForSystemModal.tsx` | `model_id` | Update chatConfig construction |
 | `lib/redux/thunks/promptSystemThunks.ts` | `model_id`, likely `max_tokens` via settings spread | Update chatConfig construction |
 | `lib/redux/prompt-execution/thunks/executeMessageThunk.ts` | `model_id` (via `promptSettings.modelId`), `max_tokens` and `output_format` (via `...promptSettings.config` spread) | Update to build final-shape body directly |
-| `features/DEPRECATED-matrx-actions/components/ActionConversationModal.tsx` | `model_id` | DEPRECATED — low priority |
+| `features/DEPRECATED-matrx-directives/components/ActionConversationModal.tsx` | `model_id` | DEPRECATED — low priority |
 | `features/chat/hooks/useExistingChat.ts` | Uses `ai_chat` task (different payload shape entirely: `{ conversation_id, message_object }`) | Needs separate migration to a proper FastAPI chat endpoint |
 
 ### Category 2: Deeper issues — callers still wrap in `chat_config` object

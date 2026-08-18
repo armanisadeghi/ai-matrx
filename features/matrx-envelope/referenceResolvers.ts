@@ -787,7 +787,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
 };
 
 // ── Catalog-derived generic resolver ─────────────────────────────────────────
-// The server's computed action catalog ships every registered noun's table +
+// The server's computed directive catalog ships every registered noun's table +
 // title_column (mirrored → the SLIM catalog-nouns.generated.ts: plain-id nouns
 // only, two fields — kept minimal for bundle/build-memory reasons). Any
 // plain-row noun WITHOUT a bespoke entry above resolves through this generic

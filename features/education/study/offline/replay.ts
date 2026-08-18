@@ -34,6 +34,19 @@ import {
   type OutboxAttempt,
 } from "./outbox";
 
+/**
+ * How many times one attempt may fail before it is dropped from the queue.
+ * Low on purpose: the failures this guards against (id reuse, FK violation,
+ * malformed payload) are permanent, and retrying them forever is what blocked
+ * every answer behind them.
+ */
+export const MAX_ATTEMPT_RETRIES = 3;
+
+export interface DeadLetteredAttempt {
+  attemptId: string;
+  reason: string;
+}
+
 export interface FlushReport {
   /** Attempts the server durably accepted (including idempotent replays). */
   flushed: number;
@@ -43,32 +56,51 @@ export interface FlushReport {
   halted: boolean;
   /** The error that halted it, for surfacing — never swallowed. */
   haltReason: string | null;
+  /**
+   * Attempts permanently dropped this flush. These are LOST ANSWERS — the
+   * caller must tell the learner, never quietly discard them.
+   */
+  deadLettered: DeadLetteredAttempt[];
 }
 
-let inFlight: Promise<FlushReport> | null = null;
+/**
+ * In-flight flushes, keyed BY USER. A single module-level slot meant a flush
+ * for user B started while user A's was running returned A's promise and
+ * silently no-opped B's queue.
+ */
+const inFlight = new Map<string, Promise<FlushReport>>();
 
 function isOffline(): boolean {
   return typeof navigator !== "undefined" && navigator.onLine === false;
 }
 
 /**
- * Drain the outbox for one user. Concurrent calls share one flush — two
- * `online` events firing together must not replay the queue twice in parallel
+ * Drain the outbox for one user. Concurrent calls FOR THE SAME USER share one
+ * flush — two `online` events firing together must not replay in parallel
  * (idempotency makes that safe at the DB, but it wastes a round trip per item
  * and interleaves the ordering the algorithm depends on).
  */
 export function flushStudyOutbox(userId: string): Promise<FlushReport> {
-  if (inFlight) return inFlight;
-  inFlight = runFlush(userId).finally(() => {
-    inFlight = null;
+  const existing = inFlight.get(userId);
+  if (existing) return existing;
+  const run = runFlush(userId).finally(() => {
+    inFlight.delete(userId);
   });
-  return inFlight;
+  inFlight.set(userId, run);
+  return run;
 }
 
 async function runFlush(userId: string): Promise<FlushReport> {
+  const deadLettered: DeadLetteredAttempt[] = [];
   const pending = await listPendingAttempts(userId);
   if (pending.length === 0) {
-    return { flushed: 0, remaining: 0, halted: false, haltReason: null };
+    return {
+      flushed: 0,
+      remaining: 0,
+      halted: false,
+      haltReason: null,
+      deadLettered,
+    };
   }
   if (isOffline()) {
     return {
@@ -76,6 +108,7 @@ async function runFlush(userId: string): Promise<FlushReport> {
       remaining: pending.length,
       halted: true,
       haltReason: "offline",
+      deadLettered,
     };
   }
 
@@ -89,12 +122,29 @@ async function runFlush(userId: string): Promise<FlushReport> {
       if (attempt.seq != null) {
         await markAttemptFailed(attempt.seq, message);
       }
-      // Halt: the remaining attempts for this item depend on this one's state.
+
+      // A PERMANENTLY failing head item used to poison the whole queue: every
+      // later flush retried it, halted on it again, and nothing behind it ever
+      // reached the server. Some refusals are permanent by nature — the RPC's
+      // id-reuse refusal, a foreign-key violation, a malformed attempt — and no
+      // number of retries fixes them. After MAX_ATTEMPT_RETRIES we drop that ONE
+      // attempt to the dead-letter list and carry on, so one bad row costs one
+      // answer instead of every answer after it.
+      const failures = attempt.failedAttempts + 1;
+      if (attempt.seq != null && failures >= MAX_ATTEMPT_RETRIES) {
+        deadLettered.push({ attemptId: attempt.attemptId, reason: message });
+        await removeAttempt(attempt.seq);
+        continue;
+      }
+
+      // Otherwise halt: a later attempt for the SAME item must never replay
+      // before an earlier one, because FSRS state is sequential.
       return {
         flushed,
         remaining: pending.length - flushed,
         halted: true,
         haltReason: message,
+        deadLettered,
       };
     }
 
@@ -108,11 +158,18 @@ async function runFlush(userId: string): Promise<FlushReport> {
         remaining: pending.length - flushed,
         halted: true,
         haltReason: "offline",
+        deadLettered,
       };
     }
   }
 
-  return { flushed, remaining: 0, halted: false, haltReason: null };
+  return {
+    flushed,
+    remaining: 0,
+    halted: false,
+    haltReason: null,
+    deadLettered,
+  };
 }
 
 function toInput(attempt: OutboxAttempt) {

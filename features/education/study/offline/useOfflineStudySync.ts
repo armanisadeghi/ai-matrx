@@ -11,16 +11,20 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 import { countPendingAttempts } from "./outbox";
 import { flushStudyOutbox } from "./replay";
 
 export function useOfflineStudySync(userId: string | null): {
   pending: number;
   syncing: boolean;
+  /** Why the last flush stopped early, or null. Shown, never swallowed. */
+  lastError: string | null;
   flushNow: () => void;
 } {
   const [pending, setPending] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!userId) return;
@@ -31,7 +35,25 @@ export function useOfflineStudySync(userId: string | null): {
     if (!userId) return;
     setSyncing(true);
     void flushStudyOutbox(userId)
-      .then(() => refresh())
+      .then((report) => {
+        // A halted flush used to be swallowed here: the learner pressed "Sync
+        // now", the spinner turned, the count did not move, and nothing said
+        // why. "offline" is an expected state, not an error worth shouting.
+        setLastError(
+          report.halted && report.haltReason !== "offline"
+            ? report.haltReason
+            : null,
+        );
+        // Dead-lettered attempts are LOST ANSWERS. The learner is told.
+        if (report.deadLettered.length > 0) {
+          toast.error(
+            report.deadLettered.length === 1
+              ? "One answer could not be saved and was discarded."
+              : `${report.deadLettered.length} answers could not be saved and were discarded.`,
+          );
+        }
+        return refresh();
+      })
       .finally(() => setSyncing(false));
   }, [userId, refresh]);
 
@@ -52,5 +74,5 @@ export function useOfflineStudySync(userId: string | null): {
     };
   }, [userId, flushNow, refresh]);
 
-  return { pending, syncing, flushNow };
+  return { pending, syncing, lastError, flushNow };
 }

@@ -98,6 +98,17 @@ const config: {
 const SHELL_CACHE = "matrx-study-shell-v1";
 const OFFLINE_URL = "/education/offline";
 
+/** Last-resort body when even the offline route was never cached. */
+const OFFLINE_HTML_FALLBACK = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Offline</title>
+<style>body{margin:0;min-height:100dvh;display:flex;align-items:center;justify-content:center;
+font-family:system-ui,-apple-system,sans-serif;background:#0b1120;color:#e2e8f0;padding:24px}
+div{max-width:22rem;text-align:center}h1{font-size:1.1rem;margin:0 0 .5rem}
+p{margin:0;color:#94a3b8;font-size:.9rem}</style></head><body><div>
+<h1>You're offline</h1><p>Reconnect and this page will load. Anything you already
+studied is saved on this device and will sync automatically.</p></div></body></html>`;
+
 async function precacheShell(): Promise<void> {
     try {
         const cache = await caches.open(SHELL_CACHE);
@@ -132,31 +143,49 @@ function isImmutableAsset(request: Request, parsed: URL): boolean {
 
 async function handleStudyNavigation(request: Request): Promise<Response> {
     try {
-        const response = await fetch(request);
-        // Warm the fallback with a real shell whenever we successfully load
-        // one, so the offline page reflects the deployed build.
-        if (response.ok) {
-            const cache = await caches.open(SHELL_CACHE);
-            void cache.put(OFFLINE_URL, response.clone());
-        }
-        return response;
+        return await fetch(request);
     } catch {
-        const cached =
-            (await caches.match(request)) ?? (await caches.match(OFFLINE_URL));
+        // Serve the dedicated offline route and NOTHING else. An earlier
+        // version cached each successful navigation UNDER THE KEY
+        // `/education/offline` to "warm the shell" — so after one visit to
+        // /education/tutor, going offline on /education/flashcards served the
+        // TUTOR page's HTML at the flashcards URL, with the router booted from
+        // mismatched flight data. It also wrote per-user authenticated HTML
+        // into origin-shared Cache Storage. Both are gone: the offline entry is
+        // written once at install, by `precacheShell`, and never rewritten.
+        const cached = await caches.match(OFFLINE_URL);
         if (cached) return cached;
-        throw new Error("offline and no cached study shell");
+        // No shell cached (precache failed, or the SW installed before the
+        // route was reachable). Answer with something honest and human rather
+        // than letting respondWith reject into the browser's error page.
+        return new Response(OFFLINE_HTML_FALLBACK, {
+            status: 503,
+            headers: {
+                "Content-Type": "text/html; charset=utf-8",
+                "Cache-Control": "no-store",
+            },
+        });
     }
 }
 
 async function handleImmutableAsset(request: Request): Promise<Response> {
     const cached = await caches.match(request);
     if (cached) return cached;
-    const response = await fetch(request);
-    if (response.ok) {
-        const cache = await caches.open(SHELL_CACHE);
-        void cache.put(request, response.clone());
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            const cache = await caches.open(SHELL_CACHE);
+            void cache.put(request, response.clone());
+        }
+        return response;
+    } catch (err) {
+        // NEVER let this reject. We already committed via respondWith(), and a
+        // rejected chunk request is the exact failure the fetch listener's
+        // comment warns about — it ate next/dynamic chunk loads and overlay
+        // windows silently never rendered. A 504 lets the page's own loader
+        // see a normal failed response and retry.
+        return new Response("", { status: 504, statusText: "asset offline" });
     }
-    return response;
 }
 
 self.addEventListener("install", (event) => {
@@ -173,6 +202,24 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
     event.waitUntil(
         (async () => {
+            // Drop shell caches from previous SW generations. Without this the
+            // Cache Storage grew with every deploy's assets forever, and origin
+            // eviction under storage pressure takes the offline OUTBOX
+            // (IndexedDB) with it — losing a learner's answers.
+            try {
+                const names = await caches.keys();
+                await Promise.all(
+                    names
+                        .filter(
+                            (name) =>
+                                name.startsWith("matrx-study-shell-") &&
+                                name !== SHELL_CACHE,
+                        )
+                        .map((name) => caches.delete(name)),
+                );
+            } catch {
+                // Cleanup is best-effort; never block activation on it.
+            }
             await (self as ServiceWorkerGlobalScope).clients.claim();
             // Notify every open client that the SW is now active. Useful
             // during dev — page logs show when registration completed.

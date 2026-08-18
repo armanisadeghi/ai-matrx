@@ -3,6 +3,7 @@
 // CTA + authed continuity (see FEATURE.md "Why (core), not (public)").
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { EducationHeader } from "@/features/education/components/EducationHeader";
+import { OfflineStudySyncMount } from "@/features/education/study/offline/OfflineStudySyncMount";
 
 export const metadata = {
   ...createRouteMetadata("/education", {
@@ -26,6 +27,9 @@ export default function EducationLayout({
   return (
     <>
       <EducationHeader />
+      {/* Render-free: drains the offline study outbox on every education
+          route, on `online`, and on tab refocus. */}
+      <OfflineStudySyncMount />
       {children}
     </>
   );

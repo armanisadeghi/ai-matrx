@@ -31,7 +31,7 @@ const PAGE_EXTRACTION_ADMIN_MAP: FeatureAdminMap = {
   routes: [
     {
       url: "/knowledge/extractions",
-      label: "Extraction catalog (list)",
+      label: "Extrdirective catalog (list)",
       description:
         "Global catalog of every extraction dataset across all sources. Search, sort, context-filter; per-row context status + 'Open' into the dataset grid. The savior list entry — replaces being trapped in the PDF Studio tab.",
       filePath: "app/(core)/knowledge/extractions/page.tsx",

@@ -60,6 +60,7 @@ import {
 } from "@/features/surfaces/manifests/education-learn-authoring.manifest";
 import { eduHref } from "../../constants";
 import { SectionRenderer } from "../../components/sections/SectionRenderer";
+import { SectionBlockEditor } from "./SectionBlockEditor";
 import {
   deleteLearnDocAction,
   listLearnDocsAdminAction,
@@ -72,6 +73,7 @@ import {
   describeAllSectionKinds,
   parseRelatedJson,
   parseSectionsJson,
+  validateAuthoredSections,
   validateRelatedValue,
   validateSectionFields,
   validateSectionsValue,
@@ -88,9 +90,7 @@ interface Props {
 }
 
 type EditorState =
-  | { mode: "list" }
-  | { mode: "new" }
-  | { mode: "edit"; doc: LearnDocRecord };
+  { mode: "list" } | { mode: "new" } | { mode: "edit"; doc: LearnDocRecord };
 
 // THE NAMING LAW: field labels for declared values render from the manifest,
 // never from a hand-typed literal that can drift away from it.
@@ -338,7 +338,8 @@ export function LearnDocAdmin({ initialDocs }: Props) {
                 Study Guide Authoring
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                <span data-surface-value="doc_count">{docs.length} total</span> ·{" "}
+                <span data-surface-value="doc_count">{docs.length} total</span>{" "}
+                ·{" "}
                 <span data-surface-value="published_count">
                   {published} published
                 </span>
@@ -381,7 +382,9 @@ export function LearnDocAdmin({ initialDocs }: Props) {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">{doc.title}</span>
+                        <span className="font-medium truncate">
+                          {doc.title}
+                        </span>
                         <Badge
                           variant={
                             doc.status === "published" ? "default" : "secondary"
@@ -491,8 +494,21 @@ function LearnDocEditor({
   const [showPreview, setShowPreview] = useState(true);
   const [isPending, startTransition] = useTransition();
 
-  const parsedSections = useMemo(() => parseSectionsJson(sectionsJson), [sectionsJson]);
-  const parsedRelated = useMemo(() => parseRelatedJson(relatedJson), [relatedJson]);
+  const parsedSections = useMemo(
+    () => parseSectionsJson(sectionsJson),
+    [sectionsJson],
+  );
+  const parsedRelated = useMemo(
+    () => parseRelatedJson(relatedJson),
+    [relatedJson],
+  );
+  const authoredSections = useMemo(
+    () =>
+      parsedSections.ok
+        ? validateAuthoredSections(parsedSections.sections ?? [])
+        : parsedSections,
+    [parsedSections],
+  );
 
   // Publish the live draft for the emitter. No dep array: this runs after every
   // commit, so the ref always mirrors what is on screen.
@@ -511,9 +527,11 @@ function LearnDocEditor({
         .split(",")
         .map((k) => k.trim())
         .filter(Boolean),
-      sections: parsedSections.ok ? (parsedSections.sections ?? []) : null,
+      sections: authoredSections.ok ? (authoredSections.sections ?? []) : null,
       related: parsedRelated.ok ? (parsedRelated.related ?? {}) : null,
-      sectionsError: parsedSections.ok ? null : (parsedSections.error ?? null),
+      sectionsError: authoredSections.ok
+        ? null
+        : (authoredSections.error ?? null),
       relatedError: parsedRelated.ok ? null : (parsedRelated.error ?? null),
       previewVisible: showPreview,
     };
@@ -615,8 +633,18 @@ function LearnDocEditor({
           `Cannot append: the Sections editor currently holds invalid JSON (${current.error}) Fix it on the page, or use "doc_sections" to replace the whole body instead.`,
         );
       }
+      const currentShape = validateAuthoredSections(current.sections ?? []);
+      if (!currentShape.ok) {
+        throw new Error(
+          `Cannot append: the current content has an invalid block (${currentShape.error}) Fix it on the page, or use "doc_sections" to replace the whole body instead.`,
+        );
+      }
       setSectionsJson(
-        JSON.stringify([...(current.sections ?? []), ...additions], null, 2),
+        JSON.stringify(
+          [...(currentShape.sections ?? []), ...additions],
+          null,
+          2,
+        ),
       );
     },
 
@@ -654,8 +682,8 @@ function LearnDocEditor({
       toast.error("Summary is required.");
       return null;
     }
-    if (!parsedSections.ok) {
-      toast.error(parsedSections.error ?? "Invalid sections.");
+    if (!authoredSections.ok) {
+      toast.error(authoredSections.error ?? "A content block is incomplete.");
       return null;
     }
     if (!parsedRelated.ok) {
@@ -673,7 +701,7 @@ function LearnDocEditor({
         .split(",")
         .map((k) => k.trim())
         .filter(Boolean),
-      sections: parsedSections.sections ?? [],
+      sections: authoredSections.sections ?? [],
       related: parsedRelated.related ?? {},
       contentUpdatedAt: updated.trim() || null,
     };
@@ -686,7 +714,7 @@ function LearnDocEditor({
     letter,
     keywords,
     updated,
-    parsedSections,
+    authoredSections,
     parsedRelated,
   ]);
 
@@ -731,13 +759,32 @@ function LearnDocEditor({
           ) : null}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" onClick={() => save(false)} disabled={isPending} className="gap-2">
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          <Button
+            variant="outline"
+            onClick={() => save(false)}
+            disabled={isPending || !authoredSections.ok || !parsedRelated.ok}
+            className="gap-2"
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
             Save draft
           </Button>
-          <Button onClick={() => save(true)} disabled={isPending} className="gap-2">
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
-            {doc?.status === "published" ? "Save & keep live" : "Save & publish"}
+          <Button
+            onClick={() => save(true)}
+            disabled={isPending || !authoredSections.ok || !parsedRelated.ok}
+            className="gap-2"
+          >
+            {isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
+            {doc?.status === "published"
+              ? "Save & keep live"
+              : "Save & publish"}
           </Button>
         </div>
       </div>
@@ -758,42 +805,104 @@ function LearnDocEditor({
             />
           </Field>
           <Field label={V.draft_title} anchor="draft_title">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Photosynthesis, Explained" />
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Photosynthesis, Explained"
+            />
           </Field>
           <Field
             label={V.draft_summary}
             anchor="draft_summary"
             hint="Meta description + hero lede."
           >
-            <Textarea value={summary} onChange={(e) => setSummary(e.target.value)} rows={3} />
+            <Textarea
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              rows={3}
+            />
           </Field>
           <div className="grid grid-cols-3 gap-3">
-            <Field label={V.draft_subject} anchor="draft_subject" hint="Subject slug">
-              <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="biology" className="font-mono" />
+            <Field
+              label={V.draft_subject}
+              anchor="draft_subject"
+              hint="Subject slug"
+            >
+              <Input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="biology"
+                className="font-mono"
+              />
             </Field>
             <Field label={V.draft_letter} anchor="draft_letter" hint="2 chars">
-              <Input value={letter} onChange={(e) => setLetter(e.target.value)} maxLength={2} className="font-mono" />
+              <Input
+                value={letter}
+                onChange={(e) => setLetter(e.target.value)}
+                maxLength={2}
+                className="font-mono"
+              />
             </Field>
-            <Field label={V.draft_updated} anchor="draft_updated" hint="YYYY-MM-DD">
-              <Input value={updated} onChange={(e) => setUpdated(e.target.value)} placeholder="2026-07-07" className="font-mono" />
+            <Field
+              label={V.draft_updated}
+              anchor="draft_updated"
+              hint="YYYY-MM-DD"
+            >
+              <Input
+                value={updated}
+                onChange={(e) => setUpdated(e.target.value)}
+                placeholder="2026-07-07"
+                className="font-mono"
+              />
             </Field>
           </div>
-          <Field label={V.draft_keywords} anchor="draft_keywords" hint="Comma-separated.">
-            <Input value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="photosynthesis, Calvin cycle" />
+          <Field
+            label={V.draft_keywords}
+            anchor="draft_keywords"
+            hint="Comma-separated."
+          >
+            <Input
+              value={keywords}
+              onChange={(e) => setKeywords(e.target.value)}
+              placeholder="photosynthesis, Calvin cycle"
+            />
           </Field>
           <Field
             label={V.draft_sections}
             anchor="draft_sections"
-            hint={`JSON · EduSection[] — kinds: ${EDU_SECTION_KINDS.join(", ")}.`}
-            error={!parsedSections.ok ? parsedSections.error : undefined}
+            hint="Build the guide from reusable content blocks."
+            error={!authoredSections.ok ? authoredSections.error : undefined}
           >
-            <Textarea
-              value={sectionsJson}
-              onChange={(e) => setSectionsJson(e.target.value)}
-              rows={16}
-              className="font-mono text-xs"
-              spellCheck={false}
-            />
+            {authoredSections.ok ? (
+              <SectionBlockEditor
+                sections={authoredSections.sections ?? []}
+                onChange={(sections) =>
+                  setSectionsJson(JSON.stringify(sections, null, 2))
+                }
+              />
+            ) : (
+              <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+                This draft contains a malformed block. Correct it in Advanced
+                JSON below; Save and Publish stay disabled until every rendered
+                field is valid.
+              </div>
+            )}
+            <details className="rounded-lg border border-border bg-muted/20 p-3">
+              <summary className="cursor-pointer text-sm font-medium">
+                Advanced JSON
+              </summary>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Optional expert view · EduSection[] kinds:{" "}
+                {EDU_SECTION_KINDS.join(", ")}.
+              </p>
+              <Textarea
+                value={sectionsJson}
+                onChange={(event) => setSectionsJson(event.target.value)}
+                rows={16}
+                className="mt-3 font-mono text-xs"
+                spellCheck={false}
+              />
+            </details>
           </Field>
           <Field
             label={V.draft_related}
@@ -815,23 +924,34 @@ function LearnDocEditor({
         <div className="space-y-3" data-surface-value="preview_visible">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-semibold">{V.preview_visible}</Label>
-            <Button variant="ghost" size="sm" onClick={() => setShowPreview((v) => !v)} className="gap-1.5 text-xs">
-              {showPreview ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPreview((v) => !v)}
+              className="gap-1.5 text-xs"
+            >
+              {showPreview ? (
+                <EyeOff className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
               {showPreview ? "Hide" : "Show"}
             </Button>
           </div>
           {showPreview ? (
             <div className="rounded-xl border border-border bg-background overflow-hidden">
               <div className="px-6 pt-6 pb-2">
-                <h2 className="text-2xl font-bold tracking-tight">{title || "Untitled"}</h2>
+                <h2 className="text-2xl font-bold tracking-tight">
+                  {title || "Untitled"}
+                </h2>
                 <p className="mt-2 text-muted-foreground">{summary}</p>
               </div>
               <div className="scale-[0.85] origin-top">
-                {parsedSections.ok ? (
-                  <SectionRenderer sections={(parsedSections.sections ?? []) as EduSection[]} />
+                {authoredSections.ok ? (
+                  <SectionRenderer sections={authoredSections.sections ?? []} />
                 ) : (
                   <div className="p-6 text-sm text-destructive">
-                    Fix the sections JSON to preview.
+                    Fix the incomplete content block to preview.
                   </div>
                 )}
               </div>
@@ -861,7 +981,11 @@ function Field({
     <div className="space-y-1.5" data-surface-value={anchor}>
       <div className="flex items-baseline justify-between gap-2">
         <Label className="text-sm font-medium">{label}</Label>
-        {hint ? <span className="text-[11px] text-muted-foreground truncate">{hint}</span> : null}
+        {hint ? (
+          <span className="text-[11px] text-muted-foreground truncate">
+            {hint}
+          </span>
+        ) : null}
       </div>
       {children}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}

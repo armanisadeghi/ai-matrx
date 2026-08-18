@@ -55,25 +55,38 @@ const MATH_STRUCTURAL: ReadonlyArray<readonly [RegExp, string]> = [
 ];
 
 const MATH_PATTERNS: ReadonlyArray<readonly [RegExp, string]> = [
-  [/\\(?:left|right)([([\]|)])/g, "$1"],
-  [/\\times\b/g, "×"],
-  [/\\div\b/g, "÷"],
-  [/\\pm\b/g, "±"],
-  [/\\cdot\b/g, "·"],
-  [/\\leq\b/g, "≤"],
-  [/\\geq\b/g, "≥"],
-  [/\\neq\b/g, "≠"],
-  [/\\approx\b/g, "≈"],
-  [/\\infty\b/g, "∞"],
-  [/\\pi\b/g, "π"],
-  [/\\theta\b/g, "θ"],
-  [/\\alpha\b/g, "α"],
-  [/\\beta\b/g, "β"],
-  [/\\Delta\b/g, "Δ"],
-  [/\\delta\b/g, "δ"],
-  [/\\sum\b/g, "Σ"],
-  [/\\int\b/g, "∫"],
-  [/\\rightarrow\b|\\to\b/g, "→"],
+  // Environments (\begin{aligned} … \end{aligned}) carry no meaning in a
+  // one-line preview; drop the wrapper, keep the contents. Without this the
+  // catch-all below turned them into the word "aligned" twice.
+  [/\\(?:begin|end)\s*\{[^{}]*\}/g, " "],
+  // A TeX line break inside a preview is just a space.
+  [/\\\\/g, " "],
+  // \left\{ … \right\} — the escaped-brace forms, which the character-class
+  // rule below cannot reach because the brace is preceded by a backslash.
+  [/\\(?:left|right)\s*\\?([([\]|){}])/g, "$1"],
+  // NOTE: every command below ends with (?![a-zA-Z]) and NOT \b. `_` is a WORD
+  // character, so \b fails after `\sum_` — which silently left every
+  // summation, integral and limit card reading as "sum_" / "int_".
+  [/\\times(?![a-zA-Z])/g, "×"],
+  [/\\div(?![a-zA-Z])/g, "÷"],
+  [/\\pm(?![a-zA-Z])/g, "±"],
+  [/\\cdot(?![a-zA-Z])/g, "·"],
+  [/\\leq(?![a-zA-Z])/g, "≤"],
+  [/\\geq(?![a-zA-Z])/g, "≥"],
+  [/\\neq(?![a-zA-Z])/g, "≠"],
+  [/\\approx(?![a-zA-Z])/g, "≈"],
+  [/\\infty(?![a-zA-Z])/g, "∞"],
+  [/\\pi(?![a-zA-Z])/g, "π"],
+  [/\\theta(?![a-zA-Z])/g, "θ"],
+  [/\\alpha(?![a-zA-Z])/g, "α"],
+  [/\\beta(?![a-zA-Z])/g, "β"],
+  [/\\Delta(?![a-zA-Z])/g, "Δ"],
+  [/\\delta(?![a-zA-Z])/g, "δ"],
+  [/\\sum(?![a-zA-Z])/g, "Σ"],
+  [/\\prod(?![a-zA-Z])/g, "∏"],
+  [/\\int(?![a-zA-Z])/g, "∫"],
+  [/\\lim(?![a-zA-Z])/g, "lim"],
+  [/\\(?:rightarrow|to)(?![a-zA-Z])/g, "→"],
   // Braces that only ever grouped a script or argument: ^{2} → ^2, _{i} → _i.
   [/([_^])\s*\{([^{}]*)\}/g, "$1$2"],
   // Any remaining single-argument command: \text{x} / \mathrm{x} → x.
@@ -125,17 +138,31 @@ function mathToReadable(expression: string): string {
  */
 export function markdownToPlainText(value: string | null | undefined): string {
   if (!value) return "";
+
+  // MATH FIRST, and this order is load-bearing. Running the emphasis pass over
+  // the whole string first let the italic rule eat multiplication asterisks
+  // inside a formula: `$$a*b*c$$` came out as `abc`, silently deleting the
+  // operator — and this helper also feeds slide export and SEO evidence text,
+  // so that was not a flashcards-only bug. Math regions are lifted out and
+  // rendered to words before any emphasis rule can see them, then re-inserted
+  // via placeholders that contain no markdown-significant characters.
+  const mathChunks: string[] = [];
   let text = value;
+  for (const region of MATH_REGIONS) {
+    text = text.replace(region, (_match, inner: string) => {
+      mathChunks.push(mathToReadable(inner));
+      return `\uE000MATH${mathChunks.length - 1}\uE001`;
+    });
+  }
+
   for (const [pattern, replacement] of INLINE_PATTERNS) {
     text = text.replace(pattern, replacement);
   }
-  // Math second, and only inside real math regions — the delimiter is dropped
-  // and its content becomes words, so a formula card reads as a formula
-  // instead of as backslashes.
-  for (const region of MATH_REGIONS) {
-    text = text.replace(region, (_match, inner: string) =>
-      mathToReadable(inner),
-    );
-  }
+
+  text = text.replace(
+    /\uE000MATH(\d+)\uE001/g,
+    (_m, index: string) => mathChunks[Number(index)] ?? "",
+  );
+
   return text.replace(/[ \t]{2,}/g, " ").trim();
 }

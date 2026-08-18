@@ -76,7 +76,7 @@ describe("service-worker offline routing", () => {
         isImmutableAssetRequest(
           "GET",
           ORIGIN,
-          "/_next/static/chunks/main-abc123.js",
+          "/_next/static/chunks/main-abc12345.js",
           ORIGIN,
         ),
       ).toBe(true);
@@ -89,6 +89,33 @@ describe("service-worker offline routing", () => {
         "/_next/webpack-hmr",
       ]) {
         expect(isImmutableAssetRequest("GET", ORIGIN, path, ORIGIN)).toBe(false);
+      }
+    });
+
+    // Regression pin (adversarial review, 2026-08-17): the original rule
+    // matched the /_next/static/ PREFIX, which in development is full of
+    // unhashed filenames — and the worker is registerable in dev. Cache-first
+    // there served stale JS forever after every edit.
+    it("does NOT claim DEV filenames under /_next/static/ that carry no hash", () => {
+      for (const path of [
+        "/_next/static/chunks/app/layout.js",
+        "/_next/static/chunks/main-app.js",
+        "/_next/static/development/_buildManifest.js",
+        "/_next/static/development/_ssgManifest.js",
+        "/_next/static/css/app.css",
+      ]) {
+        expect(isImmutableAssetRequest("GET", ORIGIN, path, ORIGIN)).toBe(false);
+      }
+    });
+
+    it("claims production filenames that DO carry a content hash", () => {
+      for (const path of [
+        "/_next/static/chunks/main-app-1a2b3c4d5e.js",
+        "/_next/static/chunks/4bd1b696-9f7a2c3d4e5f6a7b.js",
+        "/_next/static/css/a1b2c3d4e5f6.css",
+        "/_next/static/media/logo.9f8e7d6c.svg",
+      ]) {
+        expect(isImmutableAssetRequest("GET", ORIGIN, path, ORIGIN)).toBe(true);
       }
     });
 

@@ -60,9 +60,9 @@ export function MultiplayerGameImpl({
   const [finalOutcome, setFinalOutcome] = useState<GameOutcome | null>(null);
   const [newBadges, setNewBadges] = useState<BadgeKey[]>([]);
   const [scoreboard, setScoreboard] = useState<RoomPlayerResult[]>([]);
+  const [verified, setVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
-  // Track whether we were ever strictly last (for the honest comeback badge).
-  const wasLastRef = useRef(false);
   const startedRef = useRef(false);
 
   // Load the room by code (works for host AND joiner — cross-owner RPC).
@@ -109,10 +109,14 @@ export function MultiplayerGameImpl({
     onScore: channel.sendScore,
     onFinish: (outcome) => {
       setFinalOutcome(outcome);
-      // Rank at finish for the honest comeback signal.
-      const wasComeback = wasLastRef.current && !isStrictlyLast(userId, channel.players);
-      void finalizeGame({ outcome, displayName, wasComeback }).then((r) => {
+      void finalizeGame({ outcome, displayName }).then((r) => {
         setNewBadges(r.newBadges);
+        setVerificationError(r.error);
+        if (r.officialOutcome) {
+          setFinalOutcome(r.officialOutcome);
+          setVerified(true);
+          void loadScoreboardSoon();
+        }
       });
       // Host closes the room once its own round ends.
       if (isHost) {
@@ -120,8 +124,6 @@ export function MultiplayerGameImpl({
           ended_at: new Date().toISOString(),
         });
       }
-      // Load the finalized scoreboard (poll briefly so peers' rows land).
-      void loadScoreboardSoon();
     },
   });
 
@@ -138,15 +140,7 @@ export function MultiplayerGameImpl({
       startedRef.current = true;
       game.start(startAt);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game.status, channel.startedAt, room]);
-
-  // Track "was ever last" while playing (2+ players only).
-  useEffect(() => {
-    if (game.status === "playing" && isStrictlyLast(userId, channel.players)) {
-      wasLastRef.current = true;
-    }
-  }, [game.status, channel.players, userId]);
 
   const loadScoreboardSoon = async (): Promise<void> => {
     // Peers persist their result asynchronously; try a couple of times.
@@ -213,6 +207,8 @@ export function MultiplayerGameImpl({
           newBadges={newBadges}
           scoreboard={scoreboard}
           currentUserId={userId}
+          verified={verified}
+          verificationError={verificationError}
           onExit={exit}
         />
       </div>
@@ -386,8 +382,8 @@ function LiveScoreboard({
         ))}
       </ul>
       <p className="mt-2 border-t border-border pt-2 text-[11px] leading-tight text-muted-foreground">
-        Everyone’s reviewing their own weak items — scores measure improvement,
-        not speed.
+        Live totals are provisional. Official results come from each learner’s
+        study attempts, and leagues reward mastery rather than speed.
       </p>
     </aside>
   );
@@ -416,16 +412,6 @@ function ConnBadge({
       {!compact && (connected ? "Live" : "Reconnecting")}
     </span>
   );
-}
-
-function isStrictlyLast(
-  userId: string | null,
-  players: LivePlayer[],
-): boolean {
-  if (!userId || players.length < 2) return false;
-  const me = players.find((p) => p.userId === userId);
-  if (!me) return false;
-  return players.every((p) => p.userId === userId || p.score > me.score);
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

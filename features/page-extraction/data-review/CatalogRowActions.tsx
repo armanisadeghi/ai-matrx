@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Per-row Export / Send-to actions on the extraction catalog.
+ * Per-row Export / Send-to actions on the extrdirective catalog.
  * Loads the dataset view on demand, then reuses ExportMenu + SendToMenu.
  */
 

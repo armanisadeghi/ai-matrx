@@ -44,9 +44,32 @@ export function isImmutableAssetRequest(
   pathname: string,
   swOrigin: string,
 ): boolean {
-  return (
-    method === "GET" &&
-    requestOrigin === swOrigin &&
-    pathname.startsWith("/_next/static/")
-  );
+  if (method !== "GET" || requestOrigin !== swOrigin) return false;
+  if (!pathname.startsWith("/_next/static/")) return false;
+  // NOT everything under /_next/static/ is immutable, and the prefix alone is
+  // the wrong test. In development Next serves unhashed names from this exact
+  // tree (`/_next/static/chunks/app/layout.js`,
+  // `/_next/static/development/_buildManifest.js`), and the worker IS
+  // registerable in dev through the `matrx_dev_sw` opt-in — so a prefix rule
+  // served stale JS forever after every edit.
+  //
+  // Cache-first is safe ONLY for a filename that carries a content hash,
+  // because that is what guarantees a new build cannot reuse the name. So we
+  // require one: at least 8 hash characters immediately before the extension.
+  const filename = pathname.slice(pathname.lastIndexOf("/") + 1);
+  return CONTENT_HASHED_FILENAME.test(filename);
 }
+
+/**
+ * A content hash is ≥8 alphanumeric characters containing at least one digit,
+ * sitting either at the start of the filename or after a `.`/`-` separator,
+ * immediately before the extension.
+ *
+ * Matches: `main-app-1a2b3c4d5e.js`, `4bd1b696-9f7a2c3d4e5f6a7b.js`,
+ *          `a1b2c3d4e5f6.css`, `logo.9f8e7d6c.svg`.
+ * Rejects:  `layout.js`, `main-app.js`, `app.css`, `_buildManifest.js`
+ *           (no digits / too short / not alphanumeric) — the dev filenames
+ *           whose cache-first handling served stale JS after every edit.
+ */
+const CONTENT_HASHED_FILENAME =
+  /(?:^|[.-])(?=[a-z0-9]*\d)[a-z0-9]{8,}\.[a-z0-9]+$/i;

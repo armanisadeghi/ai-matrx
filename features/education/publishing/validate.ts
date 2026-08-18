@@ -91,7 +91,8 @@ export function validateSectionsValue(value: unknown): SectionsParseResult {
  */
 const SECTION_ITEM_FIELDS: Record<
   string,
-  { listField: string; itemFields: readonly string[] } | { textFields: readonly string[] }
+  | { listField: string; itemFields: readonly string[] }
+  | { textFields: readonly string[] }
 > = {
   prose: { textFields: ["body"] },
   "feature-grid": { listField: "items", itemFields: ["title", "description"] },
@@ -99,11 +100,48 @@ const SECTION_ITEM_FIELDS: Record<
   "status-cards": { listField: "cards", itemFields: ["title", "status"] },
   "stat-bar": { listField: "stats", itemFields: ["value", "label"] },
   faq: { listField: "items", itemFields: ["q", "a"] },
-  cta: { textFields: ["heading", "primary"] },
+  cta: { textFields: ["heading"] },
 };
+
+const OPTIONAL_TEXT_FIELDS: Partial<Record<string, readonly string[]>> = {
+  prose: ["heading"],
+  "feature-grid": ["heading", "subheading"],
+  steps: ["heading", "subheading"],
+  "status-cards": ["heading", "subheading"],
+  faq: ["heading"],
+  cta: ["body"],
+};
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function requireStringField(
+  record: Record<string, unknown>,
+  field: string,
+  where: string,
+): string | null {
+  const value = record[field];
+  if (typeof value !== "string") {
+    return `${where} needs a text "${field}" field.`;
+  }
+  return null;
+}
+
+function validateLink(value: unknown, where: string): string | null {
+  if (!isPlainObject(value))
+    return `${where} must be an object with "label" and "href".`;
+  return (
+    requireStringField(value, "label", where) ??
+    requireStringField(value, "href", where)
+  );
+}
 
 /** Human-readable contract per kind, for both the UI hint and agent errors. */
 export function describeSectionKind(kind: string): string {
+  if (kind === "cta") {
+    return "cta { heading, primary: { label, href }, secondary?: { label, href } }";
+  }
   const spec = SECTION_ITEM_FIELDS[kind];
   if (!spec) return kind;
   if ("textFields" in spec) return `${kind} { ${spec.textFields.join(", ")} }`;
@@ -119,11 +157,15 @@ export function describeAllSectionKinds(): string {
  * Stricter, AGENT-ONLY pass: after `validateSectionsValue` has confirmed the
  * kinds, confirm each section carries the fields its renderer reads.
  */
-export function validateSectionFields(
-  sections: readonly unknown[],
-): { ok: boolean; error?: string } {
+export function validateSectionFields(sections: readonly unknown[]): {
+  ok: boolean;
+  error?: string;
+} {
   for (let i = 0; i < sections.length; i++) {
-    const section = sections[i] as Record<string, unknown>;
+    const section = sections[i];
+    if (!isPlainObject(section)) {
+      return { ok: false, error: `Section ${i + 1} is not an object.` };
+    }
     const kind = String(section.kind);
     const spec = SECTION_ITEM_FIELDS[kind];
     if (!spec) continue;
@@ -131,49 +173,106 @@ export function validateSectionFields(
 
     if ("textFields" in spec) {
       for (const field of spec.textFields) {
-        if (section[field] === undefined || section[field] === null) {
+        const error = requireStringField(section, field, where);
+        if (error) {
           return {
             ok: false,
-            error: `${where} is missing "${field}". Expected ${describeSectionKind(kind)}.`,
+            error: `${error} Expected ${describeSectionKind(kind)}.`,
           };
         }
       }
-      continue;
+    } else {
+      const list = section[spec.listField];
+      if (!Array.isArray(list)) {
+        return {
+          ok: false,
+          error: `${where} is missing its "${spec.listField}" array. Expected ${describeSectionKind(kind)}.`,
+        };
+      }
+      for (let j = 0; j < list.length; j++) {
+        const item = list[j];
+        if (!isPlainObject(item)) {
+          return {
+            ok: false,
+            error: `${where}, ${spec.listField}[${j}] is not an object. Expected ${describeSectionKind(kind)}.`,
+          };
+        }
+        const invalid = spec.itemFields.find(
+          (field) => typeof item[field] !== "string",
+        );
+        if (invalid) {
+          return {
+            ok: false,
+            error: `${where}, ${spec.listField}[${j}] needs a text "${invalid}" field — it has ${
+              Object.keys(item)
+                .map((key) => `"${key}"`)
+                .join(", ") || "no fields"
+            }. Expected ${describeSectionKind(kind)}.`,
+          };
+        }
+        if (kind === "status-cards") {
+          if (
+            typeof item.status !== "string" ||
+            !EDU_STATUSES.some((status) => status === item.status)
+          ) {
+            return {
+              ok: false,
+              error: `${where}, cards[${j}] has status "${String(item.status)}". Allowed: ${EDU_STATUSES.join(", ")}.`,
+            };
+          }
+          if (
+            item.bullets !== undefined &&
+            (!Array.isArray(item.bullets) ||
+              item.bullets.some((bullet) => typeof bullet !== "string"))
+          ) {
+            return {
+              ok: false,
+              error: `${where}, cards[${j}].bullets must be a list of text.`,
+            };
+          }
+        }
+      }
     }
 
-    const list = section[spec.listField];
-    if (!Array.isArray(list)) {
-      return {
-        ok: false,
-        error: `${where} is missing its "${spec.listField}" array. Expected ${describeSectionKind(kind)}.`,
-      };
+    for (const field of OPTIONAL_TEXT_FIELDS[kind] ?? []) {
+      if (section[field] !== undefined && typeof section[field] !== "string") {
+        return {
+          ok: false,
+          error: `${where} has a non-text "${field}" field.`,
+        };
+      }
     }
-    for (let j = 0; j < list.length; j++) {
-      const item = list[j] as Record<string, unknown>;
-      if (!item || typeof item !== "object" || Array.isArray(item)) {
-        return {
-          ok: false,
-          error: `${where}, ${spec.listField}[${j}] is not an object. Expected ${describeSectionKind(kind)}.`,
-        };
-      }
-      const missing = spec.itemFields.filter(
-        (f) => item[f] === undefined || item[f] === null,
-      );
-      if (missing.length > 0) {
-        return {
-          ok: false,
-          error: `${where}, ${spec.listField}[${j}] is missing ${missing.map((m) => `"${m}"`).join(", ")} — it has ${Object.keys(item).map((k) => `"${k}"`).join(", ") || "no fields"}. Expected ${describeSectionKind(kind)}.`,
-        };
-      }
-      if (kind === "status-cards" && !EDU_STATUSES.includes(item.status as never)) {
-        return {
-          ok: false,
-          error: `${where}, cards[${j}] has status "${String(item.status)}". Allowed: ${EDU_STATUSES.join(", ")}.`,
-        };
+    if (
+      kind === "feature-grid" &&
+      section.columns !== undefined &&
+      section.columns !== 2 &&
+      section.columns !== 3
+    ) {
+      return { ok: false, error: `${where}.columns must be 2 or 3.` };
+    }
+    if (kind === "cta") {
+      const primaryError = validateLink(section.primary, `${where}.primary`);
+      if (primaryError) return { ok: false, error: primaryError };
+      if (section.secondary !== undefined) {
+        const secondaryError = validateLink(
+          section.secondary,
+          `${where}.secondary`,
+        );
+        if (secondaryError) return { ok: false, error: secondaryError };
       }
     }
   }
   return { ok: true };
+}
+
+/** Full save/publish gate: kind vocabulary plus every renderer-consumed field. */
+export function validateAuthoredSections(value: unknown): SectionsParseResult {
+  const kinds = validateSectionsValue(value);
+  if (!kinds.ok) return kinds;
+  const sections = kinds.sections ?? [];
+  const fields = validateSectionFields(sections);
+  if (!fields.ok) return { ok: false, error: fields.error };
+  return { ok: true, sections };
 }
 
 /** Shape-check an ALREADY-PARSED `related` value. */

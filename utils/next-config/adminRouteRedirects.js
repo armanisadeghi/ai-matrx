@@ -7,7 +7,7 @@
  */
 
 const ADMIN_ROUTE_FAMILY_MOVES = [
-    ["/administration/relationships/actions", "/administration/agents/relationships/actions"],
+    ["/administration/relationships/directives", "/administration/agents/relationships/directives"],
     ["/administration/reports/agent-drift", "/administration/agents/reports/agent-drift"],
     ["/administration/ai-models", "/administration/ai/ai-models"],
     ["/administration/ai-tasks", "/administration/ai/ai-tasks"],

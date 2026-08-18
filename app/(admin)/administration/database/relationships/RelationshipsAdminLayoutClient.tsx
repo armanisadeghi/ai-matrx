@@ -65,7 +65,7 @@ const NAV_ITEMS = [
   },
   {
     label: "Actions",
-    href: "/administration/agents/relationships/actions",
+    href: "/administration/agents/relationships/directives",
     icon: Zap,
   },
 ];

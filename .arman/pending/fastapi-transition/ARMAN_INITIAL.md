@@ -51,7 +51,7 @@
 
 | File | Reason |
 |---|---|
-| `features/DEPRECATED-matrx-actions/ActionConversationModal.tsx` | DEPRECATED feature |
+| `features/DEPRECATED-matrx-directives/ActionConversationModal.tsx` | DEPRECATED feature |
 | `features/applet/hooks/useAppletRecipe.ts` | In deferred list (`/applets`) |
 | `components/socket-io/form-builder/ActionButtons.tsx` | Generic socket form builder |
 | `features/chat/hooks/useExistingChat.ts` | In deferred list (`/chat`) |

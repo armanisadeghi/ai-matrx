@@ -3,7 +3,7 @@
 // Relationships hub — route-tabbed shell for the entity/relationship control
 // plane: overview + drift, association rules, the entity-types registry,
 // shareable/link-sharing policy, the entity explorer, the reachability
-// inspector, and the action catalog. Each tab is its own route; this layout
+// inspector, and the directive catalog. Each tab is its own route; this layout
 // owns the viewport height and the tab bar (scheduling-admin pattern).
 
 import React from "react";

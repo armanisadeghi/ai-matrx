@@ -4,7 +4,7 @@
 // (docs/db_changes/REACHABILITY-ROLLOUT.md): system status, the unified
 // drift report, cache rebuild, and write-time enforcement. Rule CRUD lives
 // on /rules; the registries on /entity-types and /sharing; the explorer,
-// reachability inspector, and action catalog on their own tabs.
+// reachability inspector, and directive catalog on their own tabs.
 //
 // The (admin) layout already requires Super Admin; every RPC below re-checks
 // is_super_admin() server-side in the DB. Data is fetched here in the Server

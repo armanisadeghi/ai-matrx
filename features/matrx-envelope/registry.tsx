@@ -303,7 +303,7 @@ registerEnvelopeRenderer(
 // Plane 2 (`kind:"function"`) — the same procedures may arrive under their
 // canonical function encoding (server dual-registers them). Same renderers;
 // an unregistered function type falls back to EnvelopeFallbackCard, whose
-// Apply button posts /actions/confirm — a brand-new server function renders
+// Apply button posts /directives/confirm — a brand-new server function renders
 // and applies with ZERO frontend edits.
 registerEnvelopeRenderer("function", PlanTreeRenderer, "plan_tree");
 registerEnvelopeRenderer("function", PlanNodePatchRenderer, "plan_node_patch");

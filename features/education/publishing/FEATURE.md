@@ -30,7 +30,8 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 | `actions.ts` | `"use server"` admin mutations → RPC → `updateTag('education-learn-docs')` (read-your-own-writes) → public surfaces update without a deploy. |
 | `sitemap.ts` | Every axis index/entry + published learn doc + live tool → `app/sitemap.xml/route.ts`. |
 | `ogImage.tsx` | Shared branded OG renderer; thin `opengraph-image.tsx` routes for axis families; learn docs use `/education/learn/og/[...slug]` route handler (catch-all can't host file-based OG). |
-| `components/LearnDocAdmin.tsx` | The authoring UI (list + JSON-sections editor with live `SectionRenderer` preview). |
+| `components/LearnDocAdmin.tsx` | The authoring UI (list + visual `EduSection` block editor + optional Advanced JSON + live `SectionRenderer` preview). |
+| `components/SectionBlockEditor.tsx` | The reusable non-technical editor for all seven `EduSection` kinds: add, edit, reorder and remove blocks/items without touching JSON. |
 | `app/(core)/education/learn/admin/page.tsx` | Self-gating super-admin route (explicit segment beats the `[...slug]` catch-all). |
 
 ## SEO surfaces (Phase A deliverables)
@@ -46,14 +47,22 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 - **Never a raw per-slug `unstable_cache`** with a static keyParts array — it silently collapses all slugs onto one entry. Derive from the list, or put the arg in keyParts.
 - **Writes never bypass the RPCs** — no direct `.from('learn_doc').insert()` from app code.
 - Anon read requires the schema-level GRANT **and** the `pub_read` policy — both, or signed-out visitors get nothing / a 404.
+- **Every save uses the full renderer-shape gate.** `validateAuthoredSections` checks kind + every
+  renderer-consumed field before `edu_learn_doc_upsert`; malformed blocks disable Save/Publish and
+  cannot become a blank public section. Advanced JSON is an escape hatch for experts, not a second
+  persistence path.
 
 ## Open / next
 
 - **Agent-assisted drafting** (Phase A stretch): a "draft sections with AI" flow (agent → `EduSection[]` JSON → human review → publish). The editor already accepts pasted sections JSON, so agent output drops straight in; the in-UI generate button is the remaining piece.
-- Visual block editor (currently JSON textarea + live preview).
 - Phase B (exam hub, consumes P1) and Phase C (community library, consumes P7) — see `docs/proposals/education-projects/P6-content-publishing.md`.
 
 ## Change log
+- **2026-08-17** — Replaced JSON-first authoring with the reusable visual `SectionBlockEditor`
+  across all seven `EduSection` kinds; Advanced JSON remains optional. Added one strict save gate
+  shared with agent writes, so the known `{question, answer}` FAQ shape is refused before save.
+  Verified against all 11 live guides (zero stranded rows), Jest regression coverage, desktop and
+  375px browser flows, and a deliberate malformed draft with both save actions disabled.
 - **2026-08-13** — The authoring UI is a real surface (`matrx-user/education-learn-authoring`) and agents can DRAFT into it. `LearnDocAdmin.tsx` mounts `SurfaceRuntimeProvider` on the list and registers 4 ask-policy **draft** targets (`doc_metadata`, `doc_sections`, `add_sections`, `doc_related`) that stage into the editor's own state — the admin still presses Save, so "publish without a deploy" stays a human action and `slug` / publish / delete are not targets at all. This closes the **"Agent-assisted drafting"** stretch item below through the declared surface seam rather than a bespoke in-UI generate button. `validate.ts` gained `EDU_SECTION_KINDS` (the exported vocabulary), `validateSectionsValue` / `validateRelatedValue` (shape-checks over an ALREADY-PARSED value, so the write handlers and the textarea share one implementation), and `validateSectionFields` — a stricter **agent-only** pass, added because a live agent emitted a valid-`kind` FAQ section keyed `{question, answer}` instead of `{q, a}`, which parses, saves, and renders blank. The textarea's own check stays kind-only on purpose: tightening it would reject guides that already exist.
 - **2026-07-14** — Published 3 exam study guides (`exam/sat-math-guide`, `exam/ap-biology-big-ideas`, `exam/gre-verbal-guide`), keyworded with their exam slug; added `getExamLearnDocs(examSlug)` so the exam-prep hub surfaces them beside the certified decks.
 

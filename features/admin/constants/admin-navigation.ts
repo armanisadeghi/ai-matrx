@@ -172,7 +172,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         name: "Tools & MCP",
         iconName: "Wrench",
         destinations: [
-          destination("/administration/agents/relationships/actions"),
+          destination("/administration/agents/relationships/directives"),
           destination("/administration/agents/mcp-tools", [
             "/administration/agents/mcp-tools/[toolId]",
             "/administration/agents/mcp-tools/[toolId]/edit",

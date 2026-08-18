@@ -83,7 +83,7 @@ export interface OfflineDeck {
 
 class StudyOfflineDb extends Dexie {
   attempts!: Table<OutboxAttempt, number>;
-  decks!: Table<OfflineDeck, string>;
+  decks!: Table<OfflineDeck, [string, string]>;
 
   constructor() {
     super(STUDY_OFFLINE_DB);
@@ -91,7 +91,11 @@ class StudyOfflineDb extends Dexie {
       // ++seq = autoincrement primary key (replay order).
       // &attemptId = unique, so a double-capture cannot queue twice.
       attempts: "++seq, &attemptId, userId, capturedAt",
-      decks: "setId, userId, cachedAt",
+      // The deck key is [userId+setId], NOT setId. Keyed on setId alone, two
+      // learners sharing a device collided: B opening set S read A's cached
+      // cards AND A's item_mastery snapshot, and B's download silently
+      // overwrote A's row. A cache key that omits the owner is a data leak.
+      decks: "[userId+setId], setId, userId, cachedAt",
     });
   }
 }
@@ -211,13 +215,19 @@ export async function putOfflineDeck(deck: OfflineDeck): Promise<boolean> {
   }
 }
 
+/**
+ * Read one cached deck FOR ONE LEARNER. The userId is required, not optional:
+ * making it optional is how the original version leaked one learner's cached
+ * cards and mastery snapshot to the next person to sign in on the same device.
+ */
 export async function getOfflineDeck(
+  userId: string,
   setId: string,
 ): Promise<OfflineDeck | null> {
   const database = getDb();
   if (!database) return null;
   try {
-    return (await database.decks.get(setId)) ?? null;
+    return (await database.decks.get([userId, setId])) ?? null;
   } catch {
     return null;
   }
@@ -236,11 +246,14 @@ export async function listOfflineDecks(
   }
 }
 
-export async function removeOfflineDeck(setId: string): Promise<void> {
+export async function removeOfflineDeck(
+  userId: string,
+  setId: string,
+): Promise<void> {
   const database = getDb();
   if (!database) return;
   try {
-    await database.decks.delete(setId);
+    await database.decks.delete([userId, setId]);
   } catch {
     /* non-fatal */
   }

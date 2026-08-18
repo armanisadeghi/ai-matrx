@@ -60,6 +60,8 @@ function SoloRound({
   const { displayName } = useCurrentPlayer();
   const [finalOutcome, setFinalOutcome] = useState<GameOutcome | null>(null);
   const [newBadges, setNewBadges] = useState<BadgeKey[]>([]);
+  const [verified, setVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
   const game = useGamePlay({
     sourceKind: sourceSetId ? "set" : "due",
@@ -72,6 +74,11 @@ function SoloRound({
       setFinalOutcome(outcome);
       void finalizeGame({ outcome, displayName }).then((r) => {
         setNewBadges(r.newBadges);
+        setVerificationError(r.error);
+        if (r.officialOutcome) {
+          setFinalOutcome(r.officialOutcome);
+          setVerified(true);
+        }
         if (r.newBadges.length > 0) {
           toast.success(`New badge earned!`);
         }
@@ -114,6 +121,8 @@ function SoloRound({
         <ResultsSummary
           outcome={finalOutcome}
           newBadges={newBadges}
+          verified={verified}
+          verificationError={verificationError}
           onPlayAgain={onPlayAgain}
           onExit={back}
         />

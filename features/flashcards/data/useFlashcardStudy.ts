@@ -22,6 +22,9 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
+import { recordAttemptOfflineAware } from "@/features/education/study/offline/recordAttemptOffline";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import type { FcSetRow, CardWithDetails } from "./types";
 import type {
   ItemMasteryRow,
@@ -161,6 +164,9 @@ export function useFlashcardStudy(
     Record<string, ReviewResult | undefined>
   >({});
   const [grading, setGrading] = useState(false);
+  // Whose attempt — the offline outbox is scoped per user so one device's
+  // queue can never flush under another login.
+  const userId = useAppSelector(selectUserId) ?? "";
   const [session, setSession] = useState<StudySessionRow | null>(null);
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
@@ -388,7 +394,11 @@ export function useFlashcardStudy(
 
     setGrading(true);
     try {
-      const res = await studyService.recordAttempt({
+      // Offline-aware: with no connection the OBSERVATION is queued and
+      // replayed idempotently on reconnect (IC-8), instead of the answer being
+      // lost. Online this is exactly `studyService.recordAttempt`.
+      const res = await recordAttemptOfflineAware({
+        userId,
         itemType: FC_CARD_ITEM_TYPE,
         itemId: card.id,
         method: mode,
@@ -400,7 +410,7 @@ export function useFlashcardStudy(
           : {}),
         ...(session ? { sessionId: session.id } : {}),
       });
-      if (res.error || !res.data) {
+      if (res.error) {
         // Loud recovery: a silently dropped grade leaves the card looking
         // ungraded with zero user signal (worst on matching cards, which
         // self-grade exactly once). Scream, and return null so callers can
@@ -411,13 +421,22 @@ export function useFlashcardStudy(
         );
         return null;
       }
-      // Reflect the graded result.
-      const { mastery } = res.data;
+      if (res.queued) {
+        // Saved locally, not yet on the server. Say so once — silence here is
+        // what makes a learner redo work they already did.
+        toast.success("Saved offline — this syncs when you reconnect.");
+      }
+      // Reflect the graded result. `mastery` is null for a queued attempt: the
+      // server computes it at flush time, so the card keeps its prior mastery
+      // rather than showing an invented one.
+      const { mastery } = res;
       setResultsByCard((prev) => ({ ...prev, [card.id]: result }));
-      setMasteryByCard((prev) => ({
-        ...prev,
-        [card.id]: mastery,
-      }));
+      if (mastery) {
+        setMasteryByCard((prev) => ({
+          ...prev,
+          [card.id]: mastery,
+        }));
+      }
 
       if (reshuffleWeighted) {
         // Learn mode: remove the card from the working queue; a wrong/

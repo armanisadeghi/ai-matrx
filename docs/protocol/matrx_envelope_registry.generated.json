@@ -908,9 +908,9 @@
                   "default": null,
                   "title": "Category"
                 },
-                "context_slots": {
+                "context_policies": {
                   "default": [],
-                  "title": "Context Slots"
+                  "title": "Context Policies"
                 },
                 "custom_tools": {
                   "default": [],
@@ -4341,9 +4341,9 @@
                   "default": null,
                   "title": "Category"
                 },
-                "context_slots": {
+                "context_policies": {
                   "default": null,
-                  "title": "Context Slots"
+                  "title": "Context Policies"
                 },
                 "custom_tools": {
                   "default": null,

@@ -22,6 +22,8 @@ export function ResultsSummary({
   newBadges,
   scoreboard,
   currentUserId,
+  verified,
+  verificationError,
   onPlayAgain,
   onExit,
 }: {
@@ -29,6 +31,8 @@ export function ResultsSummary({
   newBadges: BadgeKey[];
   scoreboard?: RoomPlayerResult[];
   currentUserId?: string | null;
+  verified: boolean;
+  verificationError?: string | null;
   onPlayAgain?: () => void;
   onExit?: () => void;
 }) {
@@ -42,28 +46,36 @@ export function ResultsSummary({
       <div className="text-center">
         <h2 className="text-2xl font-bold text-foreground">Round complete</h2>
         <p className="text-muted-foreground">
-          Every answer counted toward your mastery.
+          {verified
+            ? "Verified from your study attempts — every answer counted."
+            : "Verifying your result from the study attempt record…"}
         </p>
       </div>
+
+      {verificationError && (
+        <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          Your result could not be verified yet. Retry by reopening this round.
+        </div>
+      )}
 
       {/* Outcome-first metric grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Metric
           icon={TrendingUp}
           label="Mastery gained"
-          value={`+${outcome.masteryGain.toFixed(1)}`}
+          value={verified ? `+${outcome.masteryGain.toFixed(1)}` : "—"}
           primary
         />
-        <Metric icon={Target} label="Accuracy" value={`${accuracy}%`} />
+        <Metric icon={Target} label="Accuracy" value={verified ? `${accuracy}%` : "—"} />
         <Metric
           icon={Flame}
           label="Best streak"
-          value={String(outcome.bestStreak)}
+          value={verified ? String(outcome.bestStreak) : "—"}
         />
         <Metric
           icon={Trophy}
-          label="Score"
-          value={outcome.score.toLocaleString()}
+          label="Verified score"
+          value={verified ? outcome.score.toLocaleString() : "—"}
         />
       </div>
 
