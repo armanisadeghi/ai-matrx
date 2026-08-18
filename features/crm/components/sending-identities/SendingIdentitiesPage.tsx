@@ -80,8 +80,12 @@ function IdentityRow({ identity }: { identity: SendingIdentityView }) {
   const blocking = issues.filter((issue) => !issue.transient);
   const warming = identity.warmup;
   const firstBlocking = blocking[0];
+  // A draft or verifying mailbox is mid-setup by definition — whatever its
+  // first unmet gate is, it is a next step, not a failure.
   const setupStage =
-    firstBlocking != null && SETUP_STAGE_FIXES.has(firstBlocking.fix_action);
+    identity.status === "draft" ||
+    identity.status === "verifying" ||
+    (firstBlocking != null && SETUP_STAGE_FIXES.has(firstBlocking.fix_action));
 
   return (
     <Link
