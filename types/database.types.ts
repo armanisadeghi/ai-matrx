@@ -14939,6 +14939,8 @@ export type Database = {
           generated_by: string
           generation_status: string
           id: string
+          image_file_id: string | null
+          image_url: string | null
           kind: string
           metadata: Json
           organization_id: string
@@ -14957,6 +14959,8 @@ export type Database = {
           generated_by?: string
           generation_status?: string
           id?: string
+          image_file_id?: string | null
+          image_url?: string | null
           kind: string
           metadata?: Json
           organization_id: string
@@ -14975,6 +14979,8 @@ export type Database = {
           generated_by?: string
           generation_status?: string
           id?: string
+          image_file_id?: string | null
+          image_url?: string | null
           kind?: string
           metadata?: Json
           organization_id?: string
