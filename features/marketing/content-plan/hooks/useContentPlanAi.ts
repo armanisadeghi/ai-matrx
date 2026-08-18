@@ -54,6 +54,15 @@ export interface PlanAiRunState {
 
 const IDLE: PlanAiRunState = { status: "idle" };
 
+/**
+ * Bulk deepen deliberately opens every selected page stream together. During
+ * that burst the shared server can take longer than callApi's 15-second
+ * default to return response headers even though it accepted the durable work.
+ * Keep the client below Cloudflare's ~100-second edge ceiling, and never retry:
+ * a timed-out request may already be running and a retry could duplicate spend.
+ */
+export const CONTENT_PLAN_STREAM_CONNECT_TIMEOUT_MS = 95_000;
+
 function readPhaseMessage(event: TypedStreamEvent): string | null {
   if (event.event === "phase") {
     return event.data.phase === "connected" ? null : event.data.phase;
@@ -183,6 +192,7 @@ export function usePlanGenerate(siteId: string | null) {
           stream: true,
           consumeStream,
           signal: streamAbort.signal,
+          connectTimeoutMs: CONTENT_PLAN_STREAM_CONNECT_TIMEOUT_MS,
         }),
       );
 
@@ -342,6 +352,7 @@ export function usePlanDeepen(siteId: string | null) {
           stream: true,
           consumeStream,
           signal: streamAbort.signal,
+          connectTimeoutMs: CONTENT_PLAN_STREAM_CONNECT_TIMEOUT_MS,
         }),
       );
 
@@ -549,6 +560,7 @@ export function usePlanBulkDeepen(siteId: string | null) {
                 stream: true,
                 consumeStream,
                 signal: streamAbort.signal,
+                connectTimeoutMs: CONTENT_PLAN_STREAM_CONNECT_TIMEOUT_MS,
               }),
             );
             const error = result.error

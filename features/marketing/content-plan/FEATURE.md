@@ -69,7 +69,11 @@ plan CRUD through it.
   them since 2026-08-10; `initial_message` arrives as an info event).
   **Bulk deepen starts every selected page concurrently** through the shared
   `runWithConcurrency` worker pool. Stop aborts the active streams. One page
-  failing never blocks or cancels the others.
+  failing never blocks or cancels the others. All three content-plan stream
+  entrances use a 95-second response-header budget: a full-concurrency burst
+  can queue beyond `callApi`'s 15-second default after the durable server work
+  has already been accepted. The client never retries that ambiguous timeout,
+  because retrying can duplicate paid work.
 - **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
   grounded in the RESEARCH system's final report (the "Document",
   `research.rs_document.content`, picked by topic in the `SetupAiBar` strip).
@@ -764,6 +768,10 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-18 — **Content-plan streams survive a full-concurrency handshake
+  burst.** Generate, single deepen, and bulk deepen now use a 95-second
+  response-header budget below Cloudflare's edge ceiling; no automatic retry
+  can duplicate a durable paid run that the server may already have accepted.
 - 2026-08-18 — **Keyword-assignment parity restored.**
   `hasKeywordAssignment` now mirrors aidream's exact primary-keyword-or-page-role
   predicate; broader SEO-plan metadata no longer hides an unbriefable page.
