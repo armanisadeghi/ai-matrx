@@ -13,7 +13,7 @@ Execution half of Orchestras. System of record: `features/agents/docs/ORCHESTRAS
 
 - **Delegation E2E-VERIFIED on production 2026-08-08** (a throwaway 2-member set via the product RPCs): members project as `custom_tool_N` tools (dry-run count tracks membership), turn 1 delegated in a nested `sub_agent` child run with structured output, turn 2 (`/conversations/{id}`) re-injected members and used the other specialist on request; persistence + cost spine confirmed in `chat.*`. Server contract details: `aidream/aidream/services/orchestras/FEATURE.md`.
 - **Live member highlight BUILT** (mount model (a): run panel embedded in the builder; canvas lights up in place). Mechanism, files, and selectors documented in `ORCHESTRAS.md` "Runtime delegation". `chat.conversation.initial_agent_id` mapping verified against live child rows.
-- Grid orchestrator hub tile · shared-member batch hydration · supervisor prompt on generated orchestrators · Run entries — all shipped (see `ORCHESTRAS.md`).
+- Grid Conductor hub tile · shared-member batch hydration · supervisor prompt on generated Conductors · Run entries — all shipped (see `ORCHESTRAS.md`).
 
 ## Remaining work
 
