@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -36,6 +37,7 @@ import {
   selectFastFireScoreboard,
   selectPendingGradeCount,
   selectFastFireSessionId,
+  selectFastFireAdaptation,
 } from "../redux/fastFire.selectors";
 import { FastFireTimerBar } from "./FastFireTimerBar";
 import { SpokenFrontPlayer } from "./SpokenFrontPlayer";
@@ -68,6 +70,7 @@ export function FastFireLiveCard({
   const board = useAppSelector(selectFastFireScoreboard);
   const pending = useAppSelector(selectPendingGradeCount);
   const sessionId = useAppSelector(selectFastFireSessionId);
+  const adaptation = useAppSelector(selectFastFireAdaptation);
 
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
@@ -152,8 +155,23 @@ export function FastFireLiveCard({
       <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 sm:px-6 py-4 sm:py-6 pb-safe">
         {/* Top row: progress + abort */}
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-muted-foreground">
-            Card {index + 1} / {cards.length}
+          <span className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+            <span className="shrink-0">
+              Card {index + 1} / {cards.length}
+            </span>
+            {/* VISION §3 — the adaptation is EXPLAINED, never a silent
+                shuffle: when resolving grades tilt the unseen queue toward a
+                struggling topic, the learner sees why the order shifted. */}
+            {adaptation && adaptation.count > 0 && (
+              <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                <Zap className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">
+                  {adaptation.focusTopic
+                    ? `Adapting — more ${adaptation.focusTopic} coming up`
+                    : "Adapting to how you're doing"}
+                </span>
+              </span>
+            )}
           </span>
           <Button
             variant="ghost"

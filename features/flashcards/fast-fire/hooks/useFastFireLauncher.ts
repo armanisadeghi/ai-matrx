@@ -81,6 +81,8 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
           back: c.back,
           position: c.position ?? i,
           spokenFrontFileId: spoken?.audio_file_id ?? null,
+          // The axis live adaptation reorders on (VISION §3).
+          topic: c.topic ?? null,
         };
       });
 

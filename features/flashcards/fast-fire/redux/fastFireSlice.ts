@@ -100,6 +100,22 @@ export interface DrillCard {
   position: number;
   /** Durable file_id of the pre-generated spoken front, if any (optional TTS). */
   spokenFrontFileId?: string | null;
+  /** The card's topic — the axis live adaptation reorders on. */
+  topic?: string | null;
+}
+
+/**
+ * VISION §3 — the live-adaptation receipt. Set every time a resolving grade
+ * reorders the unseen queue, so the surface can EXPLAIN the shift to the
+ * learner ("focusing on X") instead of silently shuffling under them.
+ */
+export interface AdaptationState {
+  /** How many reorders have fired this run. */
+  count: number;
+  /** The struggling topic the queue was just tilted toward (null = untopiced). */
+  focusTopic: string | null;
+  /** Index of the first unseen card at the time of the last reorder. */
+  atIndex: number;
 }
 
 /**
@@ -141,6 +157,8 @@ export interface FastFireState {
   /** Holistic end-of-session review (fc_review_batch), null until it resolves. */
   sessionReview: string | null;
   audioPlayer: AudioPlayerState;
+  /** Live-adaptation receipt (null until the first mid-drill reorder). */
+  adaptation: AdaptationState | null;
   /** Structured error string for a fatal setup/finalize failure. */
   error: string | null;
 }
@@ -160,6 +178,7 @@ const initialState: FastFireState = {
   gradesByCard: {},
   sessionReview: null,
   audioPlayer: { playingCardId: null, filter: "all" },
+  adaptation: null,
   error: null,
 };
 
@@ -175,6 +194,74 @@ function blankGrade(cardId: string): CardGrade {
     missing: [],
     responseAudioFileId: null,
     error: null,
+  };
+}
+
+/**
+ * VISION §3 — live session adaptation, the non-AI half: reorder the UNSEEN tail
+ * of the queue toward the topics the learner is missing, using the grades that
+ * have resolved so far in THIS run. Pure function of slice state, called from
+ * `gradeResolved` while the drill is live (`config.adaptive` gates it).
+ *
+ * Policy (DECISION_LOG D-3-1): per-topic mean of resolved scores (0..1);
+ * an unseen card's weight = 1 − its topic's mean (unknown/untopiced = 0.5,
+ * neutral). Stable sort, descending weight — ties keep their existing order, so
+ * a drill with no signal (or uniform performance) never shuffles. The active
+ * card and everything already shown NEVER move.
+ */
+function adaptUnseenQueue(state: FastFireState): void {
+  // During `card_recording`, currentIndex is the active card; during
+  // `advancing`, it is the just-finished card. Either way the first movable
+  // card is currentIndex + 1.
+  const unseenStart = state.currentIndex + 1;
+  if (unseenStart < 1 || unseenStart >= state.cards.length - 1) return;
+
+  const topicTotals = new Map<string, { sum: number; n: number }>();
+  for (const grade of Object.values(state.gradesByCard)) {
+    if (grade.status !== "resolved" || grade.score == null) continue;
+    const card = state.cards.find((c) => c.id === grade.cardId);
+    const topic = card?.topic?.trim();
+    if (!topic) continue;
+    const t = topicTotals.get(topic) ?? { sum: 0, n: 0 };
+    t.sum += grade.score;
+    t.n += 1;
+    topicTotals.set(topic, t);
+  }
+  if (topicTotals.size === 0) return;
+
+  const weightOf = (card: DrillCard): number => {
+    const topic = card.topic?.trim();
+    if (!topic) return 0.5;
+    const t = topicTotals.get(topic);
+    return t ? 1 - t.sum / t.n : 0.5;
+  };
+
+  const unseen = state.cards.slice(unseenStart);
+  // Stable: sort an index-decorated copy so equal weights keep queue order.
+  const reordered = unseen
+    .map((card, i) => ({ card, i, w: weightOf(card) }))
+    .sort((a, b) => b.w - a.w || a.i - b.i)
+    .map((x) => x.card);
+
+  const changed = reordered.some((c, i) => c.id !== unseen[i].id);
+  if (!changed) return;
+
+  state.cards = [...state.cards.slice(0, unseenStart), ...reordered];
+
+  // The receipt the surface explains the shift with: the weakest KNOWN topic.
+  let focusTopic: string | null = null;
+  let worst = -1;
+  for (const [topic, t] of topicTotals) {
+    const w = 1 - t.sum / t.n;
+    if (w > worst) {
+      worst = w;
+      focusTopic = topic;
+    }
+  }
+  state.adaptation = {
+    count: (state.adaptation?.count ?? 0) + 1,
+    focusTopic,
+    atIndex: unseenStart,
   };
 }
 
@@ -224,6 +311,7 @@ const fastFireSlice = createSlice({
       for (const c of cards) state.gradesByCard[c.id] = blankGrade(c.id);
       state.sessionAudioFileId = null;
       state.sessionReview = null;
+      state.adaptation = null;
       state.error = null;
     },
 
@@ -317,6 +405,16 @@ const fastFireSlice = createSlice({
       grade.missing = p.missing;
       grade.error = null;
       state.gradesByCard[p.cardId] = grade;
+
+      // VISION §3 — a mid-drill grade is the adaptation trigger: while the
+      // drill is live and adaptation is on, tilt the unseen queue toward what
+      // this (and every prior) grade says the learner is missing.
+      if (
+        state.config.adaptive &&
+        (state.phase === "card_recording" || state.phase === "advancing")
+      ) {
+        adaptUnseenQueue(state);
+      }
     },
 
     /** No grader configured — the attempt was recorded result-less. */

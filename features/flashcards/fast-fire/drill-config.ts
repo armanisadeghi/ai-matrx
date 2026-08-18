@@ -47,6 +47,13 @@ export interface FastFireConfig {
    * only arms it when it lands strictly inside the card's window. 0 disables it.
    */
   warningSeconds: number;
+  /**
+   * VISION §3 — live session adaptation: as grades resolve mid-drill, the
+   * not-yet-seen queue reorders toward the topics the learner is missing (in
+   * THIS session, not the next one). On by default; the setup form and agents
+   * can switch it off for a fixed-order drill.
+   */
+  adaptive: boolean;
 }
 
 export const DEFAULT_DRILL_CONFIG: FastFireConfig = {
@@ -58,6 +65,7 @@ export const DEFAULT_DRILL_CONFIG: FastFireConfig = {
   spokenFronts: false,
   voiceAnswerSeconds: 8,
   warningSeconds: 3,
+  adaptive: true,
 };
 
 /**
@@ -89,6 +97,7 @@ export const AGENT_WRITABLE_DRILL_FIELDS = [
   "liveScore",
   "spokenFronts",
   "voiceAnswerSeconds",
+  "adaptive",
 ] as const;
 
 export type AgentWritableDrillField = (typeof AGENT_WRITABLE_DRILL_FIELDS)[number];
@@ -103,6 +112,7 @@ const NUMERIC_FIELDS = [
 const BOOLEAN_FIELDS = [
   "liveScore",
   "spokenFronts",
+  "adaptive",
 ] as const satisfies readonly AgentWritableDrillField[];
 
 /**

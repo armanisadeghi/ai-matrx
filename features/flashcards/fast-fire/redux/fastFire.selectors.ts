@@ -8,6 +8,7 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
 import type {
+  AdaptationState,
   AdvanceReason,
   CardGrade,
   DrillCard,
@@ -49,6 +50,11 @@ export const selectFastFireSessionReview = (state: RootState): string | null =>
 
 export const selectFastFireError = (state: RootState): string | null =>
   state.fastFire.error;
+
+/** VISION §3 — the live-adaptation receipt (null until the first reorder). */
+export const selectFastFireAdaptation = (
+  state: RootState,
+): AdaptationState | null => state.fastFire.adaptation;
 
 // ─── Current card ───────────────────────────────────────────────────────────
 export const selectFastFireCurrentCard = (

@@ -29,6 +29,7 @@ import {
   Volume2,
   Loader2,
   CheckCircle2,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -287,6 +288,29 @@ export function FastFireSetup() {
             checked={config.liveScore}
             onCheckedChange={(checked) =>
               dispatch(updateConfig({ liveScore: checked }))
+            }
+          />
+        </section>
+
+        {/* VISION §3 — live session adaptation: the unseen queue tilts toward
+            struggling topics as grades resolve, in THIS session. */}
+        <section className="mb-5 flex items-center justify-between rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-muted-foreground" />
+            <div>
+              <div className="text-sm font-medium text-foreground">
+                Adapt to how you&apos;re doing
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Upcoming cards reorder toward the topics you&apos;re missing —
+                during the drill, not the next one.
+              </div>
+            </div>
+          </div>
+          <Switch
+            checked={config.adaptive}
+            onCheckedChange={(checked) =>
+              dispatch(updateConfig({ adaptive: checked }))
             }
           />
         </section>
