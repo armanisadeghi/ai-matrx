@@ -166,6 +166,25 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "sending-identities-read-transport-loss",
+    tier: "yellow",
+    reason:
+      "The sending-identities overview loads these read-only checks together and keeps transport failure visible with a retry. One lost connection can reject several reads, so keep the local diagnostic without multiplying repair-queue incidents.",
+    addedAt: "2026-08-18",
+    match: {
+      source: "api-network",
+      code: "network_error",
+      relation: [
+        "GET /sending-identities",
+        "GET /sending-identities/policy",
+        "GET /sending-identities/bring-up-readiness",
+      ],
+      routeIncludes: "/crm/sending-identities",
+      name: "TypeError",
+      messageIncludes: "Failed to fetch",
+    },
+  },
+  {
     id: "cms-write-policy-denial",
     tier: "yellow",
     reason:
@@ -185,7 +204,8 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     addedAt: "2026-08-17",
     match: {
       source: "user-toast",
-      messagePattern: "site policy ['\"](?:blocked|draft_only)['\"] forbids ['\"][^'\"]+['\"]",
+      messagePattern:
+        "site policy ['\"](?:blocked|draft_only)['\"] forbids ['\"][^'\"]+['\"]",
     },
   },
   {

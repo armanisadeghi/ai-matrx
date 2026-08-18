@@ -186,6 +186,51 @@ describe("classifyTier", () => {
     expect(c.tier).toBe("red");
   });
 
+  it.each([
+    "GET /sending-identities",
+    "GET /sending-identities/policy",
+    "GET /sending-identities/bring-up-readiness",
+  ])(
+    "keeps recoverable sending-identity read transport loss local for %s",
+    (relation) => {
+      const c = classifyTier(
+        captured({
+          source: "api-network",
+          route: "/crm/sending-identities",
+          relation,
+          code: "network_error",
+          name: "TypeError",
+          message: "Failed to fetch",
+        }),
+      );
+
+      expect(c.tier).toBe("yellow");
+      expect(c.ruleId).toBe("sending-identities-read-transport-loss");
+    },
+  );
+
+  it.each([
+    ["POST /sending-identities", "/crm/sending-identities"],
+    ["POST /sending-identities/policy", "/crm/sending-identities"],
+    ["GET /sending-identities", "/crm/chasebox"],
+  ])(
+    "keeps non-read or off-surface sending-identity transport loss red for %s",
+    (relation, route) => {
+      const c = classifyTier(
+        captured({
+          source: "api-network",
+          route,
+          relation,
+          code: "network_error",
+          name: "TypeError",
+          message: "Failed to fetch",
+        }),
+      );
+
+      expect(c.tier).toBe("red");
+    },
+  );
+
   it("keeps an intentional CMS write-policy denial local and silent", () => {
     const c = classifyTier(
       captured({
