@@ -38,7 +38,7 @@ that is the exit-test surface.
 | Step presentation | `components/run/node-presentation.ts` | Pure derivation of label / family / lucide icon / declared `output_kind` from the definition. This is what makes "what to look forward to" possible before a single node starts. |
 | Failure card | `components/run/RunFailureCard.tsx` + `run-failure-explanation.ts` | Failure as a first-class state: plain-language headline, the failing step by its author's name, the one next action, and the technical cause one tap away. `explainRunFailure` owns the copy (add a pattern there, never a bespoke string here) and carries an optional one-click `action` — the education COPPA gate routes to the page that clears it. |
 | Zero-config board | `components/WorkflowRunBoard.tsx` | Tier 0 presentation: status rows for every node, lanes via `LiveRunDisplay variant="bare"`, settled kind-checked output via `KindInstanceRender`, interrupt answer card, recursive child boards (`adopt={false}` on children — the parent adapter already follows them). |
-| Shared readout parts | `components/readout-parts.tsx` | THE one per-invocation body (`InvocationBody`: lane → `LiveRunDisplay`, settled kind → `KindInstanceRender`, textTail, JSON, error) + `PhaseIcon` / `PHASE_LABEL` / `InterruptCard` — consumed by the board AND every Phase 2 readout; never fork a second copy. |
+| Shared readout parts | `components/readout-parts.tsx` | THE one per-invocation body (`InvocationBody`) + `PhaseIcon` / `PHASE_LABEL` / `InterruptCard` — consumed by the board AND every readout; never fork a second copy. Resolution order: a lane **that has carried something** → `LiveRunDisplay`; settled kind → `KindInstanceRender`; textTail; settled JSON → the canonical viewer via `MarkdownStream`; error; still working → the honest working state with its live progress line. **An empty lane never wins** — the adapter opens one for every non-fan-out node including nodes that never stream a token, and treating it as truth rendered an empty pane over the output the step had actually produced. |
 | Surface config | `surface/config.ts` | The Run Surface document (R1/R6/R7): 24-col `pos`, readout sources (node/group/childRun/progressRail/static/action), pages, visibility; tolerant parse + strict validate. `deriveDefaultSurfaceConfig` builds a real surface from the DEFINITION for a workflow nobody has authored one for (steps that think or declare an `output_kind` become full-width readouts). Additive only — the builder writes the same document. |
 | Progress rail | `components/ProgressRailReadout.tsx` | The generalized podcast rail: per-node rows from selectors + authored SYNTHETIC sub-steps (randomized 2.2–5.5s cadence, last held until the node leaves "running", snap-all-done), 99%-cap progress bar until the run is terminal. Animation state is presentation-local — refresh restarts it by design. |
 | Readout renderer | `components/ReadoutView.tsx` | One readout's bare content per source kind; multi-run modes stack/latest/table (table = the canonical `MatrxDataTable` over invocations — item/status/output/duration, every column sorts + filters); childRun renders the child's OWN authored compact surface when one exists (R9 — `getDefaultSurface(childDefId, {profile:"compact"})` → nested `RunSurfaceView adopt={false}`), else a compact status summary with an expandable full board; static markdown via `MarkdownStream` content mode. Node and rail labels use the resolved spec type with a human fallback, never expose graph-local IDs as dead-end UI text. Visible node readouts promote running lane-less invocations via `useViewportLanePromotion` (IntersectionObserver → `ensureLane`, seeded with the tracked tail). |
@@ -77,7 +77,15 @@ that is the exit-test surface.
 10. **The pump never refetches.** `record_update`/`resource_changed` frames become bounded
    per-run signals + revisions in the slice; consumers subscribe via `useRunRecordSignal` and
    refetch themselves (side effect colocated with its consumer).
-11. **Transports stop at terminal.** SSE ends via the `end` frame; the poller stops on the
+11. **A spinner is never the whole state of a step.** Every step that is working shows its real
+   signal (its `node_progress` line, its tools, its engine phase) or, failing that, the honest
+   working state — never an empty box. Synthetic sub-steps are the guaranteed FLOOR and are never
+   removed; they must also never be the only thing on screen.
+12. **Ring appends are idempotent.** `activity` and `emissions` are the only APPEND-shaped state in
+   the slice; every other path SETS. A re-adoption refolds the whole durable log with
+   `replay: true` (dedup bypassed by design), so appends ride the `appendedThroughSeq` watermark.
+   Without it, opening a run twice printed the entire activity feed twice.
+13. **Transports stop at terminal.** SSE ends via the `end` frame; the poller stops on the
    terminal run event — a finished run never keeps polling.
 
 ## Doctrine
@@ -92,6 +100,42 @@ that is the exit-test surface.
   one-request singleton was a measured hazard for N concurrent lanes.
 
 ## Change Log
+
+- 2026-08-18 — **the live run experience rebuilt** after Arman's verdict ("ugly and terrible",
+  "treats you like an idiot who's waiting", "none of the excitement of the podcast page"). The
+  failure was presentational and INFORMATIONAL, not structural: the slice/adapter/lanes were
+  untouched except to stop throwing truth away.
+  - **The wire's truth was being discarded.** `node_stream` markers (`phase` / `tool` / `warning`)
+    reached `applyNodeStreamMeta` and only `lastStreamKind` survived — for a plain agent/LLM node
+    those markers are the ONLY mid-node signal aidream emits, which is exactly why a four-minute
+    run could show nothing but a spinner. The slice now keeps a bounded `activity` ring
+    (`ACTIVITY_MAX`) fed by those markers plus `node_progress`, node lifecycle with real durations,
+    emissions and child links; `startedAtTs` records the ENGINE's start so a refresh doesn't
+    restart the clock. `components/run/activity-copy.ts` is the ONE place the wire's quirks become
+    sentences (bare tool names; bare phase labels; warning payloads that aidream `json.dumps`
+    then hard-slices at 200 chars, so they are usually invalid JSON — parsed leniently, never
+    shown as a blob). Two aidream-side defects found while tracing this are spun off, not
+    swallowed: the tool-event lifecycle field is read under the wrong key so every tool frame is
+    an indistinguishable bare name with its human message dropped, and warning deltas need the
+    same summary treatment `record_update` already got.
+  - **The stage.** `components/run/RunStage.tsx` composes what the podcast studio proved: a hero
+    naming every deliverable from frame zero, a journey rail carrying every step of the DEFINITION
+    (not just the ones the run has reported), the activity feed beside it, the authored readouts
+    wide enough to read, and deliverables appearing as their real kind components. New `(core)`
+    routes: `/workflows/[id]` and the run permalink `/workflows/runs/[runId]`.
+  - **Layout.** The literal 24-col Grafana grid became a 12-column FLOW honouring the same
+    authored `pos` (`w` → span, `(y,x)` → order, `h` → minimum height). The fixed 30px rows were
+    what forced streamed writing into a ~240px porthole. The builder contract is unchanged and
+    additive-only (`hideRunStatusCards`, `hideProgressRails`, `deriveDefaultSurfaceConfig`).
+  - **Failure is first-class.** `explainRunFailure` gained an optional one-click `action`; the
+    education COPPA refusal (a known product gate, not a bug) reads as a task with a door to the
+    Family page instead of a raw error string.
+  - Defects fixed during the live watch: activity/emission rings double-appended on re-adoption
+    (durable replay bypasses seq dedup by design → `appendedThroughSeq` watermark); an attached but
+    EMPTY lane rendered an empty pane over a settled step's real output; the progress sentence
+    printed twice; `quiz_set` read as "Quizs".
+  - `ElapsedTime` promoted to `components/official-candidate/elapsed-time/` — one clock, shared
+    with the podcast generator.
 
 - 2026-08-18 — **the builder was rebuilt from scratch** at `/workflows/[id]/design` after
   Arman tested the old one and rejected it outright ("no alignment, no consideration of how a

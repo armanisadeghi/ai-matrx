@@ -22,7 +22,7 @@
  * second grid (config.ts law).
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -109,22 +109,52 @@ const FLOW_COLUMNS = 12;
 /** A tall readout still scrolls internally rather than running off forever. */
 const READOUT_MAX_HEIGHT_PX = 560;
 
+/**
+ * Below this the flow is ONE column whatever the author asked for. The author
+ * sizes a readout against the page; the stage is narrower than the page (the
+ * journey rail takes its share), so a "half width" readout on a laptop landed
+ * at ~360px — narrow enough that a rich kind component (the flashcard deck,
+ * the quiz) wrapped its own words. Columns are worth having only when each one
+ * is still wide enough to read.
+ */
+const MIN_STAGE_WIDTH_FOR_COLUMNS_PX = 1100;
+
 /** 24-col author span → 12-col flow span, never narrower than a readable third. */
 function flowSpan(w: number): number {
   const span = Math.round((w / GRID_COLUMNS) * FLOW_COLUMNS);
   return Math.min(FLOW_COLUMNS, Math.max(4, span));
 }
 
+/** The rendered width of the grid — measured, because the stage's width is a
+ * property of the LAYOUT it sits in, not of the viewport. */
+function useMeasuredWidth() {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState<number | null>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) setWidth(entry.contentRect.width);
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return { ref, width };
+}
+
 function ReadoutCell({
   runId,
   item,
   mobile,
+  fullWidth,
   ensureLane,
   definition,
 }: {
   runId: string;
   item: ReadoutRender;
   mobile: boolean;
+  /** The stage is too narrow for columns — span everything. */
+  fullWidth: boolean;
   ensureLane?: (invocationKey: string, seedText?: string) => string | null;
   definition?: WorkflowDefinitionLike;
 }) {
@@ -139,7 +169,10 @@ function ReadoutCell({
   );
   const style = mobile
     ? { minHeight }
-    : { gridColumn: `span ${flowSpan(readout.pos.w)}`, minHeight };
+    : {
+        gridColumn: `span ${fullWidth ? FLOW_COLUMNS : flowSpan(readout.pos.w)}`,
+        minHeight,
+      };
 
   return (
     <div
@@ -223,6 +256,7 @@ export function RunSurfaceView({
           ensureLane(runId, invocationKey, seedText)
       : undefined;
   const isMobile = useIsMobile();
+  const { ref: gridRef, width: gridWidth } = useMeasuredWidth();
   const runStatus = useAppSelector(selectRunStatus(runId));
   const nodePhases = useAppSelector(selectNodeAggregatePhases(runId));
   const sticky = useAppSelector(selectRunStickyFacts(runId));
@@ -343,6 +377,7 @@ export function RunSurfaceView({
               runId={runId}
               item={item}
               mobile
+              fullWidth
               ensureLane={promoteLane}
               definition={definition}
             />
@@ -350,6 +385,7 @@ export function RunSurfaceView({
         </div>
       ) : (
         <div
+          ref={gridRef}
           className="grid items-start gap-3"
           style={{
             gridTemplateColumns: `repeat(${FLOW_COLUMNS}, minmax(0, 1fr))`,
@@ -361,6 +397,9 @@ export function RunSurfaceView({
               runId={runId}
               item={item}
               mobile={false}
+              fullWidth={
+                gridWidth !== null && gridWidth < MIN_STAGE_WIDTH_FOR_COLUMNS_PX
+              }
               ensureLane={promoteLane}
               definition={definition}
             />
