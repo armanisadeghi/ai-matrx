@@ -29,6 +29,12 @@ import { useFlashcardStudy } from "../../data/useFlashcardStudy";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { gradeTypedAnswer, type TypedGrade } from "../../utils/textSimilarity";
+import {
+  gradeTypedSemantic,
+  type TypedGradeVerdict,
+} from "../../data/gradeTypedSemantic";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { Loader2, BrainCircuit } from "lucide-react";
 import type { ReviewResult } from "../../types";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 
@@ -46,15 +52,22 @@ export function WriteSurface({ setId }: { setId: string }) {
   const title = study.set?.name ?? "Write";
   const current = study.cards[study.currentIndex];
 
+  const dispatch = useAppDispatch();
   const [typed, setTyped] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [autoGrade, setAutoGrade] = useState<TypedGrade | null>(null);
+  // WP3 gap 14 — the grade-on-meaning verdict (flashcards.grade_typed_answer
+  // mandate). The Levenshtein suggestion shows instantly; this upgrades it.
+  const [verdict, setVerdict] = useState<TypedGradeVerdict | null>(null);
+  const [verdictLoading, setVerdictLoading] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTyped("");
     setSubmitted(false);
     setAutoGrade(null);
+    setVerdict(null);
+    setVerdictLoading(false);
   }, [current?.id]);
 
   // One-way latch, not a pure derivation (see StudyDeck's `completed`).
@@ -73,6 +86,25 @@ export function WriteSurface({ setId }: { setId: string }) {
     if (!current || submitted) return;
     setAutoGrade(gradeTypedAnswer(typed, current.back));
     setSubmitted(true);
+
+    // Grade on MEANING (gap 14): the mandate-bound grader judges the typed
+    // answer semantically; when it lands (1-3s) it replaces the string-distance
+    // suggestion. Fire-and-forget — the learner is never blocked, and the card
+    // guard drops a verdict that arrives after they moved on.
+    const cardId = current.id;
+    if (typed.trim().length > 0) {
+      setVerdictLoading(true);
+      void dispatch(
+        gradeTypedSemantic({
+          question: current.front,
+          expectedAnswer: current.back,
+          learnerAnswer: typed,
+        }),
+      ).then((v) => {
+        setVerdictLoading(false);
+        if (v && cardId === current.id) setVerdict(v);
+      });
+    }
   };
 
   const confirmGrade = async (result: ReviewResult): Promise<void> => {
@@ -200,12 +232,28 @@ export function WriteSurface({ setId }: { setId: string }) {
                         />
                       </div>
                     </div>
-                    {autoGrade && (
-                      <p className="text-xs text-muted-foreground">
+                    {verdict ? (
+                      // The grade-on-meaning verdict, with its reason. The
+                      // learner still confirms — grading stays learner-final.
+                      <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                        <BrainCircuit className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                        <span>
+                          <span className="font-medium capitalize text-foreground">
+                            {verdict.result}
+                          </span>
+                          {verdict.reason ? ` — ${verdict.reason}` : ""}{" "}
+                          Confirm or adjust below.
+                        </span>
+                      </p>
+                    ) : autoGrade ? (
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {verdictLoading && (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        )}
                         {AUTO_GRADE_LABEL[autoGrade]} — confirm or adjust the
                         grade below.
                       </p>
-                    )}
+                    ) : null}
                     <FlashcardGradeButtonRow
                       onGrade={(r) => void confirmGrade(r)}
                       disabled={study.grading}
