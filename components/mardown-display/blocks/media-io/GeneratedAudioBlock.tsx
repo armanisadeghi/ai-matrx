@@ -110,15 +110,19 @@ export default function GeneratedAudioBlock({
 
       {data.handle ? (
         <>
-          <InlineMediaRef
-            ref={data.handle}
-            as="audio"
-            size="fill"
-            rounded="md"
-            controls
-            preload="metadata"
-            className="w-full"
-          />
+          {/* The wrapper is a HEIGHT, not chrome: `size="fill"` means
+              `h-full`, and a parent with auto height renders the player at
+              0px — audible to no one. */}
+          <div className="h-[54px] w-full">
+            <InlineMediaRef
+              ref={data.handle}
+              as="audio"
+              size="fill"
+              rounded="md"
+              controls
+              preload="metadata"
+            />
+          </div>
           {/* NO DEAD ENDS: a clip with a durable id is a file the user can open. */}
           {data.file_id && (
             <button

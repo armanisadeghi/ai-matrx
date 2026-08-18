@@ -163,16 +163,19 @@ export default function PodcastEpisodeBlock({
 
       <PodcastCastChips speakers={data.speakers} />
 
+      {/* The wrapper is a HEIGHT, not chrome: `size="fill"` means `h-full`,
+          and a parent with auto height renders the player at 0px. */}
       {data.audioHandle && (
-        <InlineMediaRef
-          ref={data.audioHandle}
-          as="audio"
-          size="fill"
-          rounded="md"
-          controls
-          preload="metadata"
-          className="w-full"
-        />
+        <div className="h-[54px] w-full">
+          <InlineMediaRef
+            ref={data.audioHandle}
+            as="audio"
+            size="fill"
+            rounded="md"
+            controls
+            preload="metadata"
+          />
+        </div>
       )}
 
       {data.officialVideoHandle && (
