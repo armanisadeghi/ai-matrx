@@ -311,6 +311,13 @@ const BrowserFrameWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/iframe/BrowserFrameWindow"),
   { ssr: false },
 );
+const CloudBrowserWindow = lazyOverlay(
+  () =>
+    import("@/features/cloud-browser/components/CloudBrowserWindow").then((m) => ({
+      default: m.CloudBrowserWindow,
+    })),
+  { ssr: false },
+);
 const BrowserWorkbenchWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/iframe/BrowserWorkbenchWindow"),
@@ -1107,6 +1114,9 @@ export default function OverlayController() {
     browserFrameWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "browserFrameWindow"),
     ),
+    cloudBrowserWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "cloudBrowserWindow"),
+    ),
     browserWorkbenchWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "browserWorkbenchWindow"),
     ),
@@ -1454,6 +1464,9 @@ export default function OverlayController() {
     > | null,
     browserFrameWindow: useAppSelector((s) =>
       selectOverlayData(s, "browserFrameWindow"),
+    ) as Record<string, unknown> | null,
+    cloudBrowserWindow: useAppSelector((s) =>
+      selectOverlayData(s, "cloudBrowserWindow"),
     ) as Record<string, unknown> | null,
     browserWorkbenchWindow: useAppSelector((s) =>
       selectOverlayData(s, "browserWorkbenchWindow"),
@@ -2842,6 +2855,27 @@ export default function OverlayController() {
               typeof data?.initialWindowTitle === "string"
                 ? data.initialWindowTitle
                 : null
+            }
+          />
+        );
+      })()}
+
+      {/* cloudBrowserWindow */}
+      {(() => {
+        const isOpen = isOpenById.cloudBrowserWindow;
+        const data = dataById.cloudBrowserWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        return (
+          <CloudBrowserWindow
+            overlayId="cloudBrowserWindow"
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "cloudBrowserWindow" }))
+            }
+            initialProfileId={
+              typeof data?.initialProfileId === "string"
+                ? data.initialProfileId
+                : undefined
             }
           />
         );

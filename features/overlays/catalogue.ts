@@ -245,6 +245,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  cloudBrowserWindow: {
+    label: "Cloud Browser",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   browserWorkbenchWindow: {
     label: "Browser Workbench Window",
     instanceMode: "singleton",
