@@ -119,6 +119,20 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-18 — **THE FLOOR + `Readout.prefer` decides WHEN, never whether.** Settled output with
+  no kind component now renders as a human document through `StructuredValueView`
+  (`components/official/structured-value/`) instead of `JSON.stringify` in a ```json fence —
+  `JsonBody` / `SettledOutputBody`, plus settled agent text that IS a JSON document, which is
+  parsed once and handed to the same floor. Full doctrine, and the measurement that forced it
+  (2 of 23 Study Pack steps rendered as components, 19 as JSON):
+  [`features/content-ir/FEATURE.md`](../content-ir/FEATURE.md) § THE FLOOR.
+  **`prefer` semantics fixed in the same pass:** the lane and the durable tail used to outlive the
+  RUN, so a finished run left the flashcards agent's raw streamed JSON on screen while a page
+  REFRESH of the same run — which has no lane to hold — showed a proper table. `prefer` now only
+  chooses WHEN the settled document takes over ("persisted" = the moment that step settles,
+  "live" = when the run ends); a terminal run always hands over. Verified live end-to-end: a fresh
+  run swapped raw stream → filterable table at DONE, with no reload.
+  `RunDeliverables` also passes `variant="bare"` — its card was already the chrome.
 - 2026-08-18 — **the last two raw-JSON panels of a live Study Pack run became real
   components.** "Your materials" (the Preparing screen, on screen from the opening seconds of
   EVERY run) rendered the ingest node's chunk array — `content_hash`, `chunk_index`,
