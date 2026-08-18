@@ -41,6 +41,7 @@ Refinements he added along the way — each is now doctrine, with the why:
 - Adding a `copy` config to `MatrxDataTable` makes its toolbar render; on pages with their own header row set `copy.showToolbar:false` and host view-copy + ExportMenu in that row, or you recreate the orphan-toolbar-row mess Arman flagged.
 - **Shared checkout is the designed workflow** (CLAUDE.md § Shared checkout): stage your own files, commit early and often, never tree-wide destructive git, never ask for your own branch/worktree. The old "prefer worktree isolation for fleets" advice here is superseded — it is now ruled against.
 - A payload name must match the surface manifest's vocabulary. The audit page shipped `gone_pages` for a COUNT while the manifest uses `gone_pages` for the LIST and `pages_gone` for the count; an agent reading both then disagrees with itself. Fixed 2026-08-15 — check your names against the manifest.
+- **`grep features/<name>` is a PROXY for coverage, not proof — it produced two false negatives on 2026-08-15.** A feature's copy wiring often lands where the surface actually renders, not in its own folder: the CMS site list lives in `app/(core)/cms/page.tsx` (helpers in `features/cms/copy.ts`) and the MCP integrations surface in `features/settings/pages/IntegrationsSettingsPage.tsx` (helpers in `features/agents/mcp-copy.ts`) — both read as "0 files" under a folder grep while being fully wired. Grep the route tree and the shared surface too before declaring a gap, and never re-chip on a folder count alone.
 - Vercel builds only `release:`-prefixed commits — plain pushes never deploy.
 
 ## Remaining work
@@ -57,14 +58,14 @@ Refinements he added along the way — each is now doctrine, with the why:
 | Small verified gaps | `SiteCommandFeed.tsx:279` warnings `.slice(0,10)` with no show-all/export (**hard violation, errors-first class**); `SitesPortfolio.tsx:614` `MatrxDataTable` with no `copy` config | `session_01WZXQcgqYiiXKCLcHrt174Y` |
 | Graded variants + groomers | Crawl URLs/Logs/Snapshots/Reports tables, `PageWorkspace` (5-section record page), `BrandWorkspace` (1,322 L, 4 sections) | `session_01Yc11TPkXCxYWvdV53kuvNJ` |
 
-Plus 4 chips covering the **user-facing feature clusters** — a category the rows above don't touch at all (they are marketing + admin/agents). Verified zero-to-near-zero coverage on 2026-08-15 via `grep -rl "agent-copy/CopyButtons\|AiCopyMenu\|ExportMenu" features/<name>`:
+Plus 4 chips covering the **user-facing feature clusters** — a category the rows above don't touch (they are marketing + admin/agents). Dispatched 2026-08-15 against measured zero-to-near-zero coverage; **status below re-measured after the `v0.4.621` agent-copy wave landed.** Two spun up their own handoffs — read those, not this table, before continuing either:
 
 | Chip | Scope (coverage at dispatch) | Session |
 |---|---|---|
-| Knowledge/content | `notes` (0), `transcripts` + studio + cleanup (0), `dictionary` (0) — a note body and a transcript are the highest-value AI captures in the app; long transcripts are the `aiCustom` case | `session_01HibxMvGftgKxFvBjaiMxxa` |
-| Data pipeline | `research` (2), `rag` (1), `api-integrations`/MCP (0 — sanitize endpoints + OAuth ids), `cms` (0); research wants a page Groomer | `session_01BCMuaqiB7wAJCmHABxRi8p` |
-| Work management | `tasks` + projects (0), `scheduling` (0), `organizations` (0), `war-room` (0 — natural Groomer consumer) | `session_01DPXb4DgXxUTeFZhKpM5rtH` |
-| Media | `files` (2), `image-manager` (1), `podcasts` (0), `audio` (1), `pdf` (0) — SKIP the viewers, wire their lists/metadata; **payloads carry `file_id` + durable URL, never a signed URL** | `session_013omdG1hM9pyqFZ9SrtsTTC` |
+| Knowledge/content | **LANDED** — notes, transcripts + studio + cleanup, dictionary all wired (0 → 3/2/2/1/3 files) | `session_01HibxMvGftgKxFvBjaiMxxa` |
+| Data pipeline | **PARTLY LANDED** — research, rag, cms site list (`features/cms/copy.ts` + the `(core)/cms` route) and the sanitized MCP integrations surface (`features/agents/mcp-copy.ts` + `IntegrationsSettingsPage`) are in. Continues in **`docs/handoffs/agent-copy-data-knowledge-cluster.md`** | `session_01BCMuaqiB7wAJCmHABxRi8p` |
+| Work management | **LANDED** — tasks + projects, scheduling, organizations, war-room all wired (0 → 4/7/4/4 files), incl. live-editor-state payloads | `session_01DPXb4DgXxUTeFZhKpM5rtH` |
+| Media | **IN PROGRESS** — audit done + file version history wired; image-manager / podcasts / audio / pdf still open. Its audit found `CloudFile` carries FIVE fields that violate the signed-URL/storage-path rules. Continues in **`docs/handoffs/agent-copy-media-cluster.md`** | `session_013omdG1hM9pyqFZ9SrtsTTC` |
 
 **Read their reports before re-chipping any of it.** Each was told to update the skill's Rollout status and to name what it deliberately skipped.
 

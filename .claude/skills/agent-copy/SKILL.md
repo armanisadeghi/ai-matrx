@@ -314,6 +314,25 @@ first and emit the gap list; only then wire, batch by batch:
   one `SharingCopyContext` (identity + KPIs) into every child, and offers an
   "Errors & access blockers" variant beside the what-I-see default.
   `accessKpis` is the what-I-see KPI mirror here, the `auditPageKpis` analogue.
+- **User-facing feature clusters (2026-08-15 wave, `v0.4.621`)** — the half of
+  the app outside marketing/admin. **Knowledge/content**: notes, transcripts +
+  transcript-studio + transcription-cleanup (session lists, Raw column),
+  dictionary. **Work management**: tasks + projects (live editor state, list,
+  table, rows), scheduling, organizations, war-room. **Data pipeline**:
+  research, rag, cms site list (`features/cms/copy.ts`, wired in the
+  `(core)/cms` route), and the sanitized MCP integrations surface
+  (`features/agents/mcp-copy.ts` + `IntegrationsSettingsPage` — no endpoint
+  URLs or OAuth ids). **content-plan**: plan tree, pages table, entity roster,
+  pillar map, reality card, brief editor, drift bar/sheet, AI runs.
+  ⚠️ **Coverage is NOT provable by `grep features/<name>`** — cms and MCP
+  integrations both read as "0 files" under a folder grep while being fully
+  wired, because the wiring lives at the route / shared-surface. Grep the route
+  tree too before declaring a gap.
+- **Still open, each with its own handoff — read it before touching either:**
+  media cluster (image-manager, podcasts, audio, pdf; files partly done —
+  `docs/handoffs/agent-copy-media-cluster.md`, whose audit found `CloudFile`
+  carries FIVE signed-URL/storage-path fields a verbatim dump would leak) and
+  the data/knowledge remainder (`docs/handoffs/agent-copy-data-knowledge-cluster.md`).
 - Pages: sandbox admin / user-list / detail; `administration/admins` (admins +
   audit); `administration/ai-tasks`; `administration/invitation-requests`;
   `/marketing/brands/[id]/sites/[id]/backlinks` (the full-granularity + groomer
