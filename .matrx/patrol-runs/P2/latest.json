@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P2",
   "runId": "2026-08-18-weekly",
-  "state": "fixing",
-  "updatedAt": "2026-08-18T07:15:55.566Z",
-  "summary": "Started bounded two-file canonical agent-door repair.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-18T07:23:14.279Z",
+  "summary": "Certified candidate preserved and queued for fast integration; release remains serialized.",
   "source": "2026-08-18-weekly.json",
-  "eventHash": "fee55fd5b2d8717a3e9c1b00a6415c46a73fec3a3d377612bc138a71fd047f95"
+  "eventHash": "1081cb9714a2bb00881286704eec02004b1391f2dc492408d79d8b29124ab45e"
 }
