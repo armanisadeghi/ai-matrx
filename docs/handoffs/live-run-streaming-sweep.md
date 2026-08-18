@@ -321,14 +321,14 @@ string-valued `extra`, no `stat` layouts) and the card stopped hand-rendering
 the same two values the one-shot runner took — **pass them**, don't silently drop
 them.
 
-Still open on this file: `AnalysisList.tsx:703` hand-renders its live stream as
-200 truncated characters beside a spinner — a bespoke renderer, not just a
-truncation. The fix is not local: `useResearchStream` consumes the pipeline
-`Response` itself, so the HOOK must be the thing that adopts
-(`adoptForeignStream`, domain events on `onEvent`, content from
-`activeRequests`), and it is shared by every research operation. **Chipped
-2026-08-18** as its own session — a half-migration of that hook would break
-search/scrape/synthesize with it.
+`AnalysisList.tsx`'s hand-rendered stream is **GONE — 2026-08-17.** The fix was
+not local, and was not made local: `useResearchStream` consumes the pipeline
+`Response` itself, so the HOOK is now the thing that adopts
+(`adoptForeignStream`, research domain events on `onEvent`, content from
+`activeRequests`, `requestId` exposed to consumers). Every research operation —
+search, scrape, analyze, synthesize, auto-tag, consolidate — rides the adopted
+path; `AnalysisList` floats the run with `useFloatingLiveRun` keyed
+`research-analyze-all:${topicId}`. See `features/research/FEATURE.md`.
 
 ### 5. Podcasts — DONE 2026-08-11 (all three), one payload question left for Arman
 
