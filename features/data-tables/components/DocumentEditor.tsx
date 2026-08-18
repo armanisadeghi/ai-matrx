@@ -29,7 +29,10 @@ import {
 import type { IDocumentData, Univer } from "@univerjs/core";
 import { UniverDocsCorePreset } from "@univerjs/preset-docs-core";
 import docsCoreEnUS from "@univerjs/preset-docs-core/locales/en-US";
+import { UniverSheetsCorePreset } from "@univerjs/preset-sheets-core";
+import sheetsCoreEnUS from "@univerjs/preset-sheets-core/locales/en-US";
 import "@univerjs/preset-docs-core/lib/index.css";
+import "@univerjs/preset-sheets-core/lib/index.css";
 
 import { supabase } from "@/utils/supabase/client";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
@@ -187,10 +190,21 @@ export default function DocumentEditor({
       try {
         const { univer, univerAPI } = createUniver({
           locale: LocaleType.EN_US,
-          locales: { [LocaleType.EN_US]: merge({}, docsCoreEnUS) },
+          locales: {
+            [LocaleType.EN_US]: merge({}, sheetsCoreEnUS, docsCoreEnUS),
+          },
           theme: defaultTheme,
           darkMode: darkModeRef.current,
           presets: [
+            // Univer's facade mixins are process-global. Once WorkbookEditor
+            // has loaded in this SPA, its sheets facade observes every later
+            // Univer instance and resolves sheets services at Rendered. Keep
+            // those services registered here; put the docs preset last so its
+            // shared UI configuration remains authoritative for this editor.
+            UniverSheetsCorePreset({
+              container: containerRef.current as HTMLElement,
+              ribbonType: "simple",
+            }),
             UniverDocsCorePreset({
               container: containerRef.current as HTMLElement,
               ribbonType: "simple",
