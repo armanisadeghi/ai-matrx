@@ -30,6 +30,7 @@ import { StudyDeckHeader } from "./StudyDeckHeader";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { gradeTypedAnswer, type TypedGrade } from "../../utils/textSimilarity";
 import type { ReviewResult } from "../../types";
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -154,9 +155,9 @@ export function WriteSurface({ setId }: { setId: string }) {
                 <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
                   Type the answer
                 </p>
-                <p className="mt-1.5 text-lg font-medium leading-snug text-foreground">
-                  {current.front}
-                </p>
+                <div className="mt-1.5">
+                  <CardFaceContent content={current.front} variant="prompt" />
+                </div>
 
                 {!submitted ? (
                   <form
@@ -192,9 +193,12 @@ export function WriteSurface({ setId }: { setId: string }) {
                       <p className="text-[11px] font-medium uppercase tracking-wider text-green-700/80 dark:text-green-400/80">
                         Correct answer
                       </p>
-                      <p className="mt-0.5 text-green-900 dark:text-green-200">
-                        {current.back}
-                      </p>
+                      <div className="mt-0.5 text-green-900 dark:text-green-200">
+                        <CardFaceContent
+                          content={current.back}
+                          variant="inline"
+                        />
+                      </div>
                     </div>
                     {autoGrade && (
                       <p className="text-xs text-muted-foreground">
