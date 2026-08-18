@@ -74,6 +74,29 @@ row builders is how those two answers start disagreeing.
 typed `not_connected` result carrying the settings link, and every caller turns
 it into a one-click "Connect" offer. Never render a failure there.
 
+## Attaching a file to a message — `attach/` + the picker row
+
+**Google is a row in the canonical attach menu** (`features/resource-manager/
+resource-picker/`), shown to everyone — including users with nothing connected.
+A user cannot ask for a capability they do not know exists, so the unconnected
+state is the pitch plus a one-click connect, never an error and never a dead row.
+
+**Connecting never leaves the page.** `useOpenGoogleConnectWindow()`
+(`features/overlays/openers/googleConnectWindow.tsx`) raises
+`GoogleConnectWindow`, a floating panel that connects, enables sending, and runs
+Picker over whatever the user was doing. Call it from anywhere Google is needed.
+It is NOT a second implementation — it calls the same `useConnectGoogle` and
+`registerSelectedGoogleFile` the settings surface calls.
+
+🚨 **An attached file travels as the reserved `__google_files` CONTEXT key, never
+as a `content[]` resource block** (`attach/googleFileContext.ts`; the key must
+stay byte-identical to the server's). The server side does two things at once —
+names the files for the agent AND injects the Google tool for that turn, even
+when the agent's configuration does not carry it. A content block would deliver
+the first half and silently drop the second, leaving the agent able to name an
+attachment it cannot open. Server half:
+`aidream/services/google_workspace/attachments.py`.
+
 ## Invariants
 
 - The settings surface leads with a compact account inventory: every personal
@@ -109,6 +132,10 @@ it into a one-click "Connect" offer. Never render a failure there.
 - 2026-08-18: Removed the `Sheet1` assumption from the Sheet range default,
   trimmed submitted A1 ranges, and kept backend input errors inline instead of
   filing a duplicate `user-toast` error.
+- 2026-08-18: Added the attach half — Google in the canonical resource picker
+  (always offered), the connect-anywhere `GoogleConnectWindow`, and the
+  `__google_files` context key that carries attached files to the agent along
+  with the tool to open them.
 - 2026-08-18: Added the in-app half — `export/sendToGoogle.ts`, "Send to Google
   Doc" on the shared content-action registry, and an optional Google Sheet
   destination on `ExportMenu` (passed by `MatrxDataTable`, so every canonical
