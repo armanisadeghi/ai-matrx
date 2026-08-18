@@ -1,3 +1,9 @@
+> 🚨 **SUPERSEDED 2026-08-17 — a 2026-07 proposal, NOT a live work order.** This brief was written
+> when the work was unstarted; it shipped. Do not read its wave/tier/assignment lines as current.
+> **Current state:** `common-docs/projects/education-platform/GAP_ANALYSIS.md`. **Current plan and
+> ownership:** that project's `MASTER_PLAN.md` + `STATUS_BOARD.md`. Kept in full because its design
+> intent is still the best record of why this was built the way it was.
+
 # P9 — ONBOARD: Universal Ingest, One-Click Import & Data Ownership
 
 > **Status date:** 2026-07-07 · **Wave 1, priority tier 2 — the growth engine.**
