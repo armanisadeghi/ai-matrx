@@ -19,6 +19,13 @@
 -- another user's attempt id, and a unique_violation handler for the concurrent
 -- replay race.
 
+-- NOTE: adding parameters CHANGES the function signature, so `create or replace`
+-- creates a SECOND overload rather than replacing. Two overloads make every
+-- existing 18-argument PostgREST call ambiguous ("could not choose the best
+-- candidate function") — i.e. it breaks every study mode. The old signature is
+-- therefore dropped explicitly at the bottom of this file. Verified live: exactly
+-- one study_record_attempt remains.
+
 alter table education.study_attempt
   add column if not exists reviewed_at timestamptz;
 
@@ -56,7 +63,6 @@ declare
   v_uid uuid := (select auth.uid());
   v_attempt_id uuid;
   v_existing_owner uuid;
-  v_existing jsonb;
   v_correct boolean := (p_result = 'correct');
   v_partial boolean := (p_result = 'partial');
   v_prev_streak integer := 0;
@@ -72,7 +78,7 @@ begin
   -- Idempotent replay: the client supplied its own attempt id and we already
   -- hold that attempt. Return it with current mastery; never re-apply.
   if p_attempt_id is not null then
-    select created_by, to_jsonb(a) into v_existing_owner, v_existing
+    select a.created_by into v_existing_owner
       from education.study_attempt a where a.id = p_attempt_id;
     if found then
       if v_existing_owner is distinct from v_uid then
@@ -152,3 +158,9 @@ begin
 
   return jsonb_build_object('attempt_id', v_attempt_id, 'mastery', to_jsonb(v_mrow));
 end $function$;
+
+-- Drop the superseded 18-argument signature so exactly ONE overload exists.
+drop function if exists public.study_record_attempt(
+  text, uuid, uuid, text, text, jsonb, numeric, text, uuid, uuid, text,
+  integer, text, numeric, numeric, timestamptz, numeric, integer
+);
