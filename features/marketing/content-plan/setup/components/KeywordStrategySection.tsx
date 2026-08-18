@@ -120,6 +120,7 @@ export function KeywordStrategySection({
           </select>
           {strategy && !busy ? (
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs text-muted-foreground"
@@ -130,6 +131,7 @@ export function KeywordStrategySection({
             </Button>
           ) : null}
           <Button
+            type="button"
             variant="ghost"
             size="sm"
             className="h-6 gap-1.5 px-2 text-xs"
@@ -233,6 +235,7 @@ export function KeywordStrategySection({
               </span>
             ) : (
               <Button
+                type="button"
                 size="sm"
                 className="ml-auto h-6 px-2 text-[11px]"
                 disabled={applying || strategy.assignments.length === 0}

@@ -101,6 +101,15 @@ plan CRUD through it.
   Each pass owns a stable lane-scoped run set and floats through
   `RunSetWindowController`; remount cleanup invalidates only the local epoch and
   leaves the adopted reader feeding the retained Redux row.
+  Keyword strategy extends this same entry point—there is no second button—with
+  `cheap` / `thorough` / `advanced` effort choices. The button is disabled until
+  the server returns pages, exact calls, and an approximate catalog-priced cost;
+  it names all three before starting. Results include roles, secondary keywords,
+  planned internal links, and desired meta per page, then the existing
+  `applyKeywordStrategy → updatePageDesiredValues` seam writes the one
+  `web.page` SEO plan. The Apply control is explicitly `type="button"`; Setup is
+  inside a form, so the implicit submit default would reload and cancel this
+  canonical write.
   The small per-step agents (shape planner, family namer, entity curator) still
   run client-side through `useSetupAgents`.
 - **A site's AI run history** (`?view=ai-runs`,

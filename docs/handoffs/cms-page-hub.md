@@ -61,12 +61,13 @@ production verification.**
 
 ## WHAT'S NEXT — the open front
 
-**1. Fill the thin plans — effort-tiered bulk SEO-plan generation (the big one).** The
-strategist + apply path exists end-to-end (Setup AI step → `applyKeywordStrategy` →
-`updatePageDesiredValues`), but plans are 99% primary-keyword-only. Build the site-level "plan
-all pages" run per `content-planning/FEATURE.md` § EFFORT TIERS: pre-estimated cost shown
-BEFORE the button, cheap tier merges steps, advanced tier money-no-object — never a mid-run
-budget kill. Per-page + per-site controls.
+~~**1. Fill the thin plans — effort-tiered bulk SEO-plan generation (the big one).**~~ DONE
+2026-08-18 — the existing Setup strategist now plans every page with `cheap` / `thorough` /
+`advanced` batching, exact call count and measured-history + live-catalog cost shown before the
+single existing button, crash-safe per-batch proposal checkpoints, and floating live progress.
+The existing Apply seam remains the only writer. Live proof on `wf4-step-queue-proof`: cheap ran
+6 pages in 1 call; after Apply, 6/6 `web.page` rows had roles, secondary keywords, planned links,
+and desired meta (12 secondary keywords, 13 links). No client site was touched.
 
 **2. Best-in-class layer on the one store.** SERP-intent targets, entity/heading coverage vs
 plan, tracking against plan (observed vs desired verdicts, not timestamps). Benchmark: Ahrefs
