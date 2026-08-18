@@ -156,10 +156,11 @@ export function buildDeckExport(
   cards: ExportCard[],
   format: DeckExportFormat,
   exportedAt: string | null,
+  extras?: DeckExportExtras,
 ): string {
   switch (format) {
     case "json":
-      return JSON.stringify(toPortableDeck(set, cards, exportedAt), null, 2);
+      return JSON.stringify(toPortableDeck(set, cards, exportedAt, extras), null, 2);
     case "md": {
       const lines = [`# ${set.name}`];
       if (set.description) lines.push("", set.description);

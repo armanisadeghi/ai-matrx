@@ -127,6 +127,7 @@ export function useKitGeneration(): UseKitGeneration {
               detail: r.detail,
               artifactId: r.artifactId,
               resourceType: r.resourceType,
+              stillGenerating: r.pending === true,
             });
           } else {
             patchTarget(outcome.targetKind, {

@@ -16,6 +16,7 @@ import {
   type DeckExportFormat,
 } from "../export/deckFormats";
 import { downloadTextFile, downloadBlob, safeFileBase } from "../export/download";
+import { fetchDeckExportExtras } from "../export/exportExtras";
 import {
   dataRightsService,
   type StudyDeleteResult,
@@ -74,7 +75,13 @@ export function useDataOwnership(): UseDataOwnership {
         throw new Error(typeof res.error === "string" ? res.error : "Couldn't load that deck");
       }
       const { set, cards } = res.data;
-      const content = buildDeckExport(set, cards, format, new Date().toISOString());
+      // JSON is the round-trip format — join in review state + media refs so a
+      // re-imported backup keeps due dates and attachments.
+      const extras =
+        format === "json"
+          ? await fetchDeckExportExtras(cards.map((c) => c.id))
+          : undefined;
+      const content = buildDeckExport(set, cards, format, new Date().toISOString(), extras);
       downloadTextFile(
         `${safeFileBase(set.name)}.${EXPORT_EXT[format]}`,
         content,
@@ -100,7 +107,8 @@ export function useDataOwnership(): UseDataOwnership {
           failed.push(set.name);
           continue;
         }
-        const json = buildDeckExport(res.data.set, res.data.cards, "json", stamp);
+        const extras = await fetchDeckExportExtras(res.data.cards.map((c) => c.id));
+        const json = buildDeckExport(res.data.set, res.data.cards, "json", stamp, extras);
         let base = safeFileBase(set.name);
         const n = seen.get(base) ?? 0;
         seen.set(base, n + 1);

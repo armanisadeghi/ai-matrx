@@ -57,6 +57,13 @@ export interface KitTargetState {
   detail?: string;
   artifactId?: string;
   resourceType?: string;
+  /**
+   * The artifact row exists but its content is still being produced elsewhere
+   * (streamed targets — audio). `status` is 'success' because the generator
+   * succeeded at STARTING the work; this flag stops the board presenting it as
+   * a finished artifact. Mirrors `ConvertResult.pending`.
+   */
+  stillGenerating?: boolean;
   /** Populated on error. */
   error?: string;
   /** Live streaming request id (for token-level preview), when available. */

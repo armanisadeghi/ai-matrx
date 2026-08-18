@@ -833,6 +833,18 @@ export function NodePanel({
                 siteId={siteId}
                 pageLabel={node.route ?? node.label}
                 progress={pipelineProgress ?? null}
+                // Mirrors aidream's `assert_step_preconditions(STEP_WRITE)` —
+                // same order (brief first), same predicate for the keyword
+                // half (`hasKeywordAssignment` ≡ the server's
+                // `has_keyword_assignment`), so the arrow says why BEFORE the
+                // click instead of the server saying it after.
+                writeBlockedReason={
+                  (node.brief?.length ?? 0) === 0
+                    ? "Can't write this page yet — it has no brief. Use “Draft brief” or “Deepen” first, so the writer knows what the page should say."
+                    : keywordGap
+                      ? "Can't write this page yet — it has no target keyword or page role, so the writer has no query to aim at. Use “Plan keywords” in Setup, or “Deepen” this page."
+                      : null
+                }
               />
             </PanelSection>
 

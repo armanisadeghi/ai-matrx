@@ -494,8 +494,26 @@ function KitResults(props: {
 
       {done && successCount > 0 && (
         <p className="text-center text-xs text-muted-foreground">
-          {successCount} artifact{successCount === 1 ? "" : "s"} created, all
-          linked to your source.
+          {(() => {
+            // Count only artifacts that actually EXIST. A streamed target
+            // (audio) has a row but no content yet and may still fail, so
+            // counting it here was the kit claiming work it had not done.
+            const finished = kit.targets.filter(
+              (t) => t.status === "success" && !t.stillGenerating,
+            ).length;
+            const generating = kit.targets.filter(
+              (t) => t.status === "success" && t.stillGenerating,
+            ).length;
+            const head =
+              finished > 0
+                ? `${finished} artifact${finished === 1 ? "" : "s"} created, all linked to your source.`
+                : "";
+            const tail =
+              generating > 0
+                ? `${finished > 0 ? " " : ""}${generating} more still being produced — we'll keep working even if you close this.`
+                : "";
+            return `${head}${tail}`;
+          })()}
         </p>
       )}
     </div>
@@ -534,7 +552,10 @@ function TargetRow({ target: t }: { target: KitTargetState }) {
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
       )}
       {t.status === "error" && <AlertCircle className="h-4 w-4 text-destructive" />}
-      {t.status === "success" && (
+      {t.status === "success" && t.stillGenerating && (
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      )}
+      {t.status === "success" && !t.stillGenerating && (
         <ArrowRight className="h-4 w-4 text-muted-foreground" />
       )}
     </div>
