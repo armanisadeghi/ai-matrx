@@ -105,9 +105,9 @@ export function buildAgentAdapterRegistry() {
     ...JsonObjectAdapter,
     label: "UI Gates",
   });
-  registry.register("matrxActions", {
+  registry.register("matrxDirectives", {
     ...JsonObjectAdapter,
-    label: "Matrx Actions",
+    label: "Matrx Directives",
   });
 
   return registry;

@@ -71,23 +71,23 @@ export interface AdvancedMenuProps {
   onActionError?: (key: string, error: unknown) => void;
 }
 
-type ActionState = "idle" | "loading" | "success" | "error";
+type DirectiveState = "idle" | "loading" | "success" | "error";
 
 // ─── Shared item renderer ─────────────────────────────────────────────────────
 
 interface MenuItemsContentProps {
   groupedItems: Record<string, MenuItem[]>;
   categorizeItems: boolean;
-  actionStates: Record<string, ActionState>;
+  actionStates: Record<string, DirectiveState>;
   onAction: (item: MenuItem) => void;
-  getActionState: (key: string) => ActionState;
+  getDirectiveState: (key: string) => DirectiveState;
 }
 
 const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
   groupedItems,
   categorizeItems,
   onAction,
-  getActionState,
+  getDirectiveState,
 }) => (
   <>
     {Object.entries(groupedItems).map(([category, categoryItems], catIndex) => (
@@ -102,7 +102,7 @@ const MenuItemsContent: React.FC<MenuItemsContentProps> = ({
 
         <div className="px-1.5 py-0.5">
           {categoryItems.map((item) => {
-            const state = getActionState(item.key);
+            const state = getDirectiveState(item.key);
             const Icon = item.icon;
             const isLoading = state === "loading";
             const isSuccess = state === "success";
@@ -208,7 +208,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [actionStates, setActionStates] = useState<Record<string, ActionState>>(
+  const [actionStates, setDirectiveStates] = useState<Record<string, DirectiveState>>(
     {},
   );
   const isMobile = useIsMobile();
@@ -348,32 +348,32 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
   }, [isOpen, mounted]);
 
   // Action state management
-  const setActionState = (key: string, state: ActionState) => {
-    setActionStates((prev) => ({ ...prev, [key]: state }));
+  const setDirectiveState = (key: string, state: DirectiveState) => {
+    setDirectiveStates((prev) => ({ ...prev, [key]: state }));
     if (state === "success" || state === "error") {
       setTimeout(() => {
-        setActionStates((prev) => ({ ...prev, [key]: "idle" }));
+        setDirectiveStates((prev) => ({ ...prev, [key]: "idle" }));
       }, 2000);
     }
   };
 
-  const getActionState = (key: string): ActionState =>
+  const getDirectiveState = (key: string): DirectiveState =>
     actionStates[key] || "idle";
 
   const handleAction = async (item: MenuItem) => {
     if (item.disabled) return;
 
-    const state = getActionState(item.key);
+    const state = getDirectiveState(item.key);
     if (state === "loading") return;
 
     try {
-      setActionState(item.key, "loading");
+      setDirectiveState(item.key, "loading");
       onActionStart?.(item.key);
 
       const result = item.action();
       if (result instanceof Promise) await result;
 
-      setActionState(item.key, "success");
+      setDirectiveState(item.key, "success");
       onActionSuccess?.(item.key);
 
       if (item.showToast !== false) {
@@ -387,7 +387,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
         setTimeout(() => onClose(), 500);
       }
     } catch (error) {
-      setActionState(item.key, "error");
+      setDirectiveState(item.key, "error");
       onActionError?.(item.key, error);
 
       if (item.showToast !== false) {
@@ -420,7 +420,7 @@ const AdvancedMenu: React.FC<AdvancedMenuProps> = ({
     categorizeItems,
     actionStates,
     onAction: handleAction,
-    getActionState,
+    getDirectiveState,
   };
 
   if (!mounted) return null;

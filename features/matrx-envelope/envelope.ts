@@ -67,7 +67,7 @@ export interface DirectiveApplyCompleted {
 /**
  * A model-emitted directive whose resolved apply policy is `ask` — NOT applied.
  * The client renders an approve/decline card and, on accept, POSTs `envelope`
- * back to `/actions/confirm`. Idempotent by `proposal_id`. See the backend
+ * back to `/directives/confirm`. Idempotent by `proposal_id`. See the backend
  * cascade: aidream services/output_directives/policy.py + confirm.py.
  */
 export interface DirectiveProposed {

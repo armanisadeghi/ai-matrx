@@ -724,11 +724,11 @@ export const adminCategoriesData: AdminCategory[] = [
     iconColor: "text-pink-600",
     features: [
       {
-        title: "Action Catalog",
+        title: "Directive Catalog",
         description:
-          "Live Matrx Action Catalog — noun × verb grid, build/test panel, and output-directive execute/confirm round-trip against the Python brain. Lives on the Relationships hub.",
+          "Live Matrx Directive Catalog — noun × verb grid, build/test panel, and output-directive execute/confirm round-trip against the Python brain. Lives on the Relationships hub.",
         iconName: "Zap",
-        link: "/administration/agents/relationships/actions",
+        link: "/administration/agents/relationships/directives",
         isNew: true,
       },
       {

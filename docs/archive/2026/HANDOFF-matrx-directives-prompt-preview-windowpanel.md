@@ -1,12 +1,12 @@
 > ARCHIVED 2026-07-26 — superseded by features/agents/FEATURE.md (WindowPanel conversion shipped 2026-07-07)
 
-# Handoff — Matrx Actions / Prompt Preview: finish the WindowPanel conversion
+# Handoff — Matrx Directives / Prompt Preview: finish the WindowPanel conversion
 
 **Repo:** `matrx-frontend` (FE) + `aidream` (backend). Both on `main`. The shared `main` is edited by many concurrent sessions — commit only your own files, expect churn.
 
 ## What already shipped (do NOT redo)
-- **Matrx Actions tab** — multi-select action list (canonical `verb:noun` + built-in directives + custom free-form types), stored in `matrx_actions.actions`; apply policy in `matrx_actions.apply_policy`. Never touches the authored prompt. File: `features/agents/components/settings-management/matrx-actions/MatrxActionsTab.tsx`.
-- **Runtime guidance (additive, never edits the prompt)** — the action list rides the request as `matrx_actions`; the backend renders an `## Available Matrx Actions` section into the system prompt at run time. Backend helper: `aidream/services/tooling/matrx_actions.py` (`apply_matrx_actions_guidance`; `aidream/api/utils/matrx_actions.py` is a shim) — called from `aidream/api/core/agent_run.py::prepare_agent_run` and `aidream/api/routers/chat.py::run_chat_request`. Renderer: `packages/matrx-ai/matrx_ai/instructions/core.py::_actions_guidance` (driven by `SystemInstruction.action_types`).
+- **Matrx Directives tab** — multi-select action list (canonical `verb:noun` + built-in directives + custom free-form types), stored in `matrx_actions.actions`; apply policy in `matrx_actions.apply_policy`. Never touches the authored prompt. File: `features/agents/components/settings-management/matrx-directives/MatrxDirectivesTab.tsx`.
+- **Runtime guidance (additive, never edits the prompt)** — the action list rides the request as `matrx_actions`; the backend renders an `## Available Matrx Directives` section into the system prompt at run time. Backend helper: `aidream/services/tooling/matrx_actions.py` (`apply_matrx_directives_guidance`; `aidream/api/utils/matrx_actions.py` is a shim) — called from `aidream/api/core/agent_run.py::prepare_agent_run` and `aidream/api/routers/chat.py::run_chat_request`. Renderer: `packages/matrx-ai/matrx_ai/instructions/core.py::_actions_guidance` (driven by `SystemInstruction.action_types`).
 - **Full-prompt preview (dry-run)** — `features/agents/prompt-preview/{service.ts,types.ts,PromptPreviewModal.tsx}`. `requestPromptPreview()` reuses `assembleManualRequest` + POSTs `dry_run:true, conversation_id:null, is_new:false` to `/ai/manual`; backend runs the FULL pre-LLM assembly against an ephemeral (skip_persistence) conversation and returns the rendered system prompt + messages + tools + params as JSON. **No model call, nothing saved.** Backend: `dry_run` on `AgentStartRequest`/`ChatRequest` + `aidream/api/utils/preview.serialize_preview`.
 
 All of the above is committed and type-clean (`pnpm type-check` — my files clean).
@@ -46,12 +46,12 @@ Copy the shape of these 4 touchpoints — this is a solved, repeated recipe:
 
 ## Secondary items (list them, do them if time; #A is quick verification)
 
-**A. E2E-verify the runtime Matrx Actions guidance (only backend-unit-tested so far).** Local dev + login (`admin@admin.com` / `Password1234#`). Agent builder → **Model Settings → Matrx Actions** → add several actions incl. a custom one (e.g. `create:task`, `create_project_with_tasks`, `create:invoice`). Then run-controls (gear) → **creator tab → Preview full prompt** → the returned **system prompt** must contain an `## Available Matrx Actions` section listing all of them, and your **authored system prompt text must be unchanged** (open the System message — it should NOT contain the guidance). Confirms additive runtime injection end-to-end. (Backend requires the aidream changes deployed/running locally.)
+**A. E2E-verify the runtime Matrx Directives guidance (only backend-unit-tested so far).** Local dev + login (`admin@admin.com` / `Password1234#`). Agent builder → **Model Settings → Matrx Directives** → add several actions incl. a custom one (e.g. `create:task`, `create_project_with_tasks`, `create:invoice`). Then run-controls (gear) → **creator tab → Preview full prompt** → the returned **system prompt** must contain an `## Available Matrx Directives` section listing all of them, and your **authored system prompt text must be unchanged** (open the System message — it should NOT contain the guidance). Confirms additive runtime injection end-to-end. (Backend requires the aidream changes deployed/running locally.)
 
-**B. Saved-agent path parity (optional).** The runtime guidance is wired on both the manual/draft path (`run_chat_request`, what the builder + preview use) and the saved-agent path (`prepare_agent_run`). If you touch it, keep both in sync via the shared `apply_matrx_actions_guidance`.
+**B. Saved-agent path parity (optional).** The runtime guidance is wired on both the manual/draft path (`run_chat_request`, what the builder + preview use) and the saved-agent path (`prepare_agent_run`). If you touch it, keep both in sync via the shared `apply_matrx_directives_guidance`.
 
 ## Known related bug — NOT part of this feature (flagged by owner, separate ticket)
-There is a **save-on-run bug**: editing an agent and running it auto-persists the draft even though the UI shows unsaved/dirty (the Run action calls `useAgentSaveAction`/`saveAgent`). This is unrelated to Matrx Actions (the draft/`config_overrides` + preview paths do NOT save), but it's the reason physical prompt-injection was catastrophic before it was removed. Owner will decide when to fix; do not fold it into this handoff's work unless asked.
+There is a **save-on-run bug**: editing an agent and running it auto-persists the draft even though the UI shows unsaved/dirty (the Run action calls `useAgentSaveAction`/`saveAgent`). This is unrelated to Matrx Directives (the draft/`config_overrides` + preview paths do NOT save), but it's the reason physical prompt-injection was catastrophic before it was removed. Owner will decide when to fix; do not fold it into this handoff's work unless asked.
 
 ---
 
@@ -59,4 +59,4 @@ There is a **save-on-run bug**: editing an agent and running it auto-persists th
 - Preview reachable today via `RunControlsTabPanel` creator tab (still a Dialog).
 - No output_schema coupling anymore; do NOT reintroduce single-action logic.
 - Backend `SystemInstruction.action_types` (a **list**) is the guidance input — already supports many actions.
-- Feature doc + change log: `features/agents/FEATURE.md` (search "Matrx Actions = multi-select") — update its "TODO: move the preview from a Dialog to a WindowPanel" line when done.
+- Feature doc + change log: `features/agents/FEATURE.md` (search "Matrx Directives = multi-select") — update its "TODO: move the preview from a Dialog to a WindowPanel" line when done.

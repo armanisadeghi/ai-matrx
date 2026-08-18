@@ -13,7 +13,7 @@
  * freeze class: a builder that re-identifies per keystroke re-memoizes every
  * consumer downstream).
  *
- * Wire-up pattern (see `NoteContextMenuContent.executeAction`):
+ * Wire-up pattern (see `NoteContextMenuContent.executeDirective`):
  *
  *   const buildSurfaceScope = useNotesSurfaceScope({ ... });
  *   ...

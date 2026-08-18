@@ -26,7 +26,7 @@ import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/s
 import { stripNullish } from "@/utils/supabase/payload";
 import type { SkillConfig } from "@/features/skills/types";
 import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
-import type { MatrxActionsConfig } from "@/features/agents/types/matrx-actions.types";
+import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-directives.types";
 import { isJsonObject } from "@/types/json";
 import type {
   AgentDefinition,
@@ -198,7 +198,7 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
     autoToolsDisabled,
     skillConfig,
     uiGates: (row.ui_gates as unknown as UiGates) ?? {},
-    matrxActions: (row.matrx_actions as unknown as MatrxActionsConfig) ?? {},
+    matrxDirectives: (row.matrx_actions as unknown as MatrxDirectivesConfig) ?? {},
     mcpServers: row.mcp_servers ?? [],
 
     createdBy: row.created_by,
@@ -270,7 +270,7 @@ export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
     ui_gates:
       agent.uiGates as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["ui_gates"],
     matrx_actions:
-      agent.matrxActions as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["matrx_actions"],
+      agent.matrxDirectives as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["matrx_actions"],
 
     context_slots:
       agent.contextPolicies as unknown as Database["agent"]["Tables"]["definition"]["Insert"]["context_slots"],
@@ -345,9 +345,9 @@ export function agentDefinitionToUpdate(
   if (partial.uiGates !== undefined)
     update.ui_gates =
       partial.uiGates as unknown as Database["agent"]["Tables"]["definition"]["Update"]["ui_gates"];
-  if (partial.matrxActions !== undefined)
+  if (partial.matrxDirectives !== undefined)
     update.matrx_actions =
-      partial.matrxActions as unknown as Database["agent"]["Tables"]["definition"]["Update"]["matrx_actions"];
+      partial.matrxDirectives as unknown as Database["agent"]["Tables"]["definition"]["Update"]["matrx_actions"];
 
   if (partial.contextPolicies !== undefined)
     update.context_slots =
@@ -463,7 +463,7 @@ export function versionSnapshotRowToAgentDefinition(
       (row as { skill_config?: unknown }).skill_config,
     ),
     uiGates: (row.ui_gates as unknown as UiGates) ?? {},
-    matrxActions: (row.matrx_actions as unknown as MatrxActionsConfig) ?? {},
+    matrxDirectives: (row.matrx_actions as unknown as MatrxDirectivesConfig) ?? {},
     mcpServers: row.mcp_servers ?? [],
 
     isOwner: null,

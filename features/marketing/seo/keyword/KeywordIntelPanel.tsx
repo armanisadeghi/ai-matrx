@@ -1072,19 +1072,19 @@ function KeywordProviderEvidence({
             ) : null}
           </div>
           {providerStatus?.health === "not_connected" ? (
-            <ProviderActionState
+            <ProviderDirectiveState
               message="This source is not connected, so no keyword result can be reported."
               href={providerStatus.fix?.href ?? null}
               label={providerStatus.fix?.label ?? "Connect source"}
             />
           ) : providerStatus?.health === "never_run" ? (
-            <ProviderActionState
+            <ProviderDirectiveState
               message="Connected, but no successful sync has supplied query evidence yet."
               href={providerStatus.fix?.href ?? null}
               label={providerStatus.fix?.label ?? "Open source settings"}
             />
           ) : providerStatus?.health === "failing" ? (
-            <ProviderActionState
+            <ProviderDirectiveState
               message={providerStatus.healthDetail}
               href={providerStatus.fix?.href ?? null}
               label="Fix source"
@@ -1117,7 +1117,7 @@ function KeywordProviderEvidence({
   );
 }
 
-function ProviderActionState({
+function ProviderDirectiveState({
   message,
   href,
   label,

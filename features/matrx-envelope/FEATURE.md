@@ -11,8 +11,8 @@ route internal parts through a registry, render them, fall back gracefully.
 aidream is canonical (registry emitted by its `scripts/generate_envelope_registry.py` —
 never edit the JSON by hand, and doc edits land in aidream FIRST). Guarded by
 `pnpm check:protocol-sync` (in `check:release-gates`; `release.sh` auto-syncs + commits
-on drift). `MATRX_ACTIONS.md` + `matrx_action_catalog.generated.json` are deliberately
-NOT mirrored — pointer-only (`features/agents/types/matrx-actions.types.ts` names the
+on drift). `MATRX_DIRECTIVES.md` + `matrx_directives_catalog.generated.json` are deliberately
+NOT mirrored — pointer-only (`features/agents/types/matrx-directives.types.ts` names the
 aidream doc as canonical); mirror them only if the FE gains a catalog consumer.
 
 ## The canonical reference item — FLAT identity (the load-bearing invariant)
@@ -49,7 +49,7 @@ render through the SAME live chip renderer.
 - `state/proposedDirectivesSlice.ts` — the per-conversation inbox of agent-proposed actions
   (`ask` policy); `proposeDirective` / `removeProposal` + `selectProposedDirectives`.
 - `components/ProposedDirectivesZone.tsx` — the Approve/Decline card per pending proposal;
-  Approve → `confirmDirective` (`features/action-catalog/service.ts`) → `POST /actions/confirm`.
+  Approve → `confirmDirective` (`features/directive-catalog/service.ts`) → `POST /directives/confirm`.
 - `registry.tsx` — the **renderer registry** (mirrors the backend shape registry):
   `registerEnvelopeRenderer(kind, renderer, type?)` + `getEnvelopeRenderer(kind, type)`
   (type-specific → kind-default → null). Built-in: `reference` → **live, clickable chips**
@@ -145,7 +145,7 @@ silently drops items the server would have happily applied.
   envelope + `proposal_id`). `process-stream.ts` enqueues it into `state/proposedDirectivesSlice.ts`;
   `components/ProposedDirectivesZone.tsx` (mounted beside the chat input in
   `AgentConversationColumn`) renders an Approve/Decline card. Approve POSTs the envelope to
-  `POST /actions/confirm` via `features/action-catalog/service.ts::confirmDirective` (runs as
+  `POST /directives/confirm` via `features/directive-catalog/service.ts::confirmDirective` (runs as
   the user, RLS; idempotent by `proposal_id`); Decline dismisses. NOT the `pendingAsks`
   rail — a proposed directive is a terminal side effect, not a suspended tool call. Backend
   cascade (agent → surface → user, default `ask`): aidream `services/output_directives/`.
@@ -183,7 +183,7 @@ silently drops items the server would have happily applied.
 
 - 2026-07-26 — Claude: **The FE derives nouns from the server catalog — zero edits for a
   new action.** `catalog-nouns.generated.ts` (from the mirrored
-  `matrx_actions_catalog.generated.json`, via `pnpm gen:action-nouns`, auto-run by
+  `matrx_directives_catalog.generated.json`, via `pnpm gen:directive-nouns`, auto-run by
   `check-protocol-sync --fix`) feeds a catalog-derived generic reference resolver:
   `getReferenceResolver` = bespoke `RESOLVERS` overlay → derived
   (schema.table + title_column + identity_fields) → graceful chip. Aliases are the
@@ -219,7 +219,7 @@ silently drops items the server would have happily applied.
   `scripts/check-protocol-sync.ts` (`pnpm check:protocol-sync` / `:strict` / `:fix`)
   byte-compares the three mirrored files against the co-located aidream checkout
   (`AIDREAM_DIR` override); wired into `run-release-gates.sh` and `release.sh`
-  (auto-sync + commit on drift, before the version bump). MATRX_ACTIONS decided
+  (auto-sync + commit on drift, before the version bump). MATRX_DIRECTIVES decided
   pointer-only, not mirrored.
 - 2026-07-25 — Claude: **Content Planning directives** —
   `directives/planTree/` renders `output_directive:plan_tree` /
@@ -260,7 +260,7 @@ silently drops items the server would have happily applied.
   `DirectiveApplyBlocked` to `envelope.ts` (+ `isDirectiveProposed`); `state/proposedDirectivesSlice.ts`
   (the per-conversation inbox); `components/ProposedDirectivesZone.tsx` (Approve/Decline card,
   mounted beside the chat input). `process-stream.ts` routes `directive_apply.proposed` →
-  `proposeDirective`. Approve applies via `confirmDirective` → `POST /actions/confirm`. Pairs
+  `proposeDirective`. Approve applies via `confirmDirective` → `POST /directives/confirm`. Pairs
   with the backend apply-policy cascade (aidream `services/output_directives/`).
 - 2026-07-08 — **Legacy `picklist_ref` annihilated.** All stored legacy envelopes backfilled to
   canonical fences (4 scope-cell rows in `context.context_item_values`; agent definitions/versions

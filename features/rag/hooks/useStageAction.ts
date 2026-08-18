@@ -28,14 +28,14 @@ export interface StageProgressFrame {
   lastUpdate: number;
 }
 
-export interface UseStageActionState {
+export interface UseStageDirectiveState {
   running: boolean;
   progress: StageProgressFrame | null;
   result: Record<string, unknown> | null;
   error: string | null;
 }
 
-export interface UseStageAction extends UseStageActionState {
+export interface UseStageAction extends UseStageDirectiveState {
   start: () => Promise<void>;
   cancel: () => void;
   reset: () => void;

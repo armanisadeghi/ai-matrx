@@ -108,8 +108,8 @@ export const AGENT_SYNC_FIELDS: readonly AgentSyncField[] = [
   },
   {
     column: "matrx_actions",
-    field: "matrxActions",
-    label: "Matrx Actions",
+    field: "matrxDirectives",
+    label: "Matrx Directives",
     group: "behavior",
   },
   {

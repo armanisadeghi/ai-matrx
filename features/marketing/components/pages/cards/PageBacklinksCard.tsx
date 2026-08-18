@@ -31,7 +31,7 @@ import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import type { MarketingPage } from "@/features/marketing/types";
 import { BacklinkEnrichmentDetail } from "@/features/marketing/components/backlinks/BacklinkEnrichmentDetail";
 import {
-  backlinkAnalysisActionState,
+  backlinkAnalysisDirectiveState,
   humanizeAssessmentValue,
   parseBacklinkAssessment,
 } from "@/features/marketing/components/backlinks/lib/enrichment";
@@ -259,7 +259,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                   row.resolved_assessment,
                 );
                 const running = analysisRuns[row.id]?.status === "running";
-                const action = backlinkAnalysisActionState(
+                const action = backlinkAnalysisDirectiveState(
                   row.enrichment_status,
                   running,
                   analysisDisabled,

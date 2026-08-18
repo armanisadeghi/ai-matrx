@@ -37,7 +37,7 @@ description: The canonical recipe for working with the Shape System — the plat
 - **Verify live, never trust reports** — after any DB write, `execute_sql` the counts; after any render change, a runtime marker or screenshot.
 - **XML is not legacy — and neither is anything else named "legacy" in this feature.** Every `*-legacy-text.ts`, every `*_legacy_text` strategy key, `legacyBlockType`, and `toLegacyServerData` is LIVE code carrying migration-narrative vocabulary that froze into identifiers. `legacyBlockType` in particular is THE render key — `kind-route.ts` sets `block.type` from it and `block-dispatch.tsx` routes on it; nothing renders without it. Never read the name as permission to delete or "modernize". Rename pending (~100 files + 23 DB rows + an aidream generated file).
 - **Render-leg satisfier order is load-bearing.** The compiled-bridge check runs FIRST because it actually exercises the bridge; the resolved `kind_component` row is the last resort. Reversing them short-circuits the "No `<kind>` available" guard for every compiled kind. Pinned by tests — do not reorder.
-- **Matrx Actions (MatrxEnvelope) is off-limits** except the collision guard and its `kind_surface` row. Its invariants are listed in SHAPE_SYSTEM.md.
+- **Matrx Directives (MatrxEnvelope) is off-limits** except the collision guard and its `kind_surface` row. Its invariants are listed in SHAPE_SYSTEM.md.
 - **`sample_data` on kind_definition is interim** — new samples go to `kind_example`; never add new readers of `sample_data`.
 - **DB changes follow the db-change skill** (MCP apply → ledger → `pnpm db-types` → aidream `python db/generate.py` → live verify → both repos commit).
 

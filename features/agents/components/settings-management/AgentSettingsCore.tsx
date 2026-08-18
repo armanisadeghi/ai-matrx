@@ -84,7 +84,7 @@ import { SettingControlInput } from "./controls/SettingControlInput";
 import { UiGatesEditor } from "./ui-gates/UiGatesEditor";
 import { SettingsJsonEditor } from "./json/SettingsJsonEditor";
 import { OutputSchemaTab } from "./output-schema/OutputSchemaTab";
-import { MatrxActionsTab } from "./matrx-actions/MatrxActionsTab";
+import { MatrxDirectivesTab } from "./matrx-directives/MatrxDirectivesTab";
 import { validateOutputSchema } from "./output-schema/validateOutputSchema";
 import {
   buildSettingsRows,
@@ -108,7 +108,7 @@ type SettingsTab =
   | "raw-edit"
   | "model-config"
   | "output-schema"
-  | "matrx-actions";
+  | "matrx-directives";
 
 // NOTE: media inputs (image_input, start_image, end_image, mask, etc.) do
 // NOT belong on agent settings — they're per-run user inputs that flow
@@ -929,8 +929,8 @@ function TabBar({ active, onChange, issueCount }: TabBarProps) {
       icon: <Braces className="h-3 w-3" />,
     },
     {
-      id: "matrx-actions",
-      label: "Matrx Actions",
+      id: "matrx-directives",
+      label: "Matrx Directives",
       icon: <Zap className="h-3 w-3" />,
     },
   ];
@@ -1947,7 +1947,7 @@ export function AgentSettingsCore({
         )}
 
         {/* ── MATRX ACTIONS TAB ──────────────────────────────────────────── */}
-        {activeTab === "matrx-actions" && <MatrxActionsTab agentId={agentId} />}
+        {activeTab === "matrx-directives" && <MatrxDirectivesTab agentId={agentId} />}
       </div>
 
       {/* Model-change reconciliation dialog */}

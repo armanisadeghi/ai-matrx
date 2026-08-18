@@ -1,9 +1,9 @@
 import type { ApplyPolicy } from "./tool-injection.types";
 
 /**
- * Matrx Actions — the agent's apply configuration.
+ * Matrx Directives — the agent's apply configuration.
  *
- * The "Matrx Actions" system (canonical spec: aidream `docs/protocol/MATRX_ACTIONS.md`)
+ * The "Matrx Directives" system (canonical spec: aidream `docs/protocol/MATRX_DIRECTIVES.md`)
  * lets a model emit output directives (create a task/project, db_create/db_update,
  * or any `verb:noun` action) that take effect as a side effect after the run.
  * THIS object is the agent layer of the apply-policy cascade: it declares whether
@@ -16,9 +16,9 @@ import type { ApplyPolicy } from "./tool-injection.types";
  */
 
 /** Same union as OpenAPI `UserOverrides.apply_policy` / `ClientContext.apply_policy`. */
-export type MatrxActionApplyPolicy = ApplyPolicy;
+export type MatrxDirectiveApplyPolicy = ApplyPolicy;
 
-export interface MatrxActionsConfig {
+export interface MatrxDirectivesConfig {
   /** The action types this agent can perform — `verb:noun` (canonical catalog),
    *  named built-in directives, or custom free-form types. An agent may list as
    *  many as it needs (mixed normal + custom). This is the guidance source: the
@@ -27,7 +27,7 @@ export interface MatrxActionsConfig {
    *  apply. */
   actions?: string[];
   /** Explicit apply policy; wins over auto_apply/allow. Applies to ALL action types. */
-  apply_policy?: MatrxActionApplyPolicy;
+  apply_policy?: MatrxDirectiveApplyPolicy;
   /** Opt ALL action types into auto-apply. */
   auto_apply?: boolean;
   /** Opt only these directive types into auto-apply (legacy per-type scope; the
@@ -37,5 +37,5 @@ export interface MatrxActionsConfig {
   directive?: string;
 }
 
-/** The empty default — no Matrx Actions configured (system default policy applies). */
-export const EMPTY_MATRX_ACTIONS: MatrxActionsConfig = {};
+/** The empty default — no Matrx Directives configured (system default policy applies). */
+export const EMPTY_MATRX_DIRECTIVES: MatrxDirectivesConfig = {};

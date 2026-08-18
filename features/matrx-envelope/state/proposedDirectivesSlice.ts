@@ -6,7 +6,7 @@
  * `directive_apply.proposed` event instead of applying. This slice holds those
  * proposals (keyed by conversation) so a card can render an Approve/Decline
  * choice; on Approve the card POSTs the round-tripped envelope to
- * `/actions/confirm` (`confirmDirective`) and removes the proposal.
+ * `/directives/confirm` (`confirmDirective`) and removes the proposal.
  *
  * This is NOT `pendingAsks`: that inbox resolves a suspended tool call via a
  * promise + `/tool_results`. A proposed directive is a TERMINAL side effect with

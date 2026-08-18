@@ -9,8 +9,8 @@ description: >-
   place to verify your results after every change instead of being blind for
   multiple turns. Triggers on "I added a backend endpoint", "new feature with no
   UI to see it", "how do I test this", or any capability whose output only shows
-  up in logs / the DB / an agent run. Worked example: features/action-catalog/ +
-  /administration/action-catalog.
+  up in logs / the DB / an agent run. Worked example: features/directive-catalog/ +
+  /administration/directive-catalog.
 ---
 
 # Ship a visibility surface with every feature (frontend recipe)
@@ -52,9 +52,9 @@ exist. If you're writing a second fetch layer or a second renderer, stop.
 
 ## Worked example (copy its shape)
 
-`features/action-catalog/` → `/administration/action-catalog`: a live grid of every
-capability (read from `GET /actions/catalog`) + a dropdown builder that runs one and shows
-the receipt (`POST /actions/execute`). That's the bar.
+`features/directive-catalog/` → `/administration/directive-catalog`: a live grid of every
+capability (read from `GET /directives/catalog`) + a dropdown builder that runs one and shows
+the receipt (`POST /directives/execute`). That's the bar.
 
 ## Done means
 

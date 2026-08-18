@@ -3,7 +3,7 @@
 -- Agent config storage normalization (DDL half; backfill is a sibling migration).
 --
 -- Adds two dedicated columns to agx_agent + agx_version:
---   * matrx_actions jsonb  — the agent's Matrx Actions apply config (was the
+--   * matrx_actions jsonb  — the agent's Matrx Directives apply config (was the
 --     polluting settings["output_apply"] key; full rebrand output_apply→matrx_actions).
 --   * ui_gates      jsonb  — FE-only model-gated UI flags (file_urls/image_urls/
 --     youtube_videos/tools-bool). NEVER sent to the server.

@@ -34,7 +34,7 @@ import {
 } from "@/features/marketing/components/backlinks/lib/columns";
 import { parseObservationExtras } from "@/features/marketing/components/backlinks/lib/extras";
 import {
-  backlinkAnalysisActionState,
+  backlinkAnalysisDirectiveState,
   backlinkScreenshotFileId,
   humanizeAssessmentValue,
   parseBacklinkAssessment,
@@ -655,7 +655,7 @@ export function BacklinkObservationTable({
             onAnalyze
               ? (row, controls) => {
                   const running = analysisRuns[row.id]?.status === "running";
-                  const action = backlinkAnalysisActionState(
+                  const action = backlinkAnalysisDirectiveState(
                     row.enrichment_status,
                     running,
                     analysisDisabled,

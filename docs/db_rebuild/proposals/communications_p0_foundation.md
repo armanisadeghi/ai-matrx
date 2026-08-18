@@ -63,7 +63,7 @@ messages, webhook logs, and notifications. Backfills only populate new columns.
   move the general assistant to its ratified dedicated sender before public launch.
 - **D2 — chat identity:** reserve a client-minted UUID on the SMS conversation and return
   `chatConversationIsNew` from canonical row existence. Aidream creates the chat row on first run.
-- **D3 — action execution:** reuse aidream `action_apply` and `platform.matrx_action_ledger`; no
+- **D3 — action execution:** reuse aidream `directive_apply` and `platform.matrx_action_ledger`; no
   SMS-specific action executor or receipt ledger.
 - **D4 — agent binding:** typed selected agent/version columns live on the existing per-user SMS
   preference and each SMS conversation snapshots that binding. The owned destination/program holds

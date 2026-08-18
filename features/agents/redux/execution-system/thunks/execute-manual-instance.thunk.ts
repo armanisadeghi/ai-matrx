@@ -451,11 +451,11 @@ export async function assembleManualRequest(
     // object is a valid value here directly, no string coercion needed.
     request.system_instruction = structuredSystemInstruction;
   }
-  // Matrx Actions: carry the agent's action repertoire so the server injects the
-  // "## Available Matrx Actions" guidance at runtime (additive — never edits the
+  // Matrx Directives: carry the agent's action repertoire so the server injects the
+  // "## Available Matrx Directives" guidance at runtime (additive — never edits the
   // authored prompt). ChatRequest is extra-allow; not in the generated type.
-  if (agent.matrxActions && Object.keys(agent.matrxActions).length > 0) {
-    (request as Record<string, unknown>).matrx_actions = agent.matrxActions;
+  if (agent.matrxDirectives && Object.keys(agent.matrxDirectives).length > 0) {
+    (request as Record<string, unknown>).matrx_actions = agent.matrxDirectives;
   }
   if (sourceApp) request.source_app = sourceApp;
   if (sourceFeature) request.source_feature = sourceFeature;

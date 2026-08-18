@@ -87,7 +87,7 @@ const AGENTS_ADMIN_MAP: FeatureAdminMap = {
     {
       overlayId: "promptPreviewWindow",
       description:
-        "Full prompt preview — read-only dry-run (POST /ai/manual dry_run:true) showing exactly what goes to the model: the fully rendered system prompt (context + tools + auto-injected Matrx Actions guidance), assembled messages, tools, and params. No model call, nothing saved. Opened from run controls → creator tab → 'Preview full prompt'.",
+        "Full prompt preview — read-only dry-run (POST /ai/manual dry_run:true) showing exactly what goes to the model: the fully rendered system prompt (context + tools + auto-injected Matrx Directives guidance), assembled messages, tools, and params. No model call, nothing saved. Opened from run controls → creator tab → 'Preview full prompt'.",
       status: "Live",
     },
   ],

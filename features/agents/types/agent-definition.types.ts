@@ -9,7 +9,7 @@ import type { DbRpcRow } from "@/types/supabase-rpc";
 import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
 import type { SkillConfig } from "@/features/skills/types";
 import type { UiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
-import type { MatrxActionsConfig } from "@/features/agents/types/matrx-actions.types";
+import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-directives.types";
 
 export type AgentType = "user" | "builtin";
 
@@ -331,12 +331,12 @@ export interface AgentDefinition {
   uiGates: UiGates;
 
   /**
-   * Matrx Actions apply config (persisted in `agx_agent.matrx_actions`). Declares
+   * Matrx Directives apply config (persisted in `agx_agent.matrx_actions`). Declares
    * whether model-emitted output directives auto-apply / ask / are off, and for
    * which action types. Read by aidream's output-directive dispatcher. Full
    * rebrand of the retired `settings["output_apply"]`. Defaults to `{}`.
    */
-  matrxActions: MatrxActionsConfig;
+  matrxDirectives: MatrxDirectivesConfig;
 
   // Ownership & Hierarchy (null on version records)
   createdBy: string | null;
@@ -579,7 +579,7 @@ export interface AgentVersionSnapshot {
   // previously missing from the projection — fixed in the same sweep).
   tool_config: Record<string, unknown> | null;
   skill_config: AgentDefinition["skillConfig"] | null;
-  matrx_actions: MatrxActionsConfig;
+  matrx_actions: MatrxDirectivesConfig;
   ui_gates: UiGates;
   rag_awareness_mode?: string;
 }

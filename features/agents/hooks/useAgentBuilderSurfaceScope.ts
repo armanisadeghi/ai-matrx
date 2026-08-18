@@ -46,7 +46,7 @@ import {
   selectAgentIsOwner,
   selectAgentIsReadOnly,
   selectAgentIsVersion,
-  selectAgentMatrxActions,
+  selectAgentMatrxDirectives,
   selectAgentMcpServers,
   selectAgentMessages,
   selectAgentModelId,
@@ -120,7 +120,7 @@ export function useAgentBuilderSurfaceScope(
         state,
         agentId,
       ) as unknown as Record<string, unknown>,
-      agent_matrx_actions: selectAgentMatrxActions(state, agentId) as Record<
+      agent_matrx_actions: selectAgentMatrxDirectives(state, agentId) as Record<
         string,
         unknown
       >,

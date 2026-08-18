@@ -42,7 +42,7 @@ DONE; U4 is gated on Arman's blocked Action/Function naming cluster — do not s
 - Verify: `pnpm type-check` · `pnpm check:shapes` · `pnpm check:content-ir:strict` no worse than
   before; regenerate generated files, never hand-edit. Report before/after grep counts → zero.
 - Protocol mirror: `MATRX_ENVELOPE.md` / `MATRX_REFERENCES.md` are byte-mirrored (edit aidream,
-  then `pnpm check:protocol-sync:fix` here). `MATRX_ACTIONS.md` is deliberately NOT mirrored.
+  then `pnpm check:protocol-sync:fix` here). `MATRX_DIRECTIVES.md` is deliberately NOT mirrored.
 
 ## Remaining work
 
@@ -52,7 +52,7 @@ DONE; U4 is gated on Arman's blocked Action/Function naming cluster — do not s
 | C3 | Split `scalar_generic` → `primitive` + `io_generic` (crosswalk rule tables are the authority; aidream `data_render_blocks.py` moves in the SAME commit; `block-dispatch.test.tsx` proves byte-equivalence) | **Chip dispatched 2026-08-17** |
 | C5 | `media_block` `kind:"document"` renders null — build the inline preview on `DocumentBlock.page1Url` via the canonical file handler | **Chip dispatched 2026-08-17** |
 | C4 | **Primitive Binding registry** — generated (from the primitive dispatch tables + `BlockComponents`, truth-vs-code guarded), each row: primitive key · component · expected payload · props_transform-needed. Consumers: shape doctor, admin kind-registry, `/shapes`, the `content_ir.kind_creator`/`kind_architect` Mandate contexts. Extend `props_transform` to `source='bundled'`. Ship THE LAW (a Shape that maps onto a primitive BINDS, never a new component) into both repos' `CLAUDE.md` + `features/content-ir/FEATURE.md` | **Orchestrating session, after C2 ∥ C3 land** |
-| C6 | `family` prose sweep (aidream `MATRX_ACTIONS.md` §§2–7 done at definition level only, `MATRX_ENVELOPE.md` §registry/§contracts/invariants, `MATRX_REFERENCES.md`, both envelope FEATURE.mds, the `matrx-envelope` skill, `kind_definition.metadata.category` prose). Envelope-side CODE identifiers stay `kind` until U4 — prose only | **Chip dispatched 2026-08-17** |
+| C6 | `family` prose sweep (aidream `MATRX_DIRECTIVES.md` §§2–7 done at definition level only, `MATRX_ENVELOPE.md` §registry/§contracts/invariants, `MATRX_REFERENCES.md`, both envelope FEATURE.mds, the `matrx-envelope` skill, `kind_definition.metadata.category` prose). Envelope-side CODE identifiers stay `kind` until U4 — prose only | **Chip dispatched 2026-08-17** |
 | U2 | One-registry identity: register artifact types + the `item-presentation` noun set as kinds (registration-without-detection precedent 2026-07-17; zero behavior change; `artifact-type-registry` keeps rendering until provably redundant) | After C2–C4 |
 | U3 | Additive wire convergence: register the `matrx_action` kind (`__kind:"matrx_action"` wrapping a standard envelope → the ONE detector → protocol handler) + the ` ```matrx ` fence `kind_surface` row. Old encodings valid forever. Careful protocol work — the 12 envelope invariants bind | After U2 |
 | C7 | **Directive / Custom Action prose sweep** — the lexicon resolved the Action cluster 2026-08-17 (protocol `action` → Directive, protocol `function` → Custom Action, Function retired platform-wide). Sweep protocol-doc PROSE the same way C6 does for family (wire values + code identifiers wait for U4). Run AFTER C6 lands to avoid churn on the same files | After C6 |
@@ -70,7 +70,7 @@ call, fixtures for the 5 test modules; the loud raise stays).
   carry the ruling). Crosswalk authority: `scripts/shape/generate-content-vocab-crosswalk.ts`.
   Binding mechanics: `registry/system-components.ts` → `react/kind-route.ts` →
   `kinds/legacy-bridge-utils.ts` (renamed by C2).
-- Actions protocol: `aidream/docs/protocol/MATRX_ACTIONS.md` (§7 carries the one-system
+- Actions protocol: `aidream/docs/protocol/MATRX_DIRECTIVES.md` (§7 carries the one-system
   mandate) · envelope core: `aidream/services/matrx_envelope/`.
 - No DB column is involved in C2 (confirmed vs `types/database.types.ts`).
 
@@ -108,7 +108,7 @@ call, fixtures for the 5 test modules; the loud raise stays).
 - C1 — docs + lexicon shipped in all three repos; mirror verified byte-identical.
 - Q1–Q6 all answered by Arman 2026-08-17; rulings recorded in UNIFICATION.md / NOMENCLATURE.md /
   the lexicon (O-1..O-4 ruled; all five names explicitly confirmed).
-- U1 — one-vocabulary docs landed: UNIFICATION.md created; MATRX_ACTIONS.md §7 mandated; lexicon
+- U1 — one-vocabulary docs landed: UNIFICATION.md created; MATRX_DIRECTIVES.md §7 mandated; lexicon
   banner added; NOMENCLATURE.md updated to ruled status.
 
 ## Decisions needed

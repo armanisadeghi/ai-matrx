@@ -11,27 +11,27 @@ import {
   buildSchemaExample,
   isJsonSchema,
   type SchemaExampleKind,
-} from "@/features/action-catalog/schemaExamples";
+} from "@/features/directive-catalog/schemaExamples";
 import type {
-  ActionVerb,
-  FunctionEntry,
-  NounActions,
-} from "@/features/action-catalog/types";
+  DirectiveVerb,
+  CustomActionEntry,
+  NounDirectives,
+} from "@/features/directive-catalog/types";
 
-export type ActionShapeSelection =
-  | { kind: "action"; noun: NounActions; verb: ActionVerb }
-  | { kind: "function"; fn: FunctionEntry };
+export type DirectiveShapeSelection =
+  | { kind: "directive"; noun: NounDirectives; verb: DirectiveVerb }
+  | { kind: "custom_action"; customAction: CustomActionEntry };
 
-function selectedSchema(selection: ActionShapeSelection): unknown {
-  if (selection.kind === "function") return selection.fn.item_schema;
+function selectedSchema(selection: DirectiveShapeSelection): unknown {
+  if (selection.kind === "custom_action") return selection.customAction.item_schema;
   return selection.noun.schemas?.[selection.verb];
 }
 
-export function ActionShapePanel({
+export function DirectiveShapePanel({
   selection,
   onClose,
 }: {
-  selection: ActionShapeSelection;
+  selection: DirectiveShapeSelection;
   onClose: () => void;
 }) {
   const [exampleKind, setExampleKind] =
@@ -44,12 +44,12 @@ export function ActionShapePanel({
     [schema, validSchema, exampleKind],
   );
   const title =
-    selection.kind === "function"
-      ? `Function: ${selection.fn.name}`
+    selection.kind === "custom_action"
+      ? `Custom Action: ${selection.customAction.name}`
       : `${selection.verb}:${selection.noun.noun}`;
   const subtitle =
-    selection.kind === "function"
-      ? selection.fn.doc
+    selection.kind === "custom_action"
+      ? selection.customAction.doc
       : `${selection.noun.label || selection.noun.noun} · ${selection.noun.table}`;
 
   async function copy(value: unknown, target: "example" | "schema") {

@@ -1,6 +1,6 @@
 > ARCHIVED 2026-07-26 — campaign complete (waves verified shipped in code; live doctrine: .claude/skills/type-safety/SKILL.md)
 
-# action-catalog — type drift hitlist
+# directive-catalog — type drift hitlist
 
 _Generated: 2026-07-01T23:23:32.104Z_
 
@@ -8,14 +8,14 @@ _Generated: 2026-07-01T23:23:32.104Z_
 
 Regenerate: `pnpm generate:type-drift-hitlists`
 
-## `features/action-catalog/types.ts` (7)
+## `features/directive-catalog/types.ts` (7)
 
 | Type | Kind | Source | Line | Status | Notes |
 | --- | --- | --- | --- | --- | --- |
-| NounActions | interface | api-types | 21 | duplicate |  |
-| ActionCatalog | interface | api-types | 33 | duplicate |  |
-| ActionReceipt | interface | api-types | 58 | duplicate |  |
-| ActionApplyResult | interface | api-types | 70 | duplicate |  |
-| ActionExecuteRequest | interface | api-types | 78 | duplicate |  |
+| NounDirectives | interface | api-types | 21 | duplicate |  |
+| DirectiveCatalog | interface | api-types | 33 | duplicate |  |
+| DirectiveReceipt | interface | api-types | 58 | duplicate |  |
+| DirectiveApplyResult | interface | api-types | 70 | duplicate |  |
+| DirectiveExecuteRequest | interface | api-types | 78 | duplicate |  |
 | DirectiveConfirmRequest | interface | api-types | 106 | duplicate |  |
 | DirectiveConfirmResult | interface | api-types | 129 | duplicate |  |

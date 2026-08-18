@@ -142,7 +142,7 @@ const PROTOCOL_ITEMS: ReadonlyMap<string, string> = new Map([
     "schema_proposal",
     "schema-proposal control flow (drives apply-to-agent output_schema write) — ratified Wave 1 protocol set; its inactive kind_definition row is a validation aid only",
   ],
-  ["matrx", "MatrxEnvelope (Matrx Actions) protocol framing — off-limits protocol surface per SHAPE_SYSTEM.md"],
+  ["matrx", "MatrxEnvelope (Matrx Directives) protocol framing — off-limits protocol surface per SHAPE_SYSTEM.md"],
   ["matrxBroker", "broker value-delivery plumbing — sets broker values, never rendered as content"],
   ["matrx_file", "file-reference envelope resolved via the universal file handler — transport, not content"],
   ["function_result", "generic tool-result envelope — the payload's typing is owned by tool_io contracts"],

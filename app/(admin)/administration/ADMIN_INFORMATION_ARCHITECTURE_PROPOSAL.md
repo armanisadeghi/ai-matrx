@@ -100,7 +100,7 @@ admin hubs are intentionally absent.
   - Categories — `/administration/agents/skills/categories`
   - Filesystem Ingest — `/administration/agents/skills/ingest`
 - **Tools & MCP**
-  - Action Catalog — `/administration/agents/relationships/actions`
+  - Directive Catalog — `/administration/agents/relationships/directives`
   - Tool Definitions — `/administration/agents/mcp-tools`
   - MCP Servers — `/administration/agents/mcp-servers`
   - Bundles — `/administration/agents/bundles`

@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { BacklinkEnrichmentRunPanel } from "@/features/marketing/components/backlinks/BacklinkEnrichmentRunPanel";
 import {
-  backlinkAnalysisActionState,
+  backlinkAnalysisDirectiveState,
   backlinkCaptureForUi,
   backlinkScreenshotFileId,
   hasBacklinkAssessment,
@@ -142,7 +142,7 @@ export function BacklinkEnrichmentDetail({
   const existingHuman = jsonRecord(row.human_ruling);
   const lastError = jsonRecord(row.last_error);
   const extras = parseObservationExtras(providerExtras(row.provider_evidence));
-  const analysisAction = backlinkAnalysisActionState(
+  const analysisAction = backlinkAnalysisDirectiveState(
     row.enrichment_status,
     running,
     analysisDisabled,

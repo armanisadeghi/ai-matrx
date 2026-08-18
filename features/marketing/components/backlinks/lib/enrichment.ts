@@ -51,7 +51,7 @@ export function hasBacklinkAssessment(value: Json | null): boolean {
   return Object.keys(jsonRecord(value)).length > 0;
 }
 
-export interface BacklinkAnalysisActionState {
+export interface BacklinkAnalysisDirectiveState {
   disabled: boolean;
   inProgress: boolean;
   label: "Review" | "Reviewing" | "Review again";
@@ -62,11 +62,11 @@ export interface BacklinkAnalysisActionState {
  * One action-state contract for every place that offers single-backlink
  * capture and analysis (table row, drawer, and row window).
  */
-export function backlinkAnalysisActionState(
+export function backlinkAnalysisDirectiveState(
   enrichmentStatus: string,
   running: boolean,
   globallyDisabled: boolean,
-): BacklinkAnalysisActionState {
+): BacklinkAnalysisDirectiveState {
   const inProgress =
     enrichmentStatus === "capturing" || enrichmentStatus === "analyzing";
   const rerun =

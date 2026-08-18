@@ -13,10 +13,10 @@
 import { Braces, Check, Clock, Loader2, Minus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { ActionState } from "@/features/action-catalog/types";
+import type { DirectiveState } from "@/features/directive-catalog/types";
 
 const STATE_META: Record<
-  ActionState,
+  DirectiveState,
   { label: string; text: string; bg: string; Icon: typeof Check }
 > = {
   yes: {
@@ -48,7 +48,7 @@ export function StateCell({
   onToggle,
   onInspect,
 }: {
-  state: ActionState;
+  state: DirectiveState;
   toggleLabel?: string;
   inspectLabel?: string;
   busy?: boolean;
@@ -106,7 +106,7 @@ export function StateCell({
 }
 
 /** A labeled badge — for the builder's prominent state read-out and the legend. */
-export function StateBadge({ state }: { state: ActionState }) {
+export function StateBadge({ state }: { state: DirectiveState }) {
   const meta = STATE_META[state];
   const Icon = meta.Icon;
   return (

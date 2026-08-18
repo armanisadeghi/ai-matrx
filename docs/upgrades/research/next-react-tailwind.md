@@ -36,12 +36,12 @@ Refs: [Next 16 blog](https://nextjs.org/blog/next-16) · [v16 upgrade guide](htt
 
 ## 3. React 19.2 features to ADOPT
 
-Refs: [React 19.2 blog](https://react.dev/blog/2025/10/01/react-19-2) · [`<Activity>`](https://react.dev/reference/react/Activity) · [`<ViewTransition>`](https://react.dev/reference/react/ViewTransition) · [useActionState](https://react.dev/reference/react/useActionState)
+Refs: [React 19.2 blog](https://react.dev/blog/2025/10/01/react-19-2) · [`<Activity>`](https://react.dev/reference/react/Activity) · [`<ViewTransition>`](https://react.dev/reference/react/ViewTransition) · [useDirectiveState](https://react.dev/reference/react/useDirectiveState)
 
 | Feature | What | Recommendation for our repo |
 |---|---|---|
-| Actions + `useActionState` | Manages async action state (pending/result/error) for form-style mutations. ([docs](https://react.dev/reference/react/useActionState)) | Use for form-driven mutations (settings, invites, agent CRUD) — replaces hand-rolled `isLoading`/`error` `useState` triads. Pairs with structured-error rule. |
-| `useOptimistic` | Shows immediate optimistic UI, auto-reverts when the real result lands. ([docs](https://react.dev/reference/react/useActionState#using-with-useoptimistic)) | Adopt for snappy mutations: tagging, favorites/pinning (dashboard), soft-delete/rename markers, reactions. Combine with `useActionState`. |
+| Actions + `useDirectiveState` | Manages async action state (pending/result/error) for form-style mutations. ([docs](https://react.dev/reference/react/useDirectiveState)) | Use for form-driven mutations (settings, invites, agent CRUD) — replaces hand-rolled `isLoading`/`error` `useState` triads. Pairs with structured-error rule. |
+| `useOptimistic` | Shows immediate optimistic UI, auto-reverts when the real result lands. ([docs](https://react.dev/reference/react/useDirectiveState#using-with-useoptimistic)) | Adopt for snappy mutations: tagging, favorites/pinning (dashboard), soft-delete/rename markers, reactions. Combine with `useDirectiveState`. |
 | `use()` | Reads a promise or context conditionally inside render (suspends on the promise). | Use to consume promises/context in client components without effect-juggling; good fit alongside `<Suspense>` data streaming. |
 | ref-as-prop | `ref` is now a normal prop — `forwardRef` no longer needed. | **Boy-scout migration**: drop `forwardRef` wrappers when touching a component. Simplifies our official component library. |
 | `<Activity>` | Pre-render/keep-alive UI in `hidden` mode (state preserved, effects unmounted, low-priority) vs `visible`. ([docs](https://react.dev/reference/react/Activity)) | High-leverage for our overlay/window-panel + tab-heavy surfaces: preserve state across panel hide/show, prefetch likely-next routes, keep back-nav state. Replaces conditional unmount that loses input state. |

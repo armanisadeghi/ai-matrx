@@ -274,6 +274,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/communications/voice/conversation-relay/session-reference": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Conversation Relay Preparation */
+        post: operations["conversation_relay_preparation_communications_voice_conversation_relay_session_reference_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/agents/{agent_id}/warm": {
         parameters: {
             query?: never;
@@ -9942,6 +9959,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -14372,7 +14413,7 @@ export interface paths {
         };
         /**
          * List Actions
-         * @description Return the action catalog — everything registered via ``@action``.
+         * @description Return the directive catalog — everything registered via ``@action``.
          *
          *     Separate from ``/workflow/node-types`` because actions carry richer
          *     metadata (determinism, tags, source module) than raw node types, and
@@ -20052,7 +20093,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/actions/catalog": {
+    "/directives/catalog": {
         parameters: {
             query?: never;
             header?: never;
@@ -20060,13 +20101,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Action Catalog
-         * @description The full action catalog — COMPUTED live from platform.entity_types + the
-         *     envelope shape registry (nouns, verb states, Plane-2 functions, per-noun
+         * Get Directive Catalog
+         * @description The full directive catalog — COMPUTED live from platform.entity_types + the
+         *     envelope shape registry (nouns, verb states, Plane-2 Custom Actions, per-noun
          *     identity fields and write schemas). Registered means listed; nothing is
          *     hand-authored.
          */
-        get: operations["get_action_catalog_actions_catalog_get"];
+        get: operations["get_directive_catalog_directives_catalog_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -20075,7 +20116,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/actions/execute": {
+    "/directives/execute": {
         parameters: {
             query?: never;
             header?: never;
@@ -20085,21 +20126,21 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Execute Action
-         * @description Run ONE `verb:noun` action (`create:`/`update:`/`delete:` <noun>) as the user.
+         * Execute Directive
+         * @description Run ONE `verb:noun` Directive (`create:`/`update:`/`delete:` <noun>) as the user.
          *
          *     Powers the admin UI "Execute". Writes run inside `acting_as_user` (RLS), so this is
          *     no more powerful than the user's own access. Idempotent by content key — a repeat of
          *     the same item in the same namespace is a no-op (set `force` for a deliberate dup).
          */
-        post: operations["execute_action_actions_execute_post"];
+        post: operations["execute_directive_directives_execute_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/actions/confirm": {
+    "/directives/confirm": {
         parameters: {
             query?: never;
             header?: never;
@@ -20109,7 +20150,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Confirm Action
+         * Confirm Proposed Directive
          * @description Apply a directive an agent PROPOSED under the `ask` policy, once the user accepts.
          *
          *     The client POSTs back the envelope it received in `directive_apply.proposed`. This
@@ -20117,7 +20158,7 @@ export interface paths {
          *     policy gate by design. Applies through the same per-item core as the auto path
          *     (`acting_as_user`, RLS), idempotent by `proposal_id` — a double-click is a no-op.
          */
-        post: operations["confirm_action_actions_confirm_post"];
+        post: operations["confirm_proposed_directive_directives_confirm_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -20751,23 +20792,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/communications/voice/conversation-relay/session-reference": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Conversation Relay Preparation */
-        post: operations["conversation_relay_preparation_communications_voice_conversation_relay_session_reference_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -20810,90 +20834,6 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
-        };
-        /** ActionApplyResult */
-        ActionApplyResult: {
-            /** Type */
-            type: string;
-            /** Applied */
-            applied: number;
-            /** Failed */
-            failed: number;
-            /** Receipts */
-            receipts: components["schemas"]["ActionReceipt"][];
-        };
-        /**
-         * ActionCatalog
-         * @description The whole grid: the verb axis + every noun row + the Plane-2 functions.
-         *     This is what the API returns and what the admin UI renders.
-         */
-        ActionCatalog: {
-            /** Matrx Version */
-            matrx_version: number;
-            /** Verbs */
-            verbs: string[];
-            /** Nouns */
-            nouns: components["schemas"]["NounActions"][];
-            /** Functions */
-            functions?: components["schemas"]["FunctionEntry"][];
-            /** Aliases */
-            aliases?: {
-                [key: string]: string;
-            };
-        };
-        /**
-         * ActionExecuteRequest
-         * @description Body for `POST /actions/execute` — one `verb:noun` output_directive envelope.
-         */
-        ActionExecuteRequest: {
-            /**
-             * Kind
-             * @default output_directive
-             */
-            kind?: string;
-            /** Type */
-            type: string;
-            /** Items */
-            items?: {
-                [key: string]: unknown;
-            }[];
-            /** Conversation Id */
-            conversation_id?: string | null;
-            /**
-             * Force
-             * @default false
-             */
-            force?: boolean;
-        };
-        /** ActionReceipt */
-        ActionReceipt: {
-            /** Verb */
-            verb: string;
-            /** Noun */
-            noun: string;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "applied" | "already_applied" | "not_implemented" | "failed";
-            /** Resource Ids */
-            resource_ids?: string[];
-            /**
-             * Summary
-             * @default
-             */
-            summary?: string;
-            /**
-             * Idempotency Key
-             * @default
-             */
-            idempotency_key?: string;
-            /** Error */
-            error?: string | null;
-            /** Detail */
-            detail?: {
-                [key: string]: unknown;
-            } | null;
         };
         /** ActionResult */
         ActionResult: {
@@ -21517,10 +21457,10 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * AgentContextSlot
+         * AgentContextPolicy
          * @description An optional named context object the agent's context system fills.
          */
-        AgentContextSlot: {
+        AgentContextPolicy: {
             /**
              * Key
              * @description Mandate key; content is passed to the run under this key.
@@ -21601,8 +21541,8 @@ export interface components {
             variables?: components["schemas"]["AgentVariableDetail"][];
             /** Variable Definitions */
             variable_definitions?: components["schemas"]["AgentVariableDefinition"][];
-            /** Context Slots */
-            context_slots?: components["schemas"]["AgentContextSlot"][];
+            /** Context Policies */
+            context_policies?: components["schemas"]["AgentContextPolicy"][];
             /** Output Schema */
             output_schema?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -30745,6 +30685,43 @@ export interface components {
             [key: string]: unknown;
         };
         /**
+         * ConversationRelayPreparationRequest
+         * @description Exact Twilio-signed form material forwarded by the Next webhook edge.
+         */
+        ConversationRelayPreparationRequest: {
+            /** Signed Url */
+            signed_url: string;
+            /**
+             * Signature
+             * Format: password
+             */
+            signature: string;
+            /** Parameters */
+            parameters: {
+                [key: string]: string;
+            };
+        };
+        /** ConversationRelayPreparationResponse */
+        ConversationRelayPreparationResponse: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Chat Conversation Id
+             * Format: uuid
+             */
+            chat_conversation_id: string;
+            /** Session Reference */
+            session_reference: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /**
          * ConversationWarmResponse
          * @description Whether the warm call populated the cache or found it already hot.
          */
@@ -31653,6 +31630,30 @@ export interface components {
             };
             /** Errors */
             errors?: string[];
+        };
+        /**
+         * CustomActionEntry
+         * @description One Plane-2 Custom Action (or a deprecated legacy named Directive).
+         */
+        CustomActionEntry: {
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Doc
+             * @default
+             */
+            doc?: string;
+            /** Item Schema */
+            item_schema?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Deprecated
+             * @default false
+             */
+            deprecated?: boolean;
         };
         /** CustomTool */
         CustomTool: {
@@ -33008,6 +33009,33 @@ export interface components {
             /** Error */
             error?: string | null;
         };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
+        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -33207,6 +33235,38 @@ export interface components {
             mapType: "direct_value";
             target: components["schemas"]["JsonValue"];
         };
+        /** DirectiveApplyResult */
+        DirectiveApplyResult: {
+            /** Type */
+            type: string;
+            /** Applied */
+            applied: number;
+            /** Failed */
+            failed: number;
+            /** Receipts */
+            receipts: components["schemas"]["DirectiveReceipt"][];
+        };
+        /**
+         * DirectiveCatalog
+         * @description The whole grid: verb axis + noun rows + Plane-2 Custom Actions.
+         *
+         *     ``functions`` is the deferred U4 wire field; do not treat it as current policy.
+         *     This is what the API returns and what the admin UI renders.
+         */
+        DirectiveCatalog: {
+            /** Matrx Version */
+            matrx_version: number;
+            /** Verbs */
+            verbs: string[];
+            /** Nouns */
+            nouns: components["schemas"]["NounDirectives"][];
+            /** Functions */
+            functions?: components["schemas"]["CustomActionEntry"][];
+            /** Aliases */
+            aliases?: {
+                [key: string]: string;
+            };
+        };
         /** DirectiveConfirmRequest */
         DirectiveConfirmRequest: {
             /**
@@ -33261,6 +33321,30 @@ export interface components {
             /** Receipts */
             receipts: (components["schemas"]["DirectiveItemApplied"] | components["schemas"]["DirectiveItemFailed"])[];
         };
+        /**
+         * DirectiveExecuteRequest
+         * @description Body for `POST /directives/execute` — one `verb:noun` output_directive envelope.
+         */
+        DirectiveExecuteRequest: {
+            /**
+             * Kind
+             * @default output_directive
+             */
+            kind?: string;
+            /** Type */
+            type: string;
+            /** Items */
+            items?: {
+                [key: string]: unknown;
+            }[];
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /**
+             * Force
+             * @default false
+             */
+            force?: boolean;
+        };
         /** DirectiveItemApplied */
         DirectiveItemApplied: {
             /**
@@ -33299,6 +33383,36 @@ export interface components {
             error: string;
             /** Fault */
             fault: string;
+        };
+        /** DirectiveReceipt */
+        DirectiveReceipt: {
+            /** Verb */
+            verb: string;
+            /** Noun */
+            noun: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "applied" | "already_applied" | "not_implemented" | "failed";
+            /** Resource Ids */
+            resource_ids?: string[];
+            /**
+             * Summary
+             * @default
+             */
+            summary?: string;
+            /**
+             * Idempotency Key
+             * @default
+             */
+            idempotency_key?: string;
+            /** Error */
+            error?: string | null;
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** DiscardRequest */
         DiscardRequest: {
@@ -35060,8 +35174,8 @@ export interface components {
             variable_definitions?: {
                 [key: string]: unknown;
             }[];
-            /** Context Slots */
-            context_slots?: {
+            /** Context Policies */
+            context_policies?: {
                 [key: string]: unknown;
             }[];
             /**
@@ -35077,7 +35191,7 @@ export interface components {
             output_schema?: {
                 [key: string]: unknown;
             } | null;
-            /** Matrx Actions */
+            /** Matrx Directives */
             matrx_actions?: {
                 [key: string]: unknown;
             } | null;
@@ -37699,30 +37813,6 @@ export interface components {
             table_name?: string | null;
         } & {
             [key: string]: unknown;
-        };
-        /**
-         * FunctionEntry
-         * @description One Plane-2 function (or a deprecated legacy named directive).
-         */
-        FunctionEntry: {
-            /** Name */
-            name: string;
-            /** Kind */
-            kind: string;
-            /**
-             * Doc
-             * @default
-             */
-            doc?: string;
-            /** Item Schema */
-            item_schema?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Deprecated
-             * @default false
-             */
-            deprecated?: boolean;
         };
         /**
          * GenerateImageRequest
@@ -44018,10 +44108,10 @@ export interface components {
             editable?: boolean | null;
         };
         /**
-         * NounActions
+         * NounDirectives
          * @description One row of the grid — a noun (Dimension 2) and its state for every verb.
          */
-        NounActions: {
+        NounDirectives: {
             /** Noun */
             noun: string;
             /** Family */
@@ -47569,7 +47659,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cx_request" | "message" | "request_snapshot" | "tool_call" | "agent" | "pending_injection" | "context_slot" | "user" | "workflow_node" | "wf_node_outcome" | "workflow_run";
+            kind: "cx_request" | "message" | "request_snapshot" | "tool_call" | "agent" | "pending_injection" | "context_policy" | "user" | "workflow_node" | "wf_node_outcome" | "workflow_run";
             /** Id */
             id?: string | null;
             descend_ref?: components["schemas"]["DescendRef"] | null;
@@ -53076,7 +53166,7 @@ export interface components {
              * Stage
              * @enum {string}
              */
-            stage: "expand" | "test" | "shape" | "loop" | "done";
+            stage: "capture" | "ground" | "enhance" | "articulate" | "stress" | "shape" | "revisit" | "done";
             /** Current Round */
             current_round: number;
             /** Run Id */
@@ -58187,8 +58277,8 @@ export interface components {
             skill_config?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
-            /** Context Slots */
-            context_slots?: {
+            /** Context Policies */
+            context_policies?: {
                 [key: string]: components["schemas"]["JsonValue"];
             }[] | null;
             /** Messages */
@@ -62155,43 +62245,6 @@ export interface components {
             /** Error Message */
             error_message?: string | null;
         };
-        /**
-         * ConversationRelayPreparationRequest
-         * @description Exact Twilio-signed form material forwarded by the Next webhook edge.
-         */
-        ConversationRelayPreparationRequest: {
-            /** Signed Url */
-            signed_url: string;
-            /**
-             * Signature
-             * Format: password
-             */
-            signature: string;
-            /** Parameters */
-            parameters: {
-                [key: string]: string;
-            };
-        };
-        /** ConversationRelayPreparationResponse */
-        ConversationRelayPreparationResponse: {
-            /**
-             * Session Id
-             * Format: uuid
-             */
-            session_id: string;
-            /**
-             * Chat Conversation Id
-             * Format: uuid
-             */
-            chat_conversation_id: string;
-            /** Session Reference */
-            session_reference: string;
-            /**
-             * Expires At
-             * Format: date-time
-             */
-            expires_at: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -62476,6 +62529,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SchemaAllResponse"];
+                };
+            };
+        };
+    };
+    conversation_relay_preparation_communications_voice_conversation_relay_session_reference_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationRelayPreparationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRelayPreparationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -79185,6 +79271,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -97364,7 +97485,7 @@ export interface operations {
             };
         };
     };
-    get_action_catalog_actions_catalog_get: {
+    get_directive_catalog_directives_catalog_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -97379,12 +97500,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActionCatalog"];
+                    "application/json": components["schemas"]["DirectiveCatalog"];
                 };
             };
         };
     };
-    execute_action_actions_execute_post: {
+    execute_directive_directives_execute_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -97393,7 +97514,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ActionExecuteRequest"];
+                "application/json": components["schemas"]["DirectiveExecuteRequest"];
             };
         };
         responses: {
@@ -97403,7 +97524,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ActionApplyResult"];
+                    "application/json": components["schemas"]["DirectiveApplyResult"];
                 };
             };
             /** @description Validation Error */
@@ -97417,7 +97538,7 @@ export interface operations {
             };
         };
     };
-    confirm_action_actions_confirm_post: {
+    confirm_proposed_directive_directives_confirm_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -98718,39 +98839,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabelMetadata"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    conversation_relay_preparation_communications_voice_conversation_relay_session_reference_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ConversationRelayPreparationRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationRelayPreparationResponse"];
                 };
             };
             /** @description Validation Error */

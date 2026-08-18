@@ -5,8 +5,8 @@
  *
  * On mount (and on Refresh) it runs the live-draft dry-run (requestPromptPreview)
  * and shows what is ABOUT to go to the model: the fully-rendered system prompt
- * (context + tools + Matrx Actions guidance already assembled — this is where the
- * auto-injected `## Available Matrx Actions` guidance lands), the assembled
+ * (context + tools + Matrx Directives guidance already assembled — this is where the
+ * auto-injected `## Available Matrx Directives` guidance lands), the assembled
  * messages, the resolved tool set, and the model params. Read-only — nothing is
  * run or saved.
  *

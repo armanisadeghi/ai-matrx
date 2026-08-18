@@ -67,7 +67,7 @@ function makeEmptyRecord(id: string): AgentDefinitionRecord {
       disabled: false,
     },
     uiGates: {},
-    matrxActions: {},
+    matrxDirectives: {},
 
     createdBy: null,
     organizationId: null,
@@ -469,7 +469,7 @@ export const agentDefinitionSlice = createSlice({
           disabled: false,
         },
         uiGates: data.uiGates ?? {},
-        matrxActions: data.matrxActions ?? {},
+        matrxDirectives: data.matrxDirectives ?? {},
         mcpServers: data.mcpServers ?? [],
         createdBy: data.createdBy ?? null,
         organizationId: data.organizationId ?? null,
@@ -686,20 +686,20 @@ export const agentDefinitionSlice = createSlice({
     },
 
     /**
-     * Matrx Actions apply config. Replaced atomically by the Matrx Actions tab;
+     * Matrx Directives apply config. Replaced atomically by the Matrx Directives tab;
      * persisted to `agent.definition.matrx_actions`. Read by aidream's output-directive
      * dispatcher (full rebrand of the retired settings["output_apply"]).
      */
-    setAgentMatrxActions(
+    setAgentMatrxDirectives(
       state,
       action: PayloadAction<{
         id: string;
-        matrxActions: AgentDefinition["matrxActions"];
+        matrxDirectives: AgentDefinition["matrxDirectives"];
       }>,
     ) {
       const record = state.agents[action.payload.id];
       if (!record) return;
-      applyFieldEdit(record, "matrxActions", action.payload.matrxActions);
+      applyFieldEdit(record, "matrxDirectives", action.payload.matrxDirectives);
     },
 
     // ── Dirty / history management ────────────────────────────────────────────
@@ -931,7 +931,7 @@ export const {
   setAgentModelTiers,
   setAgentOutputSchema,
   setAgentUiGates,
-  setAgentMatrxActions,
+  setAgentMatrxDirectives,
   resetAgentField,
   resetAllAgentFields,
   markAgentSaved,

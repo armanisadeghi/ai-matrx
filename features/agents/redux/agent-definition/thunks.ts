@@ -833,7 +833,7 @@ export const createAgent = createAsyncThunk<
       disabled: false,
     },
     uiGates: partial.uiGates ?? {},
-    matrxActions: partial.matrxActions ?? {},
+    matrxDirectives: partial.matrxDirectives ?? {},
     mcpServers: partial.mcpServers ?? [],
     createdBy: userId,
     organizationId: partial.organizationId ?? null,

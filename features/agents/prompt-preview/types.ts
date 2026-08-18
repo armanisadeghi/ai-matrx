@@ -6,7 +6,7 @@
 export interface PromptPreview {
   model: string | null;
   /** The complete rendered system prompt — context, tools list, and the
-   *  Matrx Actions guidance all already assembled. */
+   *  Matrx Directives guidance all already assembled. */
   system_prompt: string | null;
   messages: Array<Record<string, unknown>>;
   tools: string[];

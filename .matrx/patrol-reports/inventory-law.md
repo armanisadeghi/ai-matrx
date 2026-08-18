@@ -174,7 +174,7 @@ The first run cannot compute novelty, so it records an exact reproducible baseli
 Feature-directory baseline:
 
 ```text
-action-catalog, admin, administration, agent-apps, agent-comparison,
+directive-catalog, admin, administration, agent-apps, agent-comparison,
 agent-connections, agent-context, agent-settings, agent-shortcuts, agents,
 ai-models, ai-runs, api-integrations, applet, artifacts, assists, audio, auth,
 brokers, canvas, cms, code, code-editor, code-files, comments, content-ir,

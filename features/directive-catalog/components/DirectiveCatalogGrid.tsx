@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ActionCatalogGrid — the "see everything in one place" matrix.
+ * DirectiveCatalogGrid — the "see everything in one place" matrix.
  *
  * Dense, scannable table: rows = nouns (grouped by family), columns = the live
  * verbs. Each cell is a color-coded {@link StateCell}. Filterable by family, by
@@ -25,37 +25,37 @@ import {
 import {
   StateBadge,
   StateCell,
-} from "@/features/action-catalog/components/StateCell";
+} from "@/features/directive-catalog/components/StateCell";
 import type {
-  ActionCatalog,
-  ActionVerb,
-  NounActions,
-} from "@/features/action-catalog/types";
-import type { ActionShapeSelection } from "@/features/action-catalog/components/ActionShapePanel";
+  DirectiveCatalog,
+  DirectiveVerb,
+  NounDirectives,
+} from "@/features/directive-catalog/types";
+import type { DirectiveShapeSelection } from "@/features/directive-catalog/components/DirectiveShapePanel";
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
 
 const ALL_FAMILIES = "__all__";
 
-function isWritable(noun: NounActions): boolean {
+function isWritable(noun: NounDirectives): boolean {
   return (
     noun.create === "yes" || noun.update === "yes" || noun.delete === "yes"
   );
 }
 
-export function ActionCatalogGrid({
+export function DirectiveCatalogGrid({
   catalog,
   busyToggle,
   onToggleWritable,
   onInspect,
 }: {
-  catalog: ActionCatalog;
+  catalog: DirectiveCatalog;
   busyToggle: string | null;
-  onToggleWritable: (noun: NounActions, enabled: boolean) => void;
-  onInspect: (selection: ActionShapeSelection) => void;
+  onToggleWritable: (noun: NounDirectives, enabled: boolean) => void;
+  onInspect: (selection: DirectiveShapeSelection) => void;
 }) {
-  const verbs = catalog.verbs as ActionVerb[];
+  const verbs = catalog.verbs as DirectiveVerb[];
 
   const [familyFilter, setFamilyFilter] = useState<string>(ALL_FAMILIES);
   const [query, setQuery] = useState("");
@@ -83,7 +83,7 @@ export function ActionCatalogGrid({
 
   // Group filtered rows by family for the sectioned table.
   const grouped = useMemo(() => {
-    const map = new Map<string, NounActions[]>();
+    const map = new Map<string, NounDirectives[]>();
     for (const n of filtered) {
       const arr = map.get(n.family) ?? [];
       arr.push(n);
@@ -190,7 +190,7 @@ export function ActionCatalogGrid({
           </tbody>
         </table>
 
-        <FunctionsSection
+        <CustomActionsSection
           catalog={catalog}
           query={query}
           onInspect={onInspect}
@@ -201,29 +201,28 @@ export function ActionCatalogGrid({
 }
 
 /**
- * Plane-2 functions (registered custom procedures) + the deprecated legacy
- * named directives — the half of the system the noun × verb grid can't
+ * Plane-2 Custom Actions + deprecated legacy Directives — the half the noun × verb grid can't
  * represent. Fully server-derived (`catalog.functions`).
  */
-function FunctionsSection({
+function CustomActionsSection({
   catalog,
   query,
   onInspect,
 }: {
-  catalog: ActionCatalog;
+  catalog: DirectiveCatalog;
   query: string;
-  onInspect: (selection: ActionShapeSelection) => void;
+  onInspect: (selection: DirectiveShapeSelection) => void;
 }) {
-  const functions = catalog.functions ?? [];
+  const customActions = catalog.functions ?? [];
   const q = query.trim().toLowerCase();
   const visible = q
-    ? functions.filter((f) => `${f.name} ${f.doc ?? ""}`.toLowerCase().includes(q))
-    : functions;
+    ? customActions.filter((entry) => `${entry.name} ${entry.doc ?? ""}`.toLowerCase().includes(q))
+    : customActions;
   if (visible.length === 0) return null;
   return (
     <div className="border-t border-border">
       <div className="bg-muted/40 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Functions (Plane 2) &amp; legacy directives
+        Custom Actions (Plane 2) &amp; legacy Directives
       </div>
       <table className={cn("border-collapse text-sm", MOBILE_TABLE_FROZEN)}>
         <tbody>
@@ -231,7 +230,7 @@ function FunctionsSection({
             <tr
               key={`${f.kind}:${f.name}`}
               className="cursor-pointer border-b border-border/60 transition-colors hover:bg-accent/40"
-              onClick={() => onInspect({ kind: "function", fn: f })}
+              onClick={() => onInspect({ kind: "custom_action", customAction: f })}
             >
               <td className="w-64 px-3 py-1 font-mono text-xs font-medium text-foreground">
                 {f.name}
@@ -259,11 +258,11 @@ function FamilyGroup({
   onInspect,
 }: {
   family: string;
-  rows: NounActions[];
-  verbs: ActionVerb[];
+  rows: NounDirectives[];
+  verbs: DirectiveVerb[];
   busyToggle: string | null;
-  onToggleWritable: (noun: NounActions, enabled: boolean) => void;
-  onInspect: (selection: ActionShapeSelection) => void;
+  onToggleWritable: (noun: NounDirectives, enabled: boolean) => void;
+  onInspect: (selection: DirectiveShapeSelection) => void;
 }) {
   return (
     <>
@@ -286,7 +285,7 @@ function FamilyGroup({
           </td>
           {verbs.map((v) => (
             <td key={v} className="px-2 py-1">
-              <ActionStateCell
+              <DirectiveStateCell
                 noun={n}
                 verb={v}
                 busy={busyToggle === n.noun}
@@ -301,18 +300,18 @@ function FamilyGroup({
   );
 }
 
-function ActionStateCell({
+function DirectiveStateCell({
   noun,
   verb,
   busy,
   onToggleWritable,
   onInspect,
 }: {
-  noun: NounActions;
-  verb: ActionVerb;
+  noun: NounDirectives;
+  verb: DirectiveVerb;
   busy: boolean;
-  onToggleWritable: (noun: NounActions, enabled: boolean) => void;
-  onInspect: (selection: ActionShapeSelection) => void;
+  onToggleWritable: (noun: NounDirectives, enabled: boolean) => void;
+  onInspect: (selection: DirectiveShapeSelection) => void;
 }) {
   const state = noun[verb];
   const writeVerb =
@@ -330,12 +329,12 @@ function ActionStateCell({
       }
       toggleLabel={
         canToggle
-          ? `${enabled ? "Disable" : "Enable"} generic write actions for ${noun.noun}`
+          ? `${enabled ? "Disable" : "Enable"} generic write Directives for ${noun.noun}`
           : undefined
       }
       onInspect={
         schema
-          ? () => onInspect({ kind: "action", noun, verb })
+          ? () => onInspect({ kind: "directive", noun, verb })
           : undefined
       }
       inspectLabel={`Inspect ${verb}:${noun.noun} shape`}

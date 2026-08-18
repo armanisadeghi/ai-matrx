@@ -1,7 +1,7 @@
 # Pending APPLY from archive/oom-batch-v0.4.66
 # APPLIED 2026-07-26: store factory chain type-import batch (49 files)
 # STILL TO APPLY: 0 from original remaining list (transcript-studio already used inline `type`)
-# Unstaged for review: features/action-catalog/service.ts — already correct (inline `type` on mixed import)
+# Unstaged for review: features/directive-catalog/service.ts — already correct (inline `type` on mixed import)
 # WILL NOT DO: ProTextarea, navActions, check-fake-dynamic-imports
 
 ## APPLIED (2026-07-26) — store factory chain

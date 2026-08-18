@@ -403,10 +403,10 @@ const nextConfig = {
             { source: '/crm/campaigns', destination: '/crm/outreach-lists', permanent: true },
             { source: '/crm/campaigns/:path*', destination: '/crm/outreach-lists/:path*', permanent: true },
             // 2026-07-13: Relationships hub consolidation. /administration/sharing
-            // (link policy) and /administration/action-catalog moved into the
+            // (link policy) and /administration/directive-catalog moved into the
             // route-tabbed hub at /administration/database/relationships/*.
             { source: '/administration/sharing', destination: '/administration/database/relationships/sharing', permanent: false },
-            { source: '/administration/action-catalog', destination: '/administration/agents/relationships/actions', permanent: false },
+            { source: '/administration/directive-catalog', destination: '/administration/agents/relationships/directives', permanent: false },
             // 2026-07-13: Users & Access hub consolidation. Admin user/access
             // management moved into the route-tabbed hub at
             // /administration/users/*.

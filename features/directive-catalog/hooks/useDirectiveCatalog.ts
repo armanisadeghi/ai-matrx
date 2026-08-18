@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * useActionCatalog — live access to the backend action catalog.
+ * useDirectiveCatalog — live access to the backend directive catalog.
  *
  * Resolves the backend base URL from the canonical `apiConfigSlice` (so the
- * admin server toggle routes this too), fetches `GET /actions/catalog`, and
+ * admin server toggle routes this too), fetches `GET /directives/catalog`, and
  * exposes a `refresh()` plus optional light polling so the grid reflects the
  * live backend without a redeploy. Aborts in-flight requests on unmount / base
  * change. Structured loading + error state — never swallowed.
@@ -14,11 +14,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
-import { fetchActionCatalog } from "@/features/action-catalog/service";
-import type { ActionCatalog } from "@/features/action-catalog/types";
+import { fetchDirectiveCatalog } from "@/features/directive-catalog/service";
+import type { DirectiveCatalog } from "@/features/directive-catalog/types";
 
-export interface UseActionCatalogResult {
-  catalog: ActionCatalog | null;
+export interface UseDirectiveCatalogResult {
+  catalog: DirectiveCatalog | null;
   isLoading: boolean;
   error: string | null;
   /** The base URL the catalog was fetched from (for display). */
@@ -33,17 +33,21 @@ export interface UseActionCatalogResult {
  * @param pollMs When > 0, polls the catalog on this interval (ms). Default 0
  *   (manual refresh only).
  */
-export function useActionCatalog(pollMs = 0): UseActionCatalogResult {
+export function useDirectiveCatalog(pollMs = 0): UseDirectiveCatalogResult {
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
 
-  const [catalog, setCatalog] = useState<ActionCatalog | null>(null);
+  const [catalog, setCatalog] = useState<DirectiveCatalog | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
 
   // Bumping this triggers a refetch in the effect below.
   const [nonce, setNonce] = useState(0);
-  const refresh = useCallback(() => setNonce((n) => n + 1), []);
+  const refresh = useCallback(() => {
+    setIsLoading(true);
+    setError(null);
+    setNonce((n) => n + 1);
+  }, []);
 
   const abortRef = useRef<AbortController | null>(null);
 
@@ -53,10 +57,7 @@ export function useActionCatalog(pollMs = 0): UseActionCatalogResult {
     abortRef.current = controller;
 
     let cancelled = false;
-    setIsLoading(true);
-    setError(null);
-
-    fetchActionCatalog(baseUrl, controller.signal)
+    fetchDirectiveCatalog(baseUrl, controller.signal)
       .then((data) => {
         if (cancelled) return;
         setCatalog(data);

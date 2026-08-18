@@ -56,8 +56,8 @@ The scheduler already runs 7 system cron jobs through a clean registry. Adding a
 
 ### 2. API feed executor (the new generic primitive)
 
-No generic "call an HTTP endpoint + extract a value" capability exists (api-integrations = MCP-only; action-catalog = internal-table CRUD). Build a generic executor:
-- **aidream** — a `POST /context/feed/run` (or a service fn) that reads `feed_config { endpoint, method, headers, body, auth_secret_id, extraction }`, does the outbound fetch, applies the extraction (JSONPath/jq), returns the value. Reuse `user_secrets` for auth (never client-side). Model it on the action-catalog execute-envelope + receipt pattern. NOT a Next.js route (no middle tier).
+No generic "call an HTTP endpoint + extract a value" capability exists (api-integrations = MCP-only; directive-catalog = internal-table CRUD). Build a generic executor:
+- **aidream** — a `POST /context/feed/run` (or a service fn) that reads `feed_config { endpoint, method, headers, body, auth_secret_id, extraction }`, does the outbound fetch, applies the extraction (JSONPath/jq), returns the value. Reuse `user_secrets` for auth (never client-side). Model it on the directive-catalog execute-envelope + receipt pattern. NOT a Next.js route (no middle tier).
 - Doubles as a future **agent HTTP tool** — build it generic.
 - **FE** config already drafted in `FeedConfigEditor` `DefinitionFeedConfig` (method/endpoint/extraction/cron).
 

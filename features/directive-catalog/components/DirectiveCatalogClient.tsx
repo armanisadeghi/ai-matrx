@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ActionCatalogClient — the admin Action Catalog surface.
+ * DirectiveCatalogClient — the admin Directive Catalog surface.
  *
  * Left: the live noun × verb grid (see everything in one place). Right: the
  * builder/test panel (trigger via dropdowns). Owns the live fetch (manual
@@ -19,27 +19,27 @@ import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveServer } from "@/lib/redux/slices/apiConfigSlice";
-import { useActionCatalog } from "@/features/action-catalog/hooks/useActionCatalog";
-import { ActionCatalogGrid } from "@/features/action-catalog/components/ActionCatalogGrid";
-import { ActionBuilderPanel } from "@/features/action-catalog/components/ActionBuilderPanel";
+import { useDirectiveCatalog } from "@/features/directive-catalog/hooks/useDirectiveCatalog";
+import { DirectiveCatalogGrid } from "@/features/directive-catalog/components/DirectiveCatalogGrid";
+import { DirectiveBuilderPanel } from "@/features/directive-catalog/components/DirectiveBuilderPanel";
 import {
-  ActionShapePanel,
-  type ActionShapeSelection,
-} from "@/features/action-catalog/components/ActionShapePanel";
+  DirectiveShapePanel,
+  type DirectiveShapeSelection,
+} from "@/features/directive-catalog/components/DirectiveShapePanel";
 import { setEntityTypeAgentWritable } from "@/features/admin/relationships/entityTypeMutations";
-import type { NounActions } from "@/features/action-catalog/types";
+import type { NounDirectives } from "@/features/directive-catalog/types";
 
 /**
- * No polling. The action catalog is static metadata — the set of registered
+ * No polling. The directive catalog is static metadata — the set of registered
  * Python functions only changes on a backend redeploy, never at runtime. A 30s
  * timer hitting the (agent-saturated) Python backend forever, from an always-
  * open admin page, to re-read data that didn't change, is pure waste (rule 3:
  * don't poll the server). The manual Refresh button covers the rare
- * post-redeploy case. `0` disables the interval in `useActionCatalog`.
+ * post-redeploy case. `0` disables the interval in `useDirectiveCatalog`.
  */
 const POLL_MS = 0;
 
-export function ActionCatalogClient() {
+export function DirectiveCatalogClient() {
   // The route group is super-admin gated; this is the single, obvious in-page
   // gate that "could eventually be extended to org-level admin users" — lower
   // by swapping the selector, in one place.
@@ -47,16 +47,16 @@ export function ActionCatalogClient() {
 
   const activeServer = useAppSelector(selectActiveServer);
   const { catalog, isLoading, error, baseUrl, lastUpdatedAt, refresh } =
-    useActionCatalog(POLL_MS);
-  const [selection, setSelection] = useState<ActionShapeSelection | null>(null);
+    useDirectiveCatalog(POLL_MS);
+  const [selection, setSelection] = useState<DirectiveShapeSelection | null>(null);
   const [busyToggle, setBusyToggle] = useState<string | null>(null);
 
-  async function toggleWritable(noun: NounActions, enabled: boolean) {
+  async function toggleWritable(noun: NounDirectives, enabled: boolean) {
     setBusyToggle(noun.noun);
     try {
       await setEntityTypeAgentWritable(noun.noun, enabled);
       toast.success(
-        `${noun.noun} generic write actions ${enabled ? "enabled" : "disabled"}`,
+        `${noun.noun} generic write Directives ${enabled ? "enabled" : "disabled"}`,
       );
       refresh();
     } catch (toggleError) {
@@ -84,7 +84,7 @@ export function ActionCatalogClient() {
       <div className="flex items-center gap-3 border-b border-border bg-card px-3 py-2">
         <div className="flex flex-col">
           <h1 className="text-sm font-semibold text-foreground">
-            Matrx Action Catalog
+            Matrx Directive Catalog
           </h1>
           <span className="text-xs text-muted-foreground">
             Every noun × every verb, live from the backend
@@ -129,13 +129,13 @@ export function ActionCatalogClient() {
         {isLoading && !catalog ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
-            Loading action catalog…
+            Loading directive catalog…
           </div>
         ) : error && !catalog ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
             <AlertTriangle className="h-8 w-8 text-red-500" />
             <p className="max-w-md text-sm text-foreground">
-              Failed to load the action catalog.
+              Failed to load the directive catalog.
             </p>
             <p className="max-w-md font-mono text-xs text-muted-foreground">
               {error}
@@ -148,7 +148,7 @@ export function ActionCatalogClient() {
         ) : catalog ? (
           <div className="grid h-full grid-cols-1 lg:grid-cols-[1fr_22rem]">
             <div className="min-h-0 border-b border-border lg:border-b-0 lg:border-r">
-              <ActionCatalogGrid
+              <DirectiveCatalogGrid
                 catalog={catalog}
                 busyToggle={busyToggle}
                 onToggleWritable={(noun, enabled) =>
@@ -158,7 +158,7 @@ export function ActionCatalogClient() {
               />
             </div>
             <div className="min-h-0">
-              <ActionBuilderPanel catalog={catalog} />
+              <DirectiveBuilderPanel catalog={catalog} />
             </div>
           </div>
         ) : null}
@@ -171,7 +171,7 @@ export function ActionCatalogClient() {
         )}
       </div>
       {selection ? (
-        <ActionShapePanel
+        <DirectiveShapePanel
           selection={selection}
           onClose={() => setSelection(null)}
         />

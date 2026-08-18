@@ -3,7 +3,7 @@
 /**
  * ProposedDirectivesZone — the approve/decline cards for agent-proposed actions
  * (the `ask` apply policy). Renders one card per pending proposal for a
- * conversation; Approve POSTs the round-tripped envelope to `/actions/confirm`
+ * conversation; Approve POSTs the round-tripped envelope to `/directives/confirm`
  * (`confirmDirective`, runs as the user under RLS), Decline just dismisses it.
  *
  * Mounted beside the chat input (next to `PendingAsksZone`). Mirrors the visual
@@ -16,8 +16,8 @@ import { useState } from "react";
 import { Check, ListChecks, Loader2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-import { confirmDirective } from "@/features/action-catalog/service";
-import type { DirectiveConfirmRequest } from "@/features/action-catalog/types";
+import { confirmDirective } from "@/features/directive-catalog/service";
+import type { DirectiveConfirmRequest } from "@/features/directive-catalog/types";
 import {
   removeProposal,
   selectProposedDirectives,

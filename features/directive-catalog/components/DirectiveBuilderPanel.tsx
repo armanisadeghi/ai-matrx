@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ActionBuilderPanel — "trigger via a few dropdowns".
+ * DirectiveBuilderPanel — "trigger via a few dropdowns".
  *
  * Pick a verb + noun → see that cell's live state prominently → fill the
  * identity / payload fields → get the canonical Matrx envelope live (copyable).
@@ -11,14 +11,14 @@
  *    resolves the value from Supabase and opens the entity on click. This works
  *    TODAY and is the "test it" payoff.
  *  - create / update (state "yes"): a JSON payload editor + Execute runs it via
- *    `POST /actions/execute` (the Plane-1 writer, as the user / RLS) and shows the
+ *    `POST /directives/execute` (the Plane-1 writer, as the user / RLS) and shows the
  *    per-item receipts. Idempotent by content key; `force` opts out. delete is soft
  *    (planned) → disabled; non-"yes" writes are disabled. We NEVER write Supabase
  *    directly — the server is the only write path.
  */
 
 import { useMemo, useState } from "react";
-import { Check, Copy, Loader2, Play, Sparkles } from "lucide-react";
+import { BrainCircuit, Check, Copy, Loader2, Play } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { cn } from "@/lib/utils";
@@ -38,34 +38,34 @@ import {
 import { MATRX_VERSION } from "@/features/matrx-envelope/envelope";
 import MatrxEnvelopeBlock from "@/features/matrx-envelope/MatrxEnvelopeBlock";
 import { getReferenceResolver } from "@/features/matrx-envelope/referenceResolvers";
-import { StateBadge } from "@/features/action-catalog/components/StateCell";
-import { executeAction } from "@/features/action-catalog/service";
+import { StateBadge } from "@/features/directive-catalog/components/StateCell";
+import { executeDirective } from "@/features/directive-catalog/service";
 import {
-  buildActionEnvelope,
+  buildDirectiveEnvelope,
   isReferenceVerb,
   refFieldsForNoun,
-} from "@/features/action-catalog/buildEnvelope";
+} from "@/features/directive-catalog/buildEnvelope";
 import {
   cellState,
-  type ActionApplyResult,
-  type ActionCatalog,
-  type ActionReceipt,
-  type ActionState,
-  type ActionVerb,
-  type NounActions,
-} from "@/features/action-catalog/types";
+  type DirectiveApplyResult,
+  type DirectiveCatalog,
+  type DirectiveReceipt,
+  type DirectiveState,
+  type DirectiveVerb,
+  type NounDirectives,
+} from "@/features/directive-catalog/types";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const RECEIPT_PILL: Record<ActionReceipt["status"], string> = {
+const RECEIPT_PILL: Record<DirectiveReceipt["status"], string> = {
   applied: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   already_applied: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
   not_implemented: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   failed: "bg-red-500/15 text-red-600 dark:text-red-400",
 };
 
-function StatusPill({ status }: { status: ActionReceipt["status"] }) {
+function StatusPill({ status }: { status: DirectiveReceipt["status"] }) {
   return (
     <span
       className={cn(
@@ -78,14 +78,14 @@ function StatusPill({ status }: { status: ActionReceipt["status"] }) {
   );
 }
 
-export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
-  const verbs = catalog.verbs as ActionVerb[];
+export function DirectiveBuilderPanel({ catalog }: { catalog: DirectiveCatalog }) {
+  const verbs = catalog.verbs as DirectiveVerb[];
   const nouns = useMemo(
     () => [...catalog.nouns].sort((a, b) => a.noun.localeCompare(b.noun)),
     [catalog.nouns],
   );
 
-  const [verb, setVerb] = useState<ActionVerb>(verbs[0] ?? "reference");
+  const [verb, setVerb] = useState<DirectiveVerb>(verbs[0] ?? "reference");
   const initialNoun = nouns[0]?.noun;
   const [nounName, setNounName] = useState<string>(
     initialNoun === undefined ? "" : initialNoun,
@@ -98,17 +98,17 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
   const [writePayload, setWritePayload] = useState("{\n  \n}");
   const [force, setForce] = useState(false);
   const [executing, setExecuting] = useState(false);
-  const [result, setResult] = useState<ActionApplyResult | null>(null);
+  const [result, setResult] = useState<DirectiveApplyResult | null>(null);
   const [execError, setExecError] = useState<string | null>(null);
 
   const baseUrl = useAppSelector(selectResolvedBaseUrl);
 
-  const noun: NounActions | undefined = useMemo(
+  const noun: NounDirectives | undefined = useMemo(
     () => nouns.find((n) => n.noun === nounName),
     [nouns, nounName],
   );
 
-  const state: ActionState | null = noun ? cellState(noun, verb) : null;
+  const state: DirectiveState | null = noun ? cellState(noun, verb) : null;
   const isReference = isReferenceVerb(verb);
   const fieldSpecs = useMemo(
     () => (isReference && nounName ? refFieldsForNoun(nounName, noun) : []),
@@ -146,7 +146,7 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
 
   const envelope = useMemo(() => {
     if (!nounName) return null;
-    if (isReference) return buildActionEnvelope(verb, nounName, fields);
+    if (isReference) return buildDirectiveEnvelope(verb, nounName, fields);
     return {
       matrx_version: MATRX_VERSION,
       kind: "output_directive" as const,
@@ -169,7 +169,7 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
     setExecError(null);
     setResult(null);
     try {
-      const res = await executeAction(baseUrl, {
+      const res = await executeDirective(baseUrl, {
         kind: "output_directive",
         type: `${verb}:${nounName}`,
         items: [parsed.value],
@@ -215,7 +215,7 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto p-3">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-        <Sparkles className="h-4 w-4 text-primary" />
+        <BrainCircuit className="h-4 w-4 text-primary" />
         Build &amp; test an action
       </div>
 
@@ -223,7 +223,7 @@ export function ActionBuilderPanel({ catalog }: { catalog: ActionCatalog }) {
       <div className="grid grid-cols-2 gap-2">
         <div className="flex flex-col gap-1">
           <label className="text-xs text-muted-foreground">Verb</label>
-          <Select value={verb} onValueChange={(v) => setVerb(v as ActionVerb)}>
+          <Select value={verb} onValueChange={(v) => setVerb(v as DirectiveVerb)}>
             <SelectTrigger className="h-8 text-sm">
               <SelectValue />
             </SelectTrigger>

@@ -1,5 +1,5 @@
 /**
- * Action Catalog — (verb, noun) → canonical Matrx envelope.
+ * Directive Catalog — (verb, noun) → canonical Matrx envelope.
  *
  * The builder's core. Given a chosen verb + noun + the admin-typed item fields,
  * produce the exact `{ matrx_version, kind, type, items }` envelope the backend
@@ -16,8 +16,8 @@
  */
 
 import { MATRX_VERSION, type MatrxEnvelope } from "@/features/matrx-envelope/envelope";
-import type { ActionVerb, NounActions } from "@/features/action-catalog/types";
-import { isWriteVerb } from "@/features/action-catalog/types";
+import type { DirectiveVerb, NounDirectives } from "@/features/directive-catalog/types";
+import { isWriteVerb } from "@/features/directive-catalog/types";
 
 /** One identity field the admin must supply for a reference type. */
 export interface RefFieldSpec {
@@ -110,7 +110,7 @@ const DEFAULT_REF_FIELDS: RefFieldSpec[] = [
  * SERVER-DERIVED first: the catalog row's `identity_fields` (the required fields
  * of the registered reference item model) is the source of truth; the hand map
  * only adds uuid/label polish for known keys; `{ id }` is the last resort. */
-export function refFieldsForNoun(noun: string, catalogNoun?: NounActions | null): RefFieldSpec[] {
+export function refFieldsForNoun(noun: string, catalogNoun?: NounDirectives | null): RefFieldSpec[] {
   const derived = catalogNoun?.identity_fields;
   if (derived && derived.length > 0) {
     const hand = REF_FIELDS[noun];
@@ -128,7 +128,7 @@ export function refFieldsForNoun(noun: string, catalogNoun?: NounActions | null)
 
 /** A reference / view verb resolves to the `reference` kind (a pure read).
  * Anything else — including a future server-added verb — is a write. */
-export function isReferenceVerb(verb: ActionVerb): boolean {
+export function isReferenceVerb(verb: DirectiveVerb): boolean {
   return !isWriteVerb(verb);
 }
 
@@ -139,8 +139,8 @@ export function isReferenceVerb(verb: ActionVerb): boolean {
  * envelope stays clean. For write verbs the item is the raw field map (the
  * payload shape is the writer's contract); for reads it's the identity ids.
  */
-export function buildActionEnvelope(
-  verb: ActionVerb,
+export function buildDirectiveEnvelope(
+  verb: DirectiveVerb,
   noun: string,
   fields: Record<string, string>,
 ): MatrxEnvelope {

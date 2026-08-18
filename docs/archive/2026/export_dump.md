@@ -18216,7 +18216,7 @@
             {
               "id": "b22a23a8-e86f-4a7f-a696-73a37dd5e6ab",
               "organization_id": "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
-              "name": "Matrx Actions",
+              "name": "Matrx Directives",
               "slug": null,
               "scope_ids": []
             },
@@ -21991,7 +21991,7 @@
               },
               {
                 "id": "72ac9260-91ee-401a-a280-f0d275def607",
-                "title": "Completely Matrx Actions",
+                "title": "Completely Matrx Directives",
                 "status": "incomplete",
                 "due_date": null,
                 "priority": null,
@@ -22911,7 +22911,7 @@
               },
               {
                 "id": "b22a23a8-e86f-4a7f-a696-73a37dd5e6ab",
-                "name": "Matrx Actions",
+                "name": "Matrx Directives",
                 "slug": null,
                 "scope_tags": [],
                 "is_personal": false,
@@ -23680,7 +23680,7 @@
         },
         "b22a23a8-e86f-4a7f-a696-73a37dd5e6ab": {
           "id": "b22a23a8-e86f-4a7f-a696-73a37dd5e6ab",
-          "name": "Matrx Actions",
+          "name": "Matrx Directives",
           "slug": null,
           "organization_id": "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
           "is_personal": false,
@@ -27034,7 +27034,7 @@
         },
         "72ac9260-91ee-401a-a280-f0d275def607": {
           "id": "72ac9260-91ee-401a-a280-f0d275def607",
-          "title": "Completely Matrx Actions",
+          "title": "Completely Matrx Directives",
           "status": "incomplete",
           "priority": null,
           "due_date": null,

@@ -58,7 +58,7 @@ DB — the UI just `router.refresh()`es.
 | Explorer orbit | `explorer/[token]/page.tsx` (`admin_relationship_rules`)                                                | `EntityExplorerHeader` + `EntityRelationshipOrbitPageBody`                                                                             |
 | Reachability   | `reachability/page.tsx` (none)                                                                          | `ReachabilityInspectorClient` — self-fetching                                                                                          |
 | Exposure Audit | `exposure-audit/page.tsx` (none)                                                                        | `ExposureAuditClient` — super-admin summary + controlled, paginated file/note exposure inventory                                       |
-| Actions        | `actions/page.tsx` (none)                                                                               | `ActionCatalogClient` (`features/action-catalog/` — see its FEATURE.md; moved from the deleted `/administration/action-catalog` route) |
+| Actions        | `actions/page.tsx` (none)                                                                               | `DirectiveCatalogClient` (`features/directive-catalog/` — see its FEATURE.md; moved from the deleted `/administration/directive-catalog` route) |
 
 **Every view is URL-addressable.** Table search, every column filter, sort,
 pagination, toolbar facets, selected detail rows, planner selection/search/display
@@ -112,7 +112,7 @@ is untouched — never widen or modify it.**
 | `admin_entity_types_list()`                            | ALL rows incl. inactive; `default_visibility` projected as text; `table_ref` as text.                                                                                      |
 | `admin_upsert_entity_type(...)`                        | Create/update (ON CONFLICT on `token`). Validates token `^[a-z][a-z0-9_]*$` and that the physical table exists (loud RAISE otherwise); recomputes `table_ref` server-side. |
 | `admin_set_entity_type_active(token, active)`          | **The only "delete"** — tokens are FK targets of `platform.associations`; hard deletes are never offered. Loud on a missing token.                                         |
-| `admin_set_entity_type_agent_writable(token, enabled)` | Narrow super-admin toggle for generic `create:/update:/delete:` Matrx Actions; shared by Entity Types and the Actions matrix.                                              |
+| `admin_set_entity_type_agent_writable(token, enabled)` | Narrow super-admin toggle for generic `create:/update:/delete:` Matrx Directives; shared by Entity Types and the Actions matrix.                                              |
 
 **Generated-types drift:** after any registry write, `types/generated/entity-types.generated.ts`
 is stale until `pnpm gen:entity-types` runs. `EntityTypesClient` compares active
@@ -170,7 +170,7 @@ used by the per-row **Link policy** side panel).
   switches → upsert. Deactivate via the row power action (ConfirmDialog states the
   semantics); the drift banner then demands `pnpm gen:entity-types`.
 - **Toggle generic agent writes:** the `Agent writes` switch updates
-  `platform.entity_types.agent_writable` through the narrow admin RPC. The Actions tab
+  `platform.entity_types.agent_writable` through the narrow admin RPC. The Directives tab
   consumes the same mutation primitive, so both control surfaces stay identical.
 - **Manage what can be shared (Sharing tab):** full CRUD — **Register resource**
   picks any entity token not yet registered and prefills from
@@ -276,7 +276,7 @@ used by the per-row **Link policy** side panel).
 - Reachability rollout doc: `docs/db_changes/REACHABILITY-ROLLOUT.md`.
 - Sharing / permissions: `features/sharing/FEATURE.md` (grants + memberships that
   the cascade composes with in `iam.has_access`).
-- Action Catalog (the Actions tab's client): `features/action-catalog/FEATURE.md`.
+- Directive Catalog (the Directives tab's client): `features/directive-catalog/FEATURE.md`.
 - Canonical associations: `.claude/skills/canonical-associations`.
 - Window Panels (the `EntityRelationshipOrbitWindow` composition root):
   `.claude/skills/window-panels`.
@@ -378,8 +378,8 @@ used by the per-row **Link policy** side panel).
   `admin_upsert_entity_type` / `admin_set_entity_type_active`; deactivate-only
   delete; generated-types drift banner). **/administration/sharing absorbed and
   deleted** (redirect; per-row Link policy side panel via `SharePolicyColumnEditor`
-  - `admin_set_share_policy`). **/administration/action-catalog moved** to the
-    Actions tab (redirect; `ActionCatalogClient` unchanged). Cross-tab drift actions
+  - `admin_set_share_policy`). **/administration/directive-catalog moved** to the
+    Directives tab (redirect; `DirectiveCatalogClient` unchanged). Cross-tab drift actions
     ride consume-once `?edit=` / `?register=` params.
 - **2026-07-11** — Shareable resource registry gets a full CRUD home here
   (`ShareableRegistryPanel` / `ShareableResourceForm`; new RPCs

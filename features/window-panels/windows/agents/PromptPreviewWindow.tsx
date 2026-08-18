@@ -6,7 +6,7 @@
  * Floating-window presentation of the full-prompt dry-run preview. Wraps the
  * shared `PromptPreviewContent` (which runs `requestPromptPreview` on mount) in
  * a draggable / resizable / minimizable `WindowPanel`, so a creator can keep the
- * assembled prompt — context, tools, and the auto-injected Matrx Actions
+ * assembled prompt — context, tools, and the auto-injected Matrx Directives
  * guidance — open beside their work instead of in a blocking dialog.
  *
  * Read-only: the content calls no model and persists nothing.

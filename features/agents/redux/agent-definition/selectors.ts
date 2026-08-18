@@ -401,10 +401,10 @@ export const selectAgentUiGates = createSelector(
   (record) => record?.uiGates ?? {},
 );
 
-/** Matrx Actions apply config. Empty default = system default policy. */
-export const selectAgentMatrxActions = createSelector(
+/** Matrx Directives apply config. Empty default = system default policy. */
+export const selectAgentMatrxDirectives = createSelector(
   [selectAgentById],
-  (record) => record?.matrxActions ?? {},
+  (record) => record?.matrxDirectives ?? {},
 );
 
 export const selectAgentTags = createSelector(

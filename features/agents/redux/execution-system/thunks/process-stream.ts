@@ -909,7 +909,7 @@ export async function processStream({
           } else if (d.kind === "directive_apply.proposed") {
             // `ask` policy: the agent proposed an action — surface an approve/
             // decline card (proposedDirectives inbox). It applies only on accept
-            // (POST /actions/confirm). NOT auto-applied.
+            // (POST /directives/confirm). NOT auto-applied.
             dispatch(
               proposeDirective({
                 proposalId: d.proposal_id,

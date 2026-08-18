@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * MatrxActionsTab — the actions this agent can perform + how they apply.
+ * MatrxDirectivesTab — the actions this agent can perform + how they apply.
  *
  * An agent may list MANY actions (no cap): canonical `verb:noun` actions from the
- * live action catalog, named built-in directives, AND custom free-form types.
+ * live directive catalog, named built-in directives, AND custom free-form types.
  * The list is stored in `matrx_actions.actions`; the apply policy in
  * `matrx_actions.apply_policy`.
  *
  * IMPORTANT: this tab NEVER edits the agent's authored system prompt. Structure
  * guidance for these actions is injected at RUNTIME by the system-prompt builder
- * (`SystemInstruction.action_types` → "## Available Matrx Actions") — preview
+ * (`SystemInstruction.action_types` → "## Available Matrx Directives") — preview
  * exactly what the model receives via "Preview full prompt".
  */
 
@@ -26,10 +26,10 @@ import {
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentMatrxActions } from "@/features/agents/redux/agent-definition/selectors";
-import { setAgentMatrxActions } from "@/features/agents/redux/agent-definition/slice";
-import type { MatrxActionsConfig } from "@/features/agents/types/matrx-actions.types";
-import { useActionCatalog } from "@/features/action-catalog/hooks/useActionCatalog";
+import { selectAgentMatrxDirectives } from "@/features/agents/redux/agent-definition/selectors";
+import { setAgentMatrxDirectives } from "@/features/agents/redux/agent-definition/slice";
+import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-directives.types";
+import { useDirectiveCatalog } from "@/features/directive-catalog/hooks/useDirectiveCatalog";
 import {
   buildDirectiveOptions,
   groupDirectiveOptions,
@@ -37,7 +37,7 @@ import {
 
 type Policy = "default" | "auto" | "ask" | "off";
 
-function derivePolicy(cfg: MatrxActionsConfig): Policy {
+function derivePolicy(cfg: MatrxDirectivesConfig): Policy {
   if (cfg.apply_policy === "auto" || cfg.auto_apply === true) return "auto";
   if (cfg.apply_policy === "ask") return "ask";
   if (cfg.apply_policy === "off") return "off";
@@ -45,7 +45,7 @@ function derivePolicy(cfg: MatrxActionsConfig): Policy {
 }
 
 /** The agent's action list — `actions`, with back-compat for legacy shapes. */
-function deriveActions(cfg: MatrxActionsConfig): string[] {
+function deriveActions(cfg: MatrxDirectivesConfig): string[] {
   if (Array.isArray(cfg.actions)) return cfg.actions;
   if (Array.isArray(cfg.allow)) return cfg.allow;
   if (cfg.directive) return [cfg.directive];
@@ -84,20 +84,20 @@ const POLICY_OPTIONS: {
   },
 ];
 
-interface MatrxActionsTabProps {
+interface MatrxDirectivesTabProps {
   agentId: string;
 }
 
-export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
+export function MatrxDirectivesTab({ agentId }: MatrxDirectivesTabProps) {
   const dispatch = useAppDispatch();
   const cfg = useAppSelector((state) =>
-    selectAgentMatrxActions(state, agentId),
-  ) as MatrxActionsConfig;
+    selectAgentMatrxDirectives(state, agentId),
+  ) as MatrxDirectivesConfig;
 
   const actions = deriveActions(cfg);
   const policy = derivePolicy(cfg);
 
-  const { catalog, isLoading, error } = useActionCatalog();
+  const { catalog, isLoading, error } = useDirectiveCatalog();
   const [query, setQuery] = useState("");
   const [custom, setCustom] = useState("");
 
@@ -118,13 +118,13 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
 
   // Single canonical write — actions list + policy, preserving a legacy directive.
   const write = (nextActions: string[], nextPolicy: Policy) => {
-    const next: MatrxActionsConfig = {};
+    const next: MatrxDirectivesConfig = {};
     if (cfg.directive) next.directive = cfg.directive;
     if (nextActions.length) next.actions = nextActions;
     if (nextPolicy === "auto") next.apply_policy = "auto";
     else if (nextPolicy === "ask") next.apply_policy = "ask";
     else if (nextPolicy === "off") next.apply_policy = "off";
-    dispatch(setAgentMatrxActions({ id: agentId, matrxActions: next }));
+    dispatch(setAgentMatrxDirectives({ id: agentId, matrxDirectives: next }));
   };
 
   const toggle = (type: string) => {
@@ -147,7 +147,7 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-[11px] text-muted-foreground leading-snug">
-        <span className="font-medium text-foreground">Matrx Actions</span> are
+        <span className="font-medium text-foreground">Matrx Directives</span> are
         the things this agent can do from its output — create tasks or projects,
         write records, run custom actions. List as many as you need. Guidance
         for them is added to the system prompt{" "}
@@ -205,7 +205,7 @@ export function MatrxActionsTab({ agentId }: MatrxActionsTabProps) {
 
         {error ? (
           <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-            Couldn&apos;t load the live action catalog ({error}). Built-in
+            Couldn&apos;t load the live directive catalog ({error}). Built-in
             actions are still available below.
           </div>
         ) : null}

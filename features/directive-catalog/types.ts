@@ -1,7 +1,7 @@
 /**
- * Matrx Action Catalog — OpenAPI aliases + derived UI helpers.
+ * Matrx Directive Catalog — OpenAPI aliases + derived UI helpers.
  *
- * Wire contract: `types/python-generated/api-types.ts` (aidream action_catalog).
+ * Wire contract: `types/python-generated/api-types.ts` (aidream directive_catalog).
  * Aliases only — never re-declare schemas here.
  *
  * The grid is the noun × verb matrix; the builder turns a chosen (verb, noun)
@@ -11,11 +11,11 @@
 import type { components } from "@/types/python-generated/api-types";
 
 /** OpenAPI schemas — source of truth */
-export type NounActions = components["schemas"]["NounActions"];
-export type ActionCatalog = components["schemas"]["ActionCatalog"];
-export type ActionReceipt = components["schemas"]["ActionReceipt"];
-export type ActionApplyResult = components["schemas"]["ActionApplyResult"];
-export type ActionExecuteRequest = components["schemas"]["ActionExecuteRequest"];
+export type NounDirectives = components["schemas"]["NounDirectives"];
+export type DirectiveCatalog = components["schemas"]["DirectiveCatalog"];
+export type DirectiveReceipt = components["schemas"]["DirectiveReceipt"];
+export type DirectiveApplyResult = components["schemas"]["DirectiveApplyResult"];
+export type DirectiveExecuteRequest = components["schemas"]["DirectiveExecuteRequest"];
 export type DirectiveConfirmRequest = components["schemas"]["DirectiveConfirmRequest"];
 export type DirectiveConfirmResult = components["schemas"]["DirectiveConfirmResult"];
 
@@ -25,27 +25,27 @@ export type DirectiveConfirmReceipt =
   | components["schemas"]["DirectiveItemFailed"];
 
 /** One Plane-2 function (or deprecated legacy named directive). */
-export type FunctionEntry = components["schemas"]["FunctionEntry"];
+export type CustomActionEntry = components["schemas"]["CustomActionEntry"];
 
-/** A cell's wiring state — derived from NounActions verb columns. */
-export type ActionState = NounActions["reference"];
+/** A cell's wiring state — derived from NounDirectives verb columns. */
+export type DirectiveState = NounDirectives["reference"];
 
-/** The five verbs — derived from NounActions keys (excludes noun/family/table). */
-export type ActionVerb = keyof Pick<
-  NounActions,
+/** The five verbs — derived from NounDirectives keys (excludes noun/family/table). */
+export type DirectiveVerb = keyof Pick<
+  NounDirectives,
   "reference" | "view" | "create" | "update" | "delete"
 >;
 
 /** The read verbs — everything else is a write producing `verb:noun`. The
  * runtime axis is `catalog.verbs`; this only names the two pure reads. */
-export const READ_VERBS: readonly ActionVerb[] = ["reference", "view"] as const;
+export const READ_VERBS: readonly DirectiveVerb[] = ["reference", "view"] as const;
 
 export function isWriteVerb(verb: string): boolean {
-  return !READ_VERBS.includes(verb as ActionVerb);
+  return !READ_VERBS.includes(verb as DirectiveVerb);
 }
 
 /** Runtime guard — the response is non-sensitive but still untrusted JSON. */
-export function isActionCatalog(value: unknown): value is ActionCatalog {
+export function isDirectiveCatalog(value: unknown): value is DirectiveCatalog {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (
@@ -56,12 +56,12 @@ export function isActionCatalog(value: unknown): value is ActionCatalog {
 }
 
 /** Read one verb's state off a noun row (the verbs are flat columns). */
-export function cellState(noun: NounActions, verb: ActionVerb): ActionState {
+export function cellState(noun: NounDirectives, verb: DirectiveVerb): DirectiveState {
   return noun[verb];
 }
 
 /** Runtime guard for the execute response. */
-export function isActionApplyResult(value: unknown): value is ActionApplyResult {
+export function isDirectiveApplyResult(value: unknown): value is DirectiveApplyResult {
   if (typeof value !== "object" || value === null) return false;
   const v = value as Record<string, unknown>;
   return (

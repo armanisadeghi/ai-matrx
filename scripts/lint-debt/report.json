@@ -7254,11 +7254,11 @@
       "message": "String contains storage_uri/file_uri — the server-only S3 location, ERADICATED from the FE (2026-07-06). Never select it (use FILES_TABLE_COLUMNS from features/files/filesDb.ts), never read/write it as a key. See features/files/FEATURE.md."
     },
     {
-      "file": "features/action-catalog/hooks/useActionCatalog.ts",
+      "file": "features/directive-catalog/hooks/useDirectiveCatalog.ts",
       "line": 56,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/action-catalog",
+      "feature": "features/directive-catalog",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },

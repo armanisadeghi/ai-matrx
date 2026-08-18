@@ -9,7 +9,7 @@
  * "is inert": the user seeing it must be able to say yes. This button IS that
  * yes, and it is the same semantic as approving an `ask`-policy proposal.
  *
- * It posts the envelope to `POST /actions/confirm` (`confirmDirective`), which
+ * It posts the envelope to `POST /directives/confirm` (`confirmDirective`), which
  * re-validates every item against the registered `(kind, type)` item model and
  * applies it through the ONE server handler, running as the user under RLS.
  * `proposal_id` is optional there, so an envelope the server never proposed
@@ -23,7 +23,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2, Play, TriangleAlert } from "lucide-react";
 
-import { confirmDirective } from "@/features/action-catalog/service";
+import { confirmDirective } from "@/features/directive-catalog/service";
 import type { MatrxEnvelope } from "@/features/matrx-envelope/envelope";
 import { BackendApiError } from "@/lib/api/errors";
 import { useAppSelector } from "@/lib/redux/hooks";

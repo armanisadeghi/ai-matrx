@@ -301,7 +301,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "agent_matrx_actions",
     label: "Agent Matrx actions",
     description:
-      "Matrx Actions apply-policy config for this agent. Empty object means the system default policy applies.",
+      "Matrx Directives apply-policy config for this agent. Empty object means the system default policy applies.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 200,

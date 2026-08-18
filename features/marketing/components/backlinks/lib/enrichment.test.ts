@@ -1,5 +1,5 @@
 import {
-  backlinkAnalysisActionState,
+  backlinkAnalysisDirectiveState,
   backlinkCaptureForUi,
   backlinkScreenshotFileId,
   hasBacklinkAssessment,
@@ -73,17 +73,17 @@ describe("backlink enrichment narrowers", () => {
   });
 
   it("uses one controlled single-link action contract everywhere", () => {
-    expect(backlinkAnalysisActionState("pending", false, false)).toMatchObject({
+    expect(backlinkAnalysisDirectiveState("pending", false, false)).toMatchObject({
       disabled: false,
       label: "Review",
     });
     expect(
-      backlinkAnalysisActionState("completed", false, false),
+      backlinkAnalysisDirectiveState("completed", false, false),
     ).toMatchObject({ disabled: false, label: "Review again" });
-    expect(backlinkAnalysisActionState("capturing", true, false)).toMatchObject(
+    expect(backlinkAnalysisDirectiveState("capturing", true, false)).toMatchObject(
       { disabled: true, inProgress: true, label: "Reviewing" },
     );
-    expect(backlinkAnalysisActionState("pending", true, false)).toMatchObject({
+    expect(backlinkAnalysisDirectiveState("pending", true, false)).toMatchObject({
       disabled: true,
       label: "Reviewing",
     });

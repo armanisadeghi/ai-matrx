@@ -58,7 +58,7 @@ export function toAgentVersionFieldSnapshot(
       mcpServers: row.mcp_servers ?? [],
       autoToolsDisabled: parseAgentAutoToolsDisabled(row.tool_config),
       skillConfig: parseSkillConfigJson(row.skill_config),
-      matrxActions: row.matrx_actions,
+      matrxDirectives: row.matrx_actions,
       uiGates: row.ui_gates,
     },
   };

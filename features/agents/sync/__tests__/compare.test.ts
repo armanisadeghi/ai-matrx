@@ -124,12 +124,12 @@ describe("toAgentSyncSnapshot", () => {
     expect(snap.ragAwarenessMode).toBe("none");
   });
 
-  it("includes the portable UI and Matrx Actions configuration the sync writes", () => {
+  it("includes the portable UI and Matrx Directives configuration the sync writes", () => {
     const snap = toAgentSyncSnapshot(
       productionRow({ ui_gates: { file_urls: true }, matrx_actions: { a: 1 } }),
     );
     expect(snap.uiGates).toEqual({ file_urls: true });
-    expect(snap.matrxActions).toEqual({ a: 1 });
+    expect(snap.matrxDirectives).toEqual({ a: 1 });
   });
 
   it("normalizes a missing column to null on both sides equally", () => {

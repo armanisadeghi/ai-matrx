@@ -995,9 +995,9 @@
        "default": null,
        "title": "Category"
       },
-      "context_slots": {
+      "context_policies": {
        "default": [],
-       "title": "Context Slots"
+       "title": "Context Policies"
       },
       "custom_tools": {
        "default": [],
@@ -1025,7 +1025,7 @@
       },
       "matrx_actions": {
        "default": {},
-       "title": "Matrx Actions"
+       "title": "Matrx Directives"
       },
       "mcp_servers": {
        "default": [],
@@ -1142,9 +1142,9 @@
        "default": null,
        "title": "Category"
       },
-      "context_slots": {
+      "context_policies": {
        "default": null,
-       "title": "Context Slots"
+       "title": "Context Policies"
       },
       "custom_tools": {
        "default": null,
@@ -1176,7 +1176,7 @@
       },
       "matrx_actions": {
        "default": null,
-       "title": "Matrx Actions"
+       "title": "Matrx Directives"
       },
       "mcp_servers": {
        "default": null,
@@ -1815,9 +1815,9 @@
        "default": null,
        "title": "Category"
       },
-      "context_slots": {
+      "context_policies": {
        "default": [],
-       "title": "Context Slots"
+       "title": "Context Policies"
       },
       "custom_tools": {
        "default": [],
@@ -1922,9 +1922,9 @@
        "default": null,
        "title": "Category"
       },
-      "context_slots": {
+      "context_policies": {
        "default": null,
-       "title": "Context Slots"
+       "title": "Context Policies"
       },
       "custom_tools": {
        "default": null,
@@ -2136,9 +2136,9 @@
        "default": null,
        "title": "Search Tsv"
       },
-      "shared_context_slots": {
+      "shared_context_policies": {
        "default": [],
-       "title": "Shared Context Slots"
+       "title": "Shared Context Policies"
       },
       "shell_config": {
        "default": {},
@@ -2334,9 +2334,9 @@
        "default": null,
        "title": "Search Tsv"
       },
-      "shared_context_slots": {
+      "shared_context_policies": {
        "default": null,
-       "title": "Shared Context Slots"
+       "title": "Shared Context Policies"
       },
       "shell_config": {
        "default": null,
@@ -23947,6 +23947,146 @@
    "create": "planned",
    "delete": "planned",
    "family": "Other",
+   "identity_fields": [],
+   "label": "Podcast Race Episode",
+   "noun": "podcast_race",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "arms": {
+       "default": {},
+       "title": "Arms"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "request": {
+       "default": {},
+       "title": "Request"
+      },
+      "status": {
+       "default": "pending",
+       "title": "Status"
+      },
+      "topic": {
+       "title": "Topic"
+      },
+      "verdict_at": {
+       "default": null,
+       "title": "Verdict At"
+      },
+      "verdict_by": {
+       "default": null,
+       "title": "Verdict By"
+      },
+      "verdict_notes": {
+       "default": null,
+       "title": "Verdict Notes"
+      },
+      "verdict_winner": {
+       "default": null,
+       "title": "Verdict Winner"
+      }
+     },
+     "required": [
+      "topic"
+     ],
+     "title": "CreatePodcastRaceItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeletePodcastRaceItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "arms": {
+       "default": null,
+       "title": "Arms"
+      },
+      "completed_at": {
+       "default": null,
+       "title": "Completed At"
+      },
+      "error": {
+       "default": null,
+       "title": "Error"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "request": {
+       "default": null,
+       "title": "Request"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "topic": {
+       "default": null,
+       "title": "Topic"
+      },
+      "verdict_at": {
+       "default": null,
+       "title": "Verdict At"
+      },
+      "verdict_by": {
+       "default": null,
+       "title": "Verdict By"
+      },
+      "verdict_notes": {
+       "default": null,
+       "title": "Verdict Notes"
+      },
+      "verdict_winner": {
+       "default": null,
+       "title": "Verdict Winner"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdatePodcastRaceItem",
+     "type": "object"
+    }
+   },
+   "table": "podcast.pc_race",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
    "identity_fields": [
     "id"
    ],
@@ -28351,6 +28491,10 @@
        "default": null,
        "title": "Result"
       },
+      "reviewed_at": {
+       "default": null,
+       "title": "Reviewed At"
+      },
       "score": {
        "default": null,
        "title": "Score"
@@ -28459,6 +28603,10 @@
       "result": {
        "default": null,
        "title": "Result"
+      },
+      "reviewed_at": {
+       "default": null,
+       "title": "Reviewed At"
       },
       "score": {
        "default": null,
@@ -33644,6 +33792,20 @@
    "delete": "no",
    "family": "Other",
    "identity_fields": [],
+   "label": "Business Location",
+   "noun": "web_business_location",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.business_location",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
    "label": "Web Crawl Event",
    "noun": "web_crawl_event",
    "reference": "no",
@@ -33761,6 +33923,168 @@
    "reference": "no",
    "schemas": null,
    "table": "web.link_edge",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Listing Publisher",
+   "noun": "web_listing_publisher",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "api_access": {
+       "default": "none",
+       "title": "Api Access"
+      },
+      "api_notes": {
+       "default": null,
+       "title": "Api Notes"
+      },
+      "categories": {
+       "default": [],
+       "title": "Categories"
+      },
+      "citation_weight": {
+       "default": 50,
+       "title": "Citation Weight"
+      },
+      "domain": {
+       "default": null,
+       "title": "Domain"
+      },
+      "is_aggregator": {
+       "default": false,
+       "title": "Is Aggregator"
+      },
+      "manage_url": {
+       "default": null,
+       "title": "Manage Url"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "name": {
+       "title": "Name"
+      },
+      "slug": {
+       "title": "Slug"
+      },
+      "sort_rank": {
+       "default": 1000,
+       "title": "Sort Rank"
+      },
+      "tier": {
+       "title": "Tier"
+      }
+     },
+     "required": [
+      "slug",
+      "name",
+      "tier"
+     ],
+     "title": "CreateWebListingPublisherItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteWebListingPublisherItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "api_access": {
+       "default": null,
+       "title": "Api Access"
+      },
+      "api_notes": {
+       "default": null,
+       "title": "Api Notes"
+      },
+      "categories": {
+       "default": null,
+       "title": "Categories"
+      },
+      "citation_weight": {
+       "default": null,
+       "title": "Citation Weight"
+      },
+      "domain": {
+       "default": null,
+       "title": "Domain"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_aggregator": {
+       "default": null,
+       "title": "Is Aggregator"
+      },
+      "manage_url": {
+       "default": null,
+       "title": "Manage Url"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "name": {
+       "default": null,
+       "title": "Name"
+      },
+      "slug": {
+       "default": null,
+       "title": "Slug"
+      },
+      "sort_rank": {
+       "default": null,
+       "title": "Sort Rank"
+      },
+      "tier": {
+       "default": null,
+       "title": "Tier"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateWebListingPublisherItem",
+     "type": "object"
+    }
+   },
+   "table": "web.listing_publisher",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Location Listing",
+   "noun": "web_location_listing",
+   "reference": "no",
+   "schemas": null,
+   "table": "web.location_listing",
    "title_column": null,
    "update": "no",
    "view": "no"

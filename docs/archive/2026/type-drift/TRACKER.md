@@ -146,7 +146,7 @@ See: [`generated/by-feature/pdf-extractor.md`](./generated/by-feature/pdf-extrac
 | (non-feature) | 19 | [`generated/by-feature/_non-feature_.md`](./generated/by-feature/_non-feature_.md) |
 | administration | 10 | [`generated/by-feature/administration.md`](./generated/by-feature/administration.md) |
 | research | 8 | [`generated/by-feature/research.md`](./generated/by-feature/research.md) |
-| action-catalog | 7 | [`generated/by-feature/action-catalog.md`](./generated/by-feature/action-catalog.md) |
+| directive-catalog | 7 | [`generated/by-feature/directive-catalog.md`](./generated/by-feature/directive-catalog.md) |
 | tasks | 7 | [`generated/by-feature/tasks.md`](./generated/by-feature/tasks.md) |
 | secrets | 6 | [`generated/by-feature/secrets.md`](./generated/by-feature/secrets.md) |
 | kg-graph | 5 | [`generated/by-feature/kg-graph.md`](./generated/by-feature/kg-graph.md) |

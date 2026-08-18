@@ -143,7 +143,7 @@ export function ExperimentalAgentScreen({
   //                  lands as a card in the Record tab with audio + raw + cleaned.
   //   input → stage the transcript in the input AND open + focus it to edit
   //           before sending (the input is hidden by default on this tab).
-  const executeAction = useCallback(
+  const executeDirective = useCallback(
     (key: RecordActionKey, result: PendingRecordingResult) => {
       const { text, audioBlob, durationSec } = result;
       if (text) {
@@ -182,9 +182,9 @@ export function ExperimentalAgentScreen({
   const handleChoose = useCallback(
     (key: RecordActionKey) => {
       chosenKeyRef.current = key;
-      if (pendingResult !== null) executeAction(key, pendingResult);
+      if (pendingResult !== null) executeDirective(key, pendingResult);
     },
-    [pendingResult, executeAction],
+    [pendingResult, executeDirective],
   );
 
   const startRecording = async () => {
@@ -216,7 +216,7 @@ export function ExperimentalAgentScreen({
           // The turn is ready. If a choice is already queued, run it; otherwise
           // surface it so the sheet's countdown / buttons act on the real turn.
           if (chosenKeyRef.current) {
-            executeAction(chosenKeyRef.current, finished);
+            executeDirective(chosenKeyRef.current, finished);
           } else {
             setPendingResult(finished);
           }
