@@ -228,27 +228,6 @@ merges steps at the cheap end).
 
 ## Remaining work (priority order)
 
-0. **Keyword→brief enforcement tail (traced 2026-08-17 on pbw-law — the "my keywords got
-   dropped" roadblock).** The ROOT CAUSE is FIXED in aidream: the generator + Deepen wrote
-   agent-chosen keywords ONLY to the retired `plan.node.primary_keyword_id` column, invisible to
-   the brief gate/pipeline/UI — `page_seo_plan.assign_primary_keyword` is now the one server
-   writer (wired into `set_keyword` + `apply_plan_tree` phase 3, heals legacy rows on re-apply,
-   and finally produces the `p1_keywords` rail step, which had NO producer). Still open, in
-   order of harm:
-   - `assert_brief_preconditions` runs ONLY on the "Draft brief" button; Deepen
-     (`generator.py:842`), the `content_plan` tool's `update_brief`/`deepen_node`
-     (`tools.py:400,585`), and `apply_plan_tree` write briefs with zero keyword gate. Bulk paths
-     should at least warn loudly per page.
-   - No check anywhere that a produced brief actually covers its target keyword
-     (`coerce_brief_draft`, `brief_writer.py:265` — pbw-law's Home brief never mentions its
-     keyword) and `build_keyword_assignment_line` hands the keyword as context, not as a binding
-     instruction. Post-generation containment check + tightened variable framing.
-   - `assert_step_preconditions` (Write/Review, `page_pipeline.py:763`) requires only "brief
-     non-empty" — a keyword-less brief sails through; align with `assert_brief_preconditions` or
-     document why not.
-   - `NodeStepRail` run arrows have no precondition-aware disabled state
-     (`NodeStepRail.tsx:337`) — refusal discovered only after the click.
-   - Re-audit the FE `hasKeywordAssignment` predicate against the corrected server writes.
 1. **Prove the loop at SCALE.** Never yet run: a real ~25-page site end to end — starter kit →
    fill every node (all four steps) → human review → bulk publish → verify every URL live. Use a
    throwaway or `cosmeticinjectables` (`baa61391…`, already CMS-linked), never `iopbm` /
@@ -278,6 +257,14 @@ merges steps at the cheap end).
 
 ## Done (compressed — details live in the FEATURE.md files and git history)
 
+- **Keyword→brief enforcement, end to end** (2026-08-17, the pbw-law "my keywords got dropped"
+  trace): `assign_primary_keyword` is the one store writer (root cause) AND the whole tail —
+  write-step gate aligned with the brief gate (bulk fill records it as a readable SKIP),
+  warn-loud per-page floor on Deepen / the `content_plan` tool / `apply_plan_tree`,
+  keyword-containment check on produced briefs (lands in the draft's `concerns`), binding
+  TARGET-KEYWORD framing in both prompts, FE `hasKeywordAssignment` aligned to the server
+  predicate, and precondition-aware run arrows on the rail. Contracts: aidream
+  `services/content_plan/FEATURE.md` invariant 5 tail + FE `content-plan/FEATURE.md` §2.
 - Content plan feature (5 views, generator, deepen, reconciler, signals) + CMS authoring stack +
   plan↔CMS bridge — `features/marketing/content-plan/`, `features/cms/`, aidream
   `services/content_plan/` + `services/cms/`.
