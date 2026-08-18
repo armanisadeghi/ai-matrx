@@ -36,14 +36,18 @@ import { activityLine, type ActivityLine } from "./activity-copy";
 
 const TERMINAL = new Set(["completed", "failed", "cancelled", "errored"]);
 
-function ToneIcon({ tone, live }: { tone: ActivityLine["tone"]; live: boolean }) {
+function ToneIcon({
+  tone,
+  live,
+}: {
+  tone: ActivityLine["tone"];
+  live: boolean;
+}) {
   switch (tone) {
     case "tool":
       return <Wrench className="h-3.5 w-3.5 shrink-0 text-sky-500" />;
     case "done":
-      return (
-        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-      );
+      return <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />;
     case "warn":
       return <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />;
     case "fail":

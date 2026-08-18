@@ -28,11 +28,7 @@ import {
 } from "@/features/workflow-runtime/types";
 
 export type NodeRunPhase =
-  | "running"
-  | "settled"
-  | "failed"
-  | "skipped"
-  | "retrying";
+  "running" | "settled" | "failed" | "skipped" | "retrying";
 
 export interface NodeInvocationState {
   invocationKey: string;
@@ -198,6 +194,15 @@ export interface WorkflowRunState {
   activity: RunActivityEntry[];
   /** Monotonic id source for `activity` entries. */
   activitySeq: number;
+  /**
+   * The highest durable `seq` whose event has already been APPENDED to a ring
+   * (activity, emissions). Every other reducer path SETS state, so a refold is
+   * naturally idempotent — appends are not, and a re-adoption refolds the
+   * whole durable log with `replay: true`, which deliberately bypasses the
+   * seq dedup. Without this watermark, opening a run twice (or the
+   * `?run=` replace on start) printed the entire activity feed twice.
+   */
+  appendedThroughSeq: number;
   /** When the ENGINE started the run (run_started ts, else the row's
    * created_at). The elapsed clock reads this, never the attach time — a
    * mid-run refresh must not restart the timer at zero. */
@@ -289,6 +294,7 @@ function makeRunState(
     signalRevisionByTable: {},
     activity: [],
     activitySeq: 0,
+    appendedThroughSeq: 0,
     startedAtTs: null,
   };
 }
@@ -497,6 +503,9 @@ function applyEvent(
   state: WorkflowRunsState,
   run: WorkflowRunState,
   event: WorkflowRunEvent,
+  /** False when this event has already been appended to a ring (see
+   * `appendedThroughSeq`) — SET-shaped state still refolds, appends don't. */
+  append: boolean,
 ): void {
   switch (event.event) {
     case "run_started":
@@ -565,13 +574,15 @@ function applyEvent(
       invocation.progress = null;
       const iteration = readField(readField(event, "inputs"), "iteration");
       if (typeof iteration === "number") invocation.iteration = iteration;
-      pushActivity(run, {
-        nodeId: event.node_id,
-        kind: "started",
-        text: null,
-        detail: event.attempt > 1 ? `attempt ${event.attempt}` : null,
-        ts: event.ts,
-      });
+      if (append) {
+        pushActivity(run, {
+          nodeId: event.node_id,
+          kind: "started",
+          text: null,
+          detail: event.attempt > 1 ? `attempt ${event.attempt}` : null,
+          ts: event.ts,
+        });
+      }
       break;
     }
     case "node_completed": {
@@ -594,13 +605,15 @@ function applyEvent(
       // A retry that succeeded makes prior diagnostics stale.
       invocation.error = null;
       invocation.progress = null;
-      pushActivity(run, {
-        nodeId: event.node_id,
-        kind: "completed",
-        text: null,
-        detail: humanDuration(invocation.durationMs),
-        ts: event.ts,
-      });
+      if (append) {
+        pushActivity(run, {
+          nodeId: event.node_id,
+          kind: "completed",
+          text: null,
+          detail: humanDuration(invocation.durationMs),
+          ts: event.ts,
+        });
+      }
       maybeStickCompleted(run, event.node_id);
       break;
     }
@@ -615,25 +628,29 @@ function applyEvent(
           typeof event.error_message === "string" ? event.error_message : null,
       };
       invocation.progress = null;
-      pushActivity(run, {
-        nodeId: event.node_id,
-        kind: "failed",
-        text: invocation.error.message,
-        detail: null,
-        ts: event.ts,
-      });
+      if (append) {
+        pushActivity(run, {
+          nodeId: event.node_id,
+          kind: "failed",
+          text: invocation.error.message,
+          detail: null,
+          ts: event.ts,
+        });
+      }
       break;
     }
     case "node_skipped": {
       const invocation = upsertInvocation(run, event, event);
       invocation.phase = "skipped";
-      pushActivity(run, {
-        nodeId: event.node_id,
-        kind: "skipped",
-        text: null,
-        detail: null,
-        ts: event.ts,
-      });
+      if (append) {
+        pushActivity(run, {
+          nodeId: event.node_id,
+          kind: "skipped",
+          text: null,
+          detail: null,
+          ts: event.ts,
+        });
+      }
       // A trailing skip can be what completes the invocation set.
       maybeStickCompleted(run, event.node_id);
       break;
@@ -642,13 +659,15 @@ function applyEvent(
       const invocation = upsertInvocation(run, event, event);
       invocation.phase = "retrying";
       invocation.attempt = Math.max(invocation.attempt, event.attempt);
-      pushActivity(run, {
-        nodeId: event.node_id,
-        kind: "retry",
-        text: null,
-        detail: `attempt ${event.attempt}`,
-        ts: event.ts,
-      });
+      if (append) {
+        pushActivity(run, {
+          nodeId: event.node_id,
+          kind: "retry",
+          text: null,
+          detail: `attempt ${event.attempt}`,
+          ts: event.ts,
+        });
+      }
       break;
     }
     case "node_progress": {
@@ -664,16 +683,19 @@ function applyEvent(
       // "structuring 47 chunks with the LLM") — exactly the truth this feed is
       // for, so it rides straight through.
       if (message) {
-        pushActivity(run, {
-          nodeId: event.node_id,
-          kind: "progress",
-          text: message,
-          detail:
-            typeof event.current === "number" && typeof event.total === "number"
-              ? `${event.current}/${event.total}`
-              : null,
-          ts: event.ts,
-        });
+        if (append) {
+          pushActivity(run, {
+            nodeId: event.node_id,
+            kind: "progress",
+            text: message,
+            detail:
+              typeof event.current === "number" &&
+              typeof event.total === "number"
+                ? `${event.current}/${event.total}`
+                : null,
+            ts: event.ts,
+          });
+        }
       }
       break;
     }
@@ -692,6 +714,7 @@ function applyEvent(
       break;
     }
     case "node_emitted": {
+      if (!append) break;
       run.emissions.push({
         nodeId: event.node_id,
         mode: typeof event.mode === "string" ? event.mode : "full",
@@ -751,13 +774,15 @@ function applyEvent(
           ? event.child_definition_id
           : null,
       );
-      pushActivity(run, {
-        nodeId: event.node_id,
-        kind: "child",
-        text: null,
-        detail: null,
-        ts: event.ts,
-      });
+      if (append) {
+        pushActivity(run, {
+          nodeId: event.node_id,
+          kind: "child",
+          text: null,
+          detail: null,
+          ts: event.ts,
+        });
+      }
       break;
     }
     case "checkpoint_saved":
@@ -815,10 +840,7 @@ const workflowRunsSlice = createSlice({
     /** Seed durable row state (status, error, heartbeat text tails) into an
      * attached run — a reconnect baseline, never an overwrite: a node that
      * already has live streamed textTail keeps it. */
-    seedRunRow(
-      state,
-      action: PayloadAction<{ runId: string; row: RunRow }>,
-    ) {
+    seedRunRow(state, action: PayloadAction<{ runId: string; row: RunRow }>) {
       const run = state.byRunId[action.payload.runId];
       if (!run) return;
       const row = action.payload.row;
@@ -876,10 +898,20 @@ const workflowRunsSlice = createSlice({
       ) {
         return;
       }
-      if (seq !== null && (run.lastEventSeq === null || seq > run.lastEventSeq)) {
+      if (
+        seq !== null &&
+        (run.lastEventSeq === null || seq > run.lastEventSeq)
+      ) {
         run.lastEventSeq = seq;
       }
-      applyEvent(state, run, event);
+      // Ring appends run at most once per durable event, whatever the
+      // transport or the number of refolds. A seq-less event (never replayed)
+      // always appends.
+      const append = seq === null || seq > run.appendedThroughSeq;
+      if (seq !== null && seq > run.appendedThroughSeq) {
+        run.appendedThroughSeq = seq;
+      }
+      applyEvent(state, run, event, append);
     },
 
     /** Tracked-tier stream bookkeeping (phase/tool/warning markers + chunk
@@ -915,6 +947,9 @@ const workflowRunsSlice = createSlice({
         event.kind === "tool" ||
         event.kind === "warning"
       ) {
+        // Ephemeral frames carry no seq and are never replayed, so they need
+        // no append watermark — the consecutive-duplicate collapse in
+        // pushActivity is what keeps a repeated marker to one line.
         const text = event.delta.trim();
         if (text) {
           pushActivity(run, {
@@ -984,7 +1019,10 @@ const workflowRunsSlice = createSlice({
 
     setTransportMode(
       state,
-      action: PayloadAction<{ runId: string; mode: "sse" | "polling" | "idle" }>,
+      action: PayloadAction<{
+        runId: string;
+        mode: "sse" | "polling" | "idle";
+      }>,
     ) {
       const run = state.byRunId[action.payload.runId];
       if (run) run.transportMode = action.payload.mode;

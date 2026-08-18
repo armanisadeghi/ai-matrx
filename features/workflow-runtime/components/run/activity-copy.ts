@@ -84,7 +84,9 @@ export function warningCopy(raw: string): string {
   }
   const code = /"code"\s*:\s*"([^"]+)"/.exec(trimmed);
   if (code?.[1]) return humanizeIdentifier(code[1]);
-  return trimmed.startsWith("{") ? "Something needed a second attempt" : trimmed;
+  return trimmed.startsWith("{")
+    ? "Something needed a second attempt"
+    : trimmed;
 }
 
 /**

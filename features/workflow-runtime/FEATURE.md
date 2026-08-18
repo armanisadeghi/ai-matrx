@@ -34,7 +34,11 @@ that is the exit-test surface.
 | Surface config | `surface/config.ts` | The Run Surface document (R1/R6/R7): 24-col grid, readout sources (node/group/childRun/progressRail/static/action), pages, visibility; tolerant parse + strict validate. |
 | Progress rail | `components/ProgressRailReadout.tsx` | The generalized podcast rail: per-node rows from selectors + authored SYNTHETIC sub-steps (randomized 2.2–5.5s cadence, last held until the node leaves "running", snap-all-done), 99%-cap progress bar until the run is terminal. Animation state is presentation-local — refresh restarts it by design. |
 | Readout renderer | `components/ReadoutView.tsx` | One readout's bare content per source kind; multi-run modes stack/latest/table (table = the canonical `MatrxDataTable` over invocations — item/status/output/duration, every column sorts + filters); childRun renders the child's OWN authored compact surface when one exists (R9 — `getDefaultSurface(childDefId, {profile:"compact"})` → nested `RunSurfaceView adopt={false}`), else a compact status summary with an expandable full board; static markdown via `MarkdownStream` content mode. Node and rail labels use the resolved spec type with a human fallback, never expose graph-local IDs as dead-end UI text. Visible node readouts promote running lane-less invocations via `useViewportLanePromotion` (IntersectionObserver → `ensureLane`, seeded with the tracked tail). |
-| Layout preview | `components/SurfaceLayoutPreview.tsx` | The builder's drag-to-place miniature (dnd-kit core): pixel delta → grid delta → caller runs `applyPlacement`. Position only; sizes stay on steppers — the preview never re-implements layout rules. |
+| **The builder** | `builder/RunSurfaceBuilder.tsx` + `app/(core)/workflows/[id]/design/page.tsx` | Build left, watch right — the agent-apps `LiveBuilder` paradigm applied to a run page. The right pane mounts the REAL `RunSurfaceView`; there is no wireframe, no miniature, no mock. Loads definition + default surface, holds one draft, CAS-saves, and offers a workflow with no surface the generated one already rendered beside the button. `(core)` contract: body `h-full overflow-hidden`, chrome via `RouteHeader`. |
+| Builder: plain language | `builder/vocabulary.ts` | THE TRANSLATION LAYER — the one place the document becomes sentences and back. Steps get a human role from their spec type (`ai.agent.*` → "An AI writes this, live"); trigger points become a two-part question (a moment kind + which step) instead of a 70-entry dropdown; an unrecognised trigger round-trips as "a moment set up elsewhere". No UI string names a readout, a source kind, or a trigger id. |
+| Builder: layout model | `builder/layout-model.ts` | ORDER + NAMED WIDTH, never coordinates. A screen's panels are an ordered list; `packScreen` flows them left-to-right and wraps, deriving every x/y, so misalignment is not expressible. Heights stay exactly as authored until the person changes them. `normalize` reproduces the live Study Pack positions byte-for-byte (pinned by `builder/__tests__/layout-model.test.ts`), and every function spreads, so unknown config keys survive a round trip. |
+| Builder: the sample run | `builder/sample-run.ts`, `builder/useSamplePreviewRun.ts` | A workflow that has never run still gets a REAL preview: genuine `WorkflowRunEvent` objects folded by the real reducer into the real slice, at any moment on a scrubber (`adopt={false}`, so zero network). The only invented text says what it is ("Sample preview — what X produced appears here"), never plausible-looking output. |
+| Builder: the preview | `builder/PreviewPane.tsx` | Binds to the newest **completed** run when one exists (a failed run teaches an author nothing), else the sample. LOUD RECOVERY: if a past run's history never arrives within 5s it says so and falls back, rather than leaving a page reading "Not started" forever. Picking a screen winds the sample to the moment that screen is live AND its own steps are busy. |
 | Surface renderer | `components/RunSurfaceView.tsx` | Renders a config over a run: trigger-resolved visibility (`appearOn`/`hideOn`, placeholder empty states), pages with auto-advance (manual tab choice wins until a LATER page's trigger fires), 24-col desktop grid / mobile single column by `mobileOrder ?? (y,x)`, interrupt card above the grid. The grid only ever grows — zero page shift. |
 | Exit-test page | `app/(dev)/demos/workflow-runtime/page.dev.tsx` | Pick → run → watch; run id rides `?run=` so mid-run refresh re-adopts and resumes. |
 
@@ -81,6 +85,21 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-18 — **the builder was rebuilt from scratch** at `/workflows/[id]/design` after
+  Arman tested the old one and rejected it outright ("no alignment, no consideration of how a
+  human would interact with this"). `components/SurfaceBuilder.tsx` and
+  `components/SurfaceLayoutPreview.tsx` are DELETED — with them went the drag-to-place grid,
+  the x/y/w/h steppers, the raw trigger-id dropdowns, and the absence of any preview. The
+  replacement lives in `builder/**` (rows above) and holds the paradigm: **build on the left,
+  see the real thing on the right.** Coordinates are no longer expressible in the UI at all —
+  a screen is an ordered list of panels with a named width, packed onto the 24-column grid by
+  a pure packer, which is what makes alignment structural rather than a thing an author can
+  get wrong. Two defects were fixed on the way: `saveSurfaceConfig` now returns
+  `saved | conflict | refused | gone` instead of calling an RLS refusal a "conflict" (a
+  readable row still at the expected version cannot have lost a CAS race — it was refused,
+  and saying "someone else saved this" was a lie the old builder told); and
+  `surface/service.ts` gained `listRecentRuns` so the preview can bind to real data. The demo
+  page's Builder tab is now a door to the route, not a second lesser copy.
 - 2026-08-17 — Phase 5 podcast proof: "Podcast Episode v1" shipped as LIVE data — a
   `workflow.definition` (f6d0e4b2… — io.user_input brief form → the registered
   `podcast.episode.generate` host action wrapping the SAME pipeline as the product's

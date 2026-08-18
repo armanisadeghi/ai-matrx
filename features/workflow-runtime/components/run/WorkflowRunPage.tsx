@@ -89,7 +89,9 @@ export function WorkflowRunPage({
       })
       .catch(() => {
         if (!cancelled) {
-          setLoadError("This run could not be opened. It may have been removed.");
+          setLoadError(
+            "This run could not be opened. It may have been removed.",
+          );
         }
       });
     return () => {
@@ -104,9 +106,10 @@ export function WorkflowRunPage({
       fetchWorkflowDefinition(definitionId),
       // A workflow with no authored surface is not a broken workflow — the
       // stage derives one from the definition, so this failing is never fatal.
-      getDefaultSurface(definitionId, { audience: "consumer", profile: "full" }).catch(
-        () => null,
-      ),
+      getDefaultSurface(definitionId, {
+        audience: "consumer",
+        profile: "full",
+      }).catch(() => null),
     ])
       .then(([loaded, surface]) => {
         if (cancelled) return;

@@ -21,9 +21,11 @@ import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 
 import { Slider } from "@/components/ui/slider";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 
 import { RunSurfaceView } from "../components/RunSurfaceView";
+import { selectRunStatus } from "../redux/workflow-runs.selectors";
 import type { RunSurfaceConfig } from "../surface/config";
 import { listRecentRuns, type RecentRunSummary } from "../surface/service";
 import type { WorkflowDefinitionLike } from "../trigger-points";
@@ -169,6 +171,23 @@ export function PreviewPane({
     // Only when the chosen screen changes — never fighting a manual scrub.
   }, [screenId, source]);
 
+  // LOUD RECOVERY, never a silent dead page: a past run only renders once its
+  // history has been fetched. If nothing arrives, the author would otherwise
+  // sit in front of a page reading "Not started" forever and blame their
+  // layout — so we say what happened and fall back to the sample run.
+  const realStatus = useAppSelector(
+    selectRunStatus(source === "real" ? realRunId : ""),
+  );
+  const [realUnreachable, setRealUnreachable] = useState(false);
+  useEffect(() => {
+    if (source !== "real" || !realRunId || realStatus) return;
+    const timer = window.setTimeout(() => {
+      setRealUnreachable(true);
+      setSource("sample");
+    }, 5_000);
+    return () => window.clearTimeout(timer);
+  }, [source, realRunId, realStatus]);
+
   const sampleRunId = useSamplePreviewRun(definition, moment, source === "sample");
   const previewRunId = source === "real" ? realRunId : sampleRunId;
 
@@ -188,7 +207,10 @@ export function PreviewPane({
                 { value: "sample", label: "Sample run" },
                 { value: "real", label: "A real run" },
               ]}
-              onChange={setSource}
+              onChange={(next) => {
+                setRealUnreachable(false);
+                setSource(next);
+              }}
             />
           </div>
         </div>
@@ -202,7 +224,13 @@ export function PreviewPane({
               Switch back to the sample run.
             </p>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
+                A real run opens on whichever screen it had reached. Use the
+                tabs below to look at the others — or switch to the sample run
+                to wind time back and forth.
+              </p>
+              <div className="flex items-center gap-2">
               <div className="min-w-0 flex-1">
                 <SelectField
                   ariaLabel="Which past run"
@@ -224,10 +252,17 @@ export function PreviewPane({
                   <ExternalLink className="h-3.5 w-3.5" /> Open
                 </a>
               ) : null}
+              </div>
             </div>
           )
         ) : (
           <div className="space-y-1">
+            {realUnreachable ? (
+              <p className="rounded-md bg-amber-500/10 px-2 py-1 text-xs text-amber-700 dark:text-amber-400">
+                That past run&apos;s data didn&apos;t come back, so this is the
+                sample run instead. Your layout is fine — the run is the problem.
+              </p>
+            ) : null}
             <div className="flex items-baseline gap-2">
               <FieldLabel>Wind the run to</FieldLabel>
               <span className="text-xs font-medium text-foreground">

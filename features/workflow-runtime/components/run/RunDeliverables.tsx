@@ -59,7 +59,8 @@ function DeliverableCard({
   // Open on arrival — a deliverable that lands behind a closed drawer is a
   // deliverable the reader never sees. They can collapse it; we never re-open.
   const [collapsed, setCollapsed] = useState(false);
-  const working = aggregate.phase === "running" || aggregate.phase === "retrying";
+  const working =
+    aggregate.phase === "running" || aggregate.phase === "retrying";
   const style = FAMILY_STYLE[ready ? "deliver" : step.family];
   const title = step.outputKind ? humanizeKind(step.outputKind) : step.label;
 
@@ -84,10 +85,7 @@ function DeliverableCard({
 
   return (
     <section
-      className={cn(
-        "overflow-hidden rounded-xl border bg-card",
-        style.ring,
-      )}
+      className={cn("overflow-hidden rounded-xl border bg-card", style.ring)}
     >
       <button
         type="button"

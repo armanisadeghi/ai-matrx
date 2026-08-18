@@ -264,12 +264,10 @@ function NodeReadout({
               {inv.iteration !== null ? ` · pass ${inv.iteration + 1}` : ""}
             </div>
           ) : null}
+          {/* The progress message is rendered BY InvocationBody's working
+              state — printing it again here put the same sentence on screen
+              twice in every step that reports progress. */}
           <InvocationBody runId={runId} invocation={inv} prefer={prefer} />
-          {inv.progress?.message ? (
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              {inv.progress.message}
-            </p>
-          ) : null}
         </div>
       ))}
     </div>

@@ -165,7 +165,14 @@ export function stepsByNodeId(
  * `study_pack_set` → "Study pack", `flashcard_set` → "Flashcards",
  * `quiz_set` → "Quiz". A declared kind is a promise to the reader, so it is
  * spoken in their words — never as a registry identifier.
+ *
+ * Pluralisation is deliberately conservative: a bare "+s" is only correct for
+ * words that do not end in a sibilant, so "quiz" stays "Quiz" rather than
+ * becoming the nonsense "Quizs". A wrong plural in the first thing the reader
+ * sees is worse than a singular.
  */
+const NO_BARE_S = /(?:s|x|z|ch|sh)$/i;
+
 export function humanizeKind(kind: string): string {
   const base = kind
     .replace(/[._]/g, " ")
@@ -174,9 +181,9 @@ export function humanizeKind(kind: string): string {
   if (!base) return humanizeIdentifier(kind);
   const words = base.split(/\s+/);
   const head = words[0];
-  const plural =
-    head.endsWith("s") || words.length > 1 ? words.join(" ") : `${head}s`;
-  return plural.charAt(0).toUpperCase() + plural.slice(1);
+  const spoken =
+    words.length > 1 || NO_BARE_S.test(head) ? words.join(" ") : `${head}s`;
+  return spoken.charAt(0).toUpperCase() + spoken.slice(1);
 }
 
 /** `lesson_scripts` → "Lesson scripts". The last-resort human name. */

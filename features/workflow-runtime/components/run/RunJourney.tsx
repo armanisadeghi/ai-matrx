@@ -121,7 +121,8 @@ function JourneyRow({
   const settled = phase === "settled";
   const failed = phase === "failed";
   const skipped = phase === "skipped";
-  const started = phase !== undefined && phase !== "idle" && phase !== "waiting";
+  const started =
+    phase !== undefined && phase !== "idle" && phase !== "waiting";
   const style = FAMILY_STYLE[step.family];
 
   return (
@@ -182,12 +183,20 @@ function JourneyRow({
           </p>
         ) : null}
 
-        {/* While it runs: the REAL signal first, the floor beneath it. */}
-        {running && latest ? (
-          <p className="truncate text-[11px] text-foreground/80">{latest}</p>
-        ) : null}
-        {syntheticLabels && syntheticLabels.length > 0 && started ? (
-          <SyntheticSubSteps labels={syntheticLabels} running={running} />
+        {/* While it runs: the REAL signal first, the floor beneath it. Both
+            retire once the step is done — a finished run should read as a
+            clean checklist, and the full trace lives in the activity feed. */}
+        {running ? (
+          <>
+            {latest ? (
+              <p className="truncate text-[11px] text-foreground/80">
+                {latest}
+              </p>
+            ) : null}
+            {syntheticLabels && syntheticLabels.length > 0 ? (
+              <SyntheticSubSteps labels={syntheticLabels} running />
+            ) : null}
+          </>
         ) : null}
       </div>
     </li>

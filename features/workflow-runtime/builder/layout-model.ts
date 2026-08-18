@@ -43,7 +43,7 @@ export const HEIGHT_ROWS: Record<PanelHeight, number> = {
 };
 
 export const WIDTH_CHOICES: readonly { value: PanelWidth; label: string }[] = [
-  { value: "third", label: "Narrow" },
+  { value: "third", label: "Small" },
   { value: "half", label: "Half" },
   { value: "twoThirds", label: "Wide" },
   { value: "full", label: "Full" },

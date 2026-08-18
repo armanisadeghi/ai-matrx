@@ -84,10 +84,12 @@ export function Segmented<T extends string>({
             aria-checked={selected}
             onClick={() => onChange(option.value)}
             className={cn(
-              "flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
+              "flex-1 truncate whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs transition-colors",
+              // Selection carries a tint AND a ring AND a weight change: a
+              // raised card alone reads in light and disappears in dark.
               selected
-                ? "bg-card text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
+                ? "bg-primary/10 font-semibold text-foreground ring-1 ring-primary/50"
+                : "font-medium text-muted-foreground hover:text-foreground",
             )}
           >
             {option.label}

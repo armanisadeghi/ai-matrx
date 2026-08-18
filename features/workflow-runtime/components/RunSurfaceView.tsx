@@ -191,6 +191,7 @@ export function RunSurfaceView({
   config,
   adopt = true,
   hideRunStatusCards = false,
+  hideProgressRails = false,
 }: {
   runId: string;
   definition: WorkflowDefinitionLike;
@@ -205,6 +206,13 @@ export function RunSurfaceView({
    * stopped run.
    */
   hideRunStatusCards?: boolean;
+  /**
+   * The host already narrates progress somewhere better (RunStage hoists the
+   * authored rail into its always-visible journey), so the per-page rail
+   * readouts would be a second, smaller copy of the same thing beside the
+   * content. Standalone consumers leave this off and keep their rails.
+   */
+  hideProgressRails?: boolean;
 }) {
   const { ensureLane } = useWorkflowRun(adopt !== false ? runId : null);
   // Bound to THIS surface's run for the readouts below. A non-adopting
@@ -256,6 +264,7 @@ export function RunSurfaceView({
   // ── Visibility + page filter → render list (placeholders hold space). ───
   const rendered: ReadoutRender[] = [];
   for (const readout of config.readouts) {
+    if (hideProgressRails && readout.source.kind === "progressRail") continue;
     if (pages.length > 0) {
       const pageId = readout.pageId ?? firstPageId;
       if (pageId !== activePageId) continue;

@@ -175,13 +175,26 @@ export interface SaveSurfaceConfigArgs {
 }
 
 /**
+ * Why a save didn't land. Never collapse these into one message: they need
+ * different words and different ways forward, and asserting the wrong one is
+ * how a UI ends up telling a person "someone else saved this" when the truth
+ * is that their account was never allowed to write the row.
+ *
+ * - "conflict" — someone else saved since this edit's read (`version` moved).
+ * - "refused"  — the row is still readable and still at the expected version,
+ *   so the UPDATE matched nothing for a reason CAS cannot explain: RLS.
+ * - "gone"     — the row is no longer reachable at all (deleted, or hidden).
+ */
+export type SaveSurfaceOutcome = "saved" | "conflict" | "refused" | "gone";
+
+/**
  * Save a surface's config with optimistic concurrency (CAS on `version`).
- * "conflict" means someone else saved since the read — the caller surfaces
- * the refresh choice to the user, never silently overwrites.
+ * Never silently overwrites, and never silently no-ops — every non-save
+ * outcome is classified so the caller can say what actually happened.
  */
 export async function saveSurfaceConfig(
   args: SaveSurfaceConfigArgs,
-): Promise<"saved" | "conflict"> {
+): Promise<SaveSurfaceOutcome> {
   const problems = validateSurfaceConfig(args.config);
   if (problems.length > 0) {
     throw new Error(`Surface config is invalid: ${problems.join(" ")}`);
@@ -211,9 +224,11 @@ export async function saveSurfaceConfig(
       surfaceTable().select("version").eq("id", args.id).maybeSingle(),
   });
   if (result.status === "saved") return "saved";
-  // A vanished row (hard-refused by RLS or soft-deleted mid-edit) is a
-  // conflict from the editor's point of view: reload to see the truth.
-  return "conflict";
+  if (result.status === "not_found") return "gone";
+  // The row is readable and still sits at the version this edit was based on,
+  // yet the guarded UPDATE matched nothing — CAS cannot produce that. The
+  // write was refused (RLS), and calling it a conflict would be a lie.
+  return result.currentVersion === args.expectedVersion ? "refused" : "conflict";
 }
 
 /**

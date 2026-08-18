@@ -33,6 +33,7 @@ import {
   getDefaultSurface,
   saveSurfaceConfig,
   type RuntimeSurfaceRow,
+  type SaveSurfaceOutcome,
 } from "../surface/service";
 import type { WorkflowDefinitionLike } from "../trigger-points";
 import { BuildPane, type SurfaceMeta } from "./BuildPane";
@@ -64,7 +65,9 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [conflict, setConflict] = useState(false);
+  const [saveProblem, setSaveProblem] = useState<
+    Exclude<SaveSurfaceOutcome, "saved"> | null
+  >(null);
   const [mobileView, setMobileView] = useState<MobileView>("build");
   const [reloadNonce, setReloadNonce] = useState(0);
 
@@ -162,8 +165,8 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
         config,
         meta,
       });
-      if (outcome === "conflict") {
-        setConflict(true);
+      if (outcome !== "saved") {
+        setSaveProblem(outcome);
         return;
       }
       setSurface({ ...surface, ...meta, config, warnings: [], version: surface.version + 1 });
@@ -321,15 +324,31 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
       )}
 
       <ConfirmDialog
-        open={conflict}
-        onOpenChange={setConflict}
-        title="Someone else saved this view"
-        description="Your changes weren't saved, because they'd have overwritten theirs. Load their version to see what changed — your unsaved edits will be lost."
-        confirmLabel="Load their version"
-        cancelLabel="Keep editing mine"
+        open={saveProblem !== null}
+        onOpenChange={(open) => {
+          if (!open) setSaveProblem(null);
+        }}
+        title={
+          saveProblem === "conflict"
+            ? "Someone else saved this view"
+            : saveProblem === "refused"
+              ? "This account can't change this view"
+              : "This view is no longer there"
+        }
+        description={
+          saveProblem === "conflict"
+            ? "Your changes weren't saved, because they'd have overwritten theirs. Load their version to see what changed — your unsaved edits will be lost."
+            : saveProblem === "refused"
+              ? "Nothing was saved. This view belongs to another workspace, and you're signed in with an account that can read it but not change it. Ask its owner for edit access — or copy anything you need out of your edits before you leave this page."
+              : "Nothing was saved, because this view has been deleted since you opened it. Copy anything you need out of your edits before you leave this page."
+        }
+        confirmLabel={
+          saveProblem === "conflict" ? "Load their version" : "Reload the page"
+        }
+        cancelLabel={saveProblem === "conflict" ? "Keep editing mine" : "Stay here"}
         variant="destructive"
         onConfirm={() => {
-          setConflict(false);
+          setSaveProblem(null);
           setDirty(false);
           setReloadNonce((n) => n + 1);
         }}

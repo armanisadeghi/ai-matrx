@@ -104,6 +104,20 @@ export function InvocationBody({
   const settledOutput =
     invocation.phase === "settled" && invocation.output !== null;
   if (invocation.laneRequestId && !(prefer === "persisted" && settledOutput)) {
+    // An OPEN lane that has received nothing yet renders as an empty pane —
+    // which is exactly the blank box that made a working run look dead. The
+    // lane is attached and will take over the instant the first token lands;
+    // until then the reader gets the honest working state.
+    //
+    // Only while the invocation is genuinely WORKING: a settled step whose
+    // lane simply hasn't been released yet must fall through to its output, or
+    // a finished step reads "Working on this now" forever beside its own
+    // green tick in the rail.
+    const working =
+      invocation.phase === "running" || invocation.phase === "retrying";
+    if (working && invocation.chunksReceived === 0 && invocation.textTail === "") {
+      return <WorkingBody message={invocation.progress?.message ?? null} />;
+    }
     return (
       <LiveRunDisplay
         requestId={invocation.laneRequestId}

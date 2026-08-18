@@ -62,11 +62,35 @@ function collectSyntheticSteps(
   for (const readout of config.readouts) {
     if (readout.source.kind !== "progressRail") continue;
     const source = readout.source as ProgressRailSource;
-    for (const [nodeId, labels] of Object.entries(source.syntheticSteps ?? {})) {
+    for (const [nodeId, labels] of Object.entries(
+      source.syntheticSteps ?? {},
+    )) {
       if (!merged[nodeId]) merged[nodeId] = labels;
     }
   }
   return merged;
+}
+
+/**
+ * The deliverables the STAGE does not already show. When an author has placed
+ * a deliverable on one of their own pages, that placement wins — rendering the
+ * same kind component twice on one screen is the duplication the canonical
+ * component law exists to prevent, and the author's layout is the intent. The
+ * section then carries exactly what the surface leaves out (on Study Pack:
+ * the assembled study pack, which no page renders).
+ */
+function undisplayedDeliverables(
+  deliverables: RunStepPresentation[],
+  config: RunSurfaceConfig,
+): RunStepPresentation[] {
+  const shown = new Set<string>();
+  for (const readout of config.readouts) {
+    if (readout.source.kind === "node") shown.add(readout.source.nodeId);
+    if (readout.source.kind === "group") {
+      for (const nodeId of readout.source.nodeIds) shown.add(nodeId);
+    }
+  }
+  return deliverables.filter((step) => !shown.has(step.nodeId));
 }
 
 /** Keeps the step that is working right now inside the rail's own viewport. */
@@ -89,14 +113,19 @@ function useFollowRunningStep(
     );
     if (!row) return;
     // Scroll the RAIL only — never `scrollIntoView`, which would yank the whole
-    // page while the reader is reading the stage.
-    const top = row.offsetTop - container.offsetTop;
-    const bottom = top + row.offsetHeight;
-    if (top < container.scrollTop) {
-      container.scrollTop = Math.max(0, top - 12);
-    } else if (bottom > container.scrollTop + container.clientHeight) {
-      container.scrollTop = bottom - container.clientHeight + 12;
-    }
+    // page while the reader is reading the stage. Measured from the two rects
+    // (the row's offsetParent is not the scroll container, so offset arithmetic
+    // lands on the wrong step), and PARKED a third of the way down rather than
+    // merely "nearest": a nearest-fit scroll leaves the live step flush against
+    // an edge, one row from invisible, which is the one row that must never be
+    // off screen.
+    const rowRect = row.getBoundingClientRect();
+    const boxRect = container.getBoundingClientRect();
+    const target =
+      container.scrollTop +
+      (rowRect.top - boxRect.top) -
+      container.clientHeight / 3;
+    container.scrollTop = Math.max(0, target);
   }, [runningId]);
 
   return scrollRef;
@@ -119,16 +148,17 @@ export function RunStage({
   config?: RunSurfaceConfig | null;
   onRetry?: () => void;
 }) {
-  const steps = useMemo(
-    () => describeWorkflowSteps(definition),
-    [definition],
-  );
+  const steps = useMemo(() => describeWorkflowSteps(definition), [definition]);
   const deliverables = useMemo(() => deliverableSteps(steps), [steps]);
   const surface = useMemo(
     () => config ?? deriveDefaultSurfaceConfig(definition),
     [config, definition],
   );
   const synthetic = useMemo(() => collectSyntheticSteps(surface), [surface]);
+  const ownDeliverables = useMemo(
+    () => undisplayedDeliverables(deliverables, surface),
+    [deliverables, surface],
+  );
   const stepLabels = useMemo(() => {
     const labels: Record<string, string> = {};
     for (const step of steps) labels[step.nodeId] = step.label;
@@ -188,8 +218,9 @@ export function RunStage({
             definition={definition}
             config={surface}
             hideRunStatusCards
+            hideProgressRails
           />
-          <RunDeliverables runId={runId} deliverables={deliverables} />
+          <RunDeliverables runId={runId} deliverables={ownDeliverables} />
         </div>
       </div>
     </div>
