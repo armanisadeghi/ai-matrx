@@ -20,6 +20,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import {
   Layers,
   ListChecks,
@@ -40,6 +41,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
@@ -165,6 +174,7 @@ export function ConvertContentDialog({
   onConverted,
 }: ConvertContentDialogProps) {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const { convert } = useContentConverter();
   // THE FLOATING LAW, inline exception: the generator streams INSIDE the row
   // the user just clicked, not in the floating window. A modal sits ABOVE every
@@ -227,21 +237,9 @@ export function ConvertContentDialog({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Boxes className="h-4 w-4 text-primary" />
-            Turn this into study material
-          </DialogTitle>
-          <DialogDescription>
-            Every artifact is grounded in this content and links back to it —
-            nothing is siloed.
-          </DialogDescription>
-        </DialogHeader>
-
-        {hasSelection && (
+  const body = (
+    <div className="flex flex-col gap-4">
+      {hasSelection && (
           <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1">
             <button
               type="button"
@@ -270,20 +268,57 @@ export function ConvertContentDialog({
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
-          {targets.map((t) => (
-            <TargetRow
-              key={t.kind}
-              meta={t}
-              available={isTargetAvailable(t.kind)}
-              state={rows[t.kind] ?? { status: "idle" }}
-              liveRequestId={liveRequestId}
-              onConvert={() => runConvert(t.kind)}
-              onOpen={(href) => router.push(href)}
-            />
-          ))}
-        </div>
-        <coppa.Gate />
+      <div className="flex flex-col gap-2">
+        {targets.map((t) => (
+          <TargetRow
+            key={t.kind}
+            meta={t}
+            available={isTargetAvailable(t.kind)}
+            state={rows[t.kind] ?? { status: "idle" }}
+            liveRequestId={liveRequestId}
+            onConvert={() => runConvert(t.kind)}
+            onOpen={(href) => router.push(href)}
+          />
+        ))}
+      </div>
+      <coppa.Gate />
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="pb-safe">
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center justify-center gap-2">
+              <Boxes className="h-4 w-4 text-primary" />
+              Turn this into study material
+            </DrawerTitle>
+            <DrawerDescription>
+              Every artifact is grounded in this content and links back to it —
+              nothing is siloed.
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="max-h-[70dvh] overflow-y-auto px-4 pb-4">{body}</div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Boxes className="h-4 w-4 text-primary" />
+            Turn this into study material
+          </DialogTitle>
+          <DialogDescription>
+            Every artifact is grounded in this content and links back to it —
+            nothing is siloed.
+          </DialogDescription>
+        </DialogHeader>
+        {body}
       </DialogContent>
     </Dialog>
   );
@@ -329,9 +364,15 @@ function TargetRow({
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-foreground">{meta.label}</span>
           {!available && (
-            <span className="rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <button
+              type="button"
+              onClick={() =>
+                void announceComingSoon("education.convert-target-generators")
+              }
+              className="rounded-full border border-border bg-muted px-1.5 py-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
               Coming soon
-            </span>
+            </button>
           )}
           {done && state.result.trust?.confidence && (
             <ConfidenceBadge confidence={state.result.trust.confidence} />

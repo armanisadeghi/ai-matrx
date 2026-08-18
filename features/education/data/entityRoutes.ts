@@ -6,8 +6,9 @@
 // route change lives in one place. Pure — no I/O.
 //
 // Tokens are `platform.entity_types` tokens; the route targets are the live
-// /education app routes. An unknown token resolves to a linkless "Other" entry
-// (never a broken link).
+// /education app routes. An unknown token falls back to the platform entity
+// registry's canonical `hrefFor` (Door Law: a named record must be reachable),
+// and only a token with no registered route anywhere resolves linkless.
 
 import {
   Layers,
@@ -18,6 +19,7 @@ import {
   FileQuestion,
   type LucideIcon,
 } from "lucide-react";
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 
 export interface EducationEntityRoute {
   /** Display group header on aggregation surfaces. */
@@ -67,21 +69,30 @@ const ROUTES: Record<string, EducationEntityRoute> = {
     group: "Source materials",
     label: "File",
     Icon: FileText,
-    // Files render through the universal file handler, not an /education route.
-    href: () => null,
+    // Files open through the universal file viewer route (the same canonical
+    // `/files/f/<id>` the platform entity registry declares).
+    href: (id) => `/files/f/${id}`,
   },
 };
 
-const UNKNOWN: EducationEntityRoute = {
-  group: "Other",
-  label: "Item",
-  Icon: FileQuestion,
-  href: () => null,
-};
+/**
+ * Unknown-token fallback: resolve the canonical route from the platform entity
+ * registry so a token education doesn't curate still opens its record (Door
+ * Law). Only a token with no registered `hrefFor` anywhere resolves linkless.
+ */
+function unknownRoute(token: string): EducationEntityRoute {
+  const info = tryGetEntityInfo(token);
+  return {
+    group: "Other",
+    label: info?.label ?? "Item",
+    Icon: info?.Icon ?? FileQuestion,
+    href: (id) => info?.hrefFor?.(id) ?? null,
+  };
+}
 
 /** Resolve display + routing metadata for an education entity token. */
 export function educationEntityRoute(token: string): EducationEntityRoute {
-  return ROUTES[token] ?? UNKNOWN;
+  return ROUTES[token] ?? unknownRoute(token);
 }
 
 /** Convenience: the /education href for a token+id, or null. */

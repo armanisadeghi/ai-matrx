@@ -426,6 +426,15 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "Sub-agents have no way to be distinguished from top-level agents until the agent_definition.kind column lands; until then they cannot be listed or filtered out of the Agents list.",
     surfaces: ["/agent-connections/sub-agents empty state"],
   },
+  "education.convert-target-generators": {
+    id: "education.convert-target-generators",
+    label: "More convert targets",
+    owner: "education",
+    promise:
+      "Convert this content into every study artifact — targets light up here as each owning project registers its generator with the canonical converter.",
+    stage: "planned",
+    surfaces: ["ConvertContentDialog unavailable-target rows"],
+  },
   "education.premium-checkout": {
     id: "education.premium-checkout",
     label: "Education Premium Checkout",

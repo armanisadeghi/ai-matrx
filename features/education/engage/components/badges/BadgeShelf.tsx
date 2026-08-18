@@ -9,6 +9,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useBadges } from "../../data/useEngageMeta";
 import { BADGE_LIST } from "../../engine/badges";
 
@@ -50,7 +51,18 @@ export function BadgeShelf() {
         })}
       </div>
       {loading && (
-        <p className="mt-2 text-xs text-muted-foreground">Loading badges…</p>
+        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="flex flex-col items-center gap-1.5 rounded-lg border border-border p-3"
+            >
+              <Skeleton className="h-6 w-6 rounded-full" />
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -12,6 +12,7 @@
 import { Trophy, TrendingUp, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLeague } from "../../data/useEngageMeta";
 import { useCurrentPlayer } from "../../data/useCurrentPlayer";
 
@@ -42,7 +43,15 @@ export function LeaguePanel() {
           anytime.
         </p>
       ) : loading ? (
-        <p className="text-sm text-muted-foreground">Loading standings…</p>
+        <div className="divide-y divide-border">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 py-2">
+              <Skeleton className="h-4 w-5" />
+              <Skeleton className="h-4 flex-1" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+          ))}
+        </div>
       ) : leaderboard.length === 0 ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Users className="h-4 w-4" /> You’re in. Play a game to put mastery on
