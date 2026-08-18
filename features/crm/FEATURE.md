@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live` · **Tier:** `1` · **Last updated:** `2026-08-17`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live` · **Tier:** `1` · **Last updated:** `2026-08-18`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
@@ -420,6 +420,11 @@ for once:
   instead of depending on a database default. The server still derives both lane
   and identity from this campaign row and `crm.check_send_eligibility()` remains
   the only send authority.
+- **An unresolved merge field is a governed refusal, not a system failure.**
+  `POST /outreach/single/drafts` returns 409, and both draft dialogs render
+  `readOutreachProblem()`'s named fields plus the server's fix. The diagnostics
+  boundary keeps only this exact draft-creation refusal local; changed drafts,
+  send failures, other routes, and server failures remain red.
 - **Enrollment sources are the list selection, an ad-hoc filter, or a SMART
   VIEW** (`AddMembersDialog` source picker). Whichever it was, the enrolled
   list stamps its provenance into `crm.outreach_list.definition`
@@ -673,6 +678,10 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-18 — **Expected unresolved-variable draft refusals stay out of the
+  repair queue.** The exact single-draft 409 is isolated at the diagnostics
+  boundary for both the legacy `conflict` and canonical `unresolved_variables`
+  codes; the dialogs still render every missing field and the server's fix.
 - 2026-08-17 — **Missing or unreadable outreach lists stopped entering the
   repair queue as PGRST116.** The shared reader now uses `maybeSingle` plus the
   canonical `recordUnavailable` contract; the workspace and dialer render the

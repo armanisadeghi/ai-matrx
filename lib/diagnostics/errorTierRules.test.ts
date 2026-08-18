@@ -343,6 +343,47 @@ describe("classifyTier", () => {
     expect(toast.tier).toBe("red");
   });
 
+  it.each(["conflict", "unresolved_variables"])(
+    "keeps the governed outreach merge-field refusal local for code %s",
+    (code) => {
+      const c = classifyTier(
+        captured({
+          source: "api-http",
+          relation: "POST /outreach/single/drafts",
+          code,
+          status: 409,
+          message:
+            "This message still has unresolved variables: case.missing_field. Fill them from the target record before sending.",
+        }),
+      );
+
+      expect(c.tier).toBe("yellow");
+      expect(c.ruleId).toBe("outreach-draft-unresolved-variables");
+    },
+  );
+
+  it.each([
+    ["POST /outreach/single/drafts", "draft_changed", 409],
+    ["POST /outreach/single/drafts", "unresolved_variables", 500],
+    ["POST /outreach/single/drafts/draft-1/send", "unresolved_variables", 409],
+  ])(
+    "keeps non-matching outreach failures red for %s / %s / %s",
+    (relation, code, status) => {
+      const c = classifyTier(
+        captured({
+          source: "api-http",
+          relation,
+          code,
+          status,
+          message:
+            "This message still has unresolved variables: case.missing_field. Fill them from the target record before sending.",
+        }),
+      );
+
+      expect(c.tier).toBe("red");
+    },
+  );
+
   it("silences a record-unavailable capture only after AccessGate resolves denial", () => {
     const c = classifyTier(
       captured({

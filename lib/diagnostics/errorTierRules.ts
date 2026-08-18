@@ -234,6 +234,20 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "outreach-draft-unresolved-variables",
+    tier: "yellow",
+    reason:
+      "The single-send draft gate intentionally refuses a template whose target record cannot fill every merge field. Both outreach dialogs render the named fields and the server's fix, so keep this governed validation local instead of filing a repair-queue incident.",
+    addedAt: "2026-08-18",
+    match: {
+      source: "api-http",
+      code: ["conflict", "unresolved_variables"],
+      relation: "POST /outreach/single/drafts",
+      status: 409,
+      messageIncludes: "This message still has unresolved variables:",
+    },
+  },
+  {
     id: "request-aborted",
     tier: "yellow",
     reason:

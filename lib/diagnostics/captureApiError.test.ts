@@ -118,6 +118,57 @@ describe("captureApiError", () => {
     });
   });
 
+  it.each(["conflict", "unresolved_variables"])(
+    "keeps an outreach merge-field refusal local at the API capture boundary for %s",
+    (backendCode) => {
+      const outreachListId = "7888326d-06e2-4c6d-8690-088a872aad1b";
+      const message =
+        "This message still has unresolved variables: case.missing_field. Fill them from the target record before sending.";
+      window.history.replaceState(
+        {},
+        "",
+        `/crm/outreach-lists/${outreachListId}`,
+      );
+
+      captureApiError(
+        {
+          type: "validation_error",
+          message,
+          status: 409,
+          serverDetail: {
+            error: backendCode,
+            message,
+            user_message: message,
+            request_id: "7f07da9754cd4e4bad672e8ff90b916a",
+            details: {
+              code: "unresolved_variables",
+              message,
+              fix: "Fill every named field on the real target record or edit the template.",
+              unresolved: ["case.missing_field"],
+            },
+          },
+        },
+        {
+          url: "https://server.app.matrxserver.com/outreach/single/drafts",
+          method: "POST",
+          path: "/outreach/single/drafts",
+        },
+      );
+
+      expect(getSnapshot()[0]).toMatchObject({
+        source: "api-http",
+        tier: "yellow",
+        tierRuleId: "outreach-draft-unresolved-variables",
+        route: `/crm/outreach-lists/${outreachListId}`,
+        relation: "POST /outreach/single/drafts",
+        code: backendCode,
+        status: 409,
+        message,
+        requestId: "7f07da9754cd4e4bad672e8ff90b916a",
+      });
+    },
+  );
+
   it("keeps a retryable Mandate code-truth outage out of persistence", () => {
     window.history.replaceState({}, "", "/administration/agents/mandates");
 
