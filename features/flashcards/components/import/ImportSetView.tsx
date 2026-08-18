@@ -31,11 +31,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { persistImportedDeck } from "@/features/education/onboard/import/importDeck";
 import {
+  importPortableJson,
+  persistImportedDeck,
+} from "@/features/education/onboard/import/importDeck";
+import {
+  parseCsvRecords,
   parseImportText,
   parsedRowsToCardInputs,
   type FieldDelimiter,
+  type ParseImportResult,
 } from "../../utils/importExportCsv";
 
 const EDU_BASE = "/education/flashcards";
@@ -55,21 +60,42 @@ export function ImportSetView() {
   const [raw, setRaw] = useState("");
   const [delimiter, setDelimiter] = useState<FieldDelimiter>("tab");
   const [creating, setCreating] = useState(false);
+  // Set when the text came from a CSV FILE: quote-aware RFC-4180 parse
+  // (embedded commas/newlines survive — our own CSV export re-imports).
+  // Cleared the moment the user edits the textarea.
+  const [csvRows, setCsvRows] = useState<ParseImportResult | null>(null);
 
   const busy = creating || isNavigating;
-  const { rows, skipped } = parseImportText(raw, delimiter);
+  const { rows, skipped } = csvRows ?? parseImportText(raw, delimiter);
   const canSubmit = setName.trim().length > 0 && rows.length > 0 && !busy;
 
   const goBack = () => startNavigation(() => router.push(EDU_BASE));
 
   const handleFile = async (file: File) => {
     const text = await file.text();
+    // Matrx JSON export: land it directly through the one import entry.
+    if (/\.json$/i.test(file.name)) {
+      setCreating(true);
+      try {
+        const outcome = await importPortableJson(text);
+        toast.success(`Imported "${outcome.name}" with ${outcome.cardCount} cards`);
+        startNavigation(() => router.push(`${EDU_BASE}/${outcome.setId}`));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Import failed");
+      } finally {
+        setCreating(false);
+      }
+      return;
+    }
     setRaw(text);
-    // TSV/CSV file extension is a strong hint for the delimiter — but the
-    // per-line fallback in parseImportText means a wrong guess still imports.
-    if (file.name.toLowerCase().endsWith(".csv")) setDelimiter("comma");
+    if (file.name.toLowerCase().endsWith(".csv")) {
+      setDelimiter("comma");
+      setCsvRows(parseCsvRecords(text));
+    } else {
+      setCsvRows(null);
+    }
     if (!setName.trim()) {
-      setSetName(file.name.replace(/\.(csv|tsv|txt)$/i, ""));
+      setSetName(file.name.replace(/\.(csv|tsv|txt|json)$/i, ""));
     }
   };
 
@@ -172,7 +198,7 @@ export function ImportSetView() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".csv,.tsv,.txt"
+                  accept=".csv,.tsv,.txt,.json"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -200,7 +226,10 @@ export function ImportSetView() {
               <Textarea
                 id="import-text"
                 value={raw}
-                onChange={(e) => setRaw(e.target.value)}
+                onChange={(e) => {
+                  setRaw(e.target.value);
+                  setCsvRows(null);
+                }}
                 placeholder={"Mitochondria\tThe powerhouse of the cell\nPhotosynthesis\tThe process plants use to convert light into energy"}
                 className="min-h-48 resize-y font-mono text-sm"
                 disabled={busy}
