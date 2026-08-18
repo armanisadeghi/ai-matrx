@@ -59,9 +59,11 @@
 # what is already committed). Only a remote sync that must FF/rebase will refuse
 # a dirty tree. ./ship.sh (--ship) folds the working tree into the release commit.
 #
-# Quality gates (doctrine, UI primitives, migration ledger, …) stay ADVISORY —
-# they scream loudly and never block the ship. Only git (and a failed migration
-# apply) can stop a release. Manual hard-fail: pnpm check:release-gates:strict
+# Quality gates (doctrine, UI primitives, patrol certification, …) stay
+# ADVISORY — they scream loudly and never block the ship. A busy delivery lane
+# waits and resumes automatically. Only an inability to create/push a coherent
+# Git release, or a failed migration/contract reconciliation, can stop it.
+# Manual hard-fail: pnpm check:release-gates:strict
 set -euo pipefail
 
 # ── Failure trap ─────────────────────────────────────────────────────────────
@@ -109,6 +111,27 @@ verify_patrol_delivery() {
     else
         warn "Pattern Patrol delivery records need reconciliation; release remains fail-forward."
     fi
+}
+
+acquire_delivery_lease() {
+    local attempt=0 output=""
+    while true; do
+        attempt=$((attempt + 1))
+        if output="$(
+            bash "$REPO_ROOT/scripts/pattern-patrol/delivery-lease.sh" acquire \
+                "$$" "$REPO_ROOT" "${MATRX_PATROL_RUN_ID:-general-release}" 2>&1
+        )"; then
+            DELIVERY_LEASE_TOKEN="$output"
+            return 0
+        fi
+
+        # Contention is coordination, not a release failure. The lease helper
+        # reclaims dead owners; a live owner simply gets time to finish.
+        if (( attempt == 1 || attempt % 6 == 0 )); then
+            warn "Delivery lane is busy; waiting and retrying automatically. ${output}"
+        fi
+        sleep 5
+    done
 }
 
 # Every real release shares one machine-wide delivery lane. The token makes
@@ -200,10 +223,7 @@ CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
 if ! $DRY_RUN; then
     info "Claiming the serialized delivery lane..."
-    DELIVERY_LEASE_TOKEN="$(
-        bash "$REPO_ROOT/scripts/pattern-patrol/delivery-lease.sh" acquire \
-            "$$" "$REPO_ROOT" "${MATRX_PATROL_RUN_ID:-general-release}"
-    )" || fail "Another release owns the delivery lane. Wait for it to finish, then retry."
+    acquire_delivery_lease
     ok "Delivery lane claimed."
 fi
 
