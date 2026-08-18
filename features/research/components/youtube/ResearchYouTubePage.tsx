@@ -29,8 +29,6 @@ import {
 import type { YouTubeVideoLibraryRecord } from "@/features/marketing/discovery/youtube/types";
 import { useTopicId } from "../../context/ResearchContext";
 
-const YOUTUBE_ANALYSIS_CONCURRENCY = 5;
-
 export default function ResearchYouTubePage() {
   const dispatch = useAppDispatch();
   const topicId = useTopicId();
@@ -117,14 +115,12 @@ export default function ResearchYouTubePage() {
     if (selected.size === 0) return;
     const videoIds = [...selected];
     setProcessing(true);
-    setBatchProgress(
-      `Connecting to up to ${Math.min(YOUTUBE_ANALYSIS_CONCURRENCY, videoIds.length)} videos…`,
-    );
+    setBatchProgress(`Connecting to ${videoIds.length} videos…`);
     try {
       let completed = 0;
       const result = await runWithConcurrency(
         videoIds,
-        YOUTUBE_ANALYSIS_CONCURRENCY,
+        videoIds.length,
         async (videoId) => {
           const abortController = new AbortController();
           streamAbortControllersRef.current.add(abortController);

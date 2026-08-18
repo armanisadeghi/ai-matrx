@@ -39,6 +39,10 @@ function isRecord(v: unknown): v is Record<string, unknown> {
  * an honest chunk id with no page than a false "Page 1" on every card.
  */
 function chunkForGrounding(text: string): string {
+  // IC-3 passages already carry durable chunk ids. Re-chunking that payload
+  // would replace the real citation ids with local c1/c2 markers and make the
+  // resulting citation unable to open the retrieved passage.
+  if (text.includes("[GROUNDING_PASSAGE ")) return text;
   const paras = text
     .split(/\n{2,}/)
     .map((p) => p.trim())

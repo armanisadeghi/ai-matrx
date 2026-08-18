@@ -273,11 +273,10 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 
 ## Change Log
 
-- **2026-08-17** — **Describe all now runs as a bounded batch.** The Convert
-  studio no longer awaits one image-description agent run at a time. It uses
-  the shared `runWithConcurrency` worker pool with five descriptions in flight,
-  while retaining the existing per-image status, failure isolation, and agent
-  conversation cleanup.
+- **2026-08-17** — **Describe all dispatches the whole batch.** The Convert
+  studio starts every independent image-description run immediately and leaves
+  provider admission to `matrx-ai`; per-image status, failure isolation, and
+  agent conversation cleanup remain local.
 - **2026-08-14** — `describeFile` adopted the canonical headless-JSON primitive:
   the local `waitForExtraction`/`pollForExtraction` copy in `useImageStudio.ts`
   (the LAST hand-rolled instance of the D126 wait-loop class, kept alive because

@@ -65,6 +65,10 @@ TrustEnvelopes roll up via `mergeTrustEnvelopes`. The `quiz`/`practice_test` gen
 the flat `assessment.source_kind`/`source_id` columns (fast filter + learning-gain matching); the
 association edge is the polymorphic lineage every kit/convert surface reads.
 
+When `ConvertSource.text` contains IC-3 `GROUNDING_PASSAGE` markers, the deck generator preserves
+that serialization verbatim. It must never replace durable RAG chunk ids with local `c1` markers;
+otherwise a generated citation cannot open the retrieved passage.
+
 **Envelopes without agent citations (`mind_map` / `audio`):** these agents return structure
 (`diagram_spec { nodes, edges }`) or audio, not a `trust`/citations field — so the generator
 derives a **grounded TrustEnvelope from the KNOWN source** via `sourceTrust.ts#buildSourceTrust`

@@ -67,7 +67,7 @@ export function excerptFromCitations(citations: SourceCitation[]): string {
 }
 
 /** Persist a verdict onto its subject row. Only fc_card has a home today. */
-async function persistVerdict(
+export async function persistVerificationVerdict(
   subject: VerifySubject,
   verdict: VerifyResult,
   verifiedBack: string,
@@ -145,7 +145,7 @@ export function useVerifyAgainstSource(): UseVerifyAgainstSource {
               onResult: async (runResult) => {
                 const verdict = coerceVerifyResult(runResult.data);
                 if (!verdict) return;
-                await persistVerdict(
+                await persistVerificationVerdict(
                   args.subject as VerifySubject,
                   verdict,
                   args.back,

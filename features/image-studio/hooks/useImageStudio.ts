@@ -56,8 +56,6 @@ import {
 import { adoptHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
 
-const DESCRIBE_ALL_CONCURRENCY = 5;
-
 /**
  * Folder-segment sanitizer. Cloud-files folder names tolerate spaces, but
  * we strip them anyway so per-file subfolders look clean in the tree and
@@ -1203,7 +1201,7 @@ export function useImageStudio(
             f.metadataStatus !== "uploading-source",
         )
         .map((f) => f.id);
-      await runWithConcurrency(ids, DESCRIBE_ALL_CONCURRENCY, (id) =>
+      await runWithConcurrency(ids, ids.length, (id) =>
         describeFile(id, contextHint),
       );
     },

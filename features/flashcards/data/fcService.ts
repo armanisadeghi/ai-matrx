@@ -39,6 +39,12 @@ interface CardJsonRow {
   dynamic_content?: Json | null;
 }
 
+interface SetMetadataRow {
+  id: string;
+  version: number;
+  metadata?: Json | null;
+}
+
 /**
  * Resolve the org for a flashcard write. The canonical `ensureOrgId` rides the
  * user's ACTIVE org (header selection, else personal) and never returns null —
@@ -166,6 +172,46 @@ export const fcService = {
     } catch (e) {
       return fail("updateSetVisibility", e);
     }
+  },
+
+  /**
+   * Merge set metadata without dropping keys written by another surface.
+   * Public-library classification (`exam_slug`, curation provenance, etc.)
+   * shares this column with folders/import metadata, so a blind spread/write
+   * is not safe.
+   */
+  async mergeSetMetadata(
+    setId: string,
+    merge: (current: JsonObject) => JsonObject,
+  ): Promise<FcResult<null>> {
+    const SELECT = "id, version, metadata";
+    const result = await mergeJsonColumn<SetMetadataRow>({
+      fetchCurrent: () =>
+        EDU()
+          .from("fc_set")
+          .select(SELECT)
+          .eq("id", setId)
+          .is("deleted_at", null)
+          .maybeSingle<SetMetadataRow>(),
+      readColumn: (row) => row.metadata ?? null,
+      merge,
+      applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+        EDU()
+          .from("fc_set")
+          .update({ metadata: value, version: nextVersion })
+          .eq("id", setId)
+          .eq("version", expectedVersion)
+          .select(SELECT)
+          .maybeSingle<SetMetadataRow>(),
+    });
+    if (result.status === "saved") return { data: null, error: null };
+    if (result.status === "error") return fail("mergeSetMetadata", result.error);
+    return fail(
+      "mergeSetMetadata",
+      result.status === "not_found"
+        ? "That set is no longer available"
+        : "Another edit kept winning — the set metadata was not updated",
+    );
   },
 
   /** Soft-delete a set (RLS/ownership-gated by the update itself). */

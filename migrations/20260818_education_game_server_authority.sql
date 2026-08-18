@@ -498,6 +498,198 @@ BEGIN
 END;
 $function$;
 
+CREATE OR REPLACE FUNCTION public.education_streak_rollover(
+  p_rollover_date date DEFAULT (now() AT TIME ZONE 'utc')::date
+)
+RETURNS TABLE(scanned integer, protected integer, reset integer)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, education, pg_temp
+AS $function$
+DECLARE
+  v_row education.study_streak;
+  v_day date := p_rollover_date - 1;
+  v_missed date[];
+BEGIN
+  scanned := 0;
+  protected := 0;
+  reset := 0;
+
+  FOR v_row IN
+    SELECT * FROM education.study_streak s
+     WHERE s.current_streak > 0
+       AND s.last_active_date IS NOT NULL
+       AND s.last_active_date < v_day
+     FOR UPDATE
+  LOOP
+    scanned := scanned + 1;
+    SELECT coalesce(array_agg(day ORDER BY day), '{}'::date[])
+      INTO v_missed
+      FROM generate_series(v_row.last_active_date + 1, v_day, interval '1 day') day
+     WHERE NOT (extract(dow FROM day)::smallint = ANY (v_row.rest_weekdays))
+       AND NOT (day::date = ANY (v_row.frozen_dates));
+
+    IF cardinality(v_missed) = 0 THEN
+      CONTINUE;
+    ELSIF cardinality(v_missed) <= v_row.freezes_available THEN
+      UPDATE education.study_streak
+         SET freezes_available = freezes_available - cardinality(v_missed),
+             freezes_used = freezes_used + cardinality(v_missed),
+             frozen_dates = frozen_dates || v_missed,
+             updated_at = now()
+       WHERE user_id = v_row.user_id;
+      protected := protected + 1;
+    ELSE
+      UPDATE education.study_streak
+         SET current_streak = 0, updated_at = now()
+       WHERE user_id = v_row.user_id;
+      reset := reset + 1;
+    END IF;
+  END LOOP;
+
+  RETURN NEXT;
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.education_league_rollover(
+  p_week_start date DEFAULT date_trunc('week', now() AT TIME ZONE 'utc')::date
+)
+RETURNS integer
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, education, pg_temp
+AS $function$
+DECLARE
+  v_created integer;
+BEGIN
+  IF extract(isodow FROM p_week_start) <> 1 THEN
+    RAISE EXCEPTION 'League week must start on Monday';
+  END IF;
+
+  WITH returning_members AS (
+    SELECT DISTINCT ON (lm.created_by)
+           lm.organization_id, lm.created_by, lm.display_name,
+           CASE
+             WHEN count(a.id) FILTER (WHERE a.id IS NOT NULL) < 20 THEN 'starter'
+             WHEN count(a.id) FILTER (WHERE a.id IS NOT NULL) < 100 THEN 'steady'
+             ELSE 'active'
+           END AS activity_band
+      FROM education.league_membership lm
+      LEFT JOIN education.study_attempt a
+        ON a.created_by = lm.created_by
+       AND a.deleted_at IS NULL
+       AND a.is_manually_edited = false
+       AND a.result IN ('incorrect', 'partial', 'correct')
+       AND coalesce(a.reviewed_at, a.created_at) >= p_week_start - interval '28 days'
+     WHERE lm.week_start = p_week_start - 7
+       AND lm.opted_in = true
+       AND lm.deleted_at IS NULL
+     GROUP BY lm.organization_id, lm.created_by, lm.display_name, lm.created_at
+     ORDER BY lm.created_by, lm.created_at DESC
+  ), grouped AS (
+    SELECT returning_members.*,
+           ((row_number() OVER (
+             PARTITION BY activity_band
+             ORDER BY md5(created_by::text || p_week_start::text)
+           ) - 1) / 30)::integer + 1 AS cohort_number
+      FROM returning_members
+  )
+  INSERT INTO education.league_membership (
+    organization_id, created_by, week_start, display_name, opted_in,
+    mastery_gain, games_played, cohort_key
+  )
+  SELECT g.organization_id, g.created_by, p_week_start, g.display_name, true,
+         0, 0, g.activity_band || '-' || p_week_start::text || '-' || g.cohort_number::text
+    FROM grouped g
+   WHERE NOT EXISTS (
+     SELECT 1 FROM education.league_membership current_week
+      WHERE current_week.created_by = g.created_by
+        AND current_week.week_start = p_week_start
+        AND current_week.deleted_at IS NULL
+   );
+
+  GET DIAGNOSTICS v_created = ROW_COUNT;
+  RETURN v_created;
+END;
+$function$;
+
+CREATE OR REPLACE FUNCTION education.bump_study_streak()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $function$
+DECLARE
+  v_user uuid := new.created_by;
+  v_today date := (now() AT TIME ZONE 'utc')::date;
+  v_row education.study_streak%rowtype;
+  v_cursor date;
+  v_missed_nonrest integer := 0;
+  v_missed_days date[] := '{}'::date[];
+  v_new_streak integer;
+  v_max_freezes constant integer := 5;
+BEGIN
+  IF v_user IS NULL THEN RETURN new; END IF;
+  SELECT * INTO v_row FROM education.study_streak WHERE user_id = v_user FOR UPDATE;
+  IF v_row.user_id IS NULL THEN
+    INSERT INTO education.study_streak (
+      user_id, organization_id, current_streak, longest_streak, last_active_date
+    ) VALUES (v_user, new.organization_id, 1, 1, v_today);
+    RETURN new;
+  END IF;
+  IF v_row.last_active_date = v_today THEN RETURN new; END IF;
+  IF v_row.last_active_date = v_today - 1 THEN
+    v_new_streak := v_row.current_streak + 1;
+    UPDATE education.study_streak
+       SET current_streak = v_new_streak,
+           longest_streak = greatest(v_row.longest_streak, v_new_streak),
+           last_active_date = v_today,
+           freezes_available = least(
+             v_max_freezes,
+             v_row.freezes_available + CASE WHEN v_new_streak % 7 = 0 THEN 1 ELSE 0 END
+           ),
+           updated_at = now()
+     WHERE user_id = v_user;
+    RETURN new;
+  END IF;
+  IF v_row.last_active_date IS NOT NULL AND v_row.last_active_date < v_today - 1 THEN
+    v_cursor := v_row.last_active_date + 1;
+    WHILE v_cursor < v_today LOOP
+      IF NOT (extract(dow FROM v_cursor)::smallint = ANY (v_row.rest_weekdays))
+         AND NOT (v_cursor = ANY (v_row.frozen_dates)) THEN
+        v_missed_nonrest := v_missed_nonrest + 1;
+        v_missed_days := array_append(v_missed_days, v_cursor);
+      END IF;
+      v_cursor := v_cursor + 1;
+    END LOOP;
+    IF v_missed_nonrest <= v_row.freezes_available THEN
+      v_new_streak := v_row.current_streak + 1;
+      UPDATE education.study_streak
+         SET current_streak = v_new_streak,
+             longest_streak = greatest(v_row.longest_streak, v_new_streak),
+             last_active_date = v_today,
+             freezes_used = v_row.freezes_used + v_missed_nonrest,
+             freezes_available = least(
+               v_max_freezes,
+               (v_row.freezes_available - v_missed_nonrest)
+                 + CASE WHEN v_new_streak % 7 = 0 THEN 1 ELSE 0 END
+             ),
+             frozen_dates = v_row.frozen_dates || v_missed_days,
+             updated_at = now()
+       WHERE user_id = v_user;
+      RETURN new;
+    END IF;
+  END IF;
+  UPDATE education.study_streak
+     SET current_streak = 1,
+         longest_streak = greatest(v_row.longest_streak, 1),
+         last_active_date = v_today,
+         updated_at = now()
+   WHERE user_id = v_user;
+  RETURN new;
+END;
+$function$;
+
 REVOKE INSERT, UPDATE, DELETE ON education.game_result FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON education.game_badge FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON education.league_membership FROM authenticated;
@@ -505,10 +697,14 @@ REVOKE INSERT, UPDATE, DELETE ON education.league_membership FROM authenticated;
 REVOKE ALL ON FUNCTION public.game_finalize_result(uuid, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.league_set_opt_in(boolean, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.education_engagement_snapshot(uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.education_streak_rollover(date) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.education_league_rollover(date) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.game_finalize_result(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.league_set_opt_in(boolean, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.league_leaderboard(date) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.education_engagement_snapshot(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.education_streak_rollover(date) TO service_role;
+GRANT EXECUTE ON FUNCTION public.education_league_rollover(date) TO service_role;
 
 COMMENT ON FUNCTION public.game_finalize_result(uuid, text) IS
   'IC-14 authority: derives a durable game result, league gain, and badges only from the owned unedited study-attempt ledger.';
