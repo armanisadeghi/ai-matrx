@@ -162,6 +162,13 @@ export function AddRulePanel({
     [rulebook, rulebookId, onAdded, draftRun],
   );
 
+  const rulebookContext = (book: Rulebook) => ({
+    name: book.name,
+    description: book.description,
+    sections: book.sections,
+    rules: book.rules,
+  });
+
   const draftWithAi = async () => {
     if (!rulebook || !describe.trim()) return;
     const fallbackSection =
@@ -170,30 +177,13 @@ export function AddRulePanel({
         : (Object.keys(rulebook.sections)[0] ?? "G");
     try {
       const result = await draftRun.run<RuleImproveResult>({
-        mandateKey: MASTERWORK_RULE_IMPROVER_MANDATE,
         surfaceKey: "masterwork-add-rule",
-        sourceFeature: "masterwork",
-        organizationId: rulebook.organization_id,
-        contextAnchor: { resource_type: "rulebook", resource_id: rulebookId },
-        variables: {
-          rule_json: "",
-          expert_input: describe.trim(),
-          rulebook_context: JSON.stringify({
-            name: rulebook.name,
-            description: rulebook.description,
-            sections: rulebook.sections,
-            rules: rulebook.rules,
-          }),
-        },
-        expect: "json",
-        timeoutMs: 120_000,
-        coerce: (value) =>
-          coerceRuleImproveResult(value, {
-            sections: rulebook.sections,
-            fallbackSection,
-          }),
+        fields: null,
+        expertInput: describe.trim(),
+        context: rulebookContext(rulebook),
+        fallbackSection,
+        apply: (value) => value,
         failureMessages: {
-          noJson: "The AI finished without returning a usable rule.",
           timeout: "Drafting took too long. Your words are still here.",
         },
       });
@@ -201,6 +191,34 @@ export function AddRulePanel({
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Could not draft the rule",
+      );
+    }
+  };
+
+  // IMPROVE, before the rule has ever been saved: the same
+  // `masterwork.rule_improver` Mandate, now with the draft as `rule_json` and
+  // the Expert's guidance as `expert_input`. The result replaces the draft
+  // in place — it still lands only through the explicit "Add as a draft".
+  const improveDraft = async () => {
+    if (!rulebook || !aiDraft || !refineInput.trim()) return;
+    try {
+      const result = await draftRun.run<RuleImproveResult>({
+        surfaceKey: "masterwork-add-rule-improve",
+        fields: aiDraft,
+        expertInput: refineInput.trim(),
+        context: rulebookContext(rulebook),
+        fallbackSection: aiDraft.section,
+        apply: (value) => value,
+        failureMessages: {
+          timeout: "The rewrite took too long. Your draft is unchanged.",
+        },
+      });
+      setAiDraft(result);
+      setRefineInput("");
+      setRefining(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not improve the rule",
       );
     }
   };
