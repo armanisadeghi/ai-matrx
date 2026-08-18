@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { AskCard } from "@/features/agents/ui-first-tools/ui/AskCard";
 import { ApprovalCard } from "@/features/agents/ui-first-tools/ui/ApprovalCard";
 import { BatchAskCard } from "@/features/agents/ui-first-tools/ui/BatchAskCard";
+import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
 import {
   groupPendingAsks,
   type PendingAsk,
@@ -160,6 +161,26 @@ const SAMPLES: PendingAsk[] = [
       estimated_minutes: 45,
     },
   }),
+  // The Gmail consent surface. Sending is genuinely live here too: the demo
+  // connection id is not a real one, so pressing Send exercises the refusal
+  // path ("Nothing was sent") instead of mailing anybody.
+  ask({
+    callId: "g1",
+    toolName: "google_email_send",
+    kind: "email_review",
+    email: {
+      connectionId: "demo-connection",
+      fromEmail: "you@yourcompany.com",
+      to: "dana@clientco.com",
+      cc: [],
+      subject: "Notes from today's call",
+      body:
+        "Hi Dana,\n\nThanks for the time today. Recapping what we agreed:\n\n" +
+        "- We'll send the revised scope by Friday\n" +
+        "- You'll confirm the budget line internally\n\n" +
+        "Anything I missed?\n\nBest,\nAlex",
+    },
+  }),
   ask({
     callId: "k1",
     toolName: "request_user_takeover",
@@ -267,11 +288,13 @@ export default function AgentCardGalleryPage() {
               return <BatchAskCard key={group.key} asks={group.asks} />;
             }
             const a = group.asks[0];
-            return a.kind === "approval" ? (
-              <ApprovalCard key={a.callId} ask={a} />
-            ) : (
-              <AskCard key={a.callId} ask={a} />
-            );
+            if (a.kind === "approval") {
+              return <ApprovalCard key={a.callId} ask={a} />;
+            }
+            if (a.kind === "email_review") {
+              return <GmailReviewCard key={a.callId} ask={a} />;
+            }
+            return <AskCard key={a.callId} ask={a} />;
           })}
           {asks.length === 0 && (
             <div className="rounded-2xl border border-dashed border-border/70 px-4 py-10 text-center text-sm text-muted-foreground">

@@ -28,9 +28,33 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 4. Google Picker returns one file id. aidream validates it through `drive.file` and stores only safe metadata in `users.integration_connection_resources` as `google_document` or `google_spreadsheet`.
 5. Typed aidream `/api/google-workspace/*` endpoints read or update that exact resource. Gmail sends only the exact reviewed payload.
 
+## The agent half — `agent/`
+
+The same capability, reached from a normal agent conversation instead of this
+workspace. Two canonical tools, both offered on the `matrx-user/chat` surface
+through the `google` tool bundle:
+
+- **`google_workspace`** (server, aidream) — lists the user's selected Docs and
+  Sheets, reads/appends a Doc, reads/writes a bounded Sheet range, and
+  *prepares* an email. It never sends.
+- **`google_email_send`** (client-only) — `handlers/google-email-send.handler.ts`
+  in `features/agents/ui-first-tools/` resolves the sending mailbox with
+  `agent/connection.ts`, then raises an `email_review` pending ask that
+  `agent/GmailReviewCard.tsx` renders.
+
+🚨 **`<GmailReviewCard>` IS the authorization.** It shows the sender, recipient,
+cc, subject and body; every field is editable; the Send button posts exactly
+what is on screen at that moment — never the agent's original arguments once the
+user has changed them. There is no "always send", no pre-checked consent, and no
+path that sends without a click; approval covers ONE message. On the server side
+the tool has no executor binding at all, so an agent cannot assert consent even
+in principle. Preview every state at `/demos/agent-cards`.
+
 ## Invariants
 
-- No Drive list or search endpoint exists in the service.
+- No Drive list or search endpoint exists in the service, and no agent tool
+  accepts a `connection_id` — reach always resolves from a registered
+  Picker-selected resource.
 - No Gmail read scope or endpoint exists in this feature.
 - No file content or email body is stored by the Workspace service.
 - Re-consent for Gmail must preserve existing Picker-selected resource rows.
@@ -41,6 +65,9 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 
 ## Change log
 
+- 2026-08-18: Added the agent half — the client-only `google_email_send` tool
+  and `<GmailReviewCard>`, the surface that turns an agent-proposed message into
+  a user-confirmed send. Added it to the `/demos/agent-cards` gallery.
 - 2026-08-13: Made each selected Doc/Sheet's external-link indicator a real **Open in Google** action for reviewer source-account verification.
 - 2026-08-13: Added Google's required affirmative Limited Use compliance statement to the public privacy policy.
 - 2026-08-07: Prepopulated Google Picker only on the dedicated reviewer route so verification recordings show the named review fixtures without exposing unrelated Drive file names.

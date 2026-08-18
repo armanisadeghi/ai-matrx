@@ -15,7 +15,7 @@
 ## Purpose
 
 The agent calls a small set of "UI-first" tools (`user`, `update_plan`,
-`request_user_takeover`, `user_todos`) that have no server-side
+`request_user_takeover`, `user_todos`, `google_email_send`) that have no server-side
 execution — the Next.js client validates the args, runs a handler (UI
 render or Supabase CRUD), and POSTs `tool_results` back so the model
 resumes. These tools come online via the request's
@@ -42,6 +42,15 @@ names resolve against `public` and fail with `PGRST205`. Ambient context
 > — kept fresh by the Supabase Realtime subscription on `chat.agent_task`. Rule of
 > thumb: a UI-first tool must do genuine client-only work (await a human, render
 > UI, touch browser-local state); a plain DB write belongs server-side.
+
+> **`google_email_send` (2026-08-18) is the canonical example of why a tool
+> belongs here.** Its client-only-ness is not an implementation detail — it is
+> the Gmail authorization boundary. The agent proposes recipient, subject and
+> body; `<GmailReviewCard>` (`features/google-workspace/agent/`) renders those
+> exact bytes, lets the user edit them, and sends only what is on screen when
+> they click Send. Because the tool has NO server executor, an agent-supplied
+> "the user confirmed" cannot exist. Never add a server binding for it, and
+> never add a `user_confirmed`-style argument anywhere in its path.
 
 This feature exists because:
 
