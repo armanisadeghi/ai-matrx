@@ -49,6 +49,12 @@ export async function createSession(
     .insert({
       title: input.title.trim() || "Untitled interview",
       vision_statement: input.visionStatement.trim() || null,
+      // Explicit v2 opening stage — never lean on the column default. The
+      // default sat at v1's 'expand' after the v2 cutover, so every new
+      // session was born two steps in ("magically finished Capture and
+      // Ground" — Arman's live session, 2026-08-18) and the run died on the
+      // old stage CHECK constraint at hydrate.
+      stage: "capture",
     })
     .select("*")
     .single();
