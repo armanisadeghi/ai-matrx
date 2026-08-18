@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P4",
   "runId": "2026-08-18T131537Z",
-  "state": "certified",
-  "updatedAt": "2026-08-18T13:24:34.672Z",
-  "summary": "CERTIFIED: detector-scope repair introduces no detected regression",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-18T13:24:38.274Z",
+  "summary": "Certified P4 detector repair queued for normal integration; 48 exception decisions remain open",
   "source": "2026-08-18T131537Z.json",
-  "eventHash": "3313b6892ffdd24c122dea31a954626a9007d63fc08c51ed99ebde89454fd4d9"
+  "eventHash": "0aa7333885e27f9d78928c9d2d85e9762801d9ac47d2a86fe5b0d8fc1b674184"
 }
