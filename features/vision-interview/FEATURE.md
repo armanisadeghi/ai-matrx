@@ -195,6 +195,22 @@ them — `normalizeStage` in `types.ts` maps them for display
     role EXCEPT the one whose tab is live (`selectActiveRoleTab`) — that one
     is already streaming in the centre. Completed messages always land in the
     feed regardless.
+16. **THE LEFT PANEL IS CARDS, AND IT OWNS THE HOLES LEDGER (v3).**
+    `QuestionsPanel` renders ONE `QuestionCard` per question — question as the
+    hero, category chip, age in rounds, and a status a human already knows:
+    **Open · Pending · Answered · Dismissed** (`questionStatus()` in
+    `QuestionCard.tsx` is the ONE place that mapping lives; Pending = a local
+    answer waiting to ride the next message and says so on the card). The
+    action set — Answer / Edit answer / Discard / Dismiss / Restore — is
+    IDENTICAL on the card and inside `AnswerQuestionWindow`; the list view and
+    the focused view never disagree. The window is a page-local `WindowPanel`
+    (inline `onClose`, lazy-imported — no overlay registration), its entry area
+    is `ProTextarea` (dictation mic verified live), and the typed text is held
+    in `useDurableDraft` keyed by question id, so closing, reloading, or
+    crashing never destroys it. **Save never sends.** The Adversary's
+    `interview.hole` ledger lives at the bottom of this same panel — it has no
+    other surface, and a hole needing human arbitration IS the room asking the
+    Expert a question.
 
 ## Doctrine (reuse-first)
 
