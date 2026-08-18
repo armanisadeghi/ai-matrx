@@ -142,6 +142,36 @@ export default async function SignUp({ searchParams }: SignUpProps) {
         </div>
 
         <div>
+          <Label
+            htmlFor="ageBand"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Your age
+          </Label>
+          <div className="mt-1" suppressHydrationWarning={true}>
+            <select
+              id="ageBand"
+              name="ageBand"
+              required
+              defaultValue=""
+              className="appearance-none block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-neutral-700 dark:text-white"
+            >
+              <option value="" disabled>
+                Select your age range
+              </option>
+              <option value="adult">18 or older</option>
+              <option value="13_17">13–17</option>
+              <option value="under_13">Under 13</option>
+            </select>
+          </div>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            We ask a range, never your date of birth. Under-13 accounts need a
+            parent&apos;s approval before using AI features (children&apos;s
+            privacy law).
+          </p>
+        </div>
+
+        <div>
           <input
             id="redirectTo"
             type="hidden"

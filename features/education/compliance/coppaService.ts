@@ -33,6 +33,25 @@ export const coppaService = {
   },
 
   /**
+   * The age band the user chose at signup (auth metadata `education_age_band`),
+   * if any. This is INTENT captured at signup, not the enforced value — the
+   * enforced value lives on the guarded `age_band` column. The education-entry
+   * prompt reads this to auto-apply the signup choice so a learner who already
+   * answered at signup is never asked again. Returns null if none/invalid.
+   */
+  async signupAgeBand(): Promise<AgeBand | null> {
+    try {
+      const { data } = await supabase.auth.getUser();
+      const band = data.user?.user_metadata?.education_age_band;
+      return band === "under_13" || band === "13_17" || band === "adult"
+        ? band
+        : null;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
    * Is there a signed-in (non-guest) session? Local read, no network. Used by the
    * COPPA gate to decide fail-closed vs fail-open on a resolver error: a signed-in
    * account of unknown age is treated as a potential minor (fail closed); a

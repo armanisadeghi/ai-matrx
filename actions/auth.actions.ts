@@ -138,11 +138,25 @@ export async function signUpAction(
     );
   }
 
+  // Neutral age-band screen (COPPA §312.3): we ask an age RANGE, never a date
+  // of birth. It is carried as auth metadata with ZERO change to the write/
+  // session path — the education-entry prompt applies it to the guarded
+  // `age_band` on first entry, so an email-confirm account that has no session
+  // yet is never a problem. Only the three allowed bands pass through.
+  const ageBandRaw = formData.get("ageBand")?.toString();
+  const signupAgeBand =
+    ageBandRaw === "under_13" || ageBandRaw === "13_17" || ageBandRaw === "adult"
+      ? ageBandRaw
+      : undefined;
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       emailRedirectTo: confirmUrl,
+      ...(signupAgeBand
+        ? { data: { education_age_band: signupAgeBand } }
+        : {}),
     },
   });
 
