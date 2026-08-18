@@ -9,17 +9,27 @@
  * control; a second reveal/copy implementation is a defect.
  *
  * Security semantics live HERE so they cannot drift per-surface:
- *   - Values are masked by default. Nothing is fetched until the user asks.
+ *   - `visible` values resolve and display on mount for authorized viewers.
+ *     `revealable` values remain masked until the user asks.
  *   - `sealed` has NO human path: no eye, no copy, only a lock. Copying is a
  *     reveal (it puts plaintext on the clipboard), so it is gated by exactly
  *     the same capability as showing.
  *   - `revealable` needs `can_reveal` and goes through the audited reveal
  *     endpoint; `visible` needs `can_use` and resolves.
- *   - Plaintext is held ONLY in `useTransientSecret` component state with a
- *     ~30s auto-clear — never Redux, storage, a query cache, or a URL.
+ *   - Plaintext is held ONLY in component state — never Redux, storage, a
+ *     query cache, or a URL. Revealed restricted values auto-clear in ~30s;
+ *     visible values stay for the lifetime of the mounted row.
  */
-import { useEffect, useState } from "react";
-import { Check, Copy, Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Check,
+  Copy,
+  Eye,
+  EyeOff,
+  Loader2,
+  LockKeyhole,
+  RefreshCw,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
@@ -47,7 +57,11 @@ export function canShowField(item: VaultItem, field: VaultField): boolean {
  * which is the interaction the whole product is judged on.
  */
 export function useFieldSecret(item: VaultItem, field: VaultField) {
-  const held = useTransientSecret();
+  // Standard values are ordinary authorized display data: keep them for this
+  // mounted row instead of hiding them on the restricted-value timer.
+  const held = useTransientSecret(
+    field.handling === "visible" ? null : undefined,
+  );
   const [working, setWorking] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -63,6 +77,13 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
     if (!allowed) holdClear();
   }, [allowed, holdClear]);
 
+  // A new value version or protection mode must never leave the previous
+  // plaintext painted in a row that React correctly kept mounted.
+  useEffect(
+    () => holdClear(),
+    [field.handling, field.id, field.value_version, holdClear, item.id],
+  );
+
   const fetchValue = async (): Promise<string | null> => {
     // `visible` resolves under can_use; `revealable` uses the audited reveal
     // endpoint under can_reveal. `sealed` never reaches here.
@@ -77,15 +98,17 @@ export function useFieldSecret(item: VaultItem, field: VaultField) {
     return typeof value === "string" ? value : null;
   };
 
-  const reveal = async () => {
-    if (!allowed) return;
+  const reveal = async (): Promise<boolean> => {
+    if (!allowed) return false;
     setWorking(true);
     try {
       const value = await fetchValue();
       if (value === null) throw new Error("No value returned");
       held.hold(value);
+      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
+      return false;
     } finally {
       setWorking(false);
     }
@@ -189,6 +212,35 @@ export function SecretValue({
   // render before that effect runs, a value the user may no longer see is
   // never painted.
   const revealed = secret.allowed && secret.value !== null;
+  const visibleRequest = useRef<string | null>(null);
+  const visibleRequestKey = `${item.id}/${field.id}/${field.value_version}`;
+  const [visibleLoadFailed, setVisibleLoadFailed] = useState(false);
+
+  // "Standard" is a display rule, not merely a weaker reveal permission.
+  // Resolve it as the row mounts so non-secrets never masquerade as secrets.
+  useEffect(() => {
+    if (
+      field.handling !== "visible" ||
+      !secret.allowed ||
+      revealed ||
+      secret.working ||
+      visibleRequest.current === visibleRequestKey
+    ) {
+      return;
+    }
+    visibleRequest.current = visibleRequestKey;
+    setVisibleLoadFailed(false);
+    void secret.reveal().then((loaded) => {
+      if (!loaded) setVisibleLoadFailed(true);
+    });
+  }, [
+    field.handling,
+    revealed,
+    secret.allowed,
+    secret.reveal,
+    secret.working,
+    visibleRequestKey,
+  ]);
 
   const controls = secret.sealed ? (
     // Sealed: a lock and nothing else. There is no unseal control to hide.
@@ -201,25 +253,46 @@ export function SecretValue({
     </span>
   ) : secret.allowed ? (
     <>
-      <Button
-        size="sm"
-        variant="ghost"
-        className="h-7 w-7 shrink-0 px-0 text-muted-foreground hover:text-foreground"
-        disabled={secret.working}
-        onClick={() => secret.toggle()}
-        aria-label={
-          revealed ? `Hide ${field.field_key}` : `Show ${field.field_key}`
-        }
-        title={revealed ? "Hide" : "Show"}
-      >
-        {secret.working && !revealed ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : revealed ? (
-          <EyeOff className="h-3.5 w-3.5" />
-        ) : (
-          <Eye className="h-3.5 w-3.5" />
-        )}
-      </Button>
+      {field.handling === "revealable" && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 shrink-0 px-0 text-muted-foreground hover:text-foreground"
+          disabled={secret.working}
+          onClick={() => secret.toggle()}
+          aria-label={
+            revealed ? `Hide ${field.field_key}` : `Show ${field.field_key}`
+          }
+          title={revealed ? "Hide" : "Show"}
+        >
+          {secret.working && !revealed ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : revealed ? (
+            <EyeOff className="h-3.5 w-3.5" />
+          ) : (
+            <Eye className="h-3.5 w-3.5" />
+          )}
+        </Button>
+      )}
+      {field.handling === "visible" && visibleLoadFailed && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 shrink-0 px-0 text-muted-foreground hover:text-foreground"
+          disabled={secret.working}
+          onClick={() => {
+            visibleRequest.current = visibleRequestKey;
+            setVisibleLoadFailed(false);
+            void secret.reveal().then((loaded) => {
+              if (!loaded) setVisibleLoadFailed(true);
+            });
+          }}
+          aria-label={`Retry loading ${field.field_key}`}
+          title="Retry loading value"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+        </Button>
+      )}
       <Button
         size="sm"
         variant="ghost"
@@ -265,6 +338,15 @@ export function SecretValue({
       >
         {revealed ? (
           secret.value
+        ) : field.handling === "visible" && visibleLoadFailed ? (
+          <span className="font-sans text-xs text-destructive">
+            Value unavailable
+          </span>
+        ) : field.handling === "visible" ? (
+          <span
+            className="block h-4 w-full max-w-64 animate-pulse rounded bg-muted"
+            aria-label="Loading value"
+          />
         ) : (
           <>
             <span className="sr-only">

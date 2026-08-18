@@ -34,6 +34,17 @@ describe("shared vault UI contract", () => {
     expect(valueSource).toContain("Hides in {secondsLeft}s");
   });
 
+  test("displays Standard values without a reveal interaction", () => {
+    const valueSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/SecretValue.tsx"),
+      "utf8",
+    );
+
+    expect(valueSource).toContain('field.handling !== "visible"');
+    expect(valueSource).toContain('field.handling === "revealable"');
+    expect(valueSource).toContain('aria-label="Loading value"');
+  });
+
   test("offers one plain-language protection control everywhere fields are edited", () => {
     const handlingSource = readFileSync(
       join(

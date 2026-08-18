@@ -140,6 +140,11 @@ Personal and organization credentials render through the same
   must never be rendered as a partial mask. The shared `SecretValue` keeps
   reveal/copy as small trailing icon actions, displays a visible auto-hide
   countdown after reveal, and clears plaintext after about 30 seconds.
+- `visible` means visible: Standard fields resolve as their row mounts and
+  display normally for the mounted view, with copy but no meaningless eye
+  toggle. Only `revealable` fields begin Hidden and auto-clear after an
+  explicit reveal. Custom username/email/account fields default to Standard;
+  passwords and unknown fields default to Restricted.
 - Every field edit uses the shared three-way **Protection** control: Standard,
   Restricted, or Automation only. The UI says plainly that every value is
   encrypted at rest; the control changes human reveal permission, not whether

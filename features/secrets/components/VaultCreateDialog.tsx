@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/credenza-modal/credenza";
 
 import { generateVaultPassword, parseEnvAssignment } from "../utils";
+import { recommendedHandlingForFieldKey } from "../credential-identity";
 import { VaultHandlingControl } from "./VaultHandlingControl";
 import {
   ENV_VALUE_DEFINITION_KEY,
@@ -1559,11 +1560,22 @@ function CustomBuilder({
                 <Label className="text-xs">{VAULT_LABELS.fieldName}</Label>
                 <Input
                   value={field.fieldName}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const nextName = e.target.value;
+                    const previousDefault = recommendedHandlingForFieldKey(
+                      customFieldKey(field),
+                    );
                     setField(index, {
-                      fieldName: e.target.value,
-                    })
-                  }
+                      fieldName: nextName,
+                      ...(field.handling === previousDefault
+                        ? {
+                            handling: recommendedHandlingForFieldKey(
+                              sanitizeFieldName(nextName),
+                            ),
+                          }
+                        : {}),
+                    });
+                  }}
                   placeholder="API login"
                   className="h-8 text-xs"
                   aria-invalid={

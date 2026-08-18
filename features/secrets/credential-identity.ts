@@ -39,6 +39,7 @@ import {
   type CredentialDefinition,
   type CredentialFamily,
   type VaultField,
+  type VaultHandling,
   type VaultItem,
 } from "./types";
 
@@ -160,6 +161,19 @@ const IDENTITY_FIELD_KEYS = [
   "access_key_id",
   "api_key_id",
 ];
+
+/**
+ * Safe creation default for a human/account identifier. These values remain
+ * encrypted at rest, but authorized viewers should not have to reveal a
+ * username, email address, or account id as though it were a password.
+ */
+export function recommendedHandlingForFieldKey(
+  fieldKey: string,
+): VaultHandling {
+  return IDENTITY_FIELD_KEYS.includes(fieldKey.toLowerCase())
+    ? "visible"
+    : "revealable";
+}
 
 /** Ordered preference for "the value I actually came here to copy". */
 const SECRET_FIELD_PRIORITY = [

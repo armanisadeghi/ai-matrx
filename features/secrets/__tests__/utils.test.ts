@@ -2,6 +2,7 @@ import {
   generateVaultPassword,
   parseEnvAssignment,
 } from "@/features/secrets/utils";
+import { recommendedHandlingForFieldKey } from "@/features/secrets/credential-identity";
 import { normalizeVaultHandling } from "@/features/secrets/types";
 
 describe("normalizeVaultHandling", () => {
@@ -17,6 +18,22 @@ describe("normalizeVaultHandling", () => {
       "Invalid Vault protection value",
     );
   });
+});
+
+describe("recommendedHandlingForFieldKey", () => {
+  test.each(["username", "email", "account_id", "client_id"])(
+    "defaults %s to visible",
+    (fieldKey) => {
+      expect(recommendedHandlingForFieldKey(fieldKey)).toBe("visible");
+    },
+  );
+
+  test.each(["password", "api_key", "token", "custom_value"])(
+    "defaults %s to revealable",
+    (fieldKey) => {
+      expect(recommendedHandlingForFieldKey(fieldKey)).toBe("revealable");
+    },
+  );
 });
 
 describe("generateVaultPassword", () => {

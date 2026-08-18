@@ -471,11 +471,13 @@ export function useVaultAudit(itemId: string) {
 const REVEAL_CLEAR_MS = 30_000;
 
 /**
- * Holds ONE revealed value in component-local state and auto-clears it
- * after ~30s. The value must never be copied into Redux, storage, URLs,
- * or any cache.
+ * Holds ONE resolved value in component-local state. Restricted reveals clear
+ * after ~30s; passing `null` keeps a Standard value for the mounted lifetime.
+ * The value must never be copied into Redux, storage, URLs, or any cache.
  */
-export function useTransientSecret(clearAfterMs: number = REVEAL_CLEAR_MS) {
+export function useTransientSecret(
+  clearAfterMs: number | null = REVEAL_CLEAR_MS,
+) {
   const [value, setValue] = useState<string | null>(null);
   // When the auto-clear fires. A timestamp is NOT the secret, so surfacing it
   // is safe — and showing the user that a revealed value hides itself is the
@@ -494,12 +496,17 @@ export function useTransientSecret(clearAfterMs: number = REVEAL_CLEAR_MS) {
     (plaintext: string) => {
       if (timer.current) clearTimeout(timer.current);
       setValue(plaintext);
-      setExpiresAt(Date.now() + clearAfterMs);
-      timer.current = setTimeout(() => {
-        timer.current = null;
-        setValue(null);
+      if (clearAfterMs === null) {
         setExpiresAt(null);
-      }, clearAfterMs);
+        timer.current = null;
+      } else {
+        setExpiresAt(Date.now() + clearAfterMs);
+        timer.current = setTimeout(() => {
+          timer.current = null;
+          setValue(null);
+          setExpiresAt(null);
+        }, clearAfterMs);
+      }
     },
     [clearAfterMs],
   );

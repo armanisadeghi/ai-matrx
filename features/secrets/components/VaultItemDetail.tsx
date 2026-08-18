@@ -68,6 +68,7 @@ import {
   fieldLabelOf,
   identityFieldOf,
   primarySecretFieldOf,
+  recommendedHandlingForFieldKey,
 } from "../credential-identity";
 import { SecretValue } from "./SecretValue";
 import {
@@ -177,7 +178,7 @@ export function VaultItemDetail({
   const overflowActions = allOverflowActions.filter((entry) => entry.show);
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto w-full max-w-7xl space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -283,14 +284,14 @@ export function VaultItemDetail({
       ) : (
         <section
           aria-label="Credential fields"
-          className="overflow-hidden rounded-xl border border-border bg-card"
+          className="grid gap-3 xl:grid-cols-2"
         >
           {identityField && renderField(identityField, true)}
           {secretField && renderField(secretField, true)}
           {otherFields.length > 0 && (
-            <div>
+            <div className="contents">
               {primaryIds.size > 0 && (
-                <p className="border-y border-border bg-muted/25 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                <p className="rounded-md bg-muted/35 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground xl:col-span-2">
                   Other fields
                 </p>
               )}
@@ -864,7 +865,7 @@ function FieldRow({
   return (
     <div
       className={cn(
-        "border-b border-border px-4 py-3.5 transition-colors last:border-b-0",
+        "rounded-xl border border-border px-4 py-3.5 transition-colors",
         emphasis ? "bg-card" : "bg-card/70",
       )}
     >
@@ -1153,7 +1154,15 @@ function AddFieldPanel({
           <Label className="text-xs">{VAULT_LABELS.fieldName}</Label>
           <Input
             value={fieldName}
-            onChange={(e) => setFieldName(e.target.value)}
+            onChange={(e) => {
+              const nextName = e.target.value;
+              setHandling((current) =>
+                current === recommendedHandlingForFieldKey(fieldKey)
+                  ? recommendedHandlingForFieldKey(sanitizeFieldName(nextName))
+                  : current,
+              );
+              setFieldName(nextName);
+            }}
             placeholder="API login"
             className="h-8 text-xs"
             aria-invalid={Boolean(fieldName) && !FIELD_KEY_RE.test(fieldKey)}
