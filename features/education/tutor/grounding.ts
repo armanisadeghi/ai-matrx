@@ -1,10 +1,9 @@
 // features/education/tutor/grounding.ts
 //
-// Assembles the launch variables that ground a tutor conversation in the
-// learner's OWN material + cross-session memory (VISION §4, P2). The tutor
-// agent (features/education/tutor/agents.ts) substitutes these into its system
-// prompt at launch, so it opens already knowing who the learner is and what
-// they've studied — and can cite it.
+// Assembles the context policies that ground a tutor conversation in the
+// learner's OWN material + cross-session memory (VISION §4, P2). The
+// mandate-held tutor receives them on every turn, so it opens already knowing
+// who the learner is and can cite passages retrieved for the current question.
 //
 //   learner_memory   — the cross-session snapshot (assembleLearnerMemory)
 //   study_material   — a compact, citable digest of the learner's own content:
@@ -16,8 +15,8 @@
 //
 // Mode-agnostic: flashcard content is pulled via a DYNAMIC import of fcService,
 // so this foundational module never statically depends on the flashcards
-// feature. Never throws — grounding failures degrade to empty material and the
-// tutor honestly says it has nothing loaded yet.
+// feature. Retrieval failures stay explicit in `retrieval`; the send boundary
+// refuses and preserves the learner's draft rather than widening the corpus.
 
 import { assembleLearnerMemory } from "./learnerMemory";
 import { getTutorSettings } from "./settings";

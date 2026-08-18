@@ -275,7 +275,8 @@ function EducationTutorClientInner({
     let cancelled = false;
     (async () => {
       // School-safe gate FIRST (COPPA): session start is this surface's
-      // pre-generation checkpoint (no per-send hook available). A blocked
+      // pre-generation checkpoint. The same gate runs again in beforeExecute
+      // on every send. A blocked
       // under-13 opens the "a parent must approve" dialog and skips grounding —
       // the disabled composer above then keeps the account out of the AI flow.
       if (!(await coppa.ensureAllowed())) return;

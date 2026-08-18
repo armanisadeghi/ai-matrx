@@ -291,7 +291,7 @@ export const FEATURES: AxisEntry[] = [
       {
         kind: "prose",
         heading: "A tutor, not a chat window",
-        body: "Most apps bolt a chat box onto a flashcard deck and call it a tutor. Ours is a persistent academic companion that is present at every surface in the platform — and it remembers. It carries full context across a session and across days and weeks: which set you're in, every card and question you've seen and how you answered, your strengths and weaknesses over time, and your upcoming exam dates. Every answer is grounded in your own uploaded materials via RAG, so it cites your notes and textbook passages instead of hallucinating from the open internet.",
+        body: "Most apps bolt a chat box onto a flashcard deck and call it a tutor. Ours is a persistent academic companion that is present at every surface in the platform — and it remembers. It carries full context across a session and across days and weeks: which set you're in, every card and question you've seen and how you answered, your strengths and weaknesses over time, and your upcoming exam dates. Before each factual answer, it searches your own uploaded materials via RAG. When your material supports the answer, it cites the exact note or textbook passage; when it does not, the tutor says so instead of silently switching to the open internet.",
       },
       {
         kind: "feature-grid",
@@ -301,7 +301,7 @@ export const FEATURES: AxisEntry[] = [
           { icon: Brain, title: "Memory across sessions", description: "It remembers what you struggled with last week and picks up where you left off — no re-explaining, no context switching." },
           { icon: CalendarCheck, title: "Knows your exam dates", description: "Urgency, recommendation intensity, and pacing adapt to how far away your next test is and what mastery you still need." },
           { icon: MessageCircleQuestion, title: "Socratic by default", description: "It asks guiding questions instead of handing you the answer — proven to build genuine comprehension and retention." },
-          { icon: BookOpen, title: "Grounded in your materials", description: "Every response cites your actual notes, slides, or textbook passages via RAG — traceable and hallucination-resistant by architecture." },
+          { icon: BookOpen, title: "Grounded in your materials", description: "Material-grounded answers cite your actual notes, slides, or textbook passages via RAG. Unsupported questions get an honest refusal, not a fabricated citation." },
         ],
       },
       {
