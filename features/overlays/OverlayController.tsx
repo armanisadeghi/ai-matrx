@@ -622,6 +622,10 @@ const MasterworkAddRuleWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/masterwork/AddRuleWindow"),
   { ssr: false },
 );
+const MasterworkBuildWindow = lazyOverlay(
+  () => import("@/features/masterwork/build/BuildWindow"),
+  { ssr: false },
+);
 const MasterworkYourWordsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/masterwork/YourWordsWindow"),
   { ssr: false },
@@ -1078,6 +1082,9 @@ export default function OverlayController() {
     masterworkAddRuleWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "masterworkAddRuleWindow"),
     ),
+    masterworkBuildWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "masterworkBuildWindow"),
+    ),
     masterworkYourWordsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "masterworkYourWordsWindow"),
     ),
@@ -1419,6 +1426,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     masterworkAddRuleWindow: useAppSelector((s) =>
       selectOverlayData(s, "masterworkAddRuleWindow"),
+    ) as Record<string, unknown> | null,
+    masterworkBuildWindow: useAppSelector((s) =>
+      selectOverlayData(s, "masterworkBuildWindow"),
     ) as Record<string, unknown> | null,
     masterworkYourWordsWindow: useAppSelector((s) =>
       selectOverlayData(s, "masterworkYourWordsWindow"),
@@ -2517,6 +2527,32 @@ export default function OverlayController() {
             initialSelectedConversationId={
               typeof data?.initialSelectedConversationId === "string"
                 ? data.initialSelectedConversationId
+                : null
+            }
+          />
+        );
+      })()}
+
+      {/* masterworkBuildWindow — "Build a Masterwork" as a WindowPanel, the
+          payoff moment; opened via useOpenBuildWindow(). */}
+      {(() => {
+        const isOpen = isOpenById.masterworkBuildWindow;
+        const data = dataById.masterworkBuildWindow as
+          Record<string, unknown> | null | undefined;
+        const rulebookId =
+          typeof data?.rulebookId === "string" ? data.rulebookId : null;
+        // No Rulebook, no Build — there is nothing to build FROM.
+        if (!isOpen || !rulebookId) return null;
+        return (
+          <MasterworkBuildWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "masterworkBuildWindow" }))
+            }
+            rulebookId={rulebookId}
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
                 : null
             }
           />

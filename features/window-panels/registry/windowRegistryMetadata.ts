@@ -995,6 +995,26 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Masterwork Build ─────────────────────────────────────────────────────
+  // Building a Rulebook into a Masterwork — the payoff moment, on a window
+  // panel instead of the blocking dialog it lived in until 2026-08-18.
+  // Ephemeral: it belongs to ONE Rulebook and its callback group, and the run
+  // itself is remembered server-side (platform.masterwork_run), so restoring
+  // this window from a saved workspace on another page would show a Build with
+  // no subject.
+  {
+    slug: "masterwork-build-window",
+    overlayId: "masterworkBuildWindow",
+    kind: "window",
+    label: "Build a Masterwork",
+    defaultData: {
+      callbackGroupId: null as string | null,
+      rulebookId: null as string | null,
+    },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Masterwork Final Checkup ────────────────────────────────────────────
   // Ephemeral: the checkup belongs to ONE Rulebook and its run is remembered
   // server-side (platform.masterwork_run) — reopening it from a saved

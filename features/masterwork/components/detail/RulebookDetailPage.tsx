@@ -75,7 +75,6 @@ import {
 import { RuleRelations, ruleAnchorId } from "./RuleRelations";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
-import { BuildMasterworkDialog } from "./BuildMasterworkDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ScoutInterviewPanel } from "./ScoutInterviewPanel";
@@ -98,6 +97,7 @@ import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/mast
 // "Add rule" is a WindowPanel (With AI default + Manually) — never a blocking
 // modal. The RuleEditorDialog keeps only EDIT plus agent-staged drafts.
 import { useOpenAddRuleWindow } from "@/features/overlays/openers/masterworkAddRuleWindow";
+import { useOpenBuildWindow } from "@/features/overlays/openers/masterworkBuildWindow";
 import { useOpenMasterworkYourWordsWindow } from "@/features/overlays/openers/masterworkYourWordsWindow";
 
 /**
@@ -610,6 +610,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const userId = useAppSelector(selectUserId);
   const openCheckup = useOpenMasterworkCheckupWindow();
   const openAddRule = useOpenAddRuleWindow();
+  const openBuild = useOpenBuildWindow();
   const openYourWords = useOpenMasterworkYourWordsWindow();
 
   const reloadRulebook = useCallback(async () => {
@@ -636,6 +637,19 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     },
     [openAddRule, rulebookId],
   );
+
+  // Building a Masterwork is the payoff moment of the product, so it opens as
+  // a WindowPanel — draggable, resizable, minimisable, and survivable — never
+  // the blocking dialog it lived in until 2026-08-18. The Rulebook stays
+  // usable behind it while the Build runs.
+  const openBuildWindow = useCallback(() => {
+    setBuildOpen(true);
+    openBuild({
+      rulebookId,
+      onBuilt: () => reloadMasterworks(),
+      onWindowClose: () => setBuildOpen(false),
+    });
+  }, [openBuild, rulebookId, reloadMasterworks]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1208,7 +1222,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 {approvedCount > 0 ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" onClick={() => setBuildOpen(true)}>
+                      <Button size="sm" onClick={openBuildWindow}>
                         <Hammer className="h-4 w-4" />
                         Build a Masterwork
                       </Button>
@@ -1571,16 +1585,6 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             description="It stops showing as a Draft and shows as Active in your list. Nothing else changes — you can keep editing (every save creates a new version), and you can build a Masterwork from it either way."
             confirmLabel="Mark as ready"
             onConfirm={() => void activate()}
-          />
-          <BuildMasterworkDialog
-            open={buildOpen}
-            onOpenChange={setBuildOpen}
-            rulebook={rulebook}
-            onBuilt={() => {
-              void listMasterworksForRulebook(rulebook.id)
-                .then(setMasterworks)
-                .catch(() => undefined);
-            }}
           />
           <IngestSourceDialog
             open={ingestOpen}

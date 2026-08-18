@@ -485,6 +485,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  masterworkBuildWindow: {
+    label: "Build a Masterwork",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   masterworkCheckupWindow: {
     label: "Final Checkup",
     instanceMode: "singleton",
