@@ -1144,6 +1144,14 @@ export function callApi<
     // ── Step 4: Resolve scope ─────────────────────────────────────────────
     const _scope = resolveScope(state, config.scopeOverrides);
 
+    // NOTE (2026-08-18): do NOT add an X-Organization-Id header here. The
+    // server's AuthMiddleware documents it, but the live CORS allowlist does
+    // not include it, so the preflight fails and EVERY callApi request dies
+    // (measured live). The org travels in the body (injected below); server
+    // routes that need it on ctx install it from body scope
+    // (workflow run-start does since 2026-08-18). Revisit only after the
+    // header lands in aidream's CORS allow_headers.
+
     // ── Step 5: Assemble request body ─────────────────────────────────────
     const body = buildRequestBody(config.body, _scope);
     const desktopTargetInstanceId =
