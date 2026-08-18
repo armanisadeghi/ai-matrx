@@ -35,7 +35,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, Hammer, Plus, Workflow } from "lucide-react";
+import { BrainCircuit, ExternalLink, Plus, Workflow } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
@@ -97,22 +97,6 @@ const CONDUCTOR_CHIPS = [
       "We've worked through enough. Build it — and leave the unresolved pieces as open steps rather than pretending.",
   },
 ] as const;
-
-/** The toolbar entry — "Make a Masterwork". */
-export function ConductorButton({
-  onClick,
-  className,
-}: {
-  onClick: () => void;
-  className?: string;
-}) {
-  return (
-    <Button size="sm" className={className} onClick={onClick}>
-      <Hammer className="mr-1 h-4 w-4" />
-      Make a Masterwork
-    </Button>
-  );
-}
 
 /**
  * A FRESH session. Mints a conversation through the canonical launcher and
@@ -557,7 +541,7 @@ export function ConductorPanel({
       initialFocus
       title={
         <span className="inline-flex min-w-0 items-center gap-2">
-          <Hammer className="h-4 w-4 text-primary" aria-hidden />
+          <BrainCircuit className="h-4 w-4 text-primary" aria-hidden />
           <span className="truncate">Make a Masterwork</span>
         </span>
       }

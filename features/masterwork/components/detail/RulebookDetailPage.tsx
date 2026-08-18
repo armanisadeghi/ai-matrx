@@ -77,6 +77,7 @@ import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RulebookInputsSection } from "./RulebookInputsSection";
+import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
 import { ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 import {
@@ -570,6 +571,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     conversationId?: string;
     newNonce: number;
   }>({ newNonce: 0 });
+  // THE CONDUCTOR — the one canonical Masterwork system, held as a live
+  // streaming conversation with this Rulebook attached. ?conduct=1 deep-links
+  // straight into it.
+  const [conductorOpen, setConductorOpen] = useState(
+    searchParams.get("conduct") === "1",
+  );
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
   const dumpFocus = searchParams.get("dump") === "1";
@@ -1219,17 +1226,27 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   nonsense. The one thing the Expert is here to reach is
                   BUILD — 28 approved rules and he had never got past them. */}
               <div className="flex shrink-0 items-center gap-1.5">
+                {/* THE ONE CANONICAL MASTERWORK SYSTEM (Arman, 2026-08-18):
+                    "the only thing that ever makes a Masterwork is our one
+                    single canonical Masterwork system. And all we do is we go
+                    to that system and we attach what we already have." So the
+                    primary action opens the CONDUCTOR — a real streaming
+                    conversation with the Rulebook attached — not a form that
+                    fills a template. The template Build survives in the menu
+                    below as the older shortcut until the Conductor supersedes
+                    it outright; it is deliberately named for what it is. */}
                 {approvedCount > 0 ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" onClick={openBuildWindow}>
-                        <Hammer className="h-4 w-4" />
-                        Build a Masterwork
+                      <Button size="sm" onClick={() => setConductorOpen(true)}>
+                        <BrainCircuit className="h-4 w-4" />
+                        Make a Masterwork
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      Turn your {approvedCount} approved rules into a system
-                      that does this work for you
+                      Talk it through: it reads your {approvedCount} approved
+                      rules, finds what the system would still be missing, and
+                      builds it with you
                     </TooltipContent>
                   </Tooltip>
                 ) : null}
@@ -1265,6 +1282,17 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                         ) : null}
                       </Link>
                     </DropdownMenuItem>
+                    {/* The older TEMPLATE Build (aidream services/masterworks
+                        build.py): fills one of two fixed shapes with no
+                        questions asked. Kept reachable until the Conductor
+                        supersedes it outright — and named honestly, so nobody
+                        confuses it with making a Masterwork. */}
+                    {approvedCount > 0 ? (
+                      <DropdownMenuItem className="gap-2" onSelect={openBuildWindow}>
+                        <Hammer className="h-4 w-4" />
+                        Build from template
+                      </DropdownMenuItem>
+                    ) : null}
                     {/* THE FINAL CHECKUP (features/masterwork/checkup/) — the
                         finish line: we read everything you ever told us back
                         against every rule you have. This is its only entry
@@ -1617,6 +1645,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setInterviewSeed(seed);
               setInterviewOpen(true);
             }}
+          />
+          <ConductorPanel
+            rulebookId={rulebook.id}
+            rulebookName={rulebook.name}
+            open={conductorOpen}
+            onOpenChange={setConductorOpen}
           />
           {canEdit ? (
             <ScoutInterviewPanel
