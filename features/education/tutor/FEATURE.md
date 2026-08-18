@@ -1,6 +1,6 @@
 # FEATURE.md — AI Tutor (`features/education/tutor`)
 
-**Status:** `active` · **Tier:** `1` (Education Hub, project P2) · **Last updated:** `2026-07-07`
+**Status:** `active` · **Tier:** `1` (Education Hub, project P2) · **Last updated:** `2026-08-18`
 
 > The platform's #1 stated differentiator (VISION §4): "a personal tutor, not a chatbot."
 > A persistent, memory-carrying, RAG-grounded conversational tutor present at every study
@@ -48,14 +48,17 @@ that makes it a tutor: **grounding injection**.
 - `learnerMemory.ts` — **the ONE cross-session memory assembler.** Reads the study spine
   (sessions, attempts, `item_mastery` FSRS state, streak, goals) → a `LearnerMemory` snapshot +
   a compact `summaryText`.
-- `grounding.ts` — `assembleTutorGrounding()` → the context policies (`learner_memory`,
-  `study_material` [seed + weak-card digest], `teaching_mode`, `personality_style`) **plus the
+- `grounding.ts` — `assembleTutorGrounding()` → same-turn closed-corpus RAG passages plus the
+  context policies (`learner_memory`, `study_material` [retrieved passages + seed + weak-card
+  digest], `teaching_mode`, `personality_style`) **plus the
   surface `trust` envelope** (`deriveGroundingTrust` — the FALLBACK strip's envelope: real
   citations from the known sources, an honest `inferred` floor, `not_in_material` when nothing is
   loaded).
 - `turnTrust.ts` — the PER-TURN structured-trust channel: `extractTurnTrust()` pulls the tutor's
   hidden `<!--MATRX_TRUST_V1 …-->` envelope out of an assistant message's raw text and coerces it
-  through the canonical `coerceTrustEnvelope`. Never throws; null when a turn has no envelope.
+  through the canonical `coerceTrustEnvelope`; `reconcileTurnTrust` drops unknown chunk ids and
+  replaces agent-authored citation details with the canonical retrieved passage. Never throws;
+  null when a turn has no envelope.
 - `settings.ts` — per-learner tutor prefs (Socratic/Direct + personality) on the **durable settings
   system** (`userPreferences.tutor.*`, synced across devices). Owns the tutor vocabulary (unions +
   defaults) the `userPreferences` slice type-imports, the non-React `getTutorSettings()` accessor
@@ -79,10 +82,14 @@ promote with the stale-focus guard), extracted from `ChatRoomClient`. `/chat` ca
 
 The tutor is a streaming TEXT chat agent (resolved live through the `education.tutor_message`
 mandate — the DB decides which agent fulfils it) with **zero user-facing variables** (so
-the chat composer stays clean) and **four declared CONTEXT SLOTS**: `learner_memory`,
+the chat composer stays clean) and **four declared context policies**: `learner_memory`,
 `study_material`, `teaching_mode`, `personality_style` (each with a `max_inline_chars` ceiling —
-content ≤ that is inlined into the model's view, capped at 5000). Grounding is **context, not
-input**: `EducationTutorClient` assembles memory + material (`grounding.ts`) and dispatches
+content ≤ that is inlined into the model's view, capped at 5000). Before every idle submit, the
+surface runtime's awaited `beforeExecute` hook runs `retrieveGroundedPassages` against the exact
+learner-owned `(source_kind, source_id)` inventory. The canonical `features/rag` streamed search
+receives that list through `include_sources`; an empty list fails closed and a search failure
+aborts before the composer is snapshotted, preserving the draft. Grounding is **context, not
+input**: `EducationTutorClient` assembles memory + retrieved material (`grounding.ts`) and dispatches
 `setContextEntries({conversationId, entries:[…]})` → the instance-context slice → `request.context`,
 which is **re-sent on every turn** (including continuations), so grounding stays live for the whole
 conversation and never shows in the composer. The agent also carries platform **data tools** and
@@ -101,13 +108,16 @@ target state the earlier grounding-derived strip was a placeholder for):
   when the material doesn't cover a question, refuse honestly and offer general knowledge as an
   explicit choice rather than fabricate.
 - **Per-turn STRUCTURED envelope (primary) — `turnTrust.ts` + `TutorTurnTrust`:** the re-authored
-  tutor agent (`cb268e29-…`) emits, on the final line of every markdown answer, ONE hidden
+  tutor mandate's current Holder emits, on the final line of every markdown answer, ONE hidden
   machine-readable `TrustEnvelope` for THAT turn:
   `<!--MATRX_TRUST_V1 {"confidence":…,"groundedIn":…,"citations":[…]}-->`. An HTML comment is dropped
   by the chat markdown renderer, so it rides ALONGSIDE the prose in the same stream without
   polluting the student's view (the "structured channel alongside streamed prose" pattern).
   `extractTurnTrust()` parses the latest assistant message's raw text through the ONE canonical
-  `coerceTrustEnvelope` contract; `EducationTutorClient` renders `TutorTurnTrust` flush under that
+  `coerceTrustEnvelope` contract. The client then accepts only citation ids present in the exact
+  same-turn retrieval result and restores title/excerpt/file/document/page from that canonical
+  result; a fabricated id can never make a turn `grounded`. `EducationTutorClient` renders
+  `TutorTurnTrust` flush under that
   answer via `AgentConversationColumn`'s `afterMessages` slot — `ConfidenceBadge` +
   `SourceCitations` for `grounded`/`inferred`, `RefusalNotice` for `not_in_material`. This mirrors
   how the one-shot `lanes/helpLive` agent threads its `trust` envelope, adapted to a streaming
@@ -134,11 +144,10 @@ output. No audio code lives here — per the "reuse, never rebuild audio capture
 - **Do NOT fork a conversation store.** Tutor threads are `chat.conversation` rows via the agents
   pipeline, exactly like `/chat` — the registered `conversation` shareable type (owner
   `created_by`).
-- **Grounding is injected at launch AND refreshed per turn.** `request.context` re-sends every
-  turn; after each new turn `EducationTutorClient` re-assembles memory + material and overwrites
-  the `learner_memory` / `study_material` slots (a per-key MERGE — `teaching_mode` /
-  `personality_style` survive), so mid-conversation studying never leaves stale memory riding
-  along. Owner-only, gated on a changed message count.
+- **Grounding is injected at launch AND retrieved before each send.** `request.context` re-sends
+  every turn; `beforeExecute` replaces `study_material` with passages for the current question
+  before execution. After a turn, only `learner_memory` refreshes, so the cited evidence remains
+  available to the visible trust surface until the next question replaces it.
 - **`learnerMemory` is the one cross-session assembler**; `lanes/learnerContext.ts` only reshapes
   the CURRENT session — don't confuse them.
 - **Send is metered, view is access-gated.** The composer binds `useEntitlement`
@@ -165,6 +174,14 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-08-18** — **Real same-turn grounding (IC-3).** The tutor now inventories only the
+  authenticated learner's root processed documents and calls canonical `ragSearch` with exact
+  `include_sources` pairs before every send. Retrieved chunks carry stable
+  `GROUNDING_PASSAGE` markers and durable file/document/page coordinates inside the existing
+  `study_material` context policy. Empty retrieval tells the Holder to refuse; failed retrieval
+  aborts before submission and preserves the draft. Per-turn trust is reconciled against the
+  retrieved chunk ids, and citation chips open the shared RAG Source Inspector on the exact
+  chunk/page. Unit coverage pins sequencing, marker fidelity and fabricated-id refusal.
 - **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted.
   `agents.ts` → `mandates.ts` (`education.tutor_message`); `EducationTutorClient` gates on
   `useMandate` (unresolved mandate REFUSES with the error visible — never a fallback id);

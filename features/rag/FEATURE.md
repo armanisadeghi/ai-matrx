@@ -177,6 +177,15 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
 
 ## Change log
 
+- **2026-08-18 — closed-corpus product grounding (Education IC-3).** New
+  `api/grounding.ts` composes two existing primitives: an exact owner-filtered direct read of
+  `docproc.processed_documents` for corpus inventory, then canonical streamed `ragSearch` with
+  every `(source_kind, source_id)` passed through `include_sources`. It returns durable
+  `GroundedPassage` records (chunk/title/excerpt/file/document/page/score), a TrustEnvelope and
+  explicit `retrieved|empty|failed` status. Empty inventory never means global search. Shared
+  serialization emits stable `GROUNDING_PASSAGE` markers for text-valued agent context. First
+  consumer: the Education Tutor; WP3/WP11 consume this same seam rather than building retrieval.
+
 - **2026-08-15 — Shared Knowledge publishing executes again.** `rag.library_grant_publish` now calls the intended any-admin helper (`public._library_assert_admin`) while preserving its live pre-check body, and a read-only runtime probe exercises the authorization path on every broken-function audit refresh.
 - **2026-08-15 — Gemini embeddings gained an honest RAG surface.** Added the
   `/rag/embeddings` lab and linked it from both RAG navigation surfaces. It

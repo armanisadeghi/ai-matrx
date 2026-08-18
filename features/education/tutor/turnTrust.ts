@@ -21,6 +21,7 @@
 
 import {
   coerceTrustEnvelope,
+  type SourceCitation,
   type TrustEnvelope,
 } from "@/features/education/trust/types";
 
@@ -72,13 +73,45 @@ function contentToAnswerText(content: unknown): string {
  * (complete) envelope — including while the answer is still streaming and the
  * closing `-->` hasn't arrived yet.
  */
-export function extractTurnTrust(content: unknown): TrustEnvelope | null {
+export function reconcileTurnTrust(
+  claimed: TrustEnvelope,
+  allowedCitations: readonly SourceCitation[],
+): TrustEnvelope {
+  const allowed = new Map(
+    allowedCitations.map((citation) => [citation.sourceId, citation]),
+  );
+  const citations = claimed.citations.flatMap((citation) => {
+    const canonical = allowed.get(citation.sourceId);
+    return canonical ? [canonical] : [];
+  });
+
+  if (claimed.confidence === "not_in_material") {
+    return { ...claimed, citations: [] };
+  }
+  if (claimed.confidence === "grounded" && citations.length === 0) {
+    return {
+      citations: [],
+      confidence: "not_in_material",
+      groundedIn: claimed.groundedIn,
+    };
+  }
+  return { ...claimed, citations };
+}
+
+export function extractTurnTrust(
+  content: unknown,
+  allowedCitations?: readonly SourceCitation[],
+): TrustEnvelope | null {
   const text = contentToAnswerText(content);
   if (!text || text.indexOf(TUTOR_TRUST_SENTINEL) === -1) return null;
   let raw: string | null = null;
   // Take the last match (the turn's envelope is emitted at the very end).
   TRUST_COMMENT_RE.lastIndex = 0;
-  for (let m = TRUST_COMMENT_RE.exec(text); m; m = TRUST_COMMENT_RE.exec(text)) {
+  for (
+    let m = TRUST_COMMENT_RE.exec(text);
+    m;
+    m = TRUST_COMMENT_RE.exec(text)
+  ) {
     raw = m[1];
   }
   if (!raw) return null;
@@ -88,7 +121,9 @@ export function extractTurnTrust(content: unknown): TrustEnvelope | null {
   } catch {
     return null; // partial/garbled JSON (e.g. still streaming) — no envelope yet
   }
-  return coerceTrustEnvelope(parsed);
+  const trust = coerceTrustEnvelope(parsed);
+  if (!trust) return null;
+  return allowedCitations ? reconcileTurnTrust(trust, allowedCitations) : trust;
 }
 
 /**

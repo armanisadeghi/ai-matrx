@@ -23,13 +23,19 @@ import { createSelector } from "@reduxjs/toolkit";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
-import { selectAuthReady } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useConversationRoutePromotion } from "@/features/agents/hooks/useConversationRoutePromotion";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import { surfaceColdPendingCalls } from "@/features/agents/redux/execution-system/thunks/surface-cold-pending-calls.thunk";
-import { setFocus, clearFocus } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
+import {
+  setFocus,
+  clearFocus,
+} from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -41,7 +47,10 @@ import {
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
-import { useEntitlement, useEntitlementConsume } from "@/features/entitlements/hooks";
+import {
+  useEntitlement,
+  useEntitlementConsume,
+} from "@/features/entitlements/hooks";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { useAccess } from "@/utils/permissions/access";
@@ -147,6 +156,7 @@ function EducationTutorClientInner({
     ? `${SOURCE_FEATURE}-embed:${agentId}`
     : `${SOURCE_FEATURE}:${agentId}`;
   const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
   const isFreshRoute = !conversationIdProp;
 
   // ── Entitlement gate (P8): tutor messages are a metered capability ────────
@@ -206,7 +216,10 @@ function EducationTutorClientInner({
           await dispatch(fetchAgentExecutionMinimal(agentId)).unwrap();
         }
       } catch (err) {
-        console.error("[EducationTutorClient] fetchAgentExecutionMinimal failed", err);
+        console.error(
+          "[EducationTutorClient] fetchAgentExecutionMinimal failed",
+          err,
+        );
       } finally {
         if (!cancelled) setIsInitializing(false);
       }
@@ -275,10 +288,30 @@ function EducationTutorClientInner({
           setContextEntries({
             conversationId: target,
             entries: [
-              { key: "learner_memory", value: grounding.learner_memory, type: "text", label: "Learner memory" },
-              { key: "study_material", value: grounding.study_material, type: "text", label: "Study material" },
-              { key: "teaching_mode", value: grounding.teaching_mode, type: "text", label: "Teaching mode" },
-              { key: "personality_style", value: grounding.personality_style, type: "text", label: "Personality style" },
+              {
+                key: "learner_memory",
+                value: grounding.learner_memory,
+                type: "text",
+                label: "Learner memory",
+              },
+              {
+                key: "study_material",
+                value: grounding.study_material,
+                type: "text",
+                label: "Study material",
+              },
+              {
+                key: "teaching_mode",
+                value: grounding.teaching_mode,
+                type: "text",
+                label: "Teaching mode",
+              },
+              {
+                key: "personality_style",
+                value: grounding.personality_style,
+                type: "text",
+                label: "Personality style",
+              },
             ],
           }),
         );
@@ -290,7 +323,14 @@ function EducationTutorClientInner({
     return () => {
       cancelled = true;
     };
-  }, [conversationIdProp, liveConversationId, authReady, dispatch, seed, coppa.ensureAllowed]);
+  }, [
+    conversationIdProp,
+    liveConversationId,
+    authReady,
+    dispatch,
+    seed,
+    coppa.ensureAllowed,
+  ]);
 
   // ── Trust envelope for an EXISTING transcript ─────────────────────────────
   // The fresh route sets `tutorTrust` from the injection assembly above; on a
@@ -328,12 +368,16 @@ function EducationTutorClientInner({
     (async () => {
       try {
         const state = store.getState();
-        const exists = !!state.conversations?.byConversationId?.[conversationIdProp];
+        const exists =
+          !!state.conversations?.byConversationId?.[conversationIdProp];
         const alreadyLiveCount =
-          state.messages?.byConversationId?.[conversationIdProp]?.orderedIds?.length ?? 0;
+          state.messages?.byConversationId?.[conversationIdProp]?.orderedIds
+            ?.length ?? 0;
         if (exists && alreadyLiveCount > 0) {
           if (ctrl.signal.aborted) return;
-          dispatch(setFocus({ surfaceKey, conversationId: conversationIdProp }));
+          dispatch(
+            setFocus({ surfaceKey, conversationId: conversationIdProp }),
+          );
           return;
         }
         if (ctrl.signal.aborted) return;
@@ -358,14 +402,23 @@ function EducationTutorClientInner({
         if (ctrl.signal.aborted) return;
         void dispatch(surfaceColdPendingCalls(conversationIdProp));
       } catch (err) {
-        if (loadedKeyRef.current === conversationIdProp) loadedKeyRef.current = null;
+        if (loadedKeyRef.current === conversationIdProp)
+          loadedKeyRef.current = null;
         console.error("[EducationTutorClient] loadConversation failed", err);
       }
     })();
     return () => {
       ctrl.abort();
     };
-  }, [agentId, conversationIdProp, dispatch, isInitializing, authReady, store, surfaceKey]);
+  }, [
+    agentId,
+    conversationIdProp,
+    dispatch,
+    isInitializing,
+    authReady,
+    store,
+    surfaceKey,
+  ]);
 
   // ── URL promotion + surface registration (shared primitive) ──────────────
   useConversationRoutePromotion({
@@ -404,8 +457,8 @@ function EducationTutorClientInner({
     selectMessageContent(conversationId ?? "", latestAssistantId ?? ""),
   );
   const turnTrust = useMemo(
-    () => extractTurnTrust(latestAssistantContent),
-    [latestAssistantContent],
+    () => extractTurnTrust(latestAssistantContent, tutorTrust?.citations ?? []),
+    [latestAssistantContent, tutorTrust],
   );
 
   // ── Metered usage per sent tutor message (P8) ─────────────────────────────
@@ -414,9 +467,8 @@ function EducationTutorClientInner({
   // token. See `commitTutorMessage` above for why we meter by count delta.
   const selectUserMessageCount = useMemo(
     () =>
-      createSelector(
-        selectConversationMessages(conversationId ?? ""),
-        (msgs) => msgs.reduce((n, m) => n + (m.role === "user" ? 1 : 0), 0),
+      createSelector(selectConversationMessages(conversationId ?? ""), (msgs) =>
+        msgs.reduce((n, m) => n + (m.role === "user" ? 1 : 0), 0),
       ),
     [conversationId],
   );
@@ -453,14 +505,15 @@ function EducationTutorClientInner({
   // Grounding is INJECTED at launch, but `request.context` is re-sent every
   // turn — so if the learner studies mid-conversation (another tab/session),
   // stale memory would keep riding along. After each new turn we re-assemble
-  // memory + material and overwrite the `learner_memory` / `study_material`
-  // slots (and refresh the trust strip), so the NEXT turn sees current spine
-  // data. Owner-only (a read-only sharee never sends) and gated on a changed
+  // memory and overwrite only `learner_memory`, so the NEXT turn sees current
+  // spine data without erasing the exact passages retrieved for the latest
+  // answer. Owner-only (a read-only sharee never sends) and gated on a changed
   // message count so a streaming render doesn't refetch on every token.
   const memoryRefreshedAtRef = useRef<number>(0);
   useEffect(() => {
     if (!conversationId || !authReady || isSharedView) return;
-    if (messageCount === 0 || messageCount === memoryRefreshedAtRef.current) return;
+    if (messageCount === 0 || messageCount === memoryRefreshedAtRef.current)
+      return;
     memoryRefreshedAtRef.current = messageCount;
     const target = conversationId;
     let cancelled = false;
@@ -468,14 +521,22 @@ function EducationTutorClientInner({
       try {
         const grounding = await assembleTutorGrounding({ seed });
         if (cancelled) return;
-        groundingRef.current = grounding;
-        setTutorTrust(grounding.trust);
+        groundingRef.current = groundingRef.current
+          ? {
+              ...groundingRef.current,
+              learner_memory: grounding.learner_memory,
+            }
+          : grounding;
         dispatch(
           setContextEntries({
             conversationId: target,
             entries: [
-              { key: "learner_memory", value: grounding.learner_memory, type: "text", label: "Learner memory" },
-              { key: "study_material", value: grounding.study_material, type: "text", label: "Study material" },
+              {
+                key: "learner_memory",
+                value: grounding.learner_memory,
+                type: "text",
+                label: "Learner memory",
+              },
             ],
           }),
         );
@@ -565,7 +626,11 @@ function EducationTutorClientInner({
             `personality_style expects exactly one of: ${TUTOR_PERSONALITY_STYLES.join(", ")} (case-sensitive).`,
           );
         setPersonalityStylePref(value);
-        applyStyleToLiveSession("personality_style", "Personality style", value);
+        applyStyleToLiveSession(
+          "personality_style",
+          "Personality style",
+          value,
+        );
       },
 
       tutor_message_draft: (value: unknown) => {
@@ -613,9 +678,67 @@ function EducationTutorClientInner({
     };
   };
 
+  const prepareTutorTurn = async (composerText: string) => {
+    const query = composerText.trim();
+    if (!query) return;
+    if (isSharedView)
+      throw new Error("This shared tutor conversation is read-only.");
+    if (!tutorMsg.allowed) throw new Error(tutorMsg.definition.upgradeMessage);
+    if (!(await coppa.ensureAllowed()))
+      throw new Error(
+        "A parent needs to approve AI use for this account before the tutor can respond.",
+      );
+    if (!userId)
+      throw new Error(
+        "Your learner account is still loading. Please try again.",
+      );
+
+    const grounding = await assembleTutorGrounding({ seed, query, userId });
+    if (grounding.retrieval?.status === "failed") {
+      throw new Error(
+        grounding.retrieval.error ??
+          "We couldn't search your uploaded materials. Please try again.",
+      );
+    }
+    groundingRef.current = grounding;
+    setTutorTrust(grounding.trust);
+    dispatch(
+      setContextEntries({
+        conversationId,
+        entries: [
+          {
+            key: "learner_memory",
+            value: grounding.learner_memory,
+            type: "text",
+            label: "Learner memory",
+          },
+          {
+            key: "study_material",
+            value: grounding.study_material,
+            type: "text",
+            label: "Study material",
+          },
+          {
+            key: "teaching_mode",
+            value: grounding.teaching_mode,
+            type: "text",
+            label: "Teaching mode",
+          },
+          {
+            key: "personality_style",
+            value: grounding.personality_style,
+            type: "text",
+            label: "Personality style",
+          },
+        ],
+      }),
+    );
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName="matrx-user/education-tutor"
+      beforeExecute={({ composerText }) => prepareTutorTurn(composerText)}
       // Mounted only past the `!conversationId` early return above, so
       // `conversation_id` is a genuine guarantee (alwaysAvailable: true).
       // Scope is assembled at TRIGGER time from live refs — the grounding ref
@@ -656,74 +779,80 @@ function EducationTutorClientInner({
               }
             : {}),
           ...(turnTrust ? { turn_trust: { ...turnTrust } } : {}),
-          ...(tutorMsg.limit != null ? { tutor_message_limit: tutorMsg.limit } : {}),
+          ...(tutorMsg.limit != null
+            ? { tutor_message_limit: tutorMsg.limit }
+            : {}),
         });
       }}
     >
-    <div className="flex h-full flex-col overflow-hidden bg-textured">
-      {/* Owner share affordance / shared-view read-only banner (P7). Only on an
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
+        {/* Owner share affordance / shared-view read-only banner (P7). Only on an
           existing conversation, and never when embedded in an AskTutor panel. */}
-      {!embedded && conversationIdProp && (access.isOwner || isSharedView) && (
-        <div className="flex items-center justify-between gap-2 border-b border-border bg-card/40 px-4 py-1.5">
-          {isSharedView ? (
-            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Eye className="h-3.5 w-3.5" />
-              Shared conversation — read-only
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">Your tutor conversation</span>
+        {!embedded &&
+          conversationIdProp &&
+          (access.isOwner || isSharedView) && (
+            <div className="flex items-center justify-between gap-2 border-b border-border bg-card/40 px-4 py-1.5">
+              {isSharedView ? (
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Eye className="h-3.5 w-3.5" />
+                  Shared conversation — read-only
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  Your tutor conversation
+                </span>
+              )}
+              {access.isOwner && (
+                <ShareButton
+                  resourceType="conversation"
+                  resourceId={conversationIdProp}
+                  resourceName="Tutor conversation"
+                  isOwner
+                  size="sm"
+                />
+              )}
+            </div>
           )}
-          {access.isOwner && (
-            <ShareButton
-              resourceType="conversation"
-              resourceId={conversationIdProp}
-              resourceName="Tutor conversation"
-              isOwner
-              size="sm"
-            />
-          )}
-        </div>
-      )}
-      {/* P0 trust surface. Preferred: the PER-TURN structured envelope for the
+        {/* P0 trust surface. Preferred: the PER-TURN structured envelope for the
           latest answer renders under it (below, via `afterMessages`). The
           grounding-DERIVED strip is the FALLBACK — shown only when the current
           turn carries no structured envelope (fresh/empty, mid-stream, or an
           older answer that predates the structured channel). */}
-      {!turnTrust && <TutorTrustStrip trust={tutorTrust} />}
-      <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
-        <AgentConversationColumn
-          conversationId={conversationId}
-          surfaceKey={surfaceKey}
-          constrainWidth
-          edgeToEdgeScroll
-          hideInput={isSharedView}
-          smartInputProps={{
-            sendButtonVariant: "blue",
-            showSubmitOnEnterToggle: false,
-            placeholder: coppa.blocked
-              ? "A parent needs to approve AI use for this account first."
-              : sendBlocked
-                ? tutorMsg.definition.upgradeMessage
-                : "Ask your tutor anything about what you're studying…",
-            disableSend: sendBlocked,
-            extraRightControls: hasMeter ? (
-              <EntitlementMeter
-                capability="education.tutor_message"
-                className="whitespace-nowrap"
-              />
-            ) : undefined,
-          }}
-          afterMessages={
-            showEmptyState ? (
-              <TutorLanding conversationId={conversationId} />
-            ) : turnTrust ? (
-              <TutorTurnTrust trust={turnTrust} />
-            ) : undefined
-          }
-        />
+        {!turnTrust && <TutorTrustStrip trust={tutorTrust} />}
+        <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
+          <AgentConversationColumn
+            conversationId={conversationId}
+            surfaceKey={surfaceKey}
+            constrainWidth
+            edgeToEdgeScroll
+            hideInput={isSharedView}
+            smartInputProps={{
+              sendButtonVariant: "blue",
+              showSubmitOnEnterToggle: false,
+              placeholder: coppa.blocked
+                ? "A parent needs to approve AI use for this account first."
+                : sendBlocked
+                  ? tutorMsg.definition.upgradeMessage
+                  : "Ask your tutor anything about what you're studying…",
+              disableSend: sendBlocked,
+              extraRightControls: hasMeter ? (
+                <EntitlementMeter
+                  capability="education.tutor_message"
+                  className="whitespace-nowrap"
+                />
+              ) : undefined,
+            }}
+            afterMessages={
+              showEmptyState ? (
+                <TutorLanding conversationId={conversationId} />
+              ) : turnTrust ? (
+                <TutorTurnTrust trust={turnTrust} />
+              ) : undefined
+            }
+          />
+        </div>
+        <coppa.Gate />
       </div>
-      <coppa.Gate />
-    </div>
     </SurfaceRuntimeProvider>
   );
 }

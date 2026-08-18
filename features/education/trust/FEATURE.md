@@ -25,7 +25,7 @@ shared primitives:
 | Contract (types + coercers) | [`types.ts`](./types.ts) | `TrustEnvelope`, `SourceCitation`, `TrustConfidence`, `GradeVerdict`, `VerifyResult` + non-throwing coercers. THE source of truth. |
 | Contract doc | [`TRUST_ENVELOPE.md`](./TRUST_ENVELOPE.md) | Consumer-facing contract (P1–P4, P6, P9). |
 | `<ConfidenceBadge/>` | [`components/ConfidenceBadge.tsx`](./components/ConfidenceBadge.tsx) | The honest-confidence chip. |
-| `<SourceCitations/>` | [`components/SourceCitations.tsx`](./components/SourceCitations.tsx) | Tappable citation chips → exact passage popover + **"Open full source"** (opens the real file/PDF/web page). |
+| `<SourceCitations/>` | [`components/SourceCitations.tsx`](./components/SourceCitations.tsx) | Tappable citation chips → exact passage popover + source door. RAG chunks open the shared Source Inspector at the exact chunk/page; other files/URLs use the canonical fallback. |
 | Open-source resolver | [`open-source.ts`](./open-source.ts) | `openCitationSource` → canonical `openFilePreview(fileId)` / new-tab url. |
 | Grounding backfill | [`grounding.ts`](./grounding.ts) | `attachSourceRefs` — source-agnostic durable-ref backfill (RAG / uploads / chat). |
 | `<RefusalNotice/>` | [`components/RefusalNotice.tsx`](./components/RefusalNotice.tsx) | Honest-refusal callout + explicit general-knowledge opt-in. |
@@ -63,8 +63,9 @@ Grounding is not RAG-specific and citations open the actual source, not just an 
   the chat/canvas `flashcards-canonical-adapter` (carries the envelope through). Uploaded /
   attached files ground identically once their `fileId` is passed in.
 - **Open:** `<SourceCitations/>` shows **"Open full source"** for any citation with a
-  `fileId`/`url` → `openCitationSource` opens the canonical file-preview window
-  (`openFilePreview`) or the web page. The user sees the whole document, not a snippet.
+  `fileId`/`documentId`/`url`. RAG `chunk` citations reuse `useOpenCitation` and land the shared
+  Source Inspector on the exact chunk/page; other files use `openFilePreview`, and URLs open in
+  a new tab. The user can always reach the cited record.
 - **Page deep-link (follow-up):** `SourceCitation.page` is captured and persisted; landing the
   file viewer ON that page needs `pageNumber` threaded through
   `openFilePreview → filePreviewWindow overlay → PreviewPane → FileTabsBody → FilePreview →
@@ -113,6 +114,10 @@ marketing) and `/education/features/data-security` (the T5 posture statement).
 - Quiz/audio/notes consumers wire the envelope during their own waves (P1–P4) per the contract.
 
 ## Change log
+
+- **2026-08-18** — IC-3 RAG chunk citations now open the canonical Source Inspector with their
+  durable chunk, file/document and page coordinates. `citationIsOpenable` includes
+  `documentId`; the existing preview/web fallbacks remain unchanged for non-RAG citations.
 
 - **2026-08-14** — **A verify verdict is now stored on the card, and `suggestedFix` finally has an apply affordance (FOUND_DEFECTS D151).** `useVerifyAgainstSource` held its verdict in component state: the same card was re-verified — and re-paid for — on every visit, and a `drifted` verdict's corrected answer was a paid result the user could read but not use. `VerifyAgainstSourceArgs` takes an optional `subject` (`VerifySubject`, `fc_card` only today — the only verified item with a durable row AND an editable answer); with it the verdict is persisted through the primitive's `onResult` seam to `fc_card.metadata.trust_verification` (`readStoredVerification` / `VERIFICATION_KEY` in `types.ts`) the instant it lands. `VerifyAgainstSourceButton` takes `subject` + `stored`, renders the stored verdict with its check date instead of re-running (the button becomes "Check again"), and — the real fix — offers **"Use this correction"**, which writes `suggestedFix` as the item's new answer via `applyFix` and stamps `appliedAt`. A stored verdict about text the card no longer has is treated as stale, never shown as a live claim. `CardTrustFooter` threads `cardId` + `cardMetadata`; StudyDeck and EditSetView pass them. Surfaces without an `fc_card` subject (assessment, mind maps, summaries) are unchanged and stay transient until their own subject kind is added — never a second verification shape.
 - **2026-08-11** — **"Verify against source" streams (THE FLOATING LAW).** `useVerifyAgainstSource` runs through `useFloatingAgentRun`: the re-check of the cited passage is watched in the floating `LiveRunWindow` instead of behind the button's spinner. `reset()` closes the window and clears the last run.

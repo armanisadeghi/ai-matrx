@@ -208,7 +208,9 @@ function coerceGradeStep(raw: unknown, index: number): GradeStep | null {
     asString(raw.stepLabel ?? raw.step_label ?? raw.label ?? raw.description) ||
     `Step ${index + 1}`;
   const status = asStepStatus(raw.status ?? raw.result ?? raw.verdict);
-  const note = asString(raw.note ?? raw.notes ?? raw.explanation ?? raw.feedback);
+  const note = asString(
+    raw.note ?? raw.notes ?? raw.explanation ?? raw.feedback,
+  );
   return { stepLabel, status, note };
 }
 
@@ -235,8 +237,7 @@ export function coerceStepGradeVerdict(raw: unknown): StepGradeVerdict | null {
   // Result: prefer explicit booleans; fall back to a single `verdict`/`result` token.
   const verdictToken = asString(src.verdict ?? src.result).toLowerCase();
   const correct =
-    src.correct === true ||
-    (!("correct" in src) && verdictToken === "correct");
+    src.correct === true || (!("correct" in src) && verdictToken === "correct");
   const partial =
     !correct &&
     (src.partial === true ||
@@ -244,8 +245,7 @@ export function coerceStepGradeVerdict(raw: unknown): StepGradeVerdict | null {
 
   const misconceptionRaw = asString(src.misconception);
   const explanation = asString(src.explanation ?? src.feedback);
-  const transcription =
-    asString(src.transcription ?? src.transcript) || null;
+  const transcription = asString(src.transcription ?? src.transcript) || null;
 
   const stepsRaw = Array.isArray(src.steps) ? src.steps : [];
   const steps = stepsRaw
@@ -377,7 +377,8 @@ function coerceCitation(raw: unknown): SourceCitation | null {
     : "chunk";
   const locator = asString(raw.locator ?? raw.position) || undefined;
   const excerpt = asString(raw.excerpt ?? raw.passage ?? raw.text) || undefined;
-  const title = asString(raw.title ?? raw.source_title ?? raw.label) || undefined;
+  const title =
+    asString(raw.title ?? raw.source_title ?? raw.label) || undefined;
   const fileId = asString(raw.fileId ?? raw.file_id) || undefined;
   const documentId =
     asString(raw.documentId ?? raw.document_id ?? raw.processed_document_id) ||
@@ -385,8 +386,20 @@ function coerceCitation(raw: unknown): SourceCitation | null {
   const url = asString(raw.url) || undefined;
   const pageRaw = raw.page;
   const page =
-    typeof pageRaw === "number" && Number.isFinite(pageRaw) ? pageRaw : undefined;
-  return { sourceId, sourceKind, locator, excerpt, title, fileId, documentId, url, page };
+    typeof pageRaw === "number" && Number.isFinite(pageRaw)
+      ? pageRaw
+      : undefined;
+  return {
+    sourceId,
+    sourceKind,
+    locator,
+    excerpt,
+    title,
+    fileId,
+    documentId,
+    url,
+    page,
+  };
 }
 
 /**
@@ -417,8 +430,7 @@ export function coerceTrustEnvelope(raw: unknown): TrustEnvelope | null {
       ? "grounded"
       : "inferred";
 
-  const groundedIn =
-    asString(src.groundedIn ?? src.grounded_in) || undefined;
+  const groundedIn = asString(src.groundedIn ?? src.grounded_in) || undefined;
 
   return { citations, confidence, groundedIn };
 }
@@ -445,7 +457,9 @@ export function coerceVerifyResult(raw: unknown): VerifyResult | null {
   if (!isRecord(raw)) return null;
   const statusRaw = asString(raw.status);
   const status: VerifyStatus =
-    statusRaw === "verified" || statusRaw === "drifted" || statusRaw === "unverifiable"
+    statusRaw === "verified" ||
+    statusRaw === "drifted" ||
+    statusRaw === "unverifiable"
       ? statusRaw
       : "unverifiable";
   const suggested = asString(raw.suggested_fix ?? raw.suggestedFix);
@@ -475,4 +489,4 @@ export const TRUST_FIELD = "trust" as const;
  * lives in `open-source.ts` (it pulls the file-preview surface).
  */
 export const citationIsOpenable = (c: SourceCitation): boolean =>
-  Boolean(c.fileId || c.url);
+  Boolean(c.fileId || c.documentId || c.url);

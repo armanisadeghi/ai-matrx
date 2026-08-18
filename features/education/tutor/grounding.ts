@@ -25,6 +25,11 @@ import type {
   SourceCitation,
   TrustEnvelope,
 } from "@/features/education/trust/types";
+import {
+  retrieveGroundedPassages,
+  serializeGroundedPassages,
+  type GroundingResult,
+} from "@/features/rag/api/grounding";
 
 /** A specific item a surface wants the tutor grounded in (AskTutor entry). */
 export interface TutorGroundingSeed {
@@ -51,6 +56,8 @@ export interface TutorLaunchGrounding {
    * tutor surface. Null only if trust derivation itself is impossible.
    */
   trust: TrustEnvelope | null;
+  /** Exact same-turn RAG result; null when no question was supplied. */
+  retrieval: GroundingResult | null;
 }
 
 export interface AssembleTutorGroundingOptions {
@@ -58,6 +65,10 @@ export interface AssembleTutorGroundingOptions {
   /** Max weak cards to fold into the material digest (default 12). */
   maxCards?: number;
   itemType?: string;
+  /** Current learner question. When present, retrieval happens before send. */
+  query?: string;
+  /** Required with query so learner_owned corpus selection is exact. */
+  userId?: string;
 }
 
 interface WeakCard {
@@ -102,8 +113,9 @@ function weakCardDigest(cards: WeakCard[]): string {
 function deriveGroundingTrust(
   seed: TutorGroundingSeed | undefined,
   weakCards: WeakCard[],
+  retrieval: GroundingResult | null,
 ): TrustEnvelope {
-  const citations: SourceCitation[] = [];
+  const citations: SourceCitation[] = [...(retrieval?.trust.citations ?? [])];
   if (seed?.material) {
     citations.push({
       sourceId: "tutor-seed",
@@ -141,9 +153,25 @@ export async function assembleTutorGrounding(
 
   const memory = await assembleLearnerMemory({ itemType: opts.itemType });
 
+  const retrieval = opts.query?.trim()
+    ? await retrieveGroundedPassages(
+        { query: opts.query, corpus: { mode: "learner_owned" }, limit: 4 },
+        { userId: opts.userId },
+      )
+    : null;
+
   const materialParts: string[] = [];
+  if (retrieval?.status === "retrieved") {
+    materialParts.push(serializeGroundedPassages(retrieval.passages));
+  } else if (retrieval?.status === "empty") {
+    materialParts.push(
+      "No supporting passage was found in the learner's uploaded materials for this question. Say that plainly; do not silently answer from general knowledge.",
+    );
+  }
   if (opts.seed?.material) {
-    const label = opts.seed.title ? `${opts.seed.title}` : "The item the learner is on";
+    const label = opts.seed.title
+      ? `${opts.seed.title}`
+      : "The item the learner is on";
     materialParts.push(`${label}:\n${opts.seed.material}`);
   }
 
@@ -160,6 +188,7 @@ export async function assembleTutorGrounding(
     study_material: materialParts.join("\n\n"),
     teaching_mode: settings.teachingMode,
     personality_style: settings.personalityStyle,
-    trust: deriveGroundingTrust(opts.seed, weakCards),
+    trust: deriveGroundingTrust(opts.seed, weakCards, retrieval),
+    retrieval,
   };
 }
