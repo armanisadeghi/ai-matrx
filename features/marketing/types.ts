@@ -708,6 +708,9 @@ export interface UpdatePageDesiredValuesInput {
   pageId: string;
   /** Only the caller's own keys — merged over the fresh row server-side value. */
   patch: Partial<PageDesiredValues>;
+  /** Optional canonical desired-meta columns committed in the SAME guarded write. */
+  desiredMetaTitle?: string;
+  desiredMetaDescription?: string;
 }
 
 // ─── Authored draft content (web.page_content, 1:1 with web.page) ───────────

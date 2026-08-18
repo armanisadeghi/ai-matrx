@@ -1,6 +1,5 @@
 import {
   assistantBlockedReasonLabel,
-  assistantBindingLabel,
   smsAssistantProgramFromRpc,
   smsPermissionLabel,
   type SmsAssistantProgramState,
@@ -15,8 +14,6 @@ const base: SmsAssistantProgramState = {
   smsEnabled: true,
   userAssistantEnabled: false,
   verifiedUserPhone: "+15550000002",
-  preferredAgentId: null,
-  preferredAgentVersionId: null,
   smsConversationId: null,
   chatConversationId: null,
   identityStatus: "resolved",
@@ -24,30 +21,6 @@ const base: SmsAssistantProgramState = {
   ready: false,
   blockedReasons: ["Choose a saved agent."],
 };
-
-describe("assistantBindingLabel", () => {
-  it("never describes an unselected agent as ready", () => {
-    expect(assistantBindingLabel(base)).toBe("Agent not selected");
-  });
-
-  it("distinguishes a paused configured binding", () => {
-    expect(
-      assistantBindingLabel({ ...base, preferredAgentId: "agent-id" }),
-    ).toBe("Paused");
-  });
-
-  it("uses the server's readiness verdict", () => {
-    expect(
-      assistantBindingLabel({
-        ...base,
-        userAssistantEnabled: true,
-        preferredAgentId: "agent-id",
-        ready: true,
-        blockedReasons: [],
-      }),
-    ).toBe("Ready for owner testing");
-  });
-});
 
 describe("assistantBlockedReasonLabel", () => {
   it("turns durable block codes into clear next steps", () => {
@@ -93,7 +66,6 @@ describe("smsAssistantProgramFromRpc", () => {
       verified_user_phone: "+15550000002",
     });
 
-    expect(state.preferredAgentId).toBeNull();
     expect(state.chatConversationId).toBeNull();
     expect(state.smsEnabled).toBe(true);
     expect(state.consentStatus).toBe("opted_in");

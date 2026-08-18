@@ -26,7 +26,7 @@ import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { Assist } from "@/features/assists/types";
 import { assistPriority } from "@/features/assists/types";
 import { listSiteKeywordValues } from "./data/service";
-import { hasRoutePlan, planForRoute, type SitePlanIndex } from "./page-seo-plan";
+import { planForRoute, type SitePlanIndex } from "./page-seo-plan";
 import type { CmsPageMapEntry } from "./setup/bridge";
 import type { PlanNodeRow } from "./types";
 
@@ -64,17 +64,15 @@ export function isPlanAssist(assist: Assist, siteId: string): boolean {
  * wrong chip, and no chip beats a wrong chip.
  */
 export function hasKeywordAssignment(
-  node: PlanNodeRow,
+  node: Pick<PlanNodeRow, "route">,
   plans: SitePlanIndex | null | undefined,
 ): boolean {
   if (plans === null || plans === undefined) return true;
   const plan = planForRoute(plans, node.route);
-  // `hasRoutePlan` IS the server predicate (`has_keyword_assignment` /
-  // `strategy_payload` in brief_writer.py + page_seo_plan.py): a target
-  // keyword OR any strategist record — role, supported routes, secondary
-  // keywords, reason, planned links. This used to check only keyword+role,
-  // so the UI chipped a "gap" the server's gate would happily pass.
-  return hasRoutePlan(plan);
+  // Exact server predicate (`has_keyword_assignment` in brief_writer.py): a
+  // primary keyword OR an assigned page role. Secondary terms, links and
+  // strategist notes do not make an otherwise unassigned page briefable.
+  return Boolean(plan?.primaryKeyword || plan?.draft.pageRole);
 }
 
 /**

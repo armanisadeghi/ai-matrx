@@ -18,7 +18,7 @@
  * the user sees is the value that is stored.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import {
@@ -35,7 +35,8 @@ import {
 } from "@/lib/api/errors";
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import type { paths } from "@/types/python-generated/api-types";
+import type { components, paths } from "@/types/python-generated/api-types";
+import { extractErrorMessage } from "@/utils/errors";
 
 import type {
   EntityAttachPlan,
@@ -53,6 +54,9 @@ import { planAiRunKeys } from "./usePlanAiRuns";
 
 /** Which pass is running — one at a time, per the server's own cost posture. */
 export type SetupPassKind = "keywords" | "entities" | "review";
+export type KeywordEffortTier = components["schemas"]["KeywordEffortTier"];
+export type KeywordStrategyEstimate =
+  components["schemas"]["KeywordStrategyEstimate"];
 
 // `as const` matters: callApi's `path` is the generated literal union, so a
 // widened `string` here would not typecheck against the OpenAPI contract.
@@ -114,6 +118,26 @@ export function useSetupPasses(siteId: string | null) {
     entities: setupPassRunSetKey(siteId, "entities"),
     review: setupPassRunSetKey(siteId, "review"),
   };
+  const keywordEstimate = useQuery({
+    queryKey: ["content-plan", "keyword-strategy-estimate", siteId],
+    enabled: Boolean(siteId),
+    queryFn: async (): Promise<KeywordStrategyEstimate> => {
+      if (!siteId) throw new Error("Pick a site first.");
+      const result = await dispatch(
+        callApi({
+          path: "/content-plan/sites/{site_id}/keyword-strategy/estimate",
+          method: "GET",
+          pathParams: { site_id: siteId },
+        }),
+      );
+      if (result.error) {
+        throw new Error(
+          describeBackendFailure(parseCallApiError(result.error)).headline,
+        );
+      }
+      return result.data;
+    },
+  });
 
   useEffect(
     () => () => {
@@ -142,6 +166,7 @@ export function useSetupPasses(siteId: string | null) {
       kind: SetupPassKind,
       read: (settings: unknown) => PlanProposal<T> | null,
       guidance = "",
+      extraBody?: { tier: KeywordEffortTier },
     ): Promise<PlanProposal<T>> => {
       if (!siteId) throw new Error("Pick a site first.");
       if (inFlight.current) throw new Error("An AI pass is already running.");
@@ -211,7 +236,7 @@ export function useSetupPasses(siteId: string | null) {
             path: PASS_PATHS[kind],
             method: "POST",
             pathParams: { site_id: siteId },
-            body: { guidance },
+            body: { guidance, ...extraBody },
             stream: true,
             consumeStream,
             signal: streamAbort.signal,
@@ -255,8 +280,11 @@ export function useSetupPasses(siteId: string | null) {
   );
 
   const planKeywords = useCallback(
-    (guidance = ""): Promise<PlanProposal<KeywordStrategyResult>> =>
-      runPass("keywords", readKeywordStrategyProposal, guidance),
+    (
+      tier: KeywordEffortTier,
+      guidance = "",
+    ): Promise<PlanProposal<KeywordStrategyResult>> =>
+      runPass("keywords", readKeywordStrategyProposal, guidance, { tier }),
     [runPass],
   );
 
@@ -305,6 +333,11 @@ export function useSetupPasses(siteId: string | null) {
     entitiesBusy: state.running === "entities",
     reviewBusy: state.running === "review",
     busy: state.running !== null,
+    keywordEstimate: keywordEstimate.data ?? null,
+    keywordEstimateLoading: keywordEstimate.isLoading,
+    keywordEstimateError: keywordEstimate.error
+      ? extractErrorMessage(keywordEstimate.error)
+      : null,
     runSetKeys,
   };
 }

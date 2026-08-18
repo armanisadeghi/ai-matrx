@@ -1554,6 +1554,11 @@ export async function updatePageDesiredValues(
     ? (fresh.desired_values as PageDesiredValues)
     : {};
   const merged = { ...current, ...input.patch };
+  const hasMetaPatch =
+    input.desiredMetaTitle !== undefined ||
+    input.desiredMetaDescription !== undefined;
+  const desiredTitle = input.desiredMetaTitle ?? "";
+  const desiredDescription = input.desiredMetaDescription ?? "";
   const result = await guardedUpdate<MarketingPage>({
     expectedVersion: fresh.version,
     applyUpdate: ({ expectedVersion, nextVersion }) =>
@@ -1561,6 +1566,20 @@ export async function updatePageDesiredValues(
         .from("page")
         .update({
           desired_values: merged as PageUpdate["desired_values"],
+          ...(hasMetaPatch
+            ? {
+                meta_title_desired: desiredTitle,
+                meta_description_desired: desiredDescription,
+                seo_metrics_desired:
+                  desiredTitle || desiredDescription
+                    ? buildStoredSeoMetrics(
+                        desiredTitle,
+                        desiredDescription,
+                        "client",
+                      )
+                    : null,
+              }
+            : {}),
           version: nextVersion,
         })
         .eq("site_id", input.siteId)

@@ -238,6 +238,8 @@ export async function applyKeywordStrategy(args: {
         siteId: args.siteId,
         pageId,
         patch: { keyword_plan: keywordPlan, outbound_links: outboundLinks },
+        desiredMetaTitle: assignment.desiredMetaTitle,
+        desiredMetaDescription: assignment.desiredMetaDescription,
       });
 
       if (primaryKeywordId) result.bound += 1;

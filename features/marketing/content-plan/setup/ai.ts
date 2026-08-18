@@ -109,6 +109,8 @@ export interface KeywordAssignment {
   /** For a supporting page: the money routes it exists to feed. */
   supportsRoutes: string[];
   internalLinks: Array<{ toRoute: string; anchorText: string }>;
+  desiredMetaTitle: string;
+  desiredMetaDescription: string;
   reason: string;
 }
 
@@ -367,6 +369,12 @@ export function coerceKeywordStrategy(value: unknown): KeywordStrategyResult {
       secondaryKeywords: strings(row.secondary_keywords),
       supportsRoutes: strings(row.supports_routes),
       internalLinks: links,
+      desiredMetaTitle:
+        typeof row.meta_title === "string" ? row.meta_title.trim() : "",
+      desiredMetaDescription:
+        typeof row.meta_description === "string"
+          ? row.meta_description.trim()
+          : "",
       reason: typeof row.reason === "string" ? row.reason : "",
     });
   }

@@ -3,11 +3,7 @@ import type { Database } from "@/types/database.types";
 type SmsAssistantProgramRpcRow =
   Database["communication"]["Functions"]["get_my_sms_assistant_program"]["Returns"][number];
 type NullableSmsAssistantProgramRpcKey =
-  | "verified_user_phone"
-  | "preferred_agent_id"
-  | "preferred_agent_version_id"
-  | "sms_conversation_id"
-  | "chat_conversation_id";
+  "verified_user_phone" | "sms_conversation_id" | "chat_conversation_id";
 type SmsAssistantProgramRpcBoundary = Omit<
   SmsAssistantProgramRpcRow,
   NullableSmsAssistantProgramRpcKey
@@ -25,8 +21,6 @@ export interface SmsAssistantProgramState {
   smsEnabled: boolean;
   userAssistantEnabled: boolean;
   verifiedUserPhone: string | null;
-  preferredAgentId: string | null;
-  preferredAgentVersionId: string | null;
   smsConversationId: string | null;
   chatConversationId: string | null;
   identityStatus: string;
@@ -43,13 +37,6 @@ export const SMS_ASSISTANT_TEST_BODY =
   "AI Matrx: Your text assistant is connected. Reply with a harmless question to test your saved agent. Reply STOP to opt out or HELP for help.";
 export const SMS_ASSISTANT_OWNER_BETA_PROGRAM = "ai_matrx_owner_beta";
 export const SMS_ASSISTANT_OWNER_BETA_MANDATE = "sms.owner_beta";
-
-export function assistantBindingLabel(state: SmsAssistantProgramState): string {
-  if (state.ready) return "Ready for owner testing";
-  if (!state.userAssistantEnabled && state.preferredAgentId) return "Paused";
-  if (!state.preferredAgentId) return "Agent not selected";
-  return "Needs attention";
-}
 
 const BLOCKED_REASON_LABELS: Record<string, string> = {
   destination_not_ready: "The approved sender is not ready.",
@@ -90,8 +77,6 @@ export function smsAssistantProgramFromRpc(
     smsEnabled: row.sms_enabled,
     userAssistantEnabled: row.user_assistant_enabled,
     verifiedUserPhone: nullableRpcText(row.verified_user_phone),
-    preferredAgentId: nullableRpcText(row.preferred_agent_id),
-    preferredAgentVersionId: nullableRpcText(row.preferred_agent_version_id),
     smsConversationId: nullableRpcText(row.sms_conversation_id),
     chatConversationId: nullableRpcText(row.chat_conversation_id),
     identityStatus: row.identity_status,

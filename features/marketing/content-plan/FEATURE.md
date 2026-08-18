@@ -311,11 +311,10 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    (`plan-assists-producer.ts`), the mirror of aidream's
    `assert_brief_preconditions`: it reads the page's SEO plan from the ONE
    store (`web.page.desired_values.keyword_plan` via `SitePlanIndex`) — a
-   primary keyword **or any strategist record** (role, supported routes,
-   secondary keywords, reason, planned links), i.e. exactly `hasRoutePlan`,
-   which is the server's `has_keyword_assignment` (aligned 2026-08-17 — it
-   previously checked only keyword+role and chipped gaps the server would
-   pass). **Change one predicate and you must change the other** — if they
+   primary keyword **or a non-empty page role**. Secondary terms, links and
+   strategist notes do not make an otherwise unassigned page briefable. This
+   is exactly the server's `has_keyword_assignment` predicate. **Change one
+   predicate and you must change the other** — if they
    disagree, the UI offers a fix for a gap the server does not see, or
    blocks a page the server would happily brief.
 
@@ -756,6 +755,9 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-18 — **Keyword-assignment parity restored.**
+  `hasKeywordAssignment` now mirrors aidream's exact primary-keyword-or-page-role
+  predicate; broader SEO-plan metadata no longer hides an unbriefable page.
 - 2026-08-18 — **Content-plan empty states stopped telling life stories.**
   NodePanel cards and adjacent content-plan surfaces now state absence or
   waiting states in one short line while preserving every action and tab
@@ -774,8 +776,7 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   Notes and Files bulk actions were moved onto the same primitive so the
   worker-pool implementation is no longer copied between features.
 - 2026-08-17 — **Keyword→brief enforcement tail (FE half).**
-  `hasKeywordAssignment` aligned to the server predicate (`hasRoutePlan` — any
-  strategist record counts, not just keyword+role); `NodeStepRail` run arrows
+  `hasKeywordAssignment` became the server-predicate mirror; `NodeStepRail` run arrows
   are precondition-aware (`writeBlockedReason` from NodePanel + a local
   no-draft block on Review) with the reason and fix in the tooltip before the
   click. Server twins landed the same day (aidream `page_pipeline.py` write

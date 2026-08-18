@@ -257,13 +257,14 @@ merges steps at the cheap end).
 
 ## Done (compressed — details live in the FEATURE.md files and git history)
 
-- **Keyword→brief enforcement, end to end** (2026-08-17, the pbw-law "my keywords got dropped"
+- ✅ **Keyword→brief enforcement, end to end — CLOSED 2026-08-18** (the 2026-08-17 pbw-law "my keywords got dropped"
   trace): `assign_primary_keyword` is the one store writer (root cause) AND the whole tail —
   write-step gate aligned with the brief gate (bulk fill records it as a readable SKIP),
-  warn-loud per-page floor on Deepen / the `content_plan` tool / `apply_plan_tree`,
-  keyword-containment check on produced briefs (lands in the draft's `concerns`), binding
-  TARGET-KEYWORD framing in both prompts, FE `hasKeywordAssignment` aligned to the server
-  predicate, and precondition-aware run arrows on the rail. Contracts: aidream
+  one shared warn-loud per-page floor on Deepen / the `content_plan` tool /
+  `apply_plan_tree` (primary keyword OR page role; bulk paths never block), exact-phrase-or-
+  significant-words containment on produced Brief Writer drafts (lands in durable `concerns`),
+  directive target framing in both prompts, FE `hasKeywordAssignment` aligned exactly to the
+  server predicate, and precondition-aware run arrows on the rail. Contracts: aidream
   `services/content_plan/FEATURE.md` invariant 5 tail + FE `content-plan/FEATURE.md` §2.
 - Content plan feature (5 views, generator, deepen, reconciler, signals) + CMS authoring stack +
   plan↔CMS bridge — `features/marketing/content-plan/`, `features/cms/`, aidream

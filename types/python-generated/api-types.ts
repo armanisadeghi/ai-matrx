@@ -6155,6 +6155,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/sites/{site_id}/keyword-strategy/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Keyword Strategy Estimate
+         * @description Exact calls and catalog-priced approximate cost before any spend.
+         */
+        get: operations["keyword_strategy_estimate_content_plan_sites__site_id__keyword_strategy_estimate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-plan/sites/{site_id}/entity-attachments": {
         parameters: {
             query?: never;
@@ -40579,6 +40599,58 @@ export interface components {
             /** Brave Target Id */
             brave_target_id: string;
         };
+        /** KeywordStrategyBody */
+        KeywordStrategyBody: {
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Guidance
+             * @default
+             */
+            guidance?: string;
+            /**
+             * Tier
+             * @default cheap
+             * @enum {string}
+             */
+            tier?: "cheap" | "thorough" | "advanced";
+        };
+        /** KeywordStrategyEstimate */
+        KeywordStrategyEstimate: {
+            /** Site Id */
+            site_id: string;
+            /** Pages */
+            pages: number;
+            /** Tiers */
+            tiers?: components["schemas"]["KeywordTierEstimate"][];
+        };
+        /** KeywordTierEstimate */
+        KeywordTierEstimate: {
+            /**
+             * Tier
+             * @enum {string}
+             */
+            tier: "cheap" | "thorough" | "advanced";
+            /** Label */
+            label: string;
+            /** Pages */
+            pages: number;
+            /** Calls */
+            calls: number;
+            /** Pages Per Call */
+            pages_per_call: number;
+            /** Approximate Cost Usd */
+            approximate_cost_usd?: number | null;
+            /**
+             * Basis
+             * @default
+             */
+            basis?: string;
+        };
         /** KeywordVideoSearchResult */
         KeywordVideoSearchResult: {
             /** Stored Count */
@@ -72921,7 +72993,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["SetupAgentBody"] | null;
+                "application/json": components["schemas"]["KeywordStrategyBody"] | null;
             };
         };
         responses: {
@@ -72932,6 +73004,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    keyword_strategy_estimate_content_plan_sites__site_id__keyword_strategy_estimate_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KeywordStrategyEstimate"];
                 };
             };
             /** @description Validation Error */
