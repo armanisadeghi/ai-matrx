@@ -66,6 +66,7 @@ import {
   buildViewAgentInput,
   buildViewHuman,
   rowsToCsvFromColumns,
+  rowsToRecordsFromColumns,
 } from "./tableCopy";
 import {
   nextQueryState,
@@ -891,6 +892,9 @@ function MatrxDataTableCore<T>({
                       }),
                     },
                   ]}
+                  sheetRows={() =>
+                    rowsToRecordsFromColumns(processed, visibleColumns)
+                  }
                 />
               </>
             ) : null}

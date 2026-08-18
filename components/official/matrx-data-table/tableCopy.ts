@@ -100,6 +100,32 @@ export function rowsToCsvFromColumns<T>(
   return lines.join("\n");
 }
 
+/**
+ * The same rows the CSV export produces, as records — the shape a Google Sheet
+ * (or any other row destination) takes.
+ *
+ * It shares `rowsToCsvFromColumns`'s column selection and cell stringification
+ * ON PURPOSE: a user who exports the view as CSV and a user who sends it to a
+ * Sheet must get the SAME columns, in the same order, with the same values.
+ * Two independent row builders is how those two answers start disagreeing.
+ */
+export function rowsToRecordsFromColumns<T>(
+  rows: T[],
+  columns: MatrxColumnDef<T>[],
+): Array<Record<string, unknown>> {
+  const cols = columns.filter((c) => c.filter !== false || c.accessorKey);
+  const headers = cols.map((c) =>
+    typeof c.header === "string" ? c.header : columnId(c),
+  );
+  return rows.map((row) => {
+    const record: Record<string, unknown> = {};
+    cols.forEach((c, index) => {
+      record[headers[index]] = stringifyCellValue(getCellValue(row, c));
+    });
+    return record;
+  });
+}
+
 export function buildViewHuman<T>(
   config: MatrxDataTableCopyConfig<T>,
   visible: T[],

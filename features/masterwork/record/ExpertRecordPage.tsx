@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
 import { getExpertCorpus, type ExpertContribution, type ExpertCorpus } from "./service";
+import { ContentActionBar } from "@/components/content-actions/ContentActionBar";
 import {
   contributionAgentPayload,
   contributionHuman,
@@ -318,6 +319,15 @@ export function ExpertRecordPage({
               human={() => corpusHuman(corpus, name)}
               agent={() => corpusAgentPayload(corpus, name)}
               json={() => corpus}
+            />
+            {/* The Expert's own words are the thing they most want OUT of here
+                — into a Google Doc they can edit and share, printed, emailed.
+                The canonical action bar carries every destination, so this
+                surface owns none of them. */}
+            <ContentActionBar
+              content={corpusHuman(corpus, name)}
+              title={`${name} — your words`}
+              instanceKey={`masterwork-record-${rulebookId}`}
             />
             {variant === "page" ? (
               <Button asChild size="sm" variant="outline" className="h-9">

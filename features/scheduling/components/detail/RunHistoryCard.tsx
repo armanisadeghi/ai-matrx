@@ -59,6 +59,7 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
                   jsonExportItem(() => runs),
                   csvExportItem(() => runCsvRows(runs), "CSV (all runs)"),
                 ]}
+                sheetRows={() => runCsvRows(runs)}
               />
             </div>
           ) : null}

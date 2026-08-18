@@ -1,12 +1,20 @@
 "use client";
 
 /**
- * ExportMenu — the "Download" dropdown for any data surface. Sits beside
+ * ExportMenu — the "Export" dropdown for any data surface. Sits beside
  * CopyButtons in toolbars/headers; each item downloads a file built at click
  * time (JSON raw data, CSV of the current view, payload text…).
+ *
+ * Pass `sheetRows` and the menu also offers "Send to Google Sheet" — the same
+ * rows, landing in the user's own Drive instead of their downloads folder,
+ * through the ONE canonical `features/google-workspace` path. A download and a
+ * Sheet are the same intent with a different destination, so they belong in the
+ * same menu; every surface that already exports rows gains the destination by
+ * passing the data it already has.
  */
 
-import { Download } from "lucide-react";
+import { useState } from "react";
+import { Download, Table2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -29,6 +37,11 @@ export interface ExportMenuProps {
   size?: "icon" | "sm";
   disabled?: boolean;
   className?: string;
+  /**
+   * Tabular rows for the "Send to Google Sheet" destination. Same shape
+   * `csvExportItem` takes. Omit it and the destination is not offered.
+   */
+  sheetRows?: () => Array<Record<string, unknown>>;
 }
 
 export function ExportMenu({
@@ -37,14 +50,61 @@ export function ExportMenu({
   size = "icon",
   disabled = false,
   className,
+  sheetRows,
 }: ExportMenuProps) {
-  if (!items.length) return null;
+  const [sendingToSheet, setSendingToSheet] = useState(false);
+  if (!items.length && !sheetRows) return null;
   const isIcon = size === "icon";
 
   const handle = (item: ExportItem) => {
     const { content, extension, mime } = item.build();
     downloadFile(exportFilename(label, extension), content, mime);
     toast.success(`${label} exported (${extension.toUpperCase()})`);
+  };
+
+  const sendToSheet = async () => {
+    if (!sheetRows || sendingToSheet) return;
+    const rows = sheetRows();
+    if (!rows.length) {
+      toast.info("Nothing to send — this view is empty.");
+      return;
+    }
+    setSendingToSheet(true);
+    try {
+      const { sendRowsToGoogleSheet } = await import(
+        "@/features/google-workspace/export/sendToGoogle"
+      );
+      const result = await sendRowsToGoogleSheet(rows, label);
+      if (!result.ok) {
+        toast.info("Connect Google to send this to a Sheet", {
+          description:
+            "Takes about ten seconds, and only for files you choose or that we create.",
+          action: {
+            label: "Connect",
+            onClick: () =>
+              window.open(result.settingsHref, "_blank", "noopener"),
+          },
+        });
+        return;
+      }
+      toast.success(`Created "${result.name}" in your Google Drive`, {
+        action: result.openUrl
+          ? {
+              label: "Open",
+              onClick: () =>
+                window.open(result.openUrl as string, "_blank", "noopener"),
+            }
+          : undefined,
+      });
+    } catch (cause) {
+      toast.error(
+        cause instanceof Error
+          ? cause.message
+          : "Could not create the Google Sheet.",
+      );
+    } finally {
+      setSendingToSheet(false);
+    }
   };
 
   return (
@@ -70,6 +130,19 @@ export function ExportMenu({
             {item.label}
           </DropdownMenuItem>
         ))}
+        {sheetRows && (
+          <DropdownMenuItem
+            key="google-sheet"
+            disabled={sendingToSheet}
+            onSelect={(event) => {
+              event.preventDefault();
+              void sendToSheet();
+            }}
+          >
+            <Table2 className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            {sendingToSheet ? "Creating Google Sheet…" : "Send to Google Sheet"}
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );
