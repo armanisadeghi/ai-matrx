@@ -204,7 +204,10 @@ export function AiCopyMenu({
       )}
       {!single && (
         <ChevronDown
-          className={cn("opacity-60", size === "sm" ? "h-3.5 w-3.5" : "h-3 w-3")}
+          className={cn(
+            "opacity-60",
+            size === "sm" ? "h-3.5 w-3.5" : "h-3 w-3",
+          )}
         />
       )}
     </>
@@ -212,10 +215,7 @@ export function AiCopyMenu({
 
   const wrap = (node: React.ReactNode) =>
     stopPropagation ? (
-      <span
-        className="inline-flex"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <span className="inline-flex" onClick={(e) => e.stopPropagation()}>
         {node}
       </span>
     ) : (
@@ -248,11 +248,7 @@ export function AiCopyMenu({
             type="button"
             variant="ghost"
             size="icon"
-            className={cn(
-              buttonCls,
-              "w-auto gap-0 px-1.5",
-              className,
-            )}
+            className={cn(buttonCls, "w-auto gap-0 px-1.5", className)}
             disabled={disabled || busy}
             aria-label={`Copy ${label} for AI`}
             title={`Copy ${label} for AI`}
@@ -506,7 +502,10 @@ function AiCustomDialog({
       return { text: `Failed to build preview: ${String(e)}` };
     }
   }, [source, opts, open]);
-  const bytes = React.useMemo(() => new Blob([result.text]).size, [result.text]);
+  const bytes = React.useMemo(
+    () => new Blob([result.text]).size,
+    [result.text],
+  );
 
   const copy = async (wrapForAi: boolean) => {
     const text = wrapForAi

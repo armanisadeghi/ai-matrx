@@ -128,9 +128,9 @@ must scale to its data. There is no one-size-fits-all; for every surface ask
 
 | Data | Control | Variants |
 |---|---|---|
-| **Small / bounded** (one record, a short list) | Single icon, no chevron | Just "Everything" |
-| **Medium** (a focused list, a digestible page) | Dropdown (chevron) | A focused/short view **and** Everything |
-| **Massive / unbounded** (giant payloads, full histories) | Dropdown + non-blocking custom workspace | Short, Everything, **and** a tunable custom view |
+| **Small / bounded** (one record, a short list) | AI icon is plain only when it owns one action; otherwise dropdown | Faithful payload; add JSON when structured |
+| **Medium** (a focused list, a digestible page) | AI dropdown | JSON + focused/short view + Everything |
+| **Massive / unbounded** (giant payloads, full histories) | AI dropdown + non-blocking custom workspace | JSON + Short + Everything + tunable custom/Groomer |
 
 - **`AiCopyMenu`** (`AiCopyMenu.tsx`) is the chrome: pass `variants`
   (pure `build()` → envelope-or-string, may be async) and optionally `custom`

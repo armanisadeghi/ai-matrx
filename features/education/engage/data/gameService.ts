@@ -20,6 +20,7 @@ import type {
   LeagueMembershipRow,
   GameRoomConfig,
 } from "../types";
+import type { DbRpcRow } from "@/types/supabase-rpc";
 
 const EDU = () => supabase.schema("education");
 
@@ -80,7 +81,43 @@ export interface LeagueEntry {
   is_me: boolean;
 }
 
+/** Healthy-engagement signals rendered at the moment a study session ends. */
+export interface EngagementSnapshot {
+  session_points: number;
+  current_streak: number;
+  longest_streak: number;
+  badges_earned: number;
+  next_badge_key: string;
+  next_badge_progress: number;
+  next_badge_target: number;
+  league_rank: number;
+  league_size: number;
+  league_mastery_gain: number;
+  league_opted_in: boolean;
+}
+type _CheckEngagementSnapshot = EngagementSnapshot extends DbRpcRow<"education_engagement_snapshot"> ? true : false;
+declare const _engagementSnapshotMatchesDb: _CheckEngagementSnapshot;
+true satisfies typeof _engagementSnapshotMatchesDb;
+
 export const gameService = {
+  /** Outcome-based points, streak, badge progress, and private league standing. */
+  async getEngagementSnapshot(
+    sessionId: string | null,
+  ): Promise<EngageResult<EngagementSnapshot>> {
+    try {
+      const args = sessionId ? { p_session_id: sessionId } : {};
+      const { data, error } = await supabase.rpc(
+        "education_engagement_snapshot",
+        args,
+      );
+      if (error) return fail("getEngagementSnapshot", error);
+      const row = Array.isArray(data) ? data[0] : data;
+      return { data: row ?? null, error: null };
+    } catch (e) {
+      return fail("getEngagementSnapshot", e);
+    }
+  },
+
   // ─── ROOMS ─────────────────────────────────────────────────────────────
   /** Host creates a room. Retries once on a (rare) join-code collision. */
   async createRoom(input: {

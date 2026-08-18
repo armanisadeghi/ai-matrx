@@ -31,6 +31,7 @@ import {
   AlertCircle,
   BookOpen,
   Trophy,
+  Award,
   HelpCircle,
   Loader2,
   GraduationCap,
@@ -53,10 +54,17 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
+import {
+  gameService,
+  type EngagementSnapshot,
+} from "@/features/education/engage/data/gameService";
+import {
+  BADGES,
+  isBadgeKey,
+} from "@/features/education/engage/engine/badges";
 import type {
   ItemMasteryRow,
   SessionAiJournal,
-  StudyStreakRow,
 } from "@/features/education/study/types";
 import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
@@ -291,17 +299,17 @@ export function StudyDeck(props: StudyDeckProps) {
 
   // VISION §13 — the streak the session just earned, read once on completion
   // (the DB trigger writes it on session insert, so it already counts today).
-  const [streak, setStreak] = useState<StudyStreakRow | null>(null);
+  const [engagement, setEngagement] = useState<EngagementSnapshot | null>(null);
   useEffect(() => {
     if (!completed) return undefined;
     let cancelled = false;
-    void studyService.getStreak().then((res) => {
-      if (!cancelled && !res.error) setStreak(res.data ?? null);
+    void gameService.getEngagementSnapshot(sessionId).then((res) => {
+      if (!cancelled && !res.error) setEngagement(res.data ?? null);
     });
     return () => {
       cancelled = true;
     };
-  }, [completed]);
+  }, [completed, sessionId]);
   // `completed` is a one-way latch (see `restart` below), not a pure
   // derivation of progress — it must survive a "Study again" reset where
   // progress itself doesn't change, so a synchronizing effect is correct
@@ -701,18 +709,56 @@ export function StudyDeck(props: StudyDeckProps) {
               written by the education.bump_study_streak() trigger on session
               insert, so by completion it already counts this session. Healthy
               by design: it celebrates, it never guilts. */}
-          {streak && streak.current_streak > 0 && (
+          {engagement && engagement.current_streak > 0 && (
             <div className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs">
               <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
               <span className="font-medium text-foreground">
-                {streak.current_streak} day
-                {streak.current_streak === 1 ? "" : "s"} in a row
+                {engagement.current_streak} day
+                {engagement.current_streak === 1 ? "" : "s"} in a row
               </span>
-              {streak.longest_streak > streak.current_streak && (
+              {engagement.longest_streak > engagement.current_streak && (
                 <span className="text-muted-foreground">
-                  · best {streak.longest_streak}
+                  · best {engagement.longest_streak}
                 </span>
               )}
+            </div>
+          )}
+
+          {engagement && (
+            <div className="grid w-full grid-cols-2 gap-2 text-left text-xs">
+              <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <div className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
+                  <Trophy className="h-3.5 w-3.5 text-primary" />
+                  {engagement.session_points.toLocaleString()} learning points
+                </div>
+                <p className="text-muted-foreground">
+                  From this session’s learning outcomes. Practice is never capped.
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/40 p-3">
+                <div className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
+                  <Award className="h-3.5 w-3.5 text-primary" />
+                  {engagement.badges_earned} badge{engagement.badges_earned === 1 ? "" : "s"}
+                </div>
+                {isBadgeKey(engagement.next_badge_key) && engagement.next_badge_target > 0 ? (
+                  <p className="text-muted-foreground">
+                    {BADGES[engagement.next_badge_key].label}: {engagement.next_badge_progress}/{engagement.next_badge_target}
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground">Every current milestone earned.</p>
+                )}
+              </div>
+              <div className="col-span-2 rounded-lg border border-border bg-muted/40 p-3">
+                {engagement.league_opted_in && engagement.league_rank > 0 ? (
+                  <p className="font-medium text-foreground">
+                    Private league: #{engagement.league_rank} of {engagement.league_size} · +{Number(engagement.league_mastery_gain).toFixed(1)} mastery
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground">
+                    Private mastery leagues are optional. Your practice still counts either way.
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

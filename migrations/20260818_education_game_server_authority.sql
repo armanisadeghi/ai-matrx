@@ -472,24 +472,24 @@ BEGIN
       WHEN v_mastered < 10 THEN 'mastery_10'
       WHEN signals.streak_now < 30 THEN 'streak_30'
       WHEN v_mastered < 50 THEN 'mastery_50'
-      ELSE NULL
+      ELSE ''
     END AS next_badge_key,
     CASE
       WHEN signals.streak_now < 7 THEN signals.streak_now
       WHEN v_mastered < 10 THEN v_mastered
       WHEN signals.streak_now < 30 THEN signals.streak_now
       WHEN v_mastered < 50 THEN v_mastered
-      ELSE NULL
+      ELSE 0
     END AS next_badge_progress,
     CASE
       WHEN signals.streak_now < 7 THEN 7
       WHEN v_mastered < 10 THEN 10
       WHEN signals.streak_now < 30 THEN 30
       WHEN v_mastered < 50 THEN 50
-      ELSE NULL
+      ELSE 0
     END AS next_badge_target,
-    ranked.rank,
-    ranked.size,
+    coalesce(ranked.rank, 0),
+    coalesce(ranked.size, 0),
     coalesce(mine.mastery_gain, 0),
     coalesce(mine.opted_in, false)
   FROM signals

@@ -19,7 +19,9 @@ jest.mock("@/components/agent-copy/AiCopyMenu", () => ({
         ))}
       </ol>
       <output data-testid="json-payload">
-        {String(variants.find((variant) => variant.id === "json")?.build() ?? "")}
+        {String(
+          variants.find((variant) => variant.id === "json")?.build() ?? "",
+        )}
       </output>
     </div>
   ),
@@ -105,16 +107,18 @@ describe("CopyButtons AI variants", () => {
     });
 
     expect(container.querySelectorAll("button")).toHaveLength(2);
-    expect(container.querySelector("[data-testid='ai-menu']")?.getAttribute("data-size")).toBe(
-      "sm",
-    );
+    expect(
+      container
+        .querySelector("[data-testid='ai-menu']")
+        ?.getAttribute("data-size"),
+    ).toBe("sm");
     expect(
       [...container.querySelectorAll("[data-testid='ai-variants'] li")].map(
         (item) => item.textContent,
       ),
     ).toEqual(["JSON", "Everything"]);
-    expect(container.querySelector("[data-testid='json-payload']")?.textContent).toBe(
-      '{\n  "node": "pillar",\n  "depth": 1\n}',
-    );
+    expect(
+      container.querySelector("[data-testid='json-payload']")?.textContent,
+    ).toBe('{\n  "node": "pillar",\n  "depth": 1\n}');
   });
 });

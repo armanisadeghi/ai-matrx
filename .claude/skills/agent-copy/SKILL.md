@@ -1,6 +1,19 @@
 ---
 name: agent-copy
-description: Add the canonical two icon-only copy controls to any surface that shows data (rows, cards, lists, detail/record pages) using `components/agent-copy`: normal Copy and one Copy-for-AI dropdown containing JSON, AI variants, and any custom/Groomer workspace. Build payloads as WHAT THE USER SEES (rendered view, live form state, errors, KPIs), sized to the data. Use when wiring copy actions, consolidating duplicate Copy/JSON/AI/Groomer controls, continuing the app-wide rollout, reviewing or upgrading a Copy-for-AI payload, or extending agent payload context. Triggers on `components/agent-copy/**`, `CopyButtons`, `AiCopyMenu`, `AgentCopyGroomerLauncher`, `buildAgentPayload`, "add copy buttons", "copy this row/list/record", or "copy for AI/agent". NOT for the live-chat message bar (`AssistantActionBar` / `messageActionRegistry`) or markdown content actions (the `rich-document-actions` skill).
+description: >-
+  Add the canonical two icon-only copy controls to any surface that shows data
+  (rows, cards, lists, detail/record pages) using `components/agent-copy`:
+  normal Copy and one Copy-for-AI dropdown containing JSON, AI variants, and
+  any custom/Groomer workspace. Build payloads as WHAT THE USER SEES (rendered
+  view, live form state, errors, KPIs), sized to the data. Use when wiring copy
+  actions, consolidating duplicate Copy/JSON/AI/Groomer controls, continuing
+  the app-wide rollout, reviewing or upgrading a Copy-for-AI payload, or
+  extending agent payload context. Triggers on `components/agent-copy/**`,
+  `CopyButtons`, `AiCopyMenu`, `AgentCopyGroomerLauncher`, `buildAgentPayload`,
+  "add copy buttons", "copy this row/list/record", or "copy for AI/agent". NOT
+  for the live-chat message bar (`AssistantActionBar` /
+  `messageActionRegistry`) or markdown content actions (the
+  `rich-document-actions` skill).
 ---
 
 # agent-copy — copy data (human + AI) anywhere

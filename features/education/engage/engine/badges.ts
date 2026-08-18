@@ -72,6 +72,10 @@ export const BADGES: Record<BadgeKey, BadgeDef> = {
 
 export const BADGE_LIST: BadgeDef[] = Object.values(BADGES);
 
+export function isBadgeKey(value: string): value is BadgeKey {
+  return value in BADGES;
+}
+
 /** Signals the award evaluator reads (all outcome-based). */
 export interface BadgeSignals {
   gamesPlayed: number;
