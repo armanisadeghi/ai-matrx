@@ -23,4 +23,18 @@ describe("currentStoredVerdict", () => {
   it("refuses a stored verdict after the answer changes", () => {
     expect(currentStoredVerdict(metadata, "Edited answer")).toBeNull();
   });
+
+  it("reruns a non-verified verdict even when its answer is unchanged", () => {
+    expect(
+      currentStoredVerdict(
+        {
+          trust_verification: {
+            ...metadata.trust_verification,
+            status: "drifted",
+          },
+        },
+        "Supported answer",
+      ),
+    ).toBeNull();
+  });
 });

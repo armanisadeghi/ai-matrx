@@ -30,7 +30,13 @@ export function currentStoredVerdict(
   currentBack: string,
 ): VerifyResult | null {
   const stored = readStoredVerification(metadata);
-  if (!stored || stored.verifiedBack !== currentBack) return null;
+  if (
+    !stored ||
+    stored.status !== "verified" ||
+    stored.verifiedBack !== currentBack
+  ) {
+    return null;
+  }
   return {
     status: stored.status,
     explanation: stored.explanation,

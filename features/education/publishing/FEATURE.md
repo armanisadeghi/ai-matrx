@@ -65,7 +65,8 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
   for each exam and each of the three generation plans, shows it only under its own exam, and
   offers the same source-verification pass again. A subsequent run generates only missing plans;
   recovery never changes visibility or duplicates an existing draft. Persisted verdicts are
-  reused only while `verifiedBack` exactly matches the current answer; an edit forces a new check.
+  reused only while they are `verified` and `verifiedBack` exactly matches the current answer;
+  an edit or any negative verdict forces a new check.
 
 ## Open / next
 
