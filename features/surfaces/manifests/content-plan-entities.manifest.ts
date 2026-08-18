@@ -111,15 +111,14 @@ const surfaceSpecific: SurfaceValue[] = [
  *  - node↔entity ATTACHMENT (author / reviewer / citation edges) — those live
  *    on the NODE surfaces by design; this surface maintains the roster only.
  *
- * `source_type_id` WAS excluded for the reason `content-plan-node` still keeps
- * `node_primary_keyword_id` manual — a category UUID with no options exposed,
- * so an agent had no legitimate way to produce a valid one. That is now fixed
- * at the source rather than by loosening the check: `source_type_options`
+ * `source_type_id` WAS excluded because a category UUID without an exposed
+ * option inventory is one an agent can only guess. That is now fixed at the
+ * source rather than by loosening the check: `source_type_options`
  * publishes the picker's real vocabulary (the same `useCategories` read the
  * `CategorySelect` renders from), and the handler refuses any id absent from
  * it — including while the dimension is still loading, when a dangling FK
  * could not be told apart from a real one. Declaring the options is the fix
- * for the node surface's holdout too.
+ * for any similar target.
  *
  * All targets are `applyPolicy: "ask"`. Handlers are registered by
  * `EntityManager.tsx` via `useSurfaceWriteHandlers`.

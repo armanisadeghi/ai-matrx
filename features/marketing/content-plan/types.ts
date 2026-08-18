@@ -146,7 +146,6 @@ export const PARTY_SITE_ROLE = "writes_for";
 
 /** Association roles registered for plan pairs (platform.association_types). */
 export const PLAN_NODE_TOPIC_ROLE = "topic";
-export const PLAN_NODE_SECONDARY_KEYWORD_ROLE = "secondary_keyword";
 /** Roles on plan_node → plan_entity edges (source/media citations). */
 export const PLAN_NODE_SOURCE_ROLES = ["about", "cites", "embeds"] as const;
 /** Roles on plan_node → party edges (people/companies; registered pair). */

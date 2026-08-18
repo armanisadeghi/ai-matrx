@@ -16,20 +16,15 @@
  * ('created_by'), plan_entity→category ('member').
  */
 import { associationsService } from "@/features/scopes/service/associationsService";
-import type {
-  AssociationEdge,
-  ScopesRpcResult,
-} from "@/features/scopes/types";
+import type { AssociationEdge, ScopesRpcResult } from "@/features/scopes/types";
 
 import {
   PARTY_SITE_ROLE,
   PARTY_TOKEN,
   PLAN_ENTITY_TOKEN,
-  PLAN_NODE_SECONDARY_KEYWORD_ROLE,
   PLAN_NODE_TOKEN,
   PLAN_NODE_TOPIC_ROLE,
   PLAN_REVIEW_PAYLOAD_KIND,
-  SEO_KEYWORD_TOKEN,
   SEO_TOPIC_TOKEN,
   WEB_SITE_TOKEN,
   type PlanNodeEntityRole,
@@ -81,36 +76,6 @@ export async function removeNodeTopic(
       targetType: SEO_TOPIC_TOKEN,
       targetId: topicId,
       role: PLAN_NODE_TOPIC_ROLE,
-    }),
-  );
-}
-
-export async function addNodeSecondaryKeyword(
-  nodeId: string,
-  keywordId: string,
-): Promise<void> {
-  unwrap(
-    await associationsService.add({
-      sourceType: PLAN_NODE_TOKEN,
-      sourceId: nodeId,
-      targetType: SEO_KEYWORD_TOKEN,
-      targetId: keywordId,
-      role: PLAN_NODE_SECONDARY_KEYWORD_ROLE,
-    }),
-  );
-}
-
-export async function removeNodeSecondaryKeyword(
-  nodeId: string,
-  keywordId: string,
-): Promise<void> {
-  unwrap(
-    await associationsService.remove({
-      sourceType: PLAN_NODE_TOKEN,
-      sourceId: nodeId,
-      targetType: SEO_KEYWORD_TOKEN,
-      targetId: keywordId,
-      role: PLAN_NODE_SECONDARY_KEYWORD_ROLE,
     }),
   );
 }

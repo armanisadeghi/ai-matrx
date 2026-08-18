@@ -44,7 +44,6 @@ import {
 import {
   useDeletePlanNode,
   useKeywordLabels,
-  usePlanNodeEdgeMutation,
   usePlanNodeEdges,
   usePlanNodes,
   useSitePlanIndex,
@@ -55,8 +54,6 @@ import type { PlanDeepenController } from "../hooks/useContentPlanAi";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import {
   PLAN_NODE_TYPES,
-  PLAN_NODE_SECONDARY_KEYWORD_ROLE,
-  SEO_KEYWORD_TOKEN,
   TECHNICAL_DEPTHS,
   type PlanEntityRow,
   type PlanNodeRow,
@@ -83,14 +80,9 @@ import { NodeRealityCard } from "./NodeRealityCard";
 import { NodeMeasureCard } from "./NodeMeasureCard";
 import { NodeStepRail } from "./NodeStepRail";
 import { PageDraftEditor } from "./PageDraftEditor";
-import {
-  NodeSeoIntentEditor,
-  SeoPlanSection,
-} from "./NodeSeoIntentEditor";
-import { planNodeHref } from "./PlanContextPanel";
 import { SeoPlanEditor } from "@/features/marketing/seo/plan/SeoPlanEditor";
 import { useNodeSeoPlan } from "@/features/marketing/seo/plan/useNodeSeoPlan";
-import { ensureKeywordId } from "@/features/marketing/seo/keyword/data";
+import { readSeoPlan } from "@/features/marketing/seo/plan/plan-model";
 import { useResolvedKeyword } from "@/features/marketing/seo/keyword/hooks";
 import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
 import { AssociationList } from "@/features/scopes/components/associations/AssociationList";
@@ -153,9 +145,6 @@ export function NodePanel({
 }) {
   const update = useUpdatePlanNode(siteId);
   const remove = useDeletePlanNode(siteId);
-  // Whole-site node list — resolves the SEO plan's cross-page routes to real
-  // node doors (shared react-query key with the workbench; no double fetch).
-  const siteNodes = usePlanNodes(siteId);
   // THE one SEO-plan store, site-wide (content-planning invariant 9).
   const sitePlans = useSitePlanIndex(siteId);
   const deepening = deepen.run.status === "running";
@@ -190,16 +179,6 @@ export function NodePanel({
         ? draft.technical_depth
         : node.technical_depth) as TechnicalDepth | null,
       needs_reviewer: draft.needs_reviewer ?? node.needs_reviewer,
-      primary_keyword_id:
-        draft.primary_keyword_id !== undefined
-          ? draft.primary_keyword_id
-          : node.primary_keyword_id,
-      meta_title:
-        draft.meta_title !== undefined ? draft.meta_title : node.meta_title,
-      meta_description:
-        draft.meta_description !== undefined
-          ? draft.meta_description
-          : node.meta_description,
       brief: draft.brief ?? node.brief,
       attributes: draft.attributes ?? node.attributes,
     }),
@@ -222,54 +201,6 @@ export function NodePanel({
       label: edge.label,
     })),
   );
-  const edgeMutation = usePlanNodeEdgeMutation(node.id);
-  const supportingEdges = (nodeEdges.data ?? []).filter(
-    (edge) =>
-      edge.direction === "outgoing" &&
-      edge.otherType === SEO_KEYWORD_TOKEN &&
-      edge.role === PLAN_NODE_SECONDARY_KEYWORD_ROLE,
-  );
-  const keywordIds = [
-    ...(current.primary_keyword_id ? [current.primary_keyword_id] : []),
-    ...supportingEdges.map((edge) => edge.otherId),
-  ];
-  const keywordLabels = useKeywordLabels(keywordIds);
-  const phraseById = new Map(
-    (keywordLabels.data ?? []).map((row) => [row.id, row.phrase]),
-  );
-  const primaryKeyword = current.primary_keyword_id
-    ? (phraseById.get(current.primary_keyword_id) ?? null)
-    : null;
-  const resolvedPrimary = useResolvedKeyword(primaryKeyword);
-  const primaryKeywordBrief = primaryKeyword
-    ? buildKeywordBrief({
-        phrase: primaryKeyword,
-        keyword: resolvedPrimary.data?.keyword ?? null,
-        market: resolvedPrimary.data?.market ?? null,
-      })
-    : null;
-  const supportingKeywords = supportingEdges.map((edge) => ({
-    id: edge.otherId,
-    phrase: phraseById.get(edge.otherId) ?? null,
-  }));
-
-  /**
-   * Does this page still lack a target keyword?
-   *
-   * Read off the SAVED row, not the staged draft — that is exactly what the
-   * server's `assert_brief_preconditions` reads, so the button's state and the
-   * server's answer can never disagree. Enabling Draft brief on an unsaved pick
-   * would send the user into a guaranteed 409.
-   *
-   * `keywordStaged` is the in-between: they've chosen one and haven't saved. The
-   * fix then isn't "pick a keyword", it's "press Save" — so say that instead.
-   */
-  const keywordGap = !hasKeywordAssignment(node, sitePlans.data ?? null);
-  const keywordStaged =
-    keywordGap &&
-    Boolean(draft.primary_keyword_id) &&
-    draft.primary_keyword_id !== node.primary_keyword_id;
-
   const save = () => {
     update.mutate(
       { id: node.id, patch: draft },
@@ -318,6 +249,34 @@ export function NodePanel({
     sitePlansLoading: sitePlans.isLoading,
     cmsJoinedWebPageId: measurement.webPageId,
   });
+  const seoPlan = nodeSeoPlan.page ? readSeoPlan(nodeSeoPlan.page) : null;
+  const keywordIds = [
+    ...(seoPlan?.primaryKeywordId ? [seoPlan.primaryKeywordId] : []),
+    ...(seoPlan?.secondaryKeywordIds ?? []),
+  ];
+  const keywordLabels = useKeywordLabels(keywordIds);
+  const phraseById = new Map(
+    (keywordLabels.data ?? []).map((row) => [row.id, row.phrase]),
+  );
+  const primaryKeyword = seoPlan?.primaryKeywordId
+    ? (phraseById.get(seoPlan.primaryKeywordId) ?? null)
+    : null;
+  const resolvedPrimary = useResolvedKeyword(primaryKeyword);
+  const primaryKeywordBrief = primaryKeyword
+    ? buildKeywordBrief({
+        phrase: primaryKeyword,
+        keyword: resolvedPrimary.data?.keyword ?? null,
+        market: resolvedPrimary.data?.market ?? null,
+      })
+    : null;
+  const supportingKeywords = (seoPlan?.secondaryKeywordIds ?? []).map(
+    (keywordId) => ({
+      id: keywordId,
+      phrase: phraseById.get(keywordId) ?? null,
+    }),
+  );
+  /** Mirrors the server precondition and reads only the canonical page plan. */
+  const keywordGap = !hasKeywordAssignment(node, sitePlans.data ?? null);
   const getScope = () =>
     createContentPlanNodeScope({
       view,
@@ -336,15 +295,16 @@ export function NodePanel({
       node_status_id: current.status_id ?? undefined,
       node_priority: current.priority ?? undefined,
       node_technical_depth: current.technical_depth ?? undefined,
-      node_primary_keyword_id: current.primary_keyword_id ?? undefined,
+      node_primary_keyword_id: seoPlan?.primaryKeywordId ?? undefined,
       node_primary_keyword: primaryKeyword ?? undefined,
       node_primary_keyword_data: primaryKeywordBrief?.data,
       node_supporting_keywords: supportingKeywords,
-      node_meta_title: current.meta_title ?? undefined,
-      node_meta_description: current.meta_description ?? undefined,
+      node_meta_title: nodeSeoPlan.page?.meta_title_desired ?? undefined,
+      node_meta_description:
+        nodeSeoPlan.page?.meta_description_desired ?? undefined,
       node_meta_tags: {
-        meta_title: current.meta_title ?? null,
-        meta_description: current.meta_description ?? null,
+        meta_title: nodeSeoPlan.page?.meta_title_desired ?? null,
+        meta_description: nodeSeoPlan.page?.meta_description_desired ?? null,
       },
       node_keyword_plan: {
         primary_keyword: primaryKeyword,
@@ -408,27 +368,30 @@ export function NodePanel({
    * staring at when they reach for this button.
    */
   const buildNodeView = () => {
-    const unsavedChanges = (Object.keys(draft) as Array<keyof PlanNodeUpdate>)
-      .map((field) => ({
-        field,
-        saved: (node as Record<string, unknown>)[field as string] ?? null,
-        current: draft[field] ?? null,
-      }));
+    const unsavedChanges = (
+      Object.keys(draft) as Array<keyof PlanNodeUpdate>
+    ).map((field) => ({
+      field,
+      saved: (node as Record<string, unknown>)[field as string] ?? null,
+      current: draft[field] ?? null,
+    }));
 
-    // The exact amber sentence rendered under the keyword picker.
+    // The exact amber sentence rendered under the canonical SEO editor.
     const keywordNotice = keywordGap
-      ? keywordStaged
-        ? "Press Save to apply this keyword — then this page can be briefed and written."
-        : "This page has no target search term yet, so nothing tells it apart from its sibling pages — and briefs and drafts can't be written without one. Pick one above, or use Deepen to research this page and choose its term together."
+      ? "This page has no target search term yet, so nothing tells it apart from its sibling pages — and briefs and drafts can't be written without one. Create its plan record if needed, then choose a target keyword above, or use Deepen to research this page and choose its term together."
       : null;
     const blockers = [
       keywordNotice,
       reality.failure,
-      reality.pageError ? `Could not read the live page: ${reality.pageError.message}` : null,
+      reality.pageError
+        ? `Could not read the live page: ${reality.pageError.message}`
+        : null,
       measurement.error
         ? `Could not read this page's measurement: ${measurement.error.message}`
         : null,
-      nodeEdges.error ? `Research lineage unavailable: ${nodeEdges.error.message}` : null,
+      nodeEdges.error
+        ? `Research lineage unavailable: ${nodeEdges.error.message}`
+        : null,
     ].filter((line): line is string => Boolean(line));
 
     return {
@@ -472,11 +435,11 @@ export function NodePanel({
       pipeline: pipelineProgress ?? null,
       targeting: {
         primary_keyword: primaryKeyword,
-        primary_keyword_id: current.primary_keyword_id,
+        primary_keyword_id: seoPlan?.primaryKeywordId ?? null,
         primary_keyword_data: primaryKeywordBrief?.data ?? null,
         supporting_keywords: supportingKeywords,
-        meta_title: current.meta_title,
-        meta_description: current.meta_description,
+        meta_title: nodeSeoPlan.page?.meta_title_desired ?? null,
+        meta_description: nodeSeoPlan.page?.meta_description_desired ?? null,
       },
       brief: {
         lines: current.brief ?? [],
@@ -506,7 +469,9 @@ export function NodePanel({
       pageKpis ? `Plan: ${contentPlanKpiLine(pageKpis)}` : null,
       realityVerdictSummary(reality.verdict),
       nodeMeasurementSummary(measurement),
-      view.blockers.length ? `\nBlockers:\n- ${view.blockers.join("\n- ")}` : null,
+      view.blockers.length
+        ? `\nBlockers:\n- ${view.blockers.join("\n- ")}`
+        : null,
       dirty
         ? `\nUnsaved edits (${view.unsaved_changes.length}): ${view.unsaved_changes
             .map((change) => String(change.field))
@@ -597,79 +562,6 @@ export function NodePanel({
         throw new Error("node_needs_reviewer must be a boolean");
       }
       stage({ needs_reviewer: value });
-    },
-    node_primary_keyword: async (value) => {
-      const obj = expectObject(value, "node_primary_keyword");
-      const phrase = expectString(obj.keyword, "node_primary_keyword.keyword");
-      stage({ primary_keyword_id: await ensureKeywordId(phrase) });
-    },
-    node_supporting_keywords: async (value) => {
-      const phrases = expectStringArrayProperty(
-        value,
-        "keywords",
-        "node_supporting_keywords",
-      );
-      const ids = await Promise.all(
-        phrases.map((phrase) => ensureKeywordId(phrase)),
-      );
-      await Promise.all(
-        ids.map((keywordId) =>
-          edgeMutation.mutateAsync({
-            kind: "add-secondary-keyword",
-            keywordId,
-          }),
-        ),
-      );
-    },
-    node_remove_supporting_keywords: async (value) => {
-      const phrases = expectStringArrayProperty(
-        value,
-        "keywords",
-        "node_remove_supporting_keywords",
-      );
-      const normalized = new Set(
-        phrases.map((phrase) => phrase.trim().toLocaleLowerCase()),
-      );
-      const matches = supportingKeywords.filter(
-        (entry) =>
-          entry.phrase &&
-          normalized.has(entry.phrase.trim().toLocaleLowerCase()),
-      );
-      if (matches.length !== normalized.size) {
-        throw new Error(
-          "node_remove_supporting_keywords includes a phrase that is not attached to this page.",
-        );
-      }
-      await Promise.all(
-        matches.map((entry) =>
-          edgeMutation.mutateAsync({
-            kind: "remove-secondary-keyword",
-            keywordId: entry.id,
-          }),
-        ),
-      );
-    },
-    node_meta_tags: (value) => {
-      const obj = expectObject(value, "node_meta_tags");
-      const patch: PlanNodeUpdate = {};
-      if (Object.hasOwn(obj, "meta_title")) {
-        patch.meta_title = expectNullableString(
-          obj.meta_title,
-          "node_meta_tags.meta_title",
-        );
-      }
-      if (Object.hasOwn(obj, "meta_description")) {
-        patch.meta_description = expectNullableString(
-          obj.meta_description,
-          "node_meta_tags.meta_description",
-        );
-      }
-      if (!("meta_title" in patch) && !("meta_description" in patch)) {
-        throw new Error(
-          "node_meta_tags requires meta_title and/or meta_description.",
-        );
-      }
-      stage(patch);
     },
     // The SAME operation the "Use this brief" button on the rendered brief
     // runs — one path, whether a human clicks it or an agent applies it.
@@ -1169,106 +1061,70 @@ export function NodePanel({
 
             <PanelSection title="Targeting">
               {/* 🚨 ONE SEO PLAN PER PAGE, ON `web.page` (content-planning
-                  invariant 9). The moment this node HAS a page record — built
-                  in the CMS or merely PLANNED — its plan is edited here by THE
-                  canonical editor, against the one store, never a second copy
-                  on the node. Below that: one click to create the record, and
-                  the legacy plan-node fields, which the storage migration
-                  retires. */}
+                  invariant 9). A node without that record gets one honest
+                  state and the ONE planned-page writer. Once it exists, every
+                  field is edited through the canonical page-plan editor. */}
               {nodeSeoPlan.state === "ready" && nodeSeoPlan.page ? (
-                <SeoPlanEditor
-                  variant="bare"
-                  page={nodeSeoPlan.page}
-                  brandId={nodeSeoPlan.brandId}
-                />
-              ) : (
-              <div>
-                {nodeSeoPlan.state === "creatable" ? (
-                  <div className="mb-3 rounded-md border border-dashed border-border p-2.5">
-                    <p className="text-xs text-muted-foreground">
-                      This page has no plan record yet, so its keywords and
-                      desired search appearance are still stored on the plan
-                      node. Creating the record moves them onto the one page
-                      record every surface reads.
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="mt-2 h-7 text-xs"
-                      disabled={nodeSeoPlan.creating}
-                      onClick={() => void nodeSeoPlan.create()}
-                    >
-                      {nodeSeoPlan.creating ? (
-                        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                      ) : null}
-                      Create the plan record
-                    </Button>
-                    {nodeSeoPlan.error ? (
-                      <p className="mt-1.5 text-xs text-destructive">
-                        {nodeSeoPlan.error.message}
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-                <NodeSeoIntentEditor
-                  nodeId={node.id}
-                  siteId={siteId}
-                  organizationId={node.organization_id}
-                  primaryKeywordId={current.primary_keyword_id}
-                  metaTitle={current.meta_title ?? ""}
-                  metaDescription={current.meta_description ?? ""}
-                  onPrimaryKeywordChange={(primary_keyword_id) =>
-                    stage({ primary_keyword_id })
-                  }
-                  onMetaTitleChange={(meta_title) =>
-                    stage({ meta_title: meta_title.trim() ? meta_title : null })
-                  }
-                  onMetaDescriptionChange={(meta_description) =>
-                    stage({
-                      meta_description: meta_description.trim()
-                        ? meta_description
-                        : null,
-                    })
-                  }
-                />
-                {/* THE GAP, WHERE THE FIX IS. A page with no target term cannot be
-                briefed or written, and every downstream agent used to discover
-                that only after a paid run. The picker above is the fix, so the
-                notice sits on it — never in a summary count somewhere else. */}
-                {keywordGap ? (
-                  <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-500">
-                    {keywordStaged ? (
-                      <>
-                        Press <span className="font-medium">Save</span> to apply
-                        this keyword — then this page can be briefed and
-                        written.
-                      </>
-                    ) : (
-                      <>
-                        This page has no target search term yet, so nothing
-                        tells it apart from its sibling pages — and briefs and
-                        drafts can&apos;t be written without one. Pick one
-                        above, or use{" "}
-                        <span className="font-medium">Deepen</span> to research
-                        this page and choose its term together.
-                      </>
-                    )}
-                  </p>
-                ) : null}
-
-                {/* The applied site-wide keyword strategy — page role, money
-                    routes this page feeds, and the strategist's planned
-                    internal links. ONE component, shared with the measured
-                    page's plan-context card. */}
-                <div className="mt-4">
-                  <SeoPlanSection
-                    planNode={node}
-                    siteNodes={siteNodes.data ?? []}
-                    sitePlans={sitePlans.data ?? null}
-                    workspaceHref={planNodeHref(siteId, node.id)}
+                <div>
+                  <SeoPlanEditor
+                    variant="bare"
+                    page={nodeSeoPlan.page}
+                    brandId={nodeSeoPlan.brandId}
                   />
+                  {keywordGap ? (
+                    <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-500">
+                      This page has no target search term yet, so nothing tells
+                      it apart from its sibling pages — and briefs and drafts
+                      can&apos;t be written without one. Choose one above, or
+                      use <span className="font-medium">Deepen</span> to
+                      research this page and choose its term together.
+                    </p>
+                  ) : null}
                 </div>
-              </div>
+              ) : (
+                <div className="rounded-md border border-dashed border-border p-2.5">
+                  {nodeSeoPlan.state === "creatable" ? (
+                    <>
+                      <p className="text-xs text-muted-foreground">
+                        This page has no SEO plan record yet. Create its planned
+                        page record to set keywords and desired search
+                        appearance in the one place every surface reads.
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 h-7 text-xs"
+                        disabled={nodeSeoPlan.creating}
+                        onClick={() => void nodeSeoPlan.create()}
+                      >
+                        {nodeSeoPlan.creating ? (
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                        ) : null}
+                        Create the plan record
+                      </Button>
+                    </>
+                  ) : nodeSeoPlan.state === "no-route" ? (
+                    <p className="text-xs text-muted-foreground">
+                      This page needs a saved route before its SEO plan record
+                      can be created.
+                    </p>
+                  ) : nodeSeoPlan.state === "error" ? (
+                    <p className="text-xs text-destructive">
+                      {nodeSeoPlan.error?.message ??
+                        "The SEO plan record could not be loaded."}
+                    </p>
+                  ) : (
+                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Finding this page&apos;s SEO plan record…
+                    </p>
+                  )}
+                  {nodeSeoPlan.error && nodeSeoPlan.state === "creatable" ? (
+                    <p className="mt-1.5 text-xs text-destructive">
+                      {nodeSeoPlan.error.message}
+                    </p>
+                  ) : null}
+                </div>
               )}
             </PanelSection>
 
@@ -1345,38 +1201,6 @@ function expectString(value: unknown, what: string): string {
 function expectStringOrNull(value: unknown, what: string): string | null {
   if (value === null) return null;
   return expectString(value, `${what} (when not null)`);
-}
-
-function expectObject(value: unknown, what: string): Record<string, unknown> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error(`${what} must be an object`);
-  }
-  return value as Record<string, unknown>;
-}
-
-function expectNullableString(value: unknown, what: string): string | null {
-  if (value === null) return null;
-  if (typeof value !== "string") {
-    throw new Error(`${what} must be a string or null`);
-  }
-  return value.trim() || null;
-}
-
-function expectStringArrayProperty(
-  value: unknown,
-  property: string,
-  what: string,
-): string[] {
-  const obj = expectObject(value, what);
-  const raw = obj[property];
-  if (
-    !Array.isArray(raw) ||
-    raw.length === 0 ||
-    raw.some((entry) => typeof entry !== "string" || !entry.trim())
-  ) {
-    throw new Error(`${what}.${property} must be a non-empty string array`);
-  }
-  return [...new Set(raw.map((entry) => entry.trim()))];
 }
 
 /**

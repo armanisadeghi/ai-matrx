@@ -23,10 +23,8 @@
  * ONE editor, `features/marketing/seo/plan/SeoPlanEditor.tsx`, which is mounted
  * DIRECTLY EDITABLE in every host — a read-only SEO-plan summary that bounces
  * the user somewhere else to change it is banned (Arman, 2026-08-16). The
- * read-only `SeoPlanSection` this file used to export was deleted for exactly
- * that reason; its legacy `plan.node.attributes.keyword_strategy` reader now
- * lives beside the other legacy plan-node SEO code in `NodeSeoIntentEditor.tsx`
- * and dies with it when the storage migration lands.
+ * former read-only summary was deleted for exactly that reason. The storage
+ * migration has landed, and no plan-node SEO reader remains.
  */
 import Link from "next/link";
 import { AlertCircle, ExternalLink, Loader2 } from "lucide-react";

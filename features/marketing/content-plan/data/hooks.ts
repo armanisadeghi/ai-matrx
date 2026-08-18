@@ -25,7 +25,6 @@ import type {
   PlanReviewPayload,
 } from "../types";
 import {
-  addNodeSecondaryKeyword,
   addNodeTopic,
   attachNodeEntity,
   attachNodeParty,
@@ -34,7 +33,6 @@ import {
   linkPartyToSite,
   listPlanNodeEdges,
   listSitePartyIds,
-  removeNodeSecondaryKeyword,
   removeNodeTopic,
   unlinkPartyFromSite,
 } from "./associations";
@@ -339,8 +337,6 @@ export function useUnlinkPartyFromSite(siteId: string) {
 type EdgeAction =
   | { kind: "add-topic"; topicId: string }
   | { kind: "remove-topic"; topicId: string }
-  | { kind: "add-secondary-keyword"; keywordId: string }
-  | { kind: "remove-secondary-keyword"; keywordId: string }
   | {
       kind: "attach-entity";
       entityId: string;
@@ -365,10 +361,6 @@ export function usePlanNodeEdgeMutation(nodeId: string) {
           return addNodeTopic(nodeId, action.topicId);
         case "remove-topic":
           return removeNodeTopic(nodeId, action.topicId);
-        case "add-secondary-keyword":
-          return addNodeSecondaryKeyword(nodeId, action.keywordId);
-        case "remove-secondary-keyword":
-          return removeNodeSecondaryKeyword(nodeId, action.keywordId);
         case "attach-entity":
           return attachNodeEntity({
             nodeId,

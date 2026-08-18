@@ -12,9 +12,9 @@
  * the fields an agent result (via the `apply_surface_write` kind action or an
  * automated apply) may write back into the panel. Field targets are
  * `mode: "draft"`: they stage into the panel's draft for the user to review
- * and save — never a silent DB write. Supporting-keyword association writes
- * are entity-mode because edges have no panel draft; every agent-offered
- * target requires an in-place confirmation.
+ * and save — never a silent DB write. The page-backed SEO plan is read here
+ * for context but edited by the nested canonical `SeoPlanEditor`; retired
+ * `plan.node` SEO copies are never writable.
  *
  * Runtime emitter + write handlers: `NodePanel.tsx` mounts a nested
  * `SurfaceRuntimeProvider` (deepest wins while the panel is open).
@@ -239,7 +239,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "node_primary_keyword_id",
     label: "Primary keyword ID",
     description:
-      "`seo.keyword` UUID bound as THE primary keyword (draft-overlaid; a column, never an association edge). Empty when no keyword is bound.",
+      "`seo.keyword` UUID from the page's canonical `web.page.desired_values.keyword_plan`. Empty when no keyword is bound or no page plan record exists.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -251,7 +251,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "node_primary_keyword",
     label: "Primary keyword",
     description:
-      "Human-readable phrase for the canonical primary seo.keyword row (draft-overlaid). Agents read and write this; the UUID is identity plumbing.",
+      "Human-readable phrase for the canonical page-plan primary keyword. Read-only here; the nested SEO plan editor owns its write path.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 45,
@@ -273,7 +273,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "node_supporting_keywords",
     label: "Supporting keywords",
     description:
-      "Every supporting keyword associated with this planned page as [{ id, phrase }]. Empty array means none are attached.",
+      "Every supporting keyword in the page's canonical keyword plan as [{ id, phrase }]. Empty means none or no page plan record.",
     valueType: "array",
     alwaysAvailable: true,
     typicalCharCount: 500,
@@ -295,7 +295,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "node_meta_title",
     label: "Planned meta title",
     description:
-      "The draft-overlaid SEO title this planned page should use when realized. Intent, not observed live metadata.",
+      "The page's canonical `web.page.meta_title_desired`. Intent, not observed live metadata.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 60,
@@ -306,7 +306,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "node_meta_description",
     label: "Planned meta description",
     description:
-      "The draft-overlaid SEO description this planned page should use when realized. Intent, not observed live metadata.",
+      "The page's canonical `web.page.meta_description_desired`. Intent, not observed live metadata.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 160,
@@ -565,54 +565,6 @@ const writeTargets: SurfaceWriteTarget[] = [
     sortOrder: 340,
   },
   {
-    name: "node_primary_keyword",
-    label: "Primary keyword",
-    description:
-      "Set the page's primary keyword by phrase. Value: { keyword: string }. The handler ensures the canonical seo.keyword row, then stages its id in the node draft.",
-    valueType: "object",
-    updatesValue: "node_primary_keyword",
-    mode: "draft",
-    applyPolicy: "ask",
-    group: "node_targeting",
-    sortOrder: 350,
-  },
-  {
-    name: "node_supporting_keywords",
-    label: "Add supporting keywords",
-    description:
-      "Attach supporting keyword phrases. Value: { keywords: string[] }. Each phrase is ensured in the canonical library and written as a secondary_keyword association edge; duplicates are a no-op.",
-    valueType: "object",
-    updatesValue: "node_supporting_keywords",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "node_targeting",
-    sortOrder: 351,
-  },
-  {
-    name: "node_remove_supporting_keywords",
-    label: "Remove supporting keywords",
-    description:
-      "Detach supporting keyword phrases. Value: { keywords: string[] }. Phrases must currently be attached; library rows are never deleted.",
-    valueType: "object",
-    updatesValue: "node_supporting_keywords",
-    mode: "entity",
-    applyPolicy: "ask",
-    group: "node_targeting",
-    sortOrder: 352,
-  },
-  {
-    name: "node_meta_tags",
-    label: "Planned meta tags",
-    description:
-      "Stage the planned SEO title and/or description. Value: { meta_title?: string | null, meta_description?: string | null }; omitted fields stay unchanged and null clears a field.",
-    valueType: "object",
-    updatesValue: "node_meta_tags",
-    mode: "draft",
-    applyPolicy: "ask",
-    group: "node_targeting",
-    sortOrder: 353,
-  },
-  {
     name: "node_brief",
     label: "Node brief",
     description:
@@ -666,14 +618,14 @@ export const contentPlanNodeManifest: SurfaceManifest = {
   label: "Content Plan Node",
   readiness: "partial",
   readinessNote:
-    "Emitter + live write handlers are wired in NodePanel, including phrase-level primary/supporting keyword writes and planned metadata; brief_writer is bound.",
+    "Emitter + live structural/content write handlers are wired in NodePanel; the page-backed SEO plan is read-only in this surface and edited by the canonical SeoPlanEditor; brief_writer is bound.",
   urlPattern: "/marketing/content-plan/[siteId]",
   inheritsFrom: "matrx-user/content-plan",
   intro: `<surface_intro>
 You are inside the editor panel for ONE planned page of the site's content plan. The values here are the node's PARTS as the user currently sees them — draft-overlaid: unsaved edits are included, and has_unsaved_edits tells you when the panel differs from the saved row.
 This surface can be WRITTEN TO. Its field write targets stage into the user's draft for review (never a silent save), except save_node, which persists the draft through the canonical write path. Prefer proposing staged field writes and let the user save.
 It also carries the three targets that turn this plan into a REAL page on the real website: build_page, write_page_content, publish_page. Read node_page_state and node_page_next_step first — they tell you exactly which one applies, and applying the wrong one is refused with the reason. These do real work: build and write are safe (the page stays a draft nobody can see), publish changes what real visitors see.
-Hard rules: node_route, node_depth, node_pillar_label, and node_cluster_label are computed by database triggers — read-only evidence. Read/write the primary keyword by phrase through node_primary_keyword; node_primary_keyword_id is identity plumbing only. Supporting keywords are canonical association edges exposed as node_supporting_keywords. Planned meta tags are intent consumed when the page is realized, never observed crawl evidence. Slug shape, duplicate routes, and cross-site parents are rejected by the DB with exact messages — expect and relay them rather than pre-validating loosely.
+Hard rules: node_route, node_depth, node_pillar_label, and node_cluster_label are computed by database triggers — read-only evidence. SEO intent comes only from the page-backed plan values on this surface and is edited through the canonical SeoPlanEditor in the panel; never write the retired plan.node keyword fields, secondary-keyword edges, or meta columns. Slug shape, duplicate routes, and cross-site parents are rejected by the DB with exact messages — expect and relay them rather than pre-validating loosely.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(pickBaseline("selection", "context"), [
