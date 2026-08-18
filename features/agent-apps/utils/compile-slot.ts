@@ -76,17 +76,31 @@ export function compileSlotComponent({
     // SyntaxError ("Identifier 'X' has already been declared"). Runs in the same
     // pass, before the export→return rewrite, so the AST is still valid.
     const declaredTopLevel = new Set<string>();
+    const componentCandidates: string[] = [];
     const babelResult = transform(code, {
       presets: ["react", "typescript"],
       plugins: [
         stripImportDeclarationsPlugin,
-        collectTopLevelBindingsPlugin(declaredTopLevel),
+        collectTopLevelBindingsPlugin(declaredTopLevel, componentCandidates),
       ],
       filename: "slot.tsx",
     });
 
     let transformed = babelResult.code || "";
-    transformed = transformed.replace(/export\s+default\s+/g, "return ");
+    if (/export\s+default\s+/.test(transformed)) {
+      transformed = transformed.replace(/export\s+default\s+/g, "return ");
+    } else {
+      // No default export. The kind-component authoring contract's own
+      // documented example is a bare top-level `function Card({ data }) {…}`
+      // (matrx-ai `component_source_lint`), and the Workflow Studio's
+      // compiler — an explicit PORT of this one — has always accepted it. So
+      // do the same: return the LAST top-level PascalCase binding (the
+      // studio's rule, kept identical on purpose). Without this the factory
+      // returns nothing and the caller reports "compile produced no
+      // component": a stored, paid-for component that silently never renders.
+      const candidate = componentCandidates[componentCandidates.length - 1];
+      if (candidate) transformed = `${transformed}\nreturn ${candidate};`;
+    }
 
     const scope = buildComponentScope(allowedImports ?? []);
     Object.assign(scope, scopeOverrides);

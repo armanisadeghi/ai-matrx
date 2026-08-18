@@ -120,4 +120,46 @@ describe("compileSlotComponent", () => {
     const markup = renderToStaticMarkup(createElement(Component, {}));
     expect(markup).toContain('data-host-stream="true"');
   });
+
+  // The kind-component authoring contract (matrx-ai `component_source_lint`)
+  // documents a BARE top-level `function Card({ data }) {…}` — no default
+  // export — and the Workflow Studio's compiler (a port of this one) accepts
+  // it. This compiler must too: without the fallback such a source compiled
+  // to a factory returning nothing, the caller reported "compile produced no
+  // component", and a stored, paid-for component silently never rendered.
+  it("resolves a bare top-level PascalCase component with no default export", () => {
+    const result = compileSlotComponent({
+      code: `
+        function Card({ data }) {
+          return <div data-bare="true">{data?.title}</div>;
+        }
+      `,
+      allowedImports: ["react"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the bare component to compile");
+    const markup = renderToStaticMarkup(
+      createElement(Component, { data: { title: "hello" } }),
+    );
+    expect(markup).toContain('data-bare="true"');
+    expect(markup).toContain("hello");
+  });
+
+  it("prefers an explicit default export over a PascalCase candidate", () => {
+    const result = compileSlotComponent({
+      code: `
+        function Helper() { return <span data-helper="true" />; }
+        export default function Main() { return <div data-main="true" />; }
+      `,
+      allowedImports: ["react"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the component to compile");
+    const markup = renderToStaticMarkup(createElement(Component, {}));
+    expect(markup).toContain('data-main="true"');
+  });
 });

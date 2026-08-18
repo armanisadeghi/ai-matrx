@@ -151,7 +151,21 @@ interface BabelProgramPathLike {
  * to the `plugins` array of the same `transform` call that produces the sandbox
  * body: `plugins: [otherPlugin, collectTopLevelBindingsPlugin(sink)]`.
  */
-export function collectTopLevelBindingsPlugin(sink: Set<string>) {
+export function collectTopLevelBindingsPlugin(
+  sink: Set<string>,
+  /**
+   * Optional second sink: top-level PascalCase bindings, in declaration
+   * order — the component candidates for a source with NO `export default`.
+   * The kind-component authoring contract's own example is a bare top-level
+   * `function Card({ data }) {…}` (see `component_source_lint` in
+   * matrx-ai's `kind_shared.py`), and the Workflow Studio's compiler has
+   * always accepted it. Without this, such a source compiles to a factory
+   * that returns nothing and the caller reports "compile produced no
+   * component" — the component is written, stored, paid for, and never
+   * renders. Optional so every existing caller is unaffected.
+   */
+  componentCandidates?: string[],
+) {
   return function collectTopLevelBindings() {
     return {
       name: "collect-top-level-bindings",
@@ -163,6 +177,9 @@ export function collectTopLevelBindingsPlugin(sink: Set<string>) {
               const kind = bindings[name]?.kind;
               if (kind === "module" || kind === "param") continue;
               sink.add(name);
+              if (componentCandidates && /^[A-Z]/.test(name)) {
+                componentCandidates.push(name);
+              }
             }
           },
         },
