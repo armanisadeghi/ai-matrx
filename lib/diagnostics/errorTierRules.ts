@@ -198,6 +198,18 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "cms-unavailable-capability-refusal",
+    tier: "yellow",
+    reason:
+      "The server intentionally refused a CMS request because the separately declared CMS database is unavailable. Startup environment validation owns the operational alarm; keep this structured 400 visible locally without duplicating it into the system-error repair queue.",
+    addedAt: "2026-08-18",
+    match: {
+      source: "api-http",
+      code: "cms_unavailable",
+      status: 400,
+    },
+  },
+  {
     id: "cms-write-policy-denial",
     tier: "yellow",
     reason:

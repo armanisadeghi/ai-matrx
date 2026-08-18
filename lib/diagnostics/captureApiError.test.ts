@@ -80,6 +80,44 @@ describe("captureApiError", () => {
     });
   });
 
+  it("keeps a structured CMS-unavailable refusal local at the API capture boundary", () => {
+    const siteId = "8cc4ba7b-2817-47f4-aef6-8b6b2028dd7d";
+    const cmsSiteId = "4d536826-9795-4788-bbfa-3fc77a59767a";
+    const path = `/content-plan/sites/${siteId}/cms-pages`;
+    window.history.replaceState({}, "", `/marketing/content-plan/${siteId}`);
+
+    captureApiError(
+      {
+        type: "validation_error",
+        message:
+          "CMS database is not configured on this server. Set the SUPABASE_CMS_* environment variables (Supavisor pooler form) and retry.",
+        status: 400,
+        serverDetail: {
+          error: "cms_unavailable",
+          user_message: "The CMS is temporarily unavailable.",
+          request_id: "180c9f9587d4428289a1f02487ea321b",
+        },
+      },
+      {
+        url: `https://server.app.matrxserver.com${path}?cms_site=${cmsSiteId}`,
+        method: "GET",
+        path,
+      },
+    );
+
+    expect(getSnapshot()[0]).toMatchObject({
+      source: "api-http",
+      tier: "yellow",
+      tierRuleId: "cms-unavailable-capability-refusal",
+      route: `/marketing/content-plan/${siteId}`,
+      relation: `GET ${path}`,
+      code: "cms_unavailable",
+      status: 400,
+      requestId: "180c9f9587d4428289a1f02487ea321b",
+      userMessage: "The CMS is temporarily unavailable.",
+    });
+  });
+
   it("keeps a retryable Mandate code-truth outage out of persistence", () => {
     window.history.replaceState({}, "", "/administration/agents/mandates");
 

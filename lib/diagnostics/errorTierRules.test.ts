@@ -278,6 +278,38 @@ describe("classifyTier", () => {
     expect(c.ruleId).toBe("cms-write-policy-denial");
   });
 
+  it("keeps a structured CMS-unavailable capability refusal out of the repair queue", () => {
+    const c = classifyTier(
+      captured({
+        source: "api-http",
+        relation: "GET /content-plan/sites/{site_id}/cms-pages",
+        code: "cms_unavailable",
+        status: 400,
+        message: "CMS database is not configured on this server.",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("cms-unavailable-capability-refusal");
+  });
+
+  it.each([
+    ["cms_unavailable", 500],
+    ["request_crash", 400],
+  ])("keeps a CMS failure red for code %s at status %s", (code, status) => {
+    const c = classifyTier(
+      captured({
+        source: "api-http",
+        relation: "GET /content-plan/sites/{site_id}/cms-pages",
+        code,
+        status,
+        message: "CMS request failed",
+      }),
+    );
+
+    expect(c.tier).toBe("red");
+  });
+
   it("keeps the duplicate user-visible CMS policy explanation local", () => {
     const c = classifyTier(
       captured({

@@ -179,10 +179,14 @@ other content-plan work stays red. The sending-identities overview's three
 read-only bootstrap checks are yellow for the same boundary reason: the page
 shows the failure and retry, while one dropped connection can reject all three
 checks and otherwise multiply one incident into several persisted rows. Its
-mutations and calls from other routes stay red. CMS `cms_write_policy_denied` 403s
-and their explicit `site policy ... forbids ...` toasts are yellow: the policy
-is working and the toast remains visible, while neither expected signal enters
-the repair queue. Everything else stays red until tuned. Promote a specific
+mutations and calls from other routes stay red. Structured `cms_unavailable`
+400s are yellow because the server intentionally refused an unavailable
+capability and startup environment validation owns the operational alarm; the
+local diagnostic remains visible without duplicating that alarm into the repair
+queue. CMS `cms_write_policy_denied` 403s and their explicit `site policy ...
+forbids ...` toasts are yellow: the policy is working and the toast remains
+visible, while neither expected signal enters the repair queue. CMS 5xx and
+unrelated 4xx responses stay red. Everything else stays red until tuned. Promote a specific
 tool/slice to red with a `relation` rule ABOVE the broad source rule.
 
 **To quiet an error**, add a rule to `DOWNGRADE_RULES` in `errorTierRules.ts`
@@ -273,6 +277,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-18 — **CMS availability refusals stay local without hiding outages.** Structured `cms_unavailable` 400s remain visible in the Error Inspector but do not enter `system_error`; the server's startup environment validation owns the operational alarm, while CMS 5xx and unrelated 4xx responses remain red.
 - 2026-08-18 — **Sending-identity read transport loss stays local and singular.** The overview's list, policy, and production-readiness reads are yellow only on `/crm/sending-identities`: the page preserves the failure and retry, while one lost connection no longer persists up to three causal duplicates. Mutations, HTTP responses, other endpoints, and other routes remain red.
 - 2026-08-18 — **Recoverable content-plan reconcile transport loss stays local.** The exact parameterized `POST /content-plan/sites/{id}/reconcile` `Failed to fetch` class is yellow because the cached read-only check retries and refetches after reconnect; unrelated content-plan AI and write endpoints remain red. `relationPattern` gives tier rules a reusable, narrowly scoped matcher for parameterized endpoints.
 - 2026-08-17 — **Provisional access questions settle before persistence.**
