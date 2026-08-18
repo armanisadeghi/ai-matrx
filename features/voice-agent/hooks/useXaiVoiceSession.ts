@@ -75,6 +75,7 @@ import { createAudioPlayback } from "../audio/audioPlayback";
 import { createTokenManager, type TokenError } from "../transport/tokenManager";
 import { createXaiClient, type XaiClientError } from "../transport/xaiClient";
 import type { XaiServerEvent } from "../transport/serverEvents";
+import { transcriptTextFromEvent } from "../transport/serverEvents";
 import type { VoiceRelayBinding } from "../relay/types";
 import {
   voiceDebugLog,
@@ -289,9 +290,9 @@ export function useXaiVoiceSession(
       // stop scanning at the first one past the cutoff.
       const turn = store
         .getState()
-        .voiceAgent.instances[
-          instanceId
-        ]?.turns.find((t) => t.id === turnId && t.role === "assistant");
+        .voiceAgent.instances[instanceId]?.turns.find(
+          (t) => t.id === turnId && t.role === "assistant",
+        );
       if (turn && turn.text_delta_arrivals.length > 0) {
         let revealIndex = turn.text_reveal_index;
         for (const arr of turn.text_delta_arrivals) {
@@ -607,7 +608,11 @@ export function useXaiVoiceSession(
             updateUserTranscriptDelta({
               instanceId,
               turnId: pendingUserTurnIdRef.current,
-              deltaText: event.delta,
+              deltaText: transcriptTextFromEvent(event, [
+                "delta",
+                "text",
+                "transcript",
+              ]),
             }),
           );
           break;
@@ -620,6 +625,11 @@ export function useXaiVoiceSession(
               instanceId,
               turnId: pendingUserTurnIdRef.current,
               itemId: event.item_id,
+              transcript: transcriptTextFromEvent(event, [
+                "transcript",
+                "text",
+                "delta",
+              ]),
               endedAtMs: Date.now(),
             }),
           );
@@ -1169,7 +1179,8 @@ export function useXaiVoiceSession(
   // whether the OS will re-prompt ("prompt") or not ("granted"). This is the
   // single most useful signal for the "asked to verify every time" report.
   useEffect(() => {
-    if (typeof navigator === "undefined" || !navigator.permissions) return undefined;
+    if (typeof navigator === "undefined" || !navigator.permissions)
+      return undefined;
     let live: PermissionStatus | null = null;
     let cancelled = false;
     navigator.permissions

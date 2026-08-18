@@ -35,8 +35,16 @@ export type XaiServerEvent =
       type: "conversation.item.created";
       item: { id: string; role?: "user" | "assistant"; type?: string };
     }
-  | { type: "input_audio_buffer.speech_started"; audio_start_ms?: number; item_id?: string }
-  | { type: "input_audio_buffer.speech_stopped"; audio_end_ms?: number; item_id?: string }
+  | {
+      type: "input_audio_buffer.speech_started";
+      audio_start_ms?: number;
+      item_id?: string;
+    }
+  | {
+      type: "input_audio_buffer.speech_stopped";
+      audio_end_ms?: number;
+      item_id?: string;
+    }
   | { type: "input_audio_buffer.committed"; item_id?: string }
   | {
       type: "conversation.item.input_audio_transcription.delta";
@@ -59,13 +67,35 @@ export type XaiServerEvent =
       response_id?: string;
       item: { id: string; type: string; status?: string };
     }
-  | { type: "response.content_part.added"; item_id?: string; part: { type: string } }
-  | { type: "response.content_part.done"; item_id?: string; part: { type: string } }
+  | {
+      type: "response.content_part.added";
+      item_id?: string;
+      part: { type: string };
+    }
+  | {
+      type: "response.content_part.done";
+      item_id?: string;
+      part: { type: string };
+    }
   /** Audio chunk — `delta` is base64 PCM at the session's output rate. */
-  | { type: "response.output_audio.delta"; response_id?: string; item_id?: string; delta: string }
-  | { type: "response.output_audio.done"; response_id?: string; item_id?: string }
+  | {
+      type: "response.output_audio.delta";
+      response_id?: string;
+      item_id?: string;
+      delta: string;
+    }
+  | {
+      type: "response.output_audio.done";
+      response_id?: string;
+      item_id?: string;
+    }
   /** Some xAI builds use the bare `response.audio.delta` name. Treat as alias. */
-  | { type: "response.audio.delta"; response_id?: string; item_id?: string; delta: string }
+  | {
+      type: "response.audio.delta";
+      response_id?: string;
+      item_id?: string;
+      delta: string;
+    }
   | { type: "response.audio.done"; response_id?: string; item_id?: string }
   | {
       type: "response.output_audio_transcript.delta";
@@ -79,8 +109,18 @@ export type XaiServerEvent =
       item_id?: string;
       transcript: string;
     }
-  | { type: "response.audio_transcript.delta"; response_id?: string; item_id?: string; delta: string }
-  | { type: "response.audio_transcript.done"; response_id?: string; item_id?: string; transcript: string }
+  | {
+      type: "response.audio_transcript.delta";
+      response_id?: string;
+      item_id?: string;
+      delta: string;
+    }
+  | {
+      type: "response.audio_transcript.done";
+      response_id?: string;
+      item_id?: string;
+      transcript: string;
+    }
   | {
       type: "response.function_call.created";
       response_id?: string;
@@ -94,7 +134,11 @@ export type XaiServerEvent =
       name: string;
       arguments: string;
     }
-  | { type: "response.function_call.done"; response_id?: string; call_id: string }
+  | {
+      type: "response.function_call.done";
+      response_id?: string;
+      call_id: string;
+    }
   | {
       type: "response.done";
       response: { id: string; status?: string; usage?: XaiResponseUsage };
@@ -103,6 +147,41 @@ export type XaiServerEvent =
   | { type: "rate_limits.updated"; rate_limits: XaiRateLimit[] }
   | { type: "error"; code: string; message: string }
   | { type: "unknown"; raw: unknown };
+
+/**
+ * xAI has emitted transcript text under `delta`, `transcript`, and `text`
+ * across realtime builds. Normalize those wire variants at the boundary so
+ * an absent field can never become the literal string "undefined" in Redux.
+ */
+export function transcriptTextFromEvent(
+  event: unknown,
+  preferred: readonly ("delta" | "transcript" | "text")[],
+): string {
+  if (!event || typeof event !== "object" || Array.isArray(event)) return "";
+  const record = event as Record<string, unknown>;
+  for (const key of preferred) {
+    const value = record[key];
+    if (typeof value === "string") return value;
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      const nested = value as Record<string, unknown>;
+      if (typeof nested.text === "string") return nested.text;
+      if (typeof nested.transcript === "string") return nested.transcript;
+    }
+  }
+  const item = record.item;
+  if (item && typeof item === "object" && !Array.isArray(item)) {
+    const content = (item as Record<string, unknown>).content;
+    if (Array.isArray(content)) {
+      for (const part of content) {
+        if (!part || typeof part !== "object" || Array.isArray(part)) continue;
+        const entry = part as Record<string, unknown>;
+        if (typeof entry.transcript === "string") return entry.transcript;
+        if (typeof entry.text === "string") return entry.text;
+      }
+    }
+  }
+  return "";
+}
 
 export function parseServerEvent(raw: string): XaiServerEvent {
   let parsed: unknown;

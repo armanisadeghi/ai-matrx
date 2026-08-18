@@ -55,6 +55,8 @@ interface TranscriptDeltaPayload extends InstanceIdPayload {
 interface CompleteUserTurnPayload extends InstanceIdPayload {
   turnId: string;
   itemId?: string;
+  /** Server's authoritative completed transcript. */
+  transcript?: string;
   endedAtMs: number;
 }
 
@@ -184,6 +186,7 @@ const voiceAgentSlice = createSlice({
         (t) => t.id === action.payload.turnId && t.role === "user",
       );
       if (!turn) return;
+      if (typeof action.payload.deltaText !== "string") return;
       turn.text += action.payload.deltaText;
       // User-turn text comes from STT on already-recorded audio; nothing to gate.
       turn.text_reveal_index = turn.text.length;
@@ -198,6 +201,8 @@ const voiceAgentSlice = createSlice({
       if (!turn) return;
       turn.status = "completed";
       turn.ended_at_ms = action.payload.endedAtMs;
+      const transcript = action.payload.transcript?.trim();
+      if (transcript) turn.text = transcript;
       turn.text_reveal_index = turn.text.length;
       if (action.payload.itemId) turn.item_id = action.payload.itemId;
     },

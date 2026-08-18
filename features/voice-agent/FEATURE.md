@@ -280,6 +280,13 @@ Implementation tracked in
 
 ## Change log
 
+- `2026-08-18` — **Completed user transcripts are authoritative.** A real inline
+  tutor voice run exposed an xAI delta variant that rendered
+  `[undefined] undefined` even though the completion event carried the correct
+  transcript. `completeUserTurn` now receives that final transcript and replaces
+  provisional/malformed deltas before the turn is displayed or persisted;
+  reducer coverage pins the repair.
+
 - `2026-08-17` (2) — **Arman's rulings wired in.** `QuestionPacing` config +
   cue naming, THE SIDE CHANNEL (`sideChannel.ts`, `<voice_exchange>` block on
   every brain send, Communicator transcripts captured), generic
