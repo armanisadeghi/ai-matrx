@@ -11,6 +11,7 @@
 // React Compiler is on: no manual memo.
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -356,10 +357,33 @@ function LiveAudioRun({
     }
   }, [state.status, media.id, media.status]);
 
+  // ...and put it BACK to generating the moment a retry starts streaming.
+  // Without this the library kept showing "Failed" while a re-run was actively
+  // producing audio. Covers every retry path (this page's button and the shared
+  // recovery banner's "Re-run from source") because it keys on the run, not on
+  // which control the learner pressed.
+  useEffect(() => {
+    if (media.status !== "error") return;
+    if (run.streaming || state.status === "running") {
+      void studyMediaService.update(media.id, { status: "generating" });
+    }
+  }, [run.streaming, state.status, media.id, media.status]);
+
   if (!media.run_id) {
+    // No run row to retry — but never a dead end: generating a fresh version
+    // from the same source is a real way forward.
     return (
-      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-        This audio study is missing its generation run.
+      <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+        <div className="text-sm text-destructive">
+          This audio study never got a generation run, so there is nothing to
+          resume.
+        </div>
+        <Button asChild size="sm" variant="outline">
+          <Link href={regenerateHref(media)}>
+            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+            Generate a new version
+          </Link>
+        </Button>
       </div>
     );
   }
@@ -388,12 +412,48 @@ function LiveAudioRun({
         </div>
       )}
 
+      {/* A failed run always offers a way forward: re-run the stored request
+          when we have one, otherwise generate a fresh version from the source.
+          Before this, an errored audio study was a dead end — the only retry
+          was the shared banner, which is suppressed when the run has no durable
+          record (exactly the case that fails most often). */}
+      {state.status === "error" && !audioReady && (
+        <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <div className="text-sm text-destructive">
+            {state.error || "This audio study didn't finish generating."}
+          </div>
+          {run.canRerun ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                void studyMediaService.update(media.id, {
+                  status: "generating",
+                });
+                run.rerunFromSource();
+              }}
+            >
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              Try again
+            </Button>
+          ) : (
+            <Button asChild size="sm" variant="outline">
+              <Link href={regenerateHref(media)}>
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                Generate a new version
+              </Link>
+            </Button>
+          )}
+        </div>
+      )}
+
       {(run.streaming || state.status === "running" || run.loading) &&
         !audioReady && (
           <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
             <span>
-              Producing your audio — you can leave and come back; it resumes.
+              Producing your audio — you can leave and come back; it keeps
+              running on our servers.
             </span>
           </div>
         )}
