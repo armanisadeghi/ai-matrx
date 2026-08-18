@@ -24,6 +24,7 @@ import {
   deleteBusinessLocation,
   listListingPublishers,
   listLocationListings,
+  listVisibleBrandOptions,
   upsertLocationListing,
   listBrandAssets,
   listBrandProperties,
@@ -1162,6 +1163,15 @@ export function useBusinessLocation(locationId: string) {
     queryKey: [...marketingKeys.root, "location", locationId, "detail"] as const,
     queryFn: ({ signal }) => getBusinessLocation(locationId, signal),
     enabled: Boolean(locationId),
+  });
+}
+
+/** Every RLS-visible brand, org-agnostic (access never depends on the active org). */
+export function useVisibleBrandOptions() {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "visible-brand-options"] as const,
+    queryFn: ({ signal }) => listVisibleBrandOptions(signal),
+    staleTime: 30_000,
   });
 }
 

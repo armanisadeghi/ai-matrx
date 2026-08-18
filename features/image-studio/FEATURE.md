@@ -15,7 +15,7 @@ Four modes, one feature: **Convert** (resize to platform presets), **Edit** (ful
 | `/images/edit`        | Interactive tool                | Full-featured editor (Filerobot 5.0). Crop, rotate, resize, filters, fine-tune, shapes, text, freehand pen, watermark. Layered AI toolbar adds Suggest edits, Remove BG, Upscale 2×/4×, AI edit by prompt. |
 | `/images/annotate`    | Interactive tool                | Screenshot markup (marker.js 2). Arrows, callouts, boxes, freehand, text, frames, blur/redact regions. AI toolbar: Suggest annotations, Redact PII, Detect faces.                                          |
 | `/images/avatar`      | Interactive tool                | Dedicated circular-crop UX (react-easy-crop with `cropShape="round"`). 1:1 lock, zoom + rotation, Smart Crop button. Outputs canonical 512² PNG into `Images/Avatars/`.                                    |
-| `/images/generate`    | Interactive tool                | Text → image via the aidream `POST /images/generate` NDJSON stream (live 2026-08-08). Result tiles deep-link into Edit / Annotate / Avatar.                                                                 |
+| `/images/generate`    | Interactive tool                | Text → image via the aidream `POST /images/generate` NDJSON stream (live 2026-08-08). Result tiles deep-link into Edit / Annotate / Avatar.                                                                |
 | `/images/presets`     | Cached catalog                  | Browsable reference for every preset (pure server-rendered).                                                                                                                                               |
 | `/images/library`     | Per-user Supabase data          | Variants the user has saved — grouped by session, public URLs.                                                                                                                                             |
 | `/images/from-base64` | Interactive tool                | Paste a base64 string (raw or `data:` URL) → preview + metadata + save to cloud. Pure browser decode (no API hop), uploads via the cloud-files share-link primitive.                                       |
@@ -307,7 +307,7 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
   user's library), while writing the text is not, so the shortcut's existence
   is a reason to give an agent the direct path, not to withhold it.
   The target takes `{ file, alt_text?, caption?, title?, description?,
-  keywords?, filename_base? }` and lands through the same
+keywords?, filename_base? }` and lands through the same
   `updateImageMetadata` the Metadata panel's own inputs call. `file` is how it
   addresses a row: studio sources are browser-local `File` objects with no
   durable id until save, so it matches the `name` / `filename_base` the
@@ -417,7 +417,7 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
   now passes `getWriteHandlers` to the `SurfaceRuntimeProvider` it already
   mounted, registering the two targets `matrx-user/image-studio` declares:
   `conversion_settings` (a partial `{output_format?, output_quality?,
-  background_color?, resize_fit?, resize_position?}` object) and
+background_color?, resize_fit?, resize_position?}` object) and
   `selected_presets` (a full-list REPLACE of catalog preset ids), both
   `applyPolicy: "ask"` / `mode: "draft"`. Handlers call the SAME
   `useImageStudio` setters the Output-controls panel and the bundle tiles call
@@ -455,7 +455,7 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
   now passes `getWriteHandlers` to the `SurfaceRuntimeProvider` it already
   mounted, registering the one target `matrx-user/image-generate` declares:
   `generation_request`, a partial `{prompt?, style?, image_size?,
-  image_count?}` object on `applyPolicy: "ask"` / `mode: "draft"`. The handler
+image_count?}` object on `applyPolicy: "ask"` / `mode: "draft"`. The handler
   calls the SAME `setPrompt` / `setStyle` / `setSize` / `setCount` the form's
   own controls call — never a parallel write path — validates every key before
   applying any of them, and THROWS on a bad shape (the writeback seam turns

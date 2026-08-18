@@ -305,6 +305,11 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-17 — **Selected YouTube analyses now run as a bounded batch.**
+  The library action starts up to five independent video-analysis streams at
+  once through the shared `runWithConcurrency` pool, retains a separate
+  controller and adopted live-run row per video, isolates failures, and reports
+  aggregate completion instead of walking the selection one video at a time.
 - 2026-08-17 — **Every research stream is now ADOPTED; the last hand-rendered
   stream in this feature is gone.** `useResearchStream` no longer parses the
   pipeline `Response` with `consumeStream`: it runs it through

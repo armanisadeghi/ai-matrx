@@ -31,13 +31,13 @@ import {
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import {
-  useBrandOptions,
   useBusinessLocations,
   useCreateBusinessLocation,
   useListingPublishers,
   useLocationListings,
   useUpdateBusinessLocation,
   useUpsertLocationListing,
+  useVisibleBrandOptions,
 } from "@/features/marketing/data/hooks";
 import { buildListingMatrix } from "@/features/marketing/data/service";
 import {
@@ -62,8 +62,6 @@ import {
   type ListingStatus,
   type PublisherTier,
 } from "@/features/marketing/types";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
-import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
 const TIER_BADGE_CLASS: Record<PublisherTier, string> = {
@@ -103,9 +101,8 @@ function useUrlSelection() {
 }
 
 export default function LocalListingsWorkspace() {
-  const organizationId = useAppSelector(selectActiveOrganizationId);
   const { brandId, locationId, set } = useUrlSelection();
-  const brandsQuery = useBrandOptions(organizationId);
+  const brandsQuery = useVisibleBrandOptions();
 
   // Default to the first brand once options load (URL wins when present).
   useEffect(() => {
@@ -149,7 +146,9 @@ export default function LocalListingsWorkspace() {
         ) : null}
         {brandId ? (
           <BrandLocations
-            organizationId={organizationId ?? ""}
+            organizationId={
+              (brandsQuery.data ?? []).find((brand) => brand.id === brandId)?.organization_id ?? ""
+            }
             brandId={brandId}
             locationId={locationId}
             onSelectLocation={(id) => set({ location: id })}
@@ -262,20 +261,12 @@ function BrandLocations({
           ) : null}
         </nav>
       </div>
-      {selected ? (
-        <LocationWorkspace key={selected.id} organizationId={organizationId} location={selected} />
-      ) : null}
+      {selected ? <LocationWorkspace key={selected.id} location={selected} /> : null}
     </div>
   );
 }
 
-function LocationWorkspace({
-  organizationId,
-  location,
-}: {
-  organizationId: string;
-  location: BusinessLocation;
-}) {
+function LocationWorkspace({ location }: { location: BusinessLocation }) {
   const publishersQuery = useListingPublishers();
   const listingsQuery = useLocationListings(location.id);
 
@@ -328,7 +319,7 @@ function LocationWorkspace({
       </div>
 
       <ProfileEditor location={location} gaps={gaps} />
-      <ListingsMatrix organizationId={organizationId} location={location} matrix={matrix} />
+      <ListingsMatrix organizationId={location.organization_id} location={location} matrix={matrix} />
       <JsonLdCard location={location} />
     </div>
   );

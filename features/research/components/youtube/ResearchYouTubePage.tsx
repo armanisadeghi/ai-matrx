@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { toast } from "@/lib/toast";
+import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { YouTubeDiscovery } from "@/features/marketing/discovery/youtube/YouTubeDiscovery";
 import { YouTubeResearchActions } from "@/features/marketing/discovery/youtube/YouTubeResearchActions";
@@ -28,6 +29,8 @@ import {
 import type { YouTubeVideoLibraryRecord } from "@/features/marketing/discovery/youtube/types";
 import { useTopicId } from "../../context/ResearchContext";
 
+const YOUTUBE_ANALYSIS_CONCURRENCY = 5;
+
 export default function ResearchYouTubePage() {
   const dispatch = useAppDispatch();
   const topicId = useTopicId();
@@ -37,14 +40,13 @@ export default function ResearchYouTubePage() {
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [batchProgress, setBatchProgress] = useState<string | null>(null);
-  /** The adopted `activeRequests` row the current batch item streams into. */
-  const adoptedRequestIdRef = useRef<string | null>(null);
-  /** The in-flight stream's abort controller — the SAME object the fetch and
-   * the adopter watchdog share. Aborted on unmount and before each batch item
-   * so an orphaned stream never keeps draining into a reaped row (events on a
-   * missing row are silently dropped — the disappearing-run class; see
+  /** Adopted `activeRequests` rows for the bounded batch. */
+  const adoptedRequestIdsRef = useRef(new Set<string>());
+  /** In-flight stream controllers — each fetch and adopter watchdog share the
+   * same object. All are aborted on unmount so orphaned streams never keep
+   * draining into reaped rows (events on a missing row are silently dropped; see
    * features/agents/docs/LIVE_RUN_RETENTION.md seam #3). */
-  const streamAbortRef = useRef<AbortController | null>(null);
+  const streamAbortControllersRef = useRef(new Set<AbortController>());
 
   useEffect(
     () => () => {
@@ -52,11 +54,14 @@ export default function ResearchYouTubePage() {
       // saved records recover it), then reap the adopted row. The aborted
       // controller stays in the ref so the batch loop's catch can recognize
       // its own cancellation and settle silently.
-      streamAbortRef.current?.abort();
-      if (adoptedRequestIdRef.current) {
-        dispatch(removeRequest(adoptedRequestIdRef.current));
-        adoptedRequestIdRef.current = null;
+      for (const controller of streamAbortControllersRef.current) {
+        controller.abort();
       }
+      streamAbortControllersRef.current.clear();
+      for (const requestId of adoptedRequestIdsRef.current) {
+        dispatch(removeRequest(requestId));
+      }
+      adoptedRequestIdsRef.current.clear();
     },
     [dispatch],
   );
@@ -112,51 +117,61 @@ export default function ResearchYouTubePage() {
     if (selected.size === 0) return;
     const videoIds = [...selected];
     setProcessing(true);
-    setBatchProgress(`Connecting to video 1 of ${videoIds.length}…`);
+    setBatchProgress(
+      `Connecting to up to ${Math.min(YOUTUBE_ANALYSIS_CONCURRENCY, videoIds.length)} videos…`,
+    );
     try {
-      for (const [index, videoId] of videoIds.entries()) {
-        setBatchProgress(`Analyzing video ${index + 1} of ${videoIds.length}…`);
-        // Abort any prior item's stream BEFORE reaping its row — an orphaned
-        // fetch draining into a missing row is the disappearing-run class.
-        streamAbortRef.current?.abort();
-        if (adoptedRequestIdRef.current) {
-          dispatch(removeRequest(adoptedRequestIdRef.current));
-          adoptedRequestIdRef.current = null;
-        }
-        const abortController = new AbortController();
-        streamAbortRef.current = abortController;
-        await streamYouTubeVideoAnalysis(dispatch, videoId, false, {
-          signal: abortController.signal,
-          abortController,
-          onAdopted: ({ requestId }) => {
-            adoptedRequestIdRef.current = requestId;
-          },
-          onEvent: (event) => {
-            if (event.event === "info" && event.data.user_message) {
-              setBatchProgress(
-                `${index + 1}/${videoIds.length} · ${event.data.user_message}`,
-              );
+      let completed = 0;
+      const result = await runWithConcurrency(
+        videoIds,
+        YOUTUBE_ANALYSIS_CONCURRENCY,
+        async (videoId) => {
+          const abortController = new AbortController();
+          streamAbortControllersRef.current.add(abortController);
+          let adoptedRequestId: string | null = null;
+          try {
+            await streamYouTubeVideoAnalysis(dispatch, videoId, false, {
+              signal: abortController.signal,
+              abortController,
+              onAdopted: ({ requestId }) => {
+                adoptedRequestId = requestId;
+                adoptedRequestIdsRef.current.add(requestId);
+              },
+              onEvent: (event) => {
+                if (event.event === "info" && event.data.user_message) {
+                  setBatchProgress(
+                    `${completed}/${videoIds.length} finished · ${event.data.user_message}`,
+                  );
+                }
+              },
+            });
+            const updated = await getYouTubeLibraryVideo(videoId);
+            setVideos((current) =>
+              current.map((video) =>
+                video.youtube_video_id === videoId ? updated : video,
+              ),
+            );
+          } finally {
+            completed += 1;
+            setBatchProgress(`${completed}/${videoIds.length} finished`);
+            streamAbortControllersRef.current.delete(abortController);
+            if (adoptedRequestId) {
+              adoptedRequestIdsRef.current.delete(adoptedRequestId);
+              dispatch(removeRequest(adoptedRequestId));
             }
-          },
-        });
-        const updated = await getYouTubeLibraryVideo(videoId);
-        setVideos((current) =>
-          current.map((video) =>
-            video.youtube_video_id === videoId ? updated : video,
-          ),
+          }
+        },
+      );
+      if (result.failed > 0) {
+        toast.error(
+          `Completed ${result.succeeded} of ${videoIds.length} analyses; ${result.failed} failed.`,
         );
+      } else {
+        toast.success(
+          `Completed ${videoIds.length} video ${videoIds.length === 1 ? "analysis" : "analyses"}.`,
+        );
+        setSelected(new Set());
       }
-      toast.success(
-        `Completed ${videoIds.length} video ${videoIds.length === 1 ? "analysis" : "analyses"}.`,
-      );
-      setSelected(new Set());
-    } catch (caught) {
-      // Cancelled by teardown — settle silently; server-side processing of
-      // the current video continues and its saved record recovers it.
-      if (streamAbortRef.current?.signal.aborted) return;
-      toast.error(
-        caught instanceof Error ? caught.message : "Analysis could not start.",
-      );
     } finally {
       setProcessing(false);
       setBatchProgress(null);

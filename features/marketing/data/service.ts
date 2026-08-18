@@ -3893,6 +3893,21 @@ export async function deleteBusinessLocation(locationId: string): Promise<void> 
   assertMutated(response.data, response.error, "delete this location");
 }
 
+/** Every RLS-visible brand (id/name/org), for pickers that must not gate on the active org. */
+export async function listVisibleBrandOptions(
+  signal?: AbortSignal,
+): Promise<Array<Pick<MarketingBrand, "id" | "name" | "organization_id">>> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("brand")
+    .select("id, name, organization_id")
+    .is("deleted_at", null)
+    .order("name", { ascending: true })
+    .order("id", { ascending: true })
+    .limit(1000)
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
 /** The shared publisher registry — small (dozens of rows), globally readable. */
 export async function listListingPublishers(
   signal?: AbortSignal,
