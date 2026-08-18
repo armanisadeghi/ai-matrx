@@ -330,9 +330,7 @@ export function useImageStudio(
         // Recover the new file id. Match by name first; fall back to the
         // single fresh row under the sources folder (uploadFiles may have
         // collision-renamed the file, in which case the name won't match).
-        const fresh = Object.values(
-          store.getState().cloudFiles.filesById,
-        ).filter(
+        const fresh = Object.values(store.getState().cloudFiles.filesById).filter(
           (f) => !knownIds.has(f.id) && f.filePath?.startsWith(sourcePrefix),
         );
         const match =
@@ -680,7 +678,11 @@ export function useImageStudio(
       try {
         // Anchor the save under the canonical Images/Generated tree so
         // everything the studio produces is grouped and filterable.
-        const rootSegment = (folder ?? options.defaultFolder ?? "image-studio")
+        const rootSegment = (
+          folder ??
+          options.defaultFolder ??
+          "image-studio"
+        )
           .trim()
           .replace(/^\/+|\/+$/g, "");
         const rootFolderPath = rootSegment
@@ -713,8 +715,7 @@ export function useImageStudio(
           // live together. The leaf is the source's editable filenameBase
           // (which the AI describe agent or the user will have set to a
           // proper, descriptive name by the time Save runs).
-          const perFileSegment =
-            sanitizePathSegment(sourceFile.filenameBase) ||
+          const perFileSegment = sanitizePathSegment(sourceFile.filenameBase) ||
             sanitizePathSegment(sourceFile.originalName) ||
             studioFileId;
           const folderPath = `${rootFolderPath}/${perFileSegment}`;
@@ -941,6 +942,7 @@ export function useImageStudio(
     ],
   );
 
+
   // Mutates the file at `fileId` in place via React state.
   const setMetadataState = useCallback(
     (
@@ -1078,7 +1080,9 @@ export function useImageStudio(
           scope: buildSurfaceScope(),
           runtime: {
             surfaceName: IMAGE_STUDIO_SURFACE_NAME,
-            ...(contextHint?.trim() ? { userInput: contextHint.trim() } : {}),
+            ...(contextHint?.trim()
+              ? { userInput: contextHint.trim() }
+              : {}),
           },
         });
         conversationId = launchResult.conversationId;
@@ -1266,6 +1270,7 @@ export function useImageStudio(
       }),
     );
   }, []);
+
 
   return {
     files,
