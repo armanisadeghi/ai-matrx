@@ -24,6 +24,7 @@ import {
   VAULT_ATTACHMENT_COLUMNS,
   VAULT_FIELD_COLUMNS,
   normalizeNonSecretFields,
+  normalizeVaultHandling,
   normalizeWireField,
   normalizeWireItem,
   normalizeWireAttachment,
@@ -55,7 +56,6 @@ import {
   type VaultRevealResponse,
   type VaultScope,
   type VaultTransferResponse,
-  type VaultHandling,
 } from "./types";
 
 // ── aidream /api/vault client ─────────────────────────────────────────────
@@ -423,7 +423,7 @@ function normalizeField(row: VaultFieldMaskedRow): VaultField {
     credential_item_id: row.credential_item_id ?? "",
     field_key: row.field_key ?? "value",
     env_key: row.key,
-    handling: row.handling,
+    handling: normalizeVaultHandling(row.handling),
     editable: row.editable,
     inject_into_sandbox: row.inject_into_sandbox,
     value_hint: row.value_hint ?? "",
@@ -601,7 +601,7 @@ export async function fetchVaultItems(
     list.push(
       normalizeWireAttachment({
         ...row,
-        handling: row.handling as VaultHandling,
+        handling: normalizeVaultHandling(row.handling),
       }),
     );
     attachmentsByItem.set(row.credential_item_id, list);

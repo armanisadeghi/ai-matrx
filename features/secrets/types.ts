@@ -23,6 +23,18 @@ import type {
 } from "@/features/admin/applications/catalogs/schemas";
 
 type ApiSchemas = components["schemas"];
+export type VaultHandling = NonNullable<ApiSchemas["FieldIn"]["handling"]>;
+
+/** Validate the protection value at every DB/API ingress. Omitted API values
+ *  materialize the server default; any other string means the stored contract
+ *  is corrupt and must fail loudly instead of reaching permission UI. */
+export function normalizeVaultHandling(value: unknown): VaultHandling {
+  if (value === undefined || value === null) return "revealable";
+  if (value === "visible" || value === "revealable" || value === "sealed") {
+    return value;
+  }
+  throw new Error(`Invalid Vault protection value: ${String(value)}`);
+}
 
 // ── Wire shapes (generated — the source of truth) ─────────────────────────
 
@@ -39,13 +51,13 @@ export type VaultAttachment = Pick<
   | "file_name"
   | "media_type"
   | "size_bytes"
-  | "handling"
   | "value_version"
   | "created_at"
   | "updated_at"
 > & {
   description: string | null;
   last_used_at: string | null;
+  handling: VaultHandling;
 };
 
 /** Wire field with server defaults materialized (see `normalizeWireField`).
@@ -56,7 +68,7 @@ export type VaultField = Pick<
   "id" | "credential_item_id" | "field_key" | "created_at" | "updated_at"
 > & {
   env_key: string | null;
-  handling: string;
+  handling: VaultHandling;
   editable: boolean;
   inject_into_sandbox: boolean;
   value_hint: string;
@@ -115,7 +127,7 @@ export function normalizeWireField(wire: VaultFieldWire): VaultField {
   return {
     ...wire,
     env_key: wire.env_key ?? null,
-    handling: wire.handling ?? "revealable",
+    handling: normalizeVaultHandling(wire.handling),
     editable: wire.editable ?? true,
     inject_into_sandbox: wire.inject_into_sandbox ?? false,
     value_hint: wire.value_hint ?? "",
@@ -161,6 +173,7 @@ export function normalizeWireAttachment(
     ...wire,
     description: wire.description ?? null,
     last_used_at: wire.last_used_at ?? null,
+    handling: normalizeVaultHandling(wire.handling),
   };
 }
 export type VaultPrincipalIn = ApiSchemas["PrincipalIn"];
@@ -203,7 +216,6 @@ export const PROMOTABLE_URL_FIELD_KEYS = [
   "portal_url",
 ] as const;
 
-export type VaultHandling = NonNullable<VaultFieldIn["handling"]>;
 export type VaultAccessMode = VaultShareRequest["access_mode"];
 
 // ── Principal (frontend view descriptor) ──────────────────────────────────

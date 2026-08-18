@@ -2,6 +2,22 @@ import {
   generateVaultPassword,
   parseEnvAssignment,
 } from "@/features/secrets/utils";
+import { normalizeVaultHandling } from "@/features/secrets/types";
+
+describe("normalizeVaultHandling", () => {
+  test("materializes the server default and preserves every supported level", () => {
+    expect(normalizeVaultHandling(undefined)).toBe("revealable");
+    expect(normalizeVaultHandling("visible")).toBe("visible");
+    expect(normalizeVaultHandling("revealable")).toBe("revealable");
+    expect(normalizeVaultHandling("sealed")).toBe("sealed");
+  });
+
+  test("rejects invalid stored protection data loudly", () => {
+    expect(() => normalizeVaultHandling("encrypted-ish")).toThrow(
+      "Invalid Vault protection value",
+    );
+  });
+});
 
 describe("generateVaultPassword", () => {
   test("creates a strong, unambiguous password with all basic character groups", () => {

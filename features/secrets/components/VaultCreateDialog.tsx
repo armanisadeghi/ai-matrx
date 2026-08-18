@@ -72,6 +72,7 @@ import {
   VAULT_LABELS,
   WEBSITE_LOGIN_DEFINITION_KEY,
   effectiveFields,
+  normalizeVaultHandling,
   toPrincipalIn,
   type CredentialDefinition,
   type CredentialFamily,
@@ -886,7 +887,7 @@ function DefinitionForm({
         field_key: d.def.field_key,
         value: d.value,
         env_key: d.envKey || null,
-        handling: (d.def.handling ?? "revealable") as VaultHandling,
+        handling: normalizeVaultHandling(d.def.handling),
         editable: d.def.editable ?? true,
         inject_into_sandbox: d.inject && Boolean(d.envKey),
         description: d.def.description ?? null,
@@ -1194,12 +1195,7 @@ function DefinitionForm({
                   </span>
                 )}
                 <Badge variant="outline" className="font-normal">
-                  {
-                    HANDLING_LABELS[
-                      (draft.def.handling ??
-                        "revealable") as NonNullable<VaultHandling>
-                    ]
-                  }
+                  {HANDLING_LABELS[normalizeVaultHandling(draft.def.handling)]}
                 </Badge>
               </div>
               {draft.def.description && (

@@ -599,9 +599,7 @@ function AttachmentRow({
   const [label, setLabel] = useState(attachment.label);
   const [description, setDescription] = useState(attachment.description ?? "");
   const [fileName, setFileName] = useState(attachment.file_name);
-  const [handling, setHandling] = useState<VaultHandling>(
-    attachment.handling as VaultHandling,
-  );
+  const [handling, setHandling] = useState<VaultHandling>(attachment.handling);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmSeal, setConfirmSeal] = useState(false);
   const canDownload =
@@ -627,7 +625,7 @@ function AttachmentRow({
           </dd>
           <dt className="font-medium text-muted-foreground">Protection</dt>
           <dd className="text-foreground">
-            {HANDLING_PRESENTATION[attachment.handling as VaultHandling].label}
+            {HANDLING_PRESENTATION[attachment.handling].label}
           </dd>
           {attachment.description && (
             <>
