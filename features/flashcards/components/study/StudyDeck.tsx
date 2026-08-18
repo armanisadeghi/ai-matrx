@@ -63,6 +63,7 @@ import { SourceCitations } from "@/features/education/trust/components/SourceCit
 import { RefusalNotice } from "@/features/education/trust/components/RefusalNotice";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
 import { FlashcardConfidenceRow } from "./FlashcardConfidenceRow";
+import { FlashcardStudySidebar } from "./study-deck-parts";
 import { MatchingCardPlayer } from "./MatchingCardPlayer";
 import { CardAudioHelp } from "./CardAudioHelp";
 import {
@@ -744,7 +745,24 @@ export function StudyDeck(props: StudyDeckProps) {
         )}
       </div>
 
-      <div className="mx-auto max-w-2xl lg:max-w-3xl xl:max-w-4xl">
+      <div className="flex items-start justify-center gap-4">
+        {/* VISION §16 (WP3 gap 9) — the built mastery sidebar, un-gated: every
+            learner gets the card list + live FSRS stats beside the deck on
+            wide screens. The same component the study window panel mounts —
+            never a second implementation. Mobile parity is WP1/IC-4. */}
+        <aside className="sticky top-14 hidden w-60 shrink-0 xl:block">
+          <div className="flex max-h-[70dvh] flex-col overflow-hidden rounded-lg border border-border bg-card px-1 py-1">
+            <FlashcardStudySidebar
+              cards={cards}
+              currentIndex={currentIndex}
+              resultsByCard={resultsByCard}
+              masteryByCard={masteryByCard}
+              onGoTo={goTo}
+            />
+          </div>
+        </aside>
+
+        <div className="min-w-0 max-w-2xl flex-1 lg:max-w-3xl xl:max-w-4xl">
         {currentKind === CARD_KIND.matching ? (
           // Matching variant — a tap-to-match mini-game that self-grades on
           // completion through the deck's canonical grade path (no flip, no
@@ -953,6 +971,7 @@ export function StudyDeck(props: StudyDeckProps) {
               )}
             />
           ))}
+        </div>
         </div>
       </div>
 
