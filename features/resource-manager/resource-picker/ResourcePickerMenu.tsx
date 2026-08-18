@@ -24,6 +24,7 @@ import {
   formatConversationReference,
 } from "./ConversationReferencePicker";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { toast } from "@/lib/toast";
 import { GoogleResourcePicker } from "./GoogleResourcePicker";
 import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
 import {
@@ -31,7 +32,7 @@ import {
   EMPTY_GOOGLE_FILE_IDS,
   selectGoogleFileIds,
 } from "@/features/google-workspace/attach/googleFileContext";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppStore, useAppSelector } from "@/lib/redux/hooks";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
