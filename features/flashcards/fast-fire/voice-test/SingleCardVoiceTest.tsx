@@ -1,5 +1,6 @@
 "use client";
 
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 // features/flashcards/fast-fire/voice-test/SingleCardVoiceTest.tsx
 //
 // Voice test: setup → warm mic → ask (cached file OR Cartesia read-aloud) →
@@ -442,9 +443,9 @@ export function SingleCardVoiceTest({
                 )}
                 Here&apos;s your question
               </Badge>
-              <p className="max-w-xl text-2xl font-semibold leading-snug text-foreground">
-                {card.front}
-              </p>
+              <div className="max-w-xl text-2xl font-semibold leading-snug text-foreground">
+                <CardFaceContent content={card.front} variant="inline" />
+              </div>
               <p className="text-xs text-muted-foreground">
                 Listen, then speak your answer…
               </p>
@@ -454,9 +455,9 @@ export function SingleCardVoiceTest({
           {phase === "answering" && (
             <>
               <VoiceAnswerMicMeter level={level} seconds={answerSeconds} />
-              <p className="max-w-xl text-lg font-semibold leading-snug text-foreground">
-                {card.front}
-              </p>
+              <div className="max-w-xl text-lg font-semibold leading-snug text-foreground">
+                <CardFaceContent content={card.front} variant="inline" />
+              </div>
               {/* Finished before the timer? Close the window NOW and grade —
                   no dead wait. `finishAnswer` is idempotent with the timeout,
                   so whichever fires first wins and the other no-ops. */}

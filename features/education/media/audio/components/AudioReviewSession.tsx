@@ -1,5 +1,6 @@
 "use client";
 
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 // features/education/media/audio/components/AudioReviewSession.tsx
 //
 // Audio review — "FastFire in audio-only format." Questions are read aloud, the
@@ -481,9 +482,9 @@ export function AudioReviewSession({
               )}
               {phase === "answering" ? "Answer out loud…" : "Listen…"}
             </span>
-            <p className="max-w-xl text-2xl font-semibold leading-snug text-foreground">
-              {card.front}
-            </p>
+            <div className="max-w-xl text-2xl font-semibold leading-snug text-foreground">
+              <CardFaceContent content={card.front} variant="inline" />
+            </div>
           </>
         )}
 
@@ -531,7 +532,9 @@ export function AudioReviewSession({
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 Answer
               </div>
-              <div className="text-sm text-foreground">{card.back}</div>
+              <div className="text-sm text-foreground">
+                <CardFaceContent content={card.back} variant="inline" />
+              </div>
             </div>
             <Button className="w-full gap-1.5" onClick={next}>
               {index + 1 >= cards.length ? "Finish" : "Next card"}

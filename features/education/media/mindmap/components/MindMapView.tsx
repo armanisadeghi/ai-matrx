@@ -1,5 +1,6 @@
 "use client";
 
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 // features/education/media/mindmap/components/MindMapView.tsx
 //
 // Renders a stored mind-map artifact (a content-IR diagram_spec envelope) via
@@ -125,8 +126,12 @@ function NodePanel({
                 <BookOpen className="h-3.5 w-3.5" aria-hidden />
                 From this card
               </div>
-              <div className="text-sm font-medium text-foreground">{card.front}</div>
-              <div className="text-sm text-muted-foreground">{card.back}</div>
+              <div className="text-sm font-medium text-foreground">
+                <CardFaceContent content={card.front} variant="inline" />
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <CardFaceContent content={card.back} variant="inline" />
+              </div>
               <VerifyAgainstSourceButton
                 trust={mapTrust}
                 front={card.front}

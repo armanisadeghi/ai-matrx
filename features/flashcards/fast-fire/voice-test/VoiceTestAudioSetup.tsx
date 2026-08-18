@@ -1,5 +1,6 @@
 "use client";
 
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { useEffect, useState } from "react";
 import {
   Headphones,
@@ -93,9 +94,9 @@ export function VoiceTestAudioSetup({
         </p>
       </div>
 
-      <p className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-left text-sm font-medium leading-snug text-foreground">
-        {card.front}
-      </p>
+      <div className="rounded-lg border border-border bg-muted/30 px-3 py-2.5 text-left text-sm font-medium leading-snug text-foreground">
+        <CardFaceContent content={card.front} variant="inline" />
+      </div>
 
       {startError && (
         <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
