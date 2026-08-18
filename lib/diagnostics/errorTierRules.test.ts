@@ -120,6 +120,35 @@ describe("classifyTier", () => {
     expect(c.tier).toBe("red");
   });
 
+  it("keeps a guarded Hindsight transcript delimiter recovery local", () => {
+    const c = classifyTier(
+      captured({
+        source: "markdown-delimiters",
+        route: "/administration/agents/hindsight",
+        relation: "markdown:BasicMarkdownContent",
+        message:
+          'Malformed math delimiters: a stray "$$" would have turned 649 chars of prose into a math span. Escaped it.',
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("hindsight-markdown-delimiter-recovery");
+  });
+
+  it("keeps delimiter defects red outside the Hindsight transcript viewer", () => {
+    const c = classifyTier(
+      captured({
+        source: "markdown-delimiters",
+        route: "/chat/conversation-1",
+        relation: "markdown:BasicMarkdownContent",
+        message:
+          'Malformed math delimiters: a stray "$$" would have turned 649 chars of prose into a math span. Escaped it.',
+      }),
+    );
+
+    expect(c.tier).toBe("red");
+  });
+
   it("keeps Supabase browser transport loss local across routes and RPCs", () => {
     const c = classifyTier(
       captured({
