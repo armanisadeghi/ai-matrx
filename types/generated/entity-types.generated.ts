@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 390 active entity tokens. A token here is FK-valid for
+// 403 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -82,6 +82,19 @@ export type EntityTypeToken =
   | "batch_cost_event"
   | "batch_provider_batch"
   | "batch_work_item"
+  | "browser_account_binding"
+  | "browser_action_event"
+  | "browser_capture"
+  | "browser_control_request"
+  | "browser_handoff"
+  | "browser_login_attempt"
+  | "browser_login_recipe"
+  | "browser_profile"
+  | "browser_profile_checkpoint"
+  | "browser_run"
+  | "browser_site_observation"
+  | "browser_site_policy"
+  | "browser_stream_ticket"
   | "canvas_comment"
   | "canvas_comment_like"
   | "canvas_item"
@@ -542,6 +555,14 @@ export type ComponentEntityToken =
   | "app_rate_limit"
   | "artifact"
   | "assessment_item"
+  | "browser_account_binding"
+  | "browser_action_event"
+  | "browser_capture"
+  | "browser_control_request"
+  | "browser_handoff"
+  | "browser_login_attempt"
+  | "browser_run"
+  | "browser_site_observation"
   | "canvas_item_state"
   | "cmp_entry"
   | "coding_session_entry"
@@ -753,6 +774,19 @@ export type ScopeableEntityToken =
   | "batch_cost_event"
   | "batch_provider_batch"
   | "batch_work_item"
+  | "browser_account_binding"
+  | "browser_action_event"
+  | "browser_capture"
+  | "browser_control_request"
+  | "browser_handoff"
+  | "browser_login_attempt"
+  | "browser_login_recipe"
+  | "browser_profile"
+  | "browser_profile_checkpoint"
+  | "browser_run"
+  | "browser_site_observation"
+  | "browser_site_policy"
+  | "browser_stream_ticket"
   | "canvas_comment"
   | "canvas_comment_like"
   | "canvas_item"
@@ -1095,6 +1129,9 @@ export type ListedEntityToken =
   | "ai_provider"
   | "ai_setting"
   | "assist"
+  | "browser_login_recipe"
+  | "browser_profile"
+  | "browser_site_policy"
   | "content_ir_kind"
   | "content_ir_kind_instance"
   | "crm_blocklist_entry"
@@ -1173,6 +1210,19 @@ export const ENTITY_TYPE_METADATA = {
   "batch_cost_event": { token: "batch_cost_event", schema: "batch", table: "cost_event", label: "Batch Cost Event", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "batch_provider_batch": { token: "batch_provider_batch", schema: "batch", table: "provider_batch", label: "Provider Batch", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "batch_work_item": { token: "batch_work_item", schema: "batch", table: "work_item", label: "Batch Work Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_account_binding": { token: "browser_account_binding", schema: "browser", table: "account_binding", label: "Browser Account Binding", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_action_event": { token: "browser_action_event", schema: "browser", table: "action_event", label: "Browser Action Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_capture": { token: "browser_capture", schema: "browser", table: "capture", label: "Browser Capture", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_control_request": { token: "browser_control_request", schema: "browser", table: "control_request", label: "Browser Control Request", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_handoff": { token: "browser_handoff", schema: "browser", table: "handoff", label: "Browser Handoff", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_login_attempt": { token: "browser_login_attempt", schema: "browser", table: "login_attempt", label: "Browser Login Attempt", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_login_recipe": { token: "browser_login_recipe", schema: "browser", table: "login_recipe", label: "Browser Login Recipe", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_profile": { token: "browser_profile", schema: "browser", table: "profile", label: "Cloud Browser Profile", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_profile_checkpoint": { token: "browser_profile_checkpoint", schema: "browser", table: "profile_checkpoint", label: "Browser Profile Checkpoint", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_run": { token: "browser_run", schema: "browser", table: "run", label: "Cloud Browser Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_site_observation": { token: "browser_site_observation", schema: "browser", table: "site_observation", label: "Browser Site Observation", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_site_policy": { token: "browser_site_policy", schema: "browser", table: "site_policy", label: "Browser Site Policy", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "browser_stream_ticket": { token: "browser_stream_ticket", schema: "browser", table: "stream_ticket", label: "Browser Stream Ticket", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "canvas_comment": { token: "canvas_comment", schema: "canvas", table: "canvas_comments", label: "Canvas Comment", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "display_name", contentRole: null, referenceCategory: null },
   "canvas_comment_like": { token: "canvas_comment_like", schema: "canvas", table: "canvas_comment_likes", label: "Canvas Comment Like", baseTier: 3, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "canvas_item": { token: "canvas_item", schema: "canvas", table: "canvas_items", label: "Canvas Item", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: true, titleColumn: "title", contentRole: null, referenceCategory: null },
@@ -1567,6 +1617,19 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "batch_cost_event",
   "batch_provider_batch",
   "batch_work_item",
+  "browser_account_binding",
+  "browser_action_event",
+  "browser_capture",
+  "browser_control_request",
+  "browser_handoff",
+  "browser_login_attempt",
+  "browser_login_recipe",
+  "browser_profile",
+  "browser_profile_checkpoint",
+  "browser_run",
+  "browser_site_observation",
+  "browser_site_policy",
+  "browser_stream_ticket",
   "canvas_comment",
   "canvas_comment_like",
   "canvas_item",
