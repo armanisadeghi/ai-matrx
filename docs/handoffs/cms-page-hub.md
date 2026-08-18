@@ -85,13 +85,13 @@ has landed: replace the NodePanel fallback branch with one-click planned-row cre
 (`ensurePlannedPages`, already written) + `SeoPlanEditor`, delete the file + its
 `SeoPlanSection`.
 
-**5. Wire the AFTER join at publish.** 1/121 CMS pages carries `web_page_id`. Publish
-(`web_announce`/`cms_publish` path) should create-or-adopt the `web.page` row and write the link
-— same one-writer (`setWebPageLink` / server twin), reusing `ensure_planned_page_urls` semantics.
-**Carries the recorded URL-derivation risk:** a planned page's URL derives from
-`web.site.root_url` + plan route; a published CMS page anchors at `page_urls().live_url` — for a
-site served at `mymatrx.com/c/{slug}` those are two URLs → two rows for one page. Unify the
-derivation as part of this item; every paired site with its own domain agrees today.
+~~**5. Wire the AFTER join at publish.**~~ DONE 2026-08-17 — aidream's ONE per-page publish
+path now resolves `page_urls().live_url`, prefers the linked `plan_node_id`'s existing planned
+row, adopts that identity onto the real live URL, advances it to `active`, and writes
+`client_pages.web_page_id` only through `page_service.set_web_page_link`. `publish_many` and
+bridge `cms_publish` inherit the same path. The recorded custom-domain vs
+`mymatrx.com/c/{slug}` hazard is closed: the canonical URL writer moves the planned row rather
+than inserting a second one, with a regression test proving the insert seam is not called.
 
 **Lower priority:** research CMS-array reverse filter (`client_pages.research_topic_ids`, CMS
 DB — 0 rows carry data today, wire when research artifacts flow); CMS components→page usage join
