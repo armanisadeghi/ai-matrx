@@ -47,6 +47,85 @@
       ],
       "previousEventHash": "fa27a952bc54a7cb192edb64c6c0cf53e30d6837f2c4d7013cc179bdb8f12e0d",
       "eventHash": "6fe83589159a910dfb609beaef9e38e36bc3cd5f81740207871ae6ee7a4058cb"
+    },
+    {
+      "sequence": 4,
+      "state": "infrastructure_blocked",
+      "at": "2026-08-15T19:29:56Z",
+      "actor": "codex-p10-worker",
+      "summary": "Independent certification found no static regression but exact-worktree live interaction proof is blocked by a foreign preview lease.",
+      "evidence": [
+        "Certifier /root/p10_certifier reviewed exact candidate a4a7c03ea2db9311ee926433eb0f6f25774e03a6.",
+        "Type diagnostics remained the same 16 landscapeBrief errors; as-any 83 to 81; active disables 483 to 482; scoped ESLint, patrol contracts, and diff check passed.",
+        "Focused render proof validated xs to sm and unchanged sm, md, lg status markup.",
+        "pnpm preview:status: port 3001 owner /Users/armanisadeghi/code/matrx-frontend, RSS 93.4GB; this worktree did not reuse or stop it."
+      ],
+      "blocker": {
+        "prerequisite": "Release the canonical-checkout preview lease so this exact automation worktree can run live microphone-state interaction proof.",
+        "preservedRef": "refs/heads/codex/p10-20260815",
+        "preservedSha": "a4a7c03ea2db9311ee926433eb0f6f25774e03a6"
+      },
+      "previousEventHash": "6fe83589159a910dfb609beaef9e38e36bc3cd5f81740207871ae6ee7a4058cb",
+      "eventHash": "9cdbdce6a31920755524e5ae547cc679e52ca77f41112907abeeacf9e7d7c183"
+    },
+    {
+      "sequence": 5,
+      "state": "escaped_delivery",
+      "at": "2026-08-15T20:16:22.246Z",
+      "actor": "codex-d74-release-controller",
+      "summary": "Recorded the uncertified P10 candidate that entered main before the delivery controller; v0.4.703 will be its first release.",
+      "evidence": [
+        "merge:ce600b6536c900aefae521f24d69c2d4ea7a6d97",
+        "no existing release tag contains candidate a4a7c03e",
+        "interaction certification remains incomplete"
+      ],
+      "escape": {
+        "candidateSha": "a4a7c03ea2db9311ee926433eb0f6f25774e03a6",
+        "integratedSha": "ce600b6536c900aefae521f24d69c2d4ea7a6d97",
+        "release": "v0.4.703",
+        "reason": "The candidate entered origin/main through merge ce600b653 before independent interaction certification and before a controller-owned delivery queue existed."
+      },
+      "previousEventHash": "9cdbdce6a31920755524e5ae547cc679e52ca77f41112907abeeacf9e7d7c183",
+      "eventHash": "05ba22bd3bd4c457874b6dfd519b41a4c76f1ed4a084fe9cbf67361ce521a5ce"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-18T19:16:12.843Z",
+      "actor": "codex-p10-worker",
+      "summary": "Resumed escaped-delivery candidate for exact-source certification.",
+      "evidence": [
+        "Candidate a4a7c03e remains an ancestor of origin/main and the changed microphone component has no later commits.",
+        "The exact-worktree preview lease is still occupied; retry uses the constitution-approved focused component proof path."
+      ],
+      "previousEventHash": "05ba22bd3bd4c457874b6dfd519b41a4c76f1ed4a084fe9cbf67361ce521a5ce",
+      "eventHash": "757e1fc4007ab362fd71ce2a625eaadf2726510bef18dc20861a5128b5572151"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-18T19:22:51.575Z",
+      "actor": "codex-p10-certifier-resume",
+      "summary": "Independent resumed certification found no batch-caused regression.",
+      "evidence": [
+        "Exact candidate component bytes remain unchanged on current main; no later component commit exists.",
+        "Focused jsdom render proof passed recording and transcribing states across xs, sm, md, and lg.",
+        "Scoped ESLint, hatch scan, patrol contracts, and full current type-check passed."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "a4a7c03ea2db9311ee926433eb0f6f25774e03a6",
+        "certifierTaskId": "/root/p10_certifier_resume",
+        "checks": [
+          "exact candidate diff and unchanged-source history",
+          "focused Jest: 1 suite, 4 parameterized cases, 8 state-size assertions",
+          "scoped ESLint and check:hatches",
+          "pnpm check:patrol-contracts",
+          "pnpm type-check"
+        ]
+      },
+      "previousEventHash": "757e1fc4007ab362fd71ce2a625eaadf2726510bef18dc20861a5128b5572151",
+      "eventHash": "8ba1728ffc2001a99426a542b8265c34b36eb4c488ce362c0245ca893a0677af"
     }
   ]
 }
