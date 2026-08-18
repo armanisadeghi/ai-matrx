@@ -68,7 +68,6 @@ export function BuildWindowController(props: OpenBuildWindowOptions): null {
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, props.rulebookId]);
   return null;
 }

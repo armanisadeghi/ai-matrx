@@ -20,7 +20,7 @@ import {
   RefreshCw,
   RotateCcw,
   Quote,
-  Wand2,
+  BrainCircuit,
   Workflow,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -501,7 +501,7 @@ function RuleRow({
               </Button>
               {!retired && !rejected ? (
                 <Button size="sm" variant="outline" onClick={onImprove}>
-                  <Wand2 className="h-3.5 w-3.5" />
+                  <BrainCircuit className="h-3.5 w-3.5" />
                   Improve
                 </Button>
               ) : null}

@@ -129,7 +129,6 @@ function BuildWindowInner({
 
   useEffect(() => {
     let cancelled = false;
-    setLoadError(null);
     getRulebook(rulebookId)
       .then((row) => {
         if (cancelled) return;
