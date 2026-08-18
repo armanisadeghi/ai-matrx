@@ -16,6 +16,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import type {
   NodeInvocationState,
   NodeRunPhase,
+  RunActivityEntry,
   WorkflowRunEmission,
   WorkflowRunState,
   WorkflowRunsState,
@@ -233,6 +234,29 @@ export const selectRunDefinitionId = (runId: string) =>
   createSelector(
     [selectByRunId],
     (byRunId): string | null => byRunId[runId]?.definitionId ?? null,
+  );
+
+const EMPTY_ACTIVITY: RunActivityEntry[] = [];
+
+/** THE ACTIVITY TRUTH-FEED, oldest first (bounded ring — see ACTIVITY_MAX). */
+export const selectRunActivity = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): RunActivityEntry[] => byRunId[runId]?.activity ?? EMPTY_ACTIVITY,
+  );
+
+/** When the ENGINE started this run (ISO), not when this client attached. */
+export const selectRunStartedAt = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): string | null => byRunId[runId]?.startedAtTs ?? null,
+  );
+
+/** The ts of the last status transition — the run's end once it is terminal. */
+export const selectRunStatusTs = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): string | null => byRunId[runId]?.statusTs ?? null,
   );
 
 export const selectRunTransportMode = (runId: string) =>

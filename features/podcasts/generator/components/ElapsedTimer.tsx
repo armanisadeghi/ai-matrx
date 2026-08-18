@@ -1,9 +1,15 @@
 "use client";
 
 // features/podcasts/generator/components/ElapsedTimer.tsx
-// Ticks a mm:ss elapsed counter from a start epoch. Freezes once the run ends.
+//
+// The podcast generator's name for THE elapsed clock. The implementation was
+// promoted to `components/official-candidate/elapsed-time/ElapsedTime.tsx` when
+// the workflow live-run surface needed the same clock — a second copy of a
+// ticking timer is exactly the duplication the reuse ladder exists to prevent.
+// This file stays as the compatibility name so every existing podcast callsite
+// (and its `startedAt: number | null` prop shape) keeps working unchanged.
 
-import { useEffect, useState } from "react";
+import { ElapsedTime } from "@/components/official-candidate/elapsed-time/ElapsedTime";
 
 interface ElapsedTimerProps {
   startedAt: number | null;
@@ -12,26 +18,8 @@ interface ElapsedTimerProps {
   className?: string;
 }
 
-function format(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
 export function ElapsedTimer({ startedAt, running, className }: ElapsedTimerProps) {
-  const [now, setNow] = useState<number>(() => startedAt ?? Date.now());
-
-  useEffect(() => {
-    if (!running || startedAt == null) return undefined;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [running, startedAt]);
-
-  if (startedAt == null) return null;
   return (
-    <span className={className} aria-label="Elapsed time">
-      {format((running ? now : Math.max(now, startedAt)) - startedAt)}
-    </span>
+    <ElapsedTime startedAt={startedAt} running={running} className={className} />
   );
 }

@@ -86,6 +86,45 @@ export interface WorkflowRunEmission {
   ts: string;
 }
 
+/**
+ * THE ACTIVITY TRUTH-FEED (2026-08-18).
+ *
+ * The wire already carries the real work — `node_stream` frames with
+ * `kind: "phase" | "tool" | "warning"` whose `delta` names the actual tool
+ * call / stage, plus `node_progress` messages and node lifecycle. All of it
+ * was being DROPPED (only `lastStreamKind` survived), which is why a running
+ * workflow could only ever show a spinner. This bounded ring is the workflow
+ * twin of the podcast studio's ResearchActivityFeed: synthetic sub-steps stay
+ * the guaranteed floor, REAL activity layers on top.
+ *
+ * Deliberately excludes token chunks (that content belongs in a lane) and
+ * per-step cost (an aggregate, not an event a person reads).
+ */
+export type RunActivityKind =
+  | "started"
+  | "completed"
+  | "failed"
+  | "skipped"
+  | "retry"
+  | "progress"
+  | "phase"
+  | "tool"
+  | "warning"
+  | "delivered"
+  | "child";
+
+export interface RunActivityEntry {
+  /** Monotonic per run — a stable React key that survives the ring shifting. */
+  id: number;
+  nodeId: string | null;
+  kind: RunActivityKind;
+  /** Free text off the wire (tool/phase/warning/progress). Null for lifecycle. */
+  text: string | null;
+  /** One small trailing fact: duration, counts. Null when there isn't one. */
+  detail: string | null;
+  ts: string;
+}
+
 export interface WorkflowRunWorkSet {
   setName: string;
   wave: number;
@@ -155,6 +194,14 @@ export interface WorkflowRunState {
   signalRevision: number;
   /** Bumped per record_update table — the targeted subscription. */
   signalRevisionByTable: Record<string, number>;
+  /** THE ACTIVITY TRUTH-FEED — bounded ring, oldest dropped (ACTIVITY_MAX). */
+  activity: RunActivityEntry[];
+  /** Monotonic id source for `activity` entries. */
+  activitySeq: number;
+  /** When the ENGINE started the run (run_started ts, else the row's
+   * created_at). The elapsed clock reads this, never the attach time — a
+   * mid-run refresh must not restart the timer at zero. */
+  startedAtTs: string | null;
 }
 
 export interface WorkflowRunsState {
@@ -171,6 +218,9 @@ export const EMISSIONS_MAX = 100;
 
 /** Signal ring cap — beyond this the oldest entries are dropped. */
 export const SIGNALS_MAX = 50;
+
+/** Activity ring cap — beyond this the oldest entries are dropped. */
+export const ACTIVITY_MAX = 250;
 
 const initialState: WorkflowRunsState = { byRunId: {} };
 
@@ -237,7 +287,44 @@ function makeRunState(
     signals: [],
     signalRevision: 0,
     signalRevisionByTable: {},
+    activity: [],
+    activitySeq: 0,
+    startedAtTs: null,
   };
+}
+
+/**
+ * Append one activity entry (bounded ring). Consecutive duplicates of the
+ * SAME node + kind + text collapse — a node that re-emits "phase: generating"
+ * every few seconds must read as one line, not a wall.
+ */
+function pushActivity(
+  run: WorkflowRunState,
+  entry: Omit<RunActivityEntry, "id">,
+): void {
+  const previous = run.activity[run.activity.length - 1];
+  if (
+    previous &&
+    previous.nodeId === entry.nodeId &&
+    previous.kind === entry.kind &&
+    previous.text === entry.text
+  ) {
+    return;
+  }
+  run.activitySeq += 1;
+  run.activity.push({ ...entry, id: run.activitySeq });
+  if (run.activity.length > ACTIVITY_MAX) {
+    run.activity.splice(0, run.activity.length - ACTIVITY_MAX);
+  }
+}
+
+/** Human duration for an activity detail — never a raw millisecond count. */
+function humanDuration(ms: number | null | undefined): string | null {
+  if (typeof ms !== "number" || !Number.isFinite(ms) || ms <= 0) return null;
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  const seconds = ms / 1000;
+  if (seconds < 60) return `${seconds.toFixed(seconds < 10 ? 1 : 0)}s`;
+  return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
 }
 
 /**
@@ -416,6 +503,7 @@ function applyEvent(
       stampStatus(run, "running", event.ts);
       run.error = null;
       run.interrupt = null;
+      if (run.startedAtTs === null) run.startedAtTs = event.ts;
       break;
     case "run_completed":
       stampStatus(run, "completed", event.ts);
@@ -477,6 +565,13 @@ function applyEvent(
       invocation.progress = null;
       const iteration = readField(readField(event, "inputs"), "iteration");
       if (typeof iteration === "number") invocation.iteration = iteration;
+      pushActivity(run, {
+        nodeId: event.node_id,
+        kind: "started",
+        text: null,
+        detail: event.attempt > 1 ? `attempt ${event.attempt}` : null,
+        ts: event.ts,
+      });
       break;
     }
     case "node_completed": {
@@ -499,6 +594,13 @@ function applyEvent(
       // A retry that succeeded makes prior diagnostics stale.
       invocation.error = null;
       invocation.progress = null;
+      pushActivity(run, {
+        nodeId: event.node_id,
+        kind: "completed",
+        text: null,
+        detail: humanDuration(invocation.durationMs),
+        ts: event.ts,
+      });
       maybeStickCompleted(run, event.node_id);
       break;
     }
@@ -513,11 +615,25 @@ function applyEvent(
           typeof event.error_message === "string" ? event.error_message : null,
       };
       invocation.progress = null;
+      pushActivity(run, {
+        nodeId: event.node_id,
+        kind: "failed",
+        text: invocation.error.message,
+        detail: null,
+        ts: event.ts,
+      });
       break;
     }
     case "node_skipped": {
       const invocation = upsertInvocation(run, event, event);
       invocation.phase = "skipped";
+      pushActivity(run, {
+        nodeId: event.node_id,
+        kind: "skipped",
+        text: null,
+        detail: null,
+        ts: event.ts,
+      });
       // A trailing skip can be what completes the invocation set.
       maybeStickCompleted(run, event.node_id);
       break;
@@ -526,16 +642,39 @@ function applyEvent(
       const invocation = upsertInvocation(run, event, event);
       invocation.phase = "retrying";
       invocation.attempt = Math.max(invocation.attempt, event.attempt);
+      pushActivity(run, {
+        nodeId: event.node_id,
+        kind: "retry",
+        text: null,
+        detail: `attempt ${event.attempt}`,
+        ts: event.ts,
+      });
       break;
     }
     case "node_progress": {
       const invocation = upsertInvocation(run, event, event);
+      const message = typeof event.message === "string" ? event.message : null;
       invocation.progress = {
-        message: typeof event.message === "string" ? event.message : null,
+        message,
         fraction: typeof event.fraction === "number" ? event.fraction : null,
         current: typeof event.current === "number" ? event.current : null,
         total: typeof event.total === "number" ? event.total : null,
       };
+      // The four real emitters ship human sentences ("ingesting Q3-report.pdf",
+      // "structuring 47 chunks with the LLM") — exactly the truth this feed is
+      // for, so it rides straight through.
+      if (message) {
+        pushActivity(run, {
+          nodeId: event.node_id,
+          kind: "progress",
+          text: message,
+          detail:
+            typeof event.current === "number" && typeof event.total === "number"
+              ? `${event.current}/${event.total}`
+              : null,
+          ts: event.ts,
+        });
+      }
       break;
     }
     case "node_cost": {
@@ -565,6 +704,13 @@ function applyEvent(
       if (run.emissions.length > EMISSIONS_MAX) {
         run.emissions.splice(0, run.emissions.length - EMISSIONS_MAX);
       }
+      pushActivity(run, {
+        nodeId: event.node_id,
+        kind: "delivered",
+        text: typeof event.title === "string" ? event.title : null,
+        detail: null,
+        ts: event.ts,
+      });
       break;
     }
     case "work_set_progress": {
@@ -605,6 +751,13 @@ function applyEvent(
           ? event.child_definition_id
           : null,
       );
+      pushActivity(run, {
+        nodeId: event.node_id,
+        kind: "child",
+        text: null,
+        detail: null,
+        ts: event.ts,
+      });
       break;
     }
     case "checkpoint_saved":
@@ -676,6 +829,11 @@ const workflowRunsSlice = createSlice({
       // be regressed to a stale "running" forever (Bugbot #148).
       if (run.statusTs === null) run.status = row.status;
       if (row.error && run.error === null) run.error = row.error;
+      // The engine's own start time. `run_started` (replayed above) wins; the
+      // row is the fallback for a run whose first event predates the cursor.
+      if (run.startedAtTs === null && row.created_at) {
+        run.startedAtTs = row.created_at;
+      }
       // Durable reconnect snapshot for streamed text — node_stream frames are
       // never replayed; the heartbeat is how a late-attaching client rebuilds
       // the tails. Canonical reader lives beside the wire types.
@@ -742,6 +900,32 @@ const workflowRunsSlice = createSlice({
       if (!run) return;
       const nodeId = event.node_id;
       if (!nodeId) return;
+      // THE TRUTH-FEED tap. These markers are the ONLY mid-node signal a plain
+      // agent/LLM node produces (aidream emits no node_progress for those), and
+      // the delta was being discarded — the whole reason a running workflow
+      // could show nothing but a spinner. Wire formats (verified in aidream's
+      // ProgressTrackingEmitter): "tool" → the bare tool name, repeated for
+      // every lifecycle event; "phase" → a bare lowercase label
+      // ("processing" / "structuring" / "reasoning:started"); "warning" →
+      // json.dumps(WarningPayload) HARD-SLICED at 200 chars, so it is usually
+      // invalid JSON. Presentation (humanising, tolerant warning parsing) is a
+      // view concern and stays out of the reducer.
+      if (
+        event.kind === "phase" ||
+        event.kind === "tool" ||
+        event.kind === "warning"
+      ) {
+        const text = event.delta.trim();
+        if (text) {
+          pushActivity(run, {
+            nodeId,
+            kind: event.kind,
+            text,
+            detail: null,
+            ts: event.ts,
+          });
+        }
+      }
       // ONE target invocation — node-level deltas carry no invocation
       // identity; fanning them into every sibling rendered N copies.
       const key = streamTargetKey(run, nodeId);
