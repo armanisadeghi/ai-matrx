@@ -392,9 +392,15 @@ export const ConfigurableMarkdownContent: React.FC<
       (match, mathContent) => `\n\n$$${mathContent}$$\n\n`,
     );
 
+    // \(…\) is INLINE math and must stay inline: with singleDollarTextMath
+    // disabled (currency safety), remark-math's inline form is `$$…$$` inside
+    // running text — NO paragraph breaks. The old `\n\n`-wrapped conversion
+    // promoted every inline formula to a display block, which exploded list
+    // items and sentences (a formula card's "- \(x\) — the roots" rendered as
+    // a giant centered block splitting the bullet).
     processed = processed.replace(
       /\\\((.*?)\\\)/g,
-      (match, mathContent) => `\n\n$$${mathContent}$$\n\n`,
+      (match, mathContent) => `$$${mathContent}$$`,
     );
 
     processed = processed.replace(

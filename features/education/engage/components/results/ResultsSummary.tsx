@@ -24,6 +24,7 @@ export function ResultsSummary({
   currentUserId,
   verified,
   verificationError,
+  onRetryVerification,
   onPlayAgain,
   onExit,
 }: {
@@ -33,6 +34,7 @@ export function ResultsSummary({
   currentUserId?: string | null;
   verified: boolean;
   verificationError?: string | null;
+  onRetryVerification?: () => void;
   onPlayAgain?: () => void;
   onExit?: () => void;
 }) {
@@ -45,7 +47,7 @@ export function ResultsSummary({
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 py-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-foreground">Round complete</h2>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground" role="status" aria-live="polite">
           {verified
             ? "Verified from your study attempts — every eligible answer counted."
             : "Verifying your result from the study attempt record…"}
@@ -53,8 +55,16 @@ export function ResultsSummary({
       </div>
 
       {verificationError && (
-        <div role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
-          Your result could not be verified yet. Retry by reopening this round.
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+        >
+          Your result could not be verified yet.
+          {onRetryVerification && (
+            <Button className="ml-3" size="sm" onClick={onRetryVerification}>
+              Retry verification
+            </Button>
+          )}
         </div>
       )}
 
@@ -66,7 +76,11 @@ export function ResultsSummary({
           value={verified ? `+${outcome.masteryGain.toFixed(1)}` : "—"}
           primary
         />
-        <Metric icon={Target} label="Accuracy" value={verified ? `${accuracy}%` : "—"} />
+        <Metric
+          icon={Target}
+          label="Accuracy"
+          value={verified ? `${accuracy}%` : "—"}
+        />
         <Metric
           icon={Flame}
           label="Best streak"
@@ -80,7 +94,11 @@ export function ResultsSummary({
       </div>
 
       {newBadges.length > 0 && (
-        <div className="rounded-lg border border-border bg-card p-4">
+        <div
+          className="rounded-lg border border-border bg-card p-4"
+          role="status"
+          aria-live="polite"
+        >
           <p className="mb-2 text-sm font-medium text-foreground">
             New badges earned
           </p>
@@ -143,10 +161,19 @@ export function ResultsSummary({
 
       <div className="flex justify-center gap-3">
         {onPlayAgain && (
-          <Button onClick={onPlayAgain}>Play again</Button>
+          <Button
+            onClick={onPlayAgain}
+            disabled={!verified && !verificationError}
+          >
+            Play again
+          </Button>
         )}
         {onExit && (
-          <Button variant="outline" onClick={onExit}>
+          <Button
+            variant="outline"
+            onClick={onExit}
+            disabled={!verified && !verificationError}
+          >
             Done
           </Button>
         )}

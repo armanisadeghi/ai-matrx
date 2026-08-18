@@ -398,6 +398,10 @@ export function useChunkedRecordAndTranscribe({
         durationSec: duration,
         origin: originRef.current,
       });
+      // Origin/text captured for the dictation-audio announcements below —
+      // the async continuations outlive this recording cycle's refs.
+      const announcedOrigin = originRef.current ?? null;
+      const announcedText = finalText;
       import("@/utils/auth/getUserId").then(({ getUserId }) => {
         const userId = getUserId();
         if (userId) {
@@ -408,7 +412,59 @@ export function useChunkedRecordAndTranscribe({
               });
               import("@/features/transcripts/service/audioStorageService").then(
                 ({ saveAudioToStorage }) => {
-                  saveAudioToStorage(finalBlob, userId, undefined, 3)
+                  // The upload attempt, shared by the first try and every
+                  // retry a subscriber requests (the SAME in-memory blob —
+                  // localStorage can't hold blobs, so in-memory retry is the
+                  // contract; the IndexedDB safety store still backs a crash).
+                  const attemptSave = async () => {
+                    const uploadResult = await saveAudioToStorage(
+                      finalBlob,
+                      userId,
+                      undefined,
+                      3,
+                    );
+                    return uploadResult;
+                  };
+                  const announceModule = import(
+                    "@/features/audio/dictationAudioRegistry"
+                  );
+                  const runAttempt = async (): Promise<{
+                    fileId: string;
+                  }> => {
+                    const registry = await announceModule;
+                    try {
+                      const uploadResult = await attemptSave();
+                      const saved = {
+                        fileId: uploadResult.fileId,
+                        origin: announcedOrigin,
+                        text: announcedText,
+                        savedAtMs: Date.now(),
+                      };
+                      registry.announceDictationAudioSaved(saved);
+                      return uploadResult;
+                    } catch (uploadErr) {
+                      const failed = {
+                        origin: announcedOrigin,
+                        text: announcedText,
+                        error:
+                          uploadErr instanceof Error
+                            ? uploadErr.message
+                            : "The audio upload failed.",
+                        retry: async () => {
+                          const retried = await runAttempt();
+                          return {
+                            fileId: retried.fileId,
+                            origin: announcedOrigin,
+                            text: announcedText,
+                            savedAtMs: Date.now(),
+                          };
+                        },
+                      };
+                      registry.announceDictationAudioSaveFailed(failed);
+                      throw uploadErr;
+                    }
+                  };
+                  runAttempt()
                     .then((uploadResult) => {
                       // Durable full-audio upload landed — the eager chunk
                       // journal (cross-device recovery staging) is now

@@ -19,7 +19,10 @@ import { useEffect, useRef, useState } from "react";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import { currentRetrievability } from "@/features/education/study/utils/masteryFsrs";
-import type { ItemMasteryRow, StudySessionRow } from "@/features/education/study/types";
+import type {
+  ItemMasteryRow,
+  StudySessionRow,
+} from "@/features/education/study/types";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import { buildGameQueue } from "../engine/queue";
 import { scoreAnswer } from "../engine/scoring";
@@ -120,20 +123,22 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
   const [hiddenChoices, setHiddenChoices] = useState<number[]>([]);
   const [doublePointsArmed, setDoublePointsArmed] = useState(false);
   const [shieldArmed, setShieldArmed] = useState(false);
-  const [lastAnswer, setLastAnswer] = useState<{ correct: boolean; chosenIndex: number } | null>(null);
+  const [lastAnswer, setLastAnswer] = useState<{
+    correct: boolean;
+    chosenIndex: number;
+  } | null>(null);
   const [session, setSession] = useState<StudySessionRow | null>(null);
 
   const masteryRef = useRef<Record<string, ItemMasteryRow | undefined>>({});
   const questionShownAt = useRef<number>(0);
   const startedAtRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
-  const seedRef = useRef(args.seed ?? Math.floor(Math.random() * 1e9));
+  const seedRef = useRef(args.seed ?? 1);
   // Authoritative outcome accumulators (refs, not state): the finish report must
   // read final values even though the last recordAttempt resolves async. Mirror
   // the display state below but are the source of truth for the outcome.
   const masteryGainRef = useRef(0);
   const pendingAttemptsRef = useRef<Promise<unknown>[]>([]);
-  const pendingSessionCloseRef = useRef<Promise<unknown> | null>(null);
 
   // ── Load the queue + open a session. ──────────────────────────────────────
   useEffect(() => {
@@ -237,7 +242,6 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
   // Solo autostart once the queue is ready.
   useEffect(() => {
     if (autoStart && status === "ready") start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart, status]);
 
   // ── Countdown timer while playing. ────────────────────────────────────────
@@ -250,13 +254,12 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       if (left <= 0) finish();
     }, 250);
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, config.durationMs]);
 
   // `atMs` lets a rejoining multiplayer client SYNC to the host's original
   // start time (from game_room.started_at / the game_started broadcast), so its
   // countdown matches everyone else's instead of restarting a full round.
-  const start = (atMs?: number): void => {
+  function start(atMs?: number): void {
     if (status !== "ready") return;
     const startAt = atMs ?? Date.now();
     startedAtRef.current = startAt;
@@ -271,7 +274,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       return;
     }
     setStatus("playing");
-  };
+  }
 
   const advance = (): void => {
     setHiddenChoices([]);
@@ -343,13 +346,18 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       })
       .then((res) => {
         if (res.error || !res.data) {
-          console.error("[useGamePlay] recordAttempt:", res.error);
-          return;
+          throw new Error(res.error ?? "The answer was not persisted");
+        }
+        if (res.data.result !== (correct ? "correct" : "incorrect")) {
+          throw new Error(
+            "The card changed while this round was active. Start a fresh round.",
+          );
         }
         masteryRef.current[q.card.id] = res.data.mastery;
-        const newR = res.data.mastery.retrievability != null
-          ? Number(res.data.mastery.retrievability)
-          : priorR;
+        const newR =
+          res.data.mastery.retrievability != null
+            ? Number(res.data.mastery.retrievability)
+            : priorR;
         const gain = Math.max(0, newR - priorR);
         if (gain > 0) {
           masteryGainRef.current += gain;
@@ -398,18 +406,12 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
   // finish() only FLIPS state — the outcome is reported from the effect below,
   // which reads the CURRENT render's accumulated score/mastery (avoids the
   // stale-closure trap where the timer's finish() would capture zeros).
-  const finish = (): void => {
+  function finish(): void {
     if (finishedRef.current) return;
     finishedRef.current = true;
     setStatus("finished");
     setRemainingMs(0);
-    if (session) {
-      pendingSessionCloseRef.current = studyService.updateSession(session.id, {
-        status: "completed",
-        ended_at: new Date().toISOString(),
-      });
-    }
-  };
+  }
 
   // Report the finalized outcome exactly once, reading live state. Await any
   // in-flight attempt writes first so masteryGain (the headline "real learning"
@@ -432,21 +434,38 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       sourceSetId: sourceSetId ?? null,
       sourceTitle: args.sourceTitle ?? null,
     };
-    void Promise.allSettled(pendingAttemptsRef.current).then(async () => {
-      const close = await pendingSessionCloseRef.current;
-      if (
-        close &&
-        typeof close === "object" &&
-        "error" in close &&
-        close.error
-      ) {
-        setError(String(close.error));
-        setStatus("error");
-        return;
-      }
-      onFinish?.({ ...outcomeBase, masteryGain: masteryGainRef.current });
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    void Promise.allSettled(pendingAttemptsRef.current).then(
+      async (attempts) => {
+        const failed = attempts.find(
+          (attempt): attempt is PromiseRejectedResult =>
+            attempt.status === "rejected",
+        );
+        if (failed) {
+          setError(
+            failed.reason instanceof Error
+              ? failed.reason.message
+              : "One or more answers could not be saved.",
+          );
+          setStatus("error");
+          return;
+        }
+        if (!session) {
+          setError("The game session is unavailable. Start a new round.");
+          setStatus("error");
+          return;
+        }
+        const close = await studyService.updateSession(session.id, {
+          status: "completed",
+          ended_at: new Date().toISOString(),
+        });
+        if (close.error || !close.data) {
+          setError(close.error ?? "The game session could not be completed.");
+          setStatus("error");
+          return;
+        }
+        onFinish?.({ ...outcomeBase, masteryGain: masteryGainRef.current });
+      },
+    );
   }, [status]);
 
   // Close an abandoned session on unmount if we never finished.
@@ -459,7 +478,6 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
         });
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   return {

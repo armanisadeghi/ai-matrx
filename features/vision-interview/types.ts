@@ -104,6 +104,15 @@ export interface InterviewSessionRow {
   run_id: string | null;
   role_bindings: Record<string, unknown> | null;
   settings: Record<string, unknown> | null;
+  /**
+   * Final deliverables (v2 §13.3) — written by the server's finalize step.
+   * All null until the interview is finalized; `finalized_at` stamps when.
+   * Hand-declared like the rest of this row (see file header).
+   */
+  cleaned_transcript: string | null;
+  vision_document: string | null;
+  requirements_document: string | null;
+  finalized_at: string | null;
   visibility: string;
   created_by: string;
   organization_id: string | null;
@@ -124,6 +133,14 @@ export interface InterviewTurnRow {
   position: number;
   run_id: string | null;
   node_id: string | null;
+  /**
+   * Raw audio behind a dictated human turn (v2 §13.1 "never lose the
+   * speaker's audio") — a `cld_files` UUID stamped by the FE after the
+   * recorder's canonical upload lands. Null for typed turns and all role
+   * turns. Render ONLY via `<InlineMediaRef>` (re-mints from file_id —
+   * media-durability doctrine; never a raw `<audio src>` of a signed URL).
+   */
+  audio_file_id: string | null;
   /** Machine sidecar — the Scribe's full structured envelope rides
    *  `metadata.scribe_output` (its `content` is the human-readable summary). */
   metadata: Record<string, unknown> | null;

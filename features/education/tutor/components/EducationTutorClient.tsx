@@ -80,6 +80,7 @@ import {
   type TutorLaunchGrounding,
 } from "../grounding";
 import type { TrustEnvelope } from "@/features/education/trust/types";
+import { parseGroundedPassageCitations } from "@/features/rag/api/grounding";
 import { extractTurnTrust } from "../turnTrust";
 import { TutorLanding } from "./TutorLanding";
 import { TutorTrustStrip } from "./TutorTrustStrip";
@@ -460,9 +461,42 @@ function EducationTutorClientInner({
   const latestAssistantContent = useAppSelector(
     selectMessageContent(conversationId ?? "", latestAssistantId ?? ""),
   );
+  const conversationMessages = useAppSelector(
+    selectConversationMessages(conversationId ?? ""),
+  );
+  const persistedTurnCitations = useMemo(() => {
+    const assistantIndex = latestAssistantId
+      ? conversationMessages.findIndex(
+          (message) => message.id === latestAssistantId,
+        )
+      : -1;
+    if (assistantIndex < 1) return [];
+    for (let index = assistantIndex - 1; index >= 0; index -= 1) {
+      const message = conversationMessages[index];
+      if (message.role !== "user") continue;
+      const material = message.modelContext?.items.find(
+        (item) => item.key === "study_material",
+      )?.value;
+      return typeof material === "string"
+        ? parseGroundedPassageCitations(material)
+        : [];
+    }
+    return [];
+  }, [conversationMessages, latestAssistantId]);
+  const allowedTurnCitations = useMemo(() => {
+    const citations = new Map(
+      persistedTurnCitations.map((citation) => [citation.sourceId, citation]),
+    );
+    for (const citation of tutorTrust?.citations ?? []) {
+      if (!citations.has(citation.sourceId)) {
+        citations.set(citation.sourceId, citation);
+      }
+    }
+    return [...citations.values()];
+  }, [persistedTurnCitations, tutorTrust]);
   const turnTrust = useMemo(
-    () => extractTurnTrust(latestAssistantContent, tutorTrust?.citations ?? []),
-    [latestAssistantContent, tutorTrust],
+    () => extractTurnTrust(latestAssistantContent, allowedTurnCitations),
+    [allowedTurnCitations, latestAssistantContent],
   );
 
   // ── Metered usage per sent tutor message (P8) ─────────────────────────────

@@ -105,3 +105,87 @@ export function buildLocalBusinessJsonLd(
 export function localBusinessJsonLdScript(jsonLd: LocalBusinessJsonLd): string {
   return `<script type="application/ld+json">\n${JSON.stringify(jsonLd, null, 2)}\n</script>`;
 }
+
+// ─── On-site detection: does a page's JSON-LD already declare this business? ───
+
+/** Common schema.org LocalBusiness subtypes; anything ending in "Business" also counts. */
+const LOCAL_BUSINESS_TYPES = new Set([
+  "LocalBusiness",
+  "ProfessionalService",
+  "MedicalClinic",
+  "MedicalBusiness",
+  "Dentist",
+  "Physician",
+  "Attorney",
+  "LegalService",
+  "Restaurant",
+  "Store",
+  "AutoRepair",
+  "HomeAndConstructionBusiness",
+  "RealEstateAgent",
+  "FinancialService",
+  "HealthAndBeautyBusiness",
+  "FoodEstablishment",
+  "LodgingBusiness",
+]);
+
+export function isLocalBusinessType(type: string): boolean {
+  return LOCAL_BUSINESS_TYPES.has(type) || type.endsWith("Business");
+}
+
+export interface ObservedLocalBusiness {
+  types: string[];
+  /** Flat NAP payload in the same shape `auditListingNap` consumes. */
+  observed: Record<string, string>;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function typeList(value: unknown): string[] {
+  if (typeof value === "string") return [value];
+  if (Array.isArray(value)) return value.filter((entry): entry is string => typeof entry === "string");
+  return [];
+}
+
+/**
+ * Walk parsed JSON-LD blocks (including @graph nesting) and return the first
+ * LocalBusiness-typed node as a flat observed-NAP payload. Null = the page
+ * declares no LocalBusiness at all.
+ */
+export function findLocalBusinessJsonLd(blocks: Array<Record<string, unknown>>): ObservedLocalBusiness | null {
+  const queue: Array<Record<string, unknown>> = [...blocks];
+  while (queue.length > 0) {
+    const node = queue.shift();
+    if (!node) continue;
+    const graph = node["@graph"];
+    if (Array.isArray(graph)) {
+      for (const entry of graph) {
+        const record = asRecord(entry);
+        if (record) queue.push(record);
+      }
+    }
+    const types = typeList(node["@type"]);
+    if (!types.some(isLocalBusinessType)) continue;
+
+    const observed: Record<string, string> = {};
+    const take = (key: string, value: unknown) => {
+      if (typeof value === "string" && value.trim() !== "") observed[key] = value;
+    };
+    take("name", node.name);
+    take("phone", node.telephone);
+    take("website_url", node.url);
+    const address = asRecord(node.address);
+    if (address) {
+      take("street_address", address.streetAddress);
+      take("locality", address.addressLocality);
+      take("region", address.addressRegion);
+      take("postal_code", address.postalCode);
+    }
+    return { types, observed };
+  }
+  return null;
+}

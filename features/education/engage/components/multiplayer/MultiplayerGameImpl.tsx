@@ -33,11 +33,19 @@ import { cn } from "@/lib/utils";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useGamePlay } from "../../data/useGamePlay";
 import { useGameChannel } from "../../realtime/useGameChannel";
-import { gameService, type JoinableRoom, type RoomPlayerResult } from "../../data/gameService";
+import {
+  gameService,
+  type JoinableRoom,
+  type RoomPlayerResult,
+} from "../../data/gameService";
 import { finalizeGame } from "../../data/finalizeGame";
 import { useCurrentPlayer } from "../../data/useCurrentPlayer";
 import { seedFromString } from "../../engine/queue";
-import { DEFAULT_ROOM_CONFIG, type GameOutcome, type LivePlayer } from "../../types";
+import {
+  DEFAULT_ROOM_CONFIG,
+  type GameOutcome,
+  type LivePlayer,
+} from "../../types";
 import { PlaySurface } from "../play/PlaySurface";
 import { ResultsSummary } from "../results/ResultsSummary";
 import type { BadgeKey } from "../../engine/badges";
@@ -61,9 +69,24 @@ export function MultiplayerGameImpl({
   const [newBadges, setNewBadges] = useState<BadgeKey[]>([]);
   const [scoreboard, setScoreboard] = useState<RoomPlayerResult[]>([]);
   const [verified, setVerified] = useState(false);
-  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [verificationError, setVerificationError] = useState<string | null>(
+    null,
+  );
 
   const startedRef = useRef(false);
+
+  async function verifyOutcome(outcome: GameOutcome): Promise<void> {
+    setVerificationError(null);
+    setVerified(false);
+    const result = await finalizeGame({ outcome, displayName });
+    setNewBadges(result.newBadges);
+    setVerificationError(result.error);
+    if (result.officialOutcome) {
+      setFinalOutcome(result.officialOutcome);
+      setVerified(true);
+      await loadScoreboardSoon();
+    }
+  }
 
   // Load the room by code (works for host AND joiner — cross-owner RPC).
   useEffect(() => {
@@ -109,15 +132,7 @@ export function MultiplayerGameImpl({
     onScore: channel.sendScore,
     onFinish: (outcome) => {
       setFinalOutcome(outcome);
-      void finalizeGame({ outcome, displayName }).then((r) => {
-        setNewBadges(r.newBadges);
-        setVerificationError(r.error);
-        if (r.officialOutcome) {
-          setFinalOutcome(r.officialOutcome);
-          setVerified(true);
-          void loadScoreboardSoon();
-        }
-      });
+      void verifyOutcome(outcome);
       // Host closes the room once its own round ends.
       if (isHost) {
         void gameService.setRoomStatus(roomId, "ended", {
@@ -132,9 +147,10 @@ export function MultiplayerGameImpl({
   useEffect(() => {
     if (startedRef.current || game.status !== "ready" || !room) return;
     const broadcastAt = channel.startedAt;
-    const roomAt = room.status === "active" && room.started_at
-      ? Date.parse(room.started_at)
-      : null;
+    const roomAt =
+      room.status === "active" && room.started_at
+        ? Date.parse(room.started_at)
+        : null;
     const startAt = broadcastAt ?? roomAt;
     if (startAt != null) {
       startedRef.current = true;
@@ -142,14 +158,14 @@ export function MultiplayerGameImpl({
     }
   }, [game.status, channel.startedAt, room]);
 
-  const loadScoreboardSoon = async (): Promise<void> => {
+  async function loadScoreboardSoon(): Promise<void> {
     // Peers persist their result asynchronously; try a couple of times.
     for (let i = 0; i < 3; i++) {
       const res = await gameService.getRoomScoreboard(roomId);
       if (res.data && res.data.length > 0) setScoreboard(res.data);
       await new Promise((r) => setTimeout(r, 1200));
     }
-  };
+  }
 
   const onHostStart = async (): Promise<void> => {
     const res = await gameService.setRoomStatus(roomId, "active", {
@@ -209,6 +225,7 @@ export function MultiplayerGameImpl({
           currentUserId={userId}
           verified={verified}
           verificationError={verificationError}
+          onRetryVerification={() => void verifyOutcome(finalOutcome)}
           onExit={exit}
         />
       </div>
@@ -310,14 +327,14 @@ function Lobby({
             </li>
           ))}
           {players.length === 0 && (
-            <li className="text-sm text-muted-foreground">Waiting for players…</li>
+            <li className="text-sm text-muted-foreground">
+              Waiting for players…
+            </li>
           )}
         </ul>
       </div>
 
-      {queueError && (
-        <p className="text-sm text-destructive">{queueError}</p>
-      )}
+      {queueError && <p className="text-sm text-destructive">{queueError}</p>}
 
       {isHost ? (
         <Button
@@ -400,7 +417,9 @@ function ConnBadge({
     <span
       className={cn(
         "inline-flex items-center gap-1 text-xs",
-        connected ? "text-green-600 dark:text-green-400" : "text-muted-foreground",
+        connected
+          ? "text-green-600 dark:text-green-400"
+          : "text-muted-foreground",
       )}
       title={connected ? "Connected" : "Reconnecting…"}
     >

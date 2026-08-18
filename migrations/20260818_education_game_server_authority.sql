@@ -136,6 +136,8 @@ DECLARE
   v_currency integer := 0;
   v_duration integer;
   v_new_badges text[] := ARRAY[]::text[];
+  v_awarded_badges text[] := ARRAY[]::text[];
+  v_mastered integer := 0;
   v_badge text;
   v_attempt record;
   v_week date := date_trunc('week', now() AT TIME ZONE 'utc')::date;
@@ -311,15 +313,16 @@ BEGIN
      AND lm.cohort_key IS NOT NULL
      AND lm.deleted_at IS NULL;
 
-  FOREACH v_badge IN ARRAY ARRAY['first_game']::text[] LOOP
-    INSERT INTO education.game_badge (organization_id, created_by, badge_key, context)
-    SELECT v_session.organization_id, v_user, v_badge,
-           jsonb_build_object('resultId', v_result.id, 'sessionId', p_session_id, 'score', v_score)
-    WHERE NOT EXISTS (
-      SELECT 1 FROM education.game_badge b
-       WHERE b.created_by = v_user AND b.badge_key = v_badge AND b.deleted_at IS NULL
-    );
-  END LOOP;
+  INSERT INTO education.game_badge (organization_id, created_by, badge_key, context)
+  SELECT v_session.organization_id, v_user, 'first_game',
+         jsonb_build_object('resultId', v_result.id, 'sessionId', p_session_id, 'score', v_score)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM education.game_badge b
+     WHERE b.created_by = v_user AND b.badge_key = 'first_game' AND b.deleted_at IS NULL
+  );
+  IF FOUND THEN
+    v_awarded_badges := array_append(v_awarded_badges, 'first_game');
+  END IF;
 
   IF v_attempt_count >= 5 AND v_correct = v_attempt_count THEN
     v_new_badges := array_append(v_new_badges, 'perfect_round');
@@ -330,12 +333,18 @@ BEGIN
   IF coalesce((SELECT s.current_streak FROM education.study_streak s WHERE s.user_id = v_user), 0) >= 30 THEN
     v_new_badges := array_append(v_new_badges, 'streak_30');
   END IF;
-  IF (SELECT count(*) FROM education.item_mastery m
-       WHERE m.created_by = v_user AND m.deleted_at IS NULL AND m.retrievability >= 0.9) >= 10 THEN
+  SELECT count(DISTINCT a.item_id)::integer
+    INTO v_mastered
+    FROM education.study_attempt a
+   WHERE a.created_by = v_user
+     AND a.method = 'game'
+     AND a.result = 'correct'
+     AND a.is_manually_edited = false
+     AND a.deleted_at IS NULL;
+  IF v_mastered >= 10 THEN
     v_new_badges := array_append(v_new_badges, 'mastery_10');
   END IF;
-  IF (SELECT count(*) FROM education.item_mastery m
-       WHERE m.created_by = v_user AND m.deleted_at IS NULL AND m.retrievability >= 0.9) >= 50 THEN
+  IF v_mastered >= 50 THEN
     v_new_badges := array_append(v_new_badges, 'mastery_50');
   END IF;
 
@@ -347,7 +356,16 @@ BEGIN
       SELECT 1 FROM education.game_badge b
        WHERE b.created_by = v_user AND b.badge_key = v_badge AND b.deleted_at IS NULL
     );
+    IF FOUND THEN
+      v_awarded_badges := array_append(v_awarded_badges, v_badge);
+    END IF;
   END LOOP;
+
+  UPDATE education.game_result
+     SET metadata = metadata || jsonb_build_object('new_badges', to_jsonb(v_awarded_badges)),
+         updated_at = now()
+   WHERE id = v_result.id
+   RETURNING * INTO v_result;
 
   RETURN v_result;
 END;
@@ -392,10 +410,14 @@ CREATE TRIGGER guard_game_attempt_authority
 BEFORE INSERT OR UPDATE OR DELETE ON education.study_attempt
 FOR EACH ROW EXECUTE FUNCTION education.guard_game_attempt_authority();
 
+DROP FUNCTION IF EXISTS public.game_record_answer(
+  uuid, uuid, text, numeric, numeric, timestamptz, numeric, integer
+);
 CREATE OR REPLACE FUNCTION public.game_record_answer(
   p_session_id uuid,
   p_item_id uuid,
   p_selected_answer text,
+  p_expected_result text,
   p_difficulty numeric,
   p_stability numeric,
   p_due_at timestamptz,
@@ -415,6 +437,7 @@ DECLARE
   v_previous_at timestamptz;
   v_latency_ms integer;
   v_payload jsonb;
+  v_prior_mastery education.item_mastery;
 BEGIN
   IF v_user IS NULL THEN
     RAISE EXCEPTION 'game_record_answer requires authentication' USING ERRCODE = '42501';
@@ -484,6 +507,30 @@ BEGIN
     WHEN lower(btrim(p_selected_answer)) = lower(btrim(v_card.back)) THEN 'correct'
     ELSE 'incorrect'
   END;
+  IF p_expected_result NOT IN ('correct', 'incorrect')
+     OR p_expected_result <> v_result THEN
+    RAISE EXCEPTION 'The submitted grade does not match the canonical card answer'
+      USING ERRCODE = '22023';
+  END IF;
+
+  SELECT * INTO v_prior_mastery
+    FROM education.item_mastery m
+   WHERE m.created_by = v_user
+     AND m.item_type = 'flashcard'
+     AND m.item_id = p_item_id
+     AND m.deleted_at IS NULL;
+  IF p_difficulty NOT BETWEEN 1 AND 10
+     OR p_stability <= 0 OR p_stability > 36500
+     OR p_due_at <= now() OR p_due_at > now() + interval '10 years'
+     OR p_retrievability NOT BETWEEN 0 AND 1
+     OR p_lapses < 0 OR p_lapses > 10000
+     OR p_lapses < coalesce(v_prior_mastery.lapses, 0)
+     OR (v_result = 'incorrect' AND p_lapses <> coalesce(v_prior_mastery.lapses, 0) + 1)
+     OR (v_result = 'correct' AND p_lapses <> coalesce(v_prior_mastery.lapses, 0))
+     OR (v_result = 'correct' AND p_stability < coalesce(v_prior_mastery.stability, 0)) THEN
+    RAISE EXCEPTION 'The FSRS transition is inconsistent with the server-graded answer'
+      USING ERRCODE = '22023';
+  END IF;
 
   SELECT coalesce(
            max(coalesce(a.reviewed_at, a.created_at)),
@@ -599,9 +646,13 @@ BEGIN
     RAISE EXCEPTION 'Study session is missing or foreign' USING ERRCODE = '42501';
   END IF;
 
-  SELECT count(*)::integer INTO v_mastered
-    FROM education.item_mastery m
-   WHERE m.created_by = v_user AND m.deleted_at IS NULL AND m.retrievability >= 0.9;
+  SELECT count(DISTINCT a.item_id)::integer INTO v_mastered
+    FROM education.study_attempt a
+   WHERE a.created_by = v_user
+     AND a.method = 'game'
+     AND a.result = 'correct'
+     AND a.is_manually_edited = false
+     AND a.deleted_at IS NULL;
 
   RETURN QUERY
   WITH mine AS (
@@ -863,13 +914,13 @@ REVOKE INSERT, UPDATE, DELETE ON education.game_badge FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON education.league_membership FROM anon, authenticated;
 REVOKE INSERT, UPDATE, DELETE ON education.study_attempt FROM anon, authenticated;
 
-REVOKE ALL ON FUNCTION public.game_record_answer(uuid, uuid, text, numeric, numeric, timestamptz, numeric, integer) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.game_record_answer(uuid, uuid, text, text, numeric, numeric, timestamptz, numeric, integer) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.game_finalize_result(uuid, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.league_set_opt_in(boolean, text) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.education_engagement_snapshot(uuid) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.education_streak_rollover(date) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.education_league_rollover(date) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.game_record_answer(uuid, uuid, text, numeric, numeric, timestamptz, numeric, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.game_record_answer(uuid, uuid, text, text, numeric, numeric, timestamptz, numeric, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.game_finalize_result(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.league_set_opt_in(boolean, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.league_leaderboard(date) TO authenticated;
@@ -878,6 +929,6 @@ GRANT EXECUTE ON FUNCTION public.education_streak_rollover(date) TO service_role
 GRANT EXECUTE ON FUNCTION public.education_league_rollover(date) TO service_role;
 
 COMMENT ON FUNCTION public.game_finalize_result(uuid, text) IS
-  'IC-14 authority: derives a durable game result, league gain, and badges only from the owned unedited study-attempt ledger.';
+  'IC-14 authority: derives a durable game result, league gain, and badges only from server-graded, owned, unedited game attempts.';
 COMMENT ON COLUMN education.league_membership.cohort_key IS
   'Private weekly activity-matched league cohort; never a public/global shame board.';

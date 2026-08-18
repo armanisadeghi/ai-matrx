@@ -16,15 +16,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ExternalLink, MessageCircleQuestion, MessagesSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  ExternalLink,
+  MessageCircleQuestion,
+  MessagesSquare,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { VoiceRelayBar } from "@/features/voice-agent/relay/VoiceRelayBar";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
@@ -108,8 +106,7 @@ const ELICITATION_CHIPS = [
   },
   {
     label: "Draft my rule — I'll correct it",
-    message:
-      "Draft what you think my rule is here, and I'll correct it.",
+    message: "Draft what you think my rule is here, and I'll correct it.",
   },
   {
     label: "Give me two options",
@@ -246,7 +243,11 @@ function ResumedInterviewConversation({
         </p>
         <div className="flex gap-2">
           <Button asChild size="sm">
-            <Link href={`/chat/${conversationId}`} target="_blank" rel="noopener noreferrer">
+            <Link
+              href={`/chat/${conversationId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <ExternalLink className="mr-1 h-3.5 w-3.5" />
               Open the conversation
             </Link>
@@ -339,50 +340,53 @@ function InterviewColumn({
         href: `/masterwork/${rulebookId}`,
       }}
     >
-    {/* The Voice Communication Layer — spoken interview over the SAME
-        conversation (same surfaceKey → shared turns). The Scout asks big,
-        one-at-a-time vision questions, so that pacing is this surface's
-        default (Arman, 2026-08-17). */}
-    <VoiceRelayBar
-      primaryAgentId={agentId}
-      conversationId={conversationId}
-      surfaceKey={surfaceKey}
-      sourceFeature={SOURCE_FEATURE}
-      questionPacing="one_at_a_time"
-    />
-    <AgentConversationColumn
-      conversationId={conversationId}
-      surfaceKey={surfaceKey}
-      constrainWidth
-      edgeToEdgeScroll
-      smartInputProps={{
-        showSubmitOnEnterToggle: false,
-        // `rulebook_id` is wired by this panel, so there is nothing here for
-        // the Expert to fill in. This hides the COLLECTION UI and nothing else
-        // — it never suppressed the message display, which rendered the same
-        // value back as "Rulebook id: 56d96d67-…" on the first bubble. Keeping
-        // ids away from the Expert is not a per-surface setting: the display
-        // rule lives in `features/agents/utils/variable-display-lines.ts` and
-        // applies to every surface at once.
-        variablesPanelStyle: "hidden",
-        placeholder: "Answer in your own words — typing or rambling both work…",
-      }}
-      afterMessages={
-        <div className="flex flex-wrap gap-1.5 px-1 pt-2">
-          {ELICITATION_CHIPS.map((chip) => (
-            <button
-              key={chip.label}
-              type="button"
-              onClick={() => stageChip(chip.message)}
-              className="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-              title="Puts the request in the message box — you can edit it before sending."
-            >
-              {chip.label}
-            </button>
-          ))}
-        </div>
-      }
-    />
+      <AgentConversationColumn
+        conversationId={conversationId}
+        surfaceKey={surfaceKey}
+        constrainWidth
+        edgeToEdgeScroll
+        smartInputProps={{
+          showSubmitOnEnterToggle: false,
+          // `rulebook_id` is wired by this panel, so there is nothing here for
+          // the Expert to fill in. This hides the COLLECTION UI and nothing else
+          // — it never suppressed the message display, which rendered the same
+          // value back as "Rulebook id: 56d96d67-…" on the first bubble. Keeping
+          // ids away from the Expert is not a per-surface setting: the display
+          // rule lives in `features/agents/utils/variable-display-lines.ts` and
+          // applies to every surface at once.
+          variablesPanelStyle: "hidden",
+          placeholder:
+            "Answer in your own words — typing or rambling both work…",
+          // Voice is a composer action, not a second section above a column that
+          // already owns the full available height. Keeping it in the pinned
+          // toolbar leaves the textarea reachable at every panel size.
+          extraRightControls: (
+            <VoiceRelayBar
+              primaryAgentId={agentId}
+              conversationId={conversationId}
+              surfaceKey={surfaceKey}
+              sourceFeature={SOURCE_FEATURE}
+              questionPacing="one_at_a_time"
+              variant="toolbar"
+            />
+          ),
+        }}
+        afterMessages={
+          <div className="flex flex-wrap gap-1.5 px-1 pt-2">
+            {ELICITATION_CHIPS.map((chip) => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => stageChip(chip.message)}
+                className="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                title="Puts the request in the message box — you can edit it before sending."
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
     </RecordingOriginProvider>
   );
 }
@@ -417,9 +421,13 @@ export function ScoutInterviewContent({
   startNew?: boolean;
 }) {
   const { mandate, loading, error } = useMandate(SCOUT_MANDATE_KEY);
-  const [interviews, setInterviews] = useState<RulebookInterview[] | null>(null);
+  const [interviews, setInterviews] = useState<RulebookInterview[] | null>(
+    null,
+  );
   const [choice, setChoice] = useState<
-    { mode: "choose" } | { mode: "new"; key: number } | { mode: "resume"; conversationId: string }
+    | { mode: "choose" }
+    | { mode: "new"; key: number }
+    | { mode: "resume"; conversationId: string }
   >(
     initialConversationId
       ? { mode: "resume", conversationId: initialConversationId }
@@ -447,7 +455,9 @@ export function ScoutInterviewContent({
       setInterviews(rows);
       // No history → straight into a new interview, exactly as before.
       if (rows.length === 0) {
-        setChoice((prev) => (prev.mode === "choose" ? { mode: "new", key: 0 } : prev));
+        setChoice((prev) =>
+          prev.mode === "choose" ? { mode: "new", key: 0 } : prev,
+        );
       }
     })();
     return () => {
@@ -548,53 +558,50 @@ export function ScoutInterviewPanel({
   }, [open, rulebookId, onRulebookChanged]);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
-      {/* Non-modal on purpose: the Expert watches drafts land in the rule
-          list BESIDE the conversation — dimming and freezing the page would
-          sever the loop's primary feedback (vision doc 02). */}
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col gap-0 p-0 sm:max-w-xl"
-        onInteractOutside={(e) => e.preventDefault()}
-      >
-        <SheetHeader className="space-y-1 border-b border-border px-4 py-3">
-          <SheetTitle className="flex items-center gap-2 text-base">
-            <MessagesSquare className="h-4 w-4 text-primary" aria-hidden />
-            Interview
-            {/* THE DOOR LAW — the interview has its own URL. */}
-            <Link
-              href={`/masterwork/${rulebookId}/interview${
-                initialConversationId
-                  ? `?conversation=${initialConversationId}`
-                  : ""
-              }`}
-              className="ml-auto mr-6 inline-flex items-center gap-1 text-xs font-normal text-muted-foreground hover:text-foreground"
-              title="Open the interview as its own page"
-            >
-              <ExternalLink className="h-3 w-3" />
-              Full page
-            </Link>
-          </SheetTitle>
-          <SheetDescription className="text-xs">
-            Talk through how you work — rules you mention are drafted into your
-            Rulebook for your approval.
-          </SheetDescription>
-        </SheetHeader>
-        <div className="min-h-0 flex-1 overflow-hidden">
-          {open ? (
-            <ScoutInterviewContent
-              // Remount when the target changes so Continue-on-another-row and
-              // repeated "New interview" both actually switch conversations.
-              key={`${initialConversationId ?? "-"}:${startNewNonce ?? 0}`}
-              rulebookId={rulebookId}
-              rulebookName={rulebookName}
-              seedText={seedText}
-              initialConversationId={initialConversationId}
-              startNew={(startNewNonce ?? 0) > 0}
-            />
-          ) : null}
-        </div>
-      </SheetContent>
-    </Sheet>
+    <MatrxDynamicPanelHost
+      open={open}
+      onOpenChange={onOpenChange}
+      position="right"
+      defaultSize={42}
+      minSize={30}
+      maxSize={80}
+      expandButtonLabel="Interview"
+      initialFocus
+      title={
+        <span className="inline-flex min-w-0 items-center gap-2">
+          <MessagesSquare className="h-4 w-4 text-primary" aria-hidden />
+          <span className="truncate">Interview</span>
+        </span>
+      }
+      headerActions={
+        // THE DOOR LAW — the interview has its own URL.
+        <Link
+          href={`/masterwork/${rulebookId}/interview${
+            initialConversationId
+              ? `?conversation=${initialConversationId}`
+              : ""
+          }`}
+          className="inline-flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-normal text-muted-foreground hover:bg-accent hover:text-foreground"
+          title="Open the interview as its own page"
+        >
+          <ExternalLink className="h-3 w-3" />
+          Full page
+        </Link>
+      }
+      contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
+    >
+      {open ? (
+        <ScoutInterviewContent
+          // Remount when the target changes so Continue-on-another-row and
+          // repeated "New interview" both actually switch conversations.
+          key={`${initialConversationId ?? "-"}:${startNewNonce ?? 0}`}
+          rulebookId={rulebookId}
+          rulebookName={rulebookName}
+          seedText={seedText}
+          initialConversationId={initialConversationId}
+          startNew={(startNewNonce ?? 0) > 0}
+        />
+      ) : null}
+    </MatrxDynamicPanelHost>
   );
 }

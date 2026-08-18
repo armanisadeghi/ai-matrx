@@ -31,7 +31,9 @@ import {
   SectionCard,
 } from "@/features/marketing/components/shared/MarketingUi";
 import {
+  useBrandSites,
   useBusinessLocations,
+  useSiteRootStructuredData,
   useCreateBusinessLocation,
   useListingPublishers,
   useLocationListings,
@@ -47,8 +49,10 @@ import {
 } from "@/features/marketing/lib/local-listings-audit";
 import {
   buildLocalBusinessJsonLd,
+  findLocalBusinessJsonLd,
   localBusinessJsonLdScript,
 } from "@/features/marketing/lib/local-business-jsonld";
+import { parseSnapshotStructuredData } from "@/features/marketing/lib/snapshot-content";
 import {
   LISTING_STATUSES,
   LISTING_STATUS_LABELS,
@@ -319,6 +323,7 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
       </div>
 
       <ProfileEditor location={location} gaps={gaps} />
+      <OnSiteSchemaCard location={location} />
       <ListingsMatrix organizationId={location.organization_id} location={location} matrix={matrix} />
       <JsonLdCard location={location} />
     </div>
@@ -673,6 +678,94 @@ function ListingsMatrix({
         Impact is each publisher&apos;s relative citation weight (0–100). Aggregators feed dozens of
         secondary directories, so covering them closes long-tail gaps automatically.
       </p>
+    </SectionCard>
+  );
+}
+
+/**
+ * Does the brand's own website already declare this business as LocalBusiness
+ * JSON-LD? Reads the latest crawler snapshot of the site homepage — real
+ * extracted evidence, never an assertion — and audits the declared NAP against
+ * the canonical profile.
+ */
+function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
+  const sitesQuery = useBrandSites(location.brand_id);
+  const site = (sitesQuery.data ?? [])[0] ?? null;
+  const evidenceQuery = useSiteRootStructuredData(site?.id ?? "");
+
+  const verdict = useMemo(() => {
+    if (!evidenceQuery.data) return null;
+    const parsed = parseSnapshotStructuredData(evidenceQuery.data.structuredData);
+    const declared = findLocalBusinessJsonLd([
+      ...parsed.jsonLd,
+      ...parsed.blocks.map((block) => block.data),
+    ]);
+    if (!declared) return { declared: null, audit: null, capturedAt: evidenceQuery.data.capturedAt };
+    return {
+      declared,
+      audit: auditListingNap(location, declared.observed),
+      capturedAt: evidenceQuery.data.capturedAt,
+    };
+  }, [evidenceQuery.data, location]);
+
+  return (
+    <SectionCard title="On-site structured data (crawled evidence)" anchor="local-onsite-schema">
+      {!site ? (
+        <p className="text-sm text-muted-foreground">
+          This brand has no website in the platform yet, so there is nothing to check. Add one under{" "}
+          <Link className="text-primary underline-offset-2 hover:underline" href="/marketing/sites">
+            Websites
+          </Link>
+          .
+        </p>
+      ) : evidenceQuery.isPending ? (
+        <p className="text-sm text-muted-foreground">Reading the latest homepage crawl…</p>
+      ) : evidenceQuery.isError ? (
+        <InlineQueryError what="homepage evidence" error={evidenceQuery.error} onRetry={() => void evidenceQuery.refetch()} />
+      ) : !evidenceQuery.data ? (
+        <p className="text-sm text-muted-foreground">
+          {site.root_url ?? site.name} has never had its homepage crawled, so there is no evidence to
+          check yet. Run a crawl from{" "}
+          <Link className="text-primary underline-offset-2 hover:underline" href={`/marketing/sites/${site.id}`}>
+            the site workspace
+          </Link>
+          .
+        </p>
+      ) : !verdict?.declared ? (
+        <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-sm">
+          <p className="font-medium text-foreground">
+            The homepage of {site.root_url ?? site.name} declares NO LocalBusiness structured data.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Google cannot connect the site to this location without it. Fix: copy the generated
+            LocalBusiness JSON-LD below onto the site. Evidence: latest crawl
+            {verdict?.capturedAt ? ` (${new Date(verdict.capturedAt).toLocaleDateString()})` : ""}.
+          </p>
+        </div>
+      ) : (
+        <div className="text-sm">
+          <p className="inline-flex items-center gap-1 font-medium text-emerald-600 dark:text-emerald-400">
+            <Check className="size-3.5" aria-hidden />
+            Declared as {verdict.declared.types.join(", ")}
+          </p>
+          {verdict.audit && verdict.audit.score !== null ? (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Declared NAP matches the canonical profile {verdict.audit.score}% (
+              {verdict.audit.mismatches.length === 0
+                ? "no mismatches"
+                : verdict.audit.mismatches
+                    .map((m) => `${m.field}: site says "${m.observed}", profile says "${m.canonical}"`)
+                    .join("; ")}
+              ).
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              The declared block carries no comparable NAP fields — enrich it with the generated
+              JSON-LD below.
+            </p>
+          )}
+        </div>
+      )}
     </SectionCard>
   );
 }

@@ -20,6 +20,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
+  AudioLines,
   CornerDownLeft,
   MessageCircleQuestion,
   Play,
@@ -29,6 +30,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
+import {
+  subscribeDictationAudio,
+  type FailedDictationAudio,
+} from "@/features/audio/dictationAudioRegistry";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,9 +47,13 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useDurableDraft } from "@/hooks/useDurableDraft";
 import {
   composerInsertConsumed,
+  dictationAudioQueuedForTurn,
+  dictationAudioSaved,
   selectActiveSpeaker,
   selectComposerInsert,
+  selectPendingAudioFileIds,
   selectPendingInterrupt,
+  selectRoomSession,
   selectRunError,
   selectRunPhase,
 } from "../redux/vision-interview.slice";
@@ -78,6 +88,55 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
   const [sending, setSending] = useState(false);
   const [starting, setStarting] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // ── Raw-audio capture (v2 §13.1) ──────────────────────────────────────────
+  // The canonical recorder saves EVERY dictation's audio durably on its own
+  // (independent of any run call — §17.1 ordering). Here we only listen for
+  // that save landing, so the file id can be stamped onto the human turn this
+  // message becomes. A failed upload keeps its blob retryable in memory
+  // (localStorage cannot hold blobs) — surfaced honestly below.
+  const session = useAppSelector(selectRoomSession);
+  const pendingAudio = useAppSelector(selectPendingAudioFileIds);
+  const [failedAudio, setFailedAudio] = useState<FailedDictationAudio | null>(
+    null,
+  );
+  const [retryingAudio, setRetryingAudio] = useState(false);
+  useEffect(() => {
+    return subscribeDictationAudio((event) => {
+      const origin =
+        event.type === "saved" ? event.saved.origin : event.failed.origin;
+      if (
+        origin?.surface !== "vision-interview.composer" ||
+        origin.entityId !== sessionId
+      ) {
+        return;
+      }
+      if (event.type === "saved") {
+        setFailedAudio(null);
+        dispatch(
+          dictationAudioSaved({
+            fileId: event.saved.fileId,
+            savedAtMs: event.saved.savedAtMs,
+          }),
+        );
+      } else {
+        setFailedAudio(event.failed);
+      }
+    });
+  }, [dispatch, sessionId]);
+
+  const retryAudioUpload = async () => {
+    if (!failedAudio || retryingAudio) return;
+    setRetryingAudio(true);
+    try {
+      await failedAudio.retry();
+      // Success clears via the "saved" announcement above.
+    } catch {
+      // Failure re-announces; the banner stays with the fresh error.
+    } finally {
+      setRetryingAudio(false);
+    }
+  };
 
   // Consume text another surface handed the composer (a question's Answer
   // button) — append to the durable draft, then focus so they just type.
@@ -115,6 +174,9 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
       if (accepted) {
         clearDraft();
         setSummon(null);
+        // The recordings behind this message now belong to the turn the
+        // server creates for it (useTurnAudioAttachment stamps it on land).
+        dispatch(dictationAudioQueuedForTurn({ sentAtMs: Date.now() }));
       }
     } finally {
       setSending(false);
@@ -128,7 +190,12 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
       const accepted = await onStart(text.trim() || undefined);
       // Cleared only when the statement durably landed on the session row
       // (and is now visible in the transcript pane as "Your vision").
-      if (accepted) clearDraft();
+      if (accepted) {
+        clearDraft();
+        // The backend seeds the human's turn 0 from the vision statement —
+        // dictated audio belongs to that turn.
+        dispatch(dictationAudioQueuedForTurn({ sentAtMs: Date.now() }));
+      }
     } finally {
       setStarting(false);
     }
@@ -141,6 +208,29 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
 
   return (
     <div className="shrink-0 border-t border-border bg-background px-2 pb-2 pt-1.5">
+      {/* Raw-audio honesty: an upload failure never loses the recording —
+          the blob is held in memory and retried from right here. */}
+      {failedAudio && (
+        <p className="mb-1.5 flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs">
+          <AudioLines
+            className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive"
+            aria-hidden
+          />
+          <span className="min-w-0 text-foreground">
+            Your recording could not be saved to the cloud yet — it is still
+            held safely on this device (your words are already in the text
+            below).{" "}
+            <button
+              type="button"
+              onClick={() => void retryAudioUpload()}
+              disabled={retryingAudio}
+              className="font-medium text-primary underline-offset-2 hover:underline disabled:opacity-60"
+            >
+              {retryingAudio ? "Retrying…" : "Retry saving the audio"}
+            </button>
+          </span>
+        </p>
+      )}
       {/* Status line — always honest about what the room is doing. */}
       {canAnswer && pendingInterrupt?.prompt ? (
         // Height-capped: a long round summary must never squash the
@@ -204,6 +294,17 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
         </p>
       )}
 
+      {/* Origin stamp: every dictation started inside this subtree is saved
+          by the shared recorder WITH attribution to this session, and its
+          save is announced back to this composer (v2 §13.1). */}
+      <RecordingOriginProvider
+        origin={{
+          surface: "vision-interview.composer",
+          entityId: sessionId,
+          label: session?.title || "Vision interview",
+          href: `/vision-interview/${sessionId}`,
+        }}
+      >
       <div
         ref={wrapperRef}
         className="rounded-xl border border-border bg-card shadow-sm transition-colors focus-within:border-primary/40"
@@ -272,6 +373,17 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
               })}
             </DropdownMenuContent>
           </DropdownMenu>
+          {pendingAudio.length > 0 && (
+            <span
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground"
+              title="Your dictation's audio is saved and will be attached to this message"
+            >
+              <AudioLines className="h-3 w-3" aria-hidden />
+              {pendingAudio.length === 1
+                ? "audio saved"
+                : `${pendingAudio.length} recordings saved`}
+            </span>
+          )}
           <span className="ml-auto hidden items-center gap-1 text-[11px] text-muted-foreground sm:flex">
             <CornerDownLeft className="h-3 w-3" aria-hidden />
             ⌘↵ to {canStart ? "start" : "send"}
@@ -314,6 +426,7 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
           )}
         </div>
       </div>
+      </RecordingOriginProvider>
     </div>
   );
 }
