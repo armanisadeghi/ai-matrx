@@ -27,6 +27,35 @@ import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkCom
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 
 import type { Components } from "react-markdown";
+import { useRemintableSrc } from "@/features/files/handler/hooks/useRemintableSrc";
+
+/**
+ * Durable markdown <img> — the media-durability fix for the default renderer.
+ * A signed URL for one of OUR files re-mints from its file_id on load failure
+ * (useRemintableSrc); a genuinely foreign URL passes through, and one that
+ * fails (link rot on a hotlinked card/web image) hides gracefully instead of
+ * rendering the broken-image glyph.
+ */
+function DurableMarkdownImg({
+  src,
+  alt,
+  className,
+  ...props
+}: React.ComponentProps<"img">) {
+  const raw = typeof src === "string" ? src : null;
+  const { src: durableSrc, onError, failed } = useRemintableSrc(raw);
+  if (!raw || failed || !durableSrc) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      className={className}
+      {...props}
+      src={durableSrc}
+      alt={alt || "Image"}
+      onError={onError}
+    />
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Theme / style config types
@@ -888,7 +917,7 @@ export const ConfigurableMarkdownContent: React.FC<
         img:
           componentOverrides?.img ??
           (({ node, ...props }) => (
-            <img
+            <DurableMarkdownImg
               className={cn("max-w-full h-auto rounded-md", spacing.imgMy)}
               {...props}
               alt={props.alt || "Image"}

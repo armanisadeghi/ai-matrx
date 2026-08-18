@@ -16,6 +16,7 @@ import {
 } from "@/components/mardown-display/blocks/flashcards/flashcard-mobile-bridge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { ReviewResult } from "@/features/flashcards/types";
+import type { FaceImageRef } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 
 export interface FlashcardItemWindowProps {
   isOpen: boolean;
@@ -27,6 +28,8 @@ export interface FlashcardItemWindowProps {
   layoutMode?: "grid" | "list";
   additionalDetails?: Record<string, unknown>;
   lastResult?: ReviewResult | null;
+  frontImage?: FaceImageRef | null;
+  backImage?: FaceImageRef | null;
 }
 
 export function FlashcardItemWindow({
@@ -39,6 +42,8 @@ export function FlashcardItemWindow({
   layoutMode = "grid",
   additionalDetails,
   lastResult,
+  frontImage,
+  backImage,
 }: FlashcardItemWindowProps) {
   const isMobile = useIsMobile();
   const { isMobileView, enterMobileView, exitMobileView } =
@@ -95,6 +100,8 @@ export function FlashcardItemWindow({
           lastResult={lastResult}
           presentation="panel"
           showDevWindowTrigger={false}
+          frontImage={frontImage}
+          backImage={backImage}
         />
       ) : (
         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">

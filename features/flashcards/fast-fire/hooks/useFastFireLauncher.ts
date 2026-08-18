@@ -17,6 +17,7 @@
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fcService } from "@/features/flashcards/data/fcService";
+import { getFaceImageDetail } from "@/features/flashcards/components/study/cardImages";
 import { studyService } from "@/features/education/study/service/studyService";
 import { startContinuousCapture } from "../audio/continuousCapture";
 import { startDrill, setError } from "../redux/fastFireSlice";
@@ -75,6 +76,7 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
         const spoken = c.details.find(
           (d) => d.kind === "spoken_front" && !!d.audio_file_id,
         );
+        const frontImage = getFaceImageDetail(c, "front");
         return {
           id: c.id,
           front: c.front,
@@ -83,6 +85,9 @@ export function useFastFireLauncher(): UseFastFireLauncherResult {
           spokenFrontFileId: spoken?.audio_file_id ?? null,
           // The axis live adaptation reorders on (VISION §3).
           topic: c.topic ?? null,
+          frontImageFileId: frontImage?.image_file_id ?? null,
+          frontImageUrl: frontImage?.image_url ?? null,
+          frontImageAlt: frontImage?.text ?? null,
         };
       });
 

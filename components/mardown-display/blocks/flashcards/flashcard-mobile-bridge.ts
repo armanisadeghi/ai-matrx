@@ -16,6 +16,8 @@ import {
 } from "@/features/flashcards/utils/cardVariants";
 import type { NormalizedFlashcard } from "./flashcards-set-derive";
 import type { FlashcardSubcard } from "./flashcard-subcards";
+import type { FaceImageRef } from "./FlashcardFaceImage";
+import { getCardImages } from "@/features/flashcards/components/study/cardImages";
 
 export interface FlashcardMobileCard {
   /** The face to show — for cloze cards this is the OCCLUDED text (studyFaces),
@@ -29,6 +31,9 @@ export interface FlashcardMobileCard {
   /** Matching-card pairs (present only when `kind === 'matching'`). The mobile
    *  view branches to <MatchingCardPlayer> instead of a flip for these. */
   pairs?: MatchingPair[];
+  /** Face images (fc_detail front_image/back_image) — see FlashcardFaceImage. */
+  frontImage?: FaceImageRef;
+  backImage?: FaceImageRef;
 }
 
 export function toFlashcardMobileCards(
@@ -50,6 +55,7 @@ export function toFlashcardMobileCardsFromStudy(
 ): FlashcardMobileCard[] {
   return cards.map((card) => {
     const kind = asCardKind(card.card_kind);
+    const images = getCardImages(card);
     if (kind === CARD_KIND.matching) {
       // Matching cards carry their prompt (front) + pairs; the mobile view
       // renders the shared tap-to-pair player instead of a flip.
@@ -70,6 +76,8 @@ export function toFlashcardMobileCardsFromStudy(
       kind,
       front: faces.front,
       back: faces.back,
+      frontImage: images.front,
+      backImage: images.back,
     };
   });
 }

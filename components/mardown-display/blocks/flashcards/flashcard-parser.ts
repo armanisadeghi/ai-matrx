@@ -7,6 +7,13 @@
 export interface Flashcard {
     front: string;
     back: string;
+    /** Optional face images (durable URLs — fc_detail front_image/back_image).
+     *  Parsed markdown never sets these; DB-backed callers may. Print + rich
+     *  renderers consume them when present. */
+    frontImageUrl?: string | null;
+    frontImageAlt?: string | null;
+    backImageUrl?: string | null;
+    backImageAlt?: string | null;
 }
 
 export interface FlashcardParseResult {

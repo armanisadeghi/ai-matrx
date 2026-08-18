@@ -82,10 +82,31 @@ function extractCards(data: unknown): Flashcard[] {
   return [];
 }
 
+/**
+ * Face image for print — durable URL only (the print window is a fresh
+ * document; it can load exactly what a browser can fetch unauthenticated).
+ * Alt text prints in place when a hotlink has rotted. The custom-geometry
+ * variants (landscape / 6-up / Avery) stay text-only by design — their fixed
+ * cells can't absorb an image without breaking the die-cut math.
+ */
+function faceImageHtml(card: Flashcard, face: "front" | "back"): string {
+  const url = face === "front" ? card.frontImageUrl : card.backImageUrl;
+  if (!url || !/^https?:\/\//.test(url)) return "";
+  const alt = (face === "front" ? card.frontImageAlt : card.backImageAlt) ?? "";
+  return `<img class="face-image" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}">`;
+}
+
 // ---------------------------------------------------------------------------
 // Shared base styles — appended after block-print-utils PRINT_STYLES so these win on specificity
 // ---------------------------------------------------------------------------
 const BASE_STYLES = `
+  img.face-image {
+    display: block;
+    max-width: 100%;
+    max-height: 1.6in;
+    margin: 0 auto 6px auto;
+    object-fit: contain;
+  }
   h1.deck-title {
     font-size: 13pt !important;
     font-weight: 700;
@@ -270,11 +291,11 @@ function renderCutCards(
   <div class="card-inner">
     <div class="card-face card-front-face">
       <div class="card-side-label">Question / Term</div>
-      <div class="front-text ${frontSize}">${escapeHtml(card.front)}</div>
+      ${faceImageHtml(card, "front")}<div class="front-text ${frontSize}">${escapeHtml(card.front)}</div>
     </div>
     <div class="card-face card-back-face">
       <div class="card-side-label">Answer / Definition</div>
-      <div class="back-text ${backSize}">${backContent}</div>
+      ${faceImageHtml(card, "back")}<div class="back-text ${backSize}">${backContent}</div>
     </div>
   </div>
 </div>`;
@@ -361,9 +382,9 @@ function renderBothSides(
       (card, i) => `<div class="card-cell">
   <div class="card-front">
     <div class="card-number">Card ${startIndex + i + 1}</div>
-    ${escapeHtml(card.front)}
+    ${faceImageHtml(card, "front")}${escapeHtml(card.front)}
   </div>
-  <div class="card-back">${escapeHtml(card.back ?? "")}</div>
+  <div class="card-back">${faceImageHtml(card, "back")}${escapeHtml(card.back ?? "")}</div>
 </div>`,
     )
     .join("\n");
@@ -439,8 +460,8 @@ function renderStudySheet(
   const rows = cards
     .map(
       (card, i) => `  <tr>
-    <td><span class="row-num">${startIndex + i + 1}.</span>${escapeHtml(card.front)}</td>
-    <td>${escapeHtml(card.back ?? "")}</td>
+    <td><span class="row-num">${startIndex + i + 1}.</span>${faceImageHtml(card, "front")}${escapeHtml(card.front)}</td>
+    <td>${faceImageHtml(card, "back")}${escapeHtml(card.back ?? "")}</td>
   </tr>`,
     )
     .join("\n");
@@ -521,7 +542,7 @@ function renderFrontOnly(
       (card, i) => `<div class="card-cell">
   <div class="card-front">
     <div class="card-number">Card ${startIndex + i + 1}</div>
-    ${escapeHtml(card.front)}
+    ${faceImageHtml(card, "front")}${escapeHtml(card.front)}
   </div>
   <div class="answer-blank"></div>
 </div>`,
@@ -587,7 +608,7 @@ function renderBackOnly(
     .map(
       (card, i) => `<div class="card-cell">
   <div class="card-back-header">Card ${startIndex + i + 1}</div>
-  <div class="card-back-content">${escapeHtml(card.back ?? "")}</div>
+  <div class="card-back-content">${faceImageHtml(card, "back")}${escapeHtml(card.back ?? "")}</div>
 </div>`,
     )
     .join("\n");

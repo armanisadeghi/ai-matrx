@@ -611,8 +611,8 @@ export function StudyDeck(props: StudyDeckProps) {
       // Void-returning drivers resolve undefined and count as success.
       const ok = outcome !== null;
       // Phase 4 stretch: cheap-model per-card micro-coaching. Fire-and-forget
-      // (never blocks advancing to the next card) and cleanly no-ops until a
-      // fc_micro_coach agent is authored (features/flashcards/data/agents.ts).
+      // (never blocks advancing to the next card); resolves through the
+      // flashcards.micro_coach mandate (features/flashcards/data/mandates.ts).
       if (ok && card) {
         void dispatch(
           microCoach({

@@ -27,6 +27,11 @@ export interface PublicFlashcard {
   topic?: string | null;
   lesson?: string | null;
   position?: number | null;
+  /** Durable face-image URLs (hotlinked/CDN) — a bare file_id is unusable anon. */
+  front_image_url?: string | null;
+  front_image_alt?: string | null;
+  back_image_url?: string | null;
+  back_image_alt?: string | null;
 }
 
 export interface PublicResource {

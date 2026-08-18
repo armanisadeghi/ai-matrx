@@ -31,6 +31,7 @@ import { MatchingCardPlayer } from "@/features/flashcards/components/study/Match
 import { CARD_KIND } from "@/features/flashcards/utils/cardVariants";
 import type { ReviewResult } from "@/features/flashcards/types";
 import type { FlashcardMobileCard } from "./flashcard-mobile-bridge";
+import { FlashcardFaceImage, hasFaceImage } from "./FlashcardFaceImage";
 
 const ANIM_MS = 320;
 const TEXT_FADE_OUT_MS = 120;
@@ -397,17 +398,25 @@ const CardSlide: React.FC<CardSlideProps> = ({
           style={{ backfaceVisibility: "hidden" }}
         >
           <div
-            className="w-full h-full px-6 py-10"
+            className="w-full h-full px-6 py-10 flex flex-col gap-2"
             style={{
               opacity: textVisible ? 1 : 0,
               transition: `opacity ${TEXT_FADE_OUT_MS}ms ease`,
             }}
           >
-            <FitTextFace
-              content={card.front ?? ""}
-              centered={true}
-              componentOverrides={{ p: centeredParagraph }}
-            />
+            {hasFaceImage(card.frontImage) && (
+              <FlashcardFaceImage
+                image={card.frontImage}
+                className="shrink-0 max-h-[40%]"
+              />
+            )}
+            <div className="flex-1 min-h-0">
+              <FitTextFace
+                content={card.front ?? ""}
+                centered={true}
+                componentOverrides={{ p: centeredParagraph }}
+              />
+            </div>
           </div>
           {showHints && (
             <TapZoneHints
@@ -425,20 +434,28 @@ const CardSlide: React.FC<CardSlideProps> = ({
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           <div
-            className="w-full h-full px-6 py-10"
+            className="w-full h-full px-6 py-10 flex flex-col gap-2"
             style={{
               opacity: textVisible ? 1 : 0,
               transition: `opacity ${TEXT_FADE_OUT_MS}ms ease`,
             }}
           >
-            <FitTextFace
-              content={backContent}
-              centered={backCentered}
-              isStreamActive={card.back === null}
-              componentOverrides={
-                backCentered ? { p: centeredParagraph } : undefined
-              }
-            />
+            {hasFaceImage(card.backImage) && (
+              <FlashcardFaceImage
+                image={card.backImage}
+                className="shrink-0 max-h-[40%]"
+              />
+            )}
+            <div className="flex-1 min-h-0">
+              <FitTextFace
+                content={backContent}
+                centered={backCentered}
+                isStreamActive={card.back === null}
+                componentOverrides={
+                  backCentered ? { p: centeredParagraph } : undefined
+                }
+              />
+            </div>
           </div>
           {showHints && (
             <TapZoneHints

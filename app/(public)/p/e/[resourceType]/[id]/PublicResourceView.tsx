@@ -55,6 +55,17 @@ function FlashcardSetRenderer({ resource }: { resource: PublicResource }) {
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Term
                 </p>
+                {card.front_image_url && (
+                  // Server-rendered durable URL (SEO + anon; alt is real alt
+                  // text, so a rotted hotlink degrades to its description).
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={card.front_image_url}
+                    alt={card.front_image_alt ?? ""}
+                    loading="lazy"
+                    className="mb-2 max-h-40 w-auto rounded-md"
+                  />
+                )}
                 <div className="text-foreground">
                   {card.front ? <Markdown content={card.front} /> : "—"}
                 </div>
@@ -63,6 +74,15 @@ function FlashcardSetRenderer({ resource }: { resource: PublicResource }) {
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Definition
                 </p>
+                {card.back_image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={card.back_image_url}
+                    alt={card.back_image_alt ?? ""}
+                    loading="lazy"
+                    className="mb-2 max-h-40 w-auto rounded-md"
+                  />
+                )}
                 <div className="text-foreground">
                   {card.back ? <Markdown content={card.back} /> : "—"}
                 </div>

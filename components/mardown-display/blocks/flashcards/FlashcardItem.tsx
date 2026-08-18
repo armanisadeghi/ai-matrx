@@ -12,6 +12,11 @@ import { VoiceTestButton } from "@/features/flashcards/fast-fire/voice-test/Voic
 import { FlashcardGoDeeperTrigger } from "./FlashcardGoDeeperTrigger";
 import { WrenchTapButton } from "@/components/icons/tap-buttons";
 import {
+  FlashcardFaceImage,
+  hasFaceImage,
+  type FaceImageRef,
+} from "./FlashcardFaceImage";
+import {
   parseSubcardsFromDetails,
   resolveFlashcardSubcards,
   type FlashcardSubcard,
@@ -56,6 +61,9 @@ interface FlashcardItemProps {
     cardId: string;
     spokenFrontFileId?: string | null;
   };
+  /** Face images (fc_detail front_image/back_image) — see FlashcardFaceImage. */
+  frontImage?: FaceImageRef | null;
+  backImage?: FaceImageRef | null;
 }
 
 const FlashcardItem: React.FC<FlashcardItemProps> = ({
@@ -72,6 +80,8 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
   flipped,
   onFlipToggle,
   voiceTest,
+  frontImage,
+  backImage,
 }) => {
   const isPanel = presentation === "panel";
   const isControlledFlip = flipped !== undefined;
@@ -191,6 +201,8 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
       layoutMode,
       additionalDetails: additionalDetails ?? null,
       lastResult: lastResult ?? null,
+      frontImage: frontImage ?? null,
+      backImage: backImage ?? null,
       title: `Flashcard ${index + 1}`,
     });
   };
@@ -264,7 +276,20 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
           style={{ backfaceVisibility: "hidden" }}
         >
           <CardContent className="flex flex-col items-center justify-center h-full !p-2 relative">
-            <div className="w-full h-full flex items-center justify-center px-2 overflow-y-auto scrollbar-none">
+            <div
+              className={cn(
+                "w-full h-full px-2 overflow-y-auto scrollbar-none",
+                hasFaceImage(frontImage)
+                  ? "flex flex-col items-center justify-center gap-1.5"
+                  : "flex items-center justify-center",
+              )}
+            >
+              {hasFaceImage(frontImage) && (
+                <FlashcardFaceImage
+                  image={frontImage}
+                  className="flex-1 min-h-0 max-h-[55%]"
+                />
+              )}
               <ConfigurableMarkdownContent
                 content={front}
                 isStreamActive={false}
@@ -338,6 +363,12 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
                   isMultiLineBack ? "h-full pt-3 pb-2" : "",
                 )}
               >
+                {hasFaceImage(backImage) && (
+                  <FlashcardFaceImage
+                    image={backImage}
+                    className="max-h-32 mb-1.5"
+                  />
+                )}
                 <ConfigurableMarkdownContent
                   content={backContent}
                   isStreamActive={back === null}

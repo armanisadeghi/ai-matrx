@@ -102,6 +102,10 @@ export interface DrillCard {
   spokenFrontFileId?: string | null;
   /** The card's topic — the axis live adaptation reorders on. */
   topic?: string | null;
+  /** Front-face image (fc_detail kind='front_image'): stored file_id or hotlinked URL + alt. */
+  frontImageFileId?: string | null;
+  frontImageUrl?: string | null;
+  frontImageAlt?: string | null;
 }
 
 /**

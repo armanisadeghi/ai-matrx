@@ -2,6 +2,7 @@
 
 import React, { Suspense, lazy, useMemo, useState } from "react";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
+import { getCardImages } from "./study/cardImages";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import {
   studyResultsByIndex,
@@ -300,6 +301,8 @@ export function CanvasFlashcardsView({
               grading ? undefined : (_cardIndex, result) => handleGrade(result)
             }
             lastResult={resultsByCard[current.id] ?? null}
+            frontImage={getCardImages(current).front}
+            backImage={getCardImages(current).back}
           />
         )}
       </div>

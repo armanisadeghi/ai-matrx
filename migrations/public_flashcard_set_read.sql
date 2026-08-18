@@ -46,7 +46,34 @@ BEGIN
         'difficulty', c.difficulty,
         'topic', c.topic,
         'lesson', c.lesson,
-        'position', a.position
+        'position', a.position,
+        -- Face images (fc_detail front_image/back_image). Anon pages can only
+        -- consume a durable URL (a bare file_id needs an authed re-mint), so
+        -- this emits image_url — the hotlinked/CDN lane. Alt = the row's text.
+        'front_image_url', (
+          SELECT d.image_url FROM education.fc_detail d
+          WHERE d.card_id = c.id AND d.kind = 'front_image'
+            AND d.deleted_at IS NULL AND d.image_url IS NOT NULL
+          ORDER BY d.created_at DESC LIMIT 1
+        ),
+        'front_image_alt', (
+          SELECT d.text FROM education.fc_detail d
+          WHERE d.card_id = c.id AND d.kind = 'front_image'
+            AND d.deleted_at IS NULL AND d.image_url IS NOT NULL
+          ORDER BY d.created_at DESC LIMIT 1
+        ),
+        'back_image_url', (
+          SELECT d.image_url FROM education.fc_detail d
+          WHERE d.card_id = c.id AND d.kind = 'back_image'
+            AND d.deleted_at IS NULL AND d.image_url IS NOT NULL
+          ORDER BY d.created_at DESC LIMIT 1
+        ),
+        'back_image_alt', (
+          SELECT d.text FROM education.fc_detail d
+          WHERE d.card_id = c.id AND d.kind = 'back_image'
+            AND d.deleted_at IS NULL AND d.image_url IS NOT NULL
+          ORDER BY d.created_at DESC LIMIT 1
+        )
       ) AS card
     FROM platform.associations a
     JOIN education.fc_card c

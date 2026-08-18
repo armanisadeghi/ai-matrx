@@ -11,6 +11,7 @@ import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 const OVERLAY_ID = "flashcardItemWindow" as const;
 
 import type { ReviewResult } from "@/features/flashcards/types";
+import type { FaceImageRef } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 
 export interface OpenFlashcardItemWindowOptions {
   front?: string;
@@ -20,6 +21,8 @@ export interface OpenFlashcardItemWindowOptions {
   title?: string;
   additionalDetails?: Record<string, unknown> | null;
   lastResult?: ReviewResult | null;
+  frontImage?: FaceImageRef | null;
+  backImage?: FaceImageRef | null;
 }
 
 export interface FlashcardItemWindowHandle {
@@ -41,6 +44,8 @@ export function useOpenFlashcardItemWindow() {
             title: opts.title ?? null,
             additionalDetails: opts.additionalDetails ?? null,
             lastResult: opts.lastResult ?? null,
+            frontImage: opts.frontImage ?? null,
+            backImage: opts.backImage ?? null,
           },
         }),
       );

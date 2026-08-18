@@ -4,7 +4,7 @@
 // depletes, the learner speaks aloud, and the card advances on the deadline. No
 // "flip" / "submit" buttons — the timer drives everything. A live mini-scoreboard
 // shows grades catching up in the background ("processing N…"). The "I'm
-// confused" button runs the optional help lane (no-op-friendly when unconfigured).
+// confused" button runs the help lane (mandate-resolved, best-effort).
 //
 // React Compiler is on: no manual memo.
 
@@ -23,7 +23,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { getFastFireAgentConfig } from "../config";
 import { helpLive, type HelpLiveResult } from "../agents/helpLive.thunk";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { SessionAiJournal } from "@/features/education/study/types";
@@ -39,11 +38,13 @@ import {
   selectFastFireSessionId,
   selectFastFireAdaptation,
 } from "../redux/fastFire.selectors";
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { FastFireTimerBar } from "./FastFireTimerBar";
 import { SpokenFrontPlayer } from "./SpokenFrontPlayer";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { SourceCitations } from "@/features/education/trust/components/SourceCitations";
 import { RefusalNotice } from "@/features/education/trust/components/RefusalNotice";
+import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 
 interface FastFireLiveCardProps {
   subscribeProgress: (
@@ -74,7 +75,6 @@ export function FastFireLiveCard({
 
   const [help, setHelp] = useState<HelpLiveResult | null>(null);
   const [helpLoading, setHelpLoading] = useState(false);
-  const [helpUnavailable, setHelpUnavailable] = useState(false);
   const cardShownAtRef = useRef<number>(0);
 
   // L3: clear any help text when the card changes, so the previous card's help
@@ -87,7 +87,6 @@ export function FastFireLiveCard({
   // arrived a beat late is still recoverable instead of simply gone.
   useEffect(() => {
     setHelp(null);
-    setHelpUnavailable(false);
     cardShownAtRef.current = Date.now();
   }, [card?.id]);
 
@@ -128,11 +127,6 @@ export function FastFireLiveCard({
   const betweenCards = phase !== "card_recording";
 
   const askForHelp = async (): Promise<void> => {
-    const cfg = getFastFireAgentConfig();
-    if (!cfg.helpAgentId) {
-      setHelpUnavailable(true);
-      return;
-    }
     setHelpLoading(true);
     setHelp(null);
     try {
@@ -198,10 +192,23 @@ export function FastFireLiveCard({
         )}
 
         {/* The card — FRONT ONLY (you speak the back) */}
-        <div className="flex min-h-[40dvh] items-center justify-center rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
-          <p className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
-            {card.front}
-          </p>
+        <div className="flex min-h-[40dvh] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+          {(card.frontImageFileId || card.frontImageUrl) && (
+            <FlashcardFaceImage
+              image={{
+                fileId: card.frontImageFileId,
+                url: card.frontImageUrl,
+                alt: card.frontImageAlt ?? undefined,
+              }}
+              className="max-h-[22dvh] shrink-0"
+            />
+          )}
+          {/* The most-looked-at face in the product — markdown + LaTeX through
+              the canonical per-face child, never raw text (a calculus card
+              showed a literal \frac here until 2026-08-18). */}
+          <div className="text-2xl font-semibold leading-snug text-foreground sm:text-3xl">
+            <CardFaceContent content={card.front} variant="inline" />
+          </div>
         </div>
 
         {/* Help + skip */}
@@ -237,13 +244,7 @@ export function FastFireLiveCard({
           </Button>
         </div>
 
-        {/* Help result / unavailable hint */}
-        {helpUnavailable && (
-          <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-            Live help isn&apos;t configured yet. Set a help agent in FastFire
-            settings to enable it.
-          </div>
-        )}
+        {/* Help result */}
         {shownHelp && shownHelp.trust?.confidence === "not_in_material" ? (
           <RefusalNotice message={shownHelp.answer} />
         ) : (

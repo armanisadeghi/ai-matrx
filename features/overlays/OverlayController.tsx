@@ -2964,6 +2964,24 @@ export default function OverlayController() {
                   ? null
                   : undefined
             }
+            frontImage={
+              data?.frontImage && typeof data.frontImage === "object"
+                ? (data.frontImage as {
+                    fileId?: string | null;
+                    url?: string | null;
+                    alt?: string;
+                  })
+                : undefined
+            }
+            backImage={
+              data?.backImage && typeof data.backImage === "object"
+                ? (data.backImage as {
+                    fileId?: string | null;
+                    url?: string | null;
+                    alt?: string;
+                  })
+                : undefined
+            }
           />
         );
       })()}
