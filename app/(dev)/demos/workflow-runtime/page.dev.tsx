@@ -26,6 +26,7 @@ import { RunSurfaceView } from "@/features/workflow-runtime/components/RunSurfac
 import { SurfaceBuilder } from "@/features/workflow-runtime/components/SurfaceBuilder";
 import { useWorkflowRunControls } from "@/features/workflow-runtime/hooks/useWorkflowRunControls";
 import {
+  fetchRunDefinitionId,
   fetchWorkflowDefinition,
   getDefaultSurface,
   type RuntimeSurfaceRow,
@@ -138,6 +139,25 @@ function WorkflowRuntimeDemo() {
     setSurfaceLoaded(false);
     setPendingStart(null);
   };
+
+  // A ?run= deep link (or a mid-run refresh) restores the workflow it was
+  // started from — without this, a refresh dropped the user onto a bare board
+  // with the selector reset to "Choose a workflow…" (the 2026-08-18 defect).
+  useEffect(() => {
+    if (!runId || selected) return;
+    let cancelled = false;
+    void fetchRunDefinitionId(runId)
+      .then((definitionId) => {
+        if (cancelled || !definitionId) return;
+        setSelected((current) => current || definitionId);
+      })
+      .catch(() => {
+        // Unreachable run — the board's own state renders the truth.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [runId, selected]);
 
   // Load the definition graph + default surface for the selected workflow.
   useEffect(() => {

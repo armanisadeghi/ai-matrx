@@ -63,7 +63,7 @@ import {
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
 import { InvocationBody, PhaseIcon, PHASE_LABEL } from "./readout-parts";
 import { ProgressRailReadout } from "./ProgressRailReadout";
-import { RunSurfaceView } from "./RunSurfaceView";
+import { definitionNodeLabels, RunSurfaceView } from "./RunSurfaceView";
 import { WorkflowRunBoard } from "./WorkflowRunBoard";
 
 /** Promotion callback bound to the readout's run by the hosting surface. */
@@ -615,6 +615,9 @@ export function ReadoutView({
         <ProgressRailReadout
           runId={runId}
           nodeIds={source.nodeIds}
+          nodeLabels={
+            definition ? definitionNodeLabels(definition) : undefined
+          }
           syntheticSteps={source.syntheticSteps}
         />
       );

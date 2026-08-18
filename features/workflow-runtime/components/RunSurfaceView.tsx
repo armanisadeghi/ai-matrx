@@ -36,8 +36,20 @@ import {
   selectRunStickyFacts,
 } from "../redux/workflow-runs.selectors";
 import { useWorkflowRun } from "../hooks/useWorkflowRun";
-import { InterruptCard } from "./readout-parts";
+import { InterruptCard, RunErrorCard } from "./readout-parts";
 import { ReadoutView } from "./ReadoutView";
+
+/** nodeId → human label from the definition (label ?? id). */
+export function definitionNodeLabels(
+  definition: WorkflowDefinitionLike,
+): Record<string, string> {
+  const labels: Record<string, string> = {};
+  for (const node of definition.nodes) {
+    const label = node.data?.label;
+    labels[node.id] = typeof label === "string" && label ? label : node.id;
+  }
+  return labels;
+}
 
 /** Author-defined marks are Phase 3+ — none fire yet. */
 const EMPTY_MARKS: ReadonlySet<string> = new Set();
@@ -254,6 +266,7 @@ export function RunSurfaceView({
         </div>
       ) : null}
 
+      <RunErrorCard runId={runId} nodeLabels={definitionNodeLabels(definition)} />
       <InterruptCard runId={runId} />
 
       {isMobile ? (

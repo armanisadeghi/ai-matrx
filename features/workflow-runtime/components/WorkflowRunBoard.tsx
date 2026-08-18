@@ -35,6 +35,7 @@ import {
   InvocationBody,
   PhaseIcon,
   PHASE_LABEL,
+  RunErrorCard,
 } from "./readout-parts";
 
 function NodeRow({ runId, nodeId }: { runId: string; nodeId: string }) {
@@ -130,7 +131,11 @@ export function WorkflowRunBoard({
             ${costTotal.toFixed(4)}
           </span>
         ) : null}
-        <span className="text-[11px] text-muted-foreground">{transport}</span>
+        {/* Transport is a live-follow detail — meaningless (and misleading:
+            "polling" forever) once the run is terminal. */}
+        {status === "running" || status === "paused" ? (
+          <span className="text-[11px] text-muted-foreground">{transport}</span>
+        ) : null}
         <span className="ml-auto flex gap-1.5">
           {status === "running" ? (
             <>
@@ -162,6 +167,7 @@ export function WorkflowRunBoard({
         </span>
       </div>
 
+      <RunErrorCard runId={runId} />
       <InterruptCard runId={runId} />
 
       {nodeOrder.map((nodeId) => (

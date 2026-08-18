@@ -101,10 +101,13 @@ function SyntheticSubSteps({
 function RailNodeRow({
   runId,
   nodeId,
+  label,
   syntheticLabels,
 }: {
   runId: string;
   nodeId: string;
+  /** Human step name from the definition — the id/specType are fallbacks. */
+  label?: string;
   syntheticLabels?: string[];
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
@@ -118,7 +121,7 @@ function RailNodeRow({
       <div className="flex items-center gap-1.5">
         <PhaseIcon phase={phase} />
         <span className="truncate text-xs font-medium">
-          {specType ?? "Workflow step"}
+          {label ?? specType ?? nodeId}
         </span>
         <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
           {fanOut
@@ -141,11 +144,14 @@ function RailNodeRow({
 export function ProgressRailReadout({
   runId,
   nodeIds,
+  nodeLabels,
   syntheticSteps,
 }: {
   runId: string;
   /** Nodes the rail narrates, in this order; absent = the run's node order. */
   nodeIds?: string[];
+  /** nodeId → human step name (from the definition). */
+  nodeLabels?: Record<string, string>;
   /** Authored synthetic sub-step labels per nodeId. */
   syntheticSteps?: Record<string, string[]>;
 }) {
@@ -194,6 +200,7 @@ export function ProgressRailReadout({
               key={nodeId}
               runId={runId}
               nodeId={nodeId}
+              label={nodeLabels?.[nodeId]}
               syntheticLabels={syntheticSteps?.[nodeId]}
             />
           ))}

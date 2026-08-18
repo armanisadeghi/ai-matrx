@@ -25,7 +25,12 @@ import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDis
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
 import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
-import { selectRunInterrupt } from "../redux/workflow-runs.selectors";
+import {
+  selectRunError,
+  selectRunInterrupt,
+  selectRunStatus,
+  selectRunStickyFacts,
+} from "../redux/workflow-runs.selectors";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
 
 export const PHASE_LABEL: Record<string, string> = {
@@ -165,6 +170,51 @@ function parseInterruptFields(schemaHint: unknown): InterruptField[] | null {
     }
   }
   return fields.length > 0 ? fields : null;
+}
+
+/**
+ * RunErrorCard — a terminal failed/errored run must SCREAM, not sit at
+ * "Not started" forever (the 2026-08-18 defect: three Study Pack runs died
+ * in seconds while the surface showed an untouched progress rail). Renders
+ * the run's structured error message and names the failing step(s) using
+ * the definition's human labels when available.
+ */
+export function RunErrorCard({
+  runId,
+  nodeLabels,
+}: {
+  runId: string;
+  /** nodeId → human label (from the definition); absent → raw node ids. */
+  nodeLabels?: Record<string, string>;
+}) {
+  const status = useAppSelector(selectRunStatus(runId));
+  const error = useAppSelector(selectRunError(runId));
+  const sticky = useAppSelector(selectRunStickyFacts(runId));
+  if (status !== "failed" && status !== "errored") return null;
+
+  const message =
+    error && typeof error.message === "string" && error.message
+      ? error.message
+      : "This run stopped before it could finish.";
+  const failedNodeIds = Object.keys(sticky?.failedNodes ?? {});
+  const failedNames = failedNodeIds.map(
+    (nodeId) => nodeLabels?.[nodeId] ?? nodeId,
+  );
+
+  return (
+    <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+        <span className="text-sm font-medium text-destructive">
+          This run stopped
+          {failedNames.length > 0 ? ` at “${failedNames.join("”, “")}”` : ""}
+        </span>
+      </div>
+      <p className="mt-1.5 whitespace-pre-wrap break-words text-xs text-foreground/90">
+        {message}
+      </p>
+    </div>
+  );
 }
 
 export function InterruptCard({ runId }: { runId: string }) {

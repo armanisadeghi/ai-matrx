@@ -294,3 +294,21 @@ function parseEdges(raw: Json): WorkflowDefinitionLike["edges"] {
   }
   return edges;
 }
+
+/**
+ * The definition a run belongs to — how a `?run=` deep link (or a mid-run
+ * refresh) restores the workflow context it was started from. Null when the
+ * run is unreachable (missing / no access).
+ */
+export async function fetchRunDefinitionId(
+  runId: string,
+): Promise<string | null> {
+  const { data, error } = await supabase
+    .schema("workflow")
+    .from("run")
+    .select("definition_id")
+    .eq("id", runId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.definition_id ?? null;
+}
