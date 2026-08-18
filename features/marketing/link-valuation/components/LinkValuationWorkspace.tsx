@@ -93,7 +93,11 @@ export function LinkValuationWorkspace() {
           resetConfig(config.id);
           const fallback = BUILT_IN_CONFIGS[0];
           if (!fallback) return;
-          setConfigs([...BUILT_IN_CONFIGS]);
+          // Re-read storage rather than resetting to the shipped set: discarding
+          // ONE unrunnable config must never take somebody's other tunings with
+          // it. They would still be in localStorage but gone from the picker,
+          // and the next Save would overwrite them for good.
+          setConfigs(listConfigs());
           setActiveId(fallback.id);
           writeActiveConfigId(fallback.id);
           setInput(seedFor(fallback.id));
