@@ -143,6 +143,16 @@ export function ImproveRuleDialog({
 
   const target = reimproving ?? rule;
 
+  // Closing drops the per-sitting state: an Improve-again chain must never be
+  // resumed silently the next time this dialog opens on the same rule.
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      setReview(null);
+      setReimproving(null);
+    }
+    onOpenChange(next);
+  };
+
   const submit = async () => {
     if (!target || !feedback.trim()) return;
     runningForRef.current = target.id;
@@ -182,8 +192,7 @@ export function ImproveRuleDialog({
     try {
       const landed = await onApproveRevised(review.revised);
       if (landed) {
-        onOpenChange(false);
-        setReview(null);
+        handleOpenChange(false);
       }
     } finally {
       setBusy(false);
@@ -196,8 +205,7 @@ export function ImproveRuleDialog({
     try {
       await onDiscard(rule ?? review.original);
       toast.success("Rewrite discarded — the rule is back the way it was.");
-      onOpenChange(false);
-      setReview(null);
+      handleOpenChange(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not undo");
     } finally {
@@ -209,7 +217,7 @@ export function ImproveRuleDialog({
   const sectionLabel = (code: string) => sections[code]?.label ?? code;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="space-y-1 border-b border-border px-6 py-4 text-left">
           <DialogTitle className="flex items-center gap-2 text-base">
@@ -319,16 +327,14 @@ export function ImproveRuleDialog({
               onReject={() => void discard()}
               onEdit={() => {
                 onEditRevised(review.revised);
-                onOpenChange(false);
-                setReview(null);
-                setReimproving(null);
+                handleOpenChange(false);
               }}
             />
           ) : (
             <>
               <Button
                 variant="ghost"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleOpenChange(false)}
                 className="sm:mr-auto"
               >
                 {running ? (
