@@ -12,6 +12,10 @@
 //                                                    there is no history)
 //   /masterwork/[id]/interview?conversation=<id>   → resume that conversation
 //   /masterwork/[id]/interview?new=1               → start a fresh interview
+//   /masterwork/[id]/interview?seed=<text>         → prefill the composer (a
+//                                                    gaps follow-up from the
+//                                                    import/ingest lanes; the
+//                                                    Expert always presses send)
 
 "use client";
 
@@ -37,6 +41,7 @@ export default function RulebookInterviewRoute({
   const searchParams = useSearchParams();
   const conversationId = searchParams.get("conversation") ?? undefined;
   const startNew = searchParams.get("new") === "1";
+  const seedText = searchParams.get("seed") ?? undefined;
   const userId = useAppSelector(selectUserId);
 
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
@@ -110,6 +115,7 @@ export default function RulebookInterviewRoute({
               key={`${conversationId ?? "-"}:${startNew ? "new" : ""}`}
               rulebookId={rulebook.id}
               rulebookName={rulebook.name}
+              seedText={seedText}
               initialConversationId={conversationId}
               startNew={startNew}
             />

@@ -23,6 +23,7 @@ export interface RulebookWorkspaceState {
   interview_open: boolean;
   ingest_open: boolean;
   corpus_open: boolean;
+  chat_import_open: boolean;
   build_open: boolean;
   review_wizard_open: boolean;
   activate_confirmation_open: boolean;

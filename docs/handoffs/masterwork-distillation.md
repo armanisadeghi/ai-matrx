@@ -21,6 +21,22 @@
 
 ## STATUS — live and verified (compressed)
 
+- **DUPLICATE RULE-REWRITE MANDATE RETIRED + EVERY DIALOG LANE GOT ITS URL (2026-08-17).**
+  `masterwork.rule_cleanup` (a concurrent-session sibling of `rule_improver`) is gone
+  end-to-end: the editor's "Clean up with AI" now runs `masterwork.rule_improver`'s TIDY shape
+  (empty `expert_input`; agent `c09465cb-…` v3 gained the tidy case, quote/severity/section
+  frozen client-side by `applyRuleTidy`), `ruleCleanup.ts`+test deleted (logic folded into
+  `ruleImprove.ts`), aidream declaration removed, mandate row + agent `f0d59c1a-…`
+  soft-deleted live, no shim. And the ruling "every creation/working mode gets a URL" is now
+  CLOSED: `/masterwork/[id]/sources` (dump), `/masterwork/[id]/body-of-work`,
+  `/masterwork/[id]/import` — one shared component per lane (panel reused directly; the two
+  dialogs grew `variant="page"`), shared `RulebookLaneRoute` scaffold per the interview
+  precedent, "Full page" doors in the dialog/panel headers, query params still open the
+  in-page entries, and the chat-import lane finally got MOUNTED on the detail page
+  ("Your AI chats" button + `?chatImport=1` — the dialog existed but nothing rendered it).
+  Interview route gained `?seed=` for the gaps follow-up. Admin map + FEATURE.md updated;
+  `pnpm type-check` + `ruleImprove.test.ts` green.
+
 - **SOURCE-ONBOARDING FEATURE FINISHED AS A SURFACE (2026-08-17).** The provider-gallery +
   guide-page house pattern (`features/source-onboarding/`, public `/import/ai-chats[/{provider}]`)
   now has its contract doc (`features/source-onboarding/FEATURE.md` — the one aidream's

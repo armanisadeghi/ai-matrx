@@ -36,13 +36,20 @@
   `/masterwork/[id]` (rule editor + Conversations section + "Build a Masterwork"
   dialog + "From a source" ingest dialog + "Interview me" side sheet),
   `/masterwork/[id]/interview` (the Scout interview as a full page — see § The
-  Record), `/masterwork/[id]/record` ("Your words"), `/masterwork/[id]/masterworks`
+  Record), `/masterwork/[id]/sources` (the dump lane — the same
+  `RulebookSourcesPanel` the detail page renders inline),
+  `/masterwork/[id]/body-of-work` (the body_of_work lane — `BodyOfWorkDialog`
+  `variant="page"`), `/masterwork/[id]/import` (the chat-import lane —
+  `ChatImportDialog` `variant="page"`), `/masterwork/[id]/record` ("Your
+  words"), `/masterwork/[id]/masterworks`
   (built Masterworks + version-drift flags), `/masterwork/admin` (feature map),
   `/masterwork/encore` + `/masterwork/encore/[id]` (the Operator surface — see the
   Encore bullet below). **Every creation/working mode gets a real URL under
-  `/masterwork/[id]/` (Arman's ruling, 2026-08-17)** — the remaining dialog lanes
-  (ingest, body-of-work) keep their deep-linkable query params (`?dump=1`,
-  `?body_of_work=1`, `?interview=1`) on the detail page.
+  `/masterwork/[id]/` (Arman's ruling, 2026-08-17) — satisfied.** Each lane has
+  ONE shared component rendered by both its route and its detail-page
+  dialog/panel entry (`RulebookLaneRoute` is the shared page scaffold), and
+  the deep-linkable query params (`?dump=1`, `?body_of_work=1`, `?chatImport=1`,
+  `?interview=1`) keep working as openers on the detail page.
 - **The guided start (2026-08-15; rebuilt as a full page 2026-08-17):** "New Rulebook" is
   `/masterwork/new` (`features/masterwork/intake/NewRulebookFlow.tsx`) — the four-question intake
   from the Distillation vision (goal · who runs it · where the knowledge lives · stakes ·
@@ -130,9 +137,13 @@ is validated against the Rulebook's own codes. The dialog stays mounted at
 page level so the wizard's "request changes and keep going" flow works:
 submit, press **Keep reviewing**, and the rewrite returns to the queue when
 the agent responds (`requeue` prop on `RuleReviewWizard`). The same Mandate
-drafts a brand-new rule from a plain-language description (`rule_json`
-empty) — the Add-rule window's default tab. The editor offers the AI path
-from within edit ("Have the AI apply my notes instead").
+covers all three shapes of the job, selected by which variable is empty:
+`rule_json` empty = draft a brand-new rule from a plain-language description
+(the Add-rule window's default tab); `expert_input` empty = TIDY, the
+editor's "Clean up with AI" (`applyRuleTidy` freezes quote/severity/section —
+see Invariant 6). The editor offers the feedback path from within edit
+("Have the AI apply my notes instead"). It is THE ONE rule-rewrite Mandate —
+the duplicate `masterwork.rule_cleanup` was retired into it 2026-08-17.
 
 **"Add rule" is a WindowPanel, never a blocking modal** (Arman: the
 project-new window panel is "how everything in our system should run"):
@@ -543,12 +554,35 @@ deliberately never produced.
    `draft: true` so a Build can never include it. Approve-all never touches rejected rules.
 5. **Every textarea in this module is `ProTextarea`** (mic + transcription) — the Expert talks,
    never types, unless they want to.
-6. **Rule cleanup is a proposal, never a write.** `masterwork.rule_cleanup` may polish authored
-   text, but `RuleEditorDialog` refuses any AI change to the verbatim quote, severity, or section;
-   the Expert reviews the staged values and the existing `saveRules` funnel remains the only write.
+6. **AI tidy is a proposal, never a write.** The editor's "Clean up with AI" is the TIDY shape
+   of `masterwork.rule_improver` (empty `expert_input`); `applyRuleTidy` mechanically freezes the
+   verbatim quote, severity, and section (no feedback authorized changing the Expert's
+   classifications), the Expert reviews the staged values (with Undo), and the existing
+   `saveRules` funnel remains the only write. The sibling `masterwork.rule_cleanup` Mandate was
+   retired into the improver 2026-08-17 — never re-split them.
 
 ## Change log
 
+- 2026-08-17 — **Duplicate rule-rewrite Mandate retired: `masterwork.rule_cleanup` →
+  `masterwork.rule_improver`.** Two concurrent sessions had built siblings; the ruled verb set
+  (Approve / Reject / IMPROVE) keeps the improver. The editor's "Clean up with AI" now runs the
+  improver's TIDY shape (empty `expert_input`; agent v3 gained the tidy case in its DB
+  definition, `expert_input` no longer required) with `applyRuleTidy` freezing
+  quote/severity/section client-side — cleanup's capability folded in, nothing lost.
+  `ruleCleanup.ts` + test deleted (`readRuleEditorDraft` + the tests moved into
+  `ruleImprove.ts` / `ruleImprove.test.ts`; persisted editor drafts renamed
+  `beforeCleanup`→`beforeTidy`); aidream declaration removed; the `masterwork.rule_cleanup`
+  mandate row and its agent `f0d59c1a-…` soft-deleted/disabled live. No shim, no fallback.
+- 2026-08-17 — **The three remaining dialog lanes got real URLs** (Arman's ruling closed):
+  `/masterwork/[id]/sources` (dump), `/masterwork/[id]/body-of-work`, `/masterwork/[id]/import`
+  — each rendering the lane's ONE shared component (`RulebookSourcesPanel`;
+  `BodyOfWorkDialog` / `ChatImportDialog` with `variant="page"`) inside the shared
+  `RulebookLaneRoute` scaffold (the interview-route precedent). Dialog headers and the Sources
+  panel header carry "Full page" doors; query params stay live as openers, and the detail page
+  gained the chat-import entry it was missing (`?chatImport=1` + the "Your AI chats" toolbar
+  button — `ChatImportDialog` had been built but never mounted). The interview route accepts
+  `?seed=` so the import lane's "Interview me about the gaps" follow-up survives on the full
+  page. Admin map updated.
 - 2026-08-17 — **The review verbs settled: Approve / Reject / Improve, and
   SAVE ≠ APPROVE** (§ The review-verb matrix). `saveRule` no longer approves
   on save (`applyManualRuleEdit` in types.ts is the one merge); the Improve
@@ -596,6 +630,9 @@ deliberately never produced.
   fields into the form, and offers Undo; source evidence and Expert
   classifications are mechanically immutable. Paid results use the shared
   persisted draft store and nothing reaches `saveRules` until the Expert clicks Save.
+  *(Superseded the same day: the Mandate was a duplicate and was retired into
+  `masterwork.rule_improver`'s tidy shape — see the retirement entry above. The
+  behavior described here is unchanged for the Expert.)*
 - 2026-08-17 — **The Rulebook detail page is now a complete declared surface.**
   `matrx-user/masterwork-rulebook` has a verified code manifest, exact dynamic-route
   recognition, a live `SurfaceRuntimeProvider`, canonical v3 context menus on the page and

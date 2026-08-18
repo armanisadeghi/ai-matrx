@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ListTodo,
   MessageCircleQuestion,
+  MessagesSquare,
   MessageSquareWarning,
   Pencil,
   Stethoscope,
@@ -61,6 +62,7 @@ import {
   type RuleSourceRef,
 } from "../../types";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
+import { ChatImportDialog } from "./ChatImportDialog";
 import { BuildMasterworkDialog } from "./BuildMasterworkDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RulebookSourcesPanel } from "./RulebookSourcesPanel";
@@ -572,6 +574,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [corpusOpen, setCorpusOpen] = useState(
     searchParams.get("body_of_work") === "1",
   );
+  // The chat-import Approach ("Import your AI chats") lands here with
+  // ?chatImport=1 — the import dialog IS the next step. Full page:
+  // /masterwork/[id]/import.
+  const [chatImportOpen, setChatImportOpen] = useState(
+    searchParams.get("chatImport") === "1",
+  );
   // Composer seed for the Scout panel — set when a recording distillation
   // reports gaps and the Expert chooses "Interview me about the gaps", or by
   // an improvement-brain assist chip (?assist=<dedupe_key>) whose launch
@@ -730,6 +738,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         interview_open: interviewOpen,
         ingest_open: ingestOpen,
         corpus_open: corpusOpen,
+        chat_import_open: chatImportOpen,
         build_open: buildOpen,
         review_wizard_open: wizardOpen,
         activate_confirmation_open: confirmActivate,
@@ -744,6 +753,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     assistKey,
     buildOpen,
     canEdit,
+    chatImportOpen,
     confirmActivate,
     corpusOpen,
     dumpFocus,
@@ -1341,6 +1351,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   <BookOpen className="h-4 w-4" />
                   Your published work
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8"
+                  onClick={() => setChatImportOpen(true)}
+                >
+                  <MessagesSquare className="h-4 w-4" />
+                  Your AI chats
+                </Button>
               </>
             ) : null}
           </div>
@@ -1564,6 +1583,16 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             onOpenChange={setCorpusOpen}
             rulebook={rulebook}
             onIngested={() => void reloadRulebook()}
+          />
+          <ChatImportDialog
+            open={chatImportOpen}
+            onOpenChange={setChatImportOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+            onFollowupSeed={(seed) => {
+              setInterviewSeed(seed);
+              setInterviewOpen(true);
+            }}
           />
           {canEdit ? (
             <ScoutInterviewPanel

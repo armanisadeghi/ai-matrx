@@ -57,6 +57,30 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/masterwork/[id]/sources",
+      label: "Sources (dump lane, full page)",
+      description:
+        "The dump Approach's capture surface as its own URL — the same RulebookSourcesPanel the Rulebook page renders inline (?dump=1 keeps opening it there). Attach workspace things, uploads, and links; one durable ingest-dump run.",
+      filePath: "app/(core)/masterwork/[id]/sources/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/masterwork/[id]/body-of-work",
+      label: "Your published work (body_of_work lane, full page)",
+      description:
+        "The body_of_work Approach as its own URL — the same BodyOfWorkDialog lane (variant=page) the Rulebook page opens as a dialog (?body_of_work=1). Files + links in one gesture, per-piece durable board, retry-failed.",
+      filePath: "app/(core)/masterwork/[id]/body-of-work/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/masterwork/[id]/import",
+      label: "Import your AI chats (chat-import lane, full page)",
+      description:
+        "The chat-import Approach as its own URL — the same ChatImportDialog lane (variant=page) the Rulebook page opens as a dialog (?chatImport=1 / 'Your AI chats' toolbar button). Upload an export, paste a conversation, or pick AI Matrx chats.",
+      filePath: "app/(core)/masterwork/[id]/import/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/masterwork/[id]/record",
       label: "The Record ('Your words')",
       description:
