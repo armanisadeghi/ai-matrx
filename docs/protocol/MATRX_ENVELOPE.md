@@ -103,7 +103,7 @@ delivered, before the stream closes ("has the last word").
   fumble it. The key is the per-item content key
   (`act:sha256(conversation \x00 type \x00 canonical(item))`) consulted against the
   durable ledger `platform.matrx_action_ledger`; a re-emit replays the original
-  receipt. Full contract: [MATRX_ACTIONS.md](MATRX_ACTIONS.md) §6.
+  receipt. Full contract: [MATRX_DIRECTIVES.md](MATRX_DIRECTIVES.md) §6.
 - A failed apply is **warn-not-fatal** — the delivered response always stands.
 
 **`reference`** — each item is a **pure pointer**: the typed identity ids + optional
