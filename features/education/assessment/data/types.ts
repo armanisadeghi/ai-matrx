@@ -5,7 +5,7 @@
 // the generated `education` schema — never hand-redefine a column shape.
 //
 // The study spine (study_session/study_attempt/item_mastery) is REUSED for
-// per-question attempts keyed item_type='assessment_item' — see agents.ts
+// per-question attempts keyed item_type='assessment_item' — see mandates.ts
 // ASSESSMENT_ITEM_TYPE and features/education/study.
 
 import type { Database } from "@/types/database.types";

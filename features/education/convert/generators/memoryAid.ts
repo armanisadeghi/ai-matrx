@@ -7,7 +7,7 @@
 // upload-kit fan-out produce memory aids on the ONE converter dispatch.
 
 import { studyMediaService } from "@/features/education/media/service";
-import { EDU_MEMORY_AGENTS } from "@/features/education/memory/agents";
+import { EDU_MEMORY_MANDATES } from "@/features/education/memory/mandates";
 import { coerceMemoryAid } from "@/features/content-ir/kinds/memory-aid";
 import { memoryAidCounts } from "@/features/education/memory/types";
 import { runAgentExtraction } from "../runAgentExtraction";
@@ -27,7 +27,7 @@ async function run(
   const { source, options } = request;
 
   const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
-    agentId: EDU_MEMORY_AGENTS.memoryAid,
+    mandateKey: EDU_MEMORY_MANDATES.memoryAid,
     surfaceKey: "education-ingest-memory",
     sourceFeature: "education-ingest",
     variables: {

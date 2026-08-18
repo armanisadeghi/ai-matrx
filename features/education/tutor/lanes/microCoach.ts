@@ -1,12 +1,10 @@
 // features/education/tutor/lanes/microCoach.ts
 //
 // Phase 4 stretch (Flashcards Competitive Parity Push) — a cheap/fast-model
-// per-card tip, surfaced right after grading (not just end-of-session). New
-// OPTIONAL lane (`fc_micro_coach`, AGENT_SPECS.md §11): no live agent is
-// registered yet (author one via agent_author, then set the id in
-// `tutor/config.ts` / localStorage) — until then `getFcTutorAgentConfig()`
-// returns `microCoachAgentId: null` and this cleanly no-ops, same as every
-// other optional tutor lane before its agent existed.
+// per-card tip, surfaced right after grading (not just end-of-session). The
+// lane (FC_MANDATES.microCoach, AGENT_SPECS.md §11) resolves through the
+// mandate — swap the agent behind it at /agents/mandates (the old
+// localStorage agent-id override is RETIRED; bindings replaced it).
 //
 // Deliberately tiny + fire-and-forget: a wrong answer shouldn't wait on an
 // LLM round-trip before the learner can move to the next card, so callers
@@ -18,7 +16,7 @@ import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { ReviewResult } from "@/features/flashcards/types";
-import { getFcTutorAgentConfig } from "./config";
+import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 
 export interface MicroCoachContext {
   front: string;
@@ -35,7 +33,8 @@ export interface MicroCoachContext {
   sessionId?: string | null;
   /** This learner's prior attempts on this card (newest first), if any. */
   priorAttempts?: unknown[];
-  agentId?: string | null;
+  /** Override the micro-coach mandate (rare — testing only). */
+  mandateKey?: string | null;
 }
 
 /** The tip text this lane's agent produced, or null when there is no signal. */
@@ -45,18 +44,17 @@ function readTip(data: unknown): string | null {
   return typeof tip === "string" && tip.trim().length > 0 ? tip : null;
 }
 
-/** One-line coaching tip after a grade, or null when unconfigured / no-signal. */
+/** One-line coaching tip after a grade, or null on failure / no-signal. */
 export function microCoach(ctx: MicroCoachContext) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<string | null> => {
-    const agentId = ctx.agentId ?? getFcTutorAgentConfig().microCoachAgentId;
-    if (!agentId) return null; // optional lane — no agent authored yet
+    const mandateKey = ctx.mandateKey ?? FC_MANDATES.microCoach;
 
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId,
+        mandateKey,
         surfaceKey: "flashcards-micro-coach",
         sourceFeature: "education-flashcards",
         // Fires automatically right after a grade lands — not a user gesture.

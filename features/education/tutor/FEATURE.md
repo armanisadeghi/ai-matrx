@@ -41,7 +41,10 @@ that makes it a tutor: **grounding injection**.
   structured envelope (see Trust below).
 
 **Data / logic** (`features/education/tutor/`)
-- `agents.ts` — `EDU_TUTOR_AGENTS` (the live tutor agent id). `DEFAULT_TUTOR_AGENT_ID`.
+- `mandates.ts` — `EDU_TUTOR_MANDATES` / `TUTOR_MANDATE_KEY` (`education.tutor_message`). The
+  tutor's agent resolves through this mandate live (system default → org → user binding) —
+  `EducationTutorClient` pre-resolves via `useMandate` because the managed `useAgentLauncher`
+  overload is agent-id-only (TODO(platform): that overload should accept a mandateKey).
 - `learnerMemory.ts` — **the ONE cross-session memory assembler.** Reads the study spine
   (sessions, attempts, `item_mastery` FSRS state, streak, goals) → a `LearnerMemory` snapshot +
   a compact `summaryText`.
@@ -60,11 +63,13 @@ that makes it a tutor: **grounding injection**.
   writes via `useSetting("userPreferences.tutor.*")`.
 - `lanes/` — **the generalized short-lived tutor lanes** (moved here from
   `features/flashcards/data/tutor/`, P2 build guidance "generalize, don't fork"): `helpLive`
-  (`fc_help_live`, the in-context "help me with this card" call — threads its own
-  `TrustEnvelope`), `reviewSession` (`fc_review_batch` end-of-session review), `microCoach`
-  (`fc_micro_coach` per-card tip), `learnerContext` (reshapes the CURRENT session's in-memory
-  state), and `config` (per-lane agent-id overrides). Consumed by flashcards study surfaces
-  (`StudyDeck`, Fast Fire) — NOT the conversation; these are one-shot JSON lanes.
+  (`flashcards.help_live`, the in-context "help me with this card" call — threads its own
+  `TrustEnvelope`), `reviewSession` (`flashcards.review_batch` end-of-session review), and
+  `microCoach` (`flashcards.micro_coach` per-card tip) — all mandate-resolved (keys default from
+  `FC_MANDATES`; the old `config.ts` localStorage agent-id overrides are RETIRED, bindings at
+  `/agents/mandates` replace them) — plus `learnerContext` (reshapes the CURRENT session's
+  in-memory state). Consumed by flashcards study surfaces (`StudyDeck`, Fast Fire) — NOT the
+  conversation; these are one-shot JSON lanes.
 
 **Reused primitive introduced here:** `features/agents/hooks/useConversationRoutePromotion.ts`
 — the generic conversation-route URL promotion (registerSurface + pendingNav + persisted-gated
@@ -72,8 +77,8 @@ promote with the stale-focus guard), extracted from `ChatRoomClient`. `/chat` ca
 
 ## How grounding works (load-bearing)
 
-The tutor is a streaming TEXT chat agent (`cb268e29-…`, the current live id in `agents.ts` — see
-`LIVE_AGENTS.md` for the full supersession chain) with **zero user-facing variables** (so
+The tutor is a streaming TEXT chat agent (resolved live through the `education.tutor_message`
+mandate — the DB decides which agent fulfils it) with **zero user-facing variables** (so
 the chat composer stays clean) and **four declared CONTEXT SLOTS**: `learner_memory`,
 `study_material`, `teaching_mode`, `personality_style` (each with a `max_inline_chars` ceiling —
 content ≤ that is inlined into the model's view, capped at 5000). Grounding is **context, not
@@ -160,6 +165,11 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   re-check lands (per `features/entitlements/FEATURE.md`).
 
 ## Change log
+- **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted.
+  `agents.ts` → `mandates.ts` (`education.tutor_message`); `EducationTutorClient` gates on
+  `useMandate` (unresolved mandate REFUSES with the error visible — never a fallback id);
+  `lanes/config.ts` (localStorage agent-id overrides) deleted — bindings replace it; TutorHome's
+  history list is scoped by the education-tutor source feature, not a hardcoded agent id.
 - **2026-08-11** — **The tutor lanes stream (THE FLOATING LAW).** `helpLive` (Ask AI for help) and `reviewSession` (end-of-session review) take an optional `onConversationCreated`; `StudyDeck` floats both in the `LiveRunWindow`, so the card being studied never moves. `microCoach` stays deliberately headless — nothing waits on it, it has no loading state, and its one-line tip arrives as a toast.
 - **2026-08-10** — **Surface made agent-writable (3 targets) + tutor vocabulary promoted to
   `types.ts`.** `matrx-user/education-tutor` now declares `writeTargets`: `teaching_mode` and

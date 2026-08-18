@@ -10,10 +10,11 @@
 //      bug is structurally impossible),
 //   4. record the attempt on the study spine (study_record_attempt).
 //
-// GRADER-OPTIONAL (hard-requirement #6): if no grader agent id is configured, we
-// STILL upload the clip + record a result-less attempt (so the mechanics are
-// testable now) and mark the grade `skipped`. Grading lights up the instant an
-// id is set in config.ts.
+// The grader resolves through the mandate (FC_MANDATES.gradeSpoken) — swap the
+// agent behind it at /agents/mandates (the old localStorage agent-id config is
+// RETIRED; bindings replaced it). NO-AUDIO GUARD: with no uploaded clip we
+// STILL record a result-less attempt and mark the grade `skipped` — grading
+// with no audio hallucinates a "correct" from the card back.
 //
 // Keyed by the STABLE card id throughout, so grades land on the right card even
 // though they resolve out of order, long after the drill advanced past them.
@@ -28,7 +29,7 @@ import {
   normalizeAudioContentType,
 } from "@/features/audio/utils/audio-mime";
 import { verdictResult, type GradeResult } from "@/features/education/trust/types";
-import { getFastFireAgentConfig } from "../config";
+import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import { coerceSpokenGrade } from "./grading-core";
 import {
   gradePending,
@@ -65,7 +66,6 @@ export function gradeCard(args: GradeCardArgs) {
     getState: () => RootState,
   ): Promise<void> => {
     const { cardId, front, back, secondsAllowed, clip, sessionId } = args;
-    const config = getFastFireAgentConfig();
 
     // 1. Upload the per-card clip to a durable file_id (best-effort — a missing
     //    clip is not fatal; we still record the attempt result-less).
@@ -100,13 +100,13 @@ export function gradeCard(args: GradeCardArgs) {
       }
     }
 
-    // GRADER-OPTIONAL + NO-AUDIO GUARD: skip the grader (record result-less) when
-    // there's no grader configured OR no audio was captured/uploaded. Grading with
-    // NO audio is worse than not grading: the model has nothing to transcribe and
-    // hallucinates a "correct" answer from the card back (the exact 100%-on-
-    // everything bug). This also makes abort-mid-pad safe — an abandoned card whose
-    // clip resolved null never launches a grader or records a fabricated grade.
-    if (!config.graderAgentId || !responseAudioFileId) {
+    // NO-AUDIO GUARD: skip the grader (record result-less) when no audio was
+    // captured/uploaded. Grading with NO audio is worse than not grading: the
+    // model has nothing to transcribe and hallucinates a "correct" answer from
+    // the card back (the exact 100%-on-everything bug). This also makes
+    // abort-mid-pad safe — an abandoned card whose clip resolved null never
+    // launches a grader or records a fabricated grade.
+    if (!responseAudioFileId) {
       dispatch(gradeSkipped({ cardId, responseAudioFileId, runId: sessionId }));
       await recordAttempt({
         cardId,
@@ -131,7 +131,7 @@ export function gradeCard(args: GradeCardArgs) {
         fileId: responseAudioFileId,
       });
       const runResult = await runHeadlessAgentJson(dispatch, getState, {
-        agentId: config.graderAgentId,
+        mandateKey: FC_MANDATES.gradeSpoken,
         surfaceKey: `fastfire-grade-${cardId}`,
         // NOT ephemeral: the platform's ephemeral path is half-built and
         // 404s against the v2 conversation gate (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md).
@@ -197,7 +197,7 @@ export function gradeCard(args: GradeCardArgs) {
           feedback,
         },
         transcript: grade.transcript || null,
-        gradedBy: config.graderAgentId,
+        gradedBy: FC_MANDATES.gradeSpoken,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : "grading failed";
@@ -213,7 +213,7 @@ export function gradeCard(args: GradeCardArgs) {
         scoreValue: null,
         score: { grade_error: message },
         transcript: null,
-        gradedBy: config.graderAgentId,
+        gradedBy: FC_MANDATES.gradeSpoken,
       });
     }
   };

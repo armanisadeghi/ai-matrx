@@ -67,9 +67,9 @@ this button.
 
 ## The `notes` converter target (owned here)
 
-P4 registers the converter's `notes` target — `notesGenerator.ts` (`agents.ts`
-`NOTES_AGENTS.studyNotes` = `f23562ce…`, a grounded Study-Notes agent, same TrustEnvelope
-contract as summary/deck). It runs the agent → creates a real platform note (folder
+P4 registers the converter's `notes` target — `notesGenerator.ts` (`mandates.ts`
+`NOTES_MANDATES.studyNotes` = `education.notes_generate`, a grounded Study-Notes lane resolved
+live through the mandate, same TrustEnvelope contract as summary/deck). It runs the agent → creates a real platform note (folder
 "Study Notes") → calls `recordSourceLineage` to link a `source` edge to the origin (the ingest
 anchor file for the P9 kit, or the origin entity for an entity-sourced convert). So P9's
 one-upload→kit fan-out can include a structured note, and it lands right back in this surface.
@@ -89,6 +89,8 @@ one-upload→kit fan-out can include a structured note, and it lands right back 
 
 ## Change log
 
+- **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
+  (`agents.ts` → `mandates.ts`, `NOTES_MANDATES.studyNotes` = `education.notes_generate`).
 - **2026-07-26** — `LiveCaptureButton` migrated off its own `useChunkedRecordAndTranscribe`
   instance onto the global recorder (`useVoiceCapture` + new `onChunk` callback): joins
   start-always-wins arbitration + the Audio panel registry, drops the 971-line recording

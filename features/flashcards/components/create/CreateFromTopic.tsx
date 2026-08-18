@@ -3,7 +3,7 @@
 // features/flashcards/components/create/CreateFromTopic.tsx
 //
 // The first end-to-end AI flow for the canonical Flashcards tool: type a topic
-// → the live generateCards agent (FC_AGENTS.generateCards, gemini-3.5-flash)
+// → the generateCards mandate (FC_MANDATES.generateCards, DB-bound agent)
 // returns a structured set → a real fc_set + fc_card rows are created → the
 // user is navigated into the new set, ready to study.
 //
@@ -41,7 +41,7 @@ import { selectKindEnvelope } from "@/features/agents/redux/execution-system/act
 import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
-import { FC_AGENTS } from "../../data/agents";
+import { FC_MANDATES } from "../../data/mandates";
 import { fcService } from "../../data/fcService";
 import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
 import { useGenerateCards } from "../../data/useGenerateCards";
@@ -125,7 +125,7 @@ export function CreateFromTopic() {
     const safeCount = Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10));
 
     try {
-      const extracted = await generate(FC_AGENTS.generateCards, {
+      const extracted = await generate(FC_MANDATES.generateCards, {
         topic: trimmedTopic,
         count: safeCount,
         difficulty,

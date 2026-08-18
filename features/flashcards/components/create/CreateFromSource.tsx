@@ -62,7 +62,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
-import { FC_AGENTS } from "../../data/agents";
+import { FC_MANDATES } from "../../data/mandates";
 import { fcService } from "../../data/fcService";
 import type { NewCardInput } from "../../data/types";
 import { useGenerateCards } from "../../data/useGenerateCards";
@@ -193,7 +193,7 @@ export function CreateFromSource() {
     const safeCount = Math.min(COUNT_MAX, Math.max(COUNT_MIN, count || 10));
 
     try {
-      const result = await generate(FC_AGENTS.generateFromSource, {
+      const result = await generate(FC_MANDATES.generateFromSource, {
         source_content: sourceContent,
         document_id: selectedDoc.id,
         count: safeCount,

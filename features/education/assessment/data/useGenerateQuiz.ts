@@ -58,7 +58,7 @@ function isFromSourceVars(
 
 export interface UseGenerateQuizResult {
   generate: (
-    agentId: string,
+    mandateKey: string,
     vars: GenerateQuizVariables | GenerateFromSourceVariables,
   ) => Promise<GeneratedQuiz>;
   isGenerating: boolean;
@@ -195,12 +195,12 @@ export function useGenerateQuiz(): UseGenerateQuizResult {
     useLiveAgentRun();
 
   async function generate(
-    agentId: string,
+    mandateKey: string,
     vars: GenerateQuizVariables | GenerateFromSourceVariables,
   ): Promise<GeneratedQuiz> {
     const fromSource = isFromSourceVars(vars);
     return run<GeneratedQuiz>({
-      agentId,
+      mandateKey,
       surfaceKey: fromSource
         ? "assessment-generate-from-source"
         : "assessment-generate-from-topic",

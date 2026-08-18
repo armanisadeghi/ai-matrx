@@ -21,7 +21,7 @@ import {
   type GradeVerdict,
   type StepGradeVerdict,
 } from "@/features/education/trust/types";
-import { ASSESSMENT_AGENTS } from "./agents";
+import { ASSESSMENT_MANDATES } from "./mandates";
 import { runVisionGrader, uploadWorkPhoto } from "./imageGrading";
 import type { AssessmentItemRow, AttemptResult, QuestionType } from "./types";
 
@@ -34,7 +34,7 @@ export interface GradedAnswer {
   explanation: string;
   /** The named misconception the learner appears to hold, if any. */
   misconception: string | null;
-  /** How this was graded — 'local' (objective match) or the agent id. */
+  /** How this was graded — 'local' (objective match) or the grading mandate key. */
   gradedBy: string;
   /**
    * Per-step breakdown — present only for the image/handwritten path, which
@@ -118,14 +118,14 @@ function normalizeAcceptable(v: unknown): string[] {
  * explanation + misconception via the shared helpers) plus assessment's extras
  * (scoreValue, gradedBy).
  */
-function verdictToGraded(v: GradeVerdict, agentId: string): GradedAnswer {
+function verdictToGraded(v: GradeVerdict, mandateKey: string): GradedAnswer {
   const result = verdictResult(v);
   return {
     result,
     scoreValue: gradeResultScore(result),
     explanation: v.explanation,
     misconception: v.misconception,
-    gradedBy: agentId,
+    gradedBy: mandateKey,
   };
 }
 
@@ -139,13 +139,14 @@ export function gradeAnswerAI(args: {
   question: string;
   expected: string;
   learnerAnswer: string;
-  agentId?: string;
+  /** Override the grading mandate (rare — testing only). */
+  mandateKey?: string;
 }) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<GradedAnswer> => {
-    const agentId = args.agentId ?? ASSESSMENT_AGENTS.gradeTypedAnswer;
+    const mandateKey = args.mandateKey ?? ASSESSMENT_MANDATES.gradeTypedAnswer;
     const fallback: GradedAnswer = {
       result: "partial",
       scoreValue: 0.5,
@@ -165,7 +166,7 @@ export function gradeAnswerAI(args: {
     }
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId,
+        mandateKey,
         surfaceKey: "assessment-grade-typed",
         sourceFeature: "education-assessment",
         surfaceName: "matrx-user/education-assessment",
@@ -179,7 +180,7 @@ export function gradeAnswerAI(args: {
       });
       const verdict = coerceGradeVerdict(result.data);
       if (!verdict) return fallback;
-      return verdictToGraded(verdict, agentId);
+      return verdictToGraded(verdict, mandateKey);
     } catch (err) {
       console.error("[assessment.gradeAnswerAI] failed:", err);
       return fallback;
@@ -194,7 +195,7 @@ export function gradeAnswerAI(args: {
  */
 function stepVerdictToGraded(
   v: StepGradeVerdict,
-  agentId: string,
+  mandateKey: string,
   responseImageFileId: string,
 ): GradedAnswer {
   const result = verdictResult(v);
@@ -203,7 +204,7 @@ function stepVerdictToGraded(
     scoreValue: gradeResultScore(result),
     explanation: v.explanation,
     misconception: v.misconception,
-    gradedBy: agentId,
+    gradedBy: mandateKey,
     steps: v.steps,
     transcription: v.transcription,
     responseImageFileId,
@@ -228,14 +229,15 @@ export function gradeAnswerImage(args: {
   photo: File | Blob;
   /** For upload metadata / telemetry (the assessment item, when there is one). */
   itemId?: string;
-  agentId?: string;
+  /** Override the vision-grading mandate (rare — testing only). */
+  mandateKey?: string;
   surfaceKey?: string;
   surfaceName?: string;
   /** Live handle — the vision grade streams where the caller mounts it. */
   onConversationCreated?: (conversationId: string) => void;
 }) {
   return async (dispatch: AppDispatch): Promise<GradedAnswer> => {
-    const agentId = args.agentId ?? ASSESSMENT_AGENTS.gradeHandwritten;
+    const mandateKey = args.mandateKey ?? ASSESSMENT_MANDATES.gradeHandwritten;
     const fallback: GradedAnswer = {
       result: "partial",
       scoreValue: 0.5,
@@ -258,7 +260,7 @@ export function gradeAnswerImage(args: {
 
     const verdict = await dispatch(
       runVisionGrader({
-        agentId,
+        mandateKey,
         question: args.question,
         expected: args.expected,
         responseImageFileId: fileId,
@@ -271,6 +273,6 @@ export function gradeAnswerImage(args: {
       }),
     );
     if (!verdict) return { ...fallback, responseImageFileId: fileId };
-    return stepVerdictToGraded(verdict, agentId, fileId);
+    return stepVerdictToGraded(verdict, mandateKey, fileId);
   };
 }

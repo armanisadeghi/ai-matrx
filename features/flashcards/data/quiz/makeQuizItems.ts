@@ -4,14 +4,14 @@
 // (AGENT_SPECS.md §8: front, back, topic, distractor_count → question,
 // correct, distractors[], explanation). Test mode's PRIMARY distractor
 // source is free and instant — other cards' back text from the same set
-// (see quiz/buildQuizQuestions.ts) — this agent is only the FALLBACK for
-// sets too small to have enough sibling cards to draw from. OPTIONAL: with
-// no agent configured (or a failed call) the caller gets `null` and Test
-// mode simply ships fewer options for that question — never a hard blocker.
+// (see quiz/buildQuizQuestions.ts) — this lane is only the FALLBACK for
+// sets too small to have enough sibling cards to draw from. Best-effort: on
+// any failure the caller gets `null` and Test mode simply ships fewer
+// options for that question — never a hard blocker.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
-import { FC_AGENTS } from "../agents";
+import { FC_MANDATES } from "../mandates";
 import { QUIZ_ITEMS_KEY } from "./buildQuizQuestions";
 
 export interface MakeQuizItemsArgs {
@@ -27,8 +27,8 @@ export interface MakeQuizItemsArgs {
    * paid for the same items again.
    */
   cardId?: string | null;
-  /** Override the configured `fc_make_quiz_items` agent id (testing only). */
-  agentId?: string | null;
+  /** Override the quiz-items mandate (testing only). */
+  mandateKey?: string | null;
 }
 
 export interface MakeQuizItemsResult {
@@ -61,12 +61,11 @@ export function makeQuizItems(args: MakeQuizItemsArgs) {
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<MakeQuizItemsResult | null> => {
-    const agentId = args.agentId ?? FC_AGENTS.makeQuizItems;
-    if (!agentId) return null;
+    const mandateKey = args.mandateKey ?? FC_MANDATES.makeQuizItems;
 
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId,
+        mandateKey,
         surfaceKey: "flashcards-quiz-items",
         sourceFeature: "education-flashcards",
         surfaceName: "matrx-user/education-flashcards",

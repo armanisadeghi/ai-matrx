@@ -5,7 +5,7 @@
 // links a `source` lineage edge to the ingest anchor file.
 
 import { studyMediaService } from "@/features/education/media/service";
-import { EDU_MEDIA_AGENTS } from "@/features/education/media/mindmap/agents";
+import { EDU_MEDIA_MANDATES } from "@/features/education/media/mindmap/mandates";
 import { runAgentExtraction } from "../runAgentExtraction";
 import { recordSourceLineage } from "../recordSourceLineage";
 import { buildSourceTrust } from "../sourceTrust";
@@ -41,7 +41,7 @@ async function run(
   const { source, options } = request;
 
   const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
-    agentId: EDU_MEDIA_AGENTS.mindMap,
+    mandateKey: EDU_MEDIA_MANDATES.mindMap,
     surfaceKey: "education-ingest-mindmap",
     sourceFeature: "education-ingest",
     variables: {

@@ -14,7 +14,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { verdictResult } from "@/features/education/trust/types";
 import { studyService } from "@/features/education/study/service/studyService";
-import { getFastFireAgentConfig } from "../config";
+import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import {
   runSpokenGrader,
   uploadResponseClip,
@@ -55,7 +55,6 @@ export interface GradeSpokenAnswerResult {
 export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
   return async (dispatch: AppDispatch): Promise<GradeSpokenAnswerResult> => {
     try {
-      const config = getFastFireAgentConfig();
       const surface = args.surface ?? "voice-test";
 
       // Same upload path as gradeCard.thunk — best-effort; a failed upload must
@@ -72,7 +71,7 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
         ...(args.itemId ? { cardId: args.itemId } : {}),
       });
 
-      if (!config.graderAgentId || !responseAudioFileId) {
+      if (!responseAudioFileId) {
         await maybeRecord(args, responseAudioFileId, null, null);
         return {
           status: "skipped",
@@ -90,7 +89,7 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
 
       const grade = await dispatch(
         runSpokenGrader({
-          agentId: config.graderAgentId,
+          mandateKey: FC_MANDATES.gradeSpoken,
           front: args.front,
           back: args.back,
           secondsAllowed: args.secondsAllowed,
@@ -110,7 +109,7 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
           args,
           responseAudioFileId,
           null,
-          config.graderAgentId,
+          FC_MANDATES.gradeSpoken,
         );
         return {
           status: "error",
@@ -119,7 +118,7 @@ export function gradeSpokenAnswer(args: GradeSpokenAnswerArgs) {
         };
       }
 
-      await maybeRecord(args, responseAudioFileId, grade, config.graderAgentId);
+      await maybeRecord(args, responseAudioFileId, grade, FC_MANDATES.gradeSpoken);
       return { status: "graded", grade, responseAudioFileId };
     } catch (err) {
       console.error("[gradeSpokenAnswer] unexpected failure:", err);

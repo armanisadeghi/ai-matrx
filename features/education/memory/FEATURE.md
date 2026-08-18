@@ -30,7 +30,7 @@ Memory Tools is a **thin tool over the existing study-media substrate** — it i
 - **Routes** (`app/(core)/education/memory/`): `/` (list-first home) · `/new` (generate) · `/[id]` (view — the shareable URL) · `/[id]/edit` (owner controls, EDIT-gated).
 - **Shared viewer:** `/education/media/[id]` → `MediaRouter` → `MemoryDetail` (kind dispatch).
 - **Feature dir** (`features/education/memory/`):
-  - `agents.ts` — the two live agent ids.
+  - `mandates.ts` — the two mandate keys (`EDU_MEMORY_MANDATES`).
   - `types.ts` — `MemoryAidPayload` / `MemoryHintPayload` + non-throwing coercers.
   - `useGenerateMemoryAid.ts` — the generation hook (over `runAgentExtraction`).
   - `lanes/memoryHint.ts` — the proactive per-card hint thunk (mirrors the tutor `microCoach` lane).
@@ -38,10 +38,10 @@ Memory Tools is a **thin tool over the existing study-media substrate** — it i
 - **Converter generator:** `features/education/convert/generators/memoryAid.ts`.
 - **Proactive surface:** `MemoryAidButton` mounted in `features/flashcards/components/study/StudyDeck.tsx` (opt-in prop `enableMemoryAids`, default on; nothing fires until tapped).
 
-## Agents (authored + live-verified 2026-07-13, gemini-3.5-flash)
+## Mandates (keys in `mandates.ts`; the DB decides which agent fulfils each — swap at `/agents/mandates`)
 
-- **Study Memory Aid Generator** `826aaa26-baaf-4e87-b5a3-2e4bba37f053` — `source_content, title, focus` → `memory_aid` envelope `{ __kind, title, strategy_note, mnemonics[], analogies[], memory_palace }`. Grounded strictly in the supplied material. Powers the tool + the converter target.
-- **Flashcard Memory Hint** `4c5dd04a-4b22-43cd-bd8b-781a4d6dedb5` — `front, back, topic` → one `memory_hint` `{ __kind, technique, aid, explanation }`. Cheap/fast; powers the proactive StudyDeck affordance.
+- **`education.memory_generate`** (Study Memory Aid Generator) — `source_content, title, focus` → `memory_aid` envelope `{ __kind, title, strategy_note, mnemonics[], analogies[], memory_palace }`. Grounded strictly in the supplied material. Powers the tool + the converter target.
+- **`education.memory_hint`** (Flashcard Memory Hint) — `front, back, topic` → one `memory_hint` `{ __kind, technique, aid, explanation }`. Cheap/fast; powers the proactive StudyDeck affordance.
 
 ## Invariants & gotchas
 
@@ -54,6 +54,7 @@ Memory Tools is a **thin tool over the existing study-media substrate** — it i
 
 ## Change log
 
+- **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted (`agents.ts` → `mandates.ts`, `EDU_MEMORY_MANDATES`).
 - **2026-08-17** — **`memory_aid` + `memory_hint` became registered kinds, and the window stopped auto-opening over the per-card aid.** Arman generated a memory aid and watched the page render it fine while a floating LiveRunWindow showed the same payload as raw JSON — because both shapes were unregistered `__kind`s with hand-rolled renderers (the exact gap logged in `docs/handoffs/canonical-component-sweep.md`). Fixed on the paved road: compiled bridge `features/content-ir/kinds/memory-aid.ts` (schemas for `memory_aid`/`mnemonic`/`analogy`/`memory_palace`/`locus`/`memory_hint`, streaming serverData bridges, toMarkdown facets, and the ONE implementation of the types + coercers — `features/education/memory/types.ts` now keeps only `MemoryGenConfig`/`memoryAidCounts`); canonical components `MemoryAidBlock` (exports `MnemonicsSection`/`AnalogiesSection`/`MemoryPalaceSection`/`TechniquePill`) + `MemoryHintBlock`, registered in `BlockComponentRegistry` + `block-dispatch`; DB rows applied live via the Supabase MCP (`migrations/kind_memory_aid_full.sql` — definitions, edges, examples all trigger-validated `passed`, bundled `kind_component` rows, `kind_memory_aid`/`kind_memory_hint` skills + render blocks), both roots activated through `set_kind_activation` (children stay inactive — nested_only_child). `MemoryAidView` and `MemoryAidButton`'s inline hint card are DELETED; `MemoryDetail` renders `MemoryAidBlock`. **Window posture:** `MemoryAidButton` no longer floats a window at all — the hint streams INLINE in the exact spot the finished aid occupies (`useLiveRunHandle` + `LiveRunDisplay`; the deck page only grows downward, the earned inline exception), and a "Chat" button opens the run's conversation in the LiveRunWindow on demand. `MemoryNew` keeps the float (no inline render target — it navigates to the detail page), and its window now streams the real component instead of JSON. Note for the next DB-connected session: `pnpm check:shapes:crosswalk:refresh` (this container's egress blocks the DB hostname; the rows are live so the refresh is mechanical).
 
 - **2026-08-14** — **The per-card memory aid is PERSISTED, and no longer dies on the next card (FOUND_DEFECTS D151).** The `memory_hint` lane was a paid run whose payload lived only in `MemoryAidButton` state, wiped by the button's own reset effect the moment the learner advanced — so the same card could be charged for the same mnemonic indefinitely. The lane now passes `onResult` to `runHeadlessAgentJson` (the new persistence seam) and writes the aid as an `fc_detail` layer on the card — kind `mnemonic`, `metadata: {source:'memory_hint', technique, explanation}` — the instant it arrives, from INSIDE the primitive, so an unmounted button cannot intercept it. `memoryHintFromDetail` reads it back; `MemoryAidButton` takes `cardId` + the card's `existingDetails` and shows the stored aid, so returning to a card shows what was already paid for and the button reads "Another memory aid". The reset effect is keyed on `cardId` now and only clears LIVE run state. Browser-verified on `/education/flashcards/[setId]/study`: generated, reloaded, signed out and back in — the aid is still on the card, with no second model call.

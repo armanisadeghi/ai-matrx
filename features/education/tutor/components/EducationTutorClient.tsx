@@ -52,7 +52,8 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationTutorScope } from "@/features/surfaces/manifests/education-tutor.manifest";
 import { useSetting } from "@/features/settings/hooks/useSetting";
-import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
+import { useMandate } from "@/features/agents/mandates/useMandate";
+import { TUTOR_MANDATE_KEY } from "../mandates";
 import {
   TUTOR_TEACHING_MODES,
   TUTOR_PERSONALITY_STYLES,
@@ -97,16 +98,49 @@ export interface EducationTutorClientProps {
 
 const defaultHref = (id: string) => `/education/tutor/${id}`;
 
-export function EducationTutorClient({
+export function EducationTutorClient(props: EducationTutorClientProps) {
+  // The tutor's agent resolves through its MANDATE (system default → org
+  // binding → user binding, live from the DB) — never a hardcoded id. The
+  // managed useAgentLauncher overload below is agent-id-only, so we
+  // pre-resolve here and gate the surface until the mandate resolves; an
+  // unresolved mandate REFUSES with the error visible — never a fallback id.
+  // TODO(platform): managed useAgentLauncher overload should accept a
+  // mandateKey — pre-resolving drops config_overrides on this path.
+  const { mandate, loading, error } = useMandate(TUTOR_MANDATE_KEY);
+
+  if (error) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 bg-textured p-6 text-center">
+        <p className="text-sm font-medium text-foreground">
+          The AI Tutor is unavailable
+        </p>
+        <p className="max-w-md text-xs text-muted-foreground">
+          The {TUTOR_MANDATE_KEY} mandate could not resolve: {error}. Fix its
+          binding at /agents/mandates.
+        </p>
+      </div>
+    );
+  }
+  if (loading || !mandate) {
+    return (
+      <div className="flex h-full flex-col overflow-hidden bg-textured">
+        <ChatRoomSkeleton />
+      </div>
+    );
+  }
+  return <EducationTutorClientInner {...props} agentId={mandate.agentId} />;
+}
+
+function EducationTutorClientInner({
   conversationId: conversationIdProp,
   seed,
   buildHref = defaultHref,
   hideLanding,
   embedded = false,
-}: EducationTutorClientProps) {
+  agentId,
+}: EducationTutorClientProps & { agentId: string }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const agentId = DEFAULT_TUTOR_AGENT_ID;
   // Embedded (panel) mounts get their own focus scope so they never collide
   // with the standalone /education/tutor route's live conversation.
   const surfaceKey = embedded

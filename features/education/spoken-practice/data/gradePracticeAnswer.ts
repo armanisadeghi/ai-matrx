@@ -1,11 +1,12 @@
 // features/education/spoken-practice/data/gradePracticeAnswer.ts
 //
 // Grade ONE spoken practice answer with the DEDICATED, mode-aware spoken-practice
-// grader (SPOKEN_PRACTICE_AGENTS.gradeAnswer) — replacing the FastFire flashcard
+// grader (SPOKEN_PRACTICE_MANDATES.gradeAnswer) — replacing the FastFire flashcard
 // grader, which sometimes said "we can try this flashcard again" in oral-exam mode
-// (adversarial-review GAP 1). The mode/persona is conveyed to the (single) grader
-// via the first line of `rubric`, so per-answer feedback fits examiner / interviewer
-// / debate and never mentions flashcards.
+// (adversarial-review GAP 1). The mode is conveyed to the grader as FACTUAL DATA
+// on the first line of `rubric` (mode + persona labels only); the persona framing
+// and the never-say-"flashcard" rule are agent DEFINITION and live in the DB
+// graders behind the mandates — never in this file.
 //
 // REUSES the crown-jewel grading-core primitives unchanged (uploadResponseClip +
 // runSpokenGrader + coerceSpokenGrade) and the study spine (recordAttempt). Output
@@ -23,7 +24,7 @@ import {
   uploadResponseClip,
   type SpokenGrade,
 } from "@/features/flashcards/fast-fire/agents/grading-core";
-import { SPOKEN_PRACTICE_AGENTS, SPOKEN_PROMPT_ITEM_TYPE } from "../agents";
+import { SPOKEN_PRACTICE_MANDATES, SPOKEN_PROMPT_ITEM_TYPE } from "../mandates";
 import { MODE_CONFIG } from "../constants";
 import type { SpokenPracticeMode } from "../types";
 
@@ -33,7 +34,7 @@ export interface GradePracticeAnswerArgs {
   prompt: string;
   /** The reference / model answer (what a strong answer covers). */
   referenceAnswer: string;
-  /** The per-prompt rubric from the designer (mode framing is prepended here). */
+  /** The per-prompt rubric from the designer (a factual mode header is prepended here). */
   rubric: string;
   secondsAllowed: number;
   clip: Blob | null;
@@ -52,33 +53,33 @@ export interface GradePracticeAnswerResult {
 }
 
 /**
- * Prepend the mode + persona so the mode-parameterized grader frames its feedback
- * correctly (examiner / interviewer / debate-judge) and never says "flashcard".
+ * Prepend the mode as FACTUAL DATA (mode + persona labels) so the DB-defined
+ * grader can key its framing off it. Behavioral instructions ("you are the…",
+ * "never say flashcards") are agent DEFINITION — they live in the grader agents
+ * behind the mandates, never here.
  */
 function modeRubric(mode: SpokenPracticeMode, rubric: string): string {
   const cfg = MODE_CONFIG[mode];
-  const header =
-    mode === "pronunciation"
-      ? `Practice mode: ${cfg.label} — you are the ${cfg.persona.toLowerCase()}. Grade this spoken answer on BOTH content (did they say the right target-language phrase) AND pronunciation/fluency; refer to "this phrase"/"this answer", never to flashcards or cards.`
-      : `Practice mode: ${cfg.label} — you are the ${cfg.persona.toLowerCase()}. Grade this spoken answer in that frame; refer to "this answer"/"this question", never to flashcards or cards.`;
+  const header = `Practice mode: ${cfg.label} (persona: ${cfg.persona})`;
   const body = rubric.trim();
   return body ? `${header}\n\n${body}` : header;
 }
 
 /**
- * The grader for a mode. `pronunciation` uses the DEDICATED language-coach grader
- * (emits the extra `pronunciation` dimensions); every other mode uses the shared
- * spoken-practice grader. Both return the unified `SpokenGrade` shape.
+ * The grader mandate for a mode. `pronunciation` resolves the DEDICATED
+ * language-coach grader (emits the extra `pronunciation` dimensions); every
+ * other mode resolves the shared spoken-practice grader. Both return the
+ * unified `SpokenGrade` shape.
  */
-function graderAgentId(mode: SpokenPracticeMode): string {
+function graderMandateKey(mode: SpokenPracticeMode): string {
   return mode === "pronunciation"
-    ? SPOKEN_PRACTICE_AGENTS.gradePronunciation
-    : SPOKEN_PRACTICE_AGENTS.gradeAnswer;
+    ? SPOKEN_PRACTICE_MANDATES.gradePronunciation
+    : SPOKEN_PRACTICE_MANDATES.gradeAnswer;
 }
 
 export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
   return async (dispatch: AppDispatch): Promise<GradePracticeAnswerResult> => {
-    const gradedByAgent = graderAgentId(args.mode);
+    const gradedByMandate = graderMandateKey(args.mode);
     try {
       // Best-effort durable upload — a failed upload must never throw (we skip
       // grading and record a result-less attempt, keeping the ledger honest).
@@ -108,7 +109,7 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
 
       const grade = await dispatch(
         runSpokenGrader({
-          agentId: gradedByAgent,
+          mandateKey: gradedByMandate,
           front: args.prompt,
           back: args.referenceAnswer,
           secondsAllowed: args.secondsAllowed,
@@ -123,7 +124,7 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
       );
 
       if (!grade) {
-        await recordAttempt(args, responseAudioFileId, null, gradedByAgent);
+        await recordAttempt(args, responseAudioFileId, null, gradedByMandate);
         return {
           status: "error",
           responseAudioFileId,
@@ -131,7 +132,7 @@ export function gradePracticeAnswer(args: GradePracticeAnswerArgs) {
         };
       }
 
-      await recordAttempt(args, responseAudioFileId, grade, gradedByAgent);
+      await recordAttempt(args, responseAudioFileId, grade, gradedByMandate);
       return { status: "graded", grade, responseAudioFileId };
     } catch (err) {
       console.error("[spoken-practice.gradePracticeAnswer] failed:", err);

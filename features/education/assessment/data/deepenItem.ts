@@ -12,7 +12,7 @@ import {
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
-import { ASSESSMENT_AGENTS } from "./agents";
+import { ASSESSMENT_MANDATES } from "./mandates";
 import { asDepth, isDepth } from "./types";
 import type { AssessmentItemRow, Depth, NewAssessmentItemInput, QuestionType } from "./types";
 
@@ -101,11 +101,10 @@ export function deepenItem(args: {
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<NewAssessmentItemInput | null> => {
-    const agentId = ASSESSMENT_AGENTS.deepenItem;
     const target = deeperThan(asDepth(args.item.depth));
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId,
+        mandateKey: ASSESSMENT_MANDATES.deepenItem,
         surfaceKey: "assessment-deepen-item",
         sourceFeature: "education-assessment",
         surfaceName: "matrx-user/education-assessment",

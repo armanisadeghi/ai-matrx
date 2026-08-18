@@ -17,7 +17,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
-import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
 import { TutorSettingsPanel } from "./TutorSettingsPanel";
 
 export function TutorHome() {
@@ -70,7 +69,12 @@ export function TutorHome() {
           <div className="min-h-[240px] rounded-2xl border border-border bg-card p-2">
             <ConversationHistorySidebar
               scopeId="education-tutor"
-              agentIds={[DEFAULT_TUTOR_AGENT_ID]}
+              // Tutor history is scoped by the education-tutor source feature
+              // (surfaceId below), NOT by a hardcoded agent id: the tutor's
+              // agent is mandate-bound (education.tutor_message) and can be
+              // rebound, and conversations run under prior holders must stay
+              // reachable. Empty = all the user's accessible agents.
+              agentIds={[]}
               surfaceId="education-tutor"
               variant="consumer"
               getConversationHref={(c) => `/education/tutor/${c.conversationId}`}

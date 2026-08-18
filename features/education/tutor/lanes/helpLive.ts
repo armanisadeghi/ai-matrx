@@ -1,12 +1,12 @@
 // features/education/tutor/lanes/helpLive.ts
 //
 // Phase 4 (Flashcards Competitive Parity Push) — the mode-agnostic "I'm
-// confused" live help lane (`fc_help_live`, AGENT_SPECS.md §6), generalized
-// out of Fast Fire so EVERY study surface (classic set study, adaptive due
-// review, weak-area drill, Fast Fire) can offer the same AI tutor with real
-// learner context, not a stub. OPTIONAL: with no help agent configured the
-// caller gets `null` and the UI shows a "not configured" hint — the study
-// session is unaffected.
+// confused" live help lane (FC_MANDATES.helpLive, AGENT_SPECS.md §6),
+// generalized out of Fast Fire so EVERY study surface (classic set study,
+// adaptive due review, weak-area drill, Fast Fire) can offer the same AI
+// tutor with real learner context, not a stub. The lane resolves through the
+// mandate — swap the agent behind it at /agents/mandates (the old
+// localStorage agent-id override is RETIRED; bindings replaced it).
 //
 // The agent round-trip runs through the canonical headless primitive
 // (`runHeadlessAgentJson`, D126) — this lane owns context variables, result
@@ -20,7 +20,7 @@ import {
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
-import { getFcTutorAgentConfig } from "./config";
+import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import {
   coerceTrustEnvelope,
   type TrustEnvelope,
@@ -45,8 +45,8 @@ export interface HelpLiveContext {
   timeOnCardMs?: number;
   /** This learner's past attempts on THIS card (newest first). */
   cardHistory?: unknown[];
-  /** Override the configured `fc_help_live` agent id (rare — testing only). */
-  agentId?: string | null;
+  /** Override the help mandate (rare — testing only). */
+  mandateKey?: string | null;
   /** Live handle — the tutor's answer streams where the caller mounts it. */
   onConversationCreated?: (conversationId: string) => void;
   /** The card being asked about — the key the answer is journalled under. */
@@ -96,18 +96,17 @@ function readHelp(data: unknown): HelpLiveResult | null {
   };
 }
 
-/** Returns help, or null when no help agent is configured / it failed. */
+/** Returns help, or null when the run failed. */
 export function helpLive(ctx: HelpLiveContext) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<HelpLiveResult | null> => {
-    const agentId = ctx.agentId ?? getFcTutorAgentConfig().helpAgentId;
-    if (!agentId) return null; // optional lane
+    const mandateKey = ctx.mandateKey ?? FC_MANDATES.helpLive;
 
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId,
+        mandateKey,
         surfaceKey: "flashcards-help-live",
         // NOT ephemeral (see docs/EPHEMERAL_AGENT_RUNS_SPEC.md); kept out of
         // normal chats via a distinct system source_feature (source-registry.ts).

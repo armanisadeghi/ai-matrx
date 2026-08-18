@@ -14,7 +14,7 @@
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { TrustEnvelope } from "@/features/education/trust/types";
-import { NOTES_AGENTS } from "./agents";
+import { NOTES_MANDATES } from "./mandates";
 import { runAgentExtraction } from "@/features/education/convert/runAgentExtraction";
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
 import type {
@@ -76,7 +76,7 @@ async function run(
   const { source, options } = request;
 
   const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
-    agentId: NOTES_AGENTS.studyNotes,
+    mandateKey: NOTES_MANDATES.studyNotes,
     surfaceKey: "education-convert-notes",
     sourceFeature: "education-ingest",
     variables: {

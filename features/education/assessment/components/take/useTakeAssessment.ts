@@ -18,7 +18,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { studyService } from "@/features/education/study/service/studyService";
 import { buildGradeScore } from "@/features/education/study/utils/gradeScore";
 import { assessmentService } from "../../data/assessmentService";
-import { ASSESSMENT_ITEM_TYPE } from "../../data/agents";
+import { ASSESSMENT_ITEM_TYPE } from "../../data/mandates";
 import {
   gradeAnswerLocal,
   gradeAnswerAI,

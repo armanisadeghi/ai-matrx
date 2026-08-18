@@ -8,9 +8,9 @@
 // from the caller (`FastFireLiveCard` tracks when the card became visible;
 // the timer deadline itself lives in a ref, not Redux, per the slice's design).
 //
-// OPTIONAL (hard-requirement #6): with no help agent configured the caller
-// gets `null` and the UI shows a "configure a help agent" hint — the drill
-// is unaffected.
+// The lane resolves through the mandate (FC_MANDATES.helpLive) — swap the
+// agent behind it at /agents/mandates (the old localStorage agent-id config
+// is RETIRED; bindings replaced it).
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { studyService } from "@/features/education/study/service/studyService";
@@ -18,7 +18,6 @@ import {
   helpLive as helpLiveCore,
   type HelpLiveResult,
 } from "@/features/education/tutor/lanes/helpLive";
-import { getFcTutorAgentConfig } from "@/features/education/tutor/lanes/config";
 import {
   selectFastFireScoreboard,
   selectGradesInOrder,
@@ -39,15 +38,12 @@ interface HelpLiveArgs {
   timeOnCardMs?: number;
 }
 
-/** Returns help, or null when no help agent is configured / it failed. */
+/** Returns help, or null when the run failed. */
 export function helpLive(args: HelpLiveArgs) {
   return async (
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<HelpLiveResult | null> => {
-    const { helpAgentId } = getFcTutorAgentConfig();
-    if (!helpAgentId) return null; // optional lane
-
     const state = getState();
     const board = selectFastFireScoreboard(state);
     const grades = selectGradesInOrder(state);
@@ -79,7 +75,6 @@ export function helpLive(args: HelpLiveArgs) {
         front: args.front,
         back: args.back,
         question: args.question,
-        agentId: helpAgentId,
         // D151: the drill advances on a timer, so the asking card is usually
         // gone before the answer arrives. Journal it against the drill's own
         // session so nothing paid for is lost to the deadline.

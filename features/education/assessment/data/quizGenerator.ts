@@ -9,7 +9,7 @@
 // Registering these lights the "Quiz" / "Practice test" targets up on the P9
 // upload-kit fan-out and the P4 note→quiz one-click convert — no picker change.
 //
-// Reuses the SAME grounded from-source agent (ASSESSMENT_AGENTS.generateQuizFromSource)
+// Reuses the SAME grounded from-source mandate (ASSESSMENT_MANDATES.generateQuizFromSource)
 // and the SAME payload coercion (coerceGeneratedQuiz) as the interactive create
 // surface — no forked generation path. Provenance is recorded BOTH ways, like the
 // other converter generators: the flat source_kind/source_id columns (fast filter
@@ -19,7 +19,7 @@
 // sources get openable citations backfilled.
 
 import { assessmentService } from "./assessmentService";
-import { ASSESSMENT_AGENTS } from "./agents";
+import { ASSESSMENT_MANDATES } from "./mandates";
 import { coerceGeneratedQuiz } from "./useGenerateQuiz";
 import { attachSourceRefs } from "@/features/education/trust/grounding";
 import { runAgentExtraction } from "@/features/education/convert/runAgentExtraction";
@@ -64,7 +64,7 @@ function makeRun(kind: "quiz" | "practice_test") {
 
     const count = Math.max(1, options?.count ?? defaults.count);
     const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
-      agentId: ASSESSMENT_AGENTS.generateQuizFromSource,
+      mandateKey: ASSESSMENT_MANDATES.generateQuizFromSource,
       surfaceKey: `education-convert-${defaults.base}`,
       sourceFeature: "education-ingest",
       variables: {

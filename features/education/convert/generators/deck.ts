@@ -13,7 +13,7 @@
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { NewCardInput } from "@/features/flashcards/data/types";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
-import { CONVERT_AGENTS } from "../agents";
+import { CONVERT_MANDATES } from "../mandates";
 import { runAgentExtraction } from "../runAgentExtraction";
 import { recordSourceLineage } from "../recordSourceLineage";
 import { mergeTrustEnvelopes } from "../trustMerge";
@@ -145,7 +145,7 @@ async function run(
   const docId = (source.ref?.processedDocumentId ?? anchorFileId) || "ingest";
 
   const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
-    agentId: CONVERT_AGENTS.deckFromSource,
+    mandateKey: CONVERT_MANDATES.deckFromSource,
     surfaceKey: "education-ingest-deck",
     sourceFeature: "education-ingest",
     variables: {

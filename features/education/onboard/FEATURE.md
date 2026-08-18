@@ -111,8 +111,8 @@ contract. `meta.extractionMethod` records the path (`native` / `ocr` / `transcri
 
 The YouTube branch now calls aidream's **`POST /media/youtube/transcript`** (bare mount `/media`;
 router `aidream/api/routers/youtube_transcript.py`) via `fetchYouTubeTranscript`. The endpoint reuses
-the existing "YouTube Video Transcription Analysis" agent (`0cd86da2-2679-4c10-9746-e6723779fe94`,
-Gemini, `youtube_url` variable) through the shared `run_youtube_transcription` service primitive — the
+the existing "YouTube Video Transcription Analysis" agent (Gemini, `youtube_url` variable; resolved
+server-side inside aidream, no id in this repo) through the shared `run_youtube_transcription` service primitive — the
 SAME quiet (`store=False`, no chat clutter) path the in-agent-run media resolver uses. The transcript
 streams back as chunk text (`consumeStream` → `accumulatedText`); a captionless/speechless video
 yields a non-fatal warning + empty text, so `useIngest` fails honestly ("try a link with captions, or

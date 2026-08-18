@@ -108,7 +108,9 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 - `trustMerge.ts` — roll per-item envelopes up to one artifact envelope
 - `sourceTrust.ts` — `buildSourceTrust`: a grounded envelope from the source for agents that
   emit no citations (`mind_map`, `audio`)
-- `agents.ts` — converter-owned agent ids (the summary agent)
+- `mandates.ts` — converter-owned mandate keys (`CONVERT_MANDATES`: `education.summarize`; the
+  deck target rides the canonical `flashcards.generate_from_source` mandate — the former duplicate
+  deck agent collapsed into it, program decision D-WP2-3)
 - `generators/` — `deck.ts`, `summary.ts`, `mindMap.ts`, `index.ts` (registration). `notes`,
   `quiz`/`practice_test`, and `audio` self-register from their owning features
   (`education/notes`, `education/assessment`, `education/media/audio`).
@@ -131,6 +133,9 @@ The kit picker lights the target up automatically — no P9 change needed. Keep 
 
 ## Change log
 
+- **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
+  (`agents.ts` → `mandates.ts`; `runAgentExtraction` takes `mandateKey`, never an agent id;
+  the duplicate deck agent collapsed into `flashcards.generate_from_source`).
 - **2026-08-11** — **Every conversion streams (THE FLOATING LAW).** `ConvertContentDialog` opens the floating `LiveRunWindow` before each target's launch and binds it with the `onRequestId` the converter contract already carried, so the generator's output is written in front of the user instead of behind the row's "Working" spinner. No generator changed.
 - **2026-07-10** — **Lineage + source-affordance convergence (Convergence-B certification).** Closed
   four gaps: (1) extracted `recordSourceLineage.ts` — the ONE writer of the artifact→origin `source`

@@ -23,7 +23,8 @@ import { selectLatestRequestId } from "@/features/agents/redux/execution-system/
 import { fcService } from "@/features/flashcards/data/fcService";
 import { pickSpokenFrontVariables } from "./variations";
 
-/** Permanent id of the "Generate custom speech" agent (Google Gemini TTS). */
+/** Mandate key for the spoken-front TTS lane — resolves live to the DB-bound
+ *  "Generate custom speech" agent (Google Gemini TTS). */
 export const SPOKEN_FRONT_TTS_MANDATE = "flashcards.spoken_front_tts";
 
 /**

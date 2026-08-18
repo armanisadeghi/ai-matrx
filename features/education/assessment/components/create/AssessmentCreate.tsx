@@ -52,7 +52,7 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import { createEducationAssessmentScope } from "@/features/surfaces/manifests/education-assessment.manifest";
 import { assessmentService } from "../../data/assessmentService";
-import { ASSESSMENT_AGENTS } from "../../data/agents";
+import { ASSESSMENT_MANDATES } from "../../data/mandates";
 import { useGenerateQuiz } from "../../data/useGenerateQuiz";
 import {
   DEPTHS,
@@ -205,7 +205,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
 
       if (mode === "topic") {
         sourceKind = "topic";
-        generated = await generate(ASSESSMENT_AGENTS.generateQuiz, {
+        generated = await generate(ASSESSMENT_MANDATES.generateQuiz, {
           topic: topic.trim(),
           grade_level: "",
           ...sharedVars,
@@ -223,7 +223,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
         const sourceContent = cards
           .map((c) => `### Card ${c.id}\nQ: ${c.front}\nA: ${c.back}`)
           .join("\n\n");
-        generated = await generate(ASSESSMENT_AGENTS.generateQuizFromSource, {
+        generated = await generate(ASSESSMENT_MANDATES.generateQuizFromSource, {
           source_content: sourceContent,
           source_label: selectedDeck.name,
           ...sharedVars,
@@ -262,7 +262,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
               cit.sourceId ? pageByChunk.get(cit.sourceId) : undefined,
           }),
         });
-        generated = await generate(ASSESSMENT_AGENTS.generateQuizFromSource, {
+        generated = await generate(ASSESSMENT_MANDATES.generateQuizFromSource, {
           source_content: sourceContent,
           source_label: selectedDoc.name,
           ...sharedVars,

@@ -1,7 +1,7 @@
 // features/education/tutor/lanes/reviewSession.ts
 //
 // Phase 4 (Flashcards Competitive Parity Push) — the mode-agnostic
-// end-of-session "professor" review (`fc_review_batch`, AGENT_SPECS.md §7),
+// end-of-session "professor" review (FC_MANDATES.reviewBatch, AGENT_SPECS.md §7),
 // generalized out of Fast Fire so it can run at the end of ANY completed
 // study session (classic set study, adaptive due review, weak-area drill),
 // not just Fast Fire — writing `study_session.session_review` the same way,
@@ -14,10 +14,11 @@
 // after the drill finished, REATTACHES to the run and watches it in the
 // floating window instead of a page polling the row for a result.
 //
-// OPTIONAL: with no review agent configured this is a clean no-op.
-// The agent round-trip runs through the canonical headless primitive
-// (`runHeadlessAgentJson`, D126) — this lane only owns variables, coercion,
-// and the session_review persist.
+// The lane resolves through the mandate — swap the agent behind it at
+// /agents/mandates (the old localStorage agent-id override is RETIRED;
+// bindings replaced it). The agent round-trip runs through the canonical
+// headless primitive (`runHeadlessAgentJson`, D126) — this lane only owns
+// variables, coercion, and the session_review persist.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
@@ -31,15 +32,15 @@ import {
   stampReviewRun,
   studyReviewWindowId,
 } from "@/features/education/study/reviewRun";
-import { getFcTutorAgentConfig } from "./config";
+import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import type { ReviewAggregate, ReviewAttempt } from "./learnerContext";
 
 export interface ReviewSessionArgs {
   sessionId: string | null;
   attempts: ReviewAttempt[];
   aggregate: ReviewAggregate;
-  /** Override the configured `fc_review_batch` agent id (rare — testing only). */
-  agentId?: string | null;
+  /** Override the review mandate (rare — testing only). */
+  mandateKey?: string | null;
   /**
    * Live handle — the review streams where the caller mounts it. A caller that
    * passes one owns the window (`StudyDeck` does); when it is omitted this lane
@@ -66,8 +67,7 @@ export function reviewSession(args: ReviewSessionArgs) {
     dispatch: AppDispatch,
     getState: () => RootState,
   ): Promise<ReviewSessionResult | null> => {
-    const agentId = args.agentId ?? getFcTutorAgentConfig().reviewAgentId;
-    if (!agentId) return null; // optional lane — clean skip
+    const mandateKey = args.mandateKey ?? FC_MANDATES.reviewBatch;
     if (args.attempts.length === 0) return null; // nothing to review
 
     const sessionId = args.sessionId;
@@ -119,7 +119,7 @@ export function reviewSession(args: ReviewSessionArgs) {
 
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId,
+        mandateKey,
         surfaceKey: "flashcards-review-session",
         sourceFeature: "education-flashcards",
         // Fires automatically at end-of-session — not a user gesture.

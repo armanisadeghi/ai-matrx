@@ -23,12 +23,13 @@ component set (`kindConfig` parameterizes labels/routes/timer/capability).
   - **`/education/grade-work`** — standalone "Grade my handwritten work" (`grade-work/GradeWorkClient`
     → `GradeWorkSurface` + `useGradeWork`): snap a photo of a worked problem → step-level grade.
 - Feature code: `features/education/assessment/` (`data/`, `components/`, `grade-work/`).
-- Agents (authored via `agent_author`, verified via `agent_run`, gemini-3.5-flash):
-  `ASSESSMENT_AGENTS` in `data/agents.ts` — `generateQuiz` `afb89a8f…`, `generateQuizFromSource`
-  `04acfd83…`, `deepenItem` `00ae6c89…`; grading REUSES `FC_AGENTS.gradeTypedAnswer`
-  (`b39183d1…`, grade-on-meaning), `gradeSpoken`, `verifyAgainstSource`. **Vision/handwritten:**
-  `gradeHandwritten` `77db0f64…` (Gemini Flash Latest, vision) — reads a photo, grades on meaning,
-  emits the `GradeVerdict` core + `steps[]` + `transcription` (the ONE image-answer grader).
+- Mandates (keys in `data/mandates.ts`; the DB decides which agent fulfils each — swap at
+  `/agents/mandates`): `ASSESSMENT_MANDATES` — `education.quiz_generate`,
+  `education.quiz_generate_from_source`, `education.quiz_deepen_item`; grading REUSES the
+  flashcards mandates `flashcards.grade_typed_answer` (grade-on-meaning), `flashcards.grade_spoken`,
+  `flashcards.verify_against_source`. **Vision/handwritten:** `education.grade_handwritten` —
+  reads a photo, grades on meaning, emits the `GradeVerdict` core + `steps[]` + `transcription`
+  (the ONE image-answer grading lane).
 
 ## Admin map
 
@@ -150,6 +151,8 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
+  (`data/agents.ts` → `data/mandates.ts`, `ASSESSMENT_MANDATES`; item-type constants moved with it).
 - **2026-08-11** — **Every assessment agent run streams (THE FLOATING LAW).** "Make this deeper" (`AssessmentEdit`) traded its `toast.loading` for the floating `LiveRunWindow` — the harder question is written in front of the user — and "Grade my handwritten work" (`useGradeWork` → `gradeAnswerImage` → `runVisionGrader`) floats the vision grader's step-by-step read instead of spinning the button. `deepenItem` / `runVisionGrader` / `gradeAnswerImage` take an optional `onConversationCreated`; with none passed they stay headless. `AssessmentCreate` (inline, earned exception) is unchanged.
 - **2026-08-11** — **Detail / edit / results route their failures to the access gate.** All three
   stopped asserting "Not found" over a zero-row read and now render `<AccessGate>` — detail and edit

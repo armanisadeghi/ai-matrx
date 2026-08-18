@@ -7,7 +7,7 @@
 // auto-running agent launch with JSON extraction on; this hook owns only the
 // variables and the card-set coercion.
 //
-// Returns the RAW agent JSON ({ title, cards[] } for FC_AGENTS.generateCards;
+// Returns the RAW agent JSON ({ title, cards[] } for FC_MANDATES.generateCards;
 // the OLD set_title key is tolerated as a transition alias) coerced into a
 // normalized shape so callers never touch `any`. Persisting the result
 // (fc_set + fc_card rows) is the CALLER's job — this hook only owns the
@@ -66,7 +66,7 @@ function isFromSourceVars(
 
 export interface GenerateCardsResult {
   generate: (
-    agentId: string,
+    mandateKey: string,
     vars: GenerateCardsVariables | GenerateFromSourceVariables,
   ) => Promise<GeneratedCardSet>;
   isGenerating: boolean;
@@ -200,12 +200,12 @@ export function useGenerateCards(): GenerateCardsResult {
   const { run, isRunning, error, activeRequestId } = useHeadlessAgentJson();
 
   async function generate(
-    agentId: string,
+    mandateKey: string,
     vars: GenerateCardsVariables | GenerateFromSourceVariables,
   ): Promise<GeneratedCardSet> {
     const fromSource = isFromSourceVars(vars);
     return run<GeneratedCardSet>({
-      agentId,
+      mandateKey,
       surfaceKey: fromSource
         ? "flashcards-create-from-source"
         : "flashcards-create-from-topic",

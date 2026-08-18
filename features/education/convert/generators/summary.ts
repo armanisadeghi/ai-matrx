@@ -9,7 +9,7 @@
 import { studyMediaService } from "@/features/education/media/service";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
 import type { TrustEnvelope } from "@/features/education/trust/types";
-import { CONVERT_AGENTS } from "../agents";
+import { CONVERT_MANDATES } from "../mandates";
 import { runAgentExtraction } from "../runAgentExtraction";
 import { recordSourceLineage } from "../recordSourceLineage";
 import type {
@@ -54,7 +54,7 @@ async function run(
   const { source, options } = request;
 
   const extracted = await runAgentExtraction(ctx.dispatch, ctx.store, {
-    agentId: CONVERT_AGENTS.summarize,
+    mandateKey: CONVERT_MANDATES.summarize,
     surfaceKey: "education-ingest-summary",
     sourceFeature: "education-ingest",
     variables: {

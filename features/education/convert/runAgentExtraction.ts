@@ -11,7 +11,8 @@ import type { SourceFeature } from "@/features/agents/types/instance.types";
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
 
 export interface RunAgentExtractionOpts {
-  agentId: string;
+  /** The MANDATE to run — resolved live to the DB-bound generator agent. */
+  mandateKey: string;
   /** Stable surface key for this generation surface (telemetry + variable scope). */
   surfaceKey: string;
   /** Feature tag (e.g. "education-ingest"). */
@@ -46,7 +47,7 @@ export async function runAgentExtraction(
   opts: RunAgentExtractionOpts,
 ): Promise<RunAgentExtractionResult> {
   const result = await runHeadlessAgentJson(dispatch, store.getState, {
-    agentId: opts.agentId,
+    mandateKey: opts.mandateKey,
     surfaceKey: opts.surfaceKey,
     sourceFeature: opts.sourceFeature,
     variables: opts.variables,

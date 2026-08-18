@@ -11,8 +11,9 @@
 // (features/flashcards/fast-fire/agents/grading-core.ts): upload the media →
 // durable file_id, then run the canonical headless primitive
 // (`runHeadlessAgentJson`, D126) with the photo attached as a message part. Never grade an image without an
-// uploaded file_id. The grader is authored + tuned in-system (agent id in
-// data/agents.ts); the tolerant coercer absorbs prompt-driven key drift.
+// uploaded file_id. The grader is authored + tuned in-system and resolved
+// through a MANDATE (keys in data/mandates.ts — the DB decides which agent
+// fulfils it); the tolerant coercer absorbs prompt-driven key drift.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { fileHandler } from "@/features/files/handler/handler";
@@ -66,7 +67,8 @@ export async function uploadWorkPhoto(
 }
 
 export interface RunVisionGraderArgs {
-  agentId: string;
+  /** The vision-grading MANDATE to run — resolved live to the DB-bound agent. */
+  mandateKey: string;
   /** The problem statement / question the learner was solving. */
   question: string;
   /** The model answer OR rubric describing full credit — graded on meaning. */
@@ -97,7 +99,7 @@ export function runVisionGrader(args: RunVisionGraderArgs) {
         fileId: args.responseImageFileId,
       });
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId: args.agentId,
+        mandateKey: args.mandateKey,
         surfaceKey: args.surfaceKey,
         // Persisted (not ephemeral — that path 404s the v2 gate) but kept out
         // of the user's normal chats via the system-marked source_feature.

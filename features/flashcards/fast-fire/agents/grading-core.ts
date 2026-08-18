@@ -162,7 +162,8 @@ export async function uploadResponseClip(
 }
 
 export interface RunSpokenGraderArgs {
-  agentId: string;
+  /** The grading MANDATE to run — resolved live to the DB-bound grader agent. */
+  mandateKey: string;
   front: string;
   back: string;
   secondsAllowed: number;
@@ -200,7 +201,7 @@ export function runSpokenGrader(args: RunSpokenGraderArgs) {
         fileId: args.responseAudioFileId,
       });
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId: args.agentId,
+        mandateKey: args.mandateKey,
         surfaceKey: args.surfaceKey,
         // Persisted (not ephemeral — that path 404s the v2 gate) but kept out of
         // the user's normal chats via the system-marked source_feature.

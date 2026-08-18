@@ -22,7 +22,7 @@ import { useFloatingRunWindow } from "@/features/agents/hooks/useFloatingAgentRu
 import { studyService } from "@/features/education/study/service/studyService";
 import { buildGradeScore } from "@/features/education/study/utils/gradeScore";
 import { gradeAnswerImage, type GradedAnswer } from "../data/grading";
-import { HANDWRITTEN_WORK_ITEM_TYPE } from "../data/agents";
+import { HANDWRITTEN_WORK_ITEM_TYPE } from "../data/mandates";
 
 export type GradeWorkStatus = "idle" | "grading" | "graded" | "error";
 

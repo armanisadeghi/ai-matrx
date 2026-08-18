@@ -2,7 +2,7 @@
 //
 // "Make this deeper" — the depth-on-demand consumer surface for flashcards.
 // Two Redux thunks driving the LIVE enrichCard / expandCard agents (ids in
-// data/agents.ts), running through the canonical headless primitive
+// data/mandates.ts), running through the canonical headless primitive
 // (`runHeadlessAgentJson`, D126). Each returns a coerced, persist-ready result or null on any
 // skip/failure (the caller shows a toast, never a hard block).
 //
@@ -20,7 +20,7 @@
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { Depth } from "@/features/education/assessment/data/types";
-import { FC_AGENTS } from "./agents";
+import { FC_MANDATES } from "./mandates";
 import type { CardWithDetails } from "./types";
 
 /** The depth tiers, low → high, with the learner-facing label + one-line intent. */
@@ -230,7 +230,7 @@ export function enrichCard(args: {
     try {
       const existing = card.details.map((d) => ({ kind: d.kind, text: d.text }));
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId: FC_AGENTS.enrichCard,
+        mandateKey: FC_MANDATES.enrichCard,
         surfaceKey: "flashcards-enrich-card",
         sourceFeature: "education-flashcards",
         surfaceName: "matrx-user/education-flashcards",
@@ -293,7 +293,7 @@ export function expandCard(args: {
     const { card, depth } = args;
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId: FC_AGENTS.expandCard,
+        mandateKey: FC_MANDATES.expandCard,
         surfaceKey: "flashcards-expand-card",
         sourceFeature: "education-flashcards",
         surfaceName: "matrx-user/education-flashcards",

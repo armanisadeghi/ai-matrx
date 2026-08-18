@@ -2,7 +2,7 @@
 //
 // The end-of-session examiner's / interviewer's / debate-judge's review for
 // Spoken Practice. Runs the DEDICATED, MODE-AWARE review agent
-// (SPOKEN_PRACTICE_AGENTS.reviewSession) over a properly SERIALIZED transcript
+// (SPOKEN_PRACTICE_MANDATES.reviewSession) over a properly SERIALIZED transcript
 // (the prompt + the student's spoken answer + the per-answer verdict, per turn),
 // then persists it to `study_session.session_review` and returns the parsed
 // review for inline display.
@@ -71,7 +71,7 @@ export function reviewPracticeSession(args: ReviewPracticeSessionArgs) {
 
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId: SPOKEN_PRACTICE_AGENTS.reviewSession,
+        mandateKey: SPOKEN_PRACTICE_MANDATES.reviewSession,
         surfaceKey: "education-spoken-practice-review",
         sourceFeature: "education-tutor",
         ...livePosture(args.onConversationCreated),
