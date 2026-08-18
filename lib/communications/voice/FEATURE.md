@@ -57,6 +57,11 @@ long-lived media and agent execution stay in aidream.
   gate. Capture is dual-channel/both-track, begins after consent, and posts `in-progress`,
   `completed`, and `absent` events to the existing signed recording callback. Any missing or
   unavailable readiness evidence returns explicit non-recording TwiML.
+- The accepted-response builder has one composition seam for the later live-agent launch: after
+  recording starts it can emit `<Connect><ConversationRelay>` with the durable one-time
+  `sessionReference`. It deliberately omits the unpublished optional `events` subscription.
+  The route does not consume this option yet, and the builder refuses to connect when recording
+  readiness is absent because the disclosed owner-beta program promised capture after consent.
 - `storage-canary-readiness.ts` reads the latest owner-program pass/fail receipt from the existing
   `platform.activity_log` ledger and validates the exact bucket, prefix, writer ARN, retention
   policy, deny checks, application HEAD/read/hash, canonical index/access/delete receipts, and a
@@ -97,6 +102,9 @@ content, phone, provider URL, session reference, signature, or credential is ret
 
 ## Change log
 
+- **2026-08-17** — Extended the one accepted-response builder so a later launch can compose
+  consented recording before ConversationRelay, carry only the opaque one-time reference, and omit
+  unpublished provider-event subscriptions. The current route still does not connect.
 - **2026-08-17** — Upgraded the owner-beta disclosure to exact current-call recording consent and
   added fail-closed post-consent `<Start><Recording>` with dual-channel/both-track capture plus the
   existing signed lifecycle callback. Missing runtime evidence still returns non-recording TwiML.
