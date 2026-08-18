@@ -132,10 +132,23 @@ function assetMatches(asset: ClientAsset, key: string): boolean {
   return (asset.file_name ?? "").toLowerCase().includes(needle);
 }
 
-/** Resolve a `web.site` to its CMS counterpart, in order of authority. */
+/**
+ * Resolve a `web.site` to its CMS counterpart, in order of authority. The
+ * FIRST authority is the durable id join the CMS side records
+ * (`client_sites.web_site_id` — the same anchor the server, the page editor,
+ * and `resolvePushTarget` use); the settings override and the domain match
+ * are fallbacks for sites paired before that column existed. This resolver
+ * once matched by domain/settings ONLY, so a paired site with no domain
+ * rendered "No website yet" while the rest of the page proved otherwise.
+ */
 export function resolveCmsLink(
-  site: { domain: string | null; settings: unknown },
-  cmsSites: { id: string; slug: string; domain: string | null }[],
+  site: { id?: string; domain: string | null; settings: unknown },
+  cmsSites: {
+    id: string;
+    slug: string;
+    domain: string | null;
+    web_site_id?: string | null;
+  }[],
 ): CmsLink {
   const none = (reason: string): CmsLink => ({
     linked: false,
@@ -144,6 +157,19 @@ export function resolveCmsLink(
     matchedBy: null,
     reason,
   });
+
+  if (site.id) {
+    const anchored = cmsSites.find((entry) => entry.web_site_id === site.id);
+    if (anchored) {
+      return {
+        linked: true,
+        cmsSiteId: anchored.id,
+        cmsSlug: anchored.slug,
+        matchedBy: "web_site_id",
+        reason: null,
+      };
+    }
+  }
 
   const settings =
     site.settings && typeof site.settings === "object"

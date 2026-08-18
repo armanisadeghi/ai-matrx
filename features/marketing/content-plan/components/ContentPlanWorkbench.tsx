@@ -83,8 +83,7 @@ import { PlanAssistStrip } from "./PlanAssistStrip";
 import { PlanDriftBar } from "./PlanDriftBar";
 import { RunSetWindowController } from "@/features/agents/components/live-run/RunSetDisplay";
 import { PlanDriftSheet, type DriftFilter } from "./PlanDriftSheet";
-import { PlanGenerateBar } from "./PlanGenerateBar";
-import { PlanWebsiteBar } from "./PlanWebsiteBar";
+import { PlanToolbar } from "./PlanToolbar";
 import { usePlanDrift } from "../hooks/usePlanDrift";
 import type { PlanNodeRow } from "../types";
 import { buildNodePipelineProgress } from "../lib/pipeline-progress";
@@ -773,44 +772,15 @@ export function ContentPlanWorkbench({
           </div>
         ) : null}
 
-        {/* Whole-page copy. The workspace's chrome lives in the shell header,
-          which cannot see this body's data — so the page-level pair and the
-          Groomer sit here, with the sections that describe every area of the
-          page. Present on every view: "copy this page" must not move. */}
-        {siteId ? (
-          <div className="flex items-center justify-end gap-0.5 border-b border-border/40 px-2 py-0.5">
-            <CopyButtons
-              size="icon"
-              label={`Content plan — ${site ? (site.domain ?? site.name) : "site"}`}
-              human={() =>
-                [
-                  `Content plan — ${site ? (site.domain ?? site.name) : "site"}`,
-                  contentPlanKpiLine(pageKpis),
-                  "",
-                  ...nodeRows.map(planNodeSummary),
-                ].join("\n")
-              }
-              json={() => nodeRows.map(planNodeKeyFields)}
-              agent={() =>
-                buildGroomerPresetPayload(getGroomerConfig(), "everything")
-              }
-              aiVariants={groomerPresetVariants(getGroomerConfig)}
-            />
-            <AgentCopyGroomerLauncher
-              config={getGroomerConfig}
-              className="h-6 px-1.5 text-[11px] text-muted-foreground"
-            />
-          </div>
-        ) : null}
-
-        {/* AI generation strip — plan-bearing views only; Setup and
-          Entities have their own jobs. */}
+        {/* THE one chrome row (Arman ruling 2026-08-17): identity + honest
+          KPIs, transient run narration in place of the KPIs (never a second
+          row), inline assist chips, and one action cluster — generate,
+          deepen, the status-truthful Edit/Live pair, and the page-level copy
+          pair + Groomer. Four stacked bars died for this row; do not add a
+          new full-width strip here, extend the toolbar. */}
         {siteId &&
-        site?.brand_id &&
-        !nodes.isLoading &&
-        !nodes.isError &&
         (view === "tree" || view === "table" || view === "map") ? (
-          <PlanGenerateBar
+          <PlanToolbar
             nodeCount={nodeRows.length}
             run={generate.run}
             onStart={(options) =>
@@ -830,48 +800,60 @@ export function ContentPlanWorkbench({
             onBulkDeepen={() => setBulkDeepenConfirm(true)}
             onBulkDeepenCancel={bulkDeepen.cancel}
             onBulkDeepenDismiss={bulkDeepen.reset}
-          />
-        ) : null}
-
-        {/* Is there a real website behind this plan, and how much of the plan
-            exists on it? The workspace answered this NOWHERE before — a user
-            could study a whole plan without learning it had no website. */}
-        {usesCmsOverlay && siteId ? (
-          <PlanWebsiteBar
-            cmsLink={cmsLink.data ?? null}
+            cmsLink={usesCmsOverlay ? (cmsLink.data ?? null) : null}
             cmsSiteId={resolvedCmsSiteId}
+            pagesLoaded={cmsPages.map !== null}
             pagesByNodeId={cmsPages.pagesByNodeId}
             allPages={cmsPages.map?.pages ?? []}
-            plannedCount={nodeRows.length}
             siteDomain={site?.domain ?? null}
             onOpenSetup={() => setView("setup")}
-          />
-        ) : null}
-
-        {/* Page-layer assist chips (planned pages missing from the paired
-            CMS site) — plan-bearing views only; the chip's action lands on
-            Setup, so showing it there would be circular. Renders nothing
-            when there are no chips. */}
-        {view === "tree" || view === "table" || view === "map" ? (
-          <PlanAssistStrip
-            siteId={siteId}
-            siteLabel={site ? (site.domain ?? site.name) : null}
-            nodeRows={nodeRows}
-            pagesByNodeId={cmsPages.pagesByNodeId}
-            enabled={
-              !!siteId &&
-              !nodes.isLoading &&
-              !nodes.isError &&
-              nodeRows.length > 0 &&
-              cmsPages.map !== null
+            copySlot={
+              <>
+                <CopyButtons
+                  size="icon"
+                  label={`Content plan — ${site ? (site.domain ?? site.name) : "site"}`}
+                  human={() =>
+                    [
+                      `Content plan — ${site ? (site.domain ?? site.name) : "site"}`,
+                      contentPlanKpiLine(pageKpis),
+                      "",
+                      ...nodeRows.map(planNodeSummary),
+                    ].join("\n")
+                  }
+                  json={() => nodeRows.map(planNodeKeyFields)}
+                  agent={() =>
+                    buildGroomerPresetPayload(getGroomerConfig(), "everything")
+                  }
+                  aiVariants={groomerPresetVariants(getGroomerConfig)}
+                />
+                <AgentCopyGroomerLauncher
+                  config={getGroomerConfig}
+                  className="h-6 px-1.5 text-[11px] text-muted-foreground"
+                />
+              </>
             }
-            keywordSweepEnabled={
-              !!siteId &&
-              !nodes.isLoading &&
-              !nodes.isError &&
-              nodeRows.length > 0
+            assistSlot={
+              <PlanAssistStrip
+                siteId={siteId}
+                siteLabel={site ? (site.domain ?? site.name) : null}
+                nodeRows={nodeRows}
+                pagesByNodeId={cmsPages.pagesByNodeId}
+                enabled={
+                  !!siteId &&
+                  !nodes.isLoading &&
+                  !nodes.isError &&
+                  nodeRows.length > 0 &&
+                  cmsPages.map !== null
+                }
+                keywordSweepEnabled={
+                  !!siteId &&
+                  !nodes.isLoading &&
+                  !nodes.isError &&
+                  nodeRows.length > 0
+                }
+                className="flex min-w-0 items-center"
+              />
             }
-            className="border-b border-border/40 px-3 py-1.5"
           />
         ) : null}
 

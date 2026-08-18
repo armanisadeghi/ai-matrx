@@ -112,6 +112,7 @@ export type ClientSiteSummary = Pick<
   | "settings"
   | "created_at"
   | "updated_at"
+  | "web_site_id"
 > & {
   /**
    * Whether the site has minted its public data key. The KEY ITSELF is never in
@@ -138,6 +139,7 @@ export function toClientSiteSummary(site: ClientSite): ClientSiteSummary {
     settings: site.settings,
     created_at: site.created_at,
     updated_at: site.updated_at,
+    web_site_id: site.web_site_id,
     has_data_api_key: Boolean(site.data_api_key),
   };
 }

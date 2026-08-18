@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
         let query = db
           .from("client_sites")
           .select(
-            "id, slug, name, domain, is_active, owner_user_id, organization_id, visibility, favicon, settings, created_at, updated_at, data_api_key",
+            "id, slug, name, domain, is_active, owner_user_id, organization_id, visibility, favicon, settings, created_at, updated_at, data_api_key, web_site_id",
           );
         query = orFilter
           ? query.or(orFilter)

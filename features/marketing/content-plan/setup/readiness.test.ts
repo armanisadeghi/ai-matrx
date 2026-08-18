@@ -14,6 +14,25 @@ const cmsSites = [
 ];
 
 describe("resolveCmsLink", () => {
+  it("the durable web_site_id anchor beats every heuristic — a paired site with no domain is LINKED", () => {
+    const link = resolveCmsLink(
+      { id: "web-site-1", domain: null, settings: {} },
+      [
+        ...cmsSites,
+        {
+          id: "cms-anchored",
+          slug: "anchored-site",
+          domain: null,
+          web_site_id: "web-site-1",
+        },
+      ],
+    );
+
+    expect(link.linked).toBe(true);
+    expect(link.cmsSiteId).toBe("cms-anchored");
+    expect(link.matchedBy).toBe("web_site_id");
+  });
+
   it("uses the CMS site id already recorded on the plan", () => {
     expect(
       resolveCmsLink(
