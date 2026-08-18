@@ -41,6 +41,19 @@
   `role` (a Conductor session must never be read as the Expert's own words), and the shared
   variable-display rule renders an attachment list as DOORS instead of raw JSON with UUIDs
   in it.
+  **Stage (iii), the EMISSION leg, is now proved (2026-08-18).** Told to build, it validated
+  clean on the first pass and created `workflow.definition` `e07fbf06-…` — _"Primary Keyword
+  Decision for a Page"_, 24 nodes / 37 edges, five real `plan.step` open steps — now stamped
+  `built_from_rulebook`/`rulebook_slug`/`rulebook_version` so it lists on
+  `/masterwork/[id]/masterworks` beside the template Build's output with the same drift
+  check. Two platform gaps it exposed are closed in aidream (`workflow_tool.py` +
+  `workflow_plans/service.py`, regression `scripts/_verify_conductor_emission.py`, 14/14
+  live): (1) plan ROWS are materialized for every author, not just the Studio canvas — an
+  agent-authored workflow used to save anchors with `plan_id: null`, so five open steps had
+  no Plan Room, no history, and a publish gate that could not see them; (2) `workflow_catalog
+  action=definition_shape` returns a worked, self-validating example definition, because the
+  registry described node types but never how they are wired and the Conductor had to guess
+  the edge shape.
   **Open:** two real platform defects the Conductor found and filed — the Google search
   node drops the People-Also-Ask box (a `critical` SEO rule calls it a mandatory source),
   and the Search Console node returns a load receipt rather than the keyword rows. Until

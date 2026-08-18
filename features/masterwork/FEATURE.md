@@ -69,6 +69,22 @@
   mandatory source), and the Search Console step returns a load receipt rather than the
   keyword rows.
 
+  **It EMITS — proved 2026-08-18.** Told to build, the Conductor validated its definition
+  clean on the first pass and created `workflow.definition`
+  **`e07fbf06-1cf6-4d62-a3a4-e1a6111a110b`** — _"Primary Keyword Decision for a Page"_,
+  **24 nodes / 37 edges**, five of them honest `plan.step` open steps (competitor authority,
+  People-Also-Ask, the local pack, the Search-Console footprint read-back, the long-tail
+  restart). The emitted workflow is stamped `built_from_rulebook` + `rulebook_slug` +
+  `rulebook_version` exactly like the template Build's output, so **it appears on
+  `/masterwork/[id]/masterworks` with the same version-drift check** — that page's
+  `metadata->>built_from_rulebook` query is the reason the stamp shape is not optional.
+  Two platform gaps the emission exposed were fixed in aidream (never in the Conductor's
+  prompt, and never by extending `build.py`): plan rows are now materialized for EVERY
+  author, not just the Studio canvas, and `workflow_catalog action=definition_shape` returns
+  a worked, self-validating example definition so an authoring agent stops guessing the edge
+  shape. Contract + the full record: `common-docs/systems/masterwork/FEATURE.md` § THE ONE
+  CANONICAL MASTERWORK SYSTEM.
+
   **The older TEMPLATE Build is not deleted and is not the primary action.** `build/` +
   aidream `services/masterworks/build.py` fill one of two fixed shapes with no questions
   asked; they now sit in the header's **More** menu as **Build from template**, named for
