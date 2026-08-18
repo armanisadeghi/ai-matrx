@@ -47,7 +47,7 @@ export function ResultsSummary({
         <h2 className="text-2xl font-bold text-foreground">Round complete</h2>
         <p className="text-muted-foreground">
           {verified
-            ? "Verified from your study attempts — every answer counted."
+            ? "Verified from your study attempts — every eligible answer counted."
             : "Verifying your result from the study attempt record…"}
         </p>
       </div>

@@ -62,6 +62,8 @@ import {
   BADGES,
   isBadgeKey,
 } from "@/features/education/engage/engine/badges";
+import { coppaService } from "@/features/education/compliance/coppaService";
+import type { AgeBand } from "@/features/education/compliance/types";
 import type {
   ItemMasteryRow,
   SessionAiJournal,
@@ -300,11 +302,17 @@ export function StudyDeck(props: StudyDeckProps) {
   // VISION §13 — the streak the session just earned, read once on completion
   // (the DB trigger writes it on session insert, so it already counts today).
   const [engagement, setEngagement] = useState<EngagementSnapshot | null>(null);
+  const [ageBand, setAgeBand] = useState<AgeBand | null>(null);
   useEffect(() => {
     if (!completed) return undefined;
     let cancelled = false;
-    void gameService.getEngagementSnapshot(sessionId).then((res) => {
-      if (!cancelled && !res.error) setEngagement(res.data ?? null);
+    void Promise.all([
+      gameService.getEngagementSnapshot(sessionId),
+      coppaService.getGate(),
+    ]).then(([engagementResult, gateResult]) => {
+      if (cancelled) return;
+      if (!engagementResult.error) setEngagement(engagementResult.data ?? null);
+      if (!gateResult.error) setAgeBand(gateResult.data?.ageBand ?? null);
     });
     return () => {
       cancelled = true;
@@ -677,6 +685,7 @@ export function StudyDeck(props: StudyDeckProps) {
   // empty exactly when the last card is mastered, so a completed session
   // must win over "no cards" (which only applies when it never started).
   if (completed) {
+    const isYoungerLearner = ageBand === "under_13";
     const accuracy =
       progress.done > 0
         ? Math.round((progress.correct / progress.done) * 100)
@@ -729,33 +738,46 @@ export function StudyDeck(props: StudyDeckProps) {
               <div className="rounded-lg border border-border bg-muted/40 p-3">
                 <div className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
                   <Trophy className="h-3.5 w-3.5 text-primary" />
-                  {engagement.session_points.toLocaleString()} learning points
+                  {engagement.session_points.toLocaleString()} {isYoungerLearner ? "bright points!" : "learning points"}
                 </div>
                 <p className="text-muted-foreground">
-                  From this session’s learning outcomes. Practice is never capped.
+                  {isYoungerLearner
+                    ? "You made your learning stronger — nice work!"
+                    : "From this session’s learning outcomes. Practice is never capped."}
                 </p>
               </div>
               <div className="rounded-lg border border-border bg-muted/40 p-3">
                 <div className="mb-1 flex items-center gap-1.5 font-medium text-foreground">
                   <Award className="h-3.5 w-3.5 text-primary" />
-                  {engagement.badges_earned} badge{engagement.badges_earned === 1 ? "" : "s"}
+                  {engagement.badges_earned} {isYoungerLearner ? "sticker" : "badge"}
+                  {engagement.badges_earned === 1 ? "" : "s"}
                 </div>
-                {isBadgeKey(engagement.next_badge_key) && engagement.next_badge_target > 0 ? (
+                {isBadgeKey(engagement.next_badge_key) &&
+                engagement.next_badge_target > 0 ? (
                   <p className="text-muted-foreground">
-                    {BADGES[engagement.next_badge_key].label}: {engagement.next_badge_progress}/{engagement.next_badge_target}
+                    {isYoungerLearner
+                      ? "Next sticker"
+                      : BADGES[engagement.next_badge_key].label}:{" "}
+                    {engagement.next_badge_progress}/
+                    {engagement.next_badge_target}
                   </p>
                 ) : (
-                  <p className="text-muted-foreground">Every current milestone earned.</p>
+                  <p className="text-muted-foreground">
+                    Every current milestone earned.
+                  </p>
                 )}
               </div>
               <div className="col-span-2 rounded-lg border border-border bg-muted/40 p-3">
                 {engagement.league_opted_in && engagement.league_rank > 0 ? (
                   <p className="font-medium text-foreground">
-                    Private league: #{engagement.league_rank} of {engagement.league_size} · +{Number(engagement.league_mastery_gain).toFixed(1)} mastery
+                    {isYoungerLearner ? "Your learning team" : "Private league"}: #{engagement.league_rank} of{" "}
+                    {engagement.league_size} · +
+                    {Number(engagement.league_mastery_gain).toFixed(1)} mastery
                   </p>
                 ) : (
                   <p className="text-muted-foreground">
-                    Private mastery leagues are optional. Your practice still counts either way.
+                    Private mastery leagues are optional. Your practice still
+                    counts either way.
                   </p>
                 )}
               </div>
@@ -1082,245 +1104,245 @@ export function StudyDeck(props: StudyDeckProps) {
         </aside>
 
         <div className="min-w-0 max-w-2xl flex-1 lg:max-w-3xl xl:max-w-4xl">
-        {currentKind === CARD_KIND.matching ? (
-          // Matching variant — a tap-to-match mini-game that self-grades on
-          // completion through the deck's canonical grade path (no flip, no
-          // manual grade row).
-          <MatchingCardPlayer
-            key={`fc-match-${current.id}`}
-            cardId={current.id}
-            prompt={current.front}
-            pairs={matchingPairs(current)}
-            disabled={grading}
-            onComplete={(result) => handleGrade(result)}
-          />
-        ) : (
-          <>
-            <FlashcardItem
-              key={`fc-card-${current.id}`}
-              front={cardFaces.front}
-              back={cardFaces.back}
-              index={currentIndex}
-              layoutMode="list"
-              flipped={isFlipped}
-              onFlipToggle={flip}
-              lastResult={resultsByCard[current.id] ?? null}
-              voiceTest={voiceTestForCard?.(current)}
-              frontImage={getCardImages(current).front}
-              backImage={getCardImages(current).back}
+          {currentKind === CARD_KIND.matching ? (
+            // Matching variant — a tap-to-match mini-game that self-grades on
+            // completion through the deck's canonical grade path (no flip, no
+            // manual grade row).
+            <MatchingCardPlayer
+              key={`fc-match-${current.id}`}
+              cardId={current.id}
+              prompt={current.front}
+              pairs={matchingPairs(current)}
+              disabled={grading}
+              onComplete={(result) => handleGrade(result)}
             />
+          ) : (
+            <>
+              <FlashcardItem
+                key={`fc-card-${current.id}`}
+                front={cardFaces.front}
+                back={cardFaces.back}
+                index={currentIndex}
+                layoutMode="list"
+                flipped={isFlipped}
+                onFlipToggle={flip}
+                lastResult={resultsByCard[current.id] ?? null}
+                voiceTest={voiceTestForCard?.(current)}
+                frontImage={getCardImages(current).front}
+                backImage={getCardImages(current).back}
+              />
 
-            {/* P0 Trust — once the answer is revealed, show where it came from:
+              {/* P0 Trust — once the answer is revealed, show where it came from:
                 citations (tap → exact passage), the confidence badge, and the
                 "Verify against source" action. Renders nothing for hand-made cards. */}
-            {isFlipped && (
-              <CardTrustFooter
-                trust={coerceTrustEnvelope(current.metadata)}
-                front={current.front}
-                back={current.back ?? ""}
-                cardId={current.id}
-                cardMetadata={current.metadata}
-                className="mt-2"
-              />
-            )}
-          </>
-        )}
-
-        <div className="mt-2 flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 px-2 text-xs"
-              onClick={prev}
-              disabled={currentIndex === 0}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Prev
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 px-2 text-xs"
-              onClick={next}
-              disabled={currentIndex === cards.length - 1}
-            >
-              Next
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Matching cards self-grade on completion — no manual grade row. */}
-          {currentKind === CARD_KIND.matching ? null : useConfidence ? (
-            <div className="flex flex-col gap-1">
-              {!isFlipped ? (
-                // Phase 1 — predict BEFORE the flip (gap 7). Rating reveals
-                // the back; the prediction rides along to the final grade.
-                <FlashcardConfidenceRow
-                  onRate={handlePredict}
-                  disabled={grading}
-                  className="w-full"
-                  label="Predict before you flip — how well do you know this?"
+              {isFlipped && (
+                <CardTrustFooter
+                  trust={coerceTrustEnvelope(current.metadata)}
+                  front={current.front}
+                  back={current.back ?? ""}
+                  cardId={current.id}
+                  cardMetadata={current.metadata}
+                  className="mt-2"
                 />
-              ) : preFlipConfidence != null ? (
-                // Phase 2 — the answer is showing and a prediction exists:
-                // record what actually happened.
-                <div className="flex flex-col gap-1">
-                  <FlashcardGradeButtonRow
-                    onGrade={(r) => handleGrade(r, preFlipConfidence)}
+              )}
+            </>
+          )}
+
+          <div className="mt-2 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2 text-xs"
+                onClick={prev}
+                disabled={currentIndex === 0}
+              >
+                <ChevronLeft className="mr-1 h-4 w-4" />
+                Prev
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2 text-xs"
+                onClick={next}
+                disabled={currentIndex === cards.length - 1}
+              >
+                Next
+                <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Matching cards self-grade on completion — no manual grade row. */}
+            {currentKind === CARD_KIND.matching ? null : useConfidence ? (
+              <div className="flex flex-col gap-1">
+                {!isFlipped ? (
+                  // Phase 1 — predict BEFORE the flip (gap 7). Rating reveals
+                  // the back; the prediction rides along to the final grade.
+                  <FlashcardConfidenceRow
+                    onRate={handlePredict}
+                    disabled={grading}
+                    className="w-full"
+                    label="Predict before you flip — how well do you know this?"
+                  />
+                ) : preFlipConfidence != null ? (
+                  // Phase 2 — the answer is showing and a prediction exists:
+                  // record what actually happened.
+                  <div className="flex flex-col gap-1">
+                    <FlashcardGradeButtonRow
+                      onGrade={(r) => handleGrade(r, preFlipConfidence)}
+                      disabled={grading}
+                      className="w-full"
+                    />
+                    <span className="self-center text-[11px] text-muted-foreground">
+                      You predicted {preFlipConfidence}/5 — how did it go?
+                    </span>
+                  </div>
+                ) : (
+                  // Flipped without predicting — grade by confidence directly
+                  // (the pre-gap-7 behavior stays available).
+                  <FlashcardConfidenceRow
+                    onRate={(confidence) =>
+                      handleGrade(confidenceToResult(confidence), confidence)
+                    }
                     disabled={grading}
                     className="w-full"
                   />
-                  <span className="self-center text-[11px] text-muted-foreground">
-                    You predicted {preFlipConfidence}/5 — how did it go?
-                  </span>
-                </div>
-              ) : (
-                // Flipped without predicting — grade by confidence directly
-                // (the pre-gap-7 behavior stays available).
-                <FlashcardConfidenceRow
-                  onRate={(confidence) =>
-                    handleGrade(confidenceToResult(confidence), confidence)
-                  }
+                )}
+                {enableConfidence && (
+                  <button
+                    type="button"
+                    onClick={toggleGradeStyle}
+                    className="self-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+                  >
+                    Use simple grading
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1">
+                <FlashcardGradeButtonRow
+                  onGrade={handleGrade}
                   disabled={grading}
                   className="w-full"
                 />
-              )}
-              {enableConfidence && (
-                <button
-                  type="button"
-                  onClick={toggleGradeStyle}
-                  className="self-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-                >
-                  Use simple grading
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-1">
-              <FlashcardGradeButtonRow
-                onGrade={handleGrade}
-                disabled={grading}
-                className="w-full"
-              />
-              {enableConfidence && (
-                <button
-                  type="button"
-                  onClick={toggleGradeStyle}
-                  className="self-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
-                >
-                  Use 1–5 confidence rating
-                </button>
-              )}
-            </div>
-          )}
+                {enableConfidence && (
+                  <button
+                    type="button"
+                    onClick={toggleGradeStyle}
+                    className="self-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+                  >
+                    Use 1–5 confidence rating
+                  </button>
+                )}
+              </div>
+            )}
 
-          {/* VISION §2/§4 — audio help is ALWAYS on the table: hear the card
+            {/* VISION §2/§4 — audio help is ALWAYS on the table: hear the card
               (cached spoken front, generated on demand when missing) or talk
               it through with the realtime voice tutor. Matching cards skip it
               (no single question/answer to narrate). */}
-          {current && currentKind !== CARD_KIND.matching && (
-            <CardAudioHelp
-              key={`audio-${current.id}`}
-              cardId={current.id}
-              front={current.front}
-              back={current.back ?? ""}
-              topic={current.topic}
-              revealed={isFlipped}
-              spokenFrontFileId={
-                voiceTestForCard?.(current)?.spokenFrontFileId ??
-                current.details?.find(
-                  (d) => d.kind === "spoken_front" && d.audio_file_id,
-                )?.audio_file_id ??
-                null
-              }
-            />
-          )}
-
-          {enableTutor && (
-            <div className="flex flex-col gap-2">
-              <AskAiPanel
-                open={askOpen}
-                question={question}
-                onQuestionChange={setQuestion}
-                onToggle={() => setAskOpen((o) => !o)}
-                onAsk={() => void askAi()}
-                loading={helpLoading}
-                result={shownHelp}
-                tip={shownTip}
-                unavailable={helpAsked && !helpLoading && !help}
+            {current && currentKind !== CARD_KIND.matching && (
+              <CardAudioHelp
+                key={`audio-${current.id}`}
+                cardId={current.id}
+                front={current.front}
+                back={current.back ?? ""}
+                topic={current.topic}
+                revealed={isFlipped}
+                spokenFrontFileId={
+                  voiceTestForCard?.(current)?.spokenFrontFileId ??
+                  current.details?.find(
+                    (d) => d.kind === "spoken_front" && d.audio_file_id,
+                  )?.audio_file_id ??
+                  null
+                }
               />
-              {/* P2 AskTutor — escalate from the one-shot nudge above into the
-                  full memory-carrying tutor, pre-loaded with THIS card. */}
-              {current && (
-                <AskTutorButton
-                  seed={{
-                    title: "This flashcard the learner is studying",
-                    material: `Front: "${current.front}"\nBack: "${current.back}"${
-                      current.topic ? `\nTopic: ${current.topic}` : ""
-                    }`,
-                  }}
-                  label="Open full tutor"
-                  variant="ghost"
-                  className="w-full"
-                />
-              )}
-            </div>
-          )}
+            )}
 
-          {/* VISION §11 — the memory aid surfaces itself: a stored aid renders
+            {enableTutor && (
+              <div className="flex flex-col gap-2">
+                <AskAiPanel
+                  open={askOpen}
+                  question={question}
+                  onQuestionChange={setQuestion}
+                  onToggle={() => setAskOpen((o) => !o)}
+                  onAsk={() => void askAi()}
+                  loading={helpLoading}
+                  result={shownHelp}
+                  tip={shownTip}
+                  unavailable={helpAsked && !helpLoading && !help}
+                />
+                {/* P2 AskTutor — escalate from the one-shot nudge above into the
+                  full memory-carrying tutor, pre-loaded with THIS card. */}
+                {current && (
+                  <AskTutorButton
+                    seed={{
+                      title: "This flashcard the learner is studying",
+                      material: `Front: "${current.front}"\nBack: "${current.back}"${
+                        current.topic ? `\nTopic: ${current.topic}` : ""
+                      }`,
+                    }}
+                    label="Open full tutor"
+                    variant="ghost"
+                    className="w-full"
+                  />
+                )}
+              </div>
+            )}
+
+            {/* VISION §11 — the memory aid surfaces itself: a stored aid renders
               on sight, and a struggling card gets a reasoned offer instead of a
               quiet button. Skipped for matching cards (no single answer). */}
           {enableMemoryAids && current && currentKind !== CARD_KIND.matching && (
-            <MemoryAidButton
-              key={`memory-${current.id}`}
-              cardId={current.id}
-              front={current.front}
-              back={current.back ?? ""}
-              topic={current.topic}
-              existingDetails={current.details}
-              struggling={strugglingOnCurrent}
-            />
-          )}
+                <MemoryAidButton
+                  key={`memory-${current.id}`}
+                  cardId={current.id}
+                  front={current.front}
+                  back={current.back ?? ""}
+                  topic={current.topic}
+                  existingDetails={current.details}
+                  struggling={strugglingOnCurrent}
+                />
+              )}
 
-          {/* VISION §1 — the per-item "make this deeper" moment: enrich /
+            {/* VISION §1 — the per-item "make this deeper" moment: enrich /
               deepen THIS card without leaving the session. Only when the
               driver knows the owning set (cross-set drivers omit setId). */}
-          {setId && current && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="w-full gap-1.5 text-xs"
-              onClick={() => setEnhanceOpen(true)}
-            >
-              <Expand className="h-3.5 w-3.5" />
-              Improve this card
-            </Button>
-          )}
-        </div>
+            {setId && current && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full gap-1.5 text-xs"
+                onClick={() => setEnhanceOpen(true)}
+              >
+                <Expand className="h-3.5 w-3.5" />
+                Improve this card
+              </Button>
+            )}
+          </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
-          {cards.map((card, i) => (
-            <button
-              key={`dot-${card.id}`}
-              type="button"
-              onClick={() => goTo(i)}
-              aria-label={`Go to card ${i + 1}`}
-              className={cn(
-                "h-2 w-2 rounded-full transition-colors",
-                i === currentIndex
-                  ? "bg-primary"
-                  : resultsByCard[card.id] === "correct"
-                    ? "bg-green-500/70"
-                    : resultsByCard[card.id]
-                      ? "bg-amber-500/70"
-                      : "bg-muted-foreground/30",
-              )}
-            />
-          ))}
-        </div>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+            {cards.map((card, i) => (
+              <button
+                key={`dot-${card.id}`}
+                type="button"
+                onClick={() => goTo(i)}
+                aria-label={`Go to card ${i + 1}`}
+                className={cn(
+                  "h-2 w-2 rounded-full transition-colors",
+                  i === currentIndex
+                    ? "bg-primary"
+                    : resultsByCard[card.id] === "correct"
+                      ? "bg-green-500/70"
+                      : resultsByCard[card.id]
+                        ? "bg-amber-500/70"
+                        : "bg-muted-foreground/30",
+                )}
+              />
+            ))}
+          </div>
         </div>
       </div>
 

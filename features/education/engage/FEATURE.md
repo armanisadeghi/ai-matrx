@@ -1,6 +1,6 @@
 # Engagement Engine (P10) — `features/education/engage`
 
-> **Status:** Live (2026-07-07). Route base `/education/game`. Part of the
+> **Status:** Live and server-authoritative (verified 2026-08-18). Route base `/education/game`. Part of the
 > Education Hub. The wedge: **play IS review** — a game whose questions are
 > FSRS-scheduled, mastery-scored, and anxiety-safe. No rival game product has
 > spaced repetition.
@@ -16,13 +16,13 @@ analytics. Nothing is a toy: fun shows up in `item_mastery`.
 
 ## Entry points
 
-| Route | What |
-|---|---|
-| `/education/game` | List-first home: Solo / Host / Join + streak + league + badges |
-| `/education/game/solo` | Solo arcade against your due/weak queue (the daily-habit surface) |
-| `/education/game/host` | Create a multiplayer room from a deck or your due queue |
-| `/education/game/join` | Join a room by 5-char code |
-| `/education/game/play/[roomId]?code=XXXXX` | The live game: lobby → play → results |
+| Route                                      | What                                                              |
+| ------------------------------------------ | ----------------------------------------------------------------- |
+| `/education/game`                          | List-first home: Solo / Host / Join + streak + league + badges    |
+| `/education/game/solo`                     | Solo arcade against your due/weak queue (the daily-habit surface) |
+| `/education/game/host`                     | Create a multiplayer room from a deck or your due queue           |
+| `/education/game/join`                     | Join a room by 5-char code                                        |
+| `/education/game/play/[roomId]?code=XXXXX` | The live game: lobby → play → results                             |
 
 The heavy play surfaces (`SoloArcadeImpl`, `MultiplayerGameImpl`) are code-split
 behind `next/dynamic({ ssr: false })` via thin wrappers — browser-only (timers,
@@ -36,9 +36,9 @@ engine/          PURE, deterministic, unit-testable (no I/O, no Date/random)
   queue.ts         per-player SRS-biased MC queue (generalizes useDueReview selection)
   badges.ts        outcome-badge catalog + qualify rules
 data/
-  gameService.ts   rooms / results / badges / leagues persistence (never throws)
+  gameService.ts   rooms + IC-14 result/engagement/league RPCs (never throws)
   useGamePlay.ts   THE game engine — the answer loop both solo + MP share
-  finalizeGame.ts  round-over side effect: save result + award badges + league
+  finalizeGame.ts  round-over side effect: request official result; replace hints
   useEngageMeta.ts read hooks: useStreak / useBadges / useLeague
   useCurrentPlayer.ts  userId + display name
 realtime/
@@ -49,21 +49,55 @@ components/       play/ · solo/ · multiplayer/ · lobby/ · results/ · streak
 ### Data model (all `education.` schema, canonical base-entity + RLS)
 
 - `game_room` — coordination row for a match (join_code, status, source, config).
-- `game_result` — one finalized result per player per game (room_id NULL = solo).
+- `game_result` — one server-finalized result per study session (room_id NULL = solo).
 - `game_badge` — earned outcome badges (unique per user/key).
-- `league_membership` — opt-in weekly cohort, scored by mastery_gain.
+- `league_membership` — opt-in private weekly activity cohort, scored by mastery_gain.
 - `study_streak` (extended) — forgiveness columns: `freezes_available`,
   `freezes_used`, `rest_weekdays`, `frozen_dates`.
 
 ### Realtime invariant
 
-Live game state (roster, per-player score, start/end) rides **Supabase
-Broadcast**, never Postgres (CLAUDE.md realtime rule). Only *results* persist
-(`game_result` + every answer via the spine). Presence backs the roster and
+Live game state (roster, provisional per-player score, start/end) rides
+**Supabase Broadcast**, never Postgres (CLAUDE.md realtime rule). Broadcast
+scores are animation hints and have zero persistence authority. Only official
+_results_ persist (`game_result` + every answer via the spine). Presence backs the roster and
 auto-recovers it on reconnect. Cross-owner reads (join-by-code, room scoreboard,
 league leaderboard) go through SECURITY DEFINER RPCs in `public` (the
 `supabase.rpc` convention): `game_room_by_code`, `game_room_players`,
-`league_leaderboard`, `league_add_result`, `set_streak_rest_weekdays`.
+`league_leaderboard`, `game_finalize_result`, `league_set_opt_in`,
+`education_engagement_snapshot`, `set_streak_rest_weekdays`. The retired
+`league_add_result` seam raises loudly and cannot add points.
+
+### IC-14 server-authority invariant
+
+**The attempt ledger is the only competitive authority.** A client finalizes by
+calling `game_finalize_result(session_id, display_name)` and submits no score,
+correctness, streak, mastery, currency, duration, or badge keys. In one locked,
+idempotent transaction Postgres:
+
+1. proves the caller owns a completed `mode='game'` session and its room/source;
+2. refuses impossible timing, malformed attempts, excessive submissions, and
+   more than 100 attempts;
+3. excludes `study_attempt.is_manually_edited=true` from every contest value;
+4. derives deterministic `education-game-v1` score, mastery gain, currency,
+   league gain, and verifiable badges;
+5. writes exactly one live result per session.
+
+Authenticated roles have no INSERT/UPDATE/DELETE grant on `game_result`,
+`game_badge`, or `league_membership`. `league_set_opt_in` is the only membership
+write door; it assigns a bounded private cohort from recent eligible activity.
+`league_leaderboard` returns only the caller's cohort. The live scoreboard is
+explicitly provisional; completion hides client totals until the official row
+returns and then reloads `game_room_players`.
+
+### Completion engagement
+
+`education_engagement_snapshot(session_id)` derives outcome-based learning
+points (correct=100, partial=50, incorrect=20), streak, badge progress, and the
+caller's private-league standing from persisted education rows. The canonical
+`StudyDeck` completion card renders all four on phone and desktop. Points are
+feedback, never currency or an access meter: **core practice has no energy,
+daily quantity cap, or paid practice limit.**
 
 ### Reconnect recovery
 
@@ -76,7 +110,7 @@ refreshed/dropped client rejoins mid-round instead of restarting.
 This is the **anti-Duolingo / anti-Kahoot** engagement layer. The design
 enforces it in code, not copy:
 
-1. **No speed-shame, ever.** Score is correctness-first: base points + a *small*
+1. **No speed-shame, ever.** Score is correctness-first: base points + a _small_
    decaying speed bonus + a capped personal-streak bonus. A slow, correct
    learner out-scores a fast, wrong one. Wrong answers score 0 — never negative,
    never punished. Multiplayer scoreboards are team/private, framed around
@@ -84,13 +118,16 @@ enforces it in code, not copy:
 2. **Streaks forgive.** Miss a day and a banked **freeze** auto-covers it (you
    earn one every 7 days, capped at 5). Mark **rest days** and they never break a
    streak. A broken streak restarts with a clean slate — no guilt, no dark
-   pattern. Forgiveness lives in the *shared* `bump_study_streak()` trigger, so
+   pattern. Forgiveness lives in the _shared_ `bump_study_streak()` trigger, so
    every study mode hub-wide gets it, not just the game.
 3. **Outcomes over vanity.** Badges and leagues reward mastery gained and healthy
    habit — never hours logged or raw win-count for its own sake. The results
-   screen headlines *mastery gained*, not score.
-4. **No guilt notifications.** Any nudge is explicit opt-in only (leagues are
-   opt-in and off by default). No re-engagement guilt algorithm.
+   screen headlines _mastery gained_, not score.
+4. **No guilt notifications.** WP7's `choose_education_reminders` policy emits
+   at most one neutral learner nudge per local day, returns silence for rest
+   days and disabled preferences, and names forgiveness in streak copy. WP8's
+   IC-6/IC-7 path owns quiet hours, deduplication, retries, and transport. No
+   re-engagement guilt algorithm and no bespoke education queue.
 5. **Generous free tier (P8).** Room size is gated by
    `education.game_room_size` with a generous default — we deliberately do NOT
    recreate Kahoot's "player tax" resentment.
@@ -105,7 +142,7 @@ enforces it in code, not copy:
   **visibility-aware** card-membership read (`assoc_members_visible` RPC,
   `has_org_access OR iam.has_access(target,'viewer')`), surfaced inline in Host
   setup with a lock/globe hint. **Cross-account public/shared decks work:** a
-  guest from a *different personal account* loads a `visibility='public'` (or
+  guest from a _different personal account_ loads a `visibility='public'` (or
   `'link'`/share-granted) deck's cards, because `iam.has_access` is the canonical
   row-level authorization truth (honors visibility, grants, memberships, and
   reachability → the card's public parent set). A stranger with no grant on a
@@ -116,7 +153,23 @@ enforces it in code, not copy:
 - **P8 `useEntitlement("education.game_room_size")`** — max players shown BEFORE
   hosting (TRUST mandate: no mid-workflow ambush), generous default.
 
-## Verification (2026-07-10 live run)
+## Verification (2026-08-18 live integrity run)
+
+- Two real authenticated learners completed one live room through the shared
+  database/API path. Official results were 440 (3/3, +3 mastery) and 247 (2/3,
+  +2 mastery); `game_room_players` returned those persisted values.
+- A fourth client-authored “perfect” attempt marked manually edited did not
+  count: the official row remained 2/3 and 247. Finalizing the same session
+  again returned the same result id.
+- Authenticated direct INSERT/UPDATE attempts against `game_result`, direct
+  badge INSERT, and direct league-total mutation each returned HTTP 403. An
+  arbitrary client score cannot land.
+- Live migrations:
+  `20260818_education_game_result_session_unique.sql` and
+  `20260818_education_game_server_authority.sql`; generated DB types were
+  regenerated from Matrx Main.
+
+## Verification (2026-07-10 historical live run)
 
 - **Solo round** (admin) played end-to-end: `study_session` mode=game
   status=completed, 8 `study_attempt` method=game rows, 8 `item_mastery` rows
@@ -143,11 +196,17 @@ enforces it in code, not copy:
 
 - The Match mode inside flashcards (`useMatchGame`) still exists — a candidate to
   unify with this engine later (flagged, not absorbed now, per brief scope-OUT).
-- Comeback badge uses a lightweight "was ever last → finished not-last" signal;
-  could be richer.
-- Live *classroom* mode with teacher controls is Convergence C (out of scope).
+- Comeback remains in the badge catalog but is not awarded until its evidence is
+  represented in a server-verifiable ledger; a client broadcast never grants it.
+- Live _classroom_ mode with teacher controls is Convergence C (out of scope).
 
 ## Change Log
+
+- **2026-08-18** — Landed IC-14: attempt-ledger-derived score/mastery/badges,
+  direct-write revocation, idempotent per-session results, private
+  activity-matched cohorts, provisional live labels, official-result
+  replacement, and the shared study-completion engagement snapshot. Added the
+  anti-Duolingo reminder policy seam for WP8 IC-6/IC-7.
 
 - **2026-07-21** — Doc-only: `platform.visibility` enum value `private` renamed to
   `personal` DB-wide; updated the PRIVATE-deck references above to PERSONAL.
@@ -155,7 +214,7 @@ enforces it in code, not copy:
   was org-gated (`assoc_for_targets` → `iam.has_org_access`), so a guest from a
   different personal org loaded 0 cards for a `visibility='public'` deck. New
   visibility-aware `assoc_members_visible` RPC (`has_org_access OR
-  iam.has_access(target,'viewer')` — the canonical row-level auth truth,
+  `iam.has_access(target,'viewer')` — the canonical row-level auth truth,
   evaluated once per target; strict superset of the old read) wrapped by
   `associationsService.listForTargetsVisible`; `fcService.getSetWithCards` routes
   through it, so every flashcard surface reads public/shared decks cross-account.

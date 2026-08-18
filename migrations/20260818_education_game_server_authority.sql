@@ -242,7 +242,7 @@ BEGIN
       v_correct := v_correct + 1;
       v_score := v_score + 100
         + round(50 * (1 - least(v_attempt.latency_ms, 15000)::numeric / 15000))::integer
-        + least(v_streak * 10, 100);
+        + least(greatest(v_streak - 1, 0) * 10, 100);
       v_currency := v_currency + 25;
       v_best_streak := greatest(v_best_streak, v_streak);
     ELSE

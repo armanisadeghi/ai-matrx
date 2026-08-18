@@ -6,7 +6,14 @@
 // vanity" mandate encoded as data. Award evaluation is deterministic; the
 // service persists the winners to education.game_badge (once per key/user).
 
-import { Award, Flame, Rocket, Target, TrendingUp, Sparkles } from "lucide-react";
+import {
+  Award,
+  Flame,
+  Gamepad2,
+  Rocket,
+  Target,
+  TrendingUp,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 export type BadgeKey =
@@ -30,7 +37,7 @@ export const BADGES: Record<BadgeKey, BadgeDef> = {
     key: "first_game",
     label: "First Round",
     description: "Played your first study game.",
-    icon: Sparkles,
+    icon: Gamepad2,
   },
   mastery_10: {
     key: "mastery_10",
