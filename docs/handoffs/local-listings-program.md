@@ -25,12 +25,24 @@ deleted; review row `9489536a-fa7d-41a6-b252-e41e4ae2e4e3` awaits Arman.
 
 ## Open, dependency-ordered
 
-1. **Observed-listing capture** — today `location_listing.observed` is only written manually. Wire
-   the discovery pipeline (web.discovered_item precedent) and/or DataForSEO Business Data
-   (`business_listings/search`, `my_business_info` — approved-for-future in aidream
-   `docs/seo/DATAFORSEO_CAPABILITY_AND_COST_AUDIT.md` § Business Data) to fill `observed`,
-   `match_score`, `nap_match`, `last_checked_at` automatically. The FE audit engine already renders
-   verdicts the moment data lands. Cheapest-first: deterministic fetch → batch sweeps; costed.
+0. ~~On-site verification~~ SHIPPED 2026-08-18: the workspace's "On-site structured data" card
+   reads the latest homepage crawl snapshot (keyed on `path='/'` — never URL equality; www/apex
+   twins), detects LocalBusiness JSON-LD (@graph-aware, `findLocalBusinessJsonLd`) and audits the
+   declared NAP against the canonical profile. Live-verified against aimatrx.com's real crawl.
+   Baseline measured across all 12 crawled sites: only 3 declare LocalBusiness (blancacleaningdfw,
+   cosmeticinjectables, pbw-law); aimatrx.com declares NOTHING.
+1. **Observed-listing capture via DataForSEO Business Data** — today `location_listing.observed`
+   is only written manually. The implementation map is fully scouted (2026-08-18): add
+   `DataForSeoOperationName` members + `_op(...)` entries for `business_data/business_listings/
+   search/live` + `google/my_business_info` in `packages/matrx-seo` `contracts.py`/`operations.py`
+   (`family="business_data"`, `SeoCapability.RAW_PROVIDER`, `raw_only=True`, pricing keys
+   `business_listing`/`business_profile` already in the pricing catalog); request builder beside
+   `aidream/services/seo/dataforseo.py:27`; service via `run_collection("dataforseo", request)` +
+   `OrmSeoRepository().load_raw_payload` (budget guard is automatic — never call the client
+   directly); non-streaming endpoint modeled on `lookup_site_competitor` (seo_collections.py:653);
+   persist into `location_listing.observed` + `last_checked_at` + `source='dataforseo'` via
+   `matrx_scraper.db.models_web.LocationListing` managers. The FE audit engine renders verdicts
+   the moment data lands. Note `validate_live_cardinality`: one task per LIVE call.
 2. **AI enrichment (mandates only)** — a location-description writer and a category suggester as DB
    agents on new mandates (NO hardcoded prompts); assists chips on the workspace
    (`<AssistStrip surfaceName>` + a `marketing-local` surface manifest, which is also still owed for
