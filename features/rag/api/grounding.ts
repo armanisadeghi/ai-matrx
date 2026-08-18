@@ -7,6 +7,7 @@
  */
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
+import { filesDb } from "@/features/files/filesDb";
 import type {
   SourceCitation,
   TrustEnvelope,
@@ -81,30 +82,76 @@ export async function listLearnerOwnedGroundingSources(
   userId: string,
 ): Promise<GroundingSource[]> {
   if (!userId) throw new Error("Learner-owned grounding requires a user id.");
-  const { data, error } = await docprocDb(supabase)
-    .from("processed_documents")
-    .select("name, owner_id, source_kind, source_id")
-    .eq("owner_id", userId)
-    .is("parent_processed_id", null)
-    .is("archived_at", null)
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false });
-  if (error) {
+  const [documentsResult, jobsResult] = await Promise.all([
+    docprocDb(supabase)
+      .from("processed_documents")
+      .select("name, owner_id, source_kind, source_id")
+      .eq("owner_id", userId)
+      .is("parent_processed_id", null)
+      .is("archived_at", null)
+      .is("deleted_at", null)
+      .order("updated_at", { ascending: false }),
+    filesDb(supabase)
+      .from("file_rag_jobs")
+      .select("file_id")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .order("updated_at", { ascending: false }),
+  ]);
+  if (documentsResult.error) {
     throw new Error("We couldn't read your uploaded study materials.", {
-      cause: error,
+      cause: documentsResult.error,
     });
   }
-  if (!data) {
+  if (jobsResult.error) {
+    throw new Error("We couldn't read your indexed file inventory.", {
+      cause: jobsResult.error,
+    });
+  }
+  if (!documentsResult.data || !jobsResult.data) {
     throw new Error("Your uploaded study-material inventory returned no data.");
   }
 
+  const completedFileIds = [
+    ...new Set(jobsResult.data.map((job) => job.file_id)),
+  ];
+  const flatFiles = completedFileIds.length
+    ? await filesDb(supabase)
+        .from("files")
+        .select("id, file_name, created_by")
+        .in("id", completedFileIds)
+        .eq("created_by", userId)
+        .is("deleted_at", null)
+    : { data: [], error: null };
+  if (flatFiles.error) {
+    throw new Error("We couldn't read your indexed files.", {
+      cause: flatFiles.error,
+    });
+  }
+  if (!flatFiles.data) {
+    throw new Error("Your indexed-file inventory returned no data.");
+  }
+
   const unique = new Map<string, GroundingSource>();
-  for (const row of data) {
+  for (const row of documentsResult.data) {
     if (row.owner_id !== userId) continue;
     const source = {
       sourceKind: row.source_kind,
       sourceId: row.source_id,
       title: row.name,
+    };
+    const key = sourceKey(source);
+    if (!unique.has(key)) unique.set(key, source);
+  }
+  // Text/HTML and other flat file sources intentionally have no
+  // processed_documents anchor. A completed owner-scoped file RAG job is the
+  // canonical proof that they belong in the grounding inventory.
+  for (const row of flatFiles.data) {
+    if (row.created_by !== userId) continue;
+    const source = {
+      sourceKind: "cld_file",
+      sourceId: row.id,
+      title: row.file_name,
     };
     const key = sourceKey(source);
     if (!unique.has(key)) unique.set(key, source);

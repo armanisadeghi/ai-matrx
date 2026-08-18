@@ -179,7 +179,8 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
 
 - **2026-08-18 — closed-corpus product grounding (Education IC-3).** New
   `api/grounding.ts` composes two existing primitives: an exact owner-filtered direct read of
-  `docproc.processed_documents` for corpus inventory, then canonical streamed `ragSearch` with
+  `docproc.processed_documents` plus completed owner-scoped `files.file_rag_jobs` and their
+  learner-owned `files.files` rows for corpus inventory, then canonical streamed `ragSearch` with
   every `(source_kind, source_id)` passed through `include_sources`. It returns durable
   `GroundedPassage` records (chunk/title/excerpt/file/document/page/score), a TrustEnvelope and
   explicit `retrieved|empty|failed` status. Empty inventory never means global search. Shared
@@ -188,7 +189,9 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
   `empty|failed`. Tutor citations add a compact persisted coordinate ledger so the exact retrieved
   chunk/file/document/page remains verifiable after conversation reload without rerunning search.
   `rerank_status: low_confidence` is `empty`; failed/off/missing relevance verification is `failed`.
-  A nonempty nearest-neighbour list alone is never evidence of support.
+  A nonempty nearest-neighbour list alone is never evidence of support. The file-job union is
+  required because successfully indexed text/HTML files are canonical flat RAG sources and
+  intentionally have no `processed_documents` anchor; deduplication keeps anchored files singular.
 
 - **2026-08-15 — Shared Knowledge publishing executes again.** `rag.library_grant_publish` now calls the intended any-admin helper (`public._library_assert_admin`) while preserving its live pre-check body, and a read-only runtime probe exercises the authorization path on every broken-function audit refresh.
 - **2026-08-15 — Gemini embeddings gained an honest RAG surface.** Added the
