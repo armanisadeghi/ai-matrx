@@ -8,12 +8,13 @@
 // decision auto-advances. The queue is the rules waiting on the EXPERT
 // (drafts); rejected rules are with the interviewer and never appear here.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
   CheckCircle2,
   PartyPopper,
   Pencil,
+  Wand2,
   XCircle,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -35,6 +36,8 @@ export function RuleReviewWizard({
   rulebook,
   onApprove,
   onReject,
+  onImprove,
+  requeue,
   onEdit,
 }: {
   open: boolean;
@@ -43,6 +46,14 @@ export function RuleReviewWizard({
   /** Resolves true only when the save actually landed. */
   onApprove: (rule: RulebookRule) => Promise<boolean>;
   onReject: (rule: RulebookRule, feedback: string) => Promise<void>;
+  /**
+   * The third verb: opens the Improve panel over the wizard. The Expert can
+   * submit and KEEP GOING — `requeue` brings the rewritten rule back into
+   * this sitting's queue when the agent responds.
+   */
+  onImprove: (rule: RulebookRule) => void;
+  /** A rule whose Improve rewrite just landed — put it back in the queue. */
+  requeue: { id: string; token: number } | null;
   /** Closes the wizard and opens the full editor on this rule. */
   onEdit: (rule: RulebookRule) => void;
 }) {
@@ -78,6 +89,21 @@ export function RuleReviewWizard({
       setFeedback("");
     }
   }
+
+  // An Improve rewrite that lands while this sitting is open returns to the
+  // queue: appended at the end when its slot was already decided or passed,
+  // left alone when it is still ahead of the Expert. (The "request changes
+  // and keep going" flow — Arman, 2026-08-17.)
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  useEffect(() => {
+    if (!requeue || !open) return;
+    setQueueIds((prev) => {
+      const pos = prev.indexOf(requeue.id);
+      if (pos >= indexRef.current) return prev;
+      return [...prev, requeue.id];
+    });
+  }, [requeue, open]);
 
   // The queue is snapshotted per open so decided rules keep their slot (the
   // progress count stays honest) while the live rulebook updates underneath.
@@ -269,17 +295,30 @@ export function RuleReviewWizard({
             </div>
             {!rejecting ? (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/20 px-6 py-4">
-                <div className="flex gap-2">
+                {/* The three core verbs: Approve / Improve / Reject (Arman,
+                2026-08-17), plus Edit for hand-fixes. Icons rely on the
+                Button's own gap — never add mr-* to a button icon (icon +
+                gap + margin was the "giant gap" defect). */}
+                <div className="flex flex-wrap gap-2">
                   <Button onClick={() => void approve()} disabled={busy}>
-                    <CheckCircle2 className="mr-1 h-4 w-4" />
+                    <CheckCircle2 className="h-4 w-4" />
                     Approve
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => rule && onImprove(rule)}
+                    disabled={busy}
+                    title="Say what should change — the AI rewrites it and it comes back to this queue."
+                  >
+                    <Wand2 className="h-4 w-4" />
+                    Improve
                   </Button>
                   <Button
                     variant="outline"
                     onClick={() => setRejecting(true)}
                     disabled={busy}
                   >
-                    <XCircle className="mr-1 h-4 w-4" />
+                    <XCircle className="h-4 w-4" />
                     Reject
                   </Button>
                   <Button
@@ -287,13 +326,13 @@ export function RuleReviewWizard({
                     onClick={() => rule && onEdit(rule)}
                     disabled={busy}
                   >
-                    <Pencil className="mr-1 h-4 w-4" />
+                    <Pencil className="h-4 w-4" />
                     Edit
                   </Button>
                 </div>
                 <Button variant="ghost" onClick={advance} disabled={busy}>
                   Skip
-                  <ArrowRight className="ml-1 h-4 w-4" />
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
             ) : null}

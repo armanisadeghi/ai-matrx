@@ -480,6 +480,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  masterworkAddRuleWindow: {
+    label: "Add a rule",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   masterworkCheckupWindow: {
     label: "Final Checkup",
     instanceMode: "singleton",

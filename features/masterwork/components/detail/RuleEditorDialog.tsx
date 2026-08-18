@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PencilLine, RotateCcw } from "lucide-react";
+import { PencilLine, RotateCcw, Wand2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -18,16 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ProTextarea } from "@/components/official/ProTextarea";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
@@ -41,6 +31,7 @@ import {
   MASTERWORK_RULE_CLEANUP_MANDATE,
   readRuleEditorDraft,
 } from "../../agent-context/ruleCleanup";
+import { RuleFields } from "./RuleFields";
 import type { RulebookRule, RulebookSections, RuleSeverity } from "../../types";
 
 /**
@@ -72,6 +63,13 @@ export interface RuleEditorDialogProps {
   stagedDraft?: Partial<RulebookDraftSnapshot>;
   draftRevision: number;
   onDraftChange: (draft: RulebookDraftSnapshot) => void;
+  /**
+   * The AI path from within edit: close this editor and open the Improve
+   * panel on the same rule, where the Expert dictates their notes and the
+   * `masterwork.rule_improver` Mandate applies them. Rendered only when
+   * editing an existing rule and the callback is provided.
+   */
+  onImproveInstead?: () => void;
 }
 
 /**
@@ -103,6 +101,7 @@ function RuleEditorForm({
   organizationId,
   stagedDraft,
   onDraftChange,
+  onImproveInstead,
   open,
 }: RuleEditorDialogProps) {
   const dispatch = useAppDispatch();
@@ -407,99 +406,27 @@ function RuleEditorForm({
               words into checks — you never have to.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="rule-name">Short name</Label>
-              <Input
-                id="rule-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Always lead with the benefit"
-                autoFocus
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rule-statement">What&apos;s the rule?</Label>
-              <ProTextarea
-                id="rule-statement"
-                value={statement}
-                onChange={(e) => setStatement(e.target.value)}
-                placeholder="The rule itself, as an instruction."
-                rows={6}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rule-rationale">Why does it matter?</Label>
-              <ProTextarea
-                id="rule-rationale"
-                value={rationale}
-                onChange={(e) => setRationale(e.target.value)}
-                placeholder="The reasoning behind it — optional but it makes rulings much better."
-                rows={6}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rule-detection">
-                How would you catch someone breaking it?
-              </Label>
-              <ProTextarea
-                id="rule-detection"
-                value={detection}
-                onChange={(e) => setDetection(e.target.value)}
-                placeholder="What a violation looks like in practice."
-                rows={6}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>How bad is breaking it?</Label>
-                <Select
-                  value={severity}
-                  onValueChange={(v) => setSeverity(v as RuleSeverity)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="critical">
-                      Critical — never acceptable
-                    </SelectItem>
-                    <SelectItem value="major">
-                      Major — a real problem
-                    </SelectItem>
-                    <SelectItem value="minor">Minor — worth fixing</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Belongs in</Label>
-                <Select value={section} onValueChange={setSection}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sectionCodes.map((code) => (
-                      <SelectItem key={code} value={code}>
-                        {sections[code]?.label ?? code}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="rule-quote">
-                In the source&apos;s own words (optional)
-              </Label>
-              <ProTextarea
-                id="rule-quote"
-                value={quote}
-                onChange={(e) => setQuote(e.target.value)}
-                placeholder="An exact quote from the book or document this rule comes from."
-                rows={6}
-              />
-            </div>
-          </div>
+          <RuleFields
+            values={{
+              name,
+              statement,
+              rationale,
+              detection,
+              quote,
+              severity,
+              section,
+            }}
+            onChange={(patch) => {
+              if (patch.name !== undefined) setName(patch.name);
+              if (patch.statement !== undefined) setStatement(patch.statement);
+              if (patch.rationale !== undefined) setRationale(patch.rationale);
+              if (patch.detection !== undefined) setDetection(patch.detection);
+              if (patch.quote !== undefined) setQuote(patch.quote);
+              if (patch.severity !== undefined) setSeverity(patch.severity);
+              if (patch.section !== undefined) setSection(patch.section);
+            }}
+            sections={sections}
+          />
           {cleanupRun.hasLiveRun ? (
             <LiveRunDisplay
               conversationId={cleanupRun.conversationId}
@@ -516,16 +443,27 @@ function RuleEditorForm({
                 onClick={() => void cleanupWithAi()}
                 disabled={saving || cleanupRun.isRunning}
               >
-                <PencilLine className="mr-1.5 h-4 w-4" />
+                <PencilLine className="h-4 w-4" />
                 {cleanupRun.isRunning ? "Cleaning up…" : "Clean up with AI"}
               </Button>
+              {!isNew && onImproveInstead ? (
+                <Button
+                  variant="ghost"
+                  onClick={onImproveInstead}
+                  disabled={saving || cleanupRun.isRunning}
+                  title="Dictate what should change and the AI rewrites the rule for your approval."
+                >
+                  <Wand2 className="h-4 w-4" />
+                  Have the AI apply my notes instead
+                </Button>
+              ) : null}
               {beforeCleanup ? (
                 <Button
                   variant="ghost"
                   onClick={undoCleanup}
                   disabled={saving || cleanupRun.isRunning}
                 >
-                  <RotateCcw className="mr-1.5 h-4 w-4" />
+                  <RotateCcw className="h-4 w-4" />
                   Undo AI cleanup
                 </Button>
               ) : null}

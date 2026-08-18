@@ -618,6 +618,10 @@ const MasterworkCheckupWindow = lazyOverlay(
   () => import("@/features/masterwork/checkup/CheckupWindow"),
   { ssr: false },
 );
+const MasterworkAddRuleWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/masterwork/AddRuleWindow"),
+  { ssr: false },
+);
 const AddToRulebookDialog = lazyOverlay(
   () => import("@/features/masterwork/oracle/AddToRulebookDialog"),
   { ssr: false },
@@ -1067,6 +1071,9 @@ export default function OverlayController() {
     masterworkCheckupWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "masterworkCheckupWindow"),
     ),
+    masterworkAddRuleWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "masterworkAddRuleWindow"),
+    ),
     addToRulebookDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "addToRulebookDialog"),
     ),
@@ -1402,6 +1409,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     masterworkCheckupWindow: useAppSelector((s) =>
       selectOverlayData(s, "masterworkCheckupWindow"),
+    ) as Record<string, unknown> | null,
+    masterworkAddRuleWindow: useAppSelector((s) =>
+      selectOverlayData(s, "masterworkAddRuleWindow"),
     ) as Record<string, unknown> | null,
     addToRulebookDialog: useAppSelector((s) =>
       selectOverlayData(s, "addToRulebookDialog"),
@@ -2519,6 +2529,37 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "masterworkCheckupWindow" }))
             }
             rulebookId={rulebookId}
+          />
+        );
+      })()}
+
+      {/* masterworkAddRuleWindow — "Add rule" as a WindowPanel (With AI
+          default + Manually), opened via useOpenAddRuleWindow(). */}
+      {(() => {
+        const isOpen = isOpenById.masterworkAddRuleWindow;
+        const data = dataById.masterworkAddRuleWindow as
+          Record<string, unknown> | null | undefined;
+        const rulebookId =
+          typeof data?.rulebookId === "string" ? data.rulebookId : null;
+        // No Rulebook, no window — a rule has to land somewhere.
+        if (!isOpen || !rulebookId) return null;
+        return (
+          <MasterworkAddRuleWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "masterworkAddRuleWindow" }))
+            }
+            rulebookId={rulebookId}
+            callbackGroupId={
+              typeof data?.callbackGroupId === "string"
+                ? data.callbackGroupId
+                : null
+            }
+            defaultSection={
+              typeof data?.defaultSection === "string"
+                ? data.defaultSection
+                : null
+            }
           />
         );
       })()}

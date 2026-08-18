@@ -977,6 +977,24 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "multi",
   },
 
+  // ── Masterwork Add Rule ─────────────────────────────────────────────────
+  // "Add rule" on a Rulebook — a WindowPanel (never a blocking modal), With
+  // AI (default) + Manually. Ephemeral: it belongs to ONE Rulebook and its
+  // callback group; restoring it on some other page would add rules nowhere.
+  {
+    slug: "masterwork-add-rule-window",
+    overlayId: "masterworkAddRuleWindow",
+    kind: "window",
+    label: "Add a rule",
+    defaultData: {
+      callbackGroupId: null as string | null,
+      rulebookId: null as string | null,
+      defaultSection: null as string | null,
+    },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Masterwork Final Checkup ────────────────────────────────────────────
   // Ephemeral: the checkup belongs to ONE Rulebook and its run is remembered
   // server-side (platform.masterwork_run) — reopening it from a saved

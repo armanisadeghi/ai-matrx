@@ -150,6 +150,45 @@ export async function saveRules(opts: {
   return parseRulebook(data as RulebookRow);
 }
 
+const RULE_UPSERT_CAS_RETRIES = 3;
+
+/**
+ * Land ONE rule on a Rulebook — replace by id when it exists, append when it
+ * doesn't — through the canonical `saveRules` compare-and-swap, with a bounded
+ * re-read retry (a single-rule upsert is commutative with other edits, same
+ * contract as the Oracle tap's append). Used by the Improve verb landing its
+ * rewrite as a draft revision, by Improve's discard restoring the original,
+ * and by the Add-rule window's two tabs. NEVER a second write path.
+ */
+export async function upsertRuleWithRetry(opts: {
+  rulebookId: string;
+  rule: RulebookRule;
+}): Promise<Rulebook> {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < RULE_UPSERT_CAS_RETRIES; attempt++) {
+    const rulebook = await getRulebook(opts.rulebookId);
+    if (!rulebook) throw new Error("That Rulebook no longer exists.");
+    const exists = rulebook.rules.some((r) => r.id === opts.rule.id);
+    const rules = exists
+      ? rulebook.rules.map((r) => (r.id === opts.rule.id ? opts.rule : r))
+      : [...rulebook.rules, opts.rule];
+    try {
+      return await saveRules({
+        rulebookId: opts.rulebookId,
+        expectedVersion: rulebook.version,
+        rules,
+      });
+    } catch (error) {
+      lastError = error;
+      const message = error instanceof Error ? error.message : "";
+      if (!message.includes("changed while you were editing")) throw error;
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Could not save to the Rulebook — it kept changing. Try again.");
+}
+
 export async function updateRulebookMeta(opts: {
   rulebookId: string;
   patch: Partial<{

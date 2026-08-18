@@ -19,6 +19,7 @@ import {
   RefreshCw,
   RotateCcw,
   Quote,
+  Wand2,
   Workflow,
   XCircle,
 } from "lucide-react";
@@ -47,8 +48,10 @@ import {
   listMasterworksForRulebook,
   saveRules,
   updateRulebookMeta,
+  upsertRuleWithRetry,
 } from "../../service";
 import {
+  applyManualRuleEdit,
   ruleState,
   SEVERITY_LABELS,
   type Masterwork,
@@ -62,11 +65,13 @@ import { BuildMasterworkDialog } from "./BuildMasterworkDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RulebookSourcesPanel } from "./RulebookSourcesPanel";
 import { InterviewButton, ScoutInterviewPanel } from "./ScoutInterviewPanel";
+import { ConversationsSection } from "../../record/ConversationsSection";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 import {
   RuleFeedbackDialog,
   type RuleFeedbackMode,
 } from "./RuleFeedbackDialog";
+import { ImproveRuleDialog } from "./ImproveRuleDialog";
 import { RuleReviewWizard } from "./RuleReviewWizard";
 import { computeKpis, RulebookKpiStrip } from "./RulebookKpiStrip";
 import { UnderstudyCard } from "../../understudy/UnderstudyCard";
@@ -76,6 +81,9 @@ import {
 } from "../../agent-context/rulebookSurfaceScope";
 // The Final Checkup window (features/masterwork/checkup/) — its one entry point.
 import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/masterworkCheckupWindow";
+// "Add rule" is a WindowPanel (With AI default + Manually) — never a blocking
+// modal. The RuleEditorDialog keeps only EDIT plus agent-staged drafts.
+import { useOpenAddRuleWindow } from "@/features/overlays/openers/masterworkAddRuleWindow";
 
 /**
  * The Expert surface: read your Rulebook, correct it, grow it. Rules are
@@ -306,6 +314,7 @@ function RuleRow({
   onToggleRetired,
   onApprove,
   onReject,
+  onImprove,
   onRequestChanges,
   onReconsider,
 }: {
@@ -315,6 +324,7 @@ function RuleRow({
   onToggleRetired: () => void;
   onApprove: () => void;
   onReject: () => void;
+  onImprove: () => void;
   onRequestChanges: () => void;
   onReconsider: () => void;
 }) {
@@ -389,10 +399,23 @@ function RuleRow({
           </div>
         </button>
         {canEdit && state === "draft" ? (
+          // The three core review verbs (Arman, 2026-08-17): Approve / Reject
+          // / Improve. Icons rely on the Button's own gap — never add an mr-*
+          // to a button icon here (icon + gap + margin is the "giant gap"
+          // defect Arman flagged).
           <div className="flex shrink-0 gap-1">
             <Button size="sm" className="h-7" onClick={onApprove}>
-              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+              <CheckCircle2 className="h-3.5 w-3.5" />
               Approve
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={onImprove}
+            >
+              <Wand2 className="h-3.5 w-3.5" />
+              Improve
             </Button>
             <Button
               size="sm"
@@ -400,7 +423,7 @@ function RuleRow({
               className="h-7 border-destructive/40 text-destructive hover:text-destructive"
               onClick={onReject}
             >
-              <XCircle className="mr-1 h-3.5 w-3.5" />
+              <XCircle className="h-3.5 w-3.5" />
               Reject
             </Button>
           </div>
@@ -413,7 +436,7 @@ function RuleRow({
             onClick={onReconsider}
             title="Take it back from the interviewer and review it yourself again."
           >
-            <RotateCcw className="mr-1 h-3.5 w-3.5" />
+            <RotateCcw className="h-3.5 w-3.5" />
             Reconsider
           </Button>
         ) : null}
@@ -467,17 +490,23 @@ function RuleRow({
           {canEdit ? (
             <div className="flex flex-wrap gap-2 pt-1">
               <Button size="sm" variant="outline" onClick={onEdit}>
-                <Pencil className="mr-1 h-3.5 w-3.5" />
+                <Pencil className="h-3.5 w-3.5" />
                 Edit
               </Button>
               {!retired && !rejected ? (
+                <Button size="sm" variant="outline" onClick={onImprove}>
+                  <Wand2 className="h-3.5 w-3.5" />
+                  Improve
+                </Button>
+              ) : null}
+              {!retired && !rejected ? (
                 <Button size="sm" variant="outline" onClick={onRequestChanges}>
-                  <MessageSquareWarning className="mr-1 h-3.5 w-3.5" />
+                  <MessageSquareWarning className="h-3.5 w-3.5" />
                   {rule.feedback ? "Change the request" : "Request changes"}
                 </Button>
               ) : null}
               <Button size="sm" variant="ghost" onClick={onToggleRetired}>
-                <RotateCcw className="mr-1 h-3.5 w-3.5" />
+                <RotateCcw className="h-3.5 w-3.5" />
                 {retired ? "Restore" : "Retire"}
               </Button>
             </div>
@@ -511,6 +540,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     rule: RulebookRule;
     mode: RuleFeedbackMode;
   } | null>(null);
+  // The Improve verb — the dialog stays MOUNTED (not conditionally rendered)
+  // so a run submitted from the wizard keeps going after "Keep reviewing".
+  const [improveTarget, setImproveTarget] = useState<RulebookRule | null>(null);
+  const [improveOpen, setImproveOpen] = useState(false);
+  // Nudges the wizard to put an improved rule back at the end of its queue.
+  const [wizardRequeue, setWizardRequeue] = useState<{
+    id: string;
+    token: number;
+  } | null>(null);
   const searchParams = useSearchParams();
   // The guided start ("Distill your expertise") lands here with ?interview=1
   // when the knowledge lives in the Expert's head — the Scout interview IS the
@@ -518,6 +556,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const [interviewOpen, setInterviewOpen] = useState(
     searchParams.get("interview") === "1",
   );
+  // Which interview the panel opens INTO — set by the Conversations section
+  // (Continue resumes that conversation; New skips the chooser into a fresh
+  // one). Cleared whenever the panel closes, so a plain "Interview me" always
+  // shows the chooser.
+  const [interviewTarget, setInterviewTarget] = useState<{
+    conversationId?: string;
+    newNonce: number;
+  }>({ newNonce: 0 });
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
   const dumpFocus = searchParams.get("dump") === "1";
@@ -551,6 +597,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   }, [assistKey]);
   const userId = useAppSelector(selectUserId);
   const openCheckup = useOpenMasterworkCheckupWindow();
+  const openAddRule = useOpenAddRuleWindow();
 
   const reloadRulebook = useCallback(async () => {
     const r = await getRulebook(rulebookId);
@@ -562,6 +609,20 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       .then(setMasterworks)
       .catch(() => undefined);
   }, [rulebookId]);
+
+  // Every human "Add rule" entry point opens the WindowPanel (With AI default
+  // + Manually) — the Rulebook stays visible behind it. The old blocking
+  // dialog path is gone; RuleEditorDialog keeps only edit + staged drafts.
+  const openAddRuleWindow = useCallback(
+    (section?: string) => {
+      openAddRule({
+        rulebookId,
+        defaultSection: section ?? null,
+        onAdded: (e) => setRulebook(e.rulebook),
+      });
+    },
+    [openAddRule, rulebookId],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -769,13 +830,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   id: "add-rule",
                   label: "Add rule",
                   icon: Plus,
-                  onSelect: () => {
-                    setEditing(undefined);
-                    setEditorSection(undefined);
-                    setStagedRuleDraft(undefined);
-                    setDraftRevision((revision) => revision + 1);
-                    setEditorOpen(true);
-                  },
+                  onSelect: () => openAddRuleWindow(),
                 },
                 {
                   kind: "item" as const,
@@ -834,22 +889,33 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     [rulebook, reloadRulebook],
   );
 
+  // 🚨 SAVING AN EDIT IS NOT APPROVING (Arman, 2026-08-17 — "You're updating
+  // the data, not approving it"). This replaced the opposite doctrine that
+  // silently approved a draft on save. The merge lives in ONE place
+  // (`applyManualRuleEdit`, types.ts): draft stays draft (still awaiting the
+  // explicit Approve button), approved stays approved; rejected/feedback
+  // survive a no-op save but are RESOLVED by a content-changing edit (the
+  // Expert's own hand supersedes the note they wrote for the Scout). A NEW
+  // hand-authored rule lands live — the Expert typing it IS the human act
+  // (AI-drafted rules land as drafts through the Improve/Add-with-AI paths).
+  // Full matrix: FEATURE.md § The review-verb matrix.
   const saveRule = useCallback(
     async ({ rule, isNew }: RuleEditorResult) => {
       if (!rulebook) return;
-      // The Expert opening a draft, correcting it, and saving IS approval —
-      // the human-first act the whole Distillation loop waits on. Approval
-      // consumes ALL review state: a hand-fixed rejected rule is resolved
-      // (never "with the interviewer" while secretly enforced), and a
-      // change request the Expert applied themselves is done.
-      const { rejected: _rejected, feedback: _feedback, ...rest } = rule;
-      const approved = { ...rest, draft: false };
+      const prev = isNew
+        ? undefined
+        : rulebook.rules.find((r) => r.id === rule.id);
+      const merged = prev ? applyManualRuleEdit(prev, rule) : rule;
       const next = isNew
-        ? [...rulebook.rules, approved]
-        : rulebook.rules.map((r) => (r.id === approved.id ? approved : r));
+        ? [...rulebook.rules, merged]
+        : rulebook.rules.map((r) => (r.id === merged.id ? merged : r));
       await persist(next);
       toast.success(
-        isNew ? "Rule added" : rule.draft ? "Rule approved" : "Rule saved",
+        isNew
+          ? "Rule added"
+          : ruleState(merged) === "draft"
+            ? "Rule saved — still waiting for your approval"
+            : "Rule saved",
         { description: `Rulebook is now version ${rulebook.version + 1}.` },
       );
     },
@@ -900,6 +966,24 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     },
     [rulebook, persist],
   );
+
+  // The Improve verb's landing: the rewrite becomes a DRAFT revision of the
+  // same rule id through the canonical CAS upsert (bounded retry — a single-
+  // rule upsert is commutative with concurrent Scout writes). Never approved
+  // here; the Approve button stays the only approval.
+  const landImprovedRule = useCallback(
+    async (revised: RulebookRule) => {
+      const saved = await upsertRuleWithRetry({ rulebookId, rule: revised });
+      setRulebook(saved);
+      setWizardRequeue({ id: revised.id, token: Date.now() });
+    },
+    [rulebookId],
+  );
+
+  const openImprove = useCallback((rule: RulebookRule) => {
+    setImproveTarget(rule);
+    setImproveOpen(true);
+  }, []);
 
   // "Approve all" means the rules WAITING ON the Expert — never rejected ones
   // (those are the interviewer's queue, and approving them would erase the
@@ -1087,7 +1171,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               <div className="flex shrink-0 gap-2">
                 {canEdit && rulebook.status === "draft" ? (
                   <Button size="sm" onClick={() => setConfirmActivate(true)}>
-                    <CheckCircle2 className="mr-1 h-4 w-4" />
+                    <CheckCircle2 className="h-4 w-4" />
                     Activate
                   </Button>
                 ) : null}
@@ -1101,13 +1185,13 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                     variant="outline"
                     onClick={() => openCheckup({ rulebookId: rulebook.id })}
                   >
-                    <Stethoscope className="mr-1 h-4 w-4" />
+                    <Stethoscope className="h-4 w-4" />
                     Final checkup
                   </Button>
                 ) : null}
                 {approvedCount > 0 ? (
                   <Button size="sm" onClick={() => setBuildOpen(true)}>
-                    <Hammer className="mr-1 h-4 w-4" />
+                    <Hammer className="h-4 w-4" />
                     Build a Masterwork
                   </Button>
                 ) : null}
@@ -1116,13 +1200,13 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 are never more than one click away. */}
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/masterwork/${rulebook.id}/record`}>
-                    <Quote className="mr-1 h-4 w-4" />
+                    <Quote className="h-4 w-4" />
                     Your words
                   </Link>
                 </Button>
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/masterwork/${rulebook.id}/masterworks`}>
-                    <Workflow className="mr-1 h-4 w-4" />
+                    <Workflow className="h-4 w-4" />
                     Masterworks
                     {builtCount > 0 ? ` (${builtCount})` : ""}
                   </Link>
@@ -1149,7 +1233,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   className="h-7"
                   onClick={() => setWizardOpen(true)}
                 >
-                  <ListTodo className="mr-1 h-3.5 w-3.5" />
+                  <ListTodo className="h-3.5 w-3.5" />
                   Review one by one
                 </Button>
                 <Button
@@ -1158,7 +1242,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   className="h-7"
                   onClick={() => void approveAllDrafts()}
                 >
-                  <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                  <CheckCircle2 className="h-3.5 w-3.5" />
                   Approve all
                 </Button>
                 {approvedCount === 0 ? (
@@ -1169,6 +1253,27 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               </div>
             ) : null}
           </div>
+
+          {/* CONVERSATIONS — first-class on the Rulebook page. Every Scout
+          interview the Expert ever had about this Rulebook, with Continue
+          (resumes in the panel beside the rules), a new-tab door to /chat, a
+          full-page door to /masterwork/[id]/interview, and New interview.
+          Born from Arman not being able to find his own 37k-character
+          interview: the chooser only ever showed INSIDE the sheet. */}
+          <ConversationsSection
+            rulebookId={rulebook.id}
+            rules={rulebook.rules}
+            rulebookVersion={rulebook.version}
+            canEdit={canEdit}
+            onContinue={(conversationId) => {
+              setInterviewTarget({ conversationId, newNonce: 0 });
+              setInterviewOpen(true);
+            }}
+            onStartNew={() => {
+              setInterviewTarget({ newNonce: Date.now() });
+              setInterviewOpen(true);
+            }}
+          />
 
           {/* THE UNDERSTUDY — the system that runs from minute one (vision doc
           13). One crude agent does the whole job now; every rules save
@@ -1209,14 +1314,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 <Button
                   size="sm"
                   className="h-8"
-                  onClick={() => {
-                    setEditing(undefined);
-                    setEditorSection(undefined);
-                    setStagedRuleDraft(undefined);
-                    setEditorOpen(true);
-                  }}
+                  onClick={() => openAddRuleWindow()}
                 >
-                  <Plus className="mr-1 h-4 w-4" />
+                  <Plus className="h-4 w-4" />
                   Add rule
                 </Button>
                 <InterviewButton
@@ -1229,7 +1329,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   className="h-8"
                   onClick={() => setIngestOpen(true)}
                 >
-                  <FileUp className="mr-1 h-4 w-4" />
+                  <FileUp className="h-4 w-4" />
                   From a source
                 </Button>
                 <Button
@@ -1238,7 +1338,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   className="h-8"
                   onClick={() => setCorpusOpen(true)}
                 >
-                  <BookOpen className="mr-1 h-4 w-4" />
+                  <BookOpen className="h-4 w-4" />
                   Your published work
                 </Button>
               </>
@@ -1257,27 +1357,23 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 {canEdit ? (
                   <div className="mt-3 flex items-center justify-center gap-2">
                     <Button size="sm" onClick={() => setInterviewOpen(true)}>
-                      <MessageCircleQuestion className="mr-1 h-4 w-4" />
+                      <MessageCircleQuestion className="h-4 w-4" />
                       Start the interview
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => {
-                        setEditing(undefined);
-                        setStagedRuleDraft(undefined);
-                        setEditorOpen(true);
-                      }}
+                      onClick={() => openAddRuleWindow()}
                     >
-                      <Plus className="mr-1 h-4 w-4" />
-                      Add a rule by hand
+                      <Plus className="h-4 w-4" />
+                      Add a rule
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => setIngestOpen(true)}
                     >
-                      <FileUp className="mr-1 h-4 w-4" />
+                      <FileUp className="h-4 w-4" />
                       From a document
                     </Button>
                   </div>
@@ -1300,14 +1396,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                           size="sm"
                           variant="ghost"
                           className="h-7"
-                          onClick={() => {
-                            setEditing(undefined);
-                            setEditorSection(group.code);
-                            setStagedRuleDraft(undefined);
-                            setEditorOpen(true);
-                          }}
+                          onClick={() => openAddRuleWindow(group.code)}
                         >
-                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          <Plus className="h-3.5 w-3.5" />
                           Add here
                         </Button>
                       ) : null}
@@ -1329,6 +1420,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                           onReject={() =>
                             setFeedbackTarget({ rule, mode: "reject" })
                           }
+                          onImprove={() => openImprove(rule)}
                           onRequestChanges={() =>
                             setFeedbackTarget({ rule, mode: "request" })
                           }
@@ -1358,6 +1450,15 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             stagedDraft={stagedRuleDraft}
             draftRevision={draftRevision}
             onDraftChange={setActiveRuleDraft}
+            onImproveInstead={
+              editing
+                ? () => {
+                    const target = editing;
+                    setEditorOpen(false);
+                    openImprove(target);
+                  }
+                : undefined
+            }
           />
           <RuleFeedbackDialog
             open={feedbackTarget !== null}
@@ -1388,11 +1489,39 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             rulebook={rulebook}
             onApprove={approveRule}
             onReject={rejectRule}
+            onImprove={openImprove}
+            requeue={wizardRequeue}
             onEdit={(rule) => {
               setWizardOpen(false);
               setEditing(rule);
               setEditorSection(undefined);
               setStagedRuleDraft(undefined);
+              setEditorOpen(true);
+            }}
+          />
+          <ImproveRuleDialog
+            open={improveOpen}
+            onOpenChange={setImproveOpen}
+            rule={improveTarget}
+            sections={rulebook.sections}
+            surfaceName={MASTERWORK_RULEBOOK_SURFACE_NAME}
+            rulebookId={rulebook.id}
+            organizationId={rulebook.organization_id}
+            getSurfaceScope={buildSurfaceScope}
+            onLanded={landImprovedRule}
+            onDiscard={async (original) => {
+              const saved = await upsertRuleWithRetry({
+                rulebookId: rulebook.id,
+                rule: original,
+              });
+              setRulebook(saved);
+            }}
+            onApproveRevised={(revised) => approveRule(revised)}
+            onEditRevised={(revised) => {
+              setEditing(revised);
+              setEditorSection(undefined);
+              setStagedRuleDraft(undefined);
+              setDraftRevision((revision) => revision + 1);
               setEditorOpen(true);
             }}
           />
@@ -1441,9 +1570,16 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               rulebookId={rulebook.id}
               rulebookName={rulebook.name}
               open={interviewOpen}
-              onOpenChange={setInterviewOpen}
+              onOpenChange={(open) => {
+                setInterviewOpen(open);
+                // Closing resets the target so the next plain "Interview me"
+                // opens on the chooser, not on whatever was last resumed.
+                if (!open) setInterviewTarget({ newNonce: 0 });
+              }}
               onRulebookChanged={() => void reloadRulebook()}
               seedText={interviewSeed}
+              initialConversationId={interviewTarget.conversationId}
+              startNewNonce={interviewTarget.newNonce}
             />
           ) : null}
         </div>

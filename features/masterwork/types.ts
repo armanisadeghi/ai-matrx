@@ -118,6 +118,49 @@ export function ruleState(rule: RulebookRule): RuleState {
   return "approved";
 }
 
+/** The fields an edit can change — the content of a rule, as opposed to its review state. */
+export const RULE_CONTENT_FIELDS = [
+  "name",
+  "statement",
+  "rationale",
+  "detection",
+  "quote",
+  "severity",
+  "section",
+] as const;
+
+function contentChanged(prev: RulebookRule, next: RulebookRule): boolean {
+  return RULE_CONTENT_FIELDS.some(
+    (field) => (prev[field] ?? "") !== (next[field] ?? ""),
+  );
+}
+
+/**
+ * SAVING AN EDIT IS NOT APPROVING (Arman, 2026-08-17: "save rule is actually
+ * approving even though it shouldn't approve. You're updating the data, not
+ * approving it."). The ONE merge for a manual edit-save — the full matrix is
+ * documented in FEATURE.md § The review-verb matrix:
+ *
+ * - `draft` / approved status is PRESERVED exactly. A draft the Expert
+ *   corrected is still a draft awaiting the explicit Approve button; an
+ *   approved rule they touched stays approved.
+ * - `rejected` + `feedback` survive an edit that changes NOTHING — but a
+ *   content-changing edit RESOLVES them: those flags are messages to the
+ *   Scout about the OLD text, and the Expert's own hand supersedes the note
+ *   they wrote for the agent. A resolved rejected rule returns to the
+ *   Expert's own draft queue (still not approved — save is never approve).
+ */
+export function applyManualRuleEdit(
+  prev: RulebookRule,
+  edited: RulebookRule,
+): RulebookRule {
+  if (!contentChanged(prev, edited)) return { ...prev, ...edited };
+  const merged = { ...prev, ...edited };
+  delete merged.rejected;
+  delete merged.feedback;
+  return merged;
+}
+
 export interface RulebookSectionDef {
   label: string;
 }
