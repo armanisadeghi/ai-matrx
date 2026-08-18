@@ -228,6 +228,27 @@ merges steps at the cheap end).
 
 ## Remaining work (priority order)
 
+0. **Keyword→brief enforcement tail (traced 2026-08-17 on pbw-law — the "my keywords got
+   dropped" roadblock).** The ROOT CAUSE is FIXED in aidream: the generator + Deepen wrote
+   agent-chosen keywords ONLY to the retired `plan.node.primary_keyword_id` column, invisible to
+   the brief gate/pipeline/UI — `page_seo_plan.assign_primary_keyword` is now the one server
+   writer (wired into `set_keyword` + `apply_plan_tree` phase 3, heals legacy rows on re-apply,
+   and finally produces the `p1_keywords` rail step, which had NO producer). Still open, in
+   order of harm:
+   - `assert_brief_preconditions` runs ONLY on the "Draft brief" button; Deepen
+     (`generator.py:842`), the `content_plan` tool's `update_brief`/`deepen_node`
+     (`tools.py:400,585`), and `apply_plan_tree` write briefs with zero keyword gate. Bulk paths
+     should at least warn loudly per page.
+   - No check anywhere that a produced brief actually covers its target keyword
+     (`coerce_brief_draft`, `brief_writer.py:265` — pbw-law's Home brief never mentions its
+     keyword) and `build_keyword_assignment_line` hands the keyword as context, not as a binding
+     instruction. Post-generation containment check + tightened variable framing.
+   - `assert_step_preconditions` (Write/Review, `page_pipeline.py:763`) requires only "brief
+     non-empty" — a keyword-less brief sails through; align with `assert_brief_preconditions` or
+     document why not.
+   - `NodeStepRail` run arrows have no precondition-aware disabled state
+     (`NodeStepRail.tsx:337`) — refusal discovered only after the click.
+   - Re-audit the FE `hasKeywordAssignment` predicate against the corrected server writes.
 1. **Prove the loop at SCALE.** Never yet run: a real ~25-page site end to end — starter kit →
    fill every node (all four steps) → human review → bulk publish → verify every URL live. Use a
    throwaway or `cosmeticinjectables` (`baa61391…`, already CMS-linked), never `iopbm` /
