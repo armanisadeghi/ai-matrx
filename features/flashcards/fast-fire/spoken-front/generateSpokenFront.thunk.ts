@@ -12,8 +12,9 @@
 // We launch with autoRun:true (the launch thunk runs to completion), then read
 // that block by requestId and persist the fileId. No manual upload needed.
 //
-// Timing: generate ON-DEMAND (first time the option is used), batched ~5 at a
-// time — NEVER at card creation (a 50-card set would be far too expensive).
+// Timing: generate ON-DEMAND (first time the option is used) — NEVER at card
+// creation (a 50-card set would be far too expensive). Every missing card is
+// dispatched immediately; matrx-ai owns provider admission and rate limits.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
@@ -44,9 +45,6 @@ export async function getSpokenFrontReadiness(
   ).length;
   return { ready, total: cards.length };
 }
-
-/** Max concurrent TTS generations (owner: ~5 at a time). */
-const CONCURRENCY = 5;
 
 interface SpokenFrontCard {
   id: string;
@@ -186,7 +184,7 @@ export function generateSpokenFront(
 
 /**
  * Ensure every card in a set has a spoken front, generating the missing ones
- * ~5 at a time. Returns a map of cardId → audio file_id for the whole set
+ * concurrently. Returns a map of cardId → audio file_id for the whole set
  * (existing + newly generated). `onProgress(done, total)` fires as each resolves.
  * On-demand only — call this when the learner enables/starts a spoken drill.
  */
@@ -218,23 +216,15 @@ export function ensureSpokenFrontsForSet(
     onProgress?.(done, total);
     if (todo.length === 0) return result;
 
-    // Simple concurrency pool of CONCURRENCY workers over the to-do queue.
-    let cursor = 0;
-    async function worker(): Promise<void> {
-      while (cursor < todo.length) {
-        const item = todo[cursor++];
+    await Promise.all(
+      todo.map(async (item) => {
         const fileId = await dispatch(
           generateSpokenFront(item.card, item.index, total),
         );
         if (fileId) result[item.card.id] = fileId;
         done += 1;
         onProgress?.(done, total);
-      }
-    }
-    await Promise.all(
-      Array.from({ length: Math.min(CONCURRENCY, todo.length) }, () =>
-        worker(),
-      ),
+      }),
     );
     return result;
   };

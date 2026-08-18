@@ -55,6 +55,10 @@ system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` +
 
 ## Change log
 
+- 2026-08-18 — Fast Fire spoken-front generation dispatches every missing card at
+  once. Provider admission, cooldowns, and rate-limit adaptation belong to the
+  central matrx-ai dispatch boundary; this feature no longer maintains a five-call
+  worker pool that serializes large decks.
 - 2026-08-17 — `/education/flashcards` route chrome (IC-5): the six secondary actions
   (drill weak areas, review due, progress, new-from-document, import, export library) moved out
   of the body button row — which could not wrap and overflowed the viewport at 375px — into the
