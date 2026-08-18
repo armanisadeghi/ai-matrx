@@ -59,8 +59,8 @@ import type { SetWithCards, CardWithDetails } from "../../data/types";
 import {
   asCardKind,
   CARD_KIND,
-  clozeFaces,
   matchingPairs,
+  studyFaces,
 } from "../../utils/cardVariants";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { ItemMasteryRow } from "@/features/education/study/types";
@@ -161,7 +161,9 @@ function CardPeek({
   const images = getCardImages(card);
   const kind = asCardKind(card.card_kind);
   const pairs = kind === CARD_KIND.matching ? matchingPairs(card) : [];
-  const faces = kind === CARD_KIND.cloze ? clozeFaces(card.front) : null;
+  // One faces bridge for every flip kind (basic/cloze/formula) — the peek shows
+  // exactly what study will show.
+  const faces = kind === CARD_KIND.matching ? null : studyFaces(card);
 
   return (
     <div
