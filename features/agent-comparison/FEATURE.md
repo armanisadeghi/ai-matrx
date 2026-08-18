@@ -1,5 +1,7 @@
 # Agent Battle
 
+Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandate-binding-surfaces/PLAN.md` — read it before adding the proposed Mandate-aware Battle mode or mounting Battle inside an individual Mandate workspace. It has no implementation authority until Arman approves it.
+
 Multi-agent side-by-side comparison page at `/agents/battle`.
 
 Run unlimited agents (or versions of the same agent) in parallel columns,

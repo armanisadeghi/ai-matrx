@@ -2,7 +2,7 @@
 
 **Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md` — read it before touching mandates in ANY repo.** Admin pin management lives in `features/admin/mandates/` (`/administration/agents/mandates`). This folder is the USER-facing half.
 
-**Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandate-binding-surfaces/PLAN.md` — read it before implementing the proposed personal, organization, or feature-mounted Mandate Binding experience. It has no implementation authority until Arman approves it.**
+**Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandate-binding-surfaces/PLAN.md` — read it before implementing the proposed individual Mandate workspace or personal, organization, administration, feature, test, compare, or Binding experience. It has no implementation authority until Arman approves it.**
 
 ## What lives here
 

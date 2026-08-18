@@ -4,6 +4,8 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/mand
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FEATURE.md` — read it before touching this feature in ANY repo. It governs how a mandate's variables actually reach the agent (the mapping vocabulary, the scenario matrix, and why the UI must read live code truth instead of the `contract` column).
 
+Cross-repo proposed plan: `/Users/armanisadeghi/code/common-docs/projects/mandate-binding-surfaces/PLAN.md` — read it before promoting this console's floating detail, test bench, comparison, or Binding controls into the proposed full individual Mandate workspace. It has no implementation authority until Arman approves it.
+
 Route: `/administration/agents/mandates` (`app/(admin)/administration/agents/mandates/page.tsx`). Code: `service.ts` (direct supabase reads/writes on `agent.mandate` / `agent.mandate_binding`; super-admin writes ride RLS via `has_access` editor on system-org rows — no bespoke RPC) + `MandatesConsole.tsx`.
 
 The USER/ORG-facing override surface (browse mandates, provenance, write `mandate_binding` overrides) is `/agents/mandates` — `features/agents/mandates/FEATURE.md`. This console stays admin-only (pins, health, bench).
