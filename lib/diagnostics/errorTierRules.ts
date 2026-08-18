@@ -262,6 +262,18 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "supabase-browser-transport-loss",
+    tier: "yellow",
+    reason:
+      "The browser lost network connectivity before Supabase returned an HTTP response. Keep the failed operation visible locally for retry UX, but a client wifi/sleep/deploy handoff is not a server defect for the repair queue.",
+    addedAt: "2026-08-18",
+    match: {
+      source: "supabase-postgrest",
+      name: "TypeError",
+      status: 0,
+    },
+  },
+  {
     id: "cross-origin-script-error",
     tier: "yellow",
     reason:

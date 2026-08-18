@@ -61,7 +61,9 @@ the safety net, not the main event.
   operation + table/fn + a cleaned call-site. **`PGRST002` retries before
   capture:** PostgREST could not load its schema cache, so the query never ran
   and replaying the exact builder is safe; only an exhausted recovery alarms.
-  A cancelled request is normalized
+  **Browser transport loss stays local:** a status-0 `TypeError` means no HTTP
+  response reached the browser, so the Inspector preserves it for retry UX but
+  does not file a server repair job. A cancelled request is normalized
   to `name: "AbortError"` here: postgrest-js RESOLVES an aborted fetch with an
   error object (no throw), so it takes the `supabase-postgrest` resolved-error
   path — tagging it with the canonical abort name lets the one `request-aborted`
@@ -171,6 +173,9 @@ Seeded defaults (in `DOWNGRADE_RULES`): **tool errors → yellow** (a failed too
 call is normal agent operation — the agent adapts; e.g. the sql guard rejecting
 `grant`/`delete from`) and **redux-rejected → orange**. User toasts stay red by
 default: showing a failure to the user does not prove it expected or harmless.
+Supabase status-0 browser transport loss is yellow: wifi, sleep, and deployment
+handoffs are locally retryable client conditions, while every actual HTTP or
+database response stays red.
 Resolved+handled AccessGate denials → yellow; the original unknown capture and
 all other resolved record states stay red. Vision Interview's exact Safari
 `Load failed` transport class is yellow because its drafts are durable, its room
@@ -280,6 +285,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-18 — **Supabase browser transport loss stays local across every route.** The structured adapter tags only classifier-proven status-0 network failures as `TypeError`; the tier rule keeps them visible for retry UX without filing client wifi/sleep/deployment handoffs as server repair work. HTTP and database responses stay red.
 - 2026-08-18 — **Transient PostgREST schema-cache restarts recover before alarming.** The global Supabase boundary retries the exact request on `PGRST002` (the query did not execute); success produces no capture, while exhaustion produces one canonical structured error. The scopes result mapper and organization loader no longer mirror that already-captured error through `console.error`, eliminating two causal duplicate repair rows.
 - 2026-08-18 — **CMS availability refusals stay local without hiding outages.** Structured `cms_unavailable` 400s remain visible in the Error Inspector but do not enter `system_error`; the server's startup environment validation owns the operational alarm, while CMS 5xx and unrelated 4xx responses remain red.
 - 2026-08-18 — **Sending-identity read transport loss stays local and singular.** The overview's list, policy, and production-readiness reads are yellow only on `/crm/sending-identities`: the page preserves the failure and retry, while one lost connection no longer persists up to three causal duplicates. Mutations, HTTP responses, other endpoints, and other routes remain red.

@@ -120,6 +120,36 @@ describe("classifyTier", () => {
     expect(c.tier).toBe("red");
   });
 
+  it("keeps Supabase browser transport loss local across routes and RPCs", () => {
+    const c = classifyTier(
+      captured({
+        source: "supabase-postgrest",
+        relation: "get_user_file_tree",
+        operation: "rpc",
+        name: "TypeError",
+        status: 0,
+        message: "TypeError: Failed to fetch",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("supabase-browser-transport-loss");
+  });
+
+  it("keeps an HTTP Supabase failure red even when its message mentions fetch", () => {
+    const c = classifyTier(
+      captured({
+        source: "supabase-postgrest",
+        relation: "get_user_file_tree",
+        operation: "rpc",
+        status: 503,
+        message: "Failed to fetch schema data",
+      }),
+    );
+
+    expect(c.tier).toBe("red");
+  });
+
   it("keeps a vision-interview deploy-window Load failed local and silent", () => {
     const c = classifyTier(
       captured({

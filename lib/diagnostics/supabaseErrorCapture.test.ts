@@ -106,4 +106,33 @@ describe("schema-cache recovery", () => {
       code: "PGRST002",
     });
   });
+
+  it("keeps a browser transport loss local instead of filing a repair error", async () => {
+    const transportLoss = {
+      data: null,
+      error: {
+        code: "",
+        message: "TypeError: Failed to fetch",
+        details: "TypeError: Failed to fetch",
+        hint: "",
+      },
+      status: 0,
+    };
+    const builder = {
+      then(onFulfilled: (value: unknown) => unknown) {
+        return Promise.resolve(onFulfilled(transportLoss));
+      },
+    };
+    const client = wrapClientForCapture({ rpc: () => builder });
+
+    await expect(Promise.resolve(client.rpc())).resolves.toEqual(transportLoss);
+    expect(getSnapshot()).toHaveLength(1);
+    expect(getSnapshot()[0]).toMatchObject({
+      source: "supabase-postgrest",
+      name: "TypeError",
+      status: 0,
+      tier: "yellow",
+      tierRuleId: "supabase-browser-transport-loss",
+    });
+  });
 });

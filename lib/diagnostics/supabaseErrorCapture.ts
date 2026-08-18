@@ -21,6 +21,7 @@
  */
 
 import { extractErrorMessage } from "@/utils/errors";
+import { isTransportFailure } from "@/lib/net/errors";
 import {
   captureError,
   type CapturedOperation,
@@ -173,9 +174,14 @@ function captureResult(
     details: typeof e.details === "string" ? e.details : undefined,
     hint: typeof e.hint === "string" ? e.hint : undefined,
     status: typeof res.status === "number" ? res.status : undefined,
-    // Normalize a cancelled request to the canonical abort signature so the
-    // `request-aborted` downgrade rule silences it (see isAbortResultError).
-    name: isAbortResultError(e) ? "AbortError" : undefined,
+    // Normalize expected browser control/transport failures so narrow tier
+    // rules can keep them visible locally without filing a server repair job.
+    // Real PostgREST/Postgres responses carry a code/status and stay loud.
+    name: isAbortResultError(e)
+      ? "AbortError"
+      : isTransportFailure(e)
+        ? "TypeError"
+        : undefined,
     callSite: cleanCallSite(caller.stack),
     raw: e,
   });
