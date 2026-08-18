@@ -70,15 +70,18 @@ export function FlashcardConfidenceRow({
   onRate,
   disabled = false,
   className,
+  label = "How well did you know it?",
 }: {
   onRate: (confidence: Confidence) => void;
   disabled?: boolean;
   className?: string;
+  /** Row caption — pre-flip prediction phrasing vs. post-flip grading. */
+  label?: string;
 }) {
   return (
     <div className={cn("flex min-w-0 flex-col gap-1", className)}>
       <div className="flex items-center justify-between px-0.5 text-[10px] uppercase tracking-wider text-muted-foreground/70">
-        <span>How well did you know it?</span>
+        <span>{label}</span>
       </div>
       <div className="flex min-w-0 items-stretch gap-0.5 sm:gap-1">
         {CONFIDENCE_STEPS.map((step) => (

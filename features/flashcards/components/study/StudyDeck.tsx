@@ -253,6 +253,20 @@ export function StudyDeck(props: StudyDeckProps) {
   // disables confidence (`enableConfidence = false` → always simple).
   const [gradeStyle, setGradeStyle] = useState<GradeStyle>(readGradeStyle);
   const useConfidence = enableConfidence && gradeStyle === "confidence";
+
+  // VISION §2 (WP3 gap 7) — pre-flip confidence: the Brainscape "predict
+  // before you peek" signal. In confidence mode the 1–5 row appears BEFORE
+  // the flip; rating stores the prediction and reveals the back, then the
+  // 3-way row records what actually happened (prediction + result both feed
+  // `grade()` → FSRS). Flipping without predicting falls back to grading by
+  // confidence post-flip (the pre-gap-7 behavior).
+  const [preFlipConfidence, setPreFlipConfidence] = useState<Confidence | null>(
+    null,
+  );
+  const handlePredict = (confidence: Confidence): void => {
+    setPreFlipConfidence(confidence);
+    if (!isFlipped) flip();
+  };
   const toggleGradeStyle = (): void => {
     setGradeStyle((prev) => {
       const nextStyle: GradeStyle =
@@ -349,6 +363,7 @@ export function StudyDeck(props: StudyDeckProps) {
     setHelpAsked(false);
     setAskOpen(false);
     setQuestion("");
+    setPreFlipConfidence(null);
   }, [current?.id]);
 
   // What the panel actually shows: this card's live answer, else the one this
@@ -474,10 +489,38 @@ export function StudyDeck(props: StudyDeckProps) {
         !grading &&
         currentKind !== CARD_KIND.matching &&
         useConfidence &&
+        !isFlipped &&
         /^[1-5]$/.test(e.key)
       ) {
-        // 1–5 confidence taps — the confidence value drives both the FSRS
-        // grade and the coarse result recorded to the ledger.
+        // Pre-flip 1–5 = the prediction (gap 7): store it and reveal the back.
+        e.preventDefault();
+        const confidence = asConfidence(Number(e.key));
+        if (confidence != null) handlePredict(confidence);
+      } else if (
+        !grading &&
+        currentKind !== CARD_KIND.matching &&
+        useConfidence &&
+        isFlipped &&
+        preFlipConfidence != null &&
+        /^[1-3]$/.test(e.key)
+      ) {
+        // Post-flip with a prediction on record: 1–3 grades the outcome.
+        e.preventDefault();
+        const map: Record<string, ReviewResult> = {
+          "1": "incorrect",
+          "2": "partial",
+          "3": "correct",
+        };
+        void handleGrade(map[e.key], preFlipConfidence);
+      } else if (
+        !grading &&
+        currentKind !== CARD_KIND.matching &&
+        useConfidence &&
+        isFlipped &&
+        preFlipConfidence == null &&
+        /^[1-5]$/.test(e.key)
+      ) {
+        // Flipped without predicting — 1–5 grades by confidence directly.
         e.preventDefault();
         const confidence = asConfidence(Number(e.key));
         if (confidence != null) {
@@ -513,6 +556,8 @@ export function StudyDeck(props: StudyDeckProps) {
     isMobile,
     useConfidence,
     currentKind,
+    isFlipped,
+    preFlipConfidence,
   ]);
 
   const restart = () => {
@@ -833,13 +878,39 @@ export function StudyDeck(props: StudyDeckProps) {
           {/* Matching cards self-grade on completion — no manual grade row. */}
           {currentKind === CARD_KIND.matching ? null : useConfidence ? (
             <div className="flex flex-col gap-1">
-              <FlashcardConfidenceRow
-                onRate={(confidence) =>
-                  handleGrade(confidenceToResult(confidence), confidence)
-                }
-                disabled={grading}
-                className="w-full"
-              />
+              {!isFlipped ? (
+                // Phase 1 — predict BEFORE the flip (gap 7). Rating reveals
+                // the back; the prediction rides along to the final grade.
+                <FlashcardConfidenceRow
+                  onRate={handlePredict}
+                  disabled={grading}
+                  className="w-full"
+                  label="Predict before you flip — how well do you know this?"
+                />
+              ) : preFlipConfidence != null ? (
+                // Phase 2 — the answer is showing and a prediction exists:
+                // record what actually happened.
+                <div className="flex flex-col gap-1">
+                  <FlashcardGradeButtonRow
+                    onGrade={(r) => handleGrade(r, preFlipConfidence)}
+                    disabled={grading}
+                    className="w-full"
+                  />
+                  <span className="self-center text-[11px] text-muted-foreground">
+                    You predicted {preFlipConfidence}/5 — how did it go?
+                  </span>
+                </div>
+              ) : (
+                // Flipped without predicting — grade by confidence directly
+                // (the pre-gap-7 behavior stays available).
+                <FlashcardConfidenceRow
+                  onRate={(confidence) =>
+                    handleGrade(confidenceToResult(confidence), confidence)
+                  }
+                  disabled={grading}
+                  className="w-full"
+                />
+              )}
               {enableConfidence && (
                 <button
                   type="button"
