@@ -107,6 +107,32 @@
       "description": "Required when response_format='json_schema'. Validated against provider rules.",
       "title": "Output Schema"
      },
+     "owner_organization_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "Optional org placement for an owned agent. Ignored unless owner_user_id is set; when omitted it resolves to the owner's personal org via resolve_effective_organization_id. Never NULL on the written row.",
+      "title": "Owner Organization Id"
+     },
+     "owner_user_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "default": null,
+      "description": "WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card \u2014 exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the internal_agents/*.md factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list.",
+      "title": "Owner User Id"
+     },
      "response_format": {
       "default": "text",
       "description": "'text' (prose), 'json' (free JSON), or 'json_schema' (schema-enforced).",
