@@ -46,6 +46,47 @@
       ],
       "previousEventHash": "fee55fd5b2d8717a3e9c1b00a6415c46a73fec3a3d377612bc138a71fd047f95",
       "eventHash": "4e105a556b5b982833ec8351c2efd20836e3149f962cd08f1cfc249b48b051fe"
+    },
+    {
+      "sequence": 4,
+      "state": "certified",
+      "at": "2026-08-18T07:20:07.701Z",
+      "actor": "p2-independent-certifier",
+      "summary": "CERTIFIED exact two-file EntityRef candidate; no batch-caused defect found.",
+      "evidence": [
+        "Context UUID remains complete and wraps; selected agent name retains bounded truncation.",
+        "New-tab labels preserve sheet and mapping state; registered agent peek remains accessible.",
+        "Selection, lock, reset, seeding, mapping, scope, and save logic are unchanged."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "2f491773093442f46036fe14cbb266fe79466311",
+        "certifierTaskId": "p2-certifier-2026-08-18",
+        "checks": [
+          "Focused dead-end scan: zero findings in both changed files.",
+          "EntityRef Jest doors suite: 5 of 5 passed.",
+          "git diff --check clean.",
+          "Focused lint only unchanged baseline effect errors; full type-check only unrelated schema drift."
+        ]
+      },
+      "previousEventHash": "4e105a556b5b982833ec8351c2efd20836e3149f962cd08f1cfc249b48b051fe",
+      "eventHash": "51dcc3b00a1bce309ddc6511ccc29618af7e126545049636f8ebdc9f0af2dc61"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-18T07:23:14.279Z",
+      "actor": "codex-pattern-patrol-p2",
+      "summary": "Certified candidate preserved and queued for fast integration; release remains serialized.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P2/2026-08-18-weekly"
+      ],
+      "delivery": {
+        "candidateSha": "2f491773093442f46036fe14cbb266fe79466311",
+        "preservedRef": "refs/heads/patrol-runs/P2/2026-08-18-weekly"
+      },
+      "previousEventHash": "51dcc3b00a1bce309ddc6511ccc29618af7e126545049636f8ebdc9f0af2dc61",
+      "eventHash": "1081cb9714a2bb00881286704eec02004b1391f2dc492408d79d8b29124ab45e"
     }
   ]
 }
