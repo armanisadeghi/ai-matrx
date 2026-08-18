@@ -55231,6 +55231,251 @@ export type Database = {
           },
         ]
       }
+      source_request: {
+        Row: {
+          beat: string | null
+          created_at: string
+          created_by: string | null
+          deadline_at: string | null
+          deleted_at: string | null
+          draft_generated_at: string | null
+          draft_response: string | null
+          external_id: string | null
+          external_url: string | null
+          id: string
+          journalist_name: string | null
+          match_reason: string | null
+          match_score: number
+          metadata: Json
+          organization_id: string | null
+          outlet: string | null
+          party_id: string | null
+          platform: string
+          query_body: string | null
+          query_title: string
+          requirements: Json
+          site_id: string | null
+          status: string
+          story_angle_id: string | null
+          submitted_at: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          won_at: string | null
+        }
+        Insert: {
+          beat?: string | null
+          created_at?: string
+          created_by?: string | null
+          deadline_at?: string | null
+          deleted_at?: string | null
+          draft_generated_at?: string | null
+          draft_response?: string | null
+          external_id?: string | null
+          external_url?: string | null
+          id?: string
+          journalist_name?: string | null
+          match_reason?: string | null
+          match_score?: number
+          metadata?: Json
+          organization_id?: string | null
+          outlet?: string | null
+          party_id?: string | null
+          platform: string
+          query_body?: string | null
+          query_title: string
+          requirements?: Json
+          site_id?: string | null
+          status?: string
+          story_angle_id?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          won_at?: string | null
+        }
+        Update: {
+          beat?: string | null
+          created_at?: string
+          created_by?: string | null
+          deadline_at?: string | null
+          deleted_at?: string | null
+          draft_generated_at?: string | null
+          draft_response?: string | null
+          external_id?: string | null
+          external_url?: string | null
+          id?: string
+          journalist_name?: string | null
+          match_reason?: string | null
+          match_score?: number
+          metadata?: Json
+          organization_id?: string | null
+          outlet?: string | null
+          party_id?: string | null
+          platform?: string
+          query_body?: string | null
+          query_title?: string
+          requirements?: Json
+          site_id?: string | null
+          status?: string
+          story_angle_id?: string | null
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          won_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_request_story_angle_id_fkey"
+            columns: ["story_angle_id"]
+            isOneToOne: false
+            referencedRelation: "story_angle"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_angle: {
+        Row: {
+          accepted_at: string | null
+          action_reason: string | null
+          analysis: Json
+          analysis_version: string | null
+          analyzed_at: string | null
+          angle_key: string
+          angle_type: string
+          confidence: number
+          contradictions: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          dismissed_at: string | null
+          endowment: string
+          evidence_fingerprint: string | null
+          evidence_quality: number
+          evidence_refs: Json
+          expires_at: string | null
+          facts: Json
+          headline: string
+          human_reviewed_at: string | null
+          human_ruling: Json
+          id: string
+          inferences: Json
+          landed_at: string | null
+          metadata: Json
+          missing_evidence: Json
+          newsworthiness: number
+          organization_id: string | null
+          pitched_at: string | null
+          priority: number
+          proof_required: Json
+          recommended_action: string
+          requires_human_review: boolean
+          site_id: string
+          status: string
+          summary: string
+          target_beat: string | null
+          target_outlet_kind: string | null
+          timeliness: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+          why_now: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          action_reason?: string | null
+          analysis?: Json
+          analysis_version?: string | null
+          analyzed_at?: string | null
+          angle_key: string
+          angle_type: string
+          confidence?: number
+          contradictions?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dismissed_at?: string | null
+          endowment: string
+          evidence_fingerprint?: string | null
+          evidence_quality?: number
+          evidence_refs?: Json
+          expires_at?: string | null
+          facts?: Json
+          headline: string
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          inferences?: Json
+          landed_at?: string | null
+          metadata?: Json
+          missing_evidence?: Json
+          newsworthiness?: number
+          organization_id?: string | null
+          pitched_at?: string | null
+          priority?: number
+          proof_required?: Json
+          recommended_action: string
+          requires_human_review?: boolean
+          site_id: string
+          status?: string
+          summary: string
+          target_beat?: string | null
+          target_outlet_kind?: string | null
+          timeliness?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          why_now?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          action_reason?: string | null
+          analysis?: Json
+          analysis_version?: string | null
+          analyzed_at?: string | null
+          angle_key?: string
+          angle_type?: string
+          confidence?: number
+          contradictions?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          dismissed_at?: string | null
+          endowment?: string
+          evidence_fingerprint?: string | null
+          evidence_quality?: number
+          evidence_refs?: Json
+          expires_at?: string | null
+          facts?: Json
+          headline?: string
+          human_reviewed_at?: string | null
+          human_ruling?: Json
+          id?: string
+          inferences?: Json
+          landed_at?: string | null
+          metadata?: Json
+          missing_evidence?: Json
+          newsworthiness?: number
+          organization_id?: string | null
+          pitched_at?: string | null
+          priority?: number
+          proof_required?: Json
+          recommended_action?: string
+          requires_human_review?: boolean
+          site_id?: string
+          status?: string
+          summary?: string
+          target_beat?: string | null
+          target_outlet_kind?: string | null
+          timeliness?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          why_now?: string | null
+        }
+        Relationships: []
+      }
       topic: {
         Row: {
           aliases: Json
