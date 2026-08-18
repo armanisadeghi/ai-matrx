@@ -56,6 +56,23 @@ interface PostgrestLikeResult {
   statusText?: string;
 }
 
+// PGRST002 is special: PostgREST could not load its schema cache, so it did
+// not execute the requested query. Replaying that exact builder is therefore
+// safe even when the caller was issuing a mutation. Keep the recovery here,
+// before capture, so every browser Supabase call gets the same behavior and a
+// recovered infrastructure restart never enters the repair queue.
+const SCHEMA_CACHE_RETRY_DELAYS_MS = [250, 750] as const;
+
+export function isSchemaCacheUnavailableResult(
+  result: PostgrestLikeResult,
+): boolean {
+  return result.error?.code === "PGRST002";
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Preserve the HTTP fact when PostgREST supplies no useful error sentence. */
 export function postgrestResultErrorMessage(
   result: PostgrestLikeResult,
@@ -220,27 +237,39 @@ function wrapBuilder<T extends object>(builder: T, ctx: ChainContext): T {
           // Captured cheaply at execution time; `.stack` is only formatted
           // (the expensive part) if we actually capture an error below.
           const caller = new Error("supabase-call-site");
-          return Reflect.apply(thenFn, target, [
-            (res: unknown) => {
-              try {
-                if (res && typeof res === "object" && "error" in res) {
-                  captureResult(ctx, res as PostgrestLikeResult, caller);
+          const execute = (retryIndex: number): unknown =>
+            Reflect.apply(thenFn, target, [
+              async (res: unknown) => {
+                if (
+                  res &&
+                  typeof res === "object" &&
+                  isSchemaCacheUnavailableResult(res as PostgrestLikeResult) &&
+                  retryIndex < SCHEMA_CACHE_RETRY_DELAYS_MS.length
+                ) {
+                  await wait(SCHEMA_CACHE_RETRY_DELAYS_MS[retryIndex]);
+                  return execute(retryIndex + 1);
                 }
-              } catch {
-                /* capture must never break the caller */
-              }
-              return onFulfilled ? onFulfilled(res) : res;
-            },
-            (err: unknown) => {
-              try {
-                captureException(ctx, err, caller);
-              } catch {
-                /* capture must never break the caller */
-              }
-              if (onRejected) return onRejected(err);
-              throw err;
-            },
-          ]);
+                try {
+                  if (res && typeof res === "object" && "error" in res) {
+                    captureResult(ctx, res as PostgrestLikeResult, caller);
+                  }
+                } catch {
+                  /* capture must never break the caller */
+                }
+                return onFulfilled ? onFulfilled(res) : res;
+              },
+              (err: unknown) => {
+                try {
+                  captureException(ctx, err, caller);
+                } catch {
+                  /* capture must never break the caller */
+                }
+                if (onRejected) return onRejected(err);
+                throw err;
+              },
+            ]);
+
+          return execute(0);
         };
       }
 

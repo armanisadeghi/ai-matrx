@@ -58,7 +58,10 @@ the safety net, not the main event.
 - **Supabase** — `lib/diagnostics/supabaseErrorCapture.ts`, a transparent Proxy
   on the browser client (`utils/supabase/client.ts`). Intercepts `from`/`rpc`/
   `schema`; captures raw PostgREST `code`/`message`/`details`/`hint`/`status` +
-  operation + table/fn + a cleaned call-site. A cancelled request is normalized
+  operation + table/fn + a cleaned call-site. **`PGRST002` retries before
+  capture:** PostgREST could not load its schema cache, so the query never ran
+  and replaying the exact builder is safe; only an exhausted recovery alarms.
+  A cancelled request is normalized
   to `name: "AbortError"` here: postgrest-js RESOLVES an aborted fetch with an
   error object (no throw), so it takes the `supabase-postgrest` resolved-error
   path — tagging it with the canonical abort name lets the one `request-aborted`
@@ -277,6 +280,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-18 — **Transient PostgREST schema-cache restarts recover before alarming.** The global Supabase boundary retries the exact request on `PGRST002` (the query did not execute); success produces no capture, while exhaustion produces one canonical structured error. The scopes result mapper and organization loader no longer mirror that already-captured error through `console.error`, eliminating two causal duplicate repair rows.
 - 2026-08-18 — **CMS availability refusals stay local without hiding outages.** Structured `cms_unavailable` 400s remain visible in the Error Inspector but do not enter `system_error`; the server's startup environment validation owns the operational alarm, while CMS 5xx and unrelated 4xx responses remain red.
 - 2026-08-18 — **Sending-identity read transport loss stays local and singular.** The overview's list, policy, and production-readiness reads are yellow only on `/crm/sending-identities`: the page preserves the failure and retry, while one lost connection no longer persists up to three causal duplicates. Mutations, HTTP responses, other endpoints, and other routes remain red.
 - 2026-08-18 — **Recoverable content-plan reconcile transport loss stays local.** The exact parameterized `POST /content-plan/sites/{id}/reconcile` `Failed to fetch` class is yellow because the cached read-only check retries and refetches after reconnect; unrelated content-plan AI and write endpoints remain red. `relationPattern` gives tier rules a reusable, narrowly scoped matcher for parameterized endpoints.

@@ -333,7 +333,9 @@ export async function getUserOrganizations(): Promise<OrganizationWithRole[]> {
     // `organizations` — we resolve those in a second public-table read.
     const membersResult = await membershipsService.forUser("organization");
     if (isScopesRpcErr(membersResult)) {
-      console.error("Error fetching user organizations:", membersResult.error);
+      // The Supabase capture boundary already owns the structured error. Do
+      // not mirror the typed result into console.error: source participates in
+      // dedupe, so that would persist the same failed request twice.
       return [];
     }
 

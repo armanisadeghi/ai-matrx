@@ -60,7 +60,11 @@ export function mapPgError(e: unknown): ScopesRpcError {
   // they log as warnings; every genuine Postgres/PostgREST failure stays loud.
   if (isTransportFailure(e)) {
     console.warn("[scopes/rpcResult] network unreachable (browser offline?)", e);
-  } else {
+  } else if (!isPostgrestResultError(e)) {
+    // Plain PostgREST result errors have already been captured with richer
+    // relation/operation/call-site context by supabaseErrorCapture. Mirroring
+    // them through console.error creates a second repair-queue row for the
+    // same request. Thrown application errors still scream here.
     console.error("[scopes/rpcResult] supabase error", e);
   }
   const { pgCode, pgMessage, pgHint } = readPgFields(e);
@@ -91,6 +95,12 @@ export function mapPgError(e: unknown): ScopesRpcError {
     hint: pgHint,
     detail: e,
   };
+}
+
+function isPostgrestResultError(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const value = e as { code?: unknown; message?: unknown };
+  return typeof value.code === "string" && typeof value.message === "string";
 }
 
 /**
