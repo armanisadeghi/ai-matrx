@@ -67,10 +67,9 @@ plan CRUD through it.
   sets, and rendered together through `RunSetDisplay` inside the floating live
   window. Server phase/info milestones drive the stage line (aidream emits
   them since 2026-08-10; `initial_message` arrives as an info event).
-  **Bulk deepen runs five pages concurrently** through the shared
-  `runWithConcurrency` worker pool. Stop prevents queued pages from starting;
-  already-started pages finish and persist normally. One page failing never
-  blocks the other four or the remaining queue.
+  **Bulk deepen starts every selected page concurrently** through the shared
+  `runWithConcurrency` worker pool. Stop aborts the active streams. One page
+  failing never blocks or cancels the others.
 - **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
   grounded in the RESEARCH system's final report (the "Document",
   `research.rs_document.content`, picked by topic in the `SetupAiBar` strip).
@@ -750,6 +749,9 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-17 — **Bulk deepen now fans out the full selected set.** The
+  five-worker cap still serialized larger batches in waves; the worker count
+  now equals the selected page count, and Stop aborts every active stream.
 - 2026-08-17 — **Bulk deepen is bounded-concurrent, not serial.** The client
   now starts five independent page deepens at once through the shared
   `lib/async/run-with-concurrency.ts` primitive, reports active and finished

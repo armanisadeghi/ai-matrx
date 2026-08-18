@@ -225,6 +225,7 @@ FOR EACH ROW EXECUTE FUNCTION platform._version_capture('<token>');
 12. **plpgsql/sql function args without SQL `DEFAULT`s generate REQUIRED params in FE types** — an optional-in-spirit `p_label text` forces every FE caller to pass it. Give optional params `DEFAULT NULL` and normalize with `NULLIF(p,'')` when `''` would collide with a `COALESCE(col,'')` unique index.
 13. **`sum(bigint)` returns `numeric` → `RETURN QUERY` 42804 at RUNTIME** if the declared column is `bigint`. Cast the aggregate (`::bigint`). `plpgsql_check_function` catches this class; run it on any function you touch.
 14. **Adding base columns to a table with a curated FE column list breaks the FE type** — e.g. `FILES_TABLE_COLUMNS` (`features/files/filesDb.ts`) must gain `version`/`updated_by` when `files.files` does, or the `Omit<Row,…>` read type no longer matches the select. Grep for a `*_TABLE_COLUMNS` list whenever you add columns to an FE-read table.
+15. **Every live DDL lock wait is bounded.** The database's `ddl_lock_timeout_guard` supplies transaction-local `lock_timeout='8s'` only when the session left it at zero; an explicit nonzero value wins. Set the intended bound before the first DDL statement. A timeout means split the migration or use a concurrent operation—never disable the guard or retry one giant transaction against live traffic.
 
 ---
 

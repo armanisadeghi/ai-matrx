@@ -428,7 +428,7 @@ export interface BulkDeepenState {
   status: "idle" | "running" | "done" | "error";
   total: number;
   done: number;
-  /** Routes currently running; bounded to BULK_DEEPEN_CONCURRENCY. */
+  /** Routes currently running. Bulk deepen starts every selected route together. */
   active: string[];
   /** Canonical live-render handle for the most recently adopted stream. */
   requestId?: string;
@@ -447,12 +447,10 @@ const BULK_IDLE: BulkDeepenState = {
 
 export type PlanBulkDeepenController = ReturnType<typeof usePlanBulkDeepen>;
 
-export const BULK_DEEPEN_CONCURRENCY = 5;
-
 /**
- * Run the EXISTING research-grounded deepen over many nodes with bounded
- * parallelism, per-node failure isolation, and cancellation between queued
- * nodes. Not a new agent — the same POST /nodes/{id}/deepen per node.
+ * Run the EXISTING research-grounded deepen over many nodes in parallel, with
+ * per-node failure isolation and cancellation of active streams. Not a new
+ * agent — the same POST /nodes/{id}/deepen per node.
  */
 export function usePlanBulkDeepen(siteId: string | null) {
   const dispatch = useAppDispatch();
@@ -503,7 +501,7 @@ export function usePlanBulkDeepen(siteId: string | null) {
 
       await runWithConcurrency(
         targets,
-        BULK_DEEPEN_CONCURRENCY,
+        targets.length,
         async (target) => {
           if (runEpochRef.current !== epoch) return;
           activeRoutes.add(target.route);
@@ -556,20 +554,22 @@ export function usePlanBulkDeepen(siteId: string | null) {
             const error = result.error
               ? describeBackendFailure(parseCallApiError(result.error)).headline
               : streamFailure;
-            if (error) {
+            if (error && !cancelRef.current) {
               failures.push({ nodeId: target.id, route: target.route, error });
             }
           } catch (error) {
-            failures.push({
-              nodeId: target.id,
-              route: target.route,
-              error: describeBackendFailure(
-                parseCallApiError({
-                  message:
-                    error instanceof Error ? error.message : String(error),
-                }),
-              ).headline,
-            });
+            if (!cancelRef.current) {
+              failures.push({
+                nodeId: target.id,
+                route: target.route,
+                error: describeBackendFailure(
+                  parseCallApiError({
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  }),
+                ).headline,
+              });
+            }
           } finally {
             abortControllersRef.current.delete(streamAbort);
             activeRoutes.delete(target.route);
@@ -618,6 +618,7 @@ export function usePlanBulkDeepen(siteId: string | null) {
     start,
     cancel: () => {
       cancelRef.current = true;
+      for (const controller of abortControllersRef.current) controller.abort();
     },
     reset: () => {
       runEpochRef.current += 1;
