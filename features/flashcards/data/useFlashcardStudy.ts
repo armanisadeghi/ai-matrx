@@ -215,6 +215,16 @@ export function useFlashcardStudy(
       setCurrentIndex(0);
       setIsFlipped(false);
       setMasteredIds(new Set());
+      // Reset the grade map HERE, before any await — not after the mastery
+      // fetch. Otherwise there is a committed render where `cards` is the NEW
+      // set but `resultsByCard` still holds the PREVIOUS set's grades, and if
+      // the old set had at least as many grades as the new set has cards,
+      // `progress.done >= progress.total` is briefly true — which made the
+      // completion effect stamp the PREVIOUS session 'completed', fabricating
+      // exactly the metric this session-close work exists to make honest.
+      // (Reachable on a plain /flashcards/A/study -> /B/study navigation: same
+      // dynamic route, no key, so the hook never unmounts.)
+      setResultsByCard({});
 
       const setRes = await fcService.getSetWithCards(setId);
       if (cancelled) return;
@@ -480,6 +490,20 @@ export function useFlashcardStudy(
   const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
   useEffect(() => {
     closeRef.current = session ? { id: session.id, closed: false } : null;
+    // Closing over the latch we just installed: when the session is REPLACED
+    // (the learner moved to another set without unmounting), the outgoing
+    // session would otherwise be dropped on the floor and leak 'active' until
+    // the 6h reaper — the exact defect this close-path exists to remove.
+    const outgoing = closeRef.current;
+    return () => {
+      if (outgoing && !outgoing.closed) {
+        outgoing.closed = true;
+        void studyService.updateSession(outgoing.id, {
+          status: "abandoned",
+          ended_at: new Date().toISOString(),
+        });
+      }
+    };
   }, [session]);
 
   useEffect(() => {
