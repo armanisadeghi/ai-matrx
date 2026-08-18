@@ -29,12 +29,32 @@ listed under **"Not allowed by this approval"** in
 `common-docs/projects/google-oauth-verification/PRODUCTION-ROLLOUT.md`. It is also a per-feature
 Google client, the exact pattern the canonical connection exists to replace.
 
-**Decision, not a fix** (do not silently delete a shipped feature): either gate/remove the export
-until it has its own approval campaign, or open `google.slides` as a separate provider-access
-campaign and rebuild it on the canonical connection. **First verify** whether `presentations` is even
-configured on the production OAuth client — if not, the export is already broken for users, which
-changes the urgency. Found while publishing the canonical Google Workspace tools; unrelated to that
-work, so filed rather than fixed.
+**VERIFIED 2026-08-18 — the scope is NOT on the production client, so this export is already dead
+for every user.** It is broken UI, not a live data-exposure. Evidence, strongest first:
+
+- **Live DB (decisive).** `users.integration_connections`: 12 google connections. The only 3 that
+  ever carried `presentations` are all `status='revoked'`, all `arman@armansadeghi.com`, created
+  2026-07-19/21/25 and revoked 2026-08-08/09 — and each carries the pre-cleanup broad set
+  (`calendar`, `documents`, `spreadsheets`, `tasks`, full `drive`, `youtube.readonly`), i.e. exactly
+  the historical broad grants `google-oauth-verification/PLAN.md` §199 says the cleanup revoked.
+  **All 3 currently `connected` google connections have zero `presentations`.**
+- **Live console state**, verified 2026-08-18 against the Google Auth Platform overview
+  (PLAN.md:146): Data Access is saved with exactly `userinfo.email`, `userinfo.profile`,
+  `drive.file`, `gmail.send`, `webmasters.readonly`. No `presentations`. The app is published
+  external, and a published external app requesting an unregistered SENSITIVE scope is blocked by
+  Google — the export cannot complete.
+
+Verification limits: no direct console read was possible here (no `gcloud`; the SA key at
+`aidream/sec/serviceAccountKeys.json` named by `GOOGLE_APPLICATION_CREDENTIALS` is **missing**), and
+an unauthenticated OAuth probe is non-discriminating (approved `drive.file` returns the identical
+error). Also note the export uses the GIS browser token client + `localStorage`, a path that never
+writes `integration_connections` — so the DB proves consent-screen history, not the export path.
+
+**Decision, not a fix** (do not silently delete a shipped feature): (a) gate/remove the Slides
+option now — PDF/HTML/PowerPoint are fully local (`jspdf`, `pptxgenjs`) and unaffected, and a
+`.pptx` still opens in Google Slides via upload; or (b) open `google.slides` as its own
+provider-access campaign and rebuild on the canonical connection + a first-party tool. Found while
+publishing the canonical Google Workspace tools; unrelated to that work, so filed rather than fixed.
 
 ### D211 — org/project invitation email templates interpolate unescaped user text into HTML (2026-08-18)
 
