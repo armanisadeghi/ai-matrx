@@ -9,9 +9,14 @@ updated: 2026-08-18
 **Vision:** a listings-management product better than the incumbents (Yext / BrightLocal / Moz Local
 for management breadth; Yoast Local SEO for on-page structured data — we already exceed Yoast:
 they generate LocalBusiness schema, we generate it AND track/audit real directory presence).
-Program plan (four automation classes, six workstreams, Codex access briefs): `common-docs/systems/local-listings/PLAN.md`. Research SoR: `common-docs/systems/local-listings/RESEARCH.md` (publisher tiers, API accessibility,
-the practical sequencing path). Naming: "Location / Listing / Publisher" are working labels —
-lexicon ruling reserved for Arman.
+🚨 **2026-08-18 strategic pivot — read `common-docs/systems/local-listings/VISION.md` FIRST.**
+Agent-guided native listings (AI logs in as the business via the persistent cloud browser + Vault,
+writes unique per-site content) are now the PRIMARY strategy; aggregator cascade is demoted to a
+secondary tactic. This changes what Class C (browser-agent forms) is for — it's no longer the
+long-tail fallback, it's the product.
+Program plan (four automation classes, workstreams, Codex access briefs): `common-docs/systems/local-listings/PLAN.md`. Research SoR: `common-docs/systems/local-listings/RESEARCH.md` (publisher tiers, API accessibility,
+the practical sequencing path — still valid, now secondary strategy). Naming: "Location / Listing
+/ Publisher" are working labels — lexicon ruling reserved for Arman.
 
 ## Live today (2026-08-18, browser-verified end-to-end)
 
