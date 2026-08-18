@@ -138,7 +138,7 @@ export function PlaySurface({ game }: { game: UseGamePlayResult }) {
               >
                 <span>{choice}</span>
                 {answered && isCorrect && (
-                  <Check className="h-4 w-4 text-green-600" />
+                  <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
                 )}
                 {answered && isChosen && !isCorrect && (
                   <X className="h-4 w-4 text-destructive" />

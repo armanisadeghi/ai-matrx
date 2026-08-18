@@ -389,7 +389,7 @@ export function LearnDocAdmin({ initialDocs }: Props) {
                           className={cn(
                             "text-[10px] uppercase tracking-wide",
                             doc.status === "published" &&
-                              "bg-emerald-500/15 text-emerald-600 hover:bg-emerald-500/15 border-emerald-500/30",
+                              "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15 border-emerald-500/30",
                           )}
                         >
                           {doc.status}

@@ -28,7 +28,7 @@ export function TutorHome() {
         <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
-              <ShieldCheck className="h-3.5 w-3.5 text-green-600" aria-hidden />
+              <ShieldCheck className="h-3.5 w-3.5 text-green-600 dark:text-green-400" aria-hidden />
               Cites your material
             </span>
             <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">

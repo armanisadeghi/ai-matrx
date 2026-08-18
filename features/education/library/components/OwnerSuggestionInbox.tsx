@@ -65,7 +65,7 @@ export function OwnerSuggestionInbox() {
 
   const tone: Record<string, string> = {
     open: "",
-    accepted: "text-emerald-600",
+    accepted: "text-emerald-600 dark:text-emerald-400",
     declined: "text-muted-foreground",
   };
 
@@ -99,7 +99,7 @@ export function OwnerSuggestionInbox() {
                   {busy ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Check className="h-4 w-4 text-emerald-600" />
+                    <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   )}
                 </Button>
                 <Button

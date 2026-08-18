@@ -48,7 +48,7 @@ export function TutorLanding({ conversationId }: TutorLandingProps) {
 
       <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1">
-          <ShieldCheck className="h-3.5 w-3.5 text-green-600" aria-hidden />
+          <ShieldCheck className="h-3.5 w-3.5 text-green-600 dark:text-green-400" aria-hidden />
           Cites your material
         </span>
         <span className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2 py-1">
