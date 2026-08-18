@@ -16,6 +16,35 @@
 
 ## Status
 
+- 🚨 **THE RULEBOOK PAGE HAS FOUR THINGS ON IT — the page IA is now LAW (2026-08-18).**
+  Five lanes had each added their own card/button to `/masterwork/[id]` and nobody ever
+  looked at the whole page. Arman: _"every time we add a new piece of UI, some bullshit is
+  added, but no one is paying attention to what the fuck is happening… we add things in one
+  place, remove them from another, and look at it."_ and _"all of the things I'm putting in
+  to get a result should be together, not put all across the fucking code."_ The render
+  order is now, top to bottom, and **a new top-level section needs Arman**:
+
+  | # | Section | Owns | Never holds |
+  | --- | --- | --- | --- |
+  | 1 | **Header card** (`RulebookDetailPage`) | Identity (name, description, citation, version + status badges), ONE primary action **Build a Masterwork**, a **More** menu (Systems · Final checkup · Mark as ready), the KPI tiles + progress bar + **ONE** line, and the review actions when drafts are waiting | Any way to feed the Rulebook; any second sentence under the bar |
+  | 2 | **Sources** (`RulebookInputsSection`) | EVERY input: interviews (list), attached documents/files/links/workspace things, **Your words** (the record — its ONE entry point on this page), **Add ▾** (a document · published work · AI chats), **New interview**, and **Turn this into rules** | — |
+  | 3 | **Understudy** (`UnderstudyCard`) | The system that already runs, and trying it | — |
+  | 4 | **Rules** | Search · **Add rule** · the grouped rule list (+ per-group "Add here") | Any source/import/interview button |
+
+  Below the rules, ambient only: the page `AssistStrip`. **Rules of this IA:** one entry
+  point per capability (a second "Your words" or "Interview me" anywhere on this page is a
+  defect); every control carries a tooltip; a dropdown row is an icon plus **one to three
+  words**, every row the same shape (Arman, same session: _"look at how horrible and ugly
+  the text and icon combination is that you're putting in the dropdown"_) — explanations go
+  on the destination, never as paragraph subtext inside a menu item; and the header implies
+  no order it cannot keep. `ConversationsSection` renders NO chrome of its own (it is a
+  list, not a card — _"It's a session. The title is enough, and it needs to render a LIST."_)
+  and `RulebookSourcesPanel` gains `variant="bare"` for exactly this host (the standalone
+  `/masterwork/[id]/sources` route keeps `variant="card"`). **Status is a LABEL, not a
+  gate:** nothing reads `active` except the badge and the browse list, and Build works in
+  either state — the "Mark as ready" copy says so instead of implying the Rulebook is
+  switched off.
+
 - **THE UNDERSTUDY — the system that runs from minute one (2026-08-17, vision doc 13;
   vocabulary ruled).** Every Rulebook has ONE Understudy: a crude one-agent Masterwork
   (mandate `masterwork.understudy`, Gemini 3.7 Flash on the DB agent row) that does the
@@ -312,10 +341,12 @@ this was pure discoverability). Two fixes, both consuming `listRulebookInterview
 query path):
 
 - **`ConversationsSection`** (`record/ConversationsSection.tsx`) renders on `/masterwork/[id]`
-  between the summary card and the Understudy: every interview (title, when, turns, words, rules
-  produced, first line) with **Continue** (resumes in the panel via the shared content), a new-tab
-  door to `/chat/{id}`, a full-screen door to the interview route, a prominent **New interview**,
-  an honest hidden-count line, and an empty state that invites the first interview.
+  — since 2026-08-18 as a chrome-free LIST inside the one **Sources** section (see § Status,
+  the page IA): one row per interview (title, when, one tiny meta line) with **Continue**
+  (resumes in the panel via the shared content), a new-tab door to `/chat/{id}`, a full-screen
+  door to the interview route, an honest hidden-count line, and a one-line empty state. The
+  section header above it owns **New interview** and **Your words**; this component renders no
+  card, no header, and no buttons of its own.
 - **`/masterwork/[id]/interview`** — the interview as a REAL URL. `ScoutInterviewContent`
   (exported from `ScoutInterviewPanel.tsx`) is THE ONE implementation: the sheet and the route
   render exactly it, chooser included. Deep links: `?conversation=<id>` resumes that conversation,

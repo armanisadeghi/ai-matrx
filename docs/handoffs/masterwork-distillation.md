@@ -21,6 +21,22 @@
 
 ## STATUS — live and verified (compressed)
 
+- **THE RULEBOOK PAGE WAS CONSOLIDATED — element count DOWN, one section per idea (2026-08-18,
+  from Arman's live review: _"no one is paying attention to what the fuck is happening"_ /
+  _"all of the things I'm putting in to get a result should be together"_).** `/masterwork/[id]`
+  went from 5 top-level sections and ~14 header/toolbar controls to **4 sections**: header (one
+  primary **Build a Masterwork** + a **More** menu) → **Sources** (the ONE inputs section:
+  interviews list + documents/files/links + Add ▾ + New interview + Your words + Turn this into
+  rules) → Understudy → rules (search + Add rule only). Deleted: the Conversations card, the
+  collapsed Sources row, the four source buttons welded onto the rules toolbar, the duplicate
+  "Your words" (3 entry points → 1), the "Interview me"/"New interview" double name, the second
+  sentence under the KPI bar, and the three-button rules empty state. New file:
+  `components/detail/RulebookInputsSection.tsx`; `RulebookSourcesPanel` gained `variant="bare"`;
+  `ConversationsSection` is now a chrome-free compact list. The page `AssistStrip` moved out of
+  prime position to below the rules, and `AssistCard`'s action row now wraps (it used to make the
+  popover scroll horizontally AND vertically at once). Page IA is written down as law in
+  `features/masterwork/FEATURE.md` § Status. Verified as owner and as viewer, desktop + 375px.
+
 - **BODY OF WORK + CHAT IMPORT PROVEN THROUGH THE PRODUCT; RUN LINKAGE FIXED (2026-08-18).**
   Both lanes driven end-to-end in the real browser dialogs on Strunk
   (`e492a07f-…`), dev FE :3001 → local aidream :8000. Chat import: synthetic
