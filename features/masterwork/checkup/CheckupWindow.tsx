@@ -1,64 +1,73 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { Group, Panel, Separator } from "react-resizable-panels";
 import {
+  BrainCircuit,
   CheckCircle2,
   Loader2,
   RotateCcw,
-  Sparkles,
   Stethoscope,
   Undo2,
-  XCircle,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ProTextarea } from "@/components/official/ProTextarea";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { useIsMobile } from "@/hooks/use-mobile";
+import MarkdownStream from "@/components/MarkdownStream";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { CheckupCurrentPane, CheckupProposalPane } from "./CheckupPanes";
-import { CheckupFindingList } from "./CheckupFindingList";
-import { useCheckup, type CheckupFilter } from "./useCheckup";
-import type { CheckupProposedRule } from "./types";
+import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
+import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
+import {
+  CHECKUP_DECISION_UI_STATE_KEY,
+  type CheckupChange,
+} from "@/features/content-ir/kinds/masterwork-checkup-finding";
+import type { CheckupDecisionsUiState } from "@/components/mardown-display/blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
+import {
+  CheckupSuggestionDialog,
+  type CheckupSuggestionMode,
+} from "./CheckupSuggestionDialog";
+import { useCheckup } from "./useCheckup";
+import { chosenProposal, type CheckupProposedRule } from "./types";
 
 /**
  * THE FINAL CHECKUP — the window an Expert opens when they feel done.
  *
- * Arman, 2026-08-17: "a button that they click that's kind of like — maybe
- * call it a final checkup… the results of it should be this unique UI that
- * comes up, and I'm thinking it's probably a window panel, and it should be
- * split down the middle… suggest rules that need to be added, rules that could
- * be modified, rules that should be removed… the user is just going through
- * very quickly and sort of approving or disapproving."
+ * ## What Arman found wrong on 2026-08-18, and what each fix is
  *
- * So: a `WindowPanel` (the work stays visible behind it), split down the
- * middle — the Rulebook as it is on the left, what we suggest on the right —
- * and a keyboard flow built for speed: Y approve, N dismiss, arrows to move.
- * Nothing is written until Apply, so every decision is reversible in place.
+ * 1. **"It forced me to stare at a blank page … and then magically all the
+ *    content appeared."** The server blocked on the whole agent call before
+ *    emitting a single finding. It now scans each producer agent's own token
+ *    stream and releases every finding the moment it is written and has passed
+ *    the evidence gate — and this window renders them through the platform's
+ *    ONE pipeline: `<MarkdownStream requestId />` over the stream
+ *    `useDurableRun` already adopts, drawing each `masterwork_checkup_finding`
+ *    with its registered kind component. **Nothing in this feature parses,
+ *    buckets, routes, or renders a stream itself.**
+ * 2. **"The order needs to be: You said this → They created this → Here is
+ *    what is missing or wrong → Here is the version recommended."** That order
+ *    IS the kind's shape and the component's layout.
+ * 3. **"It doesn't have an option to edit the suggestion, and it doesn't have
+ *    an option to … provide guidance to the agent."** Every finding carries
+ *    Approve · Improve · Reject · Edit, from the SAME `RuleDecisionActions`
+ *    primitive and the SAME `masterwork.rule_improver` Mandate the rule review
+ *    uses. The clicks reach this window through the `checkup_decision` surface
+ *    write target — the finding card never holds a callback.
+ * 4. **"The footer … just hijacks our footer component and just fucking
+ *    destroys it."** The footer is ONE row of primary actions. The AI-pass
+ *    notice is a toast; the receipt is in the body, where content belongs.
+ * 5. **"I clicked the final checkup button … but it didn't do a final
+ *    checkup."** Opening this window RUNS the checkup. The only re-run is a
+ *    subtle "Run again" in the header.
+ *
+ * The split panes, the filter tabs, the finding sidebar and the keyboard
+ * cursor are all deleted. They existed to drive a single-focus split view; the
+ * findings now render as themselves, and the panel is smaller for it.
  */
 
-const FILTERS: { key: CheckupFilter; label: string }[] = [
-  { key: "open", label: "To decide" },
-  { key: "add", label: "Add" },
-  { key: "modify", label: "Change" },
-  { key: "remove", label: "Retire" },
-  { key: "all", label: "All" },
-];
-
-/** True when the keystroke belongs to something the user is typing into. */
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    target.isContentEditable
-  );
-}
+const AI_PASS_LABEL = (count: number) =>
+  `Approve the ${count} we're most sure about`;
 
 export interface CheckupWindowProps {
   isOpen: boolean;
@@ -68,33 +77,28 @@ export interface CheckupWindowProps {
 
 export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProps) {
   const checkup = useCheckup(rulebookId);
-  const isMobile = useIsMobile();
-  const [dismissNote, setDismissNote] = useState("");
+  const [dialog, setDialog] = useState<{
+    findingId: string;
+    mode: CheckupSuggestionMode;
+  } | null>(null);
 
   const {
     rulebook,
     loading,
     loadError,
     run,
-    visible,
-    filter,
-    setFilter,
-    counts,
-    focused,
-    focusFinding,
-    moveFocus,
+    findings,
+    findingById,
     dispositions,
+    setDecision,
+    setProposal,
+    chooseAlternative,
     decide,
-    clearDecision,
-    approveFocused,
-    dismissFocused,
+    totalFindings,
     decidedCount,
     approvedCount,
-    ruleFor,
-    aiPass,
     aiEligibleCount,
     approveWithAi,
-    undoAiPass,
     applying,
     apply,
     receipt,
@@ -102,76 +106,116 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
     undoApply,
   } = checkup;
 
-  // The keyboard model. A professional should clear thirty findings in a
-  // minute without touching the mouse, and never lose a keystroke into a
-  // ProTextarea they were dictating into.
+  // ── Clicking "Final checkup" IS the final checkup ─────────────────────────
+  // The window opens already running. The one thing auto-start must never do
+  // is spend money on a SECOND run over a live one, so it stands down the
+  // instant the durable hook claims a run id (its rejoin pass reads the pointer
+  // synchronously on mount, one frame ahead of this effect).
+  const autoStartedRef = useRef(false);
   useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (isTypingTarget(event.target)) return;
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
-      const key = event.key.toLowerCase();
-      if (key === "arrowdown" || key === "j") {
-        event.preventDefault();
-        moveFocus(1);
-      } else if (key === "arrowup" || key === "k") {
-        event.preventDefault();
-        moveFocus(-1);
-      } else if (key === "y" || key === "enter") {
-        event.preventDefault();
-        approveFocused();
-        moveFocus(1);
-      } else if (key === "n" || key === "d") {
-        event.preventDefault();
-        dismissFocused();
-        moveFocus(1);
-      } else if (key === "u") {
-        event.preventDefault();
-        if (focused) clearDecision(focused.id);
+    if (!isOpen || autoStartedRef.current) return;
+    if (loading || !rulebook) return;
+    if (run.status !== "idle" || run.runId !== null || totalFindings > 0) return;
+    const timer = window.setTimeout(() => {
+      if (autoStartedRef.current) return;
+      autoStartedRef.current = true;
+      void run.start();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [isOpen, loading, rulebook, run, totalFindings]);
+
+  // ── The two surface seams the finding cards act through ───────────────────
+  const decidedMap = useMemo(() => {
+    const map: Record<string, "approved" | "rejected"> = {};
+    for (const [findingId, disposition] of Object.entries(dispositions)) {
+      map[findingId] =
+        disposition.decision === "approve" ? "approved" : "rejected";
+    }
+    return map;
+  }, [dispositions]);
+
+  useEffect(() => {
+    // Publishing this key is what makes the rendered findings interactive.
+    // While the window is closed we publish nothing, so the same cards in a
+    // chat transcript stay read-only rather than offering a dead button.
+    publishSurfaceUiState(
+      MASTERWORK_RULEBOOK_SURFACE_NAME,
+      CHECKUP_DECISION_UI_STATE_KEY,
+      isOpen
+        ? ({
+            decided: decidedMap,
+            busyFindingId: applying ? null : null,
+          } satisfies CheckupDecisionsUiState)
+        : undefined,
+    );
+  }, [isOpen, decidedMap, applying]);
+
+  useEffect(
+    () => () =>
+      publishSurfaceUiState(
+        MASTERWORK_RULEBOOK_SURFACE_NAME,
+        CHECKUP_DECISION_UI_STATE_KEY,
+        undefined,
+      ),
+    [],
+  );
+
+  useSurfaceWriteHandlers(MASTERWORK_RULEBOOK_SURFACE_NAME, {
+    checkup_decision: (value: unknown) => {
+      if (!value || typeof value !== "object") {
+        throw new Error("checkup_decision expects an object value.");
       }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, moveFocus, approveFocused, dismissFocused, clearDecision, focused]);
+      const record = value as Record<string, unknown>;
+      const findingId = record.finding_id;
+      const verb = record.verb;
+      if (typeof findingId !== "string" || !findingId) {
+        throw new Error("checkup_decision: finding_id must be a string.");
+      }
+      if (!findingById(findingId)) {
+        throw new Error(
+          "checkup_decision: that suggestion is not part of this checkup.",
+        );
+      }
+      const alternativeIndex = record.alternative_index;
+      if (typeof alternativeIndex === "number") {
+        chooseAlternative(findingId, alternativeIndex);
+      }
+      if (verb === "approve") {
+        setDecision(findingId, "approve");
+        return;
+      }
+      if (verb === "reject") {
+        setDialog({ findingId, mode: "reject" });
+        return;
+      }
+      if (verb === "improve" || verb === "edit") {
+        setDialog({ findingId, mode: verb });
+        return;
+      }
+      throw new Error(`checkup_decision: unknown verb ${String(verb)}.`);
+    },
+  });
 
-  // Reset the dismissal note as focus moves — a note belongs to one finding.
-  useEffect(() => {
-    setDismissNote(focused ? (dispositions[focused.id]?.note ?? "") : "");
-    // Only when the focused finding itself changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focused?.id]);
+  const dialogFinding = dialog ? (findingById(dialog.findingId) ?? null) : null;
+  const dialogProposal: CheckupProposedRule | null = dialogFinding
+    ? (chosenProposal(dialogFinding, dispositions[dialogFinding.id]) ?? null)
+    : null;
 
-  const chooseAlternative = useCallback(
-    (alternativeIndex: number) => {
-      if (!focused) return;
-      decide(focused.id, {
-        ...(dispositions[focused.id] ?? { decision: "approve" }),
-        decision: dispositions[focused.id]?.decision ?? "approve",
-        alternativeIndex,
+  const closeDialog = useCallback(() => setDialog(null), []);
+
+  const rejectWithNote = useCallback(
+    (findingId: string, note: string) => {
+      decide(findingId, {
+        ...(dispositions[findingId] ?? {}),
+        decision: "dismiss",
         byAi: false,
+        ...(note ? { note } : {}),
       });
     },
-    [focused, decide, dispositions],
+    [decide, dispositions],
   );
 
-  const editProposal = useCallback(
-    (proposal: CheckupProposedRule | undefined) => {
-      if (!focused || !proposal) return;
-      decide(focused.id, {
-        ...(dispositions[focused.id] ?? { decision: "approve" }),
-        decision: dispositions[focused.id]?.decision ?? "approve",
-        edited: proposal,
-        byAi: false,
-      });
-    },
-    [focused, decide, dispositions],
-  );
-
-  const decision = focused ? dispositions[focused.id] : undefined;
-  const totalFindings = run.findings.length;
-  const progress =
-    totalFindings === 0 ? 0 : Math.round((decidedCount / totalFindings) * 100);
-
+  // ── Body ──────────────────────────────────────────────────────────────────
   const body = (() => {
     if (loading) {
       return (
@@ -187,33 +231,12 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
         </div>
       );
     }
-    if (run.status === "idle" && totalFindings === 0 && !receipt) {
-      return (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
-          <Stethoscope className="h-8 w-8 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              Ready when you are
-            </p>
-            <p className="mt-1 max-w-md text-sm text-muted-foreground">
-              We&apos;ll read back everything you&apos;ve ever told us — your
-              interviews, the sources you brought, your own corrections — and
-              hold it against every rule you have. Then you say yes or no.
-            </p>
-          </div>
-          <Button onClick={() => void run.start()}>
-            <Stethoscope className="mr-1 h-4 w-4" />
-            Start the checkup
-          </Button>
-        </div>
-      );
-    }
     if (run.status === "error" && totalFindings === 0) {
       return (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
           <p className="max-w-md text-sm text-muted-foreground">{run.error}</p>
           <Button variant="outline" onClick={() => void run.start()}>
-            <RotateCcw className="mr-1 h-4 w-4" />
+            <RotateCcw className="h-4 w-4" />
             Try again
           </Button>
         </div>
@@ -221,21 +244,20 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
     }
     if (totalFindings === 0) {
       return (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
           {run.running ? (
             <>
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
               <p className="text-sm text-muted-foreground">
                 {run.stage ?? "Reading everything you've told us…"}
               </p>
               <p className="max-w-sm text-xs text-muted-foreground">
-                Suggestions appear here as we find them — you can start
-                deciding before it finishes, and a refresh picks it back up.
+                Anything we find appears here the moment we find it.
               </p>
             </>
           ) : (
             <>
-              <CheckCircle2 className="h-8 w-8 text-primary" />
+              <CheckCircle2 className="h-7 w-7 text-primary" />
               <p className="text-sm font-medium text-foreground">
                 {run.summary ?? "Nothing to change — your Rulebook holds up."}
               </p>
@@ -244,259 +266,91 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
         </div>
       );
     }
-    if (!focused) {
-      return (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
-          <CheckCircle2 className="h-8 w-8 text-primary" />
-          <p className="text-sm font-medium text-foreground">
-            You&apos;ve been through them all.
-          </p>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            {decidedCount > 0
-              ? "Nothing is saved yet — press Apply to make it real."
-              : "Switch to All to look at them again."}
-          </p>
-        </div>
-      );
-    }
 
-    const currentPane = (
-      <CheckupCurrentPane
-        finding={focused}
-        rule={ruleFor(focused)}
-        rulebook={rulebook}
-      />
-    );
-    const proposalPane = (
-      <CheckupProposalPane
-        finding={focused}
-        disposition={decision}
-        onChoose={chooseAlternative}
-        onEdit={editProposal}
-      />
-    );
-
-    // Split down the middle. On a phone the two halves stack (proposal first —
-    // it is what the decision is about); a side-by-side split there is
-    // unreadable.
     return (
-      <Group
-        id="masterwork-checkup-split"
-        orientation={isMobile ? "vertical" : "horizontal"}
-        className="min-h-0 flex-1"
-      >
-        <Panel
-          id={isMobile ? "checkup-proposal" : "checkup-current"}
-          defaultSize="50%"
-          minSize="20%"
-        >
-          <div className="h-full overflow-y-auto">
-            {isMobile ? proposalPane : currentPane}
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+        {receipt ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs">
+            <span className="text-foreground">
+              {receipt.length === 0
+                ? "Nothing changed — everything you looked at was set aside."
+                : `Applied ${receipt.length} ${receipt.length === 1 ? "change" : "changes"}.`}
+            </span>
+            {rulebook ? (
+              <Link
+                href={`/masterwork/${rulebook.id}`}
+                target="_blank"
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                See them in your Rulebook
+              </Link>
+            ) : null}
+            {undoAvailable ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6"
+                disabled={applying}
+                onClick={() => void undoApply()}
+              >
+                <Undo2 className="h-3 w-3" />
+                Undo
+              </Button>
+            ) : null}
           </div>
-        </Panel>
-        <Separator
-          className={[
-            "bg-border transition-colors focus:outline-none",
-            "data-[separator=hover]:bg-primary",
-            "data-[separator=active]:bg-primary",
-            "data-[separator=dragging]:bg-primary",
-            "[&[aria-orientation=vertical]]:w-0.5 [&[aria-orientation=vertical]]:cursor-col-resize",
-            "[&[aria-orientation=horizontal]]:h-0.5 [&[aria-orientation=horizontal]]:cursor-row-resize",
-          ].join(" ")}
-        />
-        <Panel
-          id={isMobile ? "checkup-current" : "checkup-proposal"}
-          defaultSize="50%"
-          minSize="20%"
-        >
-          <div className="h-full overflow-y-auto">
-            {isMobile ? currentPane : proposalPane}
-          </div>
-        </Panel>
-      </Group>
+        ) : null}
+        {/* THE ONE PIPELINE. Every finding the server releases renders here as
+            its registered kind component, live, with nothing parsed locally. */}
+        {run.requestId ? (
+          <MarkdownStream
+            requestId={run.requestId}
+            isStreamActive={run.running}
+            hideCopyButton
+          />
+        ) : null}
+      </div>
     );
   })();
 
-  const sidebar = (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="flex flex-wrap gap-1 border-b border-border p-1.5">
-        {FILTERS.map(({ key, label }) => {
-          const count =
-            key === "open"
-              ? counts.open
-              : key === "all"
-                ? counts.all
-                : counts[key];
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setFilter(key)}
-              className={`rounded px-1.5 py-0.5 text-[11px] transition-colors ${
-                filter === key
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {label} {count}
-            </button>
-          );
-        })}
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <CheckupFindingList
-          findings={visible}
-          focusedId={focused?.id ?? null}
-          dispositions={dispositions}
-          ruleFor={ruleFor}
-          onFocus={focusFinding}
-        />
-      </div>
-    </div>
-  );
+  const stageLine = run.running ? (run.stage ?? "Still looking…") : null;
 
+  // ── Footer: ONE row. Primary actions only. ────────────────────────────────
   const footer = (
-    <div className="flex w-full min-w-0 flex-col gap-1.5">
-      {aiPass ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2 py-1">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
-          <span className="text-xs text-foreground">
-            AI accepted {aiPass.entries.length}{" "}
-            {aiPass.entries.length === 1 ? "suggestion" : "suggestions"} it was
-            at least {Math.round(aiPass.threshold * 100)}% sure about — they are
-            ticked in the list for you to check. Nothing is saved yet.
-          </span>
-          <Button size="sm" variant="ghost" className="h-6" onClick={undoAiPass}>
-            <Undo2 className="mr-1 h-3 w-3" />
-            Undo those
-          </Button>
-        </div>
+    <div className="flex w-full min-w-0 flex-wrap items-center gap-2 px-2 py-1.5">
+      <span className="text-xs text-muted-foreground">
+        {totalFindings === 0
+          ? (stageLine ?? "Nothing to decide yet")
+          : `${decidedCount} of ${totalFindings} decided`}
+      </span>
+      {run.running && totalFindings > 0 ? (
+        <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
       ) : null}
-      {receipt ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-2 py-1">
-          <span className="text-xs text-foreground">
-            {receipt.length === 0
-              ? "Nothing changed — everything you looked at was set aside."
-              : `Applied: ${receipt.map((entry) => entry.ruleName).join(", ")}`}
-          </span>
-          {rulebook ? (
-            <Link
-              href={`/masterwork/${rulebook.id}`}
-              target="_blank"
-              className="text-xs text-primary underline-offset-2 hover:underline"
-            >
-              See them in your Rulebook
-            </Link>
-          ) : null}
-          {undoAvailable ? (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6"
-              disabled={applying}
-              onClick={() => void undoApply()}
-            >
-              <Undo2 className="mr-1 h-3 w-3" />
-              Undo
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-      {focused ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            className="h-7"
-            onClick={() => {
-              approveFocused();
-              moveFocus(1);
-            }}
-          >
-            <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-            Yes, do it
-          </Button>
+      <div className="ml-auto flex items-center gap-2">
+        {aiEligibleCount > 0 ? (
           <Button
             size="sm"
             variant="outline"
             className="h-7"
-            onClick={() => {
-              dismissFocused();
-              moveFocus(1);
-            }}
+            onClick={approveWithAi}
           >
-            <XCircle className="mr-1 h-3.5 w-3.5" />
-            No, leave it
+            <BrainCircuit className="h-3.5 w-3.5" />
+            {AI_PASS_LABEL(aiEligibleCount)}
           </Button>
-          {decision ? (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7"
-              onClick={() => clearDecision(focused.id)}
-            >
-              <Undo2 className="mr-1 h-3.5 w-3.5" />
-              Undo this one
-            </Button>
-          ) : null}
-          <span className="text-[11px] text-muted-foreground">
-            Y yes · N no · ↑↓ move · U undo
-          </span>
-        </div>
-      ) : null}
-      {decision?.decision === "dismiss" && focused ? (
-        <ProTextarea
-          value={dismissNote}
-          onChange={(e) => {
-            setDismissNote(e.target.value);
-            decide(focused.id, { ...decision, note: e.target.value });
-          }}
-          autoGrow
-          minHeight={44}
-          placeholder="Why not? (optional — it stops us suggesting this again)"
-        />
-      ) : null}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span>
-            {decidedCount} of {totalFindings} decided
-          </span>
-          <div className="h-1 w-24 overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-primary" style={{ width: `${progress}%` }} />
-          </div>
-          {run.running ? (
-            <span className="inline-flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" />
-              {run.stage ?? "still looking"}
-            </span>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          {aiEligibleCount > 0 ? (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7"
-              onClick={approveWithAi}
-            >
-              <Sparkles className="mr-1 h-3.5 w-3.5" />
-              {`Approve the ${aiEligibleCount} we're most sure about`}
-            </Button>
-          ) : null}
-          <Button
-            size="sm"
-            className="h-7"
-            disabled={decidedCount === 0 || applying}
-            onClick={() => void apply()}
-          >
-            {applying ? (
-              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
-            )}
-            Apply {approvedCount > 0 ? `${approvedCount} ` : ""}
-            {approvedCount === 1 ? "change" : "changes"}
-          </Button>
-        </div>
+        ) : null}
+        <Button
+          size="sm"
+          className="h-7"
+          disabled={decidedCount === 0 || applying}
+          onClick={() => void apply()}
+        >
+          {applying ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          )}
+          Apply {approvedCount > 0 ? `${approvedCount} ` : ""}
+          {approvedCount === 1 ? "change" : "changes"}
+        </Button>
       </div>
     </div>
   );
@@ -504,47 +358,66 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
   if (!isOpen) return null;
 
   return (
-    <WindowPanel
-      id="masterwork-checkup-window"
-      overlayId="masterworkCheckupWindow"
-      titleNode={
-        <span className="flex items-center gap-1.5">
-          <Stethoscope className="h-4 w-4" />
-          <span className="text-sm font-medium">Final checkup</span>
-          {totalFindings > 0 ? (
-            <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-              {totalFindings}
-            </Badge>
-          ) : null}
-        </span>
-      }
-      actionsRight={
-        totalFindings > 0 && !run.running ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-6"
-            onClick={() => void run.start()}
-          >
-            <RotateCcw className="mr-1 h-3 w-3" />
-            Run again
-          </Button>
-        ) : undefined
-      }
-      width={1040}
-      height={680}
-      minWidth={520}
-      minHeight={420}
-      sidebar={totalFindings > 0 ? sidebar : undefined}
-      sidebarDefaultSize={240}
-      sidebarMinSize={160}
-      footer={footer}
-      footerVariant="rich"
-      bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
-      onClose={onClose}
-    >
-      {body}
-    </WindowPanel>
+    <>
+      <WindowPanel
+        id="masterwork-checkup-window"
+        overlayId="masterworkCheckupWindow"
+        titleNode={
+          <span className="flex items-center gap-1.5">
+            <Stethoscope className="h-4 w-4" />
+            <span className="text-sm font-medium">Final checkup</span>
+            {totalFindings > 0 ? (
+              <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                {totalFindings}
+              </Badge>
+            ) : null}
+          </span>
+        }
+        actionsRight={
+          !run.running && (totalFindings > 0 || run.status === "done") ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-[11px]"
+              onClick={() => void run.start()}
+            >
+              <RotateCcw className="h-3 w-3" />
+              Run again
+            </Button>
+          ) : undefined
+        }
+        width={760}
+        height={720}
+        minWidth={360}
+        minHeight={420}
+        footer={footer}
+        footerVariant="rich"
+        bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
+        onClose={onClose}
+      >
+        <div className="flex min-h-0 flex-1 flex-col">
+          {/* ONE line saying what this is and what it will do. */}
+          <p className="shrink-0 border-b border-border px-3 py-2 text-xs text-muted-foreground">
+            We read back everything you&apos;ve ever told us against every rule
+            you have, and show you anything we got wrong or missed. You decide
+            each one; nothing changes until you apply.
+          </p>
+          {body}
+        </div>
+      </WindowPanel>
+      {rulebook && dialog ? (
+        <CheckupSuggestionDialog
+          finding={dialogFinding}
+          mode={dialog.mode}
+          proposal={dialogProposal}
+          rulebook={rulebook}
+          surfaceName={MASTERWORK_RULEBOOK_SURFACE_NAME}
+          onClose={closeDialog}
+          onProposal={setProposal}
+          onReject={rejectWithNote}
+        />
+      ) : null}
+    </>
   );
 }
 

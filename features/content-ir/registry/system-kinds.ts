@@ -73,6 +73,7 @@ import { SEO_AUTHORITY_ROUTE_KIND_DEFINITIONS } from "../kinds/seo-authority-rou
 import { PAGE_BRIEF_KIND_DEFINITIONS } from "../kinds/page-brief";
 import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-options";
 import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
+import { MASTERWORK_CHECKUP_KIND_DEFINITIONS } from "../kinds/masterwork-checkup-finding";
 import { GENERATED_IMAGE_SET_KIND_DEFINITIONS } from "../kinds/generated-image-set";
 import { GENERATED_VIDEO_SET_KIND_DEFINITIONS } from "../kinds/generated-video-set";
 import { GENERATED_AUDIO_KIND_DEFINITIONS } from "../kinds/generated-audio";
@@ -108,6 +109,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...PAGE_BRIEF_KIND_DEFINITIONS,
   ...EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS,
   ...MEDIA_CHAPTERS_KIND_DEFINITIONS,
+  ...MASTERWORK_CHECKUP_KIND_DEFINITIONS,
   // Media workflow-I/O (python-owned models — see each module header).
   ...GENERATED_IMAGE_SET_KIND_DEFINITIONS,
   ...GENERATED_VIDEO_SET_KIND_DEFINITIONS,

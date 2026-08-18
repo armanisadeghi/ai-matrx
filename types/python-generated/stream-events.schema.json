@@ -8320,7 +8320,7 @@
       }
     },
     "additionalProperties": false,
-    "description": "One finding, streamed the moment its producer returns it.",
+    "description": "One finding, streamed the moment the producer's agent writes it.\n\n``content_ir`` carries the SAME finding as a canonical Content-IR value\n(``__kind: \"masterwork_checkup_finding\"``). The frontend's one stream\nchokepoint promotes it into a real render block, so the platform's ONE\nrenderer draws the finding live — no surface parses this event's content,\nand there is no second renderer to drift. ``finding`` stays exactly as it\nwas for the surface's own decision state.",
     "properties": {
       "type": {
         "const": "masterwork_checkup_finding",
@@ -8334,6 +8334,19 @@
       },
       "finding": {
         "$ref": "#/$defs/CheckupFinding"
+      },
+      "content_ir": {
+        "anyOf": [
+          {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Content Ir"
       }
     },
     "required": [

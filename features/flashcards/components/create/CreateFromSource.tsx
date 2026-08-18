@@ -50,6 +50,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingSpinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import { DEPTH_TIERS } from "../../data/enhanceCard";
+import type { Depth } from "@/features/education/assessment/data/types";
 import { useLibrary } from "@/features/rag/hooks/useLibrary";
 import {
   useDocument,
@@ -114,6 +116,8 @@ export function CreateFromSource() {
   );
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  // Gap 8 — generation-time depth tier (default recall = pre-tier behavior).
+  const [depth, setDepth] = useState<Depth>("recall");
 
   const {
     docs,
@@ -198,6 +202,7 @@ export function CreateFromSource() {
         document_id: selectedDoc.id,
         count: safeCount,
         difficulty,
+        depth,
       });
 
       // Only attach a file-lineage edge when the document is backed by a
@@ -350,6 +355,8 @@ export function CreateFromSource() {
               onCountChange={setCount}
               difficulty={difficulty}
               onDifficultyChange={setDifficulty}
+              depth={depth}
+              onDepthChange={setDepth}
               busy={busy}
               canGenerate={canGenerate}
               onGenerate={() => void handleGenerate()}
@@ -451,6 +458,8 @@ function CurateStep({
   onCountChange,
   difficulty,
   onDifficultyChange,
+  depth,
+  onDepthChange,
   busy,
   canGenerate,
   onGenerate,
@@ -467,6 +476,8 @@ function CurateStep({
   onCountChange: (v: number) => void;
   difficulty: Difficulty;
   onDifficultyChange: (v: Difficulty) => void;
+  depth: Depth;
+  onDepthChange: (v: Depth) => void;
   busy: boolean;
   canGenerate: boolean;
   onGenerate: () => void;
@@ -571,6 +582,34 @@ function CurateStep({
               ))}
             </SelectContent>
           </Select>
+        </div>
+        {/* VISION §1 (gap 8) — generation-time depth tier. */}
+        <div className="flex flex-col gap-1.5">
+          <Label>Depth</Label>
+          <div className="grid grid-cols-3 gap-1.5">
+            {DEPTH_TIERS.map((tier) => (
+              <button
+                key={tier.value}
+                type="button"
+                disabled={busy}
+                onClick={() => onDepthChange(tier.value)}
+                className={cn(
+                  "rounded-lg border px-2 py-1.5 text-left transition-colors disabled:opacity-50",
+                  depth === tier.value
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-background hover:bg-accent",
+                )}
+                aria-pressed={depth === tier.value}
+              >
+                <div className="text-xs font-medium text-foreground">
+                  {tier.label}
+                </div>
+                <div className="text-[10px] leading-tight text-muted-foreground">
+                  {tier.blurb}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

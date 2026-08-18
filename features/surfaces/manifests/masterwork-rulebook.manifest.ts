@@ -371,6 +371,17 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "rulebook_workspace",
     sortOrder: 110,
   },
+  {
+    name: "checkup_decision",
+    label: "Final Checkup decision",
+    description:
+      "The Expert's own Approve / Improve / Reject / Edit click on ONE Final Checkup finding, carried from the rendered finding card to the checkup panel. Value: { finding_id: string, verb: 'approve' | 'improve' | 'reject' | 'edit', alternative_index?: number }. Nothing is written to the Rulebook here — decisions accumulate and land in one save when the Expert presses Apply. applyPolicy is deliberately 'manual': deciding which of the Expert's own rules to change is the one judgement this product exists to keep with him, so an agent-originated write is refused outright.",
+    valueType: "object",
+    mode: "ui",
+    applyPolicy: "manual",
+    group: "rulebook_workspace",
+    sortOrder: 120,
+  },
 ];
 
 const clientTools: SurfaceClientTool[] = [

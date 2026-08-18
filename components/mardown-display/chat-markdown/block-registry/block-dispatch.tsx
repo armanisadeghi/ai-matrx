@@ -275,6 +275,14 @@ export function isBlockLoading(block: {
  *    only — no tag/fence surface); never emitted upstream. STREAMING bridges:
  *    `mnemonics` / `analogies` / `loci` are arrays of child kinds, so aids
  *    appear one at a time; the hint shows a writing row until `aid` parses.
+ *  - `masterwork_checkup_finding` — produced ONLY by `applyIrKindRoute`'s
+ *    compiled-bridge flip for the registered `masterwork_checkup_finding`
+ *    kind (`__kind` JSON arrival only — no tag/fence surface); never emitted
+ *    upstream. Shape-classified by construction. COMPLETE bridge: aidream
+ *    gates a whole finding before it reaches the wire, so findings stream,
+ *    fields within one do not. Carries the Approve/Improve/Reject/Edit verbs
+ *    through the `checkup_decision` surface write target when the page it
+ *    landed on offers it.
  *  - `episode_title_options` — produced ONLY by `applyIrKindRoute`'s
  *    compiled-bridge flip for the registered `episode_title_options` kind
  *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
@@ -309,6 +317,7 @@ export type FeSynthesizedBlockType =
   | "memory_aid"
   | "memory_hint"
   | "episode_title_options"
+  | "masterwork_checkup_finding"
   | "seo_package"
   | "plan_page_research"
   | "plan_page_outline"
@@ -398,6 +407,7 @@ export type ShapeBlockType =
   | "memory_aid"
   | "memory_hint"
   | "episode_title_options"
+  | "masterwork_checkup_finding"
   | "seo_package"
   | "plan_page_research"
   | "plan_page_outline"
@@ -1567,6 +1577,30 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.MemoryHintBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (masterwork_checkup_finding): COMPLETE bridge — one gated
+  // Final Checkup finding, rendered in Arman's four-step order. Same
+  // three-branch contract as every other kind-routed entry.
+  masterwork_checkup_finding: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.MasterworkCheckupFindingBlock
           key={index}
           serverData={block.serverData}
         />
