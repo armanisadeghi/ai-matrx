@@ -22,7 +22,14 @@
  * instructions (second-person role framing, or a prompt-ish section heading),
  * over MIN_CHARS. Also flags an inline multi-line template literal passed
  * straight into a `system:` / `instructions:` / `systemPrompt:` property, which
- * is the same violation spelled differently.
+ * is the same violation spelled differently. And — the blind spot found by the
+ * education-platform program (WP2, 2026-08-18) — a template literal built
+ * INSIDE a function body with no prompt-shaped name at all: gradePracticeAnswer
+ * composed `"you are the ${persona}… never say flashcards"` inline in a helper
+ * and the first two passes never saw it (wrong name, wrong position, under
+ * MIN_CHARS, and the role-framing regex broke on the `${…}` interpolation).
+ * Pass 3 therefore scans EVERY template literal ≥ FRAGMENT_MIN_CHARS anywhere
+ * in a file for the same body signals, interpolation-tolerant.
  *
  * WHAT IT DELIBERATELY DOES NOT FLAG:
  *   - short strings, single-line labels, and non-prompt-shaped names;
@@ -77,6 +84,14 @@ const SKIP_FILE = /(\.test\.tsx?$|\.spec\.tsx?$)/;
 /** Below this, it is a label or a fragment, not a persona. */
 const MIN_CHARS = 240;
 
+/**
+ * Pass-3 floor. Deliberately much lower than MIN_CHARS: a one-line
+ * function-built persona ("you are the examiner… never say flashcards") is a
+ * full agent-definition violation at ~150 chars. Body signals carry the
+ * precision here, not length.
+ */
+const FRAGMENT_MIN_CHARS = 100;
+
 const C = {
   reset: "\x1b[0m",
   bold: "\x1b[1m",
@@ -114,8 +129,15 @@ const PROMPT_NAME_RE =
  */
 const BODY_SIGNALS: Array<{ re: RegExp; why: string }> = [
   {
-    re: /\byou are (?:an?|the) \w/i,
+    // Interpolation-tolerant: `you are the ${persona}` is role framing too —
+    // requiring a word character here is how the gradePracticeAnswer
+    // violation slipped past this scanner.
+    re: /\byou are (?:an?|the) (?:\w|\$\{)/i,
     why: "second-person role framing (\"You are a/an/the …\")",
+  },
+  {
+    re: /\bnever (?:say|mention|refer to)\b/i,
+    why: "a behavioral vocabulary rule (\"never say/mention/refer to …\")",
   },
   { re: /\byour (?:role|job|task|responsibilities)\b/i, why: "assigns the model a role/job" },
   { re: /^#{1,3} +(?:base )?instructions\b/im, why: "an \"Instructions\" section heading" },
@@ -207,6 +229,35 @@ function scanFile(file: string): Finding[] {
       chars: tpl.body.length,
       why,
     });
+  }
+
+  // Pass 3 — the function-built blind spot: EVERY template literal, any
+  // position, any (or no) name. Precision comes from BODY_SIGNALS, not from
+  // where the string lives. Dedupe against passes 1/2 by line.
+  const seenLines = new Set(found.map((f) => f.line));
+  for (let i = src.indexOf("`"); i !== -1; i = src.indexOf("`", i + 1)) {
+    // Skip backticks inside line comments (crude but sufficient: prompt
+    // templates never live in `// …` lines).
+    const lineStart = src.lastIndexOf("\n", i) + 1;
+    const linePrefix = src.slice(lineStart, i);
+    if (linePrefix.includes("//")) continue;
+    const tpl = readTemplate(src, i);
+    if (!tpl) continue;
+    const line = lineOf(i);
+    if (!seenLines.has(line) && tpl.body.length >= FRAGMENT_MIN_CHARS) {
+      const why = bodyLooksLikeAgentInstructions(tpl.body);
+      if (why) {
+        seenLines.add(line);
+        found.push({
+          file: rel,
+          line,
+          name: "(function-built template literal)",
+          chars: tpl.body.length,
+          why,
+        });
+      }
+    }
+    i = tpl.end;
   }
 
   return found;
