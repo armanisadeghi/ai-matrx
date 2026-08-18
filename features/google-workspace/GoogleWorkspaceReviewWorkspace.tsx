@@ -93,6 +93,18 @@ function metadataLink(resource: GoogleConnectionResource): string | null {
   return typeof value === "string" && value ? value : null;
 }
 
+function connectionName(connection: GoogleConnectionSummary): string {
+  return (
+    connection.account_email ?? connection.account_name ?? "Google account"
+  );
+}
+
+function connectionStatus(connection: GoogleConnectionSummary): string {
+  if (connection.health === "needs_reauth") return "Needs attention";
+  if (connection.health === "revoked") return "Disconnected";
+  return "Connected";
+}
+
 interface GoogleWorkspaceReviewWorkspaceProps {
   pickerInitialQuery?: string;
 }
