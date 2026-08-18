@@ -8,11 +8,11 @@
 // cadence, and improvements found in review are applied as new revisions.
 //
 // HONESTY CONTRACT: the review rows themselves (hindsight.*) are not readable
-// from the browser, so this panel renders ONLY what the signed-in user can
-// truly read — the five jobs (public mandate registry) and each agent's
-// revision count + last-changed date (agent.definition). It NEVER fabricates
-// review activity; the read gap is tracked in
-// docs/handoffs/masterwork-distillation.md.
+// from the browser. The panel's numbers come from the ONE sanctioned window —
+// the `masterwork_improvement_summary` SECURITY DEFINER RPC, which returns
+// DE-IDENTIFIED aggregates only (review counts, last-review time, per-lever
+// theme counts) — plus the public mandate registry and each agent's revision
+// count (agent.definition). It NEVER fabricates review activity.
 
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
@@ -77,18 +77,43 @@ export function HowItsImprovingPanel() {
                 {row.label}
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">{row.job}</p>
-              {row.agentVersion !== null && row.updatedAt !== null ? (
+              {row.reviewCount > 0 ? (
                 <p className="mt-2 text-[11px] text-muted-foreground">
+                  {row.reviewCount}{" "}
+                  {row.reviewCount === 1 ? "review" : "reviews"} of its real
+                  sessions
+                  {row.lastReviewAt
+                    ? ` — last ${whenDate(row.lastReviewAt)}`
+                    : ""}
+                  {row.findingsTotal > 0
+                    ? `. ${row.findingsTotal} ${
+                        row.findingsTotal === 1
+                          ? "improvement found"
+                          : "improvements found"
+                      }${
+                        row.findingsApplied > 0
+                          ? `, ${row.findingsApplied} applied`
+                          : ""
+                      }${
+                        row.findingsOpen > 0
+                          ? `, ${row.findingsOpen} awaiting a decision`
+                          : ""
+                      }.`
+                    : ". Nothing needed changing."}
+                </p>
+              ) : row.enrolled ? (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Enrolled — its first review runs as real sessions accumulate
+                </p>
+              ) : null}
+              {row.agentVersion !== null && row.updatedAt !== null ? (
+                <p className="mt-1 text-[11px] text-muted-foreground">
                   Revised {row.agentVersion}{" "}
                   {row.agentVersion === 1 ? "time" : "times"} — last{" "}
                   {whenDate(row.updatedAt)}
                   {row.lastChangeBySystem ? ", from a review" : ""}
                 </p>
-              ) : (
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Under standing review
-                </p>
-              )}
+              ) : null}
             </div>
           ))}
         </div>

@@ -42192,6 +42192,20 @@ export type Database = {
         Args: { p_message_id: string }
         Returns: undefined
       }
+      masterwork_improvement_summary: {
+        Args: { p_mandate_keys: string[] }
+        Returns: {
+          enrolled: boolean
+          findings_applied: number
+          findings_open: number
+          findings_total: number
+          last_review_at: string
+          lever_counts: Json
+          mandate_key: string
+          review_cadence: number
+          review_count: number
+        }[]
+      }
       mbr_add: {
         Args: {
           p_container_id: string
