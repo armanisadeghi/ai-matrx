@@ -55,6 +55,7 @@ import audioSessionsReducer from "@/lib/redux/slices/audioSessionsSlice";
 import transcriptsReducer from "@/features/transcripts/redux/transcriptsSlice";
 import kgSuggestionsReducer from "@/lib/redux/slices/kgSuggestionsSlice";
 import assistsReducer from "@/features/assists/redux/assistsSlice";
+import cloudBrowserReducer from "@/features/cloud-browser/redux/cloudBrowserSlice";
 import { codeFilesReducer } from "@/features/code-files/redux/slice";
 import codeWorkspaceReducer from "@/features/code/redux/codeWorkspaceSlice";
 import codeTabsReducer from "@/features/code/redux/tabsSlice";
@@ -371,6 +372,7 @@ export const slimReducerMap = {
 
   kgSuggestions: kgSuggestionsReducer,
   assists: assistsReducer,
+  cloudBrowser: cloudBrowserReducer,
 
   agentComparison: agentComparisonReducer,
   agentComparisonSettings: agentComparisonSettingsReducer,

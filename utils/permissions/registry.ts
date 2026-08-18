@@ -88,6 +88,17 @@ export interface ShareableResourceEntry {
  * not hand-tune individual fields.
  */
 export const SHAREABLE_RESOURCE_REGISTRY = {
+  browser_profile: {
+    resourceType: "browser_profile",
+    tableName: "profile",
+    schemaName: "browser",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Cloud Browser",
+    urlPathTemplate: "",
+    rlsUsesHasPermission: true,
+  },
   agent_run: {
     resourceType: "agent_run",
     tableName: "agent_run",
