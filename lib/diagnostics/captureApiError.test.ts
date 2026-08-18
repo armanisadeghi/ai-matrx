@@ -79,4 +79,32 @@ describe("captureApiError", () => {
       message: "Failed to fetch",
     });
   });
+
+  it("keeps a retryable Mandate code-truth outage out of persistence", () => {
+    window.history.replaceState({}, "", "/administration/agents/mandates");
+
+    captureApiError(
+      {
+        type: "network_error",
+        message: "Failed to fetch",
+        name: "TypeError",
+        raw: { name: "TypeError", message: "Failed to fetch" },
+      },
+      {
+        url: "https://server.app.matrxserver.com/mandates/code-truth",
+        method: "GET",
+        path: "/mandates/code-truth",
+      },
+    );
+
+    expect(getSnapshot()[0]).toMatchObject({
+      source: "api-network",
+      tier: "yellow",
+      tierRuleId: "mandate-code-truth-read-transport-loss",
+      route: "/administration/agents/mandates",
+      relation: "GET /mandates/code-truth",
+      code: "network_error",
+      message: "Failed to fetch",
+    });
+  });
 });

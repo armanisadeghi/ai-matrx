@@ -44,8 +44,10 @@ The list is the canonical `MatrxDataTable` (`components/official/matrx-data-tabl
 
 **The code-truth read allows 60 seconds to receive headers.** A cold server may
 still be preloading its process-stable source inventory. Failure remains visible
-in the amber stale-data banner and canonical `callApi` diagnostic; the console
-uses `console.warn`, never a duplicate captured `console.error`.
+in the amber stale-data banner and local yellow `callApi` diagnostic; the
+route-and-endpoint-scoped tier rule keeps this retryable read outage out of
+`system_error`. The console uses `console.warn`, never a duplicate captured
+`console.error`.
 
 - **A code/agent mismatch ships the complete choice, not a scolding:** map onto an existing agent variable when one exists; use a real agent default when the server reports one; spill to `user_input` with a permanent caution; open the agent builder to declare the variable; choose another agent; or copy the full source-aware fix brief. Unavailable options stay visible and say why.
 - **The rebind guard consumes the same live truth.** Every `computeRebindImpact` call receives `codeSuppliedVariables`; `buildRebindFixBrief` receives the runner class, source line, bound declarations, user-input fact, and every discovered call site.
@@ -76,9 +78,9 @@ The surface is also AGENT-WRITABLE, with exactly two targets — `select_mandate
 
 ## Change Log
 
-- 2026-08-18 — Gave code truth a 60-second connection window and removed its
-  duplicate console-error capture; aidream now preloads the immutable source
-  inventory.
+- 2026-08-18 — Gave code truth a 60-second connection window, kept retryable
+  transport loss local, and removed its duplicate console-error capture;
+  aidream now preloads the immutable source inventory.
 
 - 2026-08-17 — **Retired-slot producer guard.** The admin and user Mandate services read `agent.mandate` / `agent.mandate_binding`, call `/mandates/*`, and permanently redirect the two retired `/agents/slots` URLs. `retired-slot-producer.test.ts` prevents the removed tables or API prefix from returning to runtime code; the live PostgREST failures all predate the table-rename commit.
 - 2026-08-17 — **Renamed to Mandates.** `AgentSlotsConsole` → `MandatesConsole`, `SlotDetailPanel` → `MandateDetailPanel`, `SlotTestBench` → `MandateTestBench`, and every database/API contract now uses Mandate vocabulary. The code-truth fixture moves in lockstep with its generated OpenAPI type so the runtime guard cannot silently reject the server's real shape.

@@ -231,6 +231,38 @@ describe("classifyTier", () => {
     },
   );
 
+  it.each(["Failed to fetch", "Connection timed out after 15000ms"])(
+    "keeps recoverable Mandate code-truth transport loss local: %s",
+    (message) => {
+      const c = classifyTier(
+        captured({
+          source: "api-network",
+          route: "/administration/agents/mandates",
+          relation: "GET /mandates/code-truth",
+          code: "network_error",
+          message,
+        }),
+      );
+
+      expect(c.tier).toBe("yellow");
+      expect(c.ruleId).toBe("mandate-code-truth-read-transport-loss");
+    },
+  );
+
+  it("keeps Mandate code-truth transport loss red off its recovery surface", () => {
+    const c = classifyTier(
+      captured({
+        source: "api-network",
+        route: "/chat",
+        relation: "GET /mandates/code-truth",
+        code: "network_error",
+        message: "Failed to fetch",
+      }),
+    );
+
+    expect(c.tier).toBe("red");
+  });
+
   it("keeps an intentional CMS write-policy denial local and silent", () => {
     const c = classifyTier(
       captured({

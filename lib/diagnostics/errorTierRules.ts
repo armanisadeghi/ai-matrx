@@ -185,6 +185,19 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "mandate-code-truth-read-transport-loss",
+    tier: "yellow",
+    reason:
+      "The Mandates console keeps its DB-backed rows usable, marks code truth stale, and offers retry. The server records its own boot/import failures, so a browser transport loss on this read-only diagnostic stays local instead of entering the repair queue.",
+    addedAt: "2026-08-18",
+    match: {
+      source: "api-network",
+      code: "network_error",
+      relation: "GET /mandates/code-truth",
+      routeIncludes: "/administration/agents/mandates",
+    },
+  },
+  {
     id: "cms-write-policy-denial",
     tier: "yellow",
     reason:
