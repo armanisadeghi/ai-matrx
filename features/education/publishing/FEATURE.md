@@ -64,7 +64,8 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 - **Interrupted work remains recoverable.** On load, the admin recovers the newest private draft
   for each exam and each of the three generation plans, shows it only under its own exam, and
   offers the same source-verification pass again. A subsequent run generates only missing plans;
-  recovery never changes visibility, duplicates an existing draft, or skips a failed verdict.
+  recovery never changes visibility or duplicates an existing draft. Persisted verdicts are
+  reused only while `verifiedBack` exactly matches the current answer; an edit forces a new check.
 
 ## Open / next
 

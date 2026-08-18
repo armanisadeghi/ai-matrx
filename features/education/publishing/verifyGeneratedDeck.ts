@@ -2,6 +2,7 @@ import { runAgentExtraction } from "@/features/education/convert/runAgentExtract
 import {
   coerceTrustEnvelope,
   coerceVerifyResult,
+  readStoredVerification,
   type VerifyResult,
 } from "@/features/education/trust/types";
 import {
@@ -21,6 +22,20 @@ export interface DeckCardVerification {
 export interface DeckVerificationResult {
   ready: boolean;
   cards: DeckCardVerification[];
+}
+
+/** Reuse a paid verdict only while it is still about the card's exact answer. */
+export function currentStoredVerdict(
+  metadata: unknown,
+  currentBack: string,
+): VerifyResult | null {
+  const stored = readStoredVerification(metadata);
+  if (!stored || stored.verifiedBack !== currentBack) return null;
+  return {
+    status: stored.status,
+    explanation: stored.explanation,
+    suggestedFix: stored.suggestedFix,
+  };
 }
 
 /**
@@ -54,6 +69,7 @@ export async function verifyGeneratedDeck(
     const sourceExcerpt = excerptFromCitations(citations);
 
     let verdict: VerifyResult;
+    let shouldPersist = true;
     if (!citationIdsValid || !sourceExcerpt) {
       verdict = {
         status: "unverifiable",
@@ -62,29 +78,37 @@ export async function verifyGeneratedDeck(
         suggestedFix: null,
       };
     } else {
-      const extracted = await runAgentExtraction(dispatch, store, {
-        mandateKey: FC_MANDATES.verifyAgainstSource,
-        surfaceKey: "education-content-pipeline-verify",
-        sourceFeature: "education-flashcards",
-        variables: {
-          front: card.front,
-          back: card.back,
-          source_excerpt: sourceExcerpt,
-        },
-        timeoutMs: 90_000,
-      });
-      verdict = coerceVerifyResult(extracted.value) ?? {
-        status: "unverifiable",
-        explanation: "The verification mandate returned no usable verdict.",
-        suggestedFix: null,
-      };
+      const stored = currentStoredVerdict(card.metadata, card.back);
+      if (stored) {
+        verdict = stored;
+        shouldPersist = false;
+      } else {
+        const extracted = await runAgentExtraction(dispatch, store, {
+          mandateKey: FC_MANDATES.verifyAgainstSource,
+          surfaceKey: "education-content-pipeline-verify",
+          sourceFeature: "education-flashcards",
+          variables: {
+            front: card.front,
+            back: card.back,
+            source_excerpt: sourceExcerpt,
+          },
+          timeoutMs: 90_000,
+        });
+        verdict = coerceVerifyResult(extracted.value) ?? {
+          status: "unverifiable",
+          explanation: "The verification mandate returned no usable verdict.",
+          suggestedFix: null,
+        };
+      }
     }
 
-    await persistVerificationVerdict(
-      { kind: "fc_card", id: card.id },
-      verdict,
-      card.back,
-    );
+    if (shouldPersist) {
+      await persistVerificationVerdict(
+        { kind: "fc_card", id: card.id },
+        verdict,
+        card.back,
+      );
+    }
     results.push({ cardId: card.id, front: card.front, verdict });
     onProgress?.(results.length, loaded.data.cards.length);
   }
