@@ -32,6 +32,22 @@
       ],
       "previousEventHash": "e4d7d79da7f674e3c6d067ada1fd16f45e7fb6527354f61850735e56767d001b",
       "eventHash": "79176c7641e87b1b1f7dfc275331f5fbb56430aca534bdc21b8f7fed18e9cd76"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-18T13:18:50.575Z",
+      "actor": "codex-p4-worker",
+      "summary": "Detector-scope repair and 48-item exception projection are ready for exact-candidate adversarial review",
+      "evidence": [
+        "detector-tests:5/5-pass",
+        "default-scan:6949-files/674-lines/538-paired/136-review/0-parked",
+        "structural-scan:1230-files/85-lines/68-paired/17-review",
+        "type-check:31-unchanged-baseline-errors",
+        "approvals:48-items/102-lines"
+      ],
+      "previousEventHash": "79176c7641e87b1b1f7dfc275331f5fbb56430aca534bdc21b8f7fed18e9cd76",
+      "eventHash": "863d56cb879a253336b0996a8645d5af71c6bc593d1accb9e8f9f32c33b6b9b9"
     }
   ]
 }

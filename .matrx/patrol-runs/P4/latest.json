@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P4",
   "runId": "2026-08-18T131537Z",
-  "state": "fixing",
-  "updatedAt": "2026-08-18T13:15:39.178Z",
-  "summary": "Repair detector scope to ignore Next build parks and stale quarantines",
+  "state": "certifying",
+  "updatedAt": "2026-08-18T13:18:50.575Z",
+  "summary": "Detector-scope repair and 48-item exception projection are ready for exact-candidate adversarial review",
   "source": "2026-08-18T131537Z.json",
-  "eventHash": "79176c7641e87b1b1f7dfc275331f5fbb56430aca534bdc21b8f7fed18e9cd76"
+  "eventHash": "863d56cb879a253336b0996a8645d5af71c6bc593d1accb9e8f9f32c33b6b9b9"
 }
