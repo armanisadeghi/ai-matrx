@@ -21,6 +21,28 @@
 
 ## STATUS — live and verified (compressed)
 
+- **THE UNDERSTUDY ACTUALLY RUNS, AND IT SAYS WHAT IT IS (2026-08-18, from Arman pressing
+  Run it and getting a bare error: _"No explanation of what the fuck is going on… It doesn't
+  have anything to run"_).** It DID have something to run — the Understudy workflow existed.
+  **True root cause: the run's organization reached the run ROW but never the execution
+  AppContext.** `create_streaming_response` does not call `set_app_context`, and the FE injects
+  the org into the request BODY, so the detached scheduler ran org-less and every agent step
+  refused with "an agent run belongs to an organization" *while the row plainly showed one*.
+  Fixed in aidream with `durable_run_organization(run_id, ctx)` (run row = durable truth) on
+  both detached legs, plus `organization_id` on the start + both resume `with_overrides` —
+  the same ContextVar trap `conversation_id` and `initial_variables` were already fixed for.
+  **Two FE defects fixed with it:** (a) `getMasterworkRunVerdict` read only the `chief`/`editor`
+  nodes, so a SUCCESSFUL Understudy run (output lands on `understudy`) displayed "no ruling text
+  came back"; (b) every failure rendered as one bare red line — now every failure path routes
+  through the new **`features/workflow-runtime/run-failure-explanation.ts`** (plain headline
+  naming WHAT ran + a real next step + the technical cause kept reachable, never the headline),
+  reused by Studio/Encore via `TryMasterworkBox`'s `whatItRuns` prop.
+  **Copy (Arman: _"is that what an understudy is? Isn't it the exact opposite?"_):** the card
+  headlined "Your system is already running", claiming the star instead of the stand-in and
+  throwing away the canonical word. Now **"Your understudy is ready — try it"** / "A rough
+  stand-in that already does this whole job — from the N rules you've approved." / "It won't be
+  as good as the real thing — that's what building your Masterwork is for." The
+  `RulebookKpiStrip` live-dot tooltip overclaimed the same way and was fixed too.
 - **THE RULEBOOK PAGE WAS CONSOLIDATED — element count DOWN, one section per idea (2026-08-18,
   from Arman's live review: _"no one is paying attention to what the fuck is happening"_ /
   _"all of the things I'm putting in to get a result should be together"_).** `/masterwork/[id]`
