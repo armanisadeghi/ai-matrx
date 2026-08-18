@@ -23,6 +23,7 @@ import { EXAMS } from "@/features/education/data/exam-prep";
 import { certifyDeckAction } from "@/features/education/library/actions";
 import {
   EXAM_DECK_PLANS,
+  examGroundingQueries,
   groundingReady,
   type ExamDeckPlan,
 } from "../examContentPipeline";
@@ -110,8 +111,7 @@ export function ExamContentPipeline() {
                     "education-grounded-content-v1",
                 )
                 .map(
-                  (set) =>
-                    [set.id, fcService.getSetWithCards(set.id)] as const,
+                  (set) => [set.id, fcService.getSetWithCards(set.id)] as const,
                 ),
             );
             for (const set of existing.data) {
@@ -251,11 +251,18 @@ export function ExamContentPipeline() {
 
     for (const plan of plansToGenerate) {
       try {
-        const retrieval = await retrieveGroundedPassages({
-          query: `${exam.name}: ${plan.label}. ${plan.focus}`,
-          corpus: { mode: "explicit", sources: selectedSources },
-          limit: 12,
-        });
+        let retrieval: Awaited<
+          ReturnType<typeof retrieveGroundedPassages>
+        > | null = null;
+        for (const query of examGroundingQueries(exam.name, plan)) {
+          retrieval = await retrieveGroundedPassages({
+            query,
+            corpus: { mode: "explicit", sources: selectedSources },
+            limit: 12,
+          });
+          if (retrieval.status === "retrieved") break;
+        }
+        if (!retrieval) throw new Error("Closed-corpus retrieval did not run.");
         const readiness = groundingReady(retrieval);
         if (!readiness.ok) throw new Error(readiness.reason);
 

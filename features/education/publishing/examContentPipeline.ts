@@ -31,6 +31,21 @@ export const EXAM_DECK_PLANS: readonly ExamDeckPlan[] = [
   },
 ] as const;
 
+/**
+ * Search the focused authoring intent first, then the exact exam name as a
+ * narrow lexical-safe fallback. The RAG service deliberately degrades to FTS
+ * when query embedding is unavailable; a long all-term query can return zero
+ * in that mode even though the selected issuer corpus is healthy. The fallback
+ * remains inside the exact same explicit source list, so it never widens the
+ * grounding boundary.
+ */
+export function examGroundingQueries(
+  examName: string,
+  plan: ExamDeckPlan,
+): readonly [string, string] {
+  return [`${examName}: ${plan.label}. ${plan.focus}`, examName.trim()];
+}
+
 export function groundingReady(
   result: GroundingResult,
 ): { ok: true; chunkIds: string[] } | { ok: false; reason: string } {

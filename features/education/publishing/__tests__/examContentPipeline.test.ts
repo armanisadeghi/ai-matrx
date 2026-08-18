@@ -1,4 +1,8 @@
-import { EXAM_DECK_PLANS, groundingReady } from "../examContentPipeline";
+import {
+  EXAM_DECK_PLANS,
+  examGroundingQueries,
+  groundingReady,
+} from "../examContentPipeline";
 import type { GroundingResult } from "@/features/rag/api/grounding";
 
 const trust = {
@@ -13,6 +17,14 @@ describe("exam content pipeline", () => {
       "foundations",
       "reasoning",
       "practice",
+    ]);
+  });
+
+  test("keeps the degraded-search fallback inside the exact exam corpus", () => {
+    const plan = EXAM_DECK_PLANS[0];
+    expect(examGroundingQueries("AP Calculus", plan)).toEqual([
+      `AP Calculus: ${plan.label}. ${plan.focus}`,
+      "AP Calculus",
     ]);
   });
 
