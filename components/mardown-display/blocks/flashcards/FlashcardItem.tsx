@@ -3,7 +3,10 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/styles/themes/utils";
 import { ConfigurableMarkdownContent } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
-import type { MarkdownStyleConfig } from "@/components/mardown-display/chat-markdown/ConfigurableMarkdownContent";
+import {
+  getFaceTextSizeClass,
+  makeCardFaceStyle,
+} from "./CardFaceContent";
 import { FlashcardGradeButtonRow } from "@/features/flashcards/components/study/FlashcardGradeButton";
 import { VoiceTestButton } from "@/features/flashcards/fast-fire/voice-test/VoiceTestButton";
 import { FlashcardGoDeeperTrigger } from "./FlashcardGoDeeperTrigger";
@@ -162,103 +165,19 @@ const FlashcardItem: React.FC<FlashcardItemProps> = ({
     incorrect: { color: "bg-red-500", label: "Incorrect" },
   };
 
-  const getTextSizeClass = (text: string, isMultiLine: boolean = false) => {
-    const length = text.length;
-
-    if (isMultiLine) {
-      // multiline back: list items, numbered steps, etc.
-      if (length < 120) return "text-xl";
-      if (length < 200) return "text-lg";
-      if (length < 320) return "text-base";
-      if (length < 500) return "text-sm";
-      return "text-xs";
-    }
-
-    // single-line front or back
-    if (length < 20) return "text-3xl md:text-4xl";
-    if (length < 40) return "text-2xl md:text-3xl";
-    if (length < 80) return "text-xl md:text-2xl";
-    if (length < 140) return "text-lg md:text-xl";
-    if (length < 220) return "text-base md:text-lg";
-    if (length < 320) return "text-sm md:text-base";
-    return "text-xs md:text-sm";
-  };
-
-  // Build a style config that preserves all existing visual properties
-  // but adds LaTeX/RTL/markdown rendering capabilities.
-  const makeCardStyle = (
-    textSizeClass: string,
-    centered: boolean,
-  ): MarkdownStyleConfig => ({
-    typography: {
-      fontSizeLtr: textSizeClass,
-      fontSizeRtl: textSizeClass,
-      leading: centered ? "leading-relaxed" : "leading-snug",
-      tracking: "tracking-normal",
-    },
-    colors: {
-      // Keep theme-aware text — foreground for body, blue for accents
-      headingColor: "text-blue-600 dark:text-blue-400",
-      emColorLight: "text-blue-600",
-      emColorDark: "dark:text-blue-400",
-      codeBgLight: "bg-blue-100",
-      codeTextLight: "text-blue-800",
-      codeBgDark: "dark:bg-blue-900/30",
-      codeTextDark: "dark:text-blue-300",
-      blockquoteBgLight: "bg-blue-50",
-      blockquoteBgDark: "dark:bg-blue-950/20",
-      blockquoteBorderLight: "border-blue-200",
-      blockquoteBorderDark: "dark:border-blue-700",
-      blockquoteTextLight: "text-gray-700",
-      blockquoteTextDark: "dark:text-gray-300",
-      hrBorderLight: "border-gray-300",
-      hrBorderDark: "dark:border-gray-600",
-      checkboxBorderLight: "border-blue-400",
-      checkboxCheckedBgLight: "bg-blue-600",
-      editButtonColor: "text-transparent",
-      editButtonHoverColor: "hover:text-transparent",
-    },
-    spacing: {
-      wrapperMy: "my-0",
-      paragraphMb: "mb-1",
-      listMb: "mb-1",
-      listPl: "pl-6",
-      listItemMb: "mb-0.5",
-      blockquotePl: "pl-3",
-      blockquotePr: "pr-3",
-      blockquotePy: "py-2",
-      preMy: "my-1",
-      imgMy: "my-2",
-      hrMy: "my-1",
-      mathParagraphMb: "mb-2",
-      blankLineHeight: "h-[0.4em]",
-    },
-    headings: {
-      h1: "text-xl font-bold mb-1",
-      h2: "text-lg font-semibold mb-1",
-      h3: "text-base font-semibold mb-0.5",
-      h4: "text-sm font-semibold mb-0.5",
-    },
-    wrapperClassName: cn(
-      "font-medium text-gray-800 dark:text-gray-200 w-full",
-      centered ? "text-center" : "text-left",
-      textSizeClass,
-    ),
-  });
-
+  // Face style + auto-sizing live in CardFaceContent (the canonical per-face
+  // child module) so every face-rendering surface shares one source of truth.
   const frontStyleConfig = useMemo(
-    () => makeCardStyle(getTextSizeClass(front), true),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    () => makeCardFaceStyle(getFaceTextSizeClass(front), true),
     [front],
   );
 
   const backStyleConfig = useMemo(
     () =>
-      makeCardStyle(
-        getTextSizeClass(back ?? "", isMultiLineBack),
+      makeCardFaceStyle(
+        getFaceTextSizeClass(back ?? "", isMultiLineBack),
         !isMultiLineBack,
       ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [back, isMultiLineBack],
   );
 
