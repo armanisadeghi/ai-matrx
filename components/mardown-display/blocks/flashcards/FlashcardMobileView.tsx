@@ -32,6 +32,7 @@ import { CARD_KIND } from "@/features/flashcards/utils/cardVariants";
 import type { ReviewResult } from "@/features/flashcards/types";
 import type { FlashcardMobileCard } from "./flashcard-mobile-bridge";
 import { FlashcardFaceImage, hasFaceImage } from "./FlashcardFaceImage";
+import { markdownToPlainText } from "@/lib/markdown/plain-text";
 
 const ANIM_MS = 320;
 const TEXT_FADE_OUT_MS = 120;
@@ -200,14 +201,9 @@ const makeMobileCardStyle = (centered: boolean): MarkdownStyleConfig => ({
 const countLines = (text: string): number =>
   text.split("\n").filter((l) => l.trim().length > 0).length;
 
-// Plain-text preview of a card face for the filmstrip thumbnails — strips the
-// inline markdown markers studyFaces emits (e.g. a cloze front's `**[ … ]**`)
-// so thumbnails never show literal asterisks. NOT a general markdown renderer.
-const stripInlineMarkdown = (text: string): string =>
-  text
-    .replace(/\*\*([^*]*)\*\*/g, "$1")
-    .replace(/\*([^*]*)\*/g, "$1")
-    .replace(/`([^`]*)`/g, "$1");
+// Thumbnail previews use the platform's ONE markdown→plain-text helper
+// (`markdownToPlainText`). The local copy this replaced handled emphasis only,
+// so a formula card's thumbnail showed the learner a literal `\frac{dy}{dx}`.
 
 // ─────────────────────────────────────────────
 // FitTextFace — renders markdown content and auto-sizes font to fill container
@@ -623,7 +619,7 @@ const FilmstripScrubber: React.FC<{
               >
                 <span className="text-white text-[9px] font-medium text-center px-1.5 leading-tight line-clamp-5">
                   {(() => {
-                    const plain = stripInlineMarkdown(c.front);
+                    const plain = markdownToPlainText(c.front);
                     return plain.length > 60
                       ? plain.slice(0, 58) + "…"
                       : plain;

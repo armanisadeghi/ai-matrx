@@ -50,3 +50,34 @@ describe("markdownToPlainText", () => {
     expect(markdownToPlainText(plain)).toBe(plain);
   });
 });
+
+describe("markdownToPlainText — math", () => {
+  it("makes a fraction readable instead of showing raw TeX", () => {
+    // The exact defect WP12 reported on the mobile card scrubber.
+    expect(markdownToPlainText("\\(\\frac{dy}{dx}\\)")).toBe("dy/dx");
+  });
+
+  it("handles display math and common operators", () => {
+    expect(markdownToPlainText("\\[a \\times b \\leq c\\]")).toBe("a × b ≤ c");
+    expect(markdownToPlainText("$$\\sqrt{x}$$")).toBe("√(x)");
+    expect(markdownToPlainText("\\(x^{2} + \\pi\\)")).toBe("x^2 + π");
+  });
+
+  it("resolves one level of nesting", () => {
+    expect(markdownToPlainText("\\(\\frac{\\frac{a}{b}}{c}\\)")).toBe("a/b/c");
+  });
+
+  it("leaves prose backslashes and currency alone", () => {
+    // Math transforms must never run outside a math region.
+    expect(markdownToPlainText("Use C:\\Users\\name for the path")).toBe(
+      "Use C:\\Users\\name for the path",
+    );
+    expect(markdownToPlainText("It costs $5 and $10")).toBe(
+      "It costs $5 and $10",
+    );
+  });
+
+  it("still unwraps emphasis around math", () => {
+    expect(markdownToPlainText("**\\(\\frac{1}{2}\\)**")).toBe("1/2");
+  });
+});
