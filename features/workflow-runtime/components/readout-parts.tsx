@@ -40,6 +40,7 @@ import {
   selectRunStatus,
   selectRunStickyFacts,
 } from "../redux/workflow-runs.selectors";
+import { TERMINAL_RUN_STATUSES } from "../types";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
 
 export const PHASE_LABEL: Record<string, string> = {
@@ -194,14 +195,35 @@ export function InvocationBody({
   invocation: NodeInvocationState;
   /**
    * R3 dual-source preference (Readout.prefer): "live" keeps the streaming
-   * lane while one is attached; "persisted" renders the settled output the
-   * moment it exists, even if a lane is still attached (a formatted document
-   * usually wants this). Default "live".
+   * lane through the RUNNING window; "persisted" renders the settled output
+   * the moment it exists. Default "live".
+   *
+   * NEITHER survives the RUN finishing. The settled value is kind-checked and
+   * routes to a real component; the lane and the durable tail are that same
+   * content in its rawest form. Holding them past the end of the run is why a
+   * finished Study Pack run showed a learner the flashcards agent's raw
+   * streamed JSON — while a page REFRESH of that same run, which has no lane
+   * to hold, showed a proper table (2026-08-18). So the difference between the
+   * two modes is WHEN the swap happens, never whether it does: "persisted"
+   * swaps the moment that step settles, "live" keeps the watching experience
+   * until the whole run is over.
    */
   prefer?: "live" | "persisted";
 }) {
+  // A settled step with SOMETHING in its output. Emptiness matters: a node
+  // that completed with `{}` has nothing to swap to, so its lane keeps the
+  // floor rather than trading readable text for an empty state.
   const settledOutput =
-    invocation.phase === "settled" && invocation.output !== null;
+    invocation.phase === "settled" &&
+    invocation.output !== null &&
+    Object.keys(invocation.output).length > 0;
+  // When the settled document takes over from the raw feed. "persisted" hands
+  // over as soon as this step has one; "live" lets the reader keep watching
+  // and hands over when the RUN ends. A terminal run always hands over — that
+  // is the half that was missing.
+  const runStatus = useAppSelector(selectRunStatus(runId));
+  const runOver = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
+  const documentWins = settledOutput && (prefer === "persisted" || runOver);
   const working =
     invocation.phase === "running" || invocation.phase === "retrying";
   // A lane is only the truth once it has actually carried something. The
@@ -220,9 +242,7 @@ export function InvocationBody({
   // while the heartbeat tail keeps arriving. So the lane speaks only once it
   // has actually carried a chunk; otherwise the tail gets its turn below.
   const laneCarriedContent = invocation.chunksReceived > 0;
-  const laneOwnsDisplay =
-    Boolean(invocation.laneRequestId) &&
-    !(prefer === "persisted" && settledOutput);
+  const laneOwnsDisplay = Boolean(invocation.laneRequestId) && !documentWins;
   if (laneOwnsDisplay && laneCarriedContent) {
     return (
       <LiveRunDisplay
@@ -232,7 +252,10 @@ export function InvocationBody({
       />
     );
   }
-  if (invocation.textTail && !(prefer === "persisted" && settledOutput)) {
+  // Same rule as the lane: the durable tail is raw text, and a settled output
+  // is the same content routed to a real component. The tail gets its turn
+  // only until the document wins.
+  if (invocation.textTail && !documentWins) {
     return (
       <p className="whitespace-pre-wrap text-xs text-muted-foreground">
         {invocation.textTail}
