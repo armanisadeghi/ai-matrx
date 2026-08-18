@@ -263,24 +263,17 @@
   marketing copy), authed home with live data, `/masterwork/all`, `/masterwork/encore` +
   run page, mobile 375, dark. Old `/encore` 404s; guest `/masterwork/all` → `/masterwork`;
   guest `/masterwork/encore` → login with destination preserved.
-- **🚨 THE HINDSIGHT READ GAP (2026-08-17) — "How it's improving" renders the honest floor.**
-  Arman ruled the Expert-facing panel in; the intended read (recent reviews, what they found,
-  what changed) is NOT browser-readable today for two independent reasons: (1) the `hindsight`
-  schema is not in PostgREST's exposed schemas (`schema_truth_snapshot.exposed_schemas`), so
-  `supabase.schema("hindsight")` fails before RLS is even consulted; (2) RLS scopes
-  `hindsight.enrollment` (and its components via `enrollment_id`) to `created_by` /
-  `iam.has_access` — the five Masterwork enrollments are `visibility='personal'` rows owned by
-  two admin accounts, and the two views (`v_change_history`, `v_finding_effectiveness`) are
-  `security_invoker`, so they don't launder it. The aidream `/hindsight/*` REST surface is
-  ownership/admin-scoped the same way, and adding an endpoint was explicitly out of this lane's
-  scope. The shipped panel therefore reads ONLY truth a user can reach: `agent.mandate` (public
-  rows, via `fetchMandatePins`) + `agent.definition` revision count / last-changed date /
-  `updated_by_tier|updated_by_system` for the five bound agents — zero fabricated activity.
-  **Closing it properly** = a deliberate access decision (likely a `SECURITY DEFINER` aggregate
-  RPC returning de-identified review summaries for the five Masterwork mandates — never widening
-  the enrollments to public, which would expose reviewer transcripts), then swapping
-  `fetchImprovementRows` to consume it. Files: `features/masterwork/home/service.ts`
-  (§ "How it's improving") + `HowItsImprovingPanel.tsx`.
+- **✅ THE HINDSIGHT READ GAP — CLOSED (2026-08-17).** The designed fix shipped: the
+  `masterwork_improvement_summary` `SECURITY DEFINER` RPC
+  (`migrations/masterwork_improvement_summary_rpc.sql`, applied + ledgered) returns
+  DE-IDENTIFIED aggregates for exactly the `masterwork.*` mandates' Hindsight enrollments —
+  review counts, last-review time, applied/open finding counts, per-lever theme counts. Never
+  user ids, never transcript/reviewer text; EXECUTE revoked from anon; the enrollments
+  themselves stay closed (`visibility='personal'`, hindsight not PostgREST-exposed — unchanged
+  by design). `fetchImprovementRows` consumes it and the panel renders real review numbers
+  (browser-verified on /masterwork: the checker shows "1 review — 3 improvements found, 1
+  applied, 2 awaiting a decision"). The RPC is scoped `mandate_key like 'masterwork.%'` and
+  must never become a general Hindsight reader.
 
 ## Decisions — RULED and EXECUTED 2026-08-17
 
@@ -400,7 +393,12 @@ critique lane · 5. AI-transcript import (provider gallery + guides + zero-uploa
     2026-08-17; see STATUS). (a)+(b) remain open.
 11. ✅ Hardest-Case Debrief — Critical Decision Method over one war story (interview
     variant) — SHIPPED 2026-08-17 (chip + Scout CDM instructions; see STATUS)
-12. Exception Hunter — "when does this rule NOT apply?" per approved rule
+12. ✅ Exception Hunter — "when does this rule NOT apply?" — SHIPPED 2026-08-17 as
+    checkup producer #2 (`aidream/services/masterwork_checkup/exception_hunter.py`):
+    new Mandate `masterwork.exception_hunter` (DB-defined agent, Opus-class, zero
+    findings praised), one `register_producer` call, the SAME evidence gate
+    (`auditor.validate_finding`), `add`/`modify`-only findings; approve/dismiss free
+    via the Final Checkup UI. Run live on Rulebook `8d1d4f08-…`
 13. Triad game — which two of three cases are alike, and why (repertory grid)
 14. Prediction Ledger — cheap predictions on real cases, scored against outcomes
 15. ✅ Vacation Trigger — succession-framed interview variant — SHIPPED 2026-08-17 (chip +
@@ -420,7 +418,8 @@ ritual (delivery vehicle for 9/12 and the failure lever, not a lane).
   correctedContent/prose on every thumbs click — no new table).
 - **Harness reuse:** #9 Bad Example probe = Audition run in reverse-emphasis (same judge →
   gaps → draft rules); #12 Exception Hunter = one new producer in the `masterwork_checkup`
-  harness (parallel-run, stream findings, approve/dismiss all reusable); #6 Meeting
+  harness (parallel-run, stream findings, approve/dismiss all reusable) — ✅ built exactly
+  that way 2026-08-17; #6 Meeting
   Scavenger reads the transcripts/War Room `studio_sessions` the platform already produces —
   the missing piece is only the judgment-moment detector.
 - **#7 Shadow-the-inbox's diff primitive already exists**: `useOutputFeedback.captureCorrection`
