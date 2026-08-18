@@ -13,6 +13,7 @@ Give non-technical users one public, first-party place to choose, download, and 
 - `app/(public)/download/page.tsx` — public route and metadata.
 - `MatrxLocalDownloadLanding.tsx` — OS guidance, download cards, Mac chooser, and installation steps.
 - `release.ts` — the **one release manifest** for version and installer URLs; other product surfaces link to `/download`, never GitHub’s asset list.
+- `components/matrx/PublicHeader.tsx` and `PublicFooter.tsx` — sitewide public doors to the guide.
 
 ## Rules
 
@@ -30,4 +31,4 @@ This surface composes the public header/footer, `Button`, theme tokens, and the 
 
 ## Change log
 
-- `2026-08-17` — Added the public download and install landing page for release 1.4.32, including OS recommendation and plain-language Mac selection.
+- `2026-08-17` — Added the public download and install landing page for release 1.4.32, OS recommendation, plain-language Mac selection, and sitewide header/footer doors.

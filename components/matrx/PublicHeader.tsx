@@ -3,19 +3,26 @@ import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { LogIn } from "lucide-react";
+import { Download, LogIn } from "lucide-react";
 import { PublicHeaderAuth } from "./PublicHeaderAuth";
 import { PublicHeaderFeedback } from "./PublicHeaderFeedback";
 import { PublicHeaderThemeToggle } from "./PublicHeaderThemeToggle";
 import { CanvasShellHeaderToggle } from "@/features/canvas/core/CanvasHeaderToggle";
-import { PUBLIC_HEADER_ICON_BUTTON, PUBLIC_HEADER_ROW } from "./publicHeaderChrome";
+import {
+  PUBLIC_HEADER_ICON_BUTTON,
+  PUBLIC_HEADER_ROW,
+} from "./publicHeaderChrome";
+import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
 
 function AuthFallback() {
   return (
     <Button
       variant="ghost"
       size="sm"
-      className={cn(PUBLIC_HEADER_ICON_BUTTON, "w-auto gap-1.5 px-3 text-xs opacity-50 cursor-default")}
+      className={cn(
+        PUBLIC_HEADER_ICON_BUTTON,
+        "w-auto gap-1.5 px-3 text-xs opacity-50 cursor-default",
+      )}
       disabled
     >
       <LogIn className="h-3.5 w-3.5" />
@@ -34,11 +41,19 @@ export function PublicHeader() {
       data-public-header
       className="sticky top-0 z-50 w-full matrx-glass-thin-border"
     >
-      <div className={cn(PUBLIC_HEADER_ROW, "flex w-full items-center justify-between px-4")}>
+      <div
+        className={cn(
+          PUBLIC_HEADER_ROW,
+          "flex w-full items-center justify-between px-4",
+        )}
+      >
         <Link
           href="/"
           aria-label="AI Matrx home"
-          className={cn(PUBLIC_HEADER_ICON_BUTTON, "group -ml-3 flex items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring")}
+          className={cn(
+            PUBLIC_HEADER_ICON_BUTTON,
+            "group -ml-3 flex items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          )}
         >
           <Image
             src="/matrx/matrx-icon.svg"
@@ -55,6 +70,22 @@ export function PublicHeader() {
             id="public-header-actions"
             className="flex min-w-0 items-center"
           />
+
+          <Link href={MATRX_LOCAL_DOWNLOAD_PATH}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-7 gap-1.5 rounded-lg px-2 text-xs font-medium matrx-glass-thin-border sm:px-3",
+                "text-zinc-600 dark:text-zinc-400",
+                "hover:text-zinc-900 dark:hover:text-zinc-100",
+                "transition-all duration-200",
+              )}
+            >
+              <Download className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Download</span>
+            </Button>
+          </Link>
 
           <Link href="/canvas/discover" className="hidden md:block">
             <Button

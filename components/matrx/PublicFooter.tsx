@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { siteConfig } from "@/config/extras/site";
+import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
 
 const FOOTER_LINKS = [
+  { href: MATRX_LOCAL_DOWNLOAD_PATH, label: "Download" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/privacy-policy", label: "Privacy Policy" },
   { href: "/terms-of-service", label: "Terms of Service" },
