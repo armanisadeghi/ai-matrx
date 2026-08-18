@@ -42,6 +42,11 @@
 // SW global typing
 // ---------------------------------------------------------------------------
 
+import {
+    isImmutableAssetRequest,
+    isStudyNavigationRequest,
+} from "./offline-routing";
+
 declare const self: ServiceWorkerGlobalScope;
 
 const SW_VERSION = "1";
@@ -69,10 +74,100 @@ const config: {
 // Lifecycle
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Offline study (WP1 / IC-8 client half)
+// ---------------------------------------------------------------------------
+// THIS IS THE PLATFORM'S ONLY SERVICE WORKER. Offline study lives here rather
+// than in a second worker because a second registration at scope "/" would
+// REPLACE this one and silently kill blob caching, while registering at
+// "/education" would leave education pages controlled by a worker that does no
+// blob caching. Either way media breaks with no error. (D-WP1-4.)
+//
+// The two additions are deliberately the only two shapes that cannot regress
+// the passive-SW contract documented on the fetch listener:
+//
+//   1. NAVIGATIONS to /education/* — network FIRST. The network response is
+//      always preferred; the cache is consulted only after the network has
+//      actually failed. A learner on a train gets the app shell instead of the
+//      browser's dinosaur.
+//   2. /_next/static/* — cache first. Those URLs are content-hashed and
+//      immutable, so a cache hit can never be stale, and they are what the
+//      shell needs to boot with no signal.
+//
+// Everything else still falls through untouched.
+const SHELL_CACHE = "matrx-study-shell-v1";
+const OFFLINE_URL = "/education/offline";
+
+async function precacheShell(): Promise<void> {
+    try {
+        const cache = await caches.open(SHELL_CACHE);
+        await cache.add(new Request(OFFLINE_URL, { cache: "reload" }));
+    } catch {
+        // A precache miss must never block SW installation — the fallback
+        // simply won't be available until a later visit warms it.
+    }
+}
+
+// The two predicates live in `offline-routing.ts` and are unit-tested there —
+// they are the part that can break the whole app if widened, and a service
+// worker cannot be tested directly.
+function isStudyNavigation(request: Request, parsed: URL): boolean {
+    return isStudyNavigationRequest(
+        request.method,
+        request.mode,
+        parsed.origin,
+        parsed.pathname,
+        self.location.origin,
+    );
+}
+
+function isImmutableAsset(request: Request, parsed: URL): boolean {
+    return isImmutableAssetRequest(
+        request.method,
+        parsed.origin,
+        parsed.pathname,
+        self.location.origin,
+    );
+}
+
+async function handleStudyNavigation(request: Request): Promise<Response> {
+    try {
+        const response = await fetch(request);
+        // Warm the fallback with a real shell whenever we successfully load
+        // one, so the offline page reflects the deployed build.
+        if (response.ok) {
+            const cache = await caches.open(SHELL_CACHE);
+            void cache.put(OFFLINE_URL, response.clone());
+        }
+        return response;
+    } catch {
+        const cached =
+            (await caches.match(request)) ?? (await caches.match(OFFLINE_URL));
+        if (cached) return cached;
+        throw new Error("offline and no cached study shell");
+    }
+}
+
+async function handleImmutableAsset(request: Request): Promise<Response> {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    const response = await fetch(request);
+    if (response.ok) {
+        const cache = await caches.open(SHELL_CACHE);
+        void cache.put(request, response.clone());
+    }
+    return response;
+}
+
 self.addEventListener("install", (event) => {
     // skipWaiting so a new SW version takes over without a manual reload.
     // The cache schema is versioned independently inside IndexedDB.
-    event.waitUntil((self as ServiceWorkerGlobalScope).skipWaiting());
+    event.waitUntil(
+        (async () => {
+            await precacheShell();
+            await (self as ServiceWorkerGlobalScope).skipWaiting();
+        })(),
+    );
 });
 
 self.addEventListener("activate", (event) => {
@@ -424,13 +519,29 @@ self.addEventListener("fetch", (event) => {
     // The passive-SW pattern: for everything we don't want to handle, DO
     // NOTHING in the listener. The browser performs the normal fetch and
     // the SW is invisible.
-    if (!config.userId || !config.backendUrl) return;
     let parsed: URL;
     try {
         parsed = new URL(event.request.url);
     } catch {
         return;
     }
+
+    // Offline study — handled BEFORE the blob-cache config gate, because a
+    // learner opening the installed app with no signal has no page to push
+    // `set-config` from. Both branches prefer the network and fall back only
+    // on a real failure (navigations) or serve immutable hashed assets
+    // (chunks), so neither can produce the stale-or-eaten-response class the
+    // comment above warns about.
+    if (isStudyNavigation(event.request, parsed)) {
+        event.respondWith(handleStudyNavigation(event.request));
+        return;
+    }
+    if (isImmutableAsset(event.request, parsed)) {
+        event.respondWith(handleImmutableAsset(event.request));
+        return;
+    }
+
+    if (!config.userId || !config.backendUrl) return;
     if (!isPotentiallyOurs(event.request, parsed)) return;
 
     event.respondWith(
