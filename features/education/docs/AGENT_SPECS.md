@@ -1,5 +1,11 @@
 # Education / Flashcards — AI Agent Specs
 
+> ⚠️ **Invocation shape is stale (WP12, 2026-08-17):** `launchAgentExecution({ agentId })` with a
+> raw UUID violates the mandate law. WP2 is migrating every education call site to
+> `{ mandateKey }` — the roster + call shapes are IC-1/IC-2 in
+> `common-docs/projects/education-platform/INTEGRATION_MAP.md`. The response-schema contracts
+> below remain valid.
+
 Build-ready contracts for every AI step in the Flashcards + FastFire system. Each agent is invoked
 from the FE via `launchAgentExecution({ agentId, runtime: { variables, userInput? }, config: {...} })`
 and read back with `selectFirstExtractedObject(requestId)`. The FE codes against the **response

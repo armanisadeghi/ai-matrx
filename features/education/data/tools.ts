@@ -1,12 +1,14 @@
 // features/education/data/tools.ts
 //
 // APPLICATION TOOLS registry → /education/<slug> (the interactive app layer).
-// Every entry currently renders the EduComingSoon placeholder. When a tool is
-// built for real it graduates to the agents-route server-shell pattern (server
-// layout + cache() + Redux hydrator + per-page loading.tsx) at the same slug.
+// All 16 tools are BUILT and render real routes — nothing here renders a
+// placeholder. `status: "live"` means a working desktop happy path exists;
+// mobile parity and depth vary per tool (see the education-platform program in
+// common-docs for the measured gaps and the IC-13 claim register).
 //
 // `capabilities` is a BUILDER CHECKLIST, not marketing. `visionRef` pins each
-// tool to its source-of-truth section in VISION-education-hub.md.
+// tool to its source-of-truth section in the canonical vision
+// (common-docs/projects/education-platform/VISION.md).
 
 import { Layers, Flame, GraduationCap, ListChecks, FileCheck2, Headphones, Network, Brain, NotebookPen, CalendarClock, Gamepad2, Speech, ScanText, Users, BadgeCheck } from "lucide-react";
 import type { EduToolEntry } from "../types";

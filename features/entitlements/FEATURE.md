@@ -382,9 +382,9 @@ real (F6, 2026-07-13).
 
 | Capability | Consumer surface | Owner |
 |---|---|---|
-| `education.generate_cards` | flashcards create-from-source/topic — guard wired; **commit pending** | flashcards agent |
-| `education.card_enrichment` | flashcards enrich/enhance — guard wired; **commit pending** (meter by card count via `commit({ quantity })`) | flashcards agent |
-| `education.live_grade` | flashcards live grader (`FastFireSetup`) — guard wired; **commit pending** | flashcards agent |
+| `education.generate_cards` | flashcards create-from-source/topic — guard + commit on success (`CreateFromTopic.tsx:166`, `CreateFromSource.tsx:261`) | flashcards agent |
+| `education.card_enrichment` | flashcards enrich/enhance — guard + commit on success (`EnhanceSetDialog.tsx:180,200`; single-unit commit — per-card `commit({ quantity })` metering NOT implemented) | flashcards agent |
+| `education.live_grade` | flashcards live grader — guard + commit once per started session (`FastFireSetup.tsx:476`) | flashcards agent |
 | `education.notes_generate` | notes generation (shared `ConvertContentDialog`) — commit on success | notes agent |
 | `education.ingest_document` | onboard `StartHero` (`useKitGeneration.run` → bool) — commit on success | this feature |
 | `education.mindmap_generate` | `MindMapNew` — commit on success | this feature |
@@ -452,7 +452,8 @@ real (F6, 2026-07-13).
   whose success is swallowed internally now return a `boolean` so the callsite commits only on
   real success (failed generation burns no quota). Tutor meters per user message via a
   count-delta effect (composer is agents-owned, no submit hook). Verified live against
-  `txzxabzwovsujtloxrus`. Flashcards consumers await their `commit()` (flashcards agent).
+  `txzxabzwovsujtloxrus`. Flashcards consumers' `commit()` landed since (verified wired
+  2026-08-17, WP12 — see capability table above).
 - **2026-07-07** — Day-1 contract shipped: `features/entitlements/` (types, registry, hook,
   service, slice, selectors), registered `entitlements` reducer, permissive stub for all 10
   capabilities. Unblocks P1–P5/P9/P10.

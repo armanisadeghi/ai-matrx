@@ -1,5 +1,10 @@
 # How to assign a project — copy-paste prompt
 
+> 🚨 **SUPERSEDED 2026-08-17 (WP12) — DO NOT STAFF FROM THIS FILE.** All 12 projects below
+> shipped; the assignment table is historical (its blank rows do not mean unstaffed work).
+> Education staffing now happens ONLY through
+> `common-docs/projects/education-platform/ASSIGN.md` (twelve WP work packages).
+
 Start a **fresh session** per project and paste the prompt below, filling the two `{...}` slots.
 Don't add more context than this — the briefs are written to be self-sufficient, and extra
 instructions in the prompt tend to drift from the doc. If you have a preference the brief leaves

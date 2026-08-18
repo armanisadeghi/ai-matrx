@@ -1,8 +1,12 @@
 # FEATURE.md — `education/media` (Generated Study Media: Audio Study + Mind Maps)
 
-**Status:** `active` (FE complete; live generation blocked by a backend outage — see Known gaps)
+**Status:** `active` (FE complete; **audio generation fails ~86% in production** — live
+`study_media` audio rows 2026-08-17: 5 error / 1 generating / 1 ready. Root cause is the aidream
+TTS stage, `tts_stall_timeout`, aidream FOUND_DEFECTS D40; there is **no user-visible retry**.
+Mind maps / summaries / memory aids generate fine. WP8 of the education-platform program owns the
+pipeline fix — `common-docs/projects/education-platform/`)
 **Tier:** `2`
-**Last updated:** `2026-07-10`
+**Last updated:** `2026-08-17`
 
 ---
 
@@ -96,6 +100,9 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
 
 ## Change log
 
+- **2026-08-17** — **Status header corrected (WP12, education-platform program):** "blocked by a
+  backend outage" was stale — generation runs but the audio TTS stage fails ~86% live (5 error /
+  1 generating / 1 ready measured). WP8 owns the pipeline fix + user-visible retry.
 - **2026-08-11** — **Mind maps and audio review stream (THE FLOATING LAW).** `useGenerateMindMap` runs through `useFloatingAgentRun`, so the `diagram_spec` renders as its kind component in the floating `LiveRunWindow` token-by-token (live-verified on `/education/mind-maps/new`). `AudioReviewSession`'s per-answer grading renders `LiveRunDisplay` inline in the centered grading state — the earned exception: mid-session the wait IS the whole screen, so a floating window over an empty voice screen would be worse.
 - **2026-07-14** — Cross-surface orphan-on-interrupt fix (same pattern as
   `education/spoken-practice`'s GAP 2, `54d379d53`). `AudioReviewSession.endSession` already

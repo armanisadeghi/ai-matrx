@@ -1,6 +1,12 @@
 # Entitlements, Billing & Conversion Funnel — Requirements
 
-**Status:** proposal / not started · **Owner:** TBD (dedicated workstream) · **Created:** 2026-06-29
+> 🚨 **SUPERSEDED 2026-08-17 (WP12): this system SHIPPED as P8.** The live contract is
+> `features/entitlements/FEATURE.md` (14 education capabilities registered, guards + commits
+> wired; `enforced: false` pending Arman's free-tier numbers). `/pricing` is DB-backed and
+> Stripe Connect is on prod. Remaining monetization work is owned by **WP10** of
+> `common-docs/projects/education-platform/`. This doc is design history only.
+
+**Status:** ~~proposal / not started~~ shipped (see banner) · **Created:** 2026-06-29
 
 > This is a **forked workstream**, deliberately separated from the Education Hub build so it can be solidified on its own. The Education Hub (and every other feature) only ships **display-only** funnel markers today; this system is the real enforcement + billing layer the whole platform will adopt. A separate agent should own this end to end. Do not bolt billing logic into individual features — build the shared system described here and have features consume it.
 

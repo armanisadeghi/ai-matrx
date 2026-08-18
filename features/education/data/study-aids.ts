@@ -263,7 +263,7 @@ export const STUDY_AIDS: AxisEntry[] = [
       "Auto-generated acronyms, rhymes, analogies, and memory-palace scaffolding that surface right alongside your toughest cards.",
     icon: Lightbulb,
     letter: "Mn",
-    status: "coming-soon",
+    status: "live",
     accessTier: "free",
     related: { tools: ["flashcards"] },
     sections: [
@@ -338,7 +338,7 @@ export const STUDY_AIDS: AxisEntry[] = [
       "AI-built study guides that organize a whole subject or unit into a single reviewable document — with links to drill each section.",
     icon: ScrollText,
     letter: "Sg",
-    status: "coming-soon",
+    status: "live",
     accessTier: "free",
     related: { tools: ["notes"], content: ["ap-world-history"] },
     sections: [

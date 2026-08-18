@@ -28,14 +28,15 @@
 
 ## Built
 - Single-card "Test me" on the classic study surface + the adaptive Review-due
-  surface (via `StudyDeck`'s `renderCardExtra`, pulling each card's cached
-  spoken-front so the question is asked aloud). Records a `study_attempt`
-  (`method='voice_test'`) toward mastery.
+  surface (via `StudyDeck`'s `voiceTestForCard` prop — passed by
+  `ReviewDueSurface`, `WeakAreaDrillSurface`, `LearnSurface`, `StudySurface` —
+  pulling each card's cached spoken-front so the question is asked aloud).
+  Records a `study_attempt` (`method='voice_test'`) toward mastery.
+- **Chat flashcard blocks** — `<VoiceTestButton>` renders per card in the in-chat
+  renderer (`components/mardown-display/blocks/flashcards/FlashcardItem.tsx:241`).
 
 ## Next — fan out the button (cheap; it's a drop-in)
 - Set-detail card grid: a "Test me" per card.
-- **Chat flashcard blocks** (`components/mardown-display/blocks/flashcards/`): the
-  in-chat card renderer — add `<VoiceTestButton card={…} />`.
 - **Window panels**: render `SingleCardVoiceTest` directly in a panel, or register
   a `cardVoiceTest` overlay so it's dispatchable from anywhere without a button.
 - A "quiz me on this whole set, one at a time" loop = `VoiceTestButton` walking a

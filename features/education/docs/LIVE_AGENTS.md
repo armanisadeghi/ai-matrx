@@ -1,3 +1,20 @@
+> ⚠️ **COVERAGE + FRESHNESS WARNING (WP12, 2026-08-17).** This file is a raw agent-export dump
+> from 2026-06-30, and it is INCOMPLETE and PARTLY STALE:
+>
+> - It documents only the 10 flashcards agents + the trust/tutor/assessment tables. It is
+>   **missing ~14 live education agents**: memory aids ×2 (`memory/agents.ts`), spoken-practice
+>   designer/language-designer/grader/pronunciation/reviewer ×5 (`spoken-practice/agents.ts`),
+>   handwritten grader (`assessment/data/agents.ts:30`), planner ×2 (`study/planner/agents.ts`),
+>   notes (`notes/agents.ts`), convert ×2 (`convert/agents.ts`), mind map
+>   (`media/mindmap/agents.ts`).
+> - The model lines below say `gemini-3.5-flash`; the live agents run **Gemini 3.7 Flash**
+>   (verified against the live DB 2026-08-17).
+>
+> **The canonical, complete roster is IC-1 in
+> `common-docs/projects/education-platform/INTEGRATION_MAP.md`** — WP2 is migrating every raw
+> UUID here to a Mandate; when that lands, this dump gets deleted in favour of the mandate
+> console. Do not extend this file.
+
 <agent export="basics">
 <context>
 <location>AI Matrx — Agent View</location>

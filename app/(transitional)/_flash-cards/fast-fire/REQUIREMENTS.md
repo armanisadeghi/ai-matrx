@@ -1,6 +1,13 @@
 # Fast Fire Flashcards — Requirements, Vision & Ground-Up Build Spec
 
-> **Status: NOT BUILT. Build from scratch, correctly, coherent from day one.**
+> 🚨 **SUPERSEDED 2026-08-17 (WP12): FastFire IS BUILT and live** — at
+> `features/flashcards/fast-fire/` on the `education` schema (continuous AudioWorklet capture,
+> parallel spoken grading, batch "professor" reviewer), reached from `/education` — NOT at the
+> parked route this doc names. The one headline item still missing is **live mid-session
+> adaptation**, owned by **WP3** of `common-docs/projects/education-platform/` (gate G5).
+> Read this doc as vision history only; the canonical vision is that project's `VISION.md` §3.
+>
+> *(Original header:)* **Status: NOT BUILT. Build from scratch, correctly, coherent from day one.**
 >
 > These are the primary requirements for the eventual rebuild. We are **not** patching the old
 > route and **not** binding to any existing flashcard tables. Everything the platform has today

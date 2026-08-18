@@ -491,7 +491,7 @@ export const FEATURES: AxisEntry[] = [
       "AI builds a day-by-day plan from your exam dates, mastery levels, and available time — and re-plans automatically when a practice test reveals a gap.",
     icon: CalendarClock,
     letter: "Pl",
-    status: "coming-soon",
+    status: "live",
     accessTier: "trial",
     related: { tools: ["practice-tests"] },
     sections: [
@@ -528,7 +528,7 @@ export const FEATURES: AxisEntry[] = [
       "Per-card accuracy, mastery percentages, weak-area surfacing, and pre/post learning-gain reporting — the outcome metric institutions actually buy.",
     icon: LineChart,
     letter: "Pr",
-    status: "coming-soon",
+    status: "live",
     accessTier: "free",
     related: { tools: ["practice-tests"] },
     sections: [

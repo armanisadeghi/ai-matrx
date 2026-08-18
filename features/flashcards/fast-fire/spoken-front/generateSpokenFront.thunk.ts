@@ -5,7 +5,8 @@
 // custom speech" agent (Google Gemini TTS) and CACHES it as a durable
 // fc_detail(kind='spoken_front') so playback in the drill is instant.
 //
-// Delivery mechanism (resolved — see docs/FASTFIRE_SPOKEN_FRONTS_SPEC.md): the
+// Delivery mechanism (resolved — spec archived at common-docs/projects/
+// education-platform/archive/2026-07-01-fastfire-spoken-fronts-spec.md): the
 // TTS agent streams its audio back as an `audio_output` render block whose data
 // is a UnifiedMediaBlock carrying a durable `fileId` once complete (matrx origin).
 // We launch with autoRun:true (the launch thunk runs to completion), then read

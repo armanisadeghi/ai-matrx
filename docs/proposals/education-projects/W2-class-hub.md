@@ -1,6 +1,12 @@
-# W2 — Per-Class Hub *(WAVE 2 — documented now so it is not forgotten; do NOT assign yet)*
+# W2 — Per-Class Hub *(SHIPPED — historical proposal)*
 
-> **Status date:** 2026-07-07 · **Approved by Arman for Wave 2** ("Wave 2 is fine but I still
+> 🚨 **SUPERSEDED 2026-08-17 (WP12): the class hub SHIPPED on 2026-07-14** — see
+> `features/education/classes/FEATURE.md` for what exists. The old "do NOT assign yet" header
+> stood unresolved for a month after the build. Remaining class/teacher work (invite/join,
+> roster onboarding) is owned by **WP6** of
+> `common-docs/projects/education-platform/`. This doc is design history only.
+>
+> *(Original header:)* **Status date:** 2026-07-07 · **Approved by Arman for Wave 2** ("Wave 2 is fine but I still
 > want it fully documented — the scopes model here is a massive win"). Trigger to assign: after
 > Convergence B (the connected study loop), when the tools this hub composes all exist.
 > Source: competitive research §3 (P3-class-hub) + §4 addition 13.
