@@ -109,7 +109,15 @@ export function ResourcePickerMenu({
     name: string;
     isSheet: boolean;
   }) => {
-    if (!conversationId) return;
+    if (!conversationId) {
+      // Never a dead click. Every host that shows this row has a conversation
+      // (chat mints the id before the first message), so this is a guard, not a
+      // path — but a silent return would be indistinguishable from a bug.
+      toast.error(
+        "Start a conversation first — there is nowhere to attach this yet.",
+      );
+      return;
+    }
     const next = attachedGoogleFileIds.includes(file.fileId)
       ? [...attachedGoogleFileIds]
       : [...attachedGoogleFileIds, file.fileId];
