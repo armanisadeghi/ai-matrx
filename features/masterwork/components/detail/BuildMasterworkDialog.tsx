@@ -157,10 +157,8 @@ export function BuildMasterworkDialog({
         <DialogHeader>
           <DialogTitle>Build a Masterwork from “{rulebook.name}”</DialogTitle>
           <DialogDescription>
-            A Masterwork is a working AI checker built from this Rulebook&apos;s{" "}
-            {rulebook.rules.filter((r) => !r.retired && !r.draft).length}{" "}
-            rules. Every rule is checked, and{" "}
-            {rulebook.source.author ?? "the expert"} gives the final ruling.
+            A working system that does this job the way you do it — every rule
+            you approved is applied and checked, every time it runs.
           </DialogDescription>
         </DialogHeader>
 
