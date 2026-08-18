@@ -115,6 +115,9 @@ function DeliverableCard({
             kind={ready.outputKind}
             value={ready.output}
             showRoutingNote={false}
+            // The card already draws the border + padding — a second frame
+            // here is the box-in-a-box (THE WRAPPER LAW).
+            variant="bare"
           />
         </div>
       ) : null}

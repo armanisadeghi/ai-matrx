@@ -82,6 +82,16 @@ export interface AngleView {
   matches: (angle: StoryAngle) => boolean;
 }
 
+/** Statuses that are DONE. A landed or dismissed angle is history, not work. */
+const TERMINAL_STATUSES = ["landed", "dismissed"] as const;
+
+/** True while the angle is still something the user could act on. */
+function isOpen(angle: StoryAngle): boolean {
+  return !TERMINAL_STATUSES.includes(
+    angle.status as (typeof TERMINAL_STATUSES)[number],
+  );
+}
+
 export const ANGLE_VIEWS: readonly AngleView[] = [
   {
     id: "live",
@@ -95,27 +105,33 @@ export const ANGLE_VIEWS: readonly AngleView[] = [
     id: "ready",
     label: "Ready to pitch",
     hint: "Nothing outstanding: no missing evidence, no unmet proof, no contradiction. A journalist could be emailed today.",
-    matches: (angle) => angle.recommended_action === "pitch_now",
+    // `recommended_action` is never rewritten after a ruling, so a landed angle
+    // keeps `pitch_now` forever. Without the status guard the headline KPI hands
+    // the user an already-published story as today's work.
+    matches: (angle) => isOpen(angle) && angle.recommended_action === "pitch_now",
   },
   {
     id: "proof",
     label: "Building proof",
     hint: "The normal state of a live angle: the story is real and the evidence is being assembled.",
-    matches: (angle) => angle.recommended_action === "develop_evidence",
+    matches: (angle) => isOpen(angle) && angle.recommended_action === "develop_evidence",
   },
   {
     id: "quick",
     label: "One thing away",
     hint: "A single gap between these and pitchable — the cheapest work on the page.",
-    matches: isQuickWin,
+    matches: (angle) => isOpen(angle) && isQuickWin(angle),
   },
   {
     id: "you",
     label: "Needs you",
     hint: "Blocked on your expert judgment — nobody else can answer these.",
+    // Deliberately NOT `requires_human_review`: the backend sets that on every
+    // angle that is not `pitch_now` (it means "not auto-approved"), so ORing it
+    // in made this amber tile larger than "Building proof" and told the user
+    // most of their queue was personally blocked on them. It is not.
     matches: (angle) =>
-      angle.recommended_action === "needs_expert_input" ||
-      angle.requires_human_review,
+      isOpen(angle) && angle.recommended_action === "needs_expert_input",
   },
   {
     id: "all",

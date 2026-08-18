@@ -169,6 +169,14 @@ function stringList(value: unknown): string[] {
  * Tolerant of every partial mid-stream state: a section whose `heading` has
  * arrived but whose `key_points` array has not is a section the component
  * renders, not a reason to drop it.
+ *
+ * 🚨 IDEMPOTENT ON PURPOSE. The bridge hands the component an already-coerced
+ * document, and the component coerces whatever it is given (it also accepts a
+ * raw persisted value), so this runs TWICE on the normal path. Reading only the
+ * wire spelling `key_points` made the second pass silently blank every key
+ * point while `examples` — spelled the same in both shapes — survived, which is
+ * exactly how it presented: notes with summaries and examples and no facts.
+ * Every renamed field must accept BOTH spellings here.
  */
 export function coerceStudyNotes(value: unknown): StudyNotes {
   const record = isRecord(value) ? value : {};
@@ -181,7 +189,7 @@ export function coerceStudyNotes(value: unknown): StudyNotes {
     sections: rawSections.filter(isRecord).map((section) => ({
       heading: stringOr(section.heading, ""),
       summary: stringOr(section.summary, ""),
-      keyPoints: stringList(section.key_points),
+      keyPoints: stringList(section.key_points ?? section.keyPoints),
       examples: stringList(section.examples),
     })),
     glossary: rawGlossary

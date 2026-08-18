@@ -8,8 +8,14 @@
  * `metadata.__ir`, and handed to the production `SafeBlockRenderer` — whose
  * `BlockRenderer` runs `applyIrKindRoute` exactly as it does for streamed chat
  * content (db-sourced `kind_component` renderers resolve through the same
- * route automatically). If the kind has no registered component/bridge, the
- * block stays a generic code block — shown honestly, never faked.
+ * route automatically).
+ *
+ * If the kind has no registered component/bridge, the value renders through
+ * {@link StructuredValueView} — the platform floor that turns any JSON value
+ * into a human document. It used to become a ```json code block instead, which
+ * is what put 19 of 23 Study Pack steps in front of a non-technical reader as
+ * a JSON dump (2026-08-18). A curated `kind_component` is now an UPGRADE over
+ * a good default, never the prerequisite for one.
  *
  * Extracted from the admin KindPreviewTab so the studio's Preview + Test tabs
  * and the admin page share ONE render engine (no second preview fork).
@@ -20,6 +26,7 @@
 import { useEffect, useState } from "react";
 import { Info } from "lucide-react";
 import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { envelopeFromCompleteValue } from "@/features/content-ir/core/normalize";
 import { IR_ENVELOPE_KEY } from "@/features/content-ir/core/ir-types";
@@ -58,9 +65,9 @@ interface KindInstanceRenderProps {
   showRoutingNote?: boolean;
   /**
    * What to render when the routing decision lands on "no component exists for
-   * this kind". The generic JSON viewer is the right answer for the studio and
-   * the admin preview — they are LOOKING at the shape. It is the wrong answer
-   * on a product surface, where the raw value can be an internal envelope: an
+   * this kind". The universal document view is the right answer almost
+   * everywhere — it reads well and hides nothing. It is still the wrong answer
+   * when the raw value is an internal ENVELOPE rather than content: an
    * `agent_result` dumped the verbatim prompt, the model id and the token bill
    * into the box a learner was waiting on. Passing a fallback lets that caller
    * show what the reader actually wants WITHOUT anyone second-guessing the
@@ -151,36 +158,33 @@ export default function KindInstanceRender({
     return <>{unroutableFallback}</>;
   }
 
+  // The floor. Two ways to land here, and the answer is the same document
+  // either way: the kind settled on "no component", or the value is not an
+  // object at all (a scalar / array workflow I/O shape), for which there has
+  // never been a block render path.
+  const onTheFloor = block === null || routingStatus === "unroutable";
+
   return (
     <div className="space-y-3">
       {showRoutingNote && routingStatus === "unroutable" && (
         <div className="flex items-center gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
           <Info className="h-3.5 w-3.5 shrink-0" />
           This shape has no custom component yet, so it renders through the
-          generic viewer — exactly what production shows today.
+          universal viewer — exactly what production shows today.
         </div>
       )}
-      {block ? (
-        <div className={frameClass}>
+      <div className={frameClass}>
+        {onTheFloor ? (
+          <StructuredValueView value={value} kind={kind} />
+        ) : (
           <SafeBlockRenderer
             block={block}
             index={0}
             replaceBlockContent={noopReplaceBlockContent}
             handleOpenEditor={noopOpenEditor}
           />
-        </div>
-      ) : (
-        <div className={frameClass}>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Info className="h-3.5 w-3.5 shrink-0" />
-            This value is a JSON scalar/array (workflow I/O shape) — there is no
-            block render path for it; raw value below.
-          </div>
-          <pre className="mt-2 overflow-x-auto rounded bg-muted p-2 font-mono text-xs text-foreground">
-            {JSON.stringify(value, null, 2)}
-          </pre>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

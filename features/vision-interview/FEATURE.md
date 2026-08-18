@@ -25,6 +25,7 @@ them — `normalizeStage` in `types.ts` maps them for display
 | Room | `app/(core)/vision-interview/[sessionId]/page.tsx` → `components/VisionInterviewRoom.tsx` — RouteHeader + THREE resizable panels (cookie `vision-interview-room-layout-v3`): `QuestionsPanel` (~22%) · `RoomChatPane` (~50%) · `ExpertFeedPanel` (~28%); mobile switches panes (Questions · Room · Feed) |
 | One expert's room | `components/RoomChatPane.tsx` — `StageTabs` + the CANONICAL `ChatRoomClient` for the active role, plus the Scribe's document/deliverables and the answer-append rider |
 | Stage tabs | `components/StageTabs.tsx` — one substantial button per stage primary (icon disc + role name + stage label together) |
+| **Finish (the guided run)** | `components/RoomHeader.tsx` → `components/FinishInterviewDialog.tsx` — the ONE door to the workflow run, and therefore to `interview.finalize` and the three deliverables. Starts the run, sends `done` when it hands back, shows the gate's answer, and opens each document the moment it exists |
 | New interview | `components/NewInterviewDialog.tsx` (direct Supabase insert → routes into the room) |
 
 ## Data flow
@@ -69,6 +70,22 @@ them — `normalizeStage` in `types.ts` maps them for display
   switched tabs — free, because a pass with nothing new returns before any
   model is called. Fire-and-forget throughout: caught failures, no toast,
   nothing blocked; a missed ping is repaired by the next.
+- **THE RUN'S ONE REMAINING JOB (v3) — FINALIZE.** The person now holds the
+  whole conversation through the stage tabs, so the orchestrated run is no
+  longer how the interview happens; it is how the interview ENDS.
+  `interview.finalize` (aidream) is the only writer of
+  `session.cleaned_transcript` / `vision_document` / `requirements_document`,
+  and the gate only reaches it on the `done` directive. That whole journey has
+  exactly ONE control — the room header's **Finish** →
+  `FinishInterviewDialog`: start the run (`POST /start`), then
+  `resume({done: true})` when it interrupts. The gate answers the FIRST done
+  with what is still open and runs another round; a REPEATED done is honored
+  as the person's call, and the dialog shows that answer verbatim before
+  offering "Finish anyway", so the extra round is never a surprise. Written
+  because the run had become UNREACHABLE: its only Start control sat inside
+  the "expert hasn't joined yet" empty state, which the `/roles` wiring turned
+  into an edge case (2026-08-18) — a person could hold the entire interview
+  and never be able to produce the documents the room's own tabs render.
 - **Run orchestration only** goes to aidream via `callApi`:
   `POST /vision-interview/sessions/{id}/start` (path cast `as never` until
   api-types regenerate) and the typed `POST /runs/{run_id}/resume`
@@ -132,7 +149,8 @@ them — `normalizeStage` in `types.ts` maps them for display
    classification/status/resolution (reclassify keeps provenance via
    `reclassified_by_human=true`; accept-risk behind a ConfirmDialog).
 5. **Stage movement is human-controlled and rides the resume payload** —
-   `advance_stage` (the header's Advance control) and v2's `goto_stage`
+   `advance_stage` (the header's Advance control), `done` (the header's
+   Finish control — the only path to finalize), and v2's `goto_stage`
    (v3: the centre panel's "Move the interview here" bar, shown when you are
    reading an expert whose stage is not the current one — ANY stage, forward
    or back). Both arm
@@ -195,7 +213,11 @@ them — `normalizeStage` in `types.ts` maps them for display
     `DeliverablePane` renders each read-only through `<RichDocument>` with
     copy + markdown download (`downloadBlob`). Before finalize nothing
     renders; the existing session-row realtime subscription delivers them
-    live the moment finalize lands.
+    live the moment finalize lands. **Which record is on screen lives in the
+    SLICE** (`docView` / `docViewChanged` / `selectDocView`, cleared by
+    `activeRoleTabChanged`), not in `RoomChatPane` local state, so the finish
+    dialog can OPEN a document it just told the Expert about — a document you
+    are told about but cannot reach is a dead end.
 12. **Failure honesty (v2 §17):** every run/start/resume error surface must
     SAY the Expert's words are safe — the draft persists on-device
     (`useDurableDraft`) and a sent message lands as a turn before agents run
@@ -218,7 +240,10 @@ them — `normalizeStage` in `types.ts` maps them for display
     "hasn't joined yet" invitation — an EDGE CASE since the `/roles` wiring
     landed (2026-08-18), so it names which of "still opening" / "couldn't
     open" is true, carries the error text and a Try again, and never a
-    spinner.
+    spinner. It carries NO run control: `/roles` opens these rooms, not the
+    workflow run, so a Start button here answered a question nobody asked
+    while being the feature's only door to the run (removed 2026-08-18 —
+    invariant 7's honesty applies to the run's home, which is now Finish).
 14. **THE ANSWER-APPEND RULE (v3).** Answers written in the left panel live in
     the slice (`answerDrafted` / `answerDiscarded` / `selectPendingAnswers`),
     never only in a composer, and they ride the NEXT message as an
@@ -286,6 +311,28 @@ per-node tokens the same way.
   structured marker in turn rows.
 
 ## Change log
+
+- 2026-08-18 — **FINISH: the guided run gets a home, and the documents stop
+  being unreachable.** `/roles` (same day) made every stage tab mount without
+  a run, which turned `ExpertNotJoined` — the only place a Start control ever
+  lived — into an edge case, and with it the workflow run, `interview.finalize`
+  and all three deliverables. A person could hold the entire interview and
+  never produce the Vision or Requirements document: a dead end.
+  (1) `components/FinishInterviewDialog.tsx` — the run's one home, opened from
+  a new **Finish** control in `RoomHeader` beside Advance (both are the person
+  steering). It states plainly what the run does (one guided round with the
+  experts, then the three documents), narrates the live phase, renders the
+  gate's "here is what is still open" answer before offering "Finish anyway",
+  surfaces `runError` with Try again, and lists the three deliverables with an
+  **Open** door on each one that exists.
+  (2) `ResumeInput.done` (`useInterviewRun`) — the `done` directive the gate
+  has always read (`HumanDirectives.done`) had no client. It rides the resume
+  payload beside `advance_stage`/`goto_stage`.
+  (3) `docView` moved from `RoomChatPane` local state into the slice
+  (`docViewChanged` / `selectDocView`; cleared on tab change) so the dialog can
+  open a document rather than just naming it.
+  (4) `ExpertNotJoined` lost its Start button — it keeps Try again only.
+  VERIFIED live in the browser against a real session (see below).
 
 - 2026-08-18 — **v3 LAST MILE: the room opens itself, and the Scribe stays
   current.** The v3 rewrite read `session.role_bindings` but nothing ever

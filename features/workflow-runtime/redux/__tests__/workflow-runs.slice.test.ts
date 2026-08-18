@@ -12,6 +12,7 @@ import reducer, {
   detachRun,
   seedRunRow,
   refreshHeartbeatTails,
+  setTransportMode,
   TEXT_TAIL_CAP,
   type WorkflowRunsState,
 } from "@/features/workflow-runtime/redux/workflow-runs.slice";
