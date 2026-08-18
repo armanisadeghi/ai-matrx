@@ -63,6 +63,7 @@ import {
   DeckMasteryBar,
 } from "@/features/education/study/components/MasteryDisplay";
 import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDevTrigger";
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { downloadSetCsv } from "../../utils/importExportCsv";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { AudioOverviewSection } from "./AudioOverviewSection";
@@ -195,9 +196,13 @@ function CardPeek({
       {kind === CARD_KIND.matching ? (
         <div className="mt-1.5 space-y-0.5">
           {card.front.trim() && (
-            <p className="line-clamp-2 text-sm font-medium text-foreground">
-              {card.front}
-            </p>
+            <div className="text-sm font-medium text-foreground">
+              <CardFaceContent
+                content={card.front}
+                variant="inline"
+                className="line-clamp-2"
+              />
+            </div>
           )}
           {pairs.slice(0, 3).map((p, i) => (
             <p key={i} className="line-clamp-1 text-xs text-muted-foreground">
@@ -212,13 +217,19 @@ function CardPeek({
         </div>
       ) : (
         <>
-          <p className="mt-1.5 line-clamp-3 text-sm font-medium text-foreground">
-            {faces ? faces.front.replace(/\*\*/g, "") : card.front}
-          </p>
-          <div className="mt-2 border-t border-border pt-2">
-            <p className="line-clamp-3 text-xs text-muted-foreground">
-              {faces ? faces.back.replace(/\*\*/g, "") : card.back}
-            </p>
+          <div className="mt-1.5 text-sm font-medium text-foreground">
+            <CardFaceContent
+              content={faces ? faces.front : card.front}
+              variant="inline"
+              className="line-clamp-3"
+            />
+          </div>
+          <div className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground">
+            <CardFaceContent
+              content={faces ? faces.back : card.back}
+              variant="inline"
+              className="line-clamp-3"
+            />
           </div>
         </>
       )}
