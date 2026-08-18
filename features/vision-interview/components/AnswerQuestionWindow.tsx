@@ -106,25 +106,6 @@ export function AnswerQuestionWindow({
       minHeight={300}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       footerVariant="rich"
-      footerLeft={
-        <span
-          className={cn(
-            "flex items-center gap-1 text-[11px]",
-            dirty && text
-              ? "text-warning"
-              : status === "pending"
-                ? "text-primary"
-                : "text-muted-foreground",
-          )}
-        >
-          <Clock3 className="h-3 w-3 shrink-0" aria-hidden />
-          {dirty && text
-            ? "Unsaved — Save keeps it for your next message"
-            : status === "pending"
-              ? "Saved — sends with your next message"
-              : "Saving does not send — it rides your next message"}
-        </span>
-      }
       footerRight={
         <div className="flex items-center gap-1.5">
           {pendingAnswer !== null && (
@@ -195,6 +176,25 @@ export function AnswerQuestionWindow({
             autoFocus
           />
         </RecordingOriginProvider>
+
+        {/* The one sentence that keeps Save honest — it never sends. */}
+        <p
+          className={cn(
+            "flex items-start gap-1.5 text-[11px] leading-snug",
+            dirty && text
+              ? "text-warning"
+              : status === "pending"
+                ? "text-primary"
+                : "text-muted-foreground",
+          )}
+        >
+          <Clock3 className="mt-px h-3 w-3 shrink-0" aria-hidden />
+          {dirty && text
+            ? "Unsaved — Save keeps this for your next message."
+            : status === "pending"
+              ? "Saved — this rides your next message to the room."
+              : "Saving does not send. Your answer rides your next message, so you can answer several questions and send once."}
+        </p>
       </div>
     </WindowPanel>
   );
