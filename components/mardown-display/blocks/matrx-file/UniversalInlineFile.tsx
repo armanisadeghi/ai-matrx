@@ -138,14 +138,15 @@ export function UniversalInlineFile({
 
     case "audio":
       return (
-        <div className="my-2 w-full max-w-2xl">
+        // The height is load-bearing: `size="fill"` means `h-full`, and an
+        // auto-height parent renders the player at 0px — audible to no one.
+        <div className="my-2 h-[54px] w-full max-w-2xl">
           <InlineMediaRef
             ref={fileId ? { file_id: fileId } : originalUrl}
             as="audio"
             size="fill"
             controls
             alt={label || fileName}
-            className="w-full"
           />
         </div>
       );
