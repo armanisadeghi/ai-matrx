@@ -4797,6 +4797,56 @@ export type Database = {
         }
         Relationships: []
       }
+      user_plan: {
+        Row: {
+          created_at: string
+          effective_from: string
+          expires_at: string | null
+          granted_by: string | null
+          note: string | null
+          plan_id: string | null
+          source: string
+          tier: Database["billing"]["Enums"]["tier"]
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          effective_from?: string
+          expires_at?: string | null
+          granted_by?: string | null
+          note?: string | null
+          plan_id?: string | null
+          source?: string
+          tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          effective_from?: string
+          expires_at?: string | null
+          granted_by?: string | null
+          note?: string | null
+          plan_id?: string | null
+          source?: string
+          tier?: Database["billing"]["Enums"]["tier"]
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_plan_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plan"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
