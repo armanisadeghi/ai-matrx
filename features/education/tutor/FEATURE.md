@@ -147,8 +147,9 @@ voice session and receives the current card as its seed; `AskTutorButton` uses t
 for typed help and `flashcards.help_live`, whose response carries a `TrustEnvelope` and a source
 chip. Live verification on 2026-08-18 started/stopped a listening session on a real card and got a
 card-cited ATP explanation from the typed inline path without leaving the study page.
-The realtime panel is currently card-grounded only and exposes no IC-3 citation/refusal channel;
-WP4 does not claim that narrower inline voice path is closed-corpus complete yet.
+The realtime panel is deliberately card-grounded rather than document-RAG: it has no web tool,
+the database-held voice Holder treats the exact front/back/topic/revealed block as its complete
+ground truth, and unsupported questions hand the learner to the full uploaded-material tutor.
 
 ## Invariants & gotchas
 

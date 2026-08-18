@@ -17,9 +17,9 @@
 //   <study_context> block → useRealtimeAgentConfig + useXaiVoiceSession →
 //   VoiceMicButton / VoiceStatusPill / VoiceTranscriptStream.
 //
-// 🚨 The tutor's persona lives in the DATABASE (agent
-// 00000000-0000-4000-8000-000000000003 behind the education.voice_tutor
-// mandate). This file appends session CONTEXT — the card — never instructions.
+// 🚨 The tutor's persona lives in the DATABASE behind the
+// education.voice_tutor mandate. This file appends session CONTEXT — the card
+// — never instructions.
 //
 // Ephemeral (persist=false): the study session is the system of record; a
 // 30-second "explain this card" call is not a chat the learner wants in their
@@ -98,14 +98,9 @@ export function VoiceTutorPanel({
     // real problem instead of running a persona this file made up.
     preset: "playground",
     instructions: "",
-    tools: [
-      {
-        name: "web_search",
-        description: "Search the web.",
-        parameters: {},
-        execution: "builtin",
-      },
-    ],
+    // This inline tutor is closed to the current card. Open-web help must be a
+    // separate, explicit learner choice, never a hidden realtime tool.
+    tools: [],
     persist: false,
   });
 

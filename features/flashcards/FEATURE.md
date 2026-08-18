@@ -55,6 +55,13 @@ system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` +
 
 ## Change log
 
+- **2026-08-18 — Inline voice tutoring is closed to the current card.**
+  `VoiceTutorPanel` still resolves `education.voice_tutor` and appends the exact
+  front/back/topic/revealed state, but no longer equips a hidden `web_search`
+  tool. The database-held Holder now treats that card as its complete ground
+  truth, coaches Socratically, and gives a loud handoff to the full uploaded-
+  material tutor when the question is unsupported.
+
 - 2026-08-18 — `fcService.mergeSetMetadata` is now the canonical compare-and-swap merge for
   `fc_set.metadata`. Public-library classification and grounding provenance no longer need a blind
   read/spread/write that can erase import, folder, or concurrent metadata keys. First consumer:
