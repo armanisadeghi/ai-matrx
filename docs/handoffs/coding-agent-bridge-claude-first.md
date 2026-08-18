@@ -33,27 +33,33 @@ vision:
 
 ## Resources
 
-- **Contract:** `common-docs/systems/coding-session-bridge/FEATURE.md`. Product completion:
+- **Contract:** `common-docs/systems/coding-session-bridge/FEATURE.md`. **Behavior bar (READ
+  FIRST for any UX/identity/runtime work): `common-docs/systems/coding-session-bridge/BEHAVIOR.md`**
+  — MUST-behave rules for accounts, capture, the local runtime, the provider-cloud verdict, and
+  Arman's step-by-step verification script. Product completion:
   `common-docs/projects/ai-work-hub/PLAN.md`. Adapter delivery: `projects/coding-agent-bridge/PLAN.md`.
 - **Backend:** `aidream/services/coding_session_bridge/` (service, orm_store, titles, claude_session_store,
   claude_managed_runtime + FEATURE.md); 9 MCP tools in `aidream/api/mcp/agent_service/`; REST
   `aidream/api/routers/coding_sessions.py` (incl. live `GET /coding-sessions/sessions` identity list).
 - **Frontend:** `features/ai-work/` (+ FEATURE.md). Live: https://www.aimatrx.com/work/conversations,
-  `/work/connections` (repo at `v0.4.708`). Focused chips: `.matrx/AGENT_TASKS.md` TASK-005…008.
-- **Local:** `matrx-local/app/services/coding_sessions/`; desktop page `/claude-history`; signed
-  `v1.4.26` installed and healthy. Title reconciliation is `TASK-003` (approved, P0).
+  `/work/connections`, `/work/new` with the "Claude Code on my Mac" destination and the native
+  Continue panel (repo at `v0.4.771`). Browser→Mac relay: `features/ai-work/lib/matrxLocalRuntime.ts`
+  over the per-user Supabase Broadcast channel `matrx-local-bridge:<userId>`.
+- **Local:** `matrx-local/app/services/coding_sessions/` incl. `local_runtime.py` (start/resume/
+  cancel/stream on the user's machine, native mirror, E2E-proven against production 2026-08-17 —
+  `scripts/_verify_local_claude_runtime_e2e.py`) + `capture_reconciler.py` (15-min backfill +
+  quarantine); engine handlers `app/api/coding_runtime_handlers.py`; desktop Agent Runtime card on
+  the Claude History page. Signed `v1.4.33` installed.
 - **Deploy:** aidream `./scripts/release.sh` (commit unrelated dirty files scoped first); verify
   `https://server.app.matrxserver.com/health/version` against origin/main. Frontend auto-deploys on push.
 - **DB probes:** asyncpg + aidream `.env` (`SUPABASE_MATRIX_*`), `statement_cache_size=0` (pgbouncer).
-- **Live state 2026-08-16:** 266 bindings (237 Claude, 29 Codex, all `event_mirror`) / 2 owners;
-  workspace labels populate; **232 Claude rows now carry `claude_title` with
-  `title_source=provider`, and the conversation title equals Claude's own sidebar label exactly on
-  all 232**; `git_branch` and account fingerprint are still NULL on every live row (no bound session
-  is a worktree run; event-mirror hooks cannot read the account — item 6). One `Auto:` placeholder
-  remains and it is the stale half of a duplicate binding, not a missing title.
-  **Ingestion stopped `2026-08-15 23:02:47` and had produced nothing for ~23.5h when the outage was
-  found — always check the newest `chat.coding_session_entry.created_at` before trusting this
-  section, and treat a quiet inbox as suspect until the capture-gap alert says otherwise.**
+- **Live state 2026-08-17:** capture is flowing again (verify before trusting: newest
+  `chat.coding_session_entry.created_at` must be minutes old during active coding). Claude titles
+  equal Claude's own sidebar labels via provider title sync; the capture reconciler is draining the
+  discovered backfill (160/200 recent sessions had never been delivered; one poisoned outbox row
+  had stalled delivery for four days — now quarantined). Event-mirror rows still carry no account
+  identity (hooks cannot read it); runtime-launched sessions are `native/matrx_local`. One `Auto:`
+  placeholder remains — the stale half of the known duplicate binding.
 - **Operator checklists:** VS Code `matrx-vscode/OPERATOR_CHECKLIST.md` (+ `PUBLISHING.md`);
   managed Codex design `matrx-codex-plugin/docs/MANAGED_RUNTIME_PLAN.md`.
 
