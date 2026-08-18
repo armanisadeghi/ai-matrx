@@ -10,6 +10,10 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
     "Rulebooks (platform.rulebook): the versioned, citable capture of one Expert's judgment. Masterworks (workflows) are built FROM Rulebooks; auditors consume rules verbatim; every verdict cites a rule id.",
   docs: [
     { label: "FEATURE.md", href: "/features/masterwork/FEATURE.md" },
+    {
+      label: "Source onboarding FEATURE.md (import guides)",
+      href: "/features/source-onboarding/FEATURE.md",
+    },
   ],
   routeScanPath: "app/(core)/masterwork",
   routes: [
@@ -82,6 +86,22 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       description:
         "Run one released Masterwork: input form, live streamed run (TryMasterworkBox machinery), result, the Operator's own run history.",
       filePath: "app/(core)/masterwork/encore/[id]/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/import/ai-chats",
+      label: "Import guides — provider gallery (PUBLIC, anonymous SEO surface)",
+      description:
+        "features/source-onboarding house pattern: recognizable provider cards (ChatGPT, Claude, Gemini, Grok, Meta AI, coding tools, …), each opening a hand-holding export guide. Deliberately in (public) — 'how do I export my X history' is high-intent anonymous search traffic; CTA routes into /masterwork. Linked from ChatImportDialog's Upload tab.",
+      filePath: "app/(public)/import/ai-chats/page.tsx",
+      status: "Live",
+    },
+    {
+      url: "/import/ai-chats/[provider]",
+      label: "Import guides — one provider's export guide (PUBLIC)",
+      description:
+        "Numbered steps, deep links, trap warnings, honest delivery mechanics, screenshot slots (illustrated placeholders until real captures land per SCREENSHOT_WORK_ORDERS.md). Per-provider SEO metadata + generateStaticParams.",
+      filePath: "app/(public)/import/ai-chats/[provider]/page.tsx",
       status: "Live",
     },
   ],
@@ -202,6 +222,20 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/masterwork/encore/service.ts",
       description:
         "Released-Masterwork reads for Operators (VIEW LAW scoped shelves, per-Operator run history) + the rulebook join for the Expert doors.",
+      tier: "internal",
+    },
+    {
+      name: "SourceGallery / SourceGuidePage / ScreenshotSlot",
+      filePath: "features/source-onboarding/components/SourceGallery.tsx",
+      description:
+        "The reusable provider-gallery + guide-page components behind /import/ai-chats. Config-driven: a new gallery (meeting platforms, message threads) is a new SourceGalleryConfig + provider files, zero new components. Contract: features/source-onboarding/FEATURE.md.",
+      tier: "official",
+    },
+    {
+      name: "ai-chats gallery config",
+      filePath: "features/source-onboarding/galleries/ai-chats/index.ts",
+      description:
+        "SourceGalleryConfig for AI chat providers (11 provider files under providers/); screenshot capture briefs in the sibling SCREENSHOT_WORK_ORDERS.md (0/16 captured — all need signed-in accounts).",
       tier: "internal",
     },
     {

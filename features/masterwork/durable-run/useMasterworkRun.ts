@@ -77,7 +77,7 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   chat: "masterwork_ingest_complete",
   // The dump Approach (`/masterworks/ingest-dump`) — its own surface + pointer
   // so a dump never rejoins the single-source ingest dialog or vice versa.
-  dump: "masterwork_ingest_dump_complete",
+  dump: "masterwork_dump_complete",
   // The "Everything you've published" (body_of_work) Approach
   // (`/masterworks/ingest-corpus`) — its own surface + pointer for the same
   // reason, even though its terminal event type matches the ingest lanes'.

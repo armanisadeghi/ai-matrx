@@ -245,6 +245,33 @@ export function BodyOfWorkDialog({
     (p) => p.status === "failed" || p.status === "dead_letter",
   );
 
+  /**
+   * Retry ONLY the failed/dead_letter pieces, straight from the durable board —
+   * so a retry survives a reload (the form is empty then, but the rows aren't).
+   * Re-submitting a failed piece is the server's re-open signal: explicit new
+   * intent, a fresh retry budget; succeeded pieces are skipped, never re-paid.
+   */
+  const retryFailed = async () => {
+    const urls = failedPieces
+      .filter((p) => p.kind === "url")
+      .map((p) => p.rawValue);
+    const fileIds = failedPieces
+      .filter((p) => p.kind !== "url")
+      .map((p) => p.rawValue);
+    run.reset();
+    await run.launch(
+      {
+        rulebook_id: rulebook.id,
+        urls,
+        file_ids: fileIds,
+        mode: "exemplar",
+        source_note: sourceNote.trim() || undefined,
+      },
+      "retrying the failed pieces",
+    );
+    void refreshBoard();
+  };
+
   return (
     <Dialog
       open={open}
@@ -280,9 +307,9 @@ export function BodyOfWorkDialog({
               <p className="text-sm text-muted-foreground">
                 {failedPieces.length}{" "}
                 {failedPieces.length === 1 ? "piece" : "pieces"} couldn&apos;t
-                be read (each row below says why). Press &ldquo;Distill my
-                body of work&rdquo; again to retry just those — everything
-                already distilled is never re-read.
+                be read (each row below says why). &ldquo;Try the failed
+                pieces again&rdquo; retries just those — everything already
+                distilled is never re-read.
               </p>
             ) : null}
             <div className="flex flex-wrap gap-2">
@@ -296,7 +323,11 @@ export function BodyOfWorkDialog({
                 Review the drafts
               </Button>
               {failedPieces.length > 0 ? (
-                <Button size="sm" variant="outline" onClick={() => reset()}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void retryFailed()}
+                >
                   Try the failed pieces again
                 </Button>
               ) : null}
@@ -445,6 +476,17 @@ export function BodyOfWorkDialog({
                 );
               })}
             </div>
+            {!summary && !running && failedPieces.length > 0 ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-1"
+                onClick={() => void retryFailed()}
+              >
+                Retry the {failedPieces.length} failed{" "}
+                {failedPieces.length === 1 ? "piece" : "pieces"}
+              </Button>
+            ) : null}
           </div>
         ) : null}
 

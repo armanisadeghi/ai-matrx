@@ -36,6 +36,15 @@ export const metaAi: SourceProviderConfig = {
             },
         },
         {
+            title: "Pick JSON, not HTML",
+            body: "When the download flow asks for a format, choose JSON. HTML looks nicer but is much harder for us to mine.",
+            warning: "The default format is HTML. Switch it to JSON before you create the download.",
+            screenshot: {
+                slot: "dyi-json",
+                caption: "The Meta download-your-information format screen with JSON selected.",
+            },
+        },
+        {
             title: "meta.ai on the web: copy and paste",
             body: "The meta.ai website has no export button at all. Copying and pasting the conversations that matter is the honest path — paste them straight into the Other card here.",
         },

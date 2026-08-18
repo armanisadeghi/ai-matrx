@@ -2,6 +2,18 @@
 
 Codex work orders for capturing the guide screenshots on Arman's real accounts. Each order names the exact target path. Coding tools (Cursor, VS Code Copilot, Claude Code) need no screenshots — their flows are local-file flows.
 
+## Capture status (groomed 2026-08-17)
+
+**0 of 16 captured.** Every capture below sits behind a signed-in real account (ChatGPT, Claude, Google Takeout, Grok/xAI, WhatsApp, Meta Accounts Center) — none of the export UIs render anonymously, so a sandboxed agent cannot fill any of them and must never log into an account or fabricate a fake-UI image. Until a human (or an agent driving Arman's authenticated Chrome, with his consent) runs these orders, every slot renders the honest illustrated placeholder in `ScreenshotSlot.tsx` and the pages ship complete without the images. Landing a capture is zero-code: save the PNG at the exact target path.
+
+| Provider | Slots | Account needed |
+|---|---|---|
+| ChatGPT | 4 (`settings-menu`, `data-controls`, `export-confirm`, `email-link`) | chatgpt.com + its email inbox |
+| Claude | 3 (`settings-privacy`, `export-button`, `email-link`) | claude.ai + its email inbox |
+| Gemini | 4 (`takeout-deselect`, `my-activity-filter`, `format-json`, `create-export`) | Google |
+| Grok | 2 (`grok-settings`, `xai-data-page`) | grok.com / accounts.x.ai |
+| Meta AI | 3 (`whatsapp-command`, `accounts-center`, `dyi-json`) | WhatsApp + Instagram/Facebook |
+
 ## Global rules (apply to every capture)
 
 - Viewport: 1280px wide browser window, light mode.
