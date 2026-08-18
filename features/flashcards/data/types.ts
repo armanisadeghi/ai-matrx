@@ -55,6 +55,19 @@ export interface NewCardInput {
    * without a Record index-signature wedge.
    */
   dynamic_content?: Json | null;
+  /**
+   * Media the card references (imported Anki media, extension captures).
+   * Each entry becomes an fc_card → file `platform.associations` edge with the
+   * given role (default `illustration`); the durable ref is the file_id.
+   */
+  media?: {
+    file_id: string;
+    role?: "illustration" | "photo";
+    face?: "front" | "back";
+    kind?: "image" | "audio" | "video";
+    /** Original filename in the source archive, for traceability. */
+    source_name?: string;
+  }[];
   /** Optional lineage: the source passage this card came from (§ from-source flow). */
   source?: {
     file_id: string;

@@ -15714,6 +15714,7 @@ export type Database = {
           response_kind: string | null
           response_transcript: string | null
           result: string | null
+          reviewed_at: string | null
           score: Json | null
           score_value: number | null
           session_id: string | null
@@ -15745,6 +15746,7 @@ export type Database = {
           response_kind?: string | null
           response_transcript?: string | null
           result?: string | null
+          reviewed_at?: string | null
           score?: Json | null
           score_value?: number | null
           session_id?: string | null
@@ -15776,6 +15778,7 @@ export type Database = {
           response_kind?: string | null
           response_transcript?: string | null
           result?: string | null
+          reviewed_at?: string | null
           score?: Json | null
           score_value?: number | null
           session_id?: string | null
@@ -37612,6 +37615,7 @@ export type Database = {
         Args: { p_scope: Database["context"]["Tables"]["scopes"]["Row"] }
         Returns: undefined
       }
+      _edu_generate_join_code: { Args: never; Returns: string }
       _edu_is_active_member: {
         Args: { p_scope: string; p_user: string }
         Returns: boolean
@@ -40409,6 +40413,16 @@ export type Database = {
         Returns: Json
       }
       edu_class_assignments: { Args: { p_class: string }; Returns: Json }
+      edu_class_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          access_mode: string
+          class_id: string
+          description: string
+          member_count: number
+          name: string
+        }[]
+      }
       edu_class_confer_purchase: {
         Args: { p_class: string; p_user: string }
         Returns: Json
@@ -40418,6 +40432,11 @@ export type Database = {
         Returns: Json
       }
       edu_class_join: { Args: { p_class: string }; Returns: Json }
+      edu_class_join_by_code: { Args: { p_code: string }; Returns: Json }
+      edu_class_join_code: {
+        Args: { p_action?: string; p_class: string }
+        Returns: Json
+      }
       edu_class_leave: { Args: { p_class: string }; Returns: Json }
       edu_class_progress_overview: { Args: { p_class: string }; Returns: Json }
       edu_class_remove: {
@@ -40446,6 +40465,7 @@ export type Database = {
       edu_coppa_gate: { Args: never; Returns: Json }
       edu_delete_study_data: { Args: never; Returns: Json }
       edu_export_study_data: { Args: never; Returns: Json }
+      edu_import_review_history: { Args: { p_items: Json }; Returns: Json }
       edu_learn_doc_admin_list: {
         Args: never
         Returns: Database["education"]["Tables"]["learn_doc"]["Row"][]
@@ -43379,6 +43399,7 @@ export type Database = {
       }
       study_record_attempt: {
         Args: {
+          p_attempt_id?: string
           p_difficulty?: number
           p_due_at?: string
           p_graded_by?: string
@@ -43393,6 +43414,7 @@ export type Database = {
           p_response_transcript?: string
           p_result?: string
           p_retrievability?: number
+          p_reviewed_at?: string
           p_score?: Json
           p_score_value?: number
           p_session_id?: string

@@ -32,6 +32,9 @@ export interface ImportOutcome {
   format: DirectImportFormat;
   /** Optional honest note about what was / wasn't preserved (e.g. Anki media). */
   note?: string;
+  /** Created card ids in input order — lets a caller seed per-card state
+   * (e.g. imported review history) against the rows it just made. */
+  cardIds: string[];
 }
 
 export type DirectImportFormat = "json" | "delimited" | "anki";
@@ -68,9 +71,13 @@ export async function persistImportedDeck(input: ImportedDeckInput): Promise<Imp
       typeof res.error === "string" ? res.error : "Failed to save the imported deck",
     );
   }
+  const createdCards = [...res.data.cards].sort(
+    (a, b) => (a.position ?? 0) - (b.position ?? 0),
+  );
   return {
     setId: res.data.set.id,
     name: res.data.set.name,
+    cardIds: createdCards.map((c) => c.id),
     cardCount: cards.length,
     skipped: input.skipped ?? input.skippedLines?.length ?? 0,
     skippedLines: input.skippedLines,

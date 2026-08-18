@@ -309,6 +309,25 @@ export const fcService = {
           if (!member.ok)
             console.error("[fcService.addCards] member edge failed:", member);
 
+          // Media edges (imported Anki media, captures): fc_card → file per ref.
+          for (const m of cards[i].media ?? []) {
+            const mediaEdge = await associationsService.add({
+              sourceType: "fc_card",
+              sourceId: card.id,
+              targetType: "file",
+              targetId: m.file_id,
+              role: m.role === "photo" ? EDGE_ROLE.photo : EDGE_ROLE.illustration,
+              orgId: opts.orgId,
+              metadata: {
+                face: m.face ?? null,
+                kind: m.kind ?? null,
+                source_name: m.source_name ?? null,
+              } as never,
+            });
+            if (!mediaEdge.ok)
+              console.error("[fcService.addCards] media edge failed:", mediaEdge);
+          }
+
           const src = cards[i].source;
           if (src?.file_id) {
             const lineage = await associationsService.add({
