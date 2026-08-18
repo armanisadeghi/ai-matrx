@@ -87,6 +87,7 @@ import {
   type RuleFeedbackMode,
 } from "./RuleFeedbackDialog";
 import { ImproveRuleDialog } from "./ImproveRuleDialog";
+import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { RuleReviewWizard } from "./RuleReviewWizard";
 import { computeKpis, RulebookKpiStrip } from "./RulebookKpiStrip";
 import { UnderstudyCard } from "../../understudy/UnderstudyCard";
@@ -422,34 +423,17 @@ function RuleRow({
           </div>
         </button>
         {canEdit && state === "draft" ? (
-          // The three core review verbs (Arman, 2026-08-17): Approve / Reject
-          // / Improve. Icons rely on the Button's own gap — never add an mr-*
-          // to a button icon here (icon + gap + margin is the "giant gap"
-          // defect Arman flagged).
-          <div className="flex shrink-0 gap-1">
-            <Button size="sm" className="h-7" onClick={onApprove}>
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Approve
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7"
-              onClick={onImprove}
-            >
-              <Wand2 className="h-3.5 w-3.5" />
-              Improve
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 border-destructive/40 text-destructive hover:text-destructive"
-              onClick={onReject}
-            >
-              <XCircle className="h-3.5 w-3.5" />
-              Reject
-            </Button>
-          </div>
+          // The four review verbs come from the ONE shared primitive
+          // (features/masterwork/review/RuleDecisionActions) — Approve /
+          // Improve / Reject / Edit, never redeclared per surface.
+          <RuleDecisionActions
+            className="shrink-0 flex-nowrap gap-1"
+            size="sm"
+            onApprove={onApprove}
+            onImprove={onImprove}
+            onReject={onReject}
+            onEdit={onEdit}
+          />
         ) : null}
         {canEdit && rejected ? (
           <Button
