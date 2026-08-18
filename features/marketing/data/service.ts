@@ -59,6 +59,13 @@ import type {
   UpdatePageIntentInput,
   UpdatePropertyInput,
   UpdateSiteIdentityInput,
+  BusinessLocation,
+  ListingPublisher,
+  LocationListing,
+  ListingMatrixRow,
+  CreateBusinessLocationInput,
+  UpdateBusinessLocationInput,
+  UpsertLocationListingInput,
 } from "@/features/marketing/types";
 import { isJsonRecord, isPropertyKind } from "@/features/marketing/types";
 import { extractErrorMessage, operationFailed } from "@/utils/errors";
@@ -3778,4 +3785,185 @@ export async function fetchSiteStructureRows(
     if (batch.length < STRUCTURE_PAGE_SIZE) break;
   }
   return rows;
+}
+
+// ─── Local & Listings (web.business_location / web.listing_publisher / web.location_listing) ───
+
+const BUSINESS_LOCATION_COLUMNS =
+  "id, organization_id, brand_id, name, status, is_primary, street_address, address_line2, locality, region, postal_code, country_code, phone, email, website_url, latitude, longitude, business_type, categories, opening_hours, special_hours, attributes, identifiers, description, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata";
+
+const LISTING_PUBLISHER_COLUMNS =
+  "id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility, created_at, updated_at, version, metadata";
+
+const LOCATION_LISTING_COLUMNS =
+  "id, organization_id, location_id, publisher_id, status, listing_url, observed, nap_match, match_score, last_checked_at, source, notes, created_at, updated_at, deleted_at, version, metadata";
+
+export async function listBusinessLocations(
+  brandId: string,
+  signal?: AbortSignal,
+): Promise<BusinessLocation[]> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("business_location")
+    .select(BUSINESS_LOCATION_COLUMNS)
+    .eq("brand_id", brandId)
+    .is("deleted_at", null)
+    .order("is_primary", { ascending: false })
+    .order("name", { ascending: true })
+    .order("id")
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+export async function getBusinessLocation(
+  locationId: string,
+  signal?: AbortSignal,
+): Promise<BusinessLocation> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("business_location")
+    .select(BUSINESS_LOCATION_COLUMNS)
+    .eq("id", locationId)
+    .is("deleted_at", null)
+    .maybeSingle()
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertFoundOrProbeDeleted(
+    response.data,
+    response.error,
+    "web_business_location",
+    locationId,
+  );
+}
+
+export async function createBusinessLocation(
+  input: CreateBusinessLocationInput,
+): Promise<BusinessLocation> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("business_location")
+    .insert({
+      organization_id: input.organizationId,
+      brand_id: input.brandId,
+      name: input.name,
+    })
+    .select(BUSINESS_LOCATION_COLUMNS)
+    .single();
+  return assertData(response.data, response.error);
+}
+
+export async function updateBusinessLocation(
+  input: UpdateBusinessLocationInput,
+): Promise<BusinessLocation> {
+  const db = await authenticatedWebDb(supabase);
+  return guardedUpdateOrThrow<BusinessLocation>({
+    expectedVersion: input.expectedVersion,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      db
+        .from("business_location")
+        .update({ ...input.patch, version: nextVersion })
+        .eq("id", input.locationId)
+        .eq("version", expectedVersion)
+        .is("deleted_at", null)
+        .select(BUSINESS_LOCATION_COLUMNS)
+        .maybeSingle(),
+    fetchCurrent: () =>
+      db
+        .from("business_location")
+        .select(BUSINESS_LOCATION_COLUMNS)
+        .eq("id", input.locationId)
+        .is("deleted_at", null)
+        .maybeSingle(),
+    conflictMessage:
+      "This location changed in another session. Reload and try again.",
+  });
+}
+
+export async function deleteBusinessLocation(locationId: string): Promise<void> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("business_location")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", locationId)
+    .is("deleted_at", null)
+    .select("id");
+  assertMutated(response.data, response.error, "delete this location");
+}
+
+/** The shared publisher registry — small (dozens of rows), globally readable. */
+export async function listListingPublishers(
+  signal?: AbortSignal,
+): Promise<ListingPublisher[]> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("listing_publisher")
+    .select(LISTING_PUBLISHER_COLUMNS)
+    .is("deleted_at", null)
+    .order("sort_rank", { ascending: true })
+    .order("id")
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+export async function listLocationListings(
+  locationId: string,
+  signal?: AbortSignal,
+): Promise<LocationListing[]> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("location_listing")
+    .select(LOCATION_LISTING_COLUMNS)
+    .eq("location_id", locationId)
+    .is("deleted_at", null)
+    .order("id")
+    .abortSignal(signal ?? new AbortController().signal);
+  return assertData(response.data, response.error);
+}
+
+/** Every publisher joined with this location's listing row (null = never tracked). */
+export function buildListingMatrix(
+  publishers: ListingPublisher[],
+  listings: LocationListing[],
+): ListingMatrixRow[] {
+  const byPublisher = new Map(listings.map((row) => [row.publisher_id, row]));
+  return publishers.map((publisher) => ({
+    publisher,
+    listing: byPublisher.get(publisher.id) ?? null,
+  }));
+}
+
+/** Idempotent per (location, publisher): updates the live row or inserts one. */
+export async function upsertLocationListing(
+  input: UpsertLocationListingInput,
+): Promise<LocationListing> {
+  const db = await authenticatedWebDb(supabase);
+  const existing = await db
+    .from("location_listing")
+    .select(LOCATION_LISTING_COLUMNS)
+    .eq("location_id", input.locationId)
+    .eq("publisher_id", input.publisherId)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (existing.error) {
+    throw operationFailed("load this listing", existing.error);
+  }
+  if (existing.data) {
+    const patch: Record<string, Json | null> = { status: input.status };
+    if (input.listingUrl !== undefined) patch.listing_url = input.listingUrl;
+    if (input.notes !== undefined) patch.notes = input.notes;
+    const response = await db
+      .from("location_listing")
+      .update(patch)
+      .eq("id", existing.data.id)
+      .select(LOCATION_LISTING_COLUMNS)
+      .single();
+    return assertData(response.data, response.error);
+  }
+  const response = await db
+    .from("location_listing")
+    .insert({
+      organization_id: input.organizationId,
+      location_id: input.locationId,
+      publisher_id: input.publisherId,
+      status: input.status,
+      listing_url: input.listingUrl ?? null,
+      notes: input.notes ?? null,
+      source: "manual",
+    })
+    .select(LOCATION_LISTING_COLUMNS)
+    .single();
+  return assertData(response.data, response.error);
 }

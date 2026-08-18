@@ -17,6 +17,14 @@ import {
   confirmDiscoveredProperty,
   getBrand,
   listBrands,
+  listBusinessLocations,
+  getBusinessLocation,
+  createBusinessLocation,
+  updateBusinessLocation,
+  deleteBusinessLocation,
+  listListingPublishers,
+  listLocationListings,
+  upsertLocationListing,
   listBrandAssets,
   listBrandProperties,
   listBrandSites,
@@ -1137,4 +1145,73 @@ export function useSiteVideos(siteId: string) {
       buildSiteVideoAssets(await fetchSiteVideoResourceRows(siteId, signal)),
     staleTime: 60_000,
   });
+}
+
+// ─── Local & Listings ────────────────────────────────────────────────────────
+
+export function useBusinessLocations(brandId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "brand", brandId, "locations"] as const,
+    queryFn: ({ signal }) => listBusinessLocations(brandId, signal),
+    enabled: Boolean(brandId),
+  });
+}
+
+export function useBusinessLocation(locationId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "location", locationId, "detail"] as const,
+    queryFn: ({ signal }) => getBusinessLocation(locationId, signal),
+    enabled: Boolean(locationId),
+  });
+}
+
+/** The shared registry — global, small, safe to cache aggressively. */
+export function useListingPublishers() {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "listing-publishers"] as const,
+    queryFn: ({ signal }) => listListingPublishers(signal),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useLocationListings(locationId: string) {
+  return useQuery({
+    queryKey: [...marketingKeys.root, "location", locationId, "listings"] as const,
+    queryFn: ({ signal }) => listLocationListings(locationId, signal),
+    enabled: Boolean(locationId),
+  });
+}
+
+/** Invalidate the location-scoped reads plus the brand cockpit sections. */
+function useLocationScopedMutation<TInput, TResult>(
+  mutationFn: (input: TInput) => Promise<TResult>,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "location"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...marketingKeys.root, "brand"],
+      });
+    },
+  });
+}
+
+export function useCreateBusinessLocation() {
+  return useLocationScopedMutation(createBusinessLocation);
+}
+
+export function useUpdateBusinessLocation() {
+  return useLocationScopedMutation(updateBusinessLocation);
+}
+
+export function useDeleteBusinessLocation() {
+  return useLocationScopedMutation(deleteBusinessLocation);
+}
+
+export function useUpsertLocationListing() {
+  return useLocationScopedMutation(upsertLocationListing);
 }

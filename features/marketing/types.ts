@@ -730,3 +730,134 @@ export interface MarketingTableStateOptions {
 export function isJsonRecord(value: Json): value is { [key: string]: Json } {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
+
+// ─── Local & Listings (web.business_location / web.listing_publisher / web.location_listing) ───
+
+export type BusinessLocation = WebTables["business_location"]["Row"];
+export type ListingPublisher = WebTables["listing_publisher"]["Row"];
+export type LocationListing = WebTables["location_listing"]["Row"];
+
+export const LOCATION_STATUSES = ["active", "closed", "temporarily_closed", "planned"] as const;
+export type LocationStatus = (typeof LOCATION_STATUSES)[number];
+export const LOCATION_STATUS_LABELS: Record<LocationStatus, string> = {
+  active: "Active",
+  closed: "Permanently closed",
+  temporarily_closed: "Temporarily closed",
+  planned: "Opening soon",
+};
+
+export const PUBLISHER_TIERS = ["critical", "aggregator", "high_value", "vertical", "long_tail"] as const;
+export type PublisherTier = (typeof PUBLISHER_TIERS)[number];
+export const PUBLISHER_TIER_LABELS: Record<PublisherTier, string> = {
+  critical: "Critical",
+  aggregator: "Aggregator",
+  high_value: "High value",
+  vertical: "Vertical",
+  long_tail: "Long tail",
+};
+
+export const PUBLISHER_API_ACCESS_LABELS: Record<string, string> = {
+  open: "Open API",
+  approval: "Approval required",
+  partnership: "Partnership required",
+  closed: "Closed API",
+  none: "Manual only",
+};
+
+export const LISTING_STATUSES = [
+  "unknown",
+  "not_listed",
+  "submitted",
+  "listed",
+  "claimed",
+  "needs_update",
+  "duplicate",
+  "rejected",
+  "closed",
+] as const;
+export type ListingStatus = (typeof LISTING_STATUSES)[number];
+export function isListingStatus(value: string): value is ListingStatus {
+  return LISTING_STATUSES.some((status) => status === value);
+}
+export const LISTING_STATUS_LABELS: Record<ListingStatus, string> = {
+  unknown: "Unknown",
+  not_listed: "Not listed",
+  submitted: "Submitted",
+  listed: "Listed",
+  claimed: "Claimed",
+  needs_update: "Needs update",
+  duplicate: "Duplicate",
+  rejected: "Rejected",
+  closed: "Closed",
+};
+/** Statuses that count as an existing presence on the publisher. */
+export const PRESENT_LISTING_STATUSES: readonly ListingStatus[] = ["listed", "claimed", "needs_update", "duplicate"];
+
+/** One weekday's opening interval inside business_location.opening_hours (jsonb array). */
+export interface OpeningHoursEntry {
+  day: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
+  /** 24h "HH:MM"; omitted with closed=true */
+  opens?: string;
+  closes?: string;
+  closed?: boolean;
+}
+
+export function readOpeningHours(location: BusinessLocation): OpeningHoursEntry[] {
+  const raw = location.opening_hours;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((entry): entry is OpeningHoursEntry & { [key: string]: Json } => {
+    return isJsonRecord(entry as Json) && typeof (entry as { day?: unknown }).day === "string";
+  });
+}
+
+export interface CreateBusinessLocationInput {
+  organizationId: string;
+  brandId: string;
+  name: string;
+}
+
+export interface UpdateBusinessLocationInput {
+  locationId: string;
+  expectedVersion: number;
+  patch: Partial<
+    Pick<
+      WebTables["business_location"]["Update"],
+      | "name"
+      | "status"
+      | "is_primary"
+      | "street_address"
+      | "address_line2"
+      | "locality"
+      | "region"
+      | "postal_code"
+      | "country_code"
+      | "phone"
+      | "email"
+      | "website_url"
+      | "latitude"
+      | "longitude"
+      | "business_type"
+      | "categories"
+      | "opening_hours"
+      | "special_hours"
+      | "attributes"
+      | "identifiers"
+      | "description"
+    >
+  >;
+}
+
+export interface UpsertLocationListingInput {
+  organizationId: string;
+  locationId: string;
+  publisherId: string;
+  status: ListingStatus;
+  listingUrl?: string | null;
+  notes?: string | null;
+}
+
+/** A listing row joined with its publisher for the coverage matrix. */
+export interface ListingMatrixRow {
+  publisher: ListingPublisher;
+  listing: LocationListing | null;
+}
