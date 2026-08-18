@@ -41,6 +41,7 @@ import { Textarea } from "@/components/ui/textarea";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
+import { VoiceTestButton } from "@/features/flashcards/fast-fire/voice-test/VoiceTestButton";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import {
   studyResultsByIndex,
@@ -720,19 +721,201 @@ export function StudyDeck(props: StudyDeckProps) {
   }
 
   if (isMobile && !mobileDismissed) {
+    // IC-4 parity — the phone gets the SAME affordances as desktop, rendered
+    // by the same canonical components, injected into the mobile deck's slots
+    // (never re-implemented inside FlashcardMobileView).
+    const mobileVoiceTest = current ? voiceTestForCard?.(current) : undefined;
+
+    // Grade controls: the identical confidence / simple / pre-flip-predict
+    // logic the desktop renders, on the shared handlers. Wrapped in a real
+    // themed surface so semantic tokens read correctly over the black deck.
+    const mobileBottomBar =
+      currentKind === CARD_KIND.matching ? null : (
+        <div className="rounded-2xl border border-border bg-background p-2 shadow-xl">
+          {useConfidence ? (
+            !isFlipped ? (
+              <FlashcardConfidenceRow
+                onRate={handlePredict}
+                disabled={grading}
+                className="w-full"
+                label="Predict before you flip"
+              />
+            ) : preFlipConfidence != null ? (
+              <div className="flex flex-col gap-1">
+                <FlashcardGradeButtonRow
+                  onGrade={(r) => handleGrade(r, preFlipConfidence)}
+                  disabled={grading}
+                  className="w-full"
+                />
+                <span className="self-center text-[11px] text-muted-foreground">
+                  You predicted {preFlipConfidence}/5 — how did it go?
+                </span>
+              </div>
+            ) : (
+              <FlashcardConfidenceRow
+                onRate={(confidence) =>
+                  handleGrade(confidenceToResult(confidence), confidence)
+                }
+                disabled={grading}
+                className="w-full"
+              />
+            )
+          ) : (
+            <FlashcardGradeButtonRow
+              onGrade={handleGrade}
+              disabled={grading}
+              className="w-full"
+            />
+          )}
+          {enableConfidence && (
+            <button
+              type="button"
+              onClick={toggleGradeStyle}
+              className="mt-1 w-full text-center text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+            >
+              {useConfidence ? "Use simple grading" : "Use 1–5 confidence rating"}
+            </button>
+          )}
+        </div>
+      );
+
+    // The card's full toolbox — audio help, voice test, Ask AI, the full
+    // tutor, memory aids, "Improve this card", the trust footer, and the
+    // mastery list (IC-4 §4: the desktop rail's phone form is this drawer).
+    const mobileTools = current ? (
+      <div className="flex flex-col gap-2 rounded-2xl border border-border bg-background p-2.5">
+        {isFlipped && (
+          <CardTrustFooter
+            trust={coerceTrustEnvelope(current.metadata)}
+            front={current.front}
+            back={current.back ?? ""}
+            cardId={current.id}
+            cardMetadata={current.metadata}
+          />
+        )}
+
+        {currentKind !== CARD_KIND.matching && (
+          <CardAudioHelp
+            key={`m-audio-${current.id}`}
+            cardId={current.id}
+            front={current.front}
+            back={current.back ?? ""}
+            topic={current.topic}
+            revealed={isFlipped}
+            spokenFrontFileId={
+              mobileVoiceTest?.spokenFrontFileId ??
+              current.details?.find(
+                (d) => d.kind === "spoken_front" && d.audio_file_id,
+              )?.audio_file_id ??
+              null
+            }
+          />
+        )}
+
+        {mobileVoiceTest && current.back != null && (
+          <VoiceTestButton
+            card={{
+              id: mobileVoiceTest.cardId,
+              front: current.front,
+              back: current.back,
+            }}
+            spokenFrontFileId={mobileVoiceTest.spokenFrontFileId}
+          />
+        )}
+
+        {enableTutor && (
+          <>
+            <AskAiPanel
+              open={askOpen}
+              question={question}
+              onQuestionChange={setQuestion}
+              onToggle={() => setAskOpen((o) => !o)}
+              onAsk={() => void askAi()}
+              loading={helpLoading}
+              result={shownHelp}
+              tip={shownTip}
+              unavailable={helpAsked && !helpLoading && !help}
+            />
+            <AskTutorButton
+              seed={{
+                title: "This flashcard the learner is studying",
+                material: `Front: "${current.front}"\nBack: "${current.back}"${
+                  current.topic ? `\nTopic: ${current.topic}` : ""
+                }`,
+              }}
+              label="Open full tutor"
+              variant="ghost"
+              className="w-full"
+            />
+          </>
+        )}
+
+        {enableMemoryAids && currentKind !== CARD_KIND.matching && (
+          <MemoryAidButton
+            key={`m-memory-${current.id}`}
+            cardId={current.id}
+            front={current.front}
+            back={current.back ?? ""}
+            topic={current.topic}
+            existingDetails={current.details}
+          />
+        )}
+
+        {setId && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full gap-1.5 text-xs"
+            onClick={() => setEnhanceOpen(true)}
+          >
+            <Expand className="h-3.5 w-3.5" />
+            Improve this card
+          </Button>
+        )}
+
+        {/* The mastery rail's phone form — same component, drawer placement. */}
+        <div className="flex max-h-[38dvh] flex-col overflow-hidden rounded-lg border border-border">
+          <FlashcardStudySidebar
+            cards={cards}
+            currentIndex={currentIndex}
+            resultsByCard={resultsByCard}
+            masteryByCard={masteryByCard}
+            onGoTo={goTo}
+          />
+        </div>
+      </div>
+    ) : null;
+
     return (
-      <FlashcardMobileView
-        mode="study"
-        cards={toFlashcardMobileCardsFromStudy(cards)}
-        controlledIndex={currentIndex}
-        onIndexChange={goTo}
-        controlledFlipped={isFlipped}
-        onFlipToggle={flip}
-        onGrade={handleGrade}
-        resultsByIndex={studyResultsByIndex(cards, resultsByCard)}
-        grading={grading}
-        onClose={() => setMobileDismissed(true)}
-      />
+      <>
+        <FlashcardMobileView
+          mode="study"
+          cards={toFlashcardMobileCardsFromStudy(cards)}
+          controlledIndex={currentIndex}
+          onIndexChange={goTo}
+          controlledFlipped={isFlipped}
+          onFlipToggle={flip}
+          onGrade={handleGrade}
+          resultsByIndex={studyResultsByIndex(cards, resultsByCard)}
+          grading={grading}
+          onClose={() => setMobileDismissed(true)}
+          bottomBar={mobileBottomBar}
+          toolsPanel={mobileTools}
+        />
+        {/* Same canonical enhance flow as desktop — mounted on first open. */}
+        {setId && current && enhanceOpen && (
+          <Suspense fallback={null}>
+            <EnhanceSetDialog
+              open={enhanceOpen}
+              onOpenChange={setEnhanceOpen}
+              setId={setId}
+              cards={[current]}
+              onChanged={() => onCardsChanged?.()}
+            />
+          </Suspense>
+        )}
+      </>
     );
   }
 

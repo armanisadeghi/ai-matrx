@@ -56,6 +56,22 @@ interface FlashcardMobileViewProps {
   onGrade?: (result: ReviewResult) => void | Promise<boolean | void>;
   resultsByIndex?: Record<number, ReviewResult | undefined>;
   grading?: boolean;
+  /**
+   * IC-4 parity slots — the study driver (StudyDeck) injects its OWN canonical
+   * controls so mobile study is the same logic as desktop, never a fork.
+   *
+   * `bottomBar`: always-visible strip under the card (grade / predict rows).
+   * When provided in study mode it REPLACES the drawer's built-in 3-way grade
+   * rows, so grading depth (1–5 confidence, pre-flip prediction) is decided by
+   * the driver, not hard-coded here.
+   */
+  bottomBar?: React.ReactNode;
+  /**
+   * `toolsPanel`: rendered inside the swipe-up action drawer — the card's AI
+   * and trust affordances (audio help, Ask AI, tutor, memory aids, trust
+   * footer, mastery list). Scrolls internally when tall.
+   */
+  toolsPanel?: React.ReactNode;
 }
 
 // ─────────────────────────────────────────────
@@ -670,6 +686,8 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
   onGrade,
   resultsByIndex,
   grading = false,
+  bottomBar,
+  toolsPanel,
 }) => {
   const isControlledIndex = controlledIndex !== undefined;
   const isControlledFlip = controlledFlipped !== undefined;
@@ -1042,6 +1060,13 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
         </div>
       )}
 
+      {/* ── Driver-injected bottom bar (IC-4): the study surface's own grade /
+          predict controls, always visible — grading never hides behind a
+          swipe. Hidden while a panel is open so it can't fight the drawer. ── */}
+      {bottomBar && !anyPanelOpen && (
+        <div className="shrink-0 px-2 pb-safe">{bottomBar}</div>
+      )}
+
       {/* ── Filmstrip scrubber (swipe down) — slides in from top ── */}
       <div
         className="absolute top-0 left-0 right-0 z-10 flex flex-col"
@@ -1137,6 +1162,17 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
                 label="Random"
                 onClick={shuffle}
               />
+            ) : bottomBar ? (
+              // The driver owns grading via the bottom bar — this cell offers
+              // the filmstrip jump instead of a duplicate grade row.
+              <ActionButton
+                icon={<Layers className="h-5 w-5" />}
+                label="Jump"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setScrubOpen(true);
+                }}
+              />
             ) : (
               <div className="flex flex-col items-center justify-center gap-1 bg-zinc-900 px-1 py-2">
                 <FlashcardGradeButtonRow
@@ -1158,7 +1194,7 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
             />
           </div>
 
-          {isStudy && onGrade ? (
+          {isStudy && onGrade && !bottomBar ? (
             <div className="border-t border-white/5 px-3 py-2">
               <FlashcardGradeButtonRow
                 onGrade={handleGrade}
@@ -1166,6 +1202,14 @@ const FlashcardMobileView: React.FC<FlashcardMobileViewProps> = ({
                 size="compact"
                 className="w-full"
               />
+            </div>
+          ) : null}
+
+          {/* IC-4 — the driver's card tools (audio help, Ask AI, tutor, memory
+              aids, trust footer, mastery). Scrolls internally when tall. */}
+          {toolsPanel ? (
+            <div className="max-h-[45dvh] overflow-y-auto overscroll-contain border-t border-white/5 px-3 py-2">
+              {toolsPanel}
             </div>
           ) : null}
 
