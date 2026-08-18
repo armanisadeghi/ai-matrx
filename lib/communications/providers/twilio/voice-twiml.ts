@@ -27,7 +27,13 @@ export interface OwnerBetaRecordingStart {
   recordingStatusCallbackUrl: string;
 }
 
+export interface OwnerBetaConversationRelayConnect {
+  sessionReference: string;
+  url: string;
+}
+
 export interface OwnerBetaConsentAcceptedTwimlOptions {
+  conversationRelay?: OwnerBetaConversationRelayConnect | null;
   recording: OwnerBetaRecordingStart | null;
 }
 
@@ -76,6 +82,20 @@ export function buildOwnerBetaConsentAcceptedTwiml(
     track: "both",
     trim: "do-not-trim",
   });
+
+  if (options.conversationRelay) {
+    const connect = response.connect();
+    const relay = connect.conversationRelay({
+      url: options.conversationRelay.url,
+      welcomeGreeting: OWNER_BETA_RECORDING_STARTED_MESSAGE,
+    });
+    relay.parameter({
+      name: "sessionReference",
+      value: options.conversationRelay.sessionReference,
+    });
+    return response.toString();
+  }
+
   response.say({ voice: VOICE }, OWNER_BETA_RECORDING_STARTED_MESSAGE);
   response.hangup();
   return response.toString();

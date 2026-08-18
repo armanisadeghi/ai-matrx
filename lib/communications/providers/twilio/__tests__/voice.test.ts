@@ -100,6 +100,44 @@ describe("Twilio Voice provider adapter", () => {
     expect(twiml).not.toContain("<Stream");
   });
 
+  test("composes post-consent recording before ConversationRelay without unpublished event subscriptions", () => {
+    const twiml = buildOwnerBetaConsentAcceptedTwiml({
+      recording: {
+        recordingStatusCallbackUrl:
+          "https://www.aimatrx.com/api/webhooks/twilio/voice/recording",
+      },
+      conversationRelay: {
+        sessionReference: "owner-beta-one-time-reference",
+        url: "wss://server.app.matrxserver.com/communications/voice/conversation-relay",
+      },
+    });
+
+    expect(twiml.indexOf("<Start>")).toBeLessThan(twiml.indexOf("<Connect>"));
+    expect(twiml).toContain(
+      '<ConversationRelay url="wss://server.app.matrxserver.com/communications/voice/conversation-relay"',
+    );
+    expect(twiml).toContain(
+      '<Parameter name="sessionReference" value="owner-beta-one-time-reference"/>',
+    );
+    expect(twiml).toContain('welcomeGreeting="Thank you. Your consent was received. Recording starts now.');
+    expect(twiml).not.toContain(" events=");
+    expect(twiml).not.toContain("<Hangup");
+  });
+
+  test("refuses ConversationRelay when recording is not ready after the disclosed recording promise", () => {
+    const twiml = buildOwnerBetaConsentAcceptedTwiml({
+      recording: null,
+      conversationRelay: {
+        sessionReference: "owner-beta-one-time-reference",
+        url: "wss://server.app.matrxserver.com/communications/voice/conversation-relay",
+      },
+    });
+
+    expect(twiml).toContain("recording is not available right now");
+    expect(twiml).toContain("<Hangup/>");
+    expect(twiml).not.toContain("<Connect");
+  });
+
   test("accepts only exact affirmative DTMF or narrow speech consent", () => {
     expect(parseTwilioVoiceConsentDecision({ Digits: "1" })).toEqual({
       consented: true,
