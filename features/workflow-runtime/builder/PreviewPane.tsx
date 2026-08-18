@@ -115,9 +115,12 @@ export function PreviewPane({
   useEffect(() => {
     if (source !== "sample") return;
     const target = momentForScreen(config, definition, screenId, lastMoment);
-    if (target !== null) setMoment(Math.min(target, lastMoment));
+    if (target === null) return;
+    const frame = window.requestAnimationFrame(() => {
+      setMoment(Math.min(target, lastMoment));
+    });
+    return () => window.cancelAnimationFrame(frame);
     // Only when the chosen screen changes — never fighting a manual scrub.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenId, source]);
 
   const sampleRunId = useSamplePreviewRun(definition, moment, source === "sample");
