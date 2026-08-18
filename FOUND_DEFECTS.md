@@ -17,6 +17,25 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D213 — Google Slides export requests an UNAPPROVED scope through a hand-rolled OAuth path (2026-08-18)
+
+`components/mardown-display/blocks/presentations/presentation-export.ts:345` declares
+`GOOGLE_SLIDES_SCOPE = 'https://www.googleapis.com/auth/presentations'` locally and calls the Slides
+REST API directly (`:420` create, `:776` batchUpdate); `PresentationExportMenu.tsx:247` calls
+`signIn([GOOGLE_SLIDES_SCOPE])`. Reachable — `Slideshow.tsx:201` renders the menu. Two problems:
+the scope is absent from `lib/googleScopes.ts` (which declares itself the one registry) and from the
+backend mirror `aidream/services/google_integrations/scopes.py`; and Presentations is explicitly
+listed under **"Not allowed by this approval"** in
+`common-docs/projects/google-oauth-verification/PRODUCTION-ROLLOUT.md`. It is also a per-feature
+Google client, the exact pattern the canonical connection exists to replace.
+
+**Decision, not a fix** (do not silently delete a shipped feature): either gate/remove the export
+until it has its own approval campaign, or open `google.slides` as a separate provider-access
+campaign and rebuild it on the canonical connection. **First verify** whether `presentations` is even
+configured on the production OAuth client — if not, the export is already broken for users, which
+changes the urgency. Found while publishing the canonical Google Workspace tools; unrelated to that
+work, so filed rather than fixed.
+
 ### D211 — org/project invitation email templates interpolate unescaped user text into HTML (2026-08-18)
 
 `lib/email/client.ts` — `organizationInvitation` and `projectInvitation` interpolate the org/project name and inviter name (user-controlled: `user_metadata.full_name`, org/project `name`) straight into the email HTML. A user can set a name containing markup/links and produce attacker-crafted HTML in real email sent from the aimatrx.com domain (branded-phishing vector). Found by the WP6 adversarial review; the NEW `classInvitation` template escapes via `escapeEmailHtml` (same file) and is the model — the fix is wrapping the same helper around each interpolated name in the two older templates plus any template that takes user text (`welcome`, sharing/feedback templates worth an audit). Not fixed in the WP6 session because those templates belong to the org/project invite flows (out of scope); the helper is exported and ready.
