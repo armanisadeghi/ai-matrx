@@ -283,6 +283,16 @@ live; (2) is still open.**
      real production bytes: `__tests__/artifact-wrapped-payload-live-stream.test.ts`
      (envelope present mid-stream WITH CARDS, complete at the end, block still
      `type: "artifact"`).
+     ⚠️ **One correction to that entry:** the WIRE is not artifact-wrapped.
+     Tee'ing the response body of four real runs showed bare, pretty-printed
+     JSON (`{\n  "__kind": "flashcard_set",\n  "cards": […`) with no
+     `<artifact …>` tag anywhere, and nothing in aidream emits that tag (grep
+     finds only parsers). The wrapper seen on the persisted `chat.message` row
+     is written AFTER the run by client-side canvas materialization
+     (`features/canvas/materialization/artifactWire.ts`). The accumulator fix
+     is still right and still needed — it covers D170's `<image_prompt>` half
+     and any reload of a materialized message — it simply was not what this
+     run's live stream took.
    - ✅ **THE DISCRIMINATOR-ORDER CLASS (fixed 2026-08-18, aidream).** The
      earlier read that "the run emits no chunks at all" was WRONG — measured on
      the wire, aidream streams this run token-by-token the whole way. What was
