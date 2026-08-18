@@ -42,6 +42,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 
 import type { Readout, ReadoutSource, RunSurfaceConfig } from "../surface/config";
+import { TERMINAL_RUN_STATUSES } from "../types";
 import {
   getDefaultSurface,
   fetchWorkflowDefinition,
@@ -206,6 +207,8 @@ function NodeReadout({
   ensureLane?: EnsureLaneFn;
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
+  const runStatus = useAppSelector(selectRunStatus(runId));
+  const terminal = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
   const { invocations, phase } = aggregate;
   // Promotion is SINGLE-invocation only: fan-out deltas carry node_id alone
   // and stay in the tracked tier, so a promoted sibling lane could never
@@ -222,11 +225,20 @@ function NodeReadout({
     // copy is forward-looking, not a status stamp: on the first frame of a
     // run every box said "Not started", which reads as a failure report
     // rather than as the queue it actually is.
+    //
+    // On a TERMINAL run there is no future to point at, and the forward-
+    // looking sentence becomes a lie the reader waits on: the finished Study
+    // Pack run showed "This fills in when the run reaches this step" under
+    // "Study notes" forever, because that one node of 24 never ran
+    // (2026-08-18). A finished run says so.
+    const waiting = phase === "idle" || phase === "waiting";
     return (
       <p className="text-xs text-muted-foreground">
-        {phase === "idle" || phase === "waiting"
-          ? "This fills in when the run reaches this step."
-          : (PHASE_LABEL[phase] ?? phase)}
+        {!waiting
+          ? (PHASE_LABEL[phase] ?? phase)
+          : terminal
+            ? "This step never ran."
+            : "This fills in when the run reaches this step."}
       </p>
     );
   }

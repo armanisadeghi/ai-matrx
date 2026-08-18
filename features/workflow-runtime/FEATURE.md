@@ -30,6 +30,9 @@ that is the exit-test surface.
 | Trigger points | `trigger-points.ts` | Ruling R2: named, enumerable moments derived from the DEFINITION (`run:*`, `node:<id>:*`, `edge:<id>:traversed` — client-DERIVED, the engine emits no edge events — `deliverable:ready`, `mark:<name>`), resolved against run state. Pure module. |
 | Hooks | `hooks/useWorkflowRun.ts`, `hooks/useWorkflowRunControls.ts` | Adoption is refcounted per runId (two watchers share one adapter). Controls are the ONLY lifecycle verbs — start/pause/resume/cancel/answer-interrupt/retry/skip via `callApi`. |
 | **THE LIVE RUN EXPERIENCE** | `components/run/RunStage.tsx` | The surface a person actually watches, composed like the podcast studio: hero + promise → journey rail + activity feed → authored readouts → deliverables. Hoists the authored progress rails into the always-visible journey (`hideProgressRails`) and renders the failure/interrupt cards itself (`hideRunStatusCards`), so nothing is drawn twice. Falls back to `deriveDefaultSurfaceConfig` when a workflow has no authored surface. |
+| **The catalog** | `browse/` → `app/(core)/workflows/all/page.tsx` | `/workflows/all` on the CANONICAL entity-list shell (`lib/entity-list`) — not a bespoke grid. Config in `browse/listConfig.tsx`; rows from `public.wfx_list_scoped` read DIRECT via supabase-js (`browse/service.ts`), never through the Python server. Table-first with every column sorting AND filtering server-side, card + dense views, Mine / My Orgs / Shared / Public with true server counts, relevance-ranked search. ONE `ItemMenuConfig` builder (`browse/workflowActionRegistry.tsx`) feeds the table kebab, the card kebab, the dense-row kebab and right-click, so the three-drifting-action-lists failure that hit agents cannot happen here. |
+| Catalog RPCs | `migrations/wfx_list_scoped.sql` | `wfx_list_scoped` / `wfx_list_scope_counts` / `wfx_list_facets` / `wfx_bucket_matches`, hand-written from the template in `lib/list-scope/FEATURE.md`. Owner column is `created_by` (agents use `user_id`); `iam.permissions.resource_type` is `'workflow'`. Relevance comes from `public.mtx_search_score` — the GENERIC scorer, not a fourth copy of `agx_search_score`: it reproduces agx's tiers exactly on the shared parity fixture (12/12 MATCH), with the per-feature extras passed as `p_extra_300` / `p_extra_100` arrays. |
+| Run status vocabulary | `run-status.tsx` | THE one place a `workflow.run.status` becomes words and an icon (`RUN_STATUS_LABEL`, `RUN_STATUS_PHASE`, `runStatusLabel`, `RunStatusChip`). There were two disagreeing copies before it — `ReadoutView`'s and the old catalog's ("completed" was "Done" in one and "Finished" in the other) — and the list page would have been a third. Both now import from here. |
 | Run routes | `app/(core)/workflows/[id]/page.tsx`, `app/(core)/workflows/runs/[runId]/page.tsx` → `components/run/WorkflowRunPage.tsx` | One body, two doors: `/workflows/[id]` sets up + runs (run id rides `?run=`), `/workflows/runs/[runId]` is the run's permalink (THE DOOR LAW). Each resolves the other, so a refresh always lands back on the live run. `(core)` conformant: `RouteHeader`, body `h-full overflow-hidden`, one inner scroll. |
 | Hero + the promise | `components/run/RunHero.tsx` | Status, elapsed (from the ENGINE's start, not the attach), cost, step count, and the chip row naming every deliverable **from frame zero** — the ProductionTeaser job, generalized. Fixed heights: nothing below it moves as state changes. |
 | Journey rail | `components/run/RunJourney.tsx` | Every step of the DEFINITION present immediately (not just the ones the run has reported), each with its author's label, its own icon, and what it will produce. Three layers while a step runs: its freshest REAL signal, the authored synthetic sub-steps (the guaranteed floor — never removed), the phase. Both retire on completion; the full trace lives in the feed. |
@@ -99,6 +102,20 @@ that is the exit-test surface.
   is the exit test, not the product.
 - **StreamProfiler** (`utils/stream-profiler.ts`) is gated off by CAPS constant — the global
   one-request singleton was a measured hazard for N concurrent lanes.
+
+## Known limits
+
+- **There is no per-workflow run-history surface.** `/workflows/runs/[runId]` opens ONE run, so
+  the catalog's Runs column is a plain count rather than a door: pointing "4 runs" at the single
+  most recent run would land the user somewhere the number did not promise. The Last run cell
+  beside it IS a real door to a real record, and the row menu carries "Open the last run". A
+  proper `/workflows/[id]/runs` list is the fix, and it is the one thing on this surface that
+  THE DOOR LAW still wants.
+- **`workflow.v_definition_catalog` no longer has a consumer.** The view existed so the old
+  catalog could read step/run counts without shipping the `nodes`/`edges` jsonb;
+  `wfx_list_scoped` computes the same facts from the same lateral, with scoping and filtering the
+  view could not do. The view is left in place deliberately — per the unfinished-work alarm, an
+  artifact with no runtime consumer is a decision for Arman, not something an agent retires.
 
 ## Change Log
 
@@ -263,6 +280,24 @@ that is the exit-test surface.
   added `ProgressRailReadout` / `ReadoutView` / `RunSurfaceView`; slice gained
   `childRunsByNode` (subgraph_run_linked node→child map) + selectors
   `selectChildRunIdForNode` and `selectNodeAggregatePhases`.
+- 2026-08-18 — **the catalog moved to `/workflows/all` and was rebuilt on the canonical
+  entity-list shell** (Arman's ruling after testing production). `/workflows` is now RESERVED for
+  a future marketing page and redirects signed-in visitors to the catalog (signed-out ones go
+  through `loginHref`, so the destination survives sign-in); `/workflows/[id]` and
+  `/workflows/[id]/design` are untouched. What the bespoke card grid could not do and the shell
+  does: scopes with true server counts, every column sorting AND filtering over the whole result
+  set, relevance-ranked search, card/dense/table views with persisted style, inline edit, and one
+  action list per row. **The visual defect that prompted this** — the search field flush against
+  the shell's glass header (measured: input top 44px, header bottom 44px, zero clearance) — is
+  gone because the shell owns its own `pt-[calc(var(--shell-header-h)+0.5rem)]`; measured 56px of
+  clearance after. Three doors that were dark got lit on the way: `entityRegistry.workflow`
+  gained its `hrefFor` (the "no detail route exists" comment had outlived `/workflows/[id]` by
+  months, so every workflow `EntityRef`, peek and toast door was inert), the
+  `platform.shareable_resource_registry` row got its `url_path_template` back
+  (`migrations/wfx_share_registry_workflow_route.sql` — emptied in the D138 sweep for the same
+  stale reason, so a shared workflow's modal rendered no link), and `workflow_run` was registered
+  in `FEATURE_META`, which makes 128 existing engine-stamped conversations filterable for the
+  first time. The old `catalog/` directory is deleted, not shimmed.
 - 2026-08-18 — the dead-run defect class closed after Arman's morning test: `RunErrorCard`
   (readout-parts) renders a failed/errored run's structured error + failing-step names on the
   Surface AND the Board (it used to sit at "Not started" forever); the progress rail shows the
