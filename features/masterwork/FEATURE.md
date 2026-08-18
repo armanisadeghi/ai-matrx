@@ -60,7 +60,9 @@
 - **THE RECORD — "Your words" (2026-08-17).** `/masterwork/[id]/record` shows everything the Expert
   has contributed to one Rulebook — every interview turn, every uploaded source, every recording —
   oldest first, with a door on every item and copy-everything (`CopyButtons`: human / for-AI / JSON).
-  Reached from a header action on the Rulebook page. Files: `record/service.ts`,
+  The Rulebook page opens that same `ExpertRecordPage` in a large, non-blocking
+  `masterworkYourWordsWindow`; the adjacent up-right-arrow is the explicit new-tab door to the
+  full route, so reading the Record never silently discards the Rulebook workspace. Files: `record/service.ts`,
   `record/ExpertRecordPage.tsx`, `record/InterviewChooser.tsx`, `record/copy.ts`. See § The Record
   below for the association and the corpus contract.
 - **The Scout interview Approach:** `ScoutInterviewPanel` (AskTutor pattern — useAgentLauncher +

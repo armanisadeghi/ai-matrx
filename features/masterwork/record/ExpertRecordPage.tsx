@@ -40,6 +40,7 @@ import LoadingSpinner from "@/components/ui/loading-spinner";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { cn } from "@/lib/utils";
 import { getRulebook } from "../service";
 import type { Rulebook } from "../types";
 import { getExpertCorpus, type ExpertContribution, type ExpertCorpus } from "./service";
@@ -218,9 +219,14 @@ function ContributionCard({
 
 export interface ExpertRecordPageProps {
   rulebookId: string;
+  /** Page chrome is omitted when the same record renders inside WindowPanel. */
+  variant?: "page" | "window";
 }
 
-export function ExpertRecordPage({ rulebookId }: ExpertRecordPageProps) {
+export function ExpertRecordPage({
+  rulebookId,
+  variant = "page",
+}: ExpertRecordPageProps) {
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
   const [corpus, setCorpus] = useState<ExpertCorpus | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -269,14 +275,30 @@ export function ExpertRecordPage({ rulebookId }: ExpertRecordPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4 pb-8 sm:px-6">
-      <div className="rounded-lg border border-border bg-card p-4">
+    <div
+      className={cn(
+        "mx-auto max-w-3xl space-y-4 px-4 pb-8 sm:px-6",
+        variant === "window" && "pt-4",
+      )}
+    >
+      <div
+        className={cn(
+          variant === "page" && "rounded-lg border border-border bg-card p-4",
+        )}
+      >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-base font-semibold text-foreground">
-              Your words
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
+            {variant === "page" ? (
+              <h2 className="text-base font-semibold text-foreground">
+                Your words
+              </h2>
+            ) : null}
+            <p
+              className={cn(
+                "text-sm text-muted-foreground",
+                variant === "page" && "mt-1",
+              )}
+            >
               Everything you&apos;ve told us while building{" "}
               <span className="font-medium text-foreground">{name}</span> —
               oldest first, nothing left out.
@@ -297,9 +319,13 @@ export function ExpertRecordPage({ rulebookId }: ExpertRecordPageProps) {
               agent={() => corpusAgentPayload(corpus, name)}
               json={() => corpus}
             />
-            <Button asChild size="sm" variant="outline" className="h-9">
-              <Link href={`/masterwork/${rulebookId}`}>Back to the Rulebook</Link>
-            </Button>
+            {variant === "page" ? (
+              <Button asChild size="sm" variant="outline" className="h-9">
+                <Link href={`/masterwork/${rulebookId}`}>
+                  Back to the Rulebook
+                </Link>
+              </Button>
+            ) : null}
           </div>
         </div>
       </div>

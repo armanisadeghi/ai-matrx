@@ -622,6 +622,10 @@ const MasterworkAddRuleWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/masterwork/AddRuleWindow"),
   { ssr: false },
 );
+const MasterworkYourWordsWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/masterwork/YourWordsWindow"),
+  { ssr: false },
+);
 const AddToRulebookDialog = lazyOverlay(
   () => import("@/features/masterwork/oracle/AddToRulebookDialog"),
   { ssr: false },
@@ -1074,6 +1078,9 @@ export default function OverlayController() {
     masterworkAddRuleWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "masterworkAddRuleWindow"),
     ),
+    masterworkYourWordsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "masterworkYourWordsWindow"),
+    ),
     addToRulebookDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "addToRulebookDialog"),
     ),
@@ -1412,6 +1419,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     masterworkAddRuleWindow: useAppSelector((s) =>
       selectOverlayData(s, "masterworkAddRuleWindow"),
+    ) as Record<string, unknown> | null,
+    masterworkYourWordsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "masterworkYourWordsWindow"),
     ) as Record<string, unknown> | null,
     addToRulebookDialog: useAppSelector((s) =>
       selectOverlayData(s, "addToRulebookDialog"),
@@ -2560,6 +2570,25 @@ export default function OverlayController() {
                 ? data.defaultSection
                 : null
             }
+          />
+        );
+      })()}
+
+      {/* masterworkYourWordsWindow — the canonical Record beside the Rulebook. */}
+      {(() => {
+        const isOpen = isOpenById.masterworkYourWordsWindow;
+        const data = dataById.masterworkYourWordsWindow as
+          Record<string, unknown> | null | undefined;
+        const rulebookId =
+          typeof data?.rulebookId === "string" ? data.rulebookId : null;
+        if (!isOpen || !rulebookId) return null;
+        return (
+          <MasterworkYourWordsWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "masterworkYourWordsWindow" }))
+            }
+            rulebookId={rulebookId}
           />
         );
       })()}

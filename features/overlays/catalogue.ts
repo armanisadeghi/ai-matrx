@@ -490,6 +490,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  masterworkYourWordsWindow: {
+    label: "Your words",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   addToRulebookDialog: {
     label: "Add to Rulebook",
     instanceMode: "singleton",

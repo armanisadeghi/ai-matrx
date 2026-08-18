@@ -10,6 +10,7 @@ import {
   Hammer,
   ChevronDown,
   ChevronRight,
+  ExternalLink,
   ListTodo,
   MessageCircleQuestion,
   MessagesSquare,
@@ -68,6 +69,7 @@ import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RulebookSourcesPanel } from "./RulebookSourcesPanel";
 import { InterviewButton, ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { ConversationsSection } from "../../record/ConversationsSection";
+import { YourWordsActions } from "../../record/YourWordsActions";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 import {
   RuleFeedbackDialog,
@@ -86,6 +88,7 @@ import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/mast
 // "Add rule" is a WindowPanel (With AI default + Manually) — never a blocking
 // modal. The RuleEditorDialog keeps only EDIT plus agent-staged drafts.
 import { useOpenAddRuleWindow } from "@/features/overlays/openers/masterworkAddRuleWindow";
+import { useOpenMasterworkYourWordsWindow } from "@/features/overlays/openers/masterworkYourWordsWindow";
 
 /**
  * The Expert surface: read your Rulebook, correct it, grow it. Rules are
@@ -606,6 +609,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const userId = useAppSelector(selectUserId);
   const openCheckup = useOpenMasterworkCheckupWindow();
   const openAddRule = useOpenAddRuleWindow();
+  const openYourWords = useOpenMasterworkYourWordsWindow();
 
   const reloadRulebook = useCallback(async () => {
     const r = await getRulebook(rulebookId);
@@ -859,11 +863,19 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               ] satisfies ContextMenuExtraSection["items"])
             : []),
           {
-            kind: "link",
-            id: "open-record",
+            kind: "item",
+            id: "open-record-window",
             label: "Your words",
             icon: Quote,
+            onSelect: () => openYourWords({ rulebookId }),
+          },
+          {
+            kind: "link",
+            id: "open-record-new-tab",
+            label: "Your words in a new tab",
+            icon: ExternalLink,
             href: `/masterwork/${rulebookId}/record`,
+            target: "_blank",
           },
           {
             kind: "link",
@@ -875,7 +887,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         ],
       },
     ],
-    [canEdit, refreshWorkspace, rulebookId],
+    [canEdit, openYourWords, refreshWorkspace, rulebookId],
   );
 
   const persist = useCallback(
@@ -1208,12 +1220,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 {/* THE RECORD — everything the Expert has said about this
                 Rulebook. Their words are the most valuable thing here; they
                 are never more than one click away. */}
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/masterwork/${rulebook.id}/record`}>
-                    <Quote className="h-4 w-4" />
-                    Your words
-                  </Link>
-                </Button>
+                <YourWordsActions rulebookId={rulebook.id} />
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/masterwork/${rulebook.id}/masterworks`}>
                     <Workflow className="h-4 w-4" />

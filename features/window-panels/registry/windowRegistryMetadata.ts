@@ -1009,6 +1009,19 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "fullscreen",
   },
 
+  // ── Masterwork Your Words ────────────────────────────────────────────────
+  // Ephemeral: it is a state-preserving companion to the Rulebook currently
+  // in view. The full route remains available as an explicit new-tab door.
+  {
+    slug: "masterwork-your-words-window",
+    overlayId: "masterworkYourWordsWindow",
+    kind: "window",
+    label: "Your words",
+    defaultData: { rulebookId: null },
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+  },
+
   // ── Image Annotation ─────────────────────────────────────────────────────
   {
     slug: "image-annotation-window",

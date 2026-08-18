@@ -28,7 +28,6 @@ import {
   Expand,
   MessagesSquare,
   Plus,
-  Quote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -38,6 +37,7 @@ import {
   type RulebookInterview,
 } from "./service";
 import type { RulebookRule } from "../types";
+import { YourWordsActions } from "./YourWordsActions";
 
 export interface ConversationsSectionProps {
   rulebookId: string;
@@ -95,12 +95,7 @@ export function ConversationsSection({
           ) : null}
         </h3>
         <div className="flex gap-2">
-          <Button asChild size="sm" variant="ghost" className="h-7">
-            <Link href={`/masterwork/${rulebookId}/record`}>
-              <Quote className="mr-1 h-3.5 w-3.5" />
-              Your words
-            </Link>
-          </Button>
+          <YourWordsActions rulebookId={rulebookId} compact variant="ghost" />
           {canEdit ? (
             <Button size="sm" className="h-7" onClick={onStartNew}>
               <Plus className="mr-1 h-3.5 w-3.5" />
