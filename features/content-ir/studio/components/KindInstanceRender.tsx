@@ -32,7 +32,9 @@ import {
 const noopReplaceBlockContent = (_original: string, _replacement: string) => {};
 const noopOpenEditor = () => {};
 
-export function isRecordValue(value: unknown): value is Record<string, unknown> {
+export function isRecordValue(
+  value: unknown,
+): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -54,6 +56,21 @@ interface KindInstanceRenderProps {
   value: unknown;
   /** Show the honest "no component registered" banner when unroutable. */
   showRoutingNote?: boolean;
+  /**
+   * What to render when the routing decision lands on "no component exists for
+   * this kind". The generic JSON viewer is the right answer for the studio and
+   * the admin preview — they are LOOKING at the shape. It is the wrong answer
+   * on a product surface, where the raw value can be an internal envelope: an
+   * `agent_result` dumped the verbatim prompt, the model id and the token bill
+   * into the box a learner was waiting on. Passing a fallback lets that caller
+   * show what the reader actually wants WITHOUT anyone second-guessing the
+   * routing decision — this component stays the ONE place that decides whether
+   * a kind has a component (THE CANONICAL COMPONENT LAW is about overriding an
+   * EXISTING component; there is none to override here).
+   *
+   * Omitted → the generic viewer, exactly as before.
+   */
+  unroutableFallback?: React.ReactNode;
 }
 
 type RoutingStatus = "checking" | "routable" | "unroutable";
@@ -62,6 +79,7 @@ export default function KindInstanceRender({
   kind,
   value,
   showRoutingNote = true,
+  unroutableFallback,
 }: KindInstanceRenderProps) {
   // Routing must be judged with the WARM tiers in (user kind definitions +
   // `kind_component` resolver rows — including source='db' user components).
@@ -113,6 +131,13 @@ export default function KindInstanceRender({
       }
     : null;
 
+  // A caller that supplied a fallback gets it the moment routing SETTLES on
+  // "no component" — never during "checking", so a warm-up tick can't flash
+  // the fallback over a component that is about to resolve.
+  if (routingStatus === "unroutable" && unroutableFallback !== undefined) {
+    return <>{unroutableFallback}</>;
+  }
+
   return (
     <div className="space-y-3">
       {showRoutingNote && routingStatus === "unroutable" && (
@@ -135,8 +160,8 @@ export default function KindInstanceRender({
         <div className="rounded-md border border-border bg-card p-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5 shrink-0" />
-            This value is a JSON scalar/array (workflow I/O shape) — there is
-            no block render path for it; raw value below.
+            This value is a JSON scalar/array (workflow I/O shape) — there is no
+            block render path for it; raw value below.
           </div>
           <pre className="mt-2 overflow-x-auto rounded bg-muted p-2 font-mono text-xs text-foreground">
             {JSON.stringify(value, null, 2)}

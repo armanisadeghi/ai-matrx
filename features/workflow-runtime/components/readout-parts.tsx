@@ -25,6 +25,7 @@ import MarkdownStream from "@/components/MarkdownStream";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
+import { looksLikeJsonDocument, readAgentRunOutput } from "../agent-run-output";
 import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
 import { explainRunFailure } from "../run-failure-explanation";
 import {
@@ -84,6 +85,54 @@ function WorkingBody({ message }: { message: string | null }) {
         <div className="h-2 w-[85%] animate-pulse rounded-full bg-muted [animation-delay:300ms]" />
       </div>
     </div>
+  );
+}
+
+function fenceJson(text: string): string {
+  return `\`\`\`json\n${text}\n\`\`\``;
+}
+
+/**
+ * Unregistered structured output. It still deserves the platform's real JSON
+ * viewer (fold, copy, table view), which it gets by riding the canonical
+ * markdown pipeline as a fenced block — a raw <pre> was a wall of text on the
+ * one screen where the reader most wants to SEE what was produced.
+ */
+function JsonBody({ value }: { value: Record<string, unknown> }) {
+  const json = JSON.stringify(value, null, 2);
+  if (json.length <= JSON_VIEWER_MAX_CHARS) {
+    return <MarkdownStream content={fenceJson(json)} />;
+  }
+  return (
+    <pre className="max-h-96 overflow-auto rounded-md bg-muted p-2 text-[11px]">
+      {json}
+    </pre>
+  );
+}
+
+/**
+ * What a settled step PRODUCED, for a step whose shape has no kind component.
+ *
+ * An `ai.agent.start` step's output is the run ENVELOPE, not the answer: it
+ * carries the verbatim prompt, the model id and the token bill beside the two
+ * keys the reader wants. Read it (`readAgentRunOutput`) and show only what the
+ * agent produced; anything else is genuine data and gets the JSON viewer.
+ */
+function SettledOutputBody({ output }: { output: Record<string, unknown> }) {
+  const agent = readAgentRunOutput(output);
+  if (!agent) return <JsonBody value={output} />;
+  if (agent.structured) return <JsonBody value={agent.structured} />;
+  if (agent.finalText) {
+    return looksLikeJsonDocument(agent.finalText) ? (
+      <MarkdownStream content={fenceJson(agent.finalText)} />
+    ) : (
+      <MarkdownStream content={agent.finalText} />
+    );
+  }
+  return (
+    <p className="text-xs text-muted-foreground">
+      This step ran, and handed its result to the next one.
+    </p>
   );
 }
 
@@ -177,11 +226,18 @@ export function InvocationBody({
     invocation.outputKind &&
     invocation.output
   ) {
+    // The kind's own component renders it when there is one — always. Where
+    // there ISN'T, the generic viewer would print the raw value, and for an
+    // `ai.agent.start` step that value is the run ENVELOPE (verbatim prompt,
+    // model id, token bill). `agent_result` is exactly that case today: a
+    // registered, active kind with no component. So the fallback shows what
+    // the agent produced instead of what it cost us.
     return (
       <KindInstanceRender
         kind={invocation.outputKind}
         value={invocation.output}
         showRoutingNote={false}
+        unroutableFallback={<SettledOutputBody output={invocation.output} />}
       />
     );
   }
@@ -193,19 +249,7 @@ export function InvocationBody({
     );
   }
   if (invocation.phase === "settled" && invocation.output) {
-    // No registered kind — the output still deserves the platform's real JSON
-    // viewer (fold, copy, table view), which it gets by riding the canonical
-    // markdown pipeline as a fenced block. A raw <pre> was a wall of text on
-    // the one screen where the reader most wants to SEE what was produced.
-    const json = JSON.stringify(invocation.output, null, 2);
-    if (json.length <= JSON_VIEWER_MAX_CHARS) {
-      return <MarkdownStream content={`\`\`\`json\n${json}\n\`\`\``} />;
-    }
-    return (
-      <pre className="max-h-96 overflow-auto rounded-md bg-muted p-2 text-[11px]">
-        {json}
-      </pre>
-    );
+    return <SettledOutputBody output={invocation.output} />;
   }
   if (invocation.error) {
     return <StepErrorBody message={invocation.error.message} />;
