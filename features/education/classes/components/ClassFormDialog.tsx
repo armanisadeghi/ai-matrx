@@ -17,6 +17,15 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerFooter,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +63,7 @@ export function ClassFormDialog({
   initial,
   onSubmit,
 }: ClassFormDialogProps) {
+  const isMobile = useIsMobile();
   const isEdit = Boolean(initial);
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
@@ -130,21 +140,8 @@ export function ClassFormDialog({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-primary" />
-            {isEdit ? "Edit class" : "New class"}
-          </DialogTitle>
-          <DialogDescription>
-            A class gathers the decks, quizzes, notes, media, and exam dates for
-            one course.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-1">
+  const body = (
+    <div className="space-y-4 py-1">
           <div className="space-y-1.5">
             <Label htmlFor="class-name">Class name</Label>
             <Input
@@ -280,7 +277,57 @@ export function ClassFormDialog({
               </div>
             )}
           </div>
-        </div>
+    </div>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="pb-safe">
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center justify-center gap-2">
+              <GraduationCap className="h-5 w-5 text-primary" />
+              {isEdit ? "Edit class" : "New class"}
+            </DrawerTitle>
+            <DrawerDescription>
+              A class gathers the decks, quizzes, notes, media, and exam dates
+              for one course.
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="max-h-[60dvh] overflow-y-auto px-4">{body}</div>
+          <DrawerFooter className="flex-row gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => onOpenChange(false)}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+            <Button className="flex-1" onClick={handleSubmit} disabled={busy}>
+              {busy ? "Saving…" : isEdit ? "Save changes" : "Create class"}
+            </Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5 text-primary" />
+            {isEdit ? "Edit class" : "New class"}
+          </DialogTitle>
+          <DialogDescription>
+            A class gathers the decks, quizzes, notes, media, and exam dates for
+            one course.
+          </DialogDescription>
+        </DialogHeader>
+
+        {body}
 
         <DialogFooter>
           <Button

@@ -20,6 +20,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -44,6 +52,7 @@ export function SetVersionHistoryDialog({
   /** Called after a successful restore so the editor can refetch the set. */
   onRestored: () => void;
 }) {
+  const isMobile = useIsMobile();
   const [versions, setVersions] = useState<VersionEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,23 +100,8 @@ export function SetVersionHistoryDialog({
     onRestored();
   };
 
-  return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-lg gap-0 p-0">
-          <DialogHeader className="border-b border-border px-5 py-4">
-            <DialogTitle className="flex items-center gap-2 text-base">
-              <History className="h-4 w-4 text-primary" />
-              Version history
-            </DialogTitle>
-            <DialogDescription className="text-xs">
-              Every change is versioned automatically. Restore any earlier
-              version — restoring never deletes anything, it just adds a new
-              version on top.
-            </DialogDescription>
-          </DialogHeader>
-
-          <ScrollArea className="max-h-[55dvh]">
+  const body = (
+    <ScrollArea className="max-h-[55dvh]">
             <div className="px-4 py-3">
               {loading ? (
                 <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
@@ -165,9 +159,46 @@ export function SetVersionHistoryDialog({
                 </ul>
               )}
             </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
+    </ScrollArea>
+  );
+
+  return (
+    <>
+      {isMobile ? (
+        <Drawer open={open} onOpenChange={onOpenChange}>
+          <DrawerContent className="pb-safe">
+            <DrawerHeader>
+              <DrawerTitle className="flex items-center justify-center gap-2 text-base">
+                <History className="h-4 w-4 text-primary" />
+                Version history
+              </DrawerTitle>
+              <DrawerDescription className="text-xs">
+                Every change is versioned automatically. Restore any earlier
+                version — restoring never deletes anything, it just adds a new
+                version on top.
+              </DrawerDescription>
+            </DrawerHeader>
+            <div className="px-2 pb-2">{body}</div>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-lg gap-0 p-0">
+            <DialogHeader className="border-b border-border px-5 py-4">
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <History className="h-4 w-4 text-primary" />
+                Version history
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Every change is versioned automatically. Restore any earlier
+                version — restoring never deletes anything, it just adds a new
+                version on top.
+              </DialogDescription>
+            </DialogHeader>
+            {body}
+          </DialogContent>
+        </Dialog>
+      )}
 
       <ConfirmDialog
         open={!!restoreTarget}

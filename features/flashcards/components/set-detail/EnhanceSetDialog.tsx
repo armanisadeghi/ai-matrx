@@ -22,6 +22,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -84,6 +92,7 @@ export function EnhanceSetDialog({
   onChanged: () => void;
 }) {
   const dispatch = useAppDispatch();
+  const isMobile = useIsMobile();
   const enrichGuard = useEntitlementGuard("education.card_enrichment");
   const [depth, setDepth] = useState<Depth>("applied");
   const [work, setWork] = useState<Record<string, CardWork>>({});
@@ -247,21 +256,9 @@ export function EnhanceSetDialog({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl gap-0 p-0">
-        <DialogHeader className="border-b border-border px-5 py-4">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Make cards deeper
-          </DialogTitle>
-          <DialogDescription className="text-xs">
-            Add richer detail layers or split a card into atomic sub-cards —
-            grounded in this card&apos;s own content, at the depth you choose.
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Depth tier selector — shared vocabulary with quizzes (P1). */}
+  const body = (
+    <>
+      {/* Depth tier selector — shared vocabulary with quizzes (P1). */}
         <div className="flex items-center gap-2 border-b border-border px-5 py-3">
           <span className="text-xs font-medium text-muted-foreground">
             Depth
@@ -449,8 +446,45 @@ export function EnhanceSetDialog({
             )}
           </div>
         </ScrollArea>
-        {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
-        <enrichGuard.Paywall />
+      {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
+      <enrichGuard.Paywall />
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="pb-safe">
+          <DrawerHeader>
+            <DrawerTitle className="flex items-center justify-center gap-2 text-base">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Make cards deeper
+            </DrawerTitle>
+            <DrawerDescription className="text-xs">
+              Add richer detail layers or split a card into atomic sub-cards —
+              grounded in this card&apos;s own content, at the depth you choose.
+            </DrawerDescription>
+          </DrawerHeader>
+          {body}
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl gap-0 p-0">
+        <DialogHeader className="border-b border-border px-5 py-4">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Sparkles className="h-4 w-4 text-primary" />
+            Make cards deeper
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Add richer detail layers or split a card into atomic sub-cards —
+            grounded in this card&apos;s own content, at the depth you choose.
+          </DialogDescription>
+        </DialogHeader>
+        {body}
       </DialogContent>
     </Dialog>
   );

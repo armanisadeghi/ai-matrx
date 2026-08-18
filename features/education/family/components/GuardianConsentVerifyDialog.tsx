@@ -21,6 +21,14 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { consentVerificationService } from "@/features/education/compliance/consent/consentVerificationService";
 
@@ -35,6 +43,7 @@ export function GuardianConsentVerifyDialog({
   studentUserId: string;
   studentName: string;
 }) {
+  const isMobile = useIsMobile();
   const [busy, setBusy] = useState(false);
 
   const startCard = async () => {
@@ -49,23 +58,9 @@ export function GuardianConsentVerifyDialog({
     window.location.assign(res.url);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={busy ? undefined : onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <div className="mb-1 flex items-center gap-2">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-            <DialogTitle>Verify parental consent</DialogTitle>
-          </div>
-          <DialogDescription className="text-left">
-            Because <strong>{studentName}</strong> is under 13, children&apos;s
-            privacy law (COPPA) requires you to <strong>verify</strong> you are the
-            parent or guardian before their account can use AI features. Choose a
-            method below.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex flex-col gap-2.5 pt-1">
+  const body = (
+    <>
+      <div className="flex flex-col gap-2.5 pt-1">
           <MethodCard
             icon={CreditCard}
             title="Verify with a card"
@@ -94,10 +89,53 @@ export function GuardianConsentVerifyDialog({
           />
         </div>
 
-        <p className="pt-1 text-xs text-muted-foreground">
-          Verification is confirmed securely on our servers — not from this page.
-          You can revoke consent anytime, which immediately re-blocks the account.
-        </p>
+      <p className="pt-1 text-xs text-muted-foreground">
+        Verification is confirmed securely on our servers — not from this page.
+        You can revoke consent anytime, which immediately re-blocks the account.
+      </p>
+    </>
+  );
+
+  const description = (
+    <>
+      Because <strong>{studentName}</strong> is under 13, children&apos;s privacy
+      law (COPPA) requires you to <strong>verify</strong> you are the parent or
+      guardian before their account can use AI features. Choose a method below.
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={busy ? undefined : onOpenChange}>
+        <DrawerContent className="pb-safe">
+          <DrawerHeader>
+            <div className="mb-1 flex items-center justify-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              <DrawerTitle>Verify parental consent</DrawerTitle>
+            </div>
+            <DrawerDescription className="text-left">
+              {description}
+            </DrawerDescription>
+          </DrawerHeader>
+          <div className="max-h-[65dvh] overflow-y-auto px-4 pb-4">{body}</div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={busy ? undefined : onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <div className="mb-1 flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            <DialogTitle>Verify parental consent</DialogTitle>
+          </div>
+          <DialogDescription className="text-left">
+            {description}
+          </DialogDescription>
+        </DialogHeader>
+        {body}
       </DialogContent>
     </Dialog>
   );
