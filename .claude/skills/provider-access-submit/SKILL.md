@@ -37,6 +37,15 @@ If a precondition fails, update the exact blocker and stop before changing provi
   agent can operate.
 - Do not set `Phase: blocked_owner` merely because confirmation is required. Use it only when the
   remaining action is technically or legally impossible for the agent.
+- Convert recurring choices into policy. Before asking Arman about a choice that could recur for
+  another provider, workspace, account, or agent, propose the smallest durable rule: “May I add this
+  rule to the provider-access policy: `<rule>`?” If approved, update the canonical provider-access
+  document and this skill first, then apply the rule now and in future runs without asking again.
+  Ask a one-case question only when the facts are genuinely unique and cannot be governed safely by
+  a reusable rule.
+- Disable domain-wide automatic workspace joining and send no onboarding invitations unless the
+  campaign explicitly requires and authorizes membership. Refuse defaults such as “Anyone with
+  `@aimatrx.com` can join.”
 
 ## Account and secret handling
 
