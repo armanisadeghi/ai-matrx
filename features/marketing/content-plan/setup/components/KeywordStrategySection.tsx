@@ -152,6 +152,8 @@ export function KeywordStrategySection({
                 short
                 className="ml-0.5 px-1.5 py-0"
               />
+            ) : tierEstimate ? (
+              <span className="text-muted-foreground">· cost unknown</span>
             ) : null}
           </Button>
         </div>
