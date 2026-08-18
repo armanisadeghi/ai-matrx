@@ -26,6 +26,7 @@ import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDis
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 
 import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
+import { explainRunFailure } from "../run-failure-explanation";
 import {
   selectRunError,
   selectRunInterrupt,
@@ -86,6 +87,47 @@ function WorkingBody({ message }: { message: string | null }) {
   );
 }
 
+/**
+ * A step that failed, in the reader's language.
+ *
+ * The raw engine message is not it: the one this replaced printed
+ * "Education AI generation refused: COPPA consent required (user_id=4cf62e4e-…,
+ * age_band=None, has_active_guardian=False, reason=age_undeclared)" into the
+ * box, jargon and a raw user id and all, on the same screen where the run-level
+ * card already explained the same cause in a sentence. So: the shared
+ * explanation primitive supplies the headline, the run-level card carries the
+ * next action, and the technical cause stays one tap away for us.
+ */
+function StepErrorBody({ message }: { message: string | null }) {
+  const [showTechnical, setShowTechnical] = useState(false);
+  const explanation = explainRunFailure(message, "This step");
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-start gap-1.5">
+        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive" />
+        <p className="text-xs text-destructive">{explanation.headline}</p>
+      </div>
+      {explanation.technical ? (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowTechnical((value) => !value)}
+            aria-expanded={showTechnical}
+            className="text-[11px] text-muted-foreground underline-offset-2 hover:underline"
+          >
+            {showTechnical ? "Hide technical detail" : "Technical detail"}
+          </button>
+          {showTechnical ? (
+            <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/70 p-2 text-[11px] text-muted-foreground">
+              {explanation.technical}
+            </pre>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
 export function InvocationBody({
   runId,
   invocation,
@@ -130,7 +172,11 @@ export function InvocationBody({
       />
     );
   }
-  if (invocation.phase === "settled" && invocation.outputKind && invocation.output) {
+  if (
+    invocation.phase === "settled" &&
+    invocation.outputKind &&
+    invocation.output
+  ) {
     return (
       <KindInstanceRender
         kind={invocation.outputKind}
@@ -162,11 +208,7 @@ export function InvocationBody({
     );
   }
   if (invocation.error) {
-    return (
-      <p className="text-xs text-destructive">
-        {invocation.error.message ?? "This step failed."}
-      </p>
-    );
+    return <StepErrorBody message={invocation.error.message} />;
   }
   if (working) {
     return <WorkingBody message={invocation.progress?.message ?? null} />;
@@ -212,7 +254,13 @@ function parseInterruptFields(schemaHint: unknown): InterruptField[] | null {
       ? raw.enum.filter((o): o is string => typeof o === "string")
       : null;
     if (options && options.length > 0) {
-      fields.push({ key, label, kind: "select", options, required: required.has(key) });
+      fields.push({
+        key,
+        label,
+        kind: "select",
+        options,
+        required: required.has(key),
+      });
     } else if (raw.type === "number" || raw.type === "integer") {
       fields.push({ key, label, kind: "number", required: required.has(key) });
     } else if (raw.type === "boolean") {
@@ -326,8 +374,7 @@ function InterruptForm({
   const fieldsComplete =
     fields?.every(
       (f) =>
-        !f.required ||
-        (values[f.key] !== undefined && values[f.key] !== ""),
+        !f.required || (values[f.key] !== undefined && values[f.key] !== ""),
     ) ?? true;
 
   return (
@@ -344,7 +391,11 @@ function InterruptForm({
               </span>
               {field.kind === "select" ? (
                 <select
-                  value={typeof values[field.key] === "string" ? (values[field.key] as string) : ""}
+                  value={
+                    typeof values[field.key] === "string"
+                      ? (values[field.key] as string)
+                      : ""
+                  }
                   onChange={(e) =>
                     setValues((v) => ({ ...v, [field.key]: e.target.value }))
                   }

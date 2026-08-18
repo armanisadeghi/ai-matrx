@@ -16,9 +16,15 @@ import {
   type WorkflowDefinitionLike,
 } from "../../trigger-points";
 
-/** Node/edge skeleton of "Study Pack v1" (3bd1960c-641b-4577-8f4f-c3571a8b3544). */
+/**
+ * Node/edge skeleton of "Study Pack v1" (3bd1960c-641b-4577-8f4f-c3571a8b3544),
+ * in definition order. The `*_items` → `*_set` → `study_pack_set` tier is the
+ * persisted collection the pack page reads from.
+ */
 const STUDY_PACK_DEF: WorkflowDefinitionLike = {
   nodes: [
+    "materials",
+    "build_sources",
     "ingest",
     "structure",
     "knowledge_text",
@@ -31,10 +37,50 @@ const STUDY_PACK_DEF: WorkflowDefinitionLike = {
     "lesson_scripts",
     "parse_lessons",
     "stock_images",
+    "flashcard_items",
+    "flashcard_set",
+    "quiz_mcq_items",
+    "quiz_free_response_items",
+    "quiz_fill_in_blank_items",
+    "quiz_set",
+    "study_pack_set",
     "pack",
     "show",
   ].map((id) => ({ id })),
-  edges: [],
+  edges: [
+    ["e_materials_sources", "materials", "build_sources"],
+    ["e_sources_ingest", "build_sources", "ingest"],
+    ["e_ingest_structure", "ingest", "structure"],
+    ["e_structure_ktext", "structure", "knowledge_text"],
+    ["e_ktext_notes", "knowledge_text", "notes"],
+    ["e_ktext_flashcards", "knowledge_text", "flashcards"],
+    ["e_ktext_quiz", "knowledge_text", "quiz"],
+    ["e_ktext_lessons", "knowledge_text", "lesson_scripts"],
+    ["e_notes_parse", "notes", "parse_notes"],
+    ["e_flashcards_parse", "flashcards", "parse_flashcards"],
+    ["e_quiz_parse", "quiz", "parse_quiz"],
+    ["e_lessons_parse", "lesson_scripts", "parse_lessons"],
+    ["e_structure_pack", "structure", "pack"],
+    ["e_pnotes_pack", "parse_notes", "pack"],
+    ["e_pflash_pack", "parse_flashcards", "pack"],
+    ["e_pquiz_pack", "parse_quiz", "pack"],
+    ["e_plessons_pack", "parse_lessons", "pack"],
+    ["e_stock_pack", "stock_images", "pack"],
+    ["e_ingest_pack", "ingest", "pack"],
+    ["e_pflash_cards", "parse_flashcards", "flashcard_items"],
+    ["e_cards_flashcard_set", "flashcard_items", "flashcard_set"],
+    ["e_pflash_flashcard_set", "parse_flashcards", "flashcard_set"],
+    ["e_pquiz_mcq", "parse_quiz", "quiz_mcq_items"],
+    ["e_pquiz_free_response", "parse_quiz", "quiz_free_response_items"],
+    ["e_pquiz_fill_in_blank", "parse_quiz", "quiz_fill_in_blank_items"],
+    ["e_mcq_quiz_set", "quiz_mcq_items", "quiz_set"],
+    ["e_free_response_quiz_set", "quiz_free_response_items", "quiz_set"],
+    ["e_fill_in_blank_quiz_set", "quiz_fill_in_blank_items", "quiz_set"],
+    ["e_pquiz_quiz_set", "parse_quiz", "quiz_set"],
+    ["e_flashcard_set_pack_set", "flashcard_set", "study_pack_set"],
+    ["e_quiz_set_pack_set", "quiz_set", "study_pack_set"],
+    ["e_pack_show", "pack", "show"],
+  ].map(([id, source, target]) => ({ id, source, target })),
 };
 
 /** The stored config document, verbatim. */
@@ -56,7 +102,8 @@ const STORED_CONFIG = {
     { id: "quiz", pageId: "writing", title: "Practice quiz", source: { kind: "node", nodeId: "quiz" }, pos: { x: 0, y: 16, w: 12, h: 10 }, prefer: "live" },
     { id: "lessons", pageId: "writing", title: "Lesson scripts", source: { kind: "node", nodeId: "lesson_scripts" }, pos: { x: 12, y: 16, w: 12, h: 10 }, prefer: "live" },
     { id: "images", pageId: "writing", title: "Pictures", source: { kind: "node", nodeId: "stock_images" }, pos: { x: 0, y: 26, w: 12, h: 6 }, visibility: { appearOn: "node:stock_images:started", empty: "hidden" } },
-    { id: "final", pageId: "pack", title: "Your study pack", source: { kind: "node", nodeId: "show" }, pos: { x: 0, y: 0, w: 24, h: 16 }, prefer: "persisted" },
+    { id: "final-flashcards", pageId: "pack", title: "Flashcards", source: { kind: "node", nodeId: "flashcard_set" }, pos: { x: 0, y: 0, w: 12, h: 12 }, prefer: "persisted" },
+    { id: "final-quiz", pageId: "pack", title: "Practice quiz", source: { kind: "node", nodeId: "quiz_set" }, pos: { x: 12, y: 0, w: 12, h: 12 }, prefer: "persisted" },
   ],
 };
 
@@ -65,7 +112,7 @@ describe("Study Pack authored surface", () => {
     const { config, warnings } = parseSurfaceConfig(STORED_CONFIG);
     expect(warnings).toEqual([]);
     expect(config.pages).toHaveLength(3);
-    expect(config.readouts).toHaveLength(10);
+    expect(config.readouts).toHaveLength(11);
     expect(config.deliverableNodeId).toBe("show");
     expect(validateSurfaceConfig(config)).toEqual([]);
   });
