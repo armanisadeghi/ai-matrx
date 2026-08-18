@@ -71,6 +71,16 @@ Reconnect).
 
 ## Change log
 
+- **2026-08-18** — P2-A trigger + reach: the Cloud Browser is now hosted as a
+  **canvas item** (`cloud_browser` canvas content type, NON_PERSISTABLE), not a
+  standalone route. Extracted `CloudBrowserBody` (chrome-free) from
+  `CloudBrowserWindow` so the canvas pane renders it bare and the WindowPanel
+  overlay wraps the same body. Two triggers, one open path
+  (`useOpenCloudBrowserCanvas`): the composer's "Cloud browser" pill on
+  `ConversationContextRail` (attachment-style), and `CloudBrowserHandoffCanvasOpener`
+  (agent-initiated — opens the canvas on `handoff.state === "requested"`). Go-live
+  seam: dispatch the chat stream's `human_required` tool event into
+  `cloudBrowserSlice` so the handoff fires before the panel is first opened.
 - **2026-08-18** — WS-8 initial build: panel (3 media tiers + controller banner),
   profile selector (personal/org/shared + quotas), canonical share dialog, notification
   consent (setup + first-use prompt), D-9 telemetry surface, read-only audit timeline,

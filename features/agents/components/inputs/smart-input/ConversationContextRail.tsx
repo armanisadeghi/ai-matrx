@@ -43,6 +43,7 @@ import {
   MoreHorizontal,
   NotebookPen,
   Code2,
+  Globe,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -76,6 +77,7 @@ import {
   FALLBACK_CONTEXT_ICON,
 } from "@/features/agents/components/context-policies-display/contextPolicyIcons";
 import { ContextPolicyDetailSheet } from "@/features/agents/components/context-policies-display/ContextPolicyDetailSheet";
+import { CloudBrowserHandoffCanvasOpener } from "@/features/cloud-browser/components/CloudBrowserHandoffCanvasOpener";
 import { docKindForContextKey } from "@/features/agents/utils/workingDocumentContext";
 import {
   isCanvasItemContextKey,
@@ -299,6 +301,34 @@ export function ConversationContextRail({
     setListsOpen(true);
   };
 
+  /**
+   * "Work in a cloud browser" — an ATTACHMENT-style affordance: the user hands
+   * the agent a persistent cloud browser to act in, the same way they attach a
+   * document. It opens the Cloud Browser as a CANVAS ITEM (the canvas is the
+   * host — no bespoke overlay), deduped on a stable per-chat source id so
+   * clicking again hides it. The live run/handoff state lives in the body
+   * (NON_PERSISTABLE); this pill is the show/hide + "give the agent a browser"
+   * control.
+   */
+  const cloudBrowserSourceId = `cloud-browser:${conversationId}`;
+  const toggleCloudBrowser = () => {
+    if (canvasOpen && currentCanvasSourceId === cloudBrowserSourceId) {
+      dispatch(closeCanvas());
+      return;
+    }
+    dispatch(
+      openCanvas({
+        type: "cloud_browser",
+        data: {},
+        metadata: {
+          title: "Cloud Browser",
+          conversationId,
+          sourceMessageId: cloudBrowserSourceId,
+        },
+      }),
+    );
+  };
+
   // ── Working context (Scopes) lives in PlusAttachMenu's ContextLensBar row.
   const items = useMemo<RailItem[]>(() => {
     const out: RailItem[] = [];
@@ -368,6 +398,19 @@ export function ConversationContextRail({
         onOpen: toggleLists,
       });
     }
+
+    // "Work in a cloud browser" — always offered, like an attachment. Hands the
+    // agent a persistent cloud browser and opens it as a canvas item.
+    out.push({
+      id: "cloud-browser",
+      icon: Globe,
+      label: "Cloud browser",
+      word: "Browser",
+      hint: "Click: give the agent a cloud browser · show / hide in canvas",
+      active:
+        canvasOpen && currentCanvasSourceId === cloudBrowserSourceId,
+      onOpen: toggleCloudBrowser,
+    });
 
     for (const e of valued) {
       // Doc-like keys (working doc, scratchpad, attached-scratchpad extras):
@@ -681,6 +724,9 @@ function DetailSurfaces({
 }) {
   return (
     <>
+      {/* Agent-initiated Cloud Browser open: when a run raises a human-handoff,
+          the Cloud Browser opens in the canvas (same surface the pill opens). */}
+      <CloudBrowserHandoffCanvasOpener />
       {activeEntry && (
         <ContextPolicyDetailSheet
           open={detailOpen}
