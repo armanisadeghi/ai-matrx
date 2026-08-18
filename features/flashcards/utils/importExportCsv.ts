@@ -2,8 +2,9 @@
 //
 // Phase 1A (Flashcards Competitive Parity Push) — CSV/TSV import & export.
 // Pure, DB-free parsing/formatting utilities consumed by
-// `components/import/ImportSetDialog.tsx` (import) and `SetDetailView.tsx`
-// (export). Reference-only relationship to
+// `components/import/ImportSetView.tsx` (import), `SetDetailView.tsx`
+// (export), and `features/education/onboard/import/importDeck.ts` (the IC-11
+// import entry). Reference-only relationship to
 // `components/mardown-display/blocks/flashcards/flashcard-parser.ts` — that
 // parser is chat-block-scoped and NOT imported here (per the plan).
 //
@@ -29,10 +30,16 @@ export interface ParsedImportRow {
   line: number;
 }
 
+/** One skipped source line, reported with its position — never guessed at. */
+export interface SkippedLine {
+  line: number;
+  text: string;
+}
+
 export interface ParseImportResult {
   rows: ParsedImportRow[];
   /** Lines that had no usable delimiter/second field, skipped rather than guessed. */
-  skipped: { line: number; text: string }[];
+  skipped: SkippedLine[];
 }
 
 /**
@@ -84,6 +91,87 @@ function splitOnce(line: string, delim: string): [string, string] | null {
   const idx = line.indexOf(delim);
   if (idx < 0) return null;
   return [line.slice(0, idx), line.slice(idx + delim.length)];
+}
+
+/**
+ * RFC-4180 CSV parser for FILE imports — the exact shape our own CSV export
+ * writes: quoted fields containing commas, escaped quotes (`""`), and embedded
+ * newlines all survive. A leading `front,back`-style header row is skipped.
+ * (Paste-style line imports keep using `parseImportText`, which is tolerant of
+ * mixed delimiters but is deliberately NOT quote-aware.)
+ */
+export function parseCsvRecords(text: string): ParseImportResult {
+  const records: { fields: string[]; line: number }[] = [];
+  let field = "";
+  let fields: string[] = [];
+  let inQuotes = false;
+  let line = 1;
+  let recordStartLine = 1;
+
+  const endField = () => {
+    fields.push(field);
+    field = "";
+  };
+  const endRecord = () => {
+    endField();
+    if (fields.some((f) => f.trim() !== "")) {
+      records.push({ fields, line: recordStartLine });
+    }
+    fields = [];
+    recordStartLine = line;
+  };
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        if (ch === "\n") line++;
+        field += ch;
+      }
+    } else if (ch === '"' && field === "") {
+      inQuotes = true;
+    } else if (ch === ",") {
+      endField();
+    } else if (ch === "\r") {
+      if (text[i + 1] === "\n") i++;
+      line++;
+      endRecord();
+    } else if (ch === "\n") {
+      line++;
+      endRecord();
+    } else {
+      field += ch;
+    }
+  }
+  if (field !== "" || fields.length > 0) endRecord();
+
+  const rows: ParsedImportRow[] = [];
+  const skipped: SkippedLine[] = [];
+  records.forEach((rec, idx) => {
+    const [front = "", back = "", ...rest] = rec.fields;
+    // Skip a header row like `front,back` / `term,definition` at the top.
+    if (
+      idx === 0 &&
+      /^(front|term|question)$/i.test(front.trim()) &&
+      /^(back|definition|answer)$/i.test(back.trim())
+    ) {
+      return;
+    }
+    const fullBack = rest.length > 0 ? [back, ...rest].join("\n").trim() : back.trim();
+    if (!front.trim() || !fullBack) {
+      skipped.push({ line: rec.line, text: rec.fields.join(",").slice(0, 200) });
+      return;
+    }
+    rows.push({ front: front.trim(), back: fullBack, line: rec.line });
+  });
+  return { rows, skipped };
 }
 
 export function parsedRowsToCardInputs(

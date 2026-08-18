@@ -15,16 +15,47 @@ import type { FcSetRow, CardWithDetails } from "@/features/flashcards/data/types
 
 export type DeckExportFormat = "json" | "md" | "anki" | "csv";
 
-/** The portable, round-trippable Matrx deck shape (json export = this). */
+/** The portable, round-trippable Matrx deck shape (json export = this).
+ * IC-11 (education-platform INTEGRATION_MAP): this is THE normalized shape every
+ * importer produces — CSV, Matrx JSON, Anki, extension capture. Version 2 adds
+ * optional per-card `scheduling` (imported review state) and `media` refs;
+ * version-1 files parse unchanged. */
 export interface PortableDeck {
   __format: "matrx.flashcards";
-  version: 1;
+  version: 1 | 2;
   name: string;
   description: string | null;
   topic: string | null;
   difficulty: string | null;
   exported_at: string | null;
   cards: PortableCard[];
+}
+
+/** Imported spaced-repetition state for one card (Anki revlog / Matrx re-import).
+ * Lands in the FSRS spine through the ONE sanctioned seed path — never written
+ * to `item_mastery` by a client directly. */
+export interface PortableScheduling {
+  /** ISO timestamp the card is next due. */
+  due_at: string;
+  /** FSRS stability (days). For Anki imports, seeded from the last interval. */
+  stability: number;
+  /** FSRS difficulty (1..10). For Anki imports, derived from the ease factor. */
+  difficulty: number;
+  lapses: number;
+  reps: number;
+  /** ISO timestamp of the most recent review, if known. */
+  last_review?: string | null;
+}
+
+/** A media file referenced by a card face (Anki embedded media, captures). */
+export interface PortableMediaRef {
+  /** Durable Matrx file id once uploaded; absent while still source-side. */
+  file_id?: string;
+  /** Original filename inside the source archive (e.g. Anki media map). */
+  source_name?: string;
+  /** Which face referenced it. */
+  face?: "front" | "back";
+  kind?: "image" | "audio" | "video";
 }
 
 export interface PortableCard {
@@ -35,6 +66,10 @@ export interface PortableCard {
   topic?: string | null;
   /** The P0 TrustEnvelope, preserved verbatim (opaque here). */
   trust?: unknown;
+  /** v2: imported review state, so due dates survive a migration. */
+  scheduling?: PortableScheduling | null;
+  /** v2: media the card references. */
+  media?: PortableMediaRef[] | null;
 }
 
 type ExportCard = Pick<
@@ -77,7 +112,7 @@ export function toPortableDeck(
 ): PortableDeck {
   return {
     __format: "matrx.flashcards",
-    version: 1,
+    version: 2,
     name: set.name,
     description: set.description ?? null,
     topic: set.topic ?? null,
@@ -132,14 +167,40 @@ export function buildDeckExport(
   }
 }
 
+/** Everything a portable-JSON parse recovers — deck-level fields included, so a
+ * JSON export round-trips without dropping description/topic/difficulty. */
+export interface ParsedPortableDeck {
+  name: string;
+  description: string | null;
+  topic: string | null;
+  difficulty: string | null;
+  cards: PortableCard[];
+}
+
+function str(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+
+function parseScheduling(v: unknown): PortableScheduling | null {
+  if (!v || typeof v !== "object") return null;
+  const s = v as Record<string, unknown>;
+  if (typeof s.due_at !== "string" || typeof s.stability !== "number") return null;
+  return {
+    due_at: s.due_at,
+    stability: s.stability,
+    difficulty: typeof s.difficulty === "number" ? s.difficulty : 5,
+    lapses: typeof s.lapses === "number" ? s.lapses : 0,
+    reps: typeof s.reps === "number" ? s.reps : 0,
+    last_review: typeof s.last_review === "string" ? s.last_review : null,
+  };
+}
+
 /**
- * Parse a Matrx portable-JSON export back into cards (round-trip import). Accepts
- * our export shape and is tolerant of a bare `{name, cards:[{front,back}]}`.
- * Returns null if it can't find any usable cards.
+ * Parse a Matrx portable-JSON export back into a deck (round-trip import).
+ * Accepts v1 and v2 exports and is tolerant of a bare
+ * `{name, cards:[{front,back}]}`. Returns null if it can't find usable cards.
  */
-export function parseDeckJson(
-  raw: string,
-): { name: string; cards: PortableCard[] } | null {
+export function parseDeckJson(raw: string): ParsedPortableDeck | null {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -163,10 +224,16 @@ export function parseDeckJson(
       difficulty: typeof r.difficulty === "string" ? r.difficulty : null,
       topic: typeof r.topic === "string" ? r.topic : null,
       trust: r.trust,
+      scheduling: parseScheduling(r.scheduling),
+      media: Array.isArray(r.media) ? (r.media as PortableMediaRef[]) : null,
     });
   }
   if (cards.length === 0) return null;
-  const name =
-    typeof obj.name === "string" && obj.name.trim() ? obj.name.trim() : "Imported deck";
-  return { name, cards };
+  return {
+    name: str(obj.name) ?? "Imported deck",
+    description: str(obj.description),
+    topic: str(obj.topic),
+    difficulty: str(obj.difficulty),
+    cards,
+  };
 }

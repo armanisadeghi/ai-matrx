@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fcService } from "../../data/fcService";
+import { persistImportedDeck } from "@/features/education/onboard/import/importDeck";
 import {
   parseImportText,
   parsedRowsToCardInputs,
@@ -77,19 +77,19 @@ export function ImportSetView() {
     if (!canSubmit) return;
     setCreating(true);
     try {
-      const res = await fcService.createSetWithCards(
-        { name: setName.trim() },
-        parsedRowsToCardInputs(rows),
-      );
-      if (res.error || !res.data) {
-        toast.error(res.error ?? "Could not create the flashcard set");
-        return;
-      }
-      const { set, cards } = res.data;
+      // IC-11: every import lands through the ONE entry, never the raw writer.
+      const outcome = await persistImportedDeck({
+        name: setName.trim(),
+        cards: parsedRowsToCardInputs(rows),
+        format: "delimited",
+        skippedLines: skipped,
+      });
       toast.success(
-        `Imported "${set.name}" with ${cards.length} ${cards.length === 1 ? "card" : "cards"}`,
+        `Imported "${outcome.name}" with ${outcome.cardCount} ${outcome.cardCount === 1 ? "card" : "cards"}`,
       );
-      startNavigation(() => router.push(`${EDU_BASE}/${set.id}`));
+      startNavigation(() => router.push(`${EDU_BASE}/${outcome.setId}`));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create the flashcard set");
     } finally {
       setCreating(false);
     }

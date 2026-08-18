@@ -134,5 +134,5 @@ export async function importAnkiFile(file: File): Promise<ImportOutcome> {
     );
   const note = notes.length ? notes.join(" ") : undefined;
 
-  return persistImportedDeck(name, cards, "anki", skipped, note);
+  return persistImportedDeck({ name, cards, format: "anki", skipped, note });
 }
