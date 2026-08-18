@@ -38,6 +38,10 @@ Scope: first-run full inventory (routes, registered overlays, readiness, runtime
 - Scoped ESLint, Prettier, `git diff --check`, `check:surface-drift`, and `check:surface-routes` passed.
 - Baseline and candidate type-check outputs were byte-identical: 31 diagnostics across the same 14 unrelated files, with no changed-path diagnostic.
 
+## Delivery degradation
+
+`pnpm patrol:delivery:check -- --head HEAD` is blocked by two report-only commits (`fe1ded5764f521f7f918ed04c8b5543a2f0cc2cd` and `d2d21a011e7391e00e2b18930fd39acab643599c`) whose messages include `Patrol-Id`, `Patrol-Run`, and `Patrol-Candidate` but omit the required `Patrol-Delivery: none|certified` trailer. Both commits change only this `.matrx` report, so this is not a product or certification defect. They are already on shared `origin/main`; rewriting shared history is unsafe. The serialized release lane must apply the canonical recovery for malformed historical patrol trailers before release certification can pass.
+
 ## Inventory evidence
 
 ### Declared surfaces
