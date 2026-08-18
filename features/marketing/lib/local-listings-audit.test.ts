@@ -304,3 +304,54 @@ describe("findLocalBusinessJsonLd", () => {
     ]);
   });
 });
+
+describe("profile autofill", () => {
+  const { buildProfileSuggestions, observedFromListings, fieldsFromBusinessFacts } = jest.requireActual<
+    typeof import("@/features/marketing/local/profile-autofill")
+  >("@/features/marketing/local/profile-autofill");
+
+  it("suggests only for empty fields, google outranking site and facts", () => {
+    const location = makeLocation({ phone: null, email: null, street_address: null });
+    const suggestions = buildProfileSuggestions(location, {
+      googleObserved: { phone: "+1844-886-8264", street_address: "780 Roosevelt" },
+      siteObserved: { phone: "(999) 999-9999", email: "site@example.com" },
+      facts: [],
+    });
+    const byField = Object.fromEntries(suggestions.map((s) => [s.field, s]));
+    expect(byField.phone).toMatchObject({ value: "+1844-886-8264", source: "google" });
+    expect(byField.street_address).toMatchObject({ source: "google" });
+    expect(byField.email).toMatchObject({ value: "site@example.com", source: "site" });
+    // locality is already filled on the canonical profile — never suggested against.
+    expect(byField.locality).toBeUndefined();
+  });
+
+  it("falls back to confirmed brand facts", () => {
+    const location = makeLocation({ phone: null });
+    const facts = [
+      { ...makeListing(), kind: "phone", value: { text: "714-555-0000" } } as never,
+    ];
+    const suggestions = buildProfileSuggestions(location, { facts });
+    expect(suggestions.find((s) => s.field === "phone")).toMatchObject({
+      value: "714-555-0000",
+      source: "facts",
+    });
+  });
+
+  it("prefers dataforseo-sourced observed payloads across listings", () => {
+    const observed = observedFromListings([
+      makeListing({ id: "a", source: "manual", observed: { phone: "111" } }),
+      makeListing({ id: "b", source: "dataforseo", observed: { phone: "222" } }),
+    ]);
+    expect(observed).toMatchObject({ phone: "222" });
+  });
+
+  it("maps phone/email/address facts and ignores others", () => {
+    const fields = fieldsFromBusinessFacts([
+      { kind: "phone", value: { text: "1" } } as never,
+      { kind: "email", value: { text: "a@b.c" } } as never,
+      { kind: "address", value: { text: "1 Main St" } } as never,
+      { kind: "tagline", value: { text: "nope" } } as never,
+    ]);
+    expect(fields).toEqual({ phone: "1", email: "a@b.c", street_address: "1 Main St" });
+  });
+});

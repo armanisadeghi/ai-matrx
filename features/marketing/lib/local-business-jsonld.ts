@@ -189,3 +189,11 @@ export function findLocalBusinessJsonLd(blocks: Array<Record<string, unknown>>):
   }
   return null;
 }
+
+/** Narrow arbitrary parsed values to record blocks findLocalBusinessJsonLd accepts. */
+export function asJsonLdBlocks(values: unknown[]): Array<Record<string, unknown>> {
+  return values.filter(
+    (value): value is Record<string, unknown> =>
+      typeof value === "object" && value !== null && !Array.isArray(value),
+  );
+}

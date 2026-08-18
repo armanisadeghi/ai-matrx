@@ -48,6 +48,7 @@ import {
   findProfileGaps,
 } from "@/features/marketing/lib/local-listings-audit";
 import {
+  asJsonLdBlocks,
   buildLocalBusinessJsonLd,
   findLocalBusinessJsonLd,
   localBusinessJsonLdScript,
@@ -68,7 +69,13 @@ import {
   type PublisherTier,
 } from "@/features/marketing/types";
 import { useQueryClient } from "@tanstack/react-query";
-import { marketingKeys } from "@/features/marketing/data/hooks";
+import { marketingKeys, useBusinessFacts } from "@/features/marketing/data/hooks";
+import {
+  AUTOFILL_SOURCE_LABELS,
+  buildProfileSuggestions,
+  observedFromListings,
+  type ProfileSuggestion,
+} from "@/features/marketing/local/profile-autofill";
 import { checkGoogleListing } from "@/features/marketing/local/data";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -278,6 +285,26 @@ function BrandLocations({
 function LocationWorkspace({ location }: { location: BusinessLocation }) {
   const publishersQuery = useListingPublishers();
   const listingsQuery = useLocationListings(location.id);
+  const factsQuery = useBusinessFacts(location.brand_id);
+  const sitesQuery = useBrandSites(location.brand_id);
+  const site = (sitesQuery.data ?? [])[0] ?? null;
+  const evidenceQuery = useSiteRootStructuredData(site?.id ?? "");
+
+  const suggestions = useMemo(() => {
+    const parsed = evidenceQuery.data
+      ? parseSnapshotStructuredData(evidenceQuery.data.structuredData)
+      : null;
+    const siteObserved = parsed
+      ? findLocalBusinessJsonLd(
+          asJsonLdBlocks([...parsed.jsonLd, ...parsed.blocks.map((b) => b.data)]),
+        )?.observed ?? null
+      : null;
+    return buildProfileSuggestions(location, {
+      googleObserved: observedFromListings(listingsQuery.data ?? []),
+      siteObserved,
+      facts: factsQuery.data ?? [],
+    });
+  }, [location, listingsQuery.data, factsQuery.data, evidenceQuery.data]);
 
   const matrix = useMemo(
     () => buildListingMatrix(publishersQuery.data ?? [], listingsQuery.data ?? []),
@@ -327,7 +354,7 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
         />
       </div>
 
-      <ProfileEditor location={location} gaps={gaps} />
+      <ProfileEditor location={location} gaps={gaps} suggestions={suggestions} />
       <OnSiteSchemaCard location={location} />
       <ListingsMatrix organizationId={location.organization_id} location={location} matrix={matrix} />
       <JsonLdCard location={location} />
@@ -392,9 +419,11 @@ function draftFrom(location: BusinessLocation): ProfileDraft {
 function ProfileEditor({
   location,
   gaps,
+  suggestions,
 }: {
   location: BusinessLocation;
   gaps: ReturnType<typeof findProfileGaps>;
+  suggestions: ProfileSuggestion[];
 }) {
   const updateLocation = useUpdateBusinessLocation();
   const [draft, setDraft] = useState<ProfileDraft>(() => draftFrom(location));
@@ -402,6 +431,22 @@ function ProfileEditor({
     () => JSON.stringify(draft) !== JSON.stringify(draftFrom(location)),
     [draft, location],
   );
+
+  // Suggestions apply against fields the user hasn't touched in THIS draft either.
+  const applicable = suggestions.filter(
+    (s) => (draft[s.field as keyof ProfileDraft] ?? "").trim() === "",
+  );
+  const applySuggestions = (items: ProfileSuggestion[]) => {
+    setDraft((current) => {
+      const next = { ...current };
+      for (const item of items) {
+        if ((next[item.field as keyof ProfileDraft] ?? "").trim() === "") {
+          next[item.field as keyof ProfileDraft] = item.value;
+        }
+      }
+      return next;
+    });
+  };
 
   const field = (key: keyof ProfileDraft) => ({
     value: draft[key],
@@ -452,6 +497,36 @@ function ProfileEditor({
         </Button>
       }
     >
+      {applicable.length > 0 ? (
+        <div className="mb-2 flex flex-wrap items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 p-2">
+          <p className="mr-1 text-xs font-medium text-foreground">
+            Found data for {applicable.length} empty field{applicable.length === 1 ? "" : "s"}:
+          </p>
+          {applicable.map((s) => (
+            <button
+              key={s.field}
+              type="button"
+              onClick={() => applySuggestions([s])}
+              className="rounded border border-border bg-card px-1.5 py-0.5 text-[11px] text-foreground hover:bg-muted"
+              title={`From ${AUTOFILL_SOURCE_LABELS[s.source]}`}
+            >
+              {s.field.replace(/_/g, " ")}: {s.value.length > 28 ? `${s.value.slice(0, 28)}…` : s.value}
+            </button>
+          ))}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-6 px-2 text-[11px]"
+            onClick={() => applySuggestions(applicable)}
+          >
+            Apply all
+          </Button>
+          <p className="w-full text-[10px] text-muted-foreground">
+            Sources: live Google listing, your site&apos;s structured data, confirmed brand facts.
+            Nothing saves until you review and hit Save.
+          </p>
+        </div>
+      ) : null}
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <LabeledInput label="Location name" required {...field("name")} />
         <div className="flex flex-col gap-1">
@@ -741,10 +816,9 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
   const verdict = useMemo(() => {
     if (!evidenceQuery.data) return null;
     const parsed = parseSnapshotStructuredData(evidenceQuery.data.structuredData);
-    const declared = findLocalBusinessJsonLd([
-      ...parsed.jsonLd,
-      ...parsed.blocks.map((block) => block.data),
-    ]);
+    const declared = findLocalBusinessJsonLd(
+      asJsonLdBlocks([...parsed.jsonLd, ...parsed.blocks.map((block) => block.data)]),
+    );
     if (!declared) return { declared: null, audit: null, capturedAt: evidenceQuery.data.capturedAt };
     return {
       declared,
