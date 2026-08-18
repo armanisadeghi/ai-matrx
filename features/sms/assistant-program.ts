@@ -37,13 +37,12 @@ export interface SmsAssistantProgramState {
 
 export interface UpdateSmsAssistantProgram {
   userAssistantEnabled: boolean;
-  preferredAgentId?: string | null;
-  preferredAgentVersionId?: string | null;
 }
 
 export const SMS_ASSISTANT_TEST_BODY =
   "AI Matrx: Your text assistant is connected. Reply with a harmless question to test your saved agent. Reply STOP to opt out or HELP for help.";
 export const SMS_ASSISTANT_OWNER_BETA_PROGRAM = "ai_matrx_owner_beta";
+export const SMS_ASSISTANT_OWNER_BETA_MANDATE = "sms.owner_beta";
 
 export function assistantBindingLabel(state: SmsAssistantProgramState): string {
   if (state.ready) return "Ready for owner testing";

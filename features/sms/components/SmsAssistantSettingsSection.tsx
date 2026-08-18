@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   CirclePause,
   CirclePlay,
-  Link2Off,
   MessageSquareText,
   MessagesSquare,
   Send,
   ShieldCheck,
 } from "lucide-react";
 
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsReadOnlyValue } from "@/components/official/settings/layout/SettingsReadOnlyValue";
@@ -19,117 +16,33 @@ import { SettingsSection } from "@/components/official/settings/layout/SettingsS
 import { SettingsRow } from "@/components/official/settings/SettingsRow";
 import { SettingsButton } from "@/components/official/settings/primitives/SettingsButton";
 import { SettingsLink } from "@/components/official/settings/primitives/SettingsLink";
-import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
-import { AgentListDropdown } from "@/features/agents/components/agent-listings/AgentListDropdown";
+import { MandateAgentPicker } from "@/features/agents/mandates/components/MandateAgentPicker";
+import { useMandate } from "@/features/agents/mandates/useMandate";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import {
-  fetchAgentVersionHistory,
-  type AgentVersionHistoryItem,
-} from "@/features/agents/redux/agent-definition/thunks";
-import {
-  assistantBindingLabel,
   assistantBlockedReasonLabel,
+  SMS_ASSISTANT_OWNER_BETA_MANDATE,
   smsPermissionLabel,
 } from "@/features/sms/assistant-program";
 import { useSmsAssistantProgram } from "@/features/sms/hooks/useSmsAssistantProgram";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-
-const LATEST_VERSION = "latest";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 /** Closed owner-beta control on the production Messaging settings surface. */
 export function SmsAssistantSettingsSection() {
-  const dispatch = useAppDispatch();
   const assistant = useSmsAssistantProgram();
+  const mandate = useMandate(SMS_ASSISTANT_OWNER_BETA_MANDATE);
   const state = assistant.state;
+  const resolvedAgentId = mandate.mandate?.agentId ?? null;
   const selectedAgent = useAppSelector((rootState) =>
-    state?.preferredAgentId
-      ? selectAgentById(rootState, state.preferredAgentId)
+    resolvedAgentId
+      ? selectAgentById(rootState, resolvedAgentId)
       : undefined,
   );
-  const [versions, setVersions] = useState<AgentVersionHistoryItem[]>([]);
-  const [versionAgentId, setVersionAgentId] = useState<string | null>(null);
-  const versionsLoading = Boolean(
-    state?.preferredAgentId && state.preferredAgentId !== versionAgentId,
+  const transportBlockedReasons =
+    state?.blockedReasons.filter((reason) => reason !== "agent_not_selected") ?? [];
+  const effectiveReady = Boolean(
+    state && mandate.mandate && transportBlockedReasons.length === 0,
   );
-
-  useEffect(() => {
-    const agentId = state?.preferredAgentId;
-    if (!agentId) return;
-    let active = true;
-    dispatch(fetchAgentVersionHistory({ agentId, limit: 50, offset: 0 }))
-      .unwrap()
-      .then((items) => {
-        if (active) {
-          setVersions(
-            [...items].sort((a, b) => b.version_number - a.version_number),
-          );
-          setVersionAgentId(agentId);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setVersions([]);
-          setVersionAgentId(agentId);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [dispatch, state?.preferredAgentId]);
-
-  const versionOptions = [
-    {
-      value: LATEST_VERSION,
-      label: "Always use latest",
-      description: "Automatically uses the current saved version.",
-    },
-    ...versions.map((version) => ({
-      value: version.version_id,
-      label: `Version ${version.version_number}`,
-      description: version.change_note || "Saved agent version",
-    })),
-  ];
-
-  const selectAgent = (agentId: string) => {
-    if (!state) return;
-    void assistant.update(
-      {
-        userAssistantEnabled: state.userAssistantEnabled,
-        preferredAgentId: agentId,
-        preferredAgentVersionId: null,
-      },
-      "Saved agent selected. The text assistant remains in its current on/off state.",
-    );
-  };
-
-  const selectVersion = (value: string) => {
-    if (!state) return;
-    void assistant.update(
-      {
-        userAssistantEnabled: state.userAssistantEnabled,
-        preferredAgentId: state.preferredAgentId,
-        preferredAgentVersionId: value === LATEST_VERSION ? null : value,
-      },
-      value === LATEST_VERSION
-        ? "The text assistant will use the latest saved agent version."
-        : "Saved agent version pinned.",
-    );
-  };
-
-  const disconnect = async () => {
-    if (
-      !(await confirm({
-        title: "Disconnect the text assistant?",
-        description:
-          "This pauses assistant replies and clears the saved-agent binding. SMS notifications remain enrolled.",
-        confirmLabel: "Disconnect",
-        variant: "destructive",
-      }))
-    ) {
-      return;
-    }
-    await assistant.disconnect();
-  };
 
   return (
     <>
@@ -145,15 +58,23 @@ export function SmsAssistantSettingsSection() {
               ? assistant.loading
                 ? "Checking your verified phone and assistant binding."
                 : "No verified text-assistant enrollment was found for this account."
-              : state.blockedReasons.length
-                ? state.blockedReasons
+              : mandate.error
+                ? `The SMS Mandate could not resolve: ${mandate.error}`
+                : transportBlockedReasons.length
+                  ? transportBlockedReasons
                     .map(assistantBlockedReasonLabel)
                     .join(" ")
-                : "The verified binding, sender, program, and saved agent are ready."
+                  : mandate.loading
+                    ? "Resolving the SMS Mandate and your Binding."
+                    : "The verified phone, sender, program, and Mandate Binding are ready."
           }
           value={
             state
-              ? assistantBindingLabel(state)
+              ? effectiveReady
+                ? "Ready for owner testing"
+                : !state.userAssistantEnabled
+                  ? "Paused"
+                  : "Needs attention"
               : assistant.loading
                 ? "Loading…"
                 : "Unavailable"
@@ -184,41 +105,30 @@ export function SmsAssistantSettingsSection() {
           }
         />
         <SettingsRow
-          label="Saved agent"
-          description="Selecting an agent does not turn the assistant on."
-          disabled={!state || assistant.loading}
+          label="SMS Mandate Binding"
+          description="This is the single source of truth for which agent answers your texts. Changing it does not turn replies on or off."
+          disabled={!state || assistant.loading || mandate.loading}
         >
           <div className="flex min-w-0 items-center justify-end gap-2">
-            {state?.preferredAgentId && selectedAgent?.name ? (
+            {resolvedAgentId && selectedAgent?.name ? (
               <EntityRef
                 token="agent"
-                id={state.preferredAgentId}
+                id={resolvedAgentId}
                 name={selectedAgent.name}
                 openInNewTab
               />
             ) : null}
-            <AgentListDropdown
-              consumerId="sms-assistant-agent-picker"
-              activeAgentId={state?.preferredAgentId ?? null}
-              label={state?.preferredAgentId ? "Change" : "Choose saved agent"}
-              onSelect={selectAgent}
-              resolveAgentHref={(agent) => `/agents/${agent.id}`}
-              visibleTabs={["mine", "shared", "all", "system"]}
-              compact
+            <MandateAgentPicker
+              mandateKey={SMS_ASSISTANT_OWNER_BETA_MANDATE}
             />
           </div>
         </SettingsRow>
-        {state?.preferredAgentId ? (
-          <SettingsSelect
-            label="Saved version"
-            description="Use the latest version automatically or pin a specific saved version."
-            value={state.preferredAgentVersionId ?? LATEST_VERSION}
-            onValueChange={selectVersion}
-            options={versionOptions}
-            disabled={assistant.loading || versionsLoading}
-            width="lg"
-          />
-        ) : null}
+        <SettingsLink
+          label="Mandate controls"
+          description="Open the full Mandate editor to inspect provenance, version policy, and reset your Binding."
+          href="/agents/mandates"
+          actionLabel="Open Mandates"
+        />
         {state?.chatConversationId ? (
           <SettingsLink
             label="Conversation history"
@@ -244,7 +154,7 @@ export function SmsAssistantSettingsSection() {
           loading={assistant.loading}
           disabled={
             !state ||
-            (!state.userAssistantEnabled && !state.preferredAgentId) ||
+            !mandate.mandate ||
             (!state.userAssistantEnabled && !state.globalAssistantEnabled)
           }
           onClick={() => {
@@ -264,18 +174,8 @@ export function SmsAssistantSettingsSection() {
           actionIcon={Send}
           kind="outline"
           loading={assistant.loading}
-          disabled={!state?.ready}
+          disabled={!effectiveReady}
           onClick={assistant.sendTest}
-        />
-        <SettingsButton
-          label="Disconnect text assistant"
-          description="Clears the agent binding without changing SMS notification consent."
-          actionLabel="Disconnect"
-          actionIcon={Link2Off}
-          kind="destructive"
-          loading={assistant.loading}
-          disabled={!state?.preferredAgentId && !state?.userAssistantEnabled}
-          onClick={() => void disconnect()}
           last
         />
       </SettingsSection>

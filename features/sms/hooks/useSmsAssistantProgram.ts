@@ -62,38 +62,15 @@ export function useSmsAssistantProgram() {
     input: UpdateSmsAssistantProgram,
     successMessage: string,
   ) => {
-    const agentId =
-      input.preferredAgentId === undefined
-        ? state?.preferredAgentId
-        : input.preferredAgentId;
-    const agentVersionId =
-      input.preferredAgentVersionId === undefined
-        ? state?.preferredAgentVersionId
-        : input.preferredAgentVersionId;
-    if (!agentId) {
-      setResult({
-        success: false,
-        message: "Choose a saved agent before changing assistant replies.",
-      });
-      return null;
-    }
-
     setLoading(true);
     setResult(null);
     try {
-      const communication = supabase.schema("communication");
-      const { data, error } = agentVersionId
-        ? await communication.rpc("configure_my_sms_assistant_version", {
-            p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
-            p_enabled: input.userAssistantEnabled,
-            p_agent_id: agentId,
-            p_agent_version_id: agentVersionId,
-          })
-        : await communication.rpc("configure_my_sms_assistant", {
-            p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
-            p_enabled: input.userAssistantEnabled,
-            p_agent_id: agentId,
-          });
+      const { data, error } = await supabase
+        .schema("communication")
+        .rpc("set_my_sms_assistant_enabled", {
+          p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
+          p_enabled: input.userAssistantEnabled,
+        });
       if (error) throw error;
       const row = data?.[0];
       if (!row)
@@ -109,43 +86,6 @@ export function useSmsAssistantProgram() {
           error instanceof Error
             ? error.message
             : "Unable to update the text assistant binding.",
-      });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const disconnect = async () => {
-    setLoading(true);
-    setResult(null);
-    try {
-      const { data, error } = await supabase
-        .schema("communication")
-        .rpc("disconnect_my_sms_assistant", {
-          p_program_key: SMS_ASSISTANT_OWNER_BETA_PROGRAM,
-        });
-      if (error) throw error;
-      const row = data?.[0];
-      if (!row)
-        throw new Error(
-          "The text assistant did not return its disconnected state.",
-        );
-      const program = smsAssistantProgramFromRpc(row);
-      setState(program);
-      setResult({
-        success: true,
-        message:
-          "Text assistant disconnected. SMS notifications remain enrolled.",
-      });
-      return program;
-    } catch (error) {
-      setResult({
-        success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to disconnect the text assistant.",
       });
       return null;
     } finally {
@@ -183,5 +123,5 @@ export function useSmsAssistantProgram() {
     }
   };
 
-  return { state, loading, result, update, disconnect, sendTest };
+  return { state, loading, result, update, sendTest };
 }
