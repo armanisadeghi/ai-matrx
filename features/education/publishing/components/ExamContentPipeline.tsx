@@ -102,6 +102,18 @@ export function ExamContentPipeline() {
           if (existing.data) {
             const recoveredByPlan = new Map<string, GeneratedDraft>();
             const emptyByPlan = new Map<string, GeneratedDraft>();
+            const draftLoads = new Map(
+              existing.data
+                .filter(
+                  (set) =>
+                    asJsonObject(set.metadata).generation_pipeline ===
+                    "education-grounded-content-v1",
+                )
+                .map(
+                  (set) =>
+                    [set.id, fcService.getSetWithCards(set.id)] as const,
+                ),
+            );
             for (const set of existing.data) {
               const metadata = asJsonObject(set.metadata);
               if (
@@ -140,7 +152,10 @@ export function ExamContentPipeline() {
               ) {
                 continue;
               }
-              const loadedDraft = await fcService.getSetWithCards(set.id);
+              const loadedDraft = await draftLoads.get(set.id);
+              if (!loadedDraft) {
+                throw new Error(`Recovery did not inspect draft ${set.id}.`);
+              }
               if (loadedDraft.error || !loadedDraft.data) {
                 throw new Error(
                   loadedDraft.error ??
