@@ -15,7 +15,7 @@
 // count (agent.definition). It NEVER fabricates review activity.
 
 import { useEffect, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { ChartNoAxesCombined } from "lucide-react";
 import {
   fetchImprovementRows,
   type ImprovementRow,
@@ -55,7 +55,7 @@ export function HowItsImprovingPanel() {
   return (
     <section className="space-y-2">
       <div className="flex items-center gap-1.5">
-        <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+        <ChartNoAxesCombined className="h-3.5 w-3.5 text-muted-foreground" />
         <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           How it&apos;s improving
         </h2>

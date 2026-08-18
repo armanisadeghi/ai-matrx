@@ -59,7 +59,6 @@ export function ScreenshotSlot({
     <figure className="overflow-hidden rounded-md border border-border bg-card">
       {/* Static marketing asset served from /public — not user media, so the
           canonical file handler does not apply here. */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={spec.caption}
