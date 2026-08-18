@@ -93,6 +93,9 @@ chunk boundaries are unchanged.
 - Adversarial certifier: **CERTIFIED** exact candidate
   `86fe855c6465c53464fe77ef8875fc25dff3010c`. The independent reviewer found
   no batch-caused defect and confirmed every count and proposal source above.
+- Integration: candidate ancestry is preserved in `origin/main` at
+  `f290fda8cb9902673e524041d4d545f597474aa9`; the permanent lifecycle is
+  `delivery_queued` for the serialized release owner.
 
 ## Recursive learning
 
