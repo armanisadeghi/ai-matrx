@@ -485,7 +485,11 @@ export const studyService = {
         });
         if (priorRes.error) return fail("recordAttempt", priorRes.error);
         const prev = masteryToFsrsState(priorRes.data);
-        const now = new Date();
+        // For a replayed offline attempt the review instant is when the learner
+        // ANSWERED, not when the device reconnected — otherwise a deck studied
+        // on a plane reschedules as if every card were reviewed on landing.
+        const now =
+          input.reviewedAt != null ? new Date(input.reviewedAt) : new Date();
         const rating =
           confidence != null
             ? mapConfidenceToRating(confidence)
@@ -531,6 +535,10 @@ export const studyService = {
           : {}),
         ...(input.latencyMs != null ? { p_latency_ms: input.latencyMs } : {}),
         ...(input.gradedBy != null ? { p_graded_by: input.gradedBy } : {}),
+        ...(input.attemptId != null ? { p_attempt_id: input.attemptId } : {}),
+        ...(input.reviewedAt != null
+          ? { p_reviewed_at: input.reviewedAt }
+          : {}),
         ...fsrsParams,
       });
       if (error) return fail("recordAttempt", error);

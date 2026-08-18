@@ -54,6 +54,9 @@ import {
   setResourcePreview,
 } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.slice";
 import { adoptHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
+
+const DESCRIBE_ALL_CONCURRENCY = 5;
 
 /**
  * Folder-segment sanitizer. Cloud-files folder names tolerate spaces, but
@@ -1197,8 +1200,6 @@ export function useImageStudio(
 
   const describeAll = useCallback(
     async (contextHint?: string) => {
-      // Run sequentially — each describe is a real LLM call and parallel
-      // requests would just rate-limit ourselves.
       const ids = files
         .filter(
           (f) =>
@@ -1206,9 +1207,9 @@ export function useImageStudio(
             f.metadataStatus !== "uploading-source",
         )
         .map((f) => f.id);
-      for (const id of ids) {
-        await describeFile(id, contextHint);
-      }
+      await runWithConcurrency(ids, DESCRIBE_ALL_CONCURRENCY, (id) =>
+        describeFile(id, contextHint),
+      );
     },
     [files, describeFile],
   );

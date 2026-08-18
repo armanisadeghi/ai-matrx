@@ -94,6 +94,22 @@ export interface RecordAttemptInput {
   responseTranscript?: string | null;
   latencyMs?: number | null;
   gradedBy?: string | null;
+  /**
+   * Client-generated attempt id — the idempotency key for offline replay
+   * (IC-8). The RPC uses it as the ledger row's primary key and returns the
+   * existing attempt WITHOUT touching mastery when it is already present, so
+   * replaying the same outbox twice cannot double-count. Omit for live study;
+   * the server generates one.
+   */
+  attemptId?: string | null;
+  /**
+   * When the learner actually answered, for an attempt captured offline and
+   * flushed later. Drives the FSRS review instant so a card studied on the bus
+   * schedules from when it was studied, not from when the phone reconnected.
+   * The RPC clamps it to `now()`, so it can never schedule from the future.
+   * Omit for live study.
+   */
+  reviewedAt?: string | null;
 }
 
 /**

@@ -73,6 +73,10 @@ import { SEO_AUTHORITY_ROUTE_KIND_DEFINITIONS } from "../kinds/seo-authority-rou
 import { PAGE_BRIEF_KIND_DEFINITIONS } from "../kinds/page-brief";
 import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-options";
 import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
+import { GENERATED_IMAGE_SET_KIND_DEFINITIONS } from "../kinds/generated-image-set";
+import { GENERATED_VIDEO_SET_KIND_DEFINITIONS } from "../kinds/generated-video-set";
+import { GENERATED_AUDIO_KIND_DEFINITIONS } from "../kinds/generated-audio";
+import { PODCAST_EPISODE_KIND_DEFINITIONS } from "../kinds/podcast-episode";
 import { MEMORY_AID_KIND_DEFINITIONS } from "../kinds/memory-aid";
 import { SEO_PACKAGE_KIND_DEFINITIONS } from "../kinds/seo-package";
 import { PLAN_PAGE_RESEARCH_KIND_DEFINITIONS } from "../kinds/plan-page-research";
@@ -104,6 +108,11 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...PAGE_BRIEF_KIND_DEFINITIONS,
   ...EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS,
   ...MEDIA_CHAPTERS_KIND_DEFINITIONS,
+  // Media workflow-I/O (python-owned models — see each module header).
+  ...GENERATED_IMAGE_SET_KIND_DEFINITIONS,
+  ...GENERATED_VIDEO_SET_KIND_DEFINITIONS,
+  ...GENERATED_AUDIO_KIND_DEFINITIONS,
+  ...PODCAST_EPISODE_KIND_DEFINITIONS,
   // Education Memory Tools (VISION §11): the full memory-aid artifact + the
   // per-flashcard hint. Registered 2026-08-17 after both shipped unregistered
   // and streamed as raw JSON in the LiveRunWindow.

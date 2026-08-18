@@ -114,8 +114,20 @@ describe("compiled bootstrap (system-components)", () => {
       keyword_classification_batch_v1: "keyword_classification_batch",
       page_brief: "page_brief",
       media_chapters: "media_chapters",
+      generated_image_set: "generated_image_set",
+      generated_video_set: "generated_video_set",
+      generated_audio: "generated_audio",
+      podcast_episode: "podcast_episode",
       episode_title_options: "episode_title_options",
       seo_package: "seo_package",
+      keyword_serp_intent_analysis_v1: "keyword_serp_intent_analysis",
+      memory_aid: "memory_aid",
+      memory_hint: "memory_hint",
+      plan_page_research: "plan_page_research",
+      plan_page_outline: "plan_page_outline",
+      plan_page_draft: "plan_page_draft",
+      plan_page_review: "plan_page_review",
+      cms_page_build: "cms_page_build",
     });
   });
 });

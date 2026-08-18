@@ -29,6 +29,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   AlertDialog,
@@ -491,34 +492,4 @@ function BulkActionButton({
       {label}
     </button>
   );
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────
-
-/**
- * Runs `worker(item)` for each item with a bounded concurrency. Errors on a
- * single item are caught + logged so one failure doesn't abort the rest;
- * caller is expected to surface aggregate state via Redux.
- */
-async function runWithConcurrency<T>(
-  items: T[],
-  limit: number,
-  worker: (item: T) => Promise<void>,
-): Promise<void> {
-  let cursor = 0;
-  const runners = Array.from(
-    { length: Math.min(limit, items.length) },
-    async () => {
-      while (cursor < items.length) {
-        const i = cursor++;
-        try {
-          await worker(items[i]);
-        } catch (err) {
-          // eslint-disable-next-line no-console
-          console.warn("[BulkActionsBar] item failed:", err);
-        }
-      }
-    },
-  );
-  await Promise.all(runners);
 }

@@ -67,6 +67,10 @@ plan CRUD through it.
   sets, and rendered together through `RunSetDisplay` inside the floating live
   window. Server phase/info milestones drive the stage line (aidream emits
   them since 2026-08-10; `initial_message` arrives as an info event).
+  **Bulk deepen runs five pages concurrently** through the shared
+  `runWithConcurrency` worker pool. Stop prevents queued pages from starting;
+  already-started pages finish and persist normally. One page failing never
+  blocks the other four or the remaining queue.
 - **Setup step agents (`setup/ai.ts`)** — every Setup step has a real AI,
   grounded in the RESEARCH system's final report (the "Document",
   `research.rs_document.content`, picked by topic in the `SetupAiBar` strip).
@@ -220,7 +224,7 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   The `plan_node|plan_entity → web_site` containment edge is written by the
   DB trigger `plan._site_edge` — the client NEVER writes it.
 - Research lineage is separate from SEO taxonomy: `research_topic|research_tag →
-  web_site|plan_node|web_page`, all `container_side='none'` so the relationship
+web_site|plan_node|web_page`, all `container_side='none'` so the relationship
   conveys no access. Setup exposes site-level topic/tag attachments; NodePanel
   exposes page-specific attachments. A database trigger copies node lineage to
   every `web_page` realized by that node in either insert order, with role
@@ -301,27 +305,27 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
    door, never an error.
 
    What counts as an assignment is `hasKeywordAssignment`
-     (`plan-assists-producer.ts`), the mirror of aidream's
-     `assert_brief_preconditions`: it reads the page's SEO plan from the ONE
-     store (`web.page.desired_values.keyword_plan` via `SitePlanIndex`) — a
-     primary keyword **or any strategist record** (role, supported routes,
-     secondary keywords, reason, planned links), i.e. exactly `hasRoutePlan`,
-     which is the server's `has_keyword_assignment` (aligned 2026-08-17 — it
-     previously checked only keyword+role and chipped gaps the server would
-     pass). **Change one predicate and you must change the other** — if they
-     disagree, the UI offers a fix for a gap the server does not see, or
-     blocks a page the server would happily brief.
+   (`plan-assists-producer.ts`), the mirror of aidream's
+   `assert_brief_preconditions`: it reads the page's SEO plan from the ONE
+   store (`web.page.desired_values.keyword_plan` via `SitePlanIndex`) — a
+   primary keyword **or any strategist record** (role, supported routes,
+   secondary keywords, reason, planned links), i.e. exactly `hasRoutePlan`,
+   which is the server's `has_keyword_assignment` (aligned 2026-08-17 — it
+   previously checked only keyword+role and chipped gaps the server would
+   pass). **Change one predicate and you must change the other** — if they
+   disagree, the UI offers a fix for a gap the server does not see, or
+   blocks a page the server would happily brief.
 
    The same predicate now also gates the rail (2026-08-17): `NodeStepRail`
-     takes `writeBlockedReason` (computed in `NodePanel` — no brief first,
-     then the keyword gap) and derives Review's own block (no current draft
-     artifact) from the artifacts it already reads, so a run arrow the server
-     would refuse is visibly blocked with the reason AND the fix in its
-     tooltip before the click (`aria-disabled` + a click guard, not
-     `disabled`, so the tooltip still shows). Mirrors aidream's
-     `assert_step_preconditions(STEP_WRITE)`, which refuses a keyword-less
-     page with the same predicate since the same date; the bulk fill records
-     that refusal as a readable SKIP.
+   takes `writeBlockedReason` (computed in `NodePanel` — no brief first,
+   then the keyword gap) and derives Review's own block (no current draft
+   artifact) from the artifacts it already reads, so a run arrow the server
+   would refuse is visibly blocked with the reason AND the fix in its
+   tooltip before the click (`aria-disabled` + a click guard, not
+   `disabled`, so the tooltip still shows). Mirrors aidream's
+   `assert_step_preconditions(STEP_WRITE)`, which refuses a keyword-less
+   page with the same predicate since the same date; the bulk fill records
+   that refusal as a readable SKIP.
 
 3. **Pillar map** (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
    behind the view switch with `ssr:false`): three user-switchable pure
@@ -429,7 +433,7 @@ one is the defect to avoid:
   re-verify on every return, and each failure carries its one-click way out.
 - **Coverage** — `families` (17 of 30 services planned), `corePages`,
   `extraRoutes`, `nodesWithoutBrief`/`nodesWithoutKeyword` — stays a METER in
-  `SetupWorkOrderColumn`. A count that is *supposed* to climb over weeks is not
+  `SetupWorkOrderColumn`. A count that is _supposed_ to climb over weeks is not
   a tick box; forcing it into one produces a step that is never done and always
   nagging.
 
@@ -440,7 +444,7 @@ the primitive's rule 3: a website we could not read is `unknown` WITH the
 reason, never a red "you haven't done this".
 
 **What groups a checklist step is the ACTION that finishes it, not the
-requirement it measures.** The primitive *can* emit one step per requirement (a
+requirement it measures.** The primitive _can_ emit one step per requirement (a
 `steps` factory over the context), so this is a choice: `design` (one
 starter-kit call writes styles + header + footer), `menu` and `images` each
 cover several requirements and name every piece by state in their `detail`,
@@ -462,7 +466,7 @@ split:
   step stops being optional.**
 - **Creating the website is ONE implementation, two entry points.**
   `bridge.ts#createAndLinkCmsSite` is called by the checklist's "Set it up for
-  me" step and by "Make it real" rung 1's *Create & link* branch. The rung keeps
+  me" step and by "Make it real" rung 1's _Create & link_ branch. The rung keeps
   its own control because it ALSO offers linking a website that already exists —
   a choice only a human can make. Never fork a second create-and-link path.
 
@@ -612,7 +616,7 @@ keep that honest:
    component (`blocks/page-pipeline/PlanPageDraftBlock.tsx`), used wherever a
    value appears without a record identity — chat, a live run, the artifact
    dialog's read view. `PageDraftEditor` is the EDIT surface at the one place
-   that knows *which* page this is and can therefore save. Never add a second
+   that knows _which_ page this is and can therefore save. Never add a second
    read-only draft renderer; extend the kind component instead.
 
 **Open gap (deliberate):** the guided AI actions are verb-labeled buttons, not
@@ -684,7 +688,7 @@ authored draft) — never stamped on a column.
 **And a planned page that IS real carries its AFTER.** The section under it —
 "What the live page is doing" (`NodeMeasureCard` + `hooks/useNodeMeasurement.ts`)
 — also always renders, per the before/during/after doctrine in
-`docs/handoffs/cms-page-hub.md`: the *during* surface may never forget where the
+`docs/handoffs/cms-page-hub.md`: the _during_ surface may never forget where the
 page came from or where it went. It follows the SAME durable id join the CMS
 Measure tab uses — `plan.node` → `client_pages.plan_node_id` →
 `client_pages.web_page_id` → `web.page` — reading `web_page_id` off the full CMS
@@ -746,6 +750,12 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-17 — **Bulk deepen is bounded-concurrent, not serial.** The client
+  now starts five independent page deepens at once through the shared
+  `lib/async/run-with-concurrency.ts` primitive, reports active and finished
+  counts truthfully, isolates per-page failures, and stops only queued work.
+  Notes and Files bulk actions were moved onto the same primitive so the
+  worker-pool implementation is no longer copied between features.
 - 2026-08-17 — **Keyword→brief enforcement tail (FE half).**
   `hasKeywordAssignment` aligned to the server predicate (`hasRoutePlan` — any
   strategist record counts, not just keyword+role); `NodeStepRail` run arrows
@@ -810,24 +820,24 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   and Setup's outline (which started at `<h4>` under nothing) is now
   h1 → h2 (column roots, via `SetupSection`'s new `level`) → h3. Mobile: the
   workspace header is the canonical `EntityModeHeader` (back + site dropdown
-  + views + actions, one drawer below `sm`), and Setup's three columns become
-  work-order-as-main plus two `MobilePanelShell` drawers, with
-  `useMobilePanelClose()` dismissing the shape drawer on pick.
-  **Measured at 390px, all six views: 0 controls under 44px** (setup 43,
-  table 87, tree 44, map 31, entities 9, ai-runs 13), inputs at 16px, no
-  horizontal page overflow; desktop re-verified unchanged at 1280.
-  Three bugs surfaced by that verification and fixed here: `PlanDriftBar`
-  starved its sentence to ~66px beside two non-shrinking buttons (now stacks)
-  and hid its copy buttons behind `group-hover`, which a touch device can
-  never trigger; and `PlanAssistStrip` produced assists before the site name
-  loaded, stamping a raw UUID into the assist TITLE that dedupe then froze
-  forever (it now waits for the name and never falls back to an id — one
-  persisted row repaired). **Two header rules learned the hard way, both
-  verified in the browser:** an `EntityModeHeader` injects itself through
-  `RouteHeader` → `PageHeader`, so wrapping it in a second `PageHeader`
-  renders the header EMPTY; and its `entityStatus` mandate lives inside the
-  dropdown's trigger `<button>`, so a button-shaped chip (the
-  `ActiveContextLensChip`) belongs in `right`, not there.
+  - views + actions, one drawer below `sm`), and Setup's three columns become
+    work-order-as-main plus two `MobilePanelShell` drawers, with
+    `useMobilePanelClose()` dismissing the shape drawer on pick.
+    **Measured at 390px, all six views: 0 controls under 44px** (setup 43,
+    table 87, tree 44, map 31, entities 9, ai-runs 13), inputs at 16px, no
+    horizontal page overflow; desktop re-verified unchanged at 1280.
+    Three bugs surfaced by that verification and fixed here: `PlanDriftBar`
+    starved its sentence to ~66px beside two non-shrinking buttons (now stacks)
+    and hid its copy buttons behind `group-hover`, which a touch device can
+    never trigger; and `PlanAssistStrip` produced assists before the site name
+    loaded, stamping a raw UUID into the assist TITLE that dedupe then froze
+    forever (it now waits for the name and never falls back to an id — one
+    persisted row repaired). **Two header rules learned the hard way, both
+    verified in the browser:** an `EntityModeHeader` injects itself through
+    `RouteHeader` → `PageHeader`, so wrapping it in a second `PageHeader`
+    renders the header EMPTY; and its `entityStatus` mandate lives inside the
+    dropdown's trigger `<button>`, so a button-shaped chip (the
+    `ActiveContextLensChip`) belongs in `right`, not there.
 
 - 2026-08-16 — **The plan TREE and TABLE now show the AFTER, not just the
   DURING (cms-page-hub item 6, last leg).** The overlay was the data gap:

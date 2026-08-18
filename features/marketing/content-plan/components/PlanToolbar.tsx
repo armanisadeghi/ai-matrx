@@ -15,13 +15,7 @@
  * row), assist chips inline, one action cluster on the right.
  */
 import { useState } from "react";
-import {
-  ExternalLink,
-  Loader2,
-  PenLine,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { ExternalLink, Loader2, PenLine, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -166,9 +160,8 @@ export function PlanToolbar({
       <span className="flex min-w-0 items-center gap-1.5 text-xs text-foreground">
         <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
         <span className="min-w-0 truncate">
-          Deepening {bulkDeepen.done + 1}/{bulkDeepen.total}
-          {bulkDeepen.current ? ` — ${bulkDeepen.current}` : ""}
-          {bulkDeepen.stage ? ` · ${bulkDeepen.stage}` : ""}
+          Deepening {bulkDeepen.active.length} at once · {bulkDeepen.done}/
+          {bulkDeepen.total} finished
           {bulkDeepen.failures.length > 0
             ? ` · ${bulkDeepen.failures.length} failed`
             : ""}
@@ -192,9 +185,8 @@ export function PlanToolbar({
     ) : bulkDeepen?.status === "error" ? (
       <span className="flex min-w-0 items-center gap-1.5 text-xs text-destructive">
         <span className="min-w-0 truncate">
-          Bulk deepen: {bulkDeepen.failures.length} of {bulkDeepen.total}{" "}
-          failed — {bulkDeepen.failures[0]?.route}:{" "}
-          {bulkDeepen.failures[0]?.error}
+          Bulk deepen: {bulkDeepen.failures.length} of {bulkDeepen.total} failed
+          — {bulkDeepen.failures[0]?.route}: {bulkDeepen.failures[0]?.error}
         </span>
         <Button
           variant="ghost"
@@ -330,8 +322,8 @@ export function PlanToolbar({
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
                   The topic&apos;s final research report is handed to the three
-                  research agents — real services, locations, and topics
-                  instead of guesses.
+                  research agents — real services, locations, and topics instead
+                  of guesses.
                 </p>
               </div>
               <div>

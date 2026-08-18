@@ -64,6 +64,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Already verified" }, { status: 409 });
     }
 
+    // A guardian must be an ADULT. Nothing checked this before, so a child could
+    // register a second account, grant it guardian rights over the first, and
+    // "verify" their own consent with a prepaid card — the exact self-consent
+    // COPPA §312.5 exists to prevent. An undeclared band is refused too: we
+    // cannot verify consent from an account whose own age we do not know.
+    const { data: guardianProfile } = await supabase
+      .schema("users")
+      .from("profiles")
+      .select("age_band")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (guardianProfile?.age_band !== "adult") {
+      return NextResponse.json(
+        {
+          error:
+            "Only an adult account can verify parental consent. Ask a parent or guardian to sign in with their own account.",
+        },
+        { status: 403 },
+      );
+    }
+
     const customerId = await ensureStripeCustomer(user.id, user.email ?? null);
     const origin = request.nextUrl.origin;
 

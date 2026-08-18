@@ -27,6 +27,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+// A cached "allowed" verdict is a UX convenience, not an authority, so it must
+// not outlive its own truth: a learner whose consent is revoked mid-session, or
+// who forces gate errors in devtools, would otherwise keep the stale allow
+// forever. Matches aidream's own 60s status cache.
+const ALLOWED_VERDICT_TTL_MS = 60_000;
 import { coppaService } from "./coppaService";
 import type { AgeBand, CoppaGate } from "./types";
 import { AiConsentRequiredDialog } from "./components/AiConsentRequiredDialog";
@@ -69,9 +74,13 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
   // Latest successfully-loaded verdict, read inside ensureAllowed without making
   // the callback depend on (and churn with) `gate`.
   const gateRef = useRef<CoppaGate | null>(null);
-  // Resolves the in-flight ensureAllowed() once the age prompt is answered or
-  // dismissed, so the caller's original action can resume on its own.
-  const agePromptRef = useRef<((allowed: boolean) => void) | null>(null);
+  const gateAtRef = useRef<number>(0);
+  // Resolves every in-flight ensureAllowed() once the age prompt is answered or
+  // dismissed, so each caller's original action can resume on its own. A LIST,
+  // not a single slot: two actions can race the same prompt, and overwriting
+  // one resolver left the first caller's promise pending for the life of the
+  // page — a permanent hang, not a refusal.
+  const agePromptWaitersRef = useRef<((allowed: boolean) => void)[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +88,10 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
       setLoading(true);
       const res = await coppaService.getGate();
       if (cancelled) return;
-      if (res.data) gateRef.current = res.data;
+      if (res.data) {
+        gateRef.current = res.data;
+        gateAtRef.current = Date.now();
+      }
       setGate(res.data);
       setLoading(false);
     })();
@@ -89,12 +101,23 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
   }, [nonce]);
 
   const settleAgePrompt = useCallback((allowed: boolean) => {
-    const resolve = agePromptRef.current;
-    agePromptRef.current = null;
+    const waiters = agePromptWaitersRef.current;
+    agePromptWaitersRef.current = [];
     setAskAge(false);
     setSavingBand(null);
-    resolve?.(allowed);
+    for (const resolve of waiters) resolve(allowed);
   }, []);
+
+  // A pending prompt must never outlive the component. Unmounting with waiters
+  // still queued would hang every caller forever; refuse instead.
+  useEffect(
+    () => () => {
+      const waiters = agePromptWaitersRef.current;
+      agePromptWaitersRef.current = [];
+      for (const resolve of waiters) resolve(false);
+    },
+    [],
+  );
 
   /** The learner answered the age prompt. Write it, then re-check the gate. */
   const onPickBand = useCallback(
@@ -109,11 +132,20 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
         setOpen(true);
         return;
       }
-      // A block here means an under-13 tried to self-declare upward; the band is
-      // unchanged. The consent dialog is the correct next state either way.
+      // `status: "blocked"` is NOT an error and never populates res.error: an
+      // under-13 tried to self-declare upward and the band is unchanged. Say so
+      // loudly — the consent dialog is the right next state, but a caller that
+      // only checked res.error would read this as success.
+      if (res.data.status === "blocked") {
+        console.error(
+          "[coppa] age change REFUSED — a verified guardian must confirm it",
+          { reason: res.data.reason, ageBand: res.data.ageBand },
+        );
+      }
       const verdict = await coppaService.getGate();
       if (verdict.data) {
         gateRef.current = verdict.data;
+        gateAtRef.current = Date.now();
         setGate(verdict.data);
       }
       const allowed = Boolean(verdict.data?.aiAllowed);
@@ -128,9 +160,12 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
     if (res.error || !res.data) {
       // Child-safety gate: never fail OPEN for a possible minor (D57).
       const known = gateRef.current;
-      if (known?.aiAllowed) {
+      const knownIsFresh = Date.now() - gateAtRef.current < ALLOWED_VERDICT_TTL_MS;
+      if (known?.aiAllowed && knownIsFresh) {
         // Already-resolved adult / teen / consented under-13 — keep the softer
-        // behavior on a transient blip. Loud so the resolver failure is visible.
+        // behavior on a transient blip, but only while the verdict is FRESH. An
+        // unbounded cache let a revoked consent (or a devtools-blocked RPC)
+        // keep allowing for the life of the page.
         console.error(
           "[coppa] gate re-check failed; allowing on prior allowed verdict",
           { reason: known.reason, ageBand: known.ageBand, error: res.error },
@@ -157,15 +192,17 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
       return false;
     }
     gateRef.current = res.data;
+    gateAtRef.current = Date.now();
     setGate(res.data);
     if (res.data.aiAllowed) return true;
 
     if (res.data.reason === "age_undeclared") {
       // Not a wall — a one-tap step. Resolve once the learner answers so the
-      // action they clicked resumes without a second click.
+      // action they clicked resumes without a second click. Concurrent callers
+      // queue behind the same prompt and all settle together.
       setAskAge(true);
       return await new Promise<boolean>((resolve) => {
-        agePromptRef.current = resolve;
+        agePromptWaitersRef.current.push(resolve);
       });
     }
 

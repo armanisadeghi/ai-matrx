@@ -23,6 +23,10 @@ import KeywordSerpIntentAnalysisBlock from "../../blocks/keyword-research/Keywor
 import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MediaChaptersBlock from "../../blocks/media-chapters/MediaChaptersBlock";
+import GeneratedImageSetBlock from "../../blocks/media-io/GeneratedImageSetBlock";
+import GeneratedVideoSetBlock from "../../blocks/media-io/GeneratedVideoSetBlock";
+import GeneratedAudioBlock from "../../blocks/media-io/GeneratedAudioBlock";
+import PodcastEpisodeBlock from "../../blocks/media-io/PodcastEpisodeBlock";
 import MemoryAidBlock from "../../blocks/memory-aid/MemoryAidBlock";
 import MemoryHintBlock from "../../blocks/memory-aid/MemoryHintBlock";
 import SeoPackageBlock from "../../blocks/seo-package/SeoPackageBlock";
@@ -319,6 +323,34 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <MediaChaptersBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  GeneratedImageSetBlock: (
+    props: React.ComponentProps<typeof GeneratedImageSetBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <GeneratedImageSetBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  GeneratedVideoSetBlock: (
+    props: React.ComponentProps<typeof GeneratedVideoSetBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <GeneratedVideoSetBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  GeneratedAudioBlock: (
+    props: React.ComponentProps<typeof GeneratedAudioBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <GeneratedAudioBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  PodcastEpisodeBlock: (
+    props: React.ComponentProps<typeof PodcastEpisodeBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <PodcastEpisodeBlock {...props} />
     </LazyBlockWrapper>
   ),
   MemoryAidBlock: (props: React.ComponentProps<typeof MemoryAidBlock>) => (

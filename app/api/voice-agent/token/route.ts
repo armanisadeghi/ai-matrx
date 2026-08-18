@@ -17,6 +17,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/utils/supabase/resolveUser";
 import { TOKEN_TTL_SECONDS } from "@/features/voice-agent/constants";
+import {
+  COPPA_REFUSAL_MESSAGE,
+  resolveServerCoppaVerdict,
+} from "@/utils/education/serverCoppaGate";
 
 // Force Node runtime + dynamic — this route mints a secret per request and
 // must never be cached or pre-rendered.
@@ -42,6 +46,29 @@ export async function POST(request: NextRequest) {
             "Authentication required. Provide a session cookie or Bearer token.",
         },
         { status: 401 },
+      );
+    }
+
+    // CHILD SAFETY — this route is the boundary, because nothing after it is.
+    // The secret minted below lets the BROWSER open a websocket straight to
+    // xAI, so aidream never sees the generation and `enforce_education_coppa`
+    // can never fire. Without this check a declared under-13 with no verified
+    // guardian could hold a live voice conversation with a model, with neither
+    // the client gate nor the server gate present (adversarial review,
+    // 2026-08-17). Adults, teens, verified under-13s and guests are unaffected.
+    const coppa = await resolveServerCoppaVerdict(user.id);
+    if (!coppa.aiAllowed) {
+      console.error("[/api/voice-agent/token] REFUSED — COPPA consent required", {
+        userId: user.id,
+        reason: coppa.reason,
+        ageBand: coppa.ageBand,
+      });
+      return NextResponse.json(
+        {
+          error: COPPA_REFUSAL_MESSAGE,
+          error_type: "education_coppa_consent_required",
+        },
+        { status: 403 },
       );
     }
 

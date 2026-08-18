@@ -262,6 +262,14 @@ export function isBlockLoading(block: {
  *    flip for the registered `media_chapters` kind (`__kind` JSON arrival
  *    only — no tag/fence surface); never emitted upstream. STREAMING bridge:
  *    `chapters` is an array of a child kind, so rows appear one at a time.
+ *  - `generated_image_set` / `generated_video_set` / `generated_audio` /
+ *    `podcast_episode` — the media workflow-I/O deliverables, produced ONLY by
+ *    `applyIrKindRoute`'s compiled-bridge flips for those registered kinds
+ *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
+ *    upstream. STREAMING bridges: the set kinds carry a child-kind array, so
+ *    each image/clip appears as its object closes. Media renders through
+ *    `<InlineMediaRef>` inside the components (never a raw src) — see the
+ *    media-durability law.
  *  - `memory_aid` / `memory_hint` — produced ONLY by `applyIrKindRoute`'s
  *    compiled-bridge flips for those registered kinds (`__kind` JSON arrival
  *    only — no tag/fence surface); never emitted upstream. STREAMING bridges:
@@ -294,6 +302,10 @@ export type FeSynthesizedBlockType =
   | "keyword_serp_intent_analysis"
   | "page_brief"
   | "media_chapters"
+  | "generated_image_set"
+  | "generated_video_set"
+  | "generated_audio"
+  | "podcast_episode"
   | "memory_aid"
   | "memory_hint"
   | "episode_title_options"
@@ -379,6 +391,10 @@ export type ShapeBlockType =
   | "keyword_serp_intent_analysis"
   | "page_brief"
   | "media_chapters"
+  | "generated_image_set"
+  | "generated_video_set"
+  | "generated_audio"
+  | "podcast_episode"
   | "memory_aid"
   | "memory_hint"
   | "episode_title_options"
@@ -1447,6 +1463,78 @@ const SHAPE_BLOCK_DISPATCH = {
         code={block.content}
         language="json"
       />
+    );
+  },
+
+  // Kind-routed media deliverables. Same contract as media_chapters:
+  // STREAMING bridges (each image/clip appears as its object closes), a mini
+  // loader before the first parsed field, and a readable code block if a
+  // complete block somehow carries no serverData — never hidden content.
+  generated_image_set: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.GeneratedImageSetBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock key={index} code={block.content} language="json" />
+    );
+  },
+
+  generated_video_set: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.GeneratedVideoSetBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock key={index} code={block.content} language="json" />
+    );
+  },
+
+  generated_audio: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.GeneratedAudioBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock key={index} code={block.content} language="json" />
+    );
+  },
+
+  podcast_episode: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.PodcastEpisodeBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock key={index} code={block.content} language="json" />
     );
   },
 

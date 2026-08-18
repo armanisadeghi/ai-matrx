@@ -35,6 +35,7 @@ import {
 import type { TypedStreamEvent } from "@/lib/api/types";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
+import { runWithConcurrency } from "@/lib/async/run-with-concurrency";
 
 import { planKeys } from "../data/hooks";
 
@@ -427,11 +428,9 @@ export interface BulkDeepenState {
   status: "idle" | "running" | "done" | "error";
   total: number;
   done: number;
-  /** The node currently being deepened (route or label). */
-  current?: string;
-  /** Live server phase line for the current node. */
-  stage?: string;
-  /** Canonical live-render handle for the CURRENT node's adopted stream. */
+  /** Routes currently running; bounded to BULK_DEEPEN_CONCURRENCY. */
+  active: string[];
+  /** Canonical live-render handle for the most recently adopted stream. */
   requestId?: string;
   failures: BulkDeepenFailure[];
   cancelled: boolean;
@@ -441,17 +440,19 @@ const BULK_IDLE: BulkDeepenState = {
   status: "idle",
   total: 0,
   done: 0,
+  active: [],
   failures: [],
   cancelled: false,
 };
 
 export type PlanBulkDeepenController = ReturnType<typeof usePlanBulkDeepen>;
 
+export const BULK_DEEPEN_CONCURRENCY = 5;
+
 /**
- * Run the EXISTING research-grounded deepen over many nodes — sequential
- * (each run is a real server research pass; parallel fan-out would hammer the
- * brain for no wall-clock win), per-node failure isolation, cancellable
- * between nodes. Not a new agent — the same POST /nodes/{id}/deepen per node.
+ * Run the EXISTING research-grounded deepen over many nodes with bounded
+ * parallelism, per-node failure isolation, and cancellation between queued
+ * nodes. Not a new agent — the same POST /nodes/{id}/deepen per node.
  */
 export function usePlanBulkDeepen(siteId: string | null) {
   const dispatch = useAppDispatch();
@@ -459,18 +460,18 @@ export function usePlanBulkDeepen(siteId: string | null) {
   const [run, setRun] = useState<BulkDeepenState>(BULK_IDLE);
   const inFlight = useRef(false);
   const cancelRef = useRef(false);
-  const adoptedRequestIdRef = useRef<string | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+  const adoptedRequestIdsRef = useRef(new Set<string>());
+  const abortControllersRef = useRef(new Set<AbortController>());
   const runEpochRef = useRef(0);
   const runSetKey = `content-plan-ai:${siteId ?? "none"}:bulk-deepen`;
 
   useEffect(
     () => () => {
       runEpochRef.current += 1;
-      if (adoptedRequestIdRef.current) {
-        dispatch(removeRequest(adoptedRequestIdRef.current));
-        adoptedRequestIdRef.current = null;
+      for (const requestId of adoptedRequestIdsRef.current) {
+        dispatch(removeRequest(requestId));
       }
+      adoptedRequestIdsRef.current.clear();
     },
     [dispatch],
   );
@@ -493,89 +494,102 @@ export function usePlanBulkDeepen(siteId: string | null) {
         done: 0,
         failures: [],
         cancelled: false,
-        current: targets[0].route,
+        active: [],
       });
 
       const failures: BulkDeepenFailure[] = [];
+      const activeRoutes = new Set<string>();
       let done = 0;
 
-      for (const target of targets) {
-        if (cancelRef.current) break;
-        setRunForEpoch((current) => ({
-          ...current,
-          current: target.route,
-          stage: undefined,
-        }));
-        let streamFailure: string | null = null;
-        if (adoptedRequestIdRef.current) {
-          dispatch(removeRequest(adoptedRequestIdRef.current));
-          adoptedRequestIdRef.current = null;
-        }
-        const streamAbort = new AbortController();
-        abortRef.current = streamAbort;
-        const consumeStream = dispatch(
-          adoptForeignStream({
-            onAdopted: ({ requestId }) => {
-              if (runEpochRef.current !== epoch) {
-                dispatch(removeRequest(requestId));
-                return;
-              }
-              adoptedRequestIdRef.current = requestId;
-              setRunForEpoch((current) => ({ ...current, requestId }));
-              dispatch(
-                addRunToSet({
-                  setKey: runSetKey,
-                  requestId,
-                  label: `Deepening — ${target.route}`,
+      await runWithConcurrency(
+        targets,
+        BULK_DEEPEN_CONCURRENCY,
+        async (target) => {
+          if (runEpochRef.current !== epoch) return;
+          activeRoutes.add(target.route);
+          setRunForEpoch((current) => ({
+            ...current,
+            active: [...activeRoutes],
+          }));
+          let streamFailure: string | null = null;
+          const streamAbort = new AbortController();
+          abortControllersRef.current.add(streamAbort);
+          const consumeStream = dispatch(
+            adoptForeignStream({
+              onAdopted: ({ requestId }) => {
+                if (runEpochRef.current !== epoch) {
+                  dispatch(removeRequest(requestId));
+                  return;
+                }
+                adoptedRequestIdsRef.current.add(requestId);
+                setRunForEpoch((current) => ({ ...current, requestId }));
+                dispatch(
+                  addRunToSet({
+                    setKey: runSetKey,
+                    requestId,
+                    label: `Deepening — ${target.route}`,
+                  }),
+                );
+              },
+              abortController: streamAbort,
+              onEvent: (event) => {
+                if (event.event === "error") {
+                  streamFailure = describeBackendFailure(
+                    parseStreamError(event.data),
+                  ).headline;
+                }
+              },
+            }),
+          );
+
+          try {
+            const result = await dispatch(
+              callApi({
+                path: "/content-plan/nodes/{node_id}/deepen",
+                method: "POST",
+                pathParams: { node_id: target.id },
+                stream: true,
+                consumeStream,
+                signal: streamAbort.signal,
+              }),
+            );
+            const error = result.error
+              ? describeBackendFailure(parseCallApiError(result.error)).headline
+              : streamFailure;
+            if (error) {
+              failures.push({ nodeId: target.id, route: target.route, error });
+            }
+          } catch (error) {
+            failures.push({
+              nodeId: target.id,
+              route: target.route,
+              error: describeBackendFailure(
+                parseCallApiError({
+                  message:
+                    error instanceof Error ? error.message : String(error),
                 }),
-              );
-            },
-            abortController: streamAbort,
-            onEvent: (event) => {
-              const stage = readPhaseMessage(event);
-              if (stage) {
-                setRunForEpoch((current) => ({ ...current, stage }));
-              }
-              if (event.event === "error") {
-                streamFailure = describeBackendFailure(
-                  parseStreamError(event.data),
-                ).headline;
-              }
-            },
-          }),
-        );
-        const result = await dispatch(
-          callApi({
-            path: "/content-plan/nodes/{node_id}/deepen",
-            method: "POST",
-            pathParams: { node_id: target.id },
-            stream: true,
-            consumeStream,
-            signal: streamAbort.signal,
-          }),
-        );
-        const error = result.error
-          ? describeBackendFailure(parseCallApiError(result.error)).headline
-          : streamFailure;
-        if (abortRef.current === streamAbort) abortRef.current = null;
-        // Each deepen writes brief + sources — keep the tree live per node.
-        void queryClient.invalidateQueries({
-          queryKey: planKeys.nodes(siteId),
-        });
-        void queryClient.invalidateQueries({
-          queryKey: planKeys.nodeEdges(target.id),
-        });
-        if (runEpochRef.current !== epoch) return;
-        if (error) {
-          failures.push({ nodeId: target.id, route: target.route, error });
-        }
-        done += 1;
-        setRunForEpoch((current) => ({
-          ...current,
-          done,
-          failures: [...failures],
-        }));
-      }
+              ).headline,
+            });
+          } finally {
+            abortControllersRef.current.delete(streamAbort);
+            activeRoutes.delete(target.route);
+            done += 1;
+            setRunForEpoch((current) => ({
+              ...current,
+              active: [...activeRoutes],
+              done,
+              failures: [...failures],
+            }));
+            void queryClient.invalidateQueries({
+              queryKey: planKeys.nodes(siteId),
+            });
+            void queryClient.invalidateQueries({
+              queryKey: planKeys.nodeEdges(target.id),
+            });
+          }
+        },
+        () => !cancelRef.current && runEpochRef.current === epoch,
+      );
 
       if (runEpochRef.current !== epoch) return;
       inFlight.current = false;
@@ -584,8 +598,7 @@ export function usePlanBulkDeepen(siteId: string | null) {
         ...current,
         status: failures.length > 0 ? "error" : "done",
         cancelled,
-        current: undefined,
-        stage: undefined,
+        active: [],
       }));
       if (cancelled) {
         toast.info(`Bulk deepen stopped — ${done} of ${targets.length} done.`);
@@ -609,13 +622,13 @@ export function usePlanBulkDeepen(siteId: string | null) {
     reset: () => {
       runEpochRef.current += 1;
       cancelRef.current = true;
-      abortRef.current?.abort();
-      abortRef.current = null;
+      for (const controller of abortControllersRef.current) controller.abort();
+      abortControllersRef.current.clear();
       inFlight.current = false;
-      if (adoptedRequestIdRef.current) {
-        dispatch(removeRequest(adoptedRequestIdRef.current));
-        adoptedRequestIdRef.current = null;
+      for (const requestId of adoptedRequestIdsRef.current) {
+        dispatch(removeRequest(requestId));
       }
+      adoptedRequestIdsRef.current.clear();
       dispatch(clearRunSet(runSetKey));
       setRun(BULK_IDLE);
     },
