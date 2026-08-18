@@ -18365,7 +18365,7 @@
        "title": "Settings"
       },
       "stage": {
-       "default": "expand",
+       "default": "capture",
        "title": "Stage"
       },
       "title": {
@@ -27609,14 +27609,6 @@
        "default": null,
        "title": "Preferred Agent Version Id"
       },
-      "preferred_ai_agent_id": {
-       "default": null,
-       "title": "Preferred Ai Agent Id"
-      },
-      "preferred_ai_agent_version_id": {
-       "default": null,
-       "title": "Preferred Ai Agent Version Id"
-      },
       "quiet_hours_enabled": {
        "default": true,
        "title": "Quiet Hours Enabled"
@@ -27717,14 +27709,6 @@
       "preferred_agent_version_id": {
        "default": null,
        "title": "Preferred Agent Version Id"
-      },
-      "preferred_ai_agent_id": {
-       "default": null,
-       "title": "Preferred Ai Agent Id"
-      },
-      "preferred_ai_agent_version_id": {
-       "default": null,
-       "title": "Preferred Ai Agent Version Id"
       },
       "quiet_hours_enabled": {
        "default": null,
