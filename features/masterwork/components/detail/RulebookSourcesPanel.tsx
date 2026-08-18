@@ -34,6 +34,7 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import {
   AlertCircle,
   ChevronDown,
@@ -412,28 +413,39 @@ export function RulebookSourcesPanel({
       className="scroll-mt-16 rounded-lg border border-border bg-card"
     >
       {/* ── header (always visible; a count is a door) ───────────────── */}
-      <button
-        type="button"
-        className="flex w-full items-center gap-2 px-4 py-3 text-left"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
-        {open ? (
-          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-        )}
-        <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <span className="text-sm font-semibold text-foreground">Sources</span>
-        {totalSources > 0 ? (
-          <span className="rounded bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
-            {totalSources}
+      <div className="flex w-full items-center gap-2 pr-4">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 text-left"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+        >
+          {open ? (
+            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+          )}
+          <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-semibold text-foreground">Sources</span>
+          {totalSources > 0 ? (
+            <span className="rounded bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
+              {totalSources}
+            </span>
+          ) : null}
+          <span className="ml-auto truncate text-xs text-muted-foreground">
+            Dump everything you have — we turn it into rules
           </span>
-        ) : null}
-        <span className="ml-auto truncate text-xs text-muted-foreground">
-          Dump everything you have — we turn it into rules
-        </span>
-      </button>
+        </button>
+        {/* THE DOOR LAW — this working mode has its own URL. */}
+        <Link
+          href={`/masterwork/${rulebook.id}/sources`}
+          className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          title="Open Sources as its own page"
+        >
+          <ExternalLink className="h-3 w-3" />
+          Full page
+        </Link>
+      </div>
 
       {open ? (
         <div className="border-t border-border px-4 pb-4 pt-3">

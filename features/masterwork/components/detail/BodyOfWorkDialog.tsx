@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FileUp, Link2, X } from "lucide-react";
+import Link from "next/link";
+import { ExternalLink, FileUp, Link2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +40,13 @@ import type { Rulebook } from "../../types";
  * rejoins (`useMasterworkRun`), and the board rebuilds from the rows. A piece
  * that fails does so honestly on its own row, never sinking the rest;
  * pressing the button again retries ONLY the failed pieces.
+ *
+ * TWO HOSTS, ONE IMPLEMENTATION (Arman's ruling: every creation/working mode
+ * gets a real URL): the Rulebook page's dialog (`variant="dialog"`, default,
+ * with a "Full page" door) and the route `/masterwork/[id]/body-of-work`
+ * (`variant="page"`) both render exactly this component, so the two entry
+ * points can never drift apart. `?body_of_work=1` on the detail page keeps
+ * opening the dialog.
  */
 
 const INGEST_CORPUS_PATH = "/masterworks/ingest-corpus" satisfies keyof paths;
@@ -89,16 +97,25 @@ function parseUrls(text: string): string[] {
     .filter(Boolean);
 }
 
+const BODY_OF_WORK_DESCRIPTION =
+  "Hand over your published work in one go — drag in files and paste links. " +
+  "Each piece is read and distilled on its own, then the patterns you always " +
+  "follow are worked out from the whole body of work. Everything lands as " +
+  "drafts for you to approve; nothing goes live without you.";
+
 export function BodyOfWorkDialog({
   open,
   onOpenChange,
   rulebook,
   onIngested,
+  variant = "dialog",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   rulebook: Rulebook;
   onIngested?: () => void;
+  /** "page" renders the same lane bare for /masterwork/[id]/body-of-work. */
+  variant?: "dialog" | "page";
 }) {
   const { upload } = useFileUpload();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -272,27 +289,8 @@ export function BodyOfWorkDialog({
     void refreshBoard();
   };
 
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (running) return;
-        if (!next) reset();
-        onOpenChange(next);
-      }}
-    >
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Everything you&apos;ve published</DialogTitle>
-          <DialogDescription>
-            Hand over your published work in one go — drag in files and paste
-            links. Each piece is read and distilled on its own, then the
-            patterns you always follow are worked out from the whole body of
-            work. Everything lands as drafts for you to approve; nothing goes
-            live without you.
-          </DialogDescription>
-        </DialogHeader>
-
+  const content = (
+    <>
         {summary ? (
           <div className="space-y-3">
             <p className="text-sm text-foreground">
@@ -500,7 +498,7 @@ export function BodyOfWorkDialog({
               }}
               disabled={running}
             >
-              Cancel
+              {variant === "page" ? "Back to the Rulebook" : "Cancel"}
             </Button>
             <Button onClick={() => void launch()} disabled={running}>
               {running
@@ -511,6 +509,46 @@ export function BodyOfWorkDialog({
             </Button>
           </DialogFooter>
         ) : null}
+    </>
+  );
+
+  if (variant === "page") {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          {BODY_OF_WORK_DESCRIPTION}
+        </p>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (running) return;
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            Everything you&apos;ve published
+            {/* THE DOOR LAW — this working mode has its own URL. */}
+            <Link
+              href={`/masterwork/${rulebook.id}/body-of-work`}
+              className="ml-auto mr-6 inline-flex items-center gap-1 text-xs font-normal text-muted-foreground hover:text-foreground"
+              title="Open this as its own page"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Full page
+            </Link>
+          </DialogTitle>
+          <DialogDescription>{BODY_OF_WORK_DESCRIPTION}</DialogDescription>
+        </DialogHeader>
+        {content}
       </DialogContent>
     </Dialog>
   );

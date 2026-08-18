@@ -54,6 +54,12 @@ import {
  * The public hand-holding guides ("how do I even get my export?") live at
  * /import/ai-chats — linked from here, reusable per THE HOUSE DOCTRINE
  * (features/source-onboarding/).
+ *
+ * TWO HOSTS, ONE IMPLEMENTATION (Arman's ruling: every creation/working mode
+ * gets a real URL): the Rulebook page's dialog (`variant="dialog"`, default,
+ * opened by the "Your AI chats" toolbar button or `?chatImport=1`, with a
+ * "Full page" door) and the route `/masterwork/[id]/import`
+ * (`variant="page"`) both render exactly this component.
  */
 
 const PREVIEW_PATH = "/masterworks/chat-import/preview" satisfies keyof paths;
@@ -103,6 +109,12 @@ function formatWords(count: number): string {
   return `${count} words`;
 }
 
+const CHAT_IMPORT_DESCRIPTION =
+  "Your chats with AI assistants are full of your own judgment — what you " +
+  "corrected, insisted on, and rejected. Pick the conversations that matter " +
+  "and we mine YOUR rules from them, never the AI's opinions. Everything " +
+  "lands as drafts you approve.";
+
 export function ChatImportDialog({
   open,
   onOpenChange,
@@ -110,6 +122,7 @@ export function ChatImportDialog({
   initialTab,
   onIngested,
   onFollowupSeed,
+  variant = "dialog",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -117,6 +130,8 @@ export function ChatImportDialog({
   initialTab?: ChatTab;
   onIngested?: () => void;
   onFollowupSeed?: (seed: string) => void;
+  /** "page" renders the same lane bare for /masterwork/[id]/import. */
+  variant?: "dialog" | "page";
 }) {
   const store = useAppStore();
   const { upload } = useFileUpload();
@@ -436,26 +451,8 @@ export function ChatImportDialog({
     });
   };
 
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (running) return;
-        if (!next) reset();
-        onOpenChange(next);
-      }}
-    >
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Import your AI chats</DialogTitle>
-          <DialogDescription>
-            Your chats with AI assistants are full of your own judgment — what
-            you corrected, insisted on, and rejected. Pick the conversations
-            that matter and we mine YOUR rules from them, never the AI&apos;s
-            opinions. Everything lands as drafts you approve.
-          </DialogDescription>
-        </DialogHeader>
-
+  const content = (
+    <>
         {summary ? (
           <div className="space-y-3">
             <p className="text-sm text-foreground">{summary}</p>
@@ -732,7 +729,7 @@ export function ChatImportDialog({
               }}
               disabled={running}
             >
-              Cancel
+              {variant === "page" ? "Back to the Rulebook" : "Cancel"}
             </Button>
             {rows ? (
               <Button
@@ -760,6 +757,46 @@ export function ChatImportDialog({
             ) : null}
           </DialogFooter>
         ) : null}
+    </>
+  );
+
+  if (variant === "page") {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          {CHAT_IMPORT_DESCRIPTION}
+        </p>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (running) return;
+        if (!next) reset();
+        onOpenChange(next);
+      }}
+    >
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            Import your AI chats
+            {/* THE DOOR LAW — this working mode has its own URL. */}
+            <Link
+              href={`/masterwork/${rulebook.id}/import`}
+              className="ml-auto mr-6 inline-flex items-center gap-1 text-xs font-normal text-muted-foreground hover:text-foreground"
+              title="Open this as its own page"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Full page
+            </Link>
+          </DialogTitle>
+          <DialogDescription>{CHAT_IMPORT_DESCRIPTION}</DialogDescription>
+        </DialogHeader>
+        {content}
       </DialogContent>
     </Dialog>
   );

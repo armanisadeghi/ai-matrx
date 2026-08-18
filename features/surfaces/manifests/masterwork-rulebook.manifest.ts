@@ -442,11 +442,10 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
     {
       name: "rule_improver",
       label: "Rule improver",
-      // NOTE: the `masterwork.rule_improver` mandate row is being created by a
-      // concurrent session (verified absent from agent.mandate 2026-08-17).
-      // Resolution is live from the DB, so this role binds automatically the
-      // moment the mandate lands; until then it renders unfilled with a loud
-      // console error from fetchMandatePins — never a silent fallback.
+      // The ONE rule-rewrite Mandate (live in agent.mandate since 2026-08-17):
+      // feedback rewrite, new-rule drafting (empty rule_json), and the
+      // editor's no-feedback tidy (empty expert_input). The sibling
+      // `masterwork.rule_cleanup` was retired into it on 2026-08-17.
       description:
         "Rewrites a rejected or weak rule from the Expert's review feedback and stages the improved version for approval.",
       kind: "single",

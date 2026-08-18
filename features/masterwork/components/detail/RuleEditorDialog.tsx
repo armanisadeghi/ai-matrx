@@ -26,11 +26,11 @@ import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { nextRuleId } from "../../ruleIds";
 import type { RulebookDraftSnapshot } from "../../agent-context/rulebookSurfaceScope";
 import {
-  applyRuleCleanup,
-  coerceRuleCleanupResult,
-  MASTERWORK_RULE_CLEANUP_MANDATE,
+  applyRuleTidy,
+  coerceRuleImproveResult,
+  MASTERWORK_RULE_IMPROVER_MANDATE,
   readRuleEditorDraft,
-} from "../../agent-context/ruleCleanup";
+} from "../../agent-context/ruleImprove";
 import { RuleFields } from "./RuleFields";
 import type { RulebookRule, RulebookSections, RuleSeverity } from "../../types";
 
@@ -146,9 +146,9 @@ function RuleEditorForm({
       "G",
   );
   const [saving, setSaving] = useState(false);
-  const [beforeCleanup, setBeforeCleanup] =
+  const [beforeTidy, setBeforeTidy] =
     useState<RulebookDraftSnapshot | null>(
-      persistedDraft?.beforeCleanup ?? null,
+      persistedDraft?.beforeTidy ?? null,
     );
 
   const draftSnapshot = useCallback(
@@ -185,12 +185,12 @@ function RuleEditorForm({
         patch: {
           baseVersion: rulebookVersion,
           fields: draftSnapshot(),
-          beforeCleanup,
+          beforeTidy,
         },
       }),
     );
   }, [
-    beforeCleanup,
+    beforeTidy,
     dispatch,
     draftSnapshot,
     onDraftChange,
@@ -215,7 +215,7 @@ function RuleEditorForm({
           sectionCodes[0] ??
           "G",
       );
-      setBeforeCleanup(persistedDraft?.beforeCleanup ?? null);
+      setBeforeTidy(persistedDraft?.beforeTidy ?? null);
     }
     wasOpen.current = open;
   }, [
@@ -297,11 +297,16 @@ function RuleEditorForm({
       setQuote(cleaned.quote);
       setSeverity(cleaned.severity);
       setSection(cleaned.section);
-      setBeforeCleanup(before);
+      setBeforeTidy(before);
     },
     [],
   );
 
+  // "Clean up with AI" — the TIDY shape of the `masterwork.rule_improver`
+  // Mandate: an empty `expert_input` means "polish the wording, change no
+  // meaning". `applyRuleTidy` freezes quote/severity/section mechanically,
+  // whatever the agent returns. (Absorbed from the retired
+  // `masterwork.rule_cleanup` Mandate, 2026-08-17.)
   const cleanupWithAi = async () => {
     const before = draftSnapshot();
     if (!before.name.trim() || !before.statement.trim()) {
@@ -310,10 +315,19 @@ function RuleEditorForm({
     }
 
     const context = getSurfaceScope();
+    const ruleJson = JSON.stringify({
+      name: before.name,
+      statement: before.statement,
+      rationale: before.rationale,
+      detection: before.detection,
+      quote: before.quote,
+      severity: before.severity,
+      section: before.section,
+    });
     try {
       const cleaned = await cleanupRun.run<RulebookDraftSnapshot>({
-        mandateKey: MASTERWORK_RULE_CLEANUP_MANDATE,
-        surfaceKey: "masterwork-rule-cleanup",
+        mandateKey: MASTERWORK_RULE_IMPROVER_MANDATE,
+        surfaceKey: "masterwork-rule-tidy",
         sourceFeature: "masterwork",
         surfaceName,
         organizationId,
@@ -322,18 +336,28 @@ function RuleEditorForm({
           resource_id: rulebookId,
         },
         variables: {
-          rule_draft: JSON.stringify(before),
+          rule_json: ruleJson,
+          expert_input: "",
           rulebook_context: JSON.stringify(context),
         },
         expect: "json",
         timeoutMs: 120_000,
         coerce: (value) =>
-          applyRuleCleanup(before, coerceRuleCleanupResult(value, before)),
+          applyRuleTidy(
+            before,
+            coerceRuleImproveResult(value, {
+              sections,
+              fallbackSection: before.section,
+            }),
+          ),
         onResult: (result) => {
           if (!result.data) return;
-          const durable = applyRuleCleanup(
+          const durable = applyRuleTidy(
             before,
-            coerceRuleCleanupResult(result.data, before),
+            coerceRuleImproveResult(result.data, {
+              sections,
+              fallbackSection: before.section,
+            }),
           );
           dispatch(
             patchWizardDraft({
@@ -341,7 +365,7 @@ function RuleEditorForm({
               patch: {
                 baseVersion: rulebookVersion,
                 fields: durable,
-                beforeCleanup: before,
+                beforeTidy: before,
               },
             }),
           );
@@ -361,8 +385,8 @@ function RuleEditorForm({
   };
 
   const undoCleanup = () => {
-    if (!beforeCleanup) return;
-    const restored = beforeCleanup;
+    if (!beforeTidy) return;
+    const restored = beforeTidy;
     setName(restored.name);
     setStatement(restored.statement);
     setRationale(restored.rationale);
@@ -370,7 +394,7 @@ function RuleEditorForm({
     setQuote(restored.quote);
     setSeverity(restored.severity);
     setSection(restored.section);
-    setBeforeCleanup(null);
+    setBeforeTidy(null);
     cleanupRun.dismiss();
     toast.success("AI cleanup undone.");
   };
@@ -457,7 +481,7 @@ function RuleEditorForm({
                   Have the AI apply my notes instead
                 </Button>
               ) : null}
-              {beforeCleanup ? (
+              {beforeTidy ? (
                 <Button
                   variant="ghost"
                   onClick={undoCleanup}

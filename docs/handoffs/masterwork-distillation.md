@@ -21,6 +21,19 @@
 
 ## STATUS — live and verified (compressed)
 
+- **SOURCE-ONBOARDING FEATURE FINISHED AS A SURFACE (2026-08-17).** The provider-gallery +
+  guide-page house pattern (`features/source-onboarding/`, public `/import/ai-chats[/{provider}]`)
+  now has its contract doc (`features/source-onboarding/FEATURE.md` — the one aidream's
+  distillation FEATURE.md already cited), an honest illustrated screenshot placeholder
+  (faux-browser frame naming the step in `ScreenshotSlot.tsx` — pages ship well with ZERO
+  captures), the Meta AI JSON-format trap wired to its work-ordered `dyi-json` slot, and both
+  routes + components declared on the Masterwork admin map. Browser-verified desktop + 375px,
+  light + dark, no horizontal overflow, `pnpm type-check` green. **All 16 screenshot captures
+  remain open for a HUMAN** (SCREENSHOT_WORK_ORDERS.md heads with the status table): every
+  export UI sits behind a signed-in real account — takeout.google.com and accounts.x.ai
+  verified to bounce straight to sign-in — so no anonymous agent can fill any slot; landing a
+  PNG at `public/images/source-onboarding/{provider}/{slot}.png` upgrades the slot with zero code.
+
 - **REVIEW VERBS SETTLED + SAVE≠APPROVE SHIPPED (2026-08-17, Arman's live-test rulings).** The
   three core verbs are **Approve / Reject / Improve**. Saving an edit no longer approves
   (`applyManualRuleEdit`, matrix in `features/masterwork/FEATURE.md` § The review-verb matrix);
@@ -448,6 +461,12 @@ ritual (delivery vehicle for 9/12 and the failure lever, not a lane).
    "how everything in our system should run"; a create flow in a blocking Dialog is a defect.
 5. **Never add `mr-*` to a Button icon** — the Button base already has `gap-2`; margin on top
    is the double-spacing defect.
+6. **A slot for an asset you cannot produce yet ships with an HONEST designed placeholder, not
+   a broken image or a bare "coming soon" strip** — name the exact thing that will land there,
+   make the empty state good-looking, and make landing the real asset zero-code (a file at a
+   contract path). Screenshot slots, sample data panes, and preview thumbnails all follow this;
+   the capture work that needs a human gets a groomed work-order file with a status table, not
+   a silent TODO.
 
 ## Working notes that save hours
 
