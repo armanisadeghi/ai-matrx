@@ -39,13 +39,24 @@ export function useRunPipeline() {
       // Organization is asserted from the LOADED TOPIC, never from ambient
       // active-org state — the backend reloads the topic as authority and
       // rejects a mismatch before any paid work starts.
-      const response = await api.runPipeline(topicId, topic.organization_id);
-      await stream.startStream(response, {
-        onEnd: () => {
-          refresh();
-          refreshProgress();
+      // The FETCH's own controller, so `cancel()` really closes the body and
+      // the adopted stream's watchdog is armed.
+      const controller = new AbortController();
+      const response = await api.runPipeline(
+        topicId,
+        topic.organization_id,
+        controller.signal,
+      );
+      await stream.startStream(
+        response,
+        {
+          onEnd: () => {
+            refresh();
+            refreshProgress();
+          },
         },
-      });
+        { abortController: controller },
+      );
     } catch (err) {
       toast.error((err as Error).message ?? "Could not start the pipeline");
     }

@@ -33,6 +33,7 @@ import {
 } from "../../hooks/useResearchState";
 import { useResearchApi } from "../../hooks/useResearchApi";
 import { useResearchStream } from "../../hooks/useResearchStream";
+import { useFloatingLiveRun } from "@/features/overlays/openers/liveRunWindow";
 import { useStreamDebug } from "../../context/ResearchContext";
 import { ResearchFilterBar, type FilterDef } from "../shared/ResearchFilterBar";
 import { StoppedEarlyNote } from "../shared/StoppedEarlyNote";
@@ -467,8 +468,17 @@ export default function AnalysisList() {
   const [modelFilter, setModelFilter] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const [streamingText, setStreamingText] = useState("");
   const [streamingLabel, setStreamingLabel] = useState("");
+
+  // The live analysis stream is ADOPTED (see `useResearchStream`) and rendered
+  // by the canonical floating live-run window off this request id — never
+  // hand-painted into this list, which would also shift the page on every run.
+  useFloatingLiveRun({
+    active: stream.isStreaming,
+    instanceId: `research-analyze-all:${topicId}`,
+    requestId: stream.requestId,
+    label: streamingLabel || "Analyzing sources",
+  });
 
   const analysisList = (analyses ?? []) as ResearchAnalysis[];
   const sourceMap = useMemo(() => {
@@ -593,9 +603,11 @@ export default function AnalysisList() {
   }, [statusOptions, modelOptions, statusFilter, modelFilter, models.length]);
 
   const handleAnalyzeAll = async () => {
-    setStreamingText("");
     setStreamingLabel("Analyzing all sources...");
-    const res = await api.analyzeAll(topicId);
+    // The controller must be the FETCH's own so the watchdog (and cancel)
+    // actually closes the body — see `StartStreamOptions.abortController`.
+    const controller = new AbortController();
+    const res = await api.analyzeAll(topicId, undefined, controller.signal);
     stream.startStream(res, {
       onData: (payload: ResearchDataEvent) => {
         if (payload.type === "analysis_start") {
@@ -610,18 +622,15 @@ export default function AnalysisList() {
           refetchAnalyses();
         }
         if (payload.type === "analyze_all_complete") {
-          setStreamingText("");
           setStreamingLabel("");
           refetchAnalyses();
         }
       },
-      onChunk: (text) => setStreamingText((prev) => prev + text),
       onEnd: () => {
-        setStreamingText("");
         setStreamingLabel("");
         refetchAnalyses();
       },
-    });
+    }, { abortController: controller });
     debug.pushEvents(stream.rawEvents, "analyze-all");
   };
 
@@ -689,23 +698,6 @@ export default function AnalysisList() {
           trailing={actionButtons}
         />
       </div>
-
-      {/* Live streaming indicator */}
-      {stream.isStreaming && (streamingText || streamingLabel) && (
-        <div className="mx-2.5 mb-1.5 rounded-lg border border-primary/20 bg-primary/[0.03] px-2.5 py-2">
-          <div className="flex items-center gap-1.5">
-            <Loader2 className="h-3 w-3 text-primary animate-spin shrink-0" />
-            <span className="text-[10px] font-medium text-primary truncate">
-              {streamingLabel || "Analyzing…"}
-            </span>
-          </div>
-          {streamingText && (
-            <p className="text-[10px] text-muted-foreground line-clamp-2 mt-1 pl-[18px]">
-              {streamingText.slice(0, 200)}
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Analysis list */}
       <div className="flex-1 overflow-y-auto px-1.5 pb-20 md:pb-2">

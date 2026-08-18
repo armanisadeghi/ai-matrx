@@ -259,6 +259,9 @@ export function PipelineGraph() {
     async (
       response: Response,
       label: string,
+      // The FETCH's own controller — what `cancel()` aborts and what arms the
+      // adopted stream's watchdog. See `StartStreamOptions.abortController`.
+      controller: AbortController,
       opts: StartOpts = { iterationMode: "initial" },
     ) => {
       pipeline.reset({ iterationMode: opts.iterationMode });
@@ -273,7 +276,7 @@ export function PipelineGraph() {
           pipeline.finalize();
           refresh();
         },
-      });
+      }, { abortController: controller });
       debug.pushEvents(stream.rawEvents, label);
     },
     [
@@ -294,33 +297,52 @@ export function PipelineGraph() {
       );
       return;
     }
-    const response = await api.runPipeline(topicId, topic.organization_id);
-    await startStream(response, "pipeline");
+    const controller = new AbortController();
+    const response = await api.runPipeline(
+      topicId,
+      topic.organization_id,
+      controller.signal,
+    );
+    await startStream(response, "pipeline", controller);
   }, [api, topicId, topic, startStream]);
 
   const handleSearch = useCallback(async () => {
-    const response = await api.triggerSearch(topicId);
-    await startStream(response, "search");
+    const controller = new AbortController();
+    const response = await api.triggerSearch(topicId, controller.signal);
+    await startStream(response, "search", controller);
   }, [api, topicId, startStream]);
 
   const handleScrape = useCallback(async () => {
-    const response = await api.triggerScrape(topicId);
-    await startStream(response, "scrape");
+    const controller = new AbortController();
+    const response = await api.triggerScrape(topicId, controller.signal);
+    await startStream(response, "scrape", controller);
   }, [api, topicId, startStream]);
 
   const handleAnalyze = useCallback(async () => {
-    const response = await api.analyzeAll(topicId);
-    await startStream(response, "analyze-all");
+    const controller = new AbortController();
+    const response = await api.analyzeAll(
+      topicId,
+      undefined,
+      controller.signal,
+    );
+    await startStream(response, "analyze-all", controller);
   }, [api, topicId, startStream]);
 
   const handleSynthesize = useCallback(async () => {
-    const response = await api.synthesize(topicId, {
-      // PHASE-3/4 COMPAT: wire value for topic-wide synthesis (see types.ts).
-      scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
-      iteration_mode: "initial",
-      use_user_agent_overrides: false,
+    const controller = new AbortController();
+    const response = await api.synthesize(
+      topicId,
+      {
+        // PHASE-3/4 COMPAT: wire value for topic-wide synthesis (see types.ts).
+        scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
+        iteration_mode: "initial",
+        use_user_agent_overrides: false,
+      },
+      controller.signal,
+    );
+    await startStream(response, "synthesize", controller, {
+      iterationMode: "initial",
     });
-    await startStream(response, "synthesize", { iterationMode: "initial" });
   }, [api, topicId, startStream]);
 
   // Tags is a MANUAL branch — `/run` never emits tag events, so the only way to
@@ -329,8 +351,9 @@ export function PipelineGraph() {
   // (network / 4xx) must surface rather than vanish as an unhandled rejection.
   const handleAutoTag = useCallback(async () => {
     try {
-      const response = await api.autoTag(topicId, {});
-      await startStream(response, "auto-tag");
+      const controller = new AbortController();
+      const response = await api.autoTag(topicId, {}, controller.signal);
+      await startStream(response, "auto-tag", controller);
     } catch (err) {
       toast.error((err as Error).message ?? "Could not start auto-tag");
     }
@@ -338,33 +361,48 @@ export function PipelineGraph() {
 
   const handleAutoConsolidate = useCallback(async () => {
     try {
-      const response = await api.autoConsolidate(topicId, {});
-      await startStream(response, "auto-consolidate");
+      const controller = new AbortController();
+      const response = await api.autoConsolidate(
+        topicId,
+        {},
+        controller.signal,
+      );
+      await startStream(response, "auto-consolidate", controller);
     } catch (err) {
       toast.error((err as Error).message ?? "Could not start consolidation");
     }
   }, [api, topicId, startStream]);
 
   const handleRebuildReport = useCallback(async () => {
-    const response = await api.synthesize(topicId, {
-      // PHASE-3/4 COMPAT: wire value for topic-wide synthesis (see types.ts).
-      scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
-      iteration_mode: "rebuild",
-      use_user_agent_overrides: false,
-    });
-    await startStream(response, "synthesize-rebuild", {
+    const controller = new AbortController();
+    const response = await api.synthesize(
+      topicId,
+      {
+        // PHASE-3/4 COMPAT: wire value for topic-wide synthesis (see types.ts).
+        scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
+        iteration_mode: "rebuild",
+        use_user_agent_overrides: false,
+      },
+      controller.signal,
+    );
+    await startStream(response, "synthesize-rebuild", controller, {
       iterationMode: "rebuild",
     });
   }, [api, topicId, startStream]);
 
   const handleUpdateReport = useCallback(async () => {
-    const response = await api.synthesize(topicId, {
-      // PHASE-3/4 COMPAT: wire value for topic-wide synthesis (see types.ts).
-      scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
-      iteration_mode: "update",
-      use_user_agent_overrides: false,
-    });
-    await startStream(response, "synthesize-update", {
+    const controller = new AbortController();
+    const response = await api.synthesize(
+      topicId,
+      {
+        // PHASE-3/4 COMPAT: wire value for topic-wide synthesis (see types.ts).
+        scope: TOPIC_SYNTHESIS_WIRE_SCOPE,
+        iteration_mode: "update",
+        use_user_agent_overrides: false,
+      },
+      controller.signal,
+    );
+    await startStream(response, "synthesize-update", controller, {
       iterationMode: "update",
     });
   }, [api, topicId, startStream]);

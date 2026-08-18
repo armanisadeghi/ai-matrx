@@ -1758,6 +1758,13 @@ export interface ResearchInfoEvent {
 }
 
 export interface ResearchStreamCallbacks {
+  /**
+   * The adopted stream's ids, fired the INSTANT they exist — before any event
+   * is processed. This is how a surface floats the run (`useFloatingLiveRun`)
+   * without waiting for `startStream` to resolve, which would leave the window
+   * dead for the entire run. See `adoptForeignStream`'s `onAdopted`.
+   */
+  onAdopted?: (ids: { requestId: string; conversationId: string }) => void;
   onChunk?: (text: string) => void;
   onStatusUpdate?: (
     step: ResearchStreamStep,
