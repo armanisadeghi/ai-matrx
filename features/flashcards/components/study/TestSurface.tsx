@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useQuizStudy } from "../../data/useQuizStudy";
 import { StudyDeckHeader } from "./StudyDeckHeader";
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -119,9 +120,12 @@ function QuestionPanel({ study }: { study: ReturnType<typeof useQuizStudy> }) {
         </p>
         {/* D151 — when this card has an AI-authored question stem, THAT is what
             we paid for; the raw card front is the fallback, not the default. */}
-        <p className="mt-1.5 text-lg font-medium leading-snug text-foreground">
-          {current.aiQuestion || current.front}
-        </p>
+        <div className="mt-1.5">
+          <CardFaceContent
+            content={current.aiQuestion || current.front}
+            variant="prompt"
+          />
+        </div>
         {study.fallbackLoading && current.needsFallback && (
           <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -159,7 +163,9 @@ function QuestionPanel({ study }: { study: ReturnType<typeof useQuizStudy> }) {
                     "border-border bg-background opacity-50",
                 )}
               >
-                <span>{option}</span>
+                <span className="min-w-0 flex-1">
+                  <CardFaceContent content={option} variant="inline" />
+                </span>
                 {showFeedback && isCorrectOption && (
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-400" />
                 )}
