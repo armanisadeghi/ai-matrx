@@ -133,6 +133,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
   // the display state below but are the source of truth for the outcome.
   const masteryGainRef = useRef(0);
   const pendingAttemptsRef = useRef<Promise<unknown>[]>([]);
+  const pendingSessionCloseRef = useRef<Promise<unknown> | null>(null);
 
   // ── Load the queue + open a session. ──────────────────────────────────────
   useEffect(() => {
@@ -148,6 +149,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
 
       let cards: CardWithDetails[] = [];
       let masteryById: Record<string, ItemMasteryRow | undefined> = {};
+      let effectiveSourceSetId = sourceSetId ?? null;
 
       if (sourceKind === "set" && sourceSetId) {
         const setRes = await fcService.getSetWithCards(sourceSetId);
@@ -188,6 +190,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
           if (firstSet) {
             const swc = await fcService.getSetWithCards(firstSet.id);
             if (!cancelled && swc.data) {
+              effectiveSourceSetId = firstSet.id;
               cards = swc.data.cards;
               const mRes = await studyService.getMasteryBulk(
                 cards.map((c) => ({ itemType: GAME_ITEM_TYPE, itemId: c.id })),
@@ -213,11 +216,16 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
 
       const sessRes = await studyService.createSession({
         mode: GAME_METHOD,
-        sourceKind: sourceKind === "set" ? "set" : "due",
-        ...(sourceSetId ? { sourceSetId } : {}),
+        sourceKind: effectiveSourceSetId ? "set" : "due",
+        ...(effectiveSourceSetId ? { sourceSetId: effectiveSourceSetId } : {}),
         metadata: { engage: true, mode, roomId },
       });
       if (cancelled) return;
+      if (sessRes.error || !sessRes.data) {
+        setError(sessRes.error ?? "Failed to open the game session");
+        setStatus("error");
+        return;
+      }
       setSession(sessRes.data);
       setStatus("ready");
     })();
@@ -321,15 +329,17 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     // answer's gain (→ league standing + badges) is lost to the async race.
     const prior = masteryRef.current[q.card.id];
     const priorR = currentRetrievability(prior) ?? 0;
+    if (!session) {
+      setError("The game session is unavailable. Start a new round.");
+      setStatus("error");
+      return;
+    }
     const attemptPromise = studyService
-      .recordAttempt({
-        itemType: GAME_ITEM_TYPE,
+      .recordGameAnswer({
+        sessionId: session.id,
         itemId: q.card.id,
-        method: GAME_METHOD,
-        result: correct ? "correct" : "incorrect",
-        responseKind: "selected",
-        latencyMs,
-        ...(session ? { sessionId: session.id } : {}),
+        selectedAnswer: q.choices[choiceIndex] ?? "",
+        localResult: correct ? "correct" : "incorrect",
       })
       .then((res) => {
         if (res.error || !res.data) {
@@ -394,7 +404,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     setStatus("finished");
     setRemainingMs(0);
     if (session) {
-      void studyService.updateSession(session.id, {
+      pendingSessionCloseRef.current = studyService.updateSession(session.id, {
         status: "completed",
         ended_at: new Date().toISOString(),
       });
@@ -422,7 +432,18 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       sourceSetId: sourceSetId ?? null,
       sourceTitle: args.sourceTitle ?? null,
     };
-    void Promise.allSettled(pendingAttemptsRef.current).then(() => {
+    void Promise.allSettled(pendingAttemptsRef.current).then(async () => {
+      const close = await pendingSessionCloseRef.current;
+      if (
+        close &&
+        typeof close === "object" &&
+        "error" in close &&
+        close.error
+      ) {
+        setError(String(close.error));
+        setStatus("error");
+        return;
+      }
       onFinish?.({ ...outcomeBase, masteryGain: masteryGainRef.current });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps

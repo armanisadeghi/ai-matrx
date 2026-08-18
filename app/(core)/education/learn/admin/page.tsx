@@ -10,6 +10,7 @@ import { ShieldAlert } from "lucide-react";
 import { getCurrentUserAdminStatus } from "@/utils/auth/adminUtils";
 import { listLearnDocsAdminAction } from "@/features/education/publishing/actions";
 import { LearnDocAdmin } from "@/features/education/publishing/components/LearnDocAdmin";
+import { ExamContentPipeline } from "@/features/education/publishing/components/ExamContentPipeline";
 import { eduHref } from "@/features/education/constants";
 
 export const metadata: Metadata = {
@@ -41,5 +42,10 @@ export default async function LearnAdminPage() {
   }
 
   const docs = await listLearnDocsAdminAction();
-  return <LearnDocAdmin initialDocs={docs} />;
+  return (
+    <>
+      <LearnDocAdmin initialDocs={docs} />
+      <ExamContentPipeline />
+    </>
+  );
 }

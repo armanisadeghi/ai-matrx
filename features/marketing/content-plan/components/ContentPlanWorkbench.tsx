@@ -1093,7 +1093,7 @@ export function ContentPlanWorkbench({
           open={bulkDeepenConfirm}
           onOpenChange={setBulkDeepenConfirm}
           title={`Deepen ${emptyBriefNodes.length} page(s)?`}
-          description="Runs the research-grounded deepen over every page with an empty brief — each gets brief bullets and cited sources written onto the node. Runs one page at a time; you can stop between pages. Pages that already have a brief are untouched."
+          description="Runs the research-grounded deepen over every page with an empty brief at once — each gets brief bullets and cited sources written onto the node. Stop cancels every active page stream. Pages that already have a brief are untouched."
           confirmLabel="Run bulk deepen"
           onConfirm={() => {
             setBulkDeepenConfirm(false);

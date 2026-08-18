@@ -77,6 +77,20 @@ interface RecordAttemptRpcResult {
   mastery: ItemMasteryRow;
 }
 
+interface GameAnswerRpcResult extends RecordAttemptRpcResult {
+  result: "correct" | "incorrect";
+  latency_ms: number;
+}
+
+function isGameAnswerResult(value: unknown): value is GameAnswerRpcResult {
+  return (
+    isRecordAttemptResult(value) &&
+    ((value as { result?: unknown }).result === "correct" ||
+      (value as { result?: unknown }).result === "incorrect") &&
+    typeof (value as { latency_ms?: unknown }).latency_ms === "number"
+  );
+}
+
 function isRecordAttemptResult(
   value: unknown,
 ): value is RecordAttemptRpcResult {
@@ -448,6 +462,65 @@ export const studyService = {
   },
 
   // ─── ATTEMPTS (the canonical, mastery-updating writer) ───────────────────
+  /**
+   * Record a competitive multiple-choice answer. Unlike ordinary self-graded
+   * practice, Postgres compares the selected text to the canonical card and
+   * measures elapsed time itself. The browser supplies neither durable
+   * correctness nor durable latency.
+   */
+  async recordGameAnswer(input: {
+    sessionId: string;
+    itemId: string;
+    selectedAnswer: string;
+    localResult: "correct" | "incorrect";
+  }): Promise<
+    StudyResult<{
+      attemptId: string;
+      mastery: ItemMasteryRow;
+      result: "correct" | "incorrect";
+      latencyMs: number;
+    }>
+  > {
+    try {
+      const priorRes = await this.getMastery({
+        itemType: "flashcard",
+        itemId: input.itemId,
+      });
+      if (priorRes.error) return fail("recordGameAnswer", priorRes.error);
+      const now = new Date();
+      const next = nextState(
+        masteryToFsrsState(priorRes.data),
+        mapResultToRating(input.localResult),
+        now,
+      );
+      const { data, error } = await supabase.rpc("game_record_answer", {
+        p_session_id: input.sessionId,
+        p_item_id: input.itemId,
+        p_selected_answer: input.selectedAnswer,
+        p_difficulty: next.difficulty,
+        p_stability: next.stability,
+        p_due_at: next.due,
+        p_retrievability: fsrsRetrievability(next, now),
+        p_lapses: next.lapses,
+      });
+      if (error) return fail("recordGameAnswer", error);
+      if (!isGameAnswerResult(data)) {
+        return fail("recordGameAnswer", "RPC returned an unexpected shape");
+      }
+      return {
+        data: {
+          attemptId: data.attempt_id,
+          mastery: data.mastery,
+          result: data.result,
+          latencyMs: data.latency_ms,
+        },
+        error: null,
+      };
+    } catch (error) {
+      return fail("recordGameAnswer", error);
+    }
+  },
+
   /**
    * Record one study attempt. Calls the `study_record_attempt` RPC, which
    * appends the immutable ledger row AND atomically updates `item_mastery`,

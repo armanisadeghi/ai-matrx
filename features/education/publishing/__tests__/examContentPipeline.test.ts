@@ -1,7 +1,4 @@
-import {
-  EXAM_DECK_PLANS,
-  groundingReady,
-} from "../examContentPipeline";
+import { EXAM_DECK_PLANS, groundingReady } from "../examContentPipeline";
 import type { GroundingResult } from "@/features/rag/api/grounding";
 
 const trust = {

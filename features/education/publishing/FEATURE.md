@@ -32,6 +32,9 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 | `ogImage.tsx`                               | Shared branded OG renderer; thin `opengraph-image.tsx` routes for axis families; learn docs use `/education/learn/og/[...slug]` route handler (catch-all can't host file-based OG).                                                                                                                                                                                                                                                 |
 | `components/LearnDocAdmin.tsx`              | The authoring UI (list + visual `EduSection` block editor + optional Advanced JSON + live `SectionRenderer` preview).                                                                                                                                                                                                                                                                                                               |
 | `components/SectionBlockEditor.tsx`         | The reusable non-technical editor for all seven `EduSection` kinds: add, edit, reorder and remove blocks/items without touching JSON.                                                                                                                                                                                                                                                                                               |
+| `components/ExamContentPipeline.tsx`        | Super-admin batch authoring: select processed official sources → IC-3 exact-passage retrieval → three private exam-deck drafts through `flashcards.generate_from_source` → per-card `flashcards.verify_against_source` pass → explicit publish/curate action.                                                                                                                                                                   |
+| `examContentPipeline.ts`                    | The three launch-floor deck plans and the fail-closed grounding gate shared with tests.                                                                                                                                                                                                                                                                                                                                             |
+| `verifyGeneratedDeck.ts`                    | Rejects citations outside the retrieved chunk-id set, runs the canonical verification mandate, and persists verdicts through the existing trust metadata seam.                                                                                                                                                                                                                                                                     |
 | `app/(core)/education/learn/admin/page.tsx` | Self-gating super-admin route (explicit segment beats the `[...slug]` catch-all).                                                                                                                                                                                                                                                                                                                                                   |
 
 ## SEO surfaces (Phase A deliverables)
@@ -51,14 +54,28 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
   renderer-consumed field before `edu_learn_doc_upsert`; malformed blocks disable Save/Publish and
   cannot become a blank public section. Advanced JSON is an escape hatch for experts, not a second
   persistence path.
+- **Batch content fails closed.** An empty/failed IC-3 result, a citation id outside the retrieved
+  set, a missing excerpt, or any non-`verified` card verdict leaves that deck private and disables
+  the publish action. Generation and verification resolve through mandate keys; no agent id or
+  prompt lives in this feature.
+- **Publish is a visible human transition.** The pipeline may automate private drafting and the
+  verification pass. The explicit button makes the set public and curated as an **AI-built
+  starter**; it never writes WP9's human-verification fields or claims Certified.
 
 ## Open / next
 
-- **Agent-assisted drafting** (Phase A stretch): a "draft sections with AI" flow (agent → `EduSection[]` JSON → human review → publish). The editor already accepts pasted sections JSON, so agent output drops straight in; the in-UI generate button is the remaining piece.
+- **Grounded guide drafting:** consume the requested `education.learn_doc_draft` mandate once WP2
+  declares its strict `EduSection[]` output. It will receive the same IC-3 passage serialization,
+  validate into the visual editor, and remain a draft until the admin publishes it.
 - Phase B (exam hub, consumes P1) and Phase C (community library, consumes P7) — see `docs/proposals/education-projects/P6-content-publishing.md`.
 
 ## Change log
 
+- **2026-08-18** — Added the grounded exam-content pipeline to the existing study-guide admin:
+  explicit processed-source selection, IC-3 retrieval, three focused private deck drafts through
+  the canonical converter/mandate, durable chunk-id preservation, per-card source-verification,
+  and a separate publish/curate-as-AI-starter action. Empty retrieval and unknown citations refuse
+  publication; 4 focused pipeline tests cover the three-deck plan and fail-closed gate.
 - **2026-08-17** — Replaced JSON-first authoring with the reusable visual `SectionBlockEditor`
   across all seven `EduSection` kinds; Advanced JSON remains optional. Added one strict save gate
   shared with agent writes, so the known `{question, answer}` FAQ shape is refused before save.

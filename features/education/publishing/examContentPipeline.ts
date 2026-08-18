@@ -31,9 +31,9 @@ export const EXAM_DECK_PLANS: readonly ExamDeckPlan[] = [
   },
 ] as const;
 
-export function groundingReady(result: GroundingResult):
-  | { ok: true; chunkIds: string[] }
-  | { ok: false; reason: string } {
+export function groundingReady(
+  result: GroundingResult,
+): { ok: true; chunkIds: string[] } | { ok: false; reason: string } {
   if (result.status === "failed") {
     return {
       ok: false,
@@ -46,6 +46,8 @@ export function groundingReady(result: GroundingResult):
       reason: "The selected sources returned no supporting passages.",
     };
   }
-  return { ok: true, chunkIds: result.passages.map((passage) => passage.chunkId) };
+  return {
+    ok: true,
+    chunkIds: result.passages.map((passage) => passage.chunkId),
+  };
 }
-

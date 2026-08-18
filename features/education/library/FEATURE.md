@@ -44,7 +44,22 @@ Migrations: `education_content_certification.sql`, `education_deck_suggestion.sq
 
 ## Curated exam libraries (starter seed)
 
-The **standardized exam content library** vision surface is live. A seeded set of **9 certified, curated decks** (128 cards) — SAT Math (3), AP Biology (3), GRE Verbal (3) — is public + certified, tagged `metadata.exam_slug` + `metadata.curated`, each card carrying a `TrustEnvelope` (`confidence: "inferred"`, labelled honestly as an AI-generated starter pending human verification — the certify note says so). Generated via the real flashcards agent (`FC_AGENTS.generateCards`) and persisted into the canonical `fc_set`/`fc_card` tables + `role='member'` association edges + `content_certification`. Surfaced on each exam-prep page by `features/education/components/ExamCuratedLibrary.tsx` (server component: `fetchExamCertifiedDecks(examSlug)` decks + `getExamLearnDocs(examSlug)` guides), and in this library filtered to **Certified**.
+The **standardized exam content library** vision surface is live. A seeded set of **9 public,
+curated AI-built starters** (128 cards) — SAT Math (3), AP Biology (3), GRE Verbal (3) — is tagged
+`metadata.exam_slug` + `metadata.curated`; each card carries a `TrustEnvelope` with
+`confidence: "inferred"`. All nine have curation rows but **zero are human verified**, so the UI
+must never call them Certified. Generated via the real flashcards agent and persisted into the
+canonical `fc_set`/`fc_card` tables + `role='member'` association edges +
+`content_certification`. They surface on each exam-prep page through
+`features/education/components/ExamCuratedLibrary.tsx` (`fetchExamCertifiedDecks(examSlug)` decks
++ `getExamLearnDocs(examSlug)` guides) and in the community library's curated filter, rendered
+with the WP9 trust-state badge.
+
+New corpus expansion uses `publishing/components/ExamContentPipeline.tsx`: official material is
+processed through canonical RAG, IC-3 retrieves exact passages, the existing converter runs
+`flashcards.generate_from_source`, and every card passes `flashcards.verify_against_source` before
+the human may make it public + curated. This path still creates an **AI-built starter**; only
+`edu_verify_content` can add the human-verified Certified mark.
 
 ## Open / next
 

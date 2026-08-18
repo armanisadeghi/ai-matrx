@@ -353,6 +353,174 @@ BEGIN
 END;
 $function$;
 
+-- Competitive attempts are a separate trust boundary from self-graded study.
+-- The generic study RPC remains the canonical writer for ordinary practice,
+-- but it may not mint a `method = game` row from client-authored correctness.
+CREATE OR REPLACE FUNCTION education.guard_game_attempt_authority()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, education, pg_temp
+AS $function$
+DECLARE
+  v_session_id uuid := coalesce(new.session_id, old.session_id);
+  v_authority text := current_setting('education.game_authority_session', true);
+BEGIN
+  IF coalesce(new.method, old.method) <> 'game' THEN
+    RETURN coalesce(new, old);
+  END IF;
+
+  IF v_authority = coalesce(v_session_id::text, '') THEN
+    RETURN coalesce(new, old);
+  END IF;
+
+  -- The learner may still correct their own history through the existing
+  -- manual-override RPC. Such rows are permanently excluded from contests.
+  IF tg_op = 'UPDATE'
+     AND old.is_manually_edited = false
+     AND new.is_manually_edited = true THEN
+    RETURN new;
+  END IF;
+
+  RAISE EXCEPTION 'Competitive attempts must be recorded by game_record_answer'
+    USING ERRCODE = '42501';
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS guard_game_attempt_authority ON education.study_attempt;
+CREATE TRIGGER guard_game_attempt_authority
+BEFORE INSERT OR UPDATE OR DELETE ON education.study_attempt
+FOR EACH ROW EXECUTE FUNCTION education.guard_game_attempt_authority();
+
+CREATE OR REPLACE FUNCTION public.game_record_answer(
+  p_session_id uuid,
+  p_item_id uuid,
+  p_selected_answer text,
+  p_difficulty numeric,
+  p_stability numeric,
+  p_due_at timestamptz,
+  p_retrievability numeric,
+  p_lapses integer
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, education, platform, pg_temp
+AS $function$
+DECLARE
+  v_user uuid := auth.uid();
+  v_session education.study_session;
+  v_card education.fc_card;
+  v_result text;
+  v_previous_at timestamptz;
+  v_latency_ms integer;
+  v_payload jsonb;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'game_record_answer requires authentication' USING ERRCODE = '42501';
+  END IF;
+  IF p_session_id IS NULL OR p_item_id IS NULL OR p_selected_answer IS NULL THEN
+    RAISE EXCEPTION 'A game session, item, and selected answer are required';
+  END IF;
+
+  PERFORM pg_advisory_xact_lock(hashtextextended(
+    'education-game-answer-' || p_session_id::text, 0
+  ));
+
+  SELECT * INTO v_session
+    FROM education.study_session s
+   WHERE s.id = p_session_id
+     AND s.created_by = v_user
+     AND s.mode = 'game'
+     AND s.status = 'active'
+     AND s.deleted_at IS NULL
+   FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Game session is missing, foreign, or no longer active'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF (SELECT count(*) FROM education.study_attempt a
+       WHERE a.session_id = p_session_id AND a.created_by = v_user
+         AND a.method = 'game' AND a.deleted_at IS NULL) >= 100 THEN
+    RAISE EXCEPTION 'Game attempt limit exceeded';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM education.study_attempt a
+     WHERE a.session_id = p_session_id AND a.created_by = v_user
+       AND a.item_id = p_item_id AND a.method = 'game' AND a.deleted_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'This item already has an answer in the game session'
+      USING ERRCODE = '23505';
+  END IF;
+
+  SELECT * INTO v_card
+    FROM education.fc_card c
+   WHERE c.id = p_item_id AND c.deleted_at IS NULL;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'The game card does not exist';
+  END IF;
+
+  -- A set round accepts only active members of that set. An adaptive round
+  -- accepts only items already present in this learner's mastery queue.
+  IF v_session.source_set_id IS NOT NULL THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM platform.associations a
+       WHERE a.source_type = 'fc_card' AND a.source_id = p_item_id
+         AND a.target_type = 'fc_set' AND a.target_id = v_session.source_set_id
+         AND a.role = 'member' AND a.deleted_at IS NULL
+    ) THEN
+      RAISE EXCEPTION 'The card is not part of this game session source';
+    END IF;
+  ELSIF NOT EXISTS (
+    SELECT 1 FROM education.item_mastery m
+     WHERE m.created_by = v_user AND m.item_type = 'flashcard'
+       AND m.item_id = p_item_id AND m.deleted_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Adaptive games accept only cards from the learner queue';
+  END IF;
+
+  v_result := CASE
+    WHEN lower(btrim(p_selected_answer)) = lower(btrim(v_card.back)) THEN 'correct'
+    ELSE 'incorrect'
+  END;
+
+  SELECT coalesce(
+           max(coalesce(a.reviewed_at, a.created_at)),
+           v_session.started_at,
+           v_session.created_at
+         )
+    INTO v_previous_at
+    FROM education.study_attempt a
+   WHERE a.session_id = p_session_id
+     AND a.created_by = v_user
+     AND a.method = 'game'
+     AND a.deleted_at IS NULL;
+  v_latency_ms := greatest(1, least(120000,
+    round(extract(epoch FROM (clock_timestamp() - v_previous_at)) * 1000)::integer
+  ));
+
+  PERFORM set_config('education.game_authority_session', p_session_id::text, true);
+  v_payload := public.study_record_attempt(
+    p_item_type => 'flashcard',
+    p_item_id => p_item_id,
+    p_session_id => p_session_id,
+    p_method => 'game',
+    p_result => v_result,
+    p_response_kind => 'selected',
+    p_latency_ms => v_latency_ms,
+    p_difficulty => p_difficulty,
+    p_stability => p_stability,
+    p_due_at => p_due_at,
+    p_retrievability => p_retrievability,
+    p_lapses => p_lapses
+  );
+  PERFORM set_config('education.game_authority_session', '', true);
+
+  RETURN v_payload || jsonb_build_object('result', v_result, 'latency_ms', v_latency_ms);
+END;
+$function$;
+
 CREATE OR REPLACE FUNCTION public.league_add_result(
   p_mastery_gain numeric,
   p_display_name text DEFAULT NULL
@@ -690,15 +858,18 @@ BEGIN
 END;
 $function$;
 
-REVOKE INSERT, UPDATE, DELETE ON education.game_result FROM authenticated;
-REVOKE INSERT, UPDATE, DELETE ON education.game_badge FROM authenticated;
-REVOKE INSERT, UPDATE, DELETE ON education.league_membership FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE ON education.game_result FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON education.game_badge FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON education.league_membership FROM anon, authenticated;
+REVOKE INSERT, UPDATE, DELETE ON education.study_attempt FROM anon, authenticated;
 
-REVOKE ALL ON FUNCTION public.game_finalize_result(uuid, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.league_set_opt_in(boolean, text) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.education_engagement_snapshot(uuid) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.education_streak_rollover(date) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.education_league_rollover(date) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.game_record_answer(uuid, uuid, text, numeric, numeric, timestamptz, numeric, integer) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.game_finalize_result(uuid, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.league_set_opt_in(boolean, text) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.education_engagement_snapshot(uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.education_streak_rollover(date) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.education_league_rollover(date) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.game_record_answer(uuid, uuid, text, numeric, numeric, timestamptz, numeric, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.game_finalize_result(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.league_set_opt_in(boolean, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.league_leaderboard(date) TO authenticated;

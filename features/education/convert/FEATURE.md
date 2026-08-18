@@ -28,10 +28,16 @@ import { runConvert } from "@/features/education/convert/registry";
 const { convert, convertMany } = useContentConverter();
 
 // one target
-const deck = await convert({ source, targetKind: "deck", options: { count: 15 } });
+const deck = await convert({
+  source,
+  targetKind: "deck",
+  options: { count: 15 },
+});
 
 // the kit fan-out — parallel, never throws; each target succeeds/fails on its own
-const outcomes = await convertMany(source, ["deck", "summary", "mind_map"], { focus });
+const outcomes = await convertMany(source, ["deck", "summary", "mind_map"], {
+  focus,
+});
 ```
 
 **`ConvertSource`** — `{ text, title?, ref? }`. `text` is already-extracted content (ingest owns
@@ -48,15 +54,15 @@ ingest pipeline normalizes EVERY input to a durable file.
 
 ## Live generators
 
-| Kind | Agent / service | Persists to | Capability (P8) |
-|---|---|---|---|
-| `deck` | Kit Flashcard agent (`0de9ff99…`) → `fcService.createSetWithCards` | `fc_set` + `fc_card` | `education.generate_cards` |
-| `summary` | Study Summary agent (`92b607a4…`) → `studyMediaService` | `study_media` (`media_kind='summary'`) | `education.ingest_document` |
-| `mind_map` | Study Mind Map agent → `studyMediaService` | `study_media` (`media_kind='mind_map'`) | `education.mindmap_generate` |
-| `notes` | Study Notes agent (`f23562ce…`) → `NotesAPI.create` | `workbench.notes` (a real platform note) | `education.notes_generate` |
-| `quiz` | Assessment from-source agent → `assessmentService.createWithItems` | `education.assessment` (`assessment_kind='quiz'`) | `education.quiz_generate` |
-| `practice_test` | same from-source agent (longer/timed defaults) → `assessmentService.createWithItems` | `education.assessment` (`assessment_kind='practice_test'`) | `education.practice_test_generate` |
-| `audio` | `buildAudioRequest` → `studioRunsService` + `studyMediaService` (streamed podcast pipeline) | `study_media` (`media_kind='audio'`) + `pc_studio_runs` | `education.audio_generate` |
+| Kind            | Agent / service                                                                             | Persists to                                                | Capability (P8)                    |
+| --------------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------- |
+| `deck`          | Kit Flashcard agent (`0de9ff99…`) → `fcService.createSetWithCards`                          | `fc_set` + `fc_card`                                       | `education.generate_cards`         |
+| `summary`       | Study Summary agent (`92b607a4…`) → `studyMediaService`                                     | `study_media` (`media_kind='summary'`)                     | `education.ingest_document`        |
+| `mind_map`      | Study Mind Map agent → `studyMediaService`                                                  | `study_media` (`media_kind='mind_map'`)                    | `education.mindmap_generate`       |
+| `notes`         | Study Notes agent (`f23562ce…`) → `NotesAPI.create`                                         | `workbench.notes` (a real platform note)                   | `education.notes_generate`         |
+| `quiz`          | Assessment from-source agent → `assessmentService.createWithItems`                          | `education.assessment` (`assessment_kind='quiz'`)          | `education.quiz_generate`          |
+| `practice_test` | same from-source agent (longer/timed defaults) → `assessmentService.createWithItems`        | `education.assessment` (`assessment_kind='practice_test'`) | `education.practice_test_generate` |
+| `audio`         | `buildAudioRequest` → `studioRunsService` + `studyMediaService` (streamed podcast pipeline) | `study_media` (`media_kind='audio'`) + `pc_studio_runs`    | `education.audio_generate`         |
 
 Each generator: run the agent (`runAgentExtraction` — the shared launch+extract primitive),
 coerce, persist, then call `recordSourceLineage(result, source, orgId)` — the ONE canonical writer
@@ -87,7 +93,9 @@ registerGenerator({
   label: "Quiz",
   available: true,
   capability: "education.quiz_generate",
-  run: async (request, ctx) => { /* agent → persist → source edge → ConvertResult */ },
+  run: async (request, ctx) => {
+    /* agent → persist → source edge → ConvertResult */
+  },
 });
 ```
 

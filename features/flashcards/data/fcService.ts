@@ -13,7 +13,10 @@
 
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
-import { mergeJsonColumn, type JsonObject } from "@/lib/supabase/mergeJsonColumn";
+import {
+  mergeJsonColumn,
+  type JsonObject,
+} from "@/lib/supabase/mergeJsonColumn";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { EDGE_ROLE } from "./types";
@@ -205,7 +208,8 @@ export const fcService = {
           .maybeSingle<SetMetadataRow>(),
     });
     if (result.status === "saved") return { data: null, error: null };
-    if (result.status === "error") return fail("mergeSetMetadata", result.error);
+    if (result.status === "error")
+      return fail("mergeSetMetadata", result.error);
     return fail(
       "mergeSetMetadata",
       result.status === "not_found"
@@ -362,7 +366,8 @@ export const fcService = {
               sourceId: card.id,
               targetType: "file",
               targetId: m.file_id,
-              role: m.role === "photo" ? EDGE_ROLE.photo : EDGE_ROLE.illustration,
+              role:
+                m.role === "photo" ? EDGE_ROLE.photo : EDGE_ROLE.illustration,
               orgId: opts.orgId,
               metadata: {
                 face: m.face ?? null,
@@ -371,7 +376,10 @@ export const fcService = {
               } as never,
             });
             if (!mediaEdge.ok)
-              console.error("[fcService.addCards] media edge failed:", mediaEdge);
+              console.error(
+                "[fcService.addCards] media edge failed:",
+                mediaEdge,
+              );
           }
 
           const src = cards[i].source;

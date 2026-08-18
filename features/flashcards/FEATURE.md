@@ -55,6 +55,10 @@ system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` +
 
 ## Change log
 
+- 2026-08-18 — `fcService.mergeSetMetadata` is now the canonical compare-and-swap merge for
+  `fc_set.metadata`. Public-library classification and grounding provenance no longer need a blind
+  read/spread/write that can erase import, folder, or concurrent metadata keys. First consumer:
+  WP11's grounded exam-content pipeline (`exam_slug`, curation state, retrieved chunk ids).
 - 2026-08-18 — Fast Fire spoken-front generation dispatches every missing card at
   once. Provider admission, cooldowns, and rate-limit adaptation belong to the
   central matrx-ai dispatch boundary; this feature no longer maintains a five-call
