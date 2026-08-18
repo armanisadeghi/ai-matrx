@@ -41,9 +41,10 @@ parity proofs pinned by tests: Study Pack (surface `c797a1c1-…`) and Podcast (
 
 ## Dispatched as chips (2026-08-17 — do not duplicate)
 
-FE kind components + activation for the 4 media kinds (`task_fa01879d`) · generated shared TS
-event-types (replaces hand-maintained `types.ts`; cross-repo, `task_5e0478ef`) ·
-`kind_component_autogen` → web (`task_0ec39b7c`).
+FE kind components + activation for the 4 media kinds (`task_2d094758`) · generated shared TS
+event-types (replaces hand-maintained `types.ts`; cross-repo, `task_786c5371`) ·
+`kind_component_autogen` → web (`task_6c3c1840`). (Ids re-fired 2026-08-18 — the first chip
+generation died with an app restart before anyone started them.)
 
 Server half: `aidream docs/handoffs/workflow-runtime-ui-server.md` + `workflow-node-kinds-gap.md`
 + `podcast-media-shapes.md`.
