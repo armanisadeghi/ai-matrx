@@ -11,26 +11,36 @@
  * miss. That is the difference between a demo and a lie: the query ran, the
  * answer was "none", and we show what the surface will look like once it isn't.
  *
+ * `?data=ready|empty|error|stalled` FORCES a load state so the unglamorous ones
+ * are reachable and reviewable on the real route. The switch only forces the
+ * state; the copy for a stall still comes from the real React Query signals
+ * (`isPaused` / `failureCount`) on the live path, so what a reviewer reads is
+ * what a user would read.
+ *
  * Coverage → angle: `seo.coverage_mention` has NO foreign key to
  * `seo.story_angle`. The tie lives in `metadata.story_angle_id`, and THIS FILE
  * is the only reader of that key — nothing downstream assumes the shape.
  */
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+import type { Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { isJsonRecord } from "@/features/marketing/types";
 import {
   buildPressRoomFixture,
   type PressRoomFixture,
-} from "@/features/marketing/pr/refine/fixtures";
-import type {
-  CoverageMention,
-  SourceRequest,
-  StoryAngle,
-} from "@/features/marketing/pr/refine/types";
+} from "@/features/marketing/pr/fixtures";
+import type { PressRoomScenario } from "@/features/marketing/pr/routes";
+import {
+  readEvidenceRefs,
+  readMissingEvidence,
+  type CoverageMention,
+  type SourceRequest,
+  type StoryAngle,
+} from "@/features/marketing/pr/types";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -132,10 +142,21 @@ export interface PressRoomData {
   failed: string[];
   refetch: () => void;
   isFetching: boolean;
+  /** Non-null when `?data=` is forcing this state rather than the DB producing it. */
+  forcedScenario: Exclude<PressRoomScenario, "live"> | null;
 }
 
-export function usePressRoom(siteId: string): PressRoomData {
-  const enabled = Boolean(siteId);
+const FORCED_ERROR = new Error(
+  "seo.story_angle: permission denied for schema seo (RLS). This is the forced ?data=error state — no real read failed.",
+);
+
+export function usePressRoom(
+  siteId: string,
+  scenario: PressRoomScenario = "live",
+): PressRoomData {
+  const forced = scenario === "live" ? null : scenario;
+  const enabled = Boolean(siteId) && forced === null;
+
   const angles = useQuery({
     queryKey: pressKeys.angles(siteId),
     queryFn: ({ signal }) => listStoryAngles(siteId, signal),
@@ -157,7 +178,7 @@ export function usePressRoom(siteId: string): PressRoomData {
     staleTime: 5 * 60_000,
   });
 
-  const isLoading =
+  const liveLoading =
     enabled && (angles.isLoading || requests.isLoading || coverage.isLoading);
 
   /**
@@ -173,7 +194,6 @@ export function usePressRoom(siteId: string): PressRoomData {
     requests.failureCount,
     coverage.failureCount,
   );
-  const isStalled = isLoading && (isPaused || retrying > 0);
 
   // The sample dataset is built once per mount so its relative deadlines do not
   // re-randomise under the user while they read the page.
@@ -183,10 +203,40 @@ export function usePressRoom(siteId: string): PressRoomData {
     [fixtureAnchor],
   );
 
+  const refetch = useCallback(() => {
+    void angles.refetch();
+    void requests.refetch();
+    void coverage.refetch();
+  }, [angles, requests, coverage]);
+
+  if (forced !== null) {
+    const showSample = forced === "ready";
+    return {
+      angles: showSample ? fixture.angles : [],
+      requests: showSample ? fixture.requests : [],
+      coverage: showSample ? fixture.coverage : [],
+      isSample: showSample,
+      sampleBrandName: showSample ? fixture.brandName : null,
+      isLoading: forced === "stalled",
+      isStalled: forced === "stalled",
+      stallReason: forced === "stalled" ? "retrying" : null,
+      retryAttempt: forced === "stalled" ? 2 : 0,
+      isError: forced === "error",
+      error: forced === "error" ? FORCED_ERROR : null,
+      failed: forced === "error" ? ["story angles"] : [],
+      refetch,
+      isFetching: false,
+      forcedScenario: forced,
+    };
+  }
+
   const realAngles = angles.data ?? [];
   const realRequests = requests.data ?? [];
   const realCoverage = coverage.data ?? [];
-  const settled = !isLoading && !angles.isError && !requests.isError;
+  const settled = !liveLoading && !angles.isError && !requests.isError;
+  // Also true before a site is chosen: the queries are disabled, there is
+  // nothing real to show, and the honest sample + its banner is more use than
+  // an empty page. The banner names which of the three cases this is.
   const isSample =
     settled && realAngles.length === 0 && realRequests.length === 0;
 
@@ -202,8 +252,8 @@ export function usePressRoom(siteId: string): PressRoomData {
     coverage: isSample ? fixture.coverage : realCoverage,
     isSample,
     sampleBrandName: isSample ? fixture.brandName : null,
-    isLoading,
-    isStalled,
+    isLoading: liveLoading,
+    isStalled: liveLoading && (isPaused || retrying > 0),
     stallReason: isPaused
       ? ("offline" as const)
       : retrying > 0
@@ -214,13 +264,167 @@ export function usePressRoom(siteId: string): PressRoomData {
     isError: angles.isError || requests.isError,
     error: angles.error ?? requests.error ?? coverage.error,
     failed,
-    refetch: () => {
-      void angles.refetch();
-      void requests.refetch();
-      void coverage.refetch();
-    },
+    refetch,
     isFetching: angles.isFetching || requests.isFetching || coverage.isFetching,
+    forcedScenario: null,
   };
+}
+
+// ─── Rulings held in this session ───────────────────────────────────────────
+
+/**
+ * Accept / Mark pitched / Dismiss / "I have this" all WORK — the queue, the
+ * funnel and the readiness numbers move together the moment one is made. What
+ * they cannot yet do is persist: there is no write path to `seo.story_angle`
+ * from this surface.
+ *
+ * ONE honest treatment, applied everywhere: the ruling applies, and the status
+ * bar says out loud how many rulings are held in this session and offers to
+ * discard them. A disabled button that explains itself was the alternative, and
+ * it is worse — it teaches the user the product cannot do the thing at all,
+ * when in fact the whole surface can already compute the consequence.
+ */
+export interface PressRoomRulings {
+  angleStatus: Record<string, string>;
+  requestStatus: Record<string, string>;
+  /** angle id → proof keys the human says are now in hand. */
+  evidenceHeld: Record<string, string[]>;
+}
+
+export const EMPTY_RULINGS: PressRoomRulings = {
+  angleStatus: {},
+  requestStatus: {},
+  evidenceHeld: {},
+};
+
+export function countRulings(rulings: PressRoomRulings): number {
+  return (
+    Object.keys(rulings.angleStatus).length +
+    Object.keys(rulings.requestStatus).length +
+    Object.values(rulings.evidenceHeld).reduce(
+      (sum, keys) => sum + keys.length,
+      0,
+    )
+  );
+}
+
+export interface RulingController {
+  rulings: PressRoomRulings;
+  count: number;
+  ruleAngle: (angleId: string, status: string) => void;
+  ruleRequest: (requestId: string, status: string) => void;
+  holdEvidence: (angleId: string, proofKey: string) => void;
+  discard: () => void;
+}
+
+export function usePressRoomRulings(): RulingController {
+  const [rulings, setRulings] = useState<PressRoomRulings>(EMPTY_RULINGS);
+
+  const ruleAngle = useCallback((angleId: string, status: string) => {
+    setRulings((current) => ({
+      ...current,
+      angleStatus: { ...current.angleStatus, [angleId]: status },
+    }));
+  }, []);
+
+  const ruleRequest = useCallback((requestId: string, status: string) => {
+    setRulings((current) => ({
+      ...current,
+      requestStatus: { ...current.requestStatus, [requestId]: status },
+    }));
+  }, []);
+
+  const holdEvidence = useCallback((angleId: string, proofKey: string) => {
+    setRulings((current) => {
+      const existing = current.evidenceHeld[angleId] ?? [];
+      if (existing.includes(proofKey)) return current;
+      return {
+        ...current,
+        evidenceHeld: {
+          ...current.evidenceHeld,
+          [angleId]: [...existing, proofKey],
+        },
+      };
+    });
+  }, []);
+
+  const discard = useCallback(() => setRulings(EMPTY_RULINGS), []);
+
+  return useMemo(
+    () => ({
+      rulings,
+      count: countRulings(rulings),
+      ruleAngle,
+      ruleRequest,
+      holdEvidence,
+      discard,
+    }),
+    [rulings, ruleAngle, ruleRequest, holdEvidence, discard],
+  );
+}
+
+/**
+ * A ruling is applied OVER the loaded row so the whole surface moves together.
+ * It never mutates the source row, and it recomputes `evidence_quality` from
+ * the ladder rather than inventing a number.
+ */
+export function applyAngleRulings(
+  angles: readonly StoryAngle[],
+  rulings: PressRoomRulings,
+): StoryAngle[] {
+  const hasStatus = Object.keys(rulings.angleStatus).length > 0;
+  const hasEvidence = Object.keys(rulings.evidenceHeld).length > 0;
+  if (!hasStatus && !hasEvidence) return [...angles];
+
+  return angles.map((angle) => {
+    const status = rulings.angleStatus[angle.id];
+    const held = rulings.evidenceHeld[angle.id];
+    if (!status && (!held || held.length === 0)) return angle;
+
+    let next: StoryAngle = angle;
+    if (status) next = { ...next, status };
+
+    if (held && held.length > 0) {
+      const missing = readMissingEvidence(next.missing_evidence).items;
+      const refs = readEvidenceRefs(next.evidence_refs).items;
+      const moved = missing.filter((item) => held.includes(item.key));
+      const remaining = missing.filter((item) => !held.includes(item.key));
+      const nextRefs = [
+        ...refs,
+        ...moved
+          .filter((item) => !refs.some((ref) => ref.key === item.key))
+          .map((item) => ({
+            key: item.key,
+            label: item.label,
+            source: "Confirmed by you in this session",
+            url: null,
+            captured_at: new Date().toISOString(),
+          })),
+      ];
+      // evidence_quality is a real column and it genuinely improves when a
+      // required proof lands. Recomputed from the ladder, never invented.
+      const total = Math.max(1, refs.length + missing.length);
+      const inHand = total - remaining.length;
+      next = {
+        ...next,
+        missing_evidence: remaining as unknown as Json,
+        evidence_refs: nextRefs as unknown as Json,
+        evidence_quality: Math.round((inHand / total) * 100),
+      };
+    }
+    return next;
+  });
+}
+
+export function applyRequestRulings(
+  requests: readonly SourceRequest[],
+  rulings: PressRoomRulings,
+): SourceRequest[] {
+  if (Object.keys(rulings.requestStatus).length === 0) return [...requests];
+  return requests.map((request) => {
+    const status = rulings.requestStatus[request.id];
+    return status ? { ...request, status } : request;
+  });
 }
 
 // ─── The page clock ─────────────────────────────────────────────────────────

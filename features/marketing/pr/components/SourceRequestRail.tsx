@@ -3,12 +3,20 @@
 /**
  * Source Requests — journalist queries that expire in HOURS.
  *
- * This is the only genuinely time-critical thing in the product, so it gets
- * the treatment a deadline-driven inbox gets (Front / Superhuman): the queue is
+ * This is the only genuinely time-critical thing in the product, so it gets the
+ * treatment a deadline-driven inbox gets (Front / Superhuman): the queue is
  * ordered by what closes first and by nothing else, the countdown is on every
- * row at a fixed width, and anything inside six hours escalates the whole
- * panel — a bar at the top that names the outlet and the hours left, which is
- * visible whether or not the user has scrolled the list.
+ * row at a fixed width, and anything inside six hours escalates the whole panel
+ * — a bar at the top that names the outlet and the hours left, visible whether
+ * or not the user has scrolled.
+ *
+ * BACKEND FACT 2 is enforced here. `seo.source_request.status` reaches
+ * `expired` and `passed`, and those rows carry `draft_response = null` and no
+ * subject line — the query cannot be answered any more. So no send or submit
+ * affordance is rendered for them (nor for `submitted` / `won`, which are also
+ * done). What is rendered instead is WHAT HAPPENED, and the original query door
+ * (`external_url`) stays open, because on a closed request that link is the only
+ * thing left worth opening.
  *
  * The countdown is driven by ONE clock passed down from the workspace, and the
  * chip reserves its widest width, so a row can never resize as time passes.
@@ -25,23 +33,27 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
+import {
+  JournalistRef,
+  MEDIA_LISTS_HREF,
+} from "@/features/marketing/pr/components/JournalistRef";
 import {
   deadlineState,
   rankRequests,
   type DeadlineUrgency,
-} from "@/features/marketing/pr/refine/scoring";
+} from "@/features/marketing/pr/scoring";
 import {
+  CLOSED_REQUEST_STORY,
   PLATFORM_LABELS,
   REQUEST_STATUS_LABELS,
   humanize,
-  jsonRecords,
-  jsonText,
+  isAnswerable,
+  readRequirements,
   type SourceRequest,
   type StoryAngle,
-} from "@/features/marketing/pr/refine/types";
+} from "@/features/marketing/pr/types";
 
 const URGENCY_CHIP: Record<DeadlineUrgency, string> = {
   critical:
@@ -79,7 +91,10 @@ export function DeadlineChip({
       )}
     >
       {state.urgency === "critical" ? (
-        <AlarmClock className="h-3 w-3 shrink-0 animate-pulse" aria-hidden />
+        <AlarmClock
+          className="h-3 w-3 shrink-0 animate-pulse motion-reduce:animate-none"
+          aria-hidden
+        />
       ) : null}
       {state.short}
     </span>
@@ -95,7 +110,10 @@ function MatchScore({ score }: { score: number }) {
         : "text-muted-foreground";
   return (
     <span
-      className={cn("w-8 shrink-0 text-right text-xs font-semibold tabular-nums", tone)}
+      className={cn(
+        "w-8 shrink-0 text-right text-xs font-semibold tabular-nums",
+        tone,
+      )}
       title={`${score}% match against this business`}
     >
       {score}
@@ -109,16 +127,22 @@ function RequestRow({
   expanded,
   onToggle,
   angle,
+  onRule,
 }: {
   request: SourceRequest;
   now: number;
   expanded: boolean;
   onToggle: () => void;
   angle: StoryAngle | null;
+  onRule: (status: string) => void;
 }) {
   const ref = useRef<HTMLLIElement>(null);
   const state = deadlineState(request.deadline_at, now);
-  const requirements = jsonRecords(request.requirements);
+  const requirements = readRequirements(request.requirements);
+  const answerable = isAnswerable(request);
+  const closed = state.urgency === "past";
+  const statusLabel =
+    REQUEST_STATUS_LABELS[request.status] ?? humanize(request.status);
 
   useEffect(() => {
     if (expanded) {
@@ -129,10 +153,12 @@ function RequestRow({
   return (
     <li
       ref={ref}
+      data-request-id={request.id}
       className={cn(
         "min-w-0 border-b border-border last:border-b-0",
         expanded && "bg-muted/30",
-        state.urgency === "critical" && "bg-destructive/[0.04]",
+        state.urgency === "critical" && answerable && "bg-destructive/[0.04]",
+        !answerable && "opacity-80",
       )}
     >
       <button
@@ -141,7 +167,11 @@ function RequestRow({
         aria-expanded={expanded}
         className="flex w-full min-w-0 items-start gap-2 px-2.5 py-2 text-left transition-colors hover:bg-muted/50"
       >
-        <DeadlineChip deadlineAt={request.deadline_at} now={now} className="mt-0.5" />
+        <DeadlineChip
+          deadlineAt={request.deadline_at}
+          now={now}
+          className="mt-0.5"
+        />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-xs font-medium leading-4 text-foreground">
             {request.query_title}
@@ -156,6 +186,11 @@ function RequestRow({
             <span className="shrink-0">
               · {PLATFORM_LABELS[request.platform] ?? humanize(request.platform)}
             </span>
+            {!answerable ? (
+              <span className="shrink-0 font-medium text-muted-foreground">
+                · {statusLabel}
+              </span>
+            ) : null}
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-1.5 pt-0.5">
@@ -174,7 +209,7 @@ function RequestRow({
         <div className="space-y-2.5 border-t border-border px-2.5 py-2.5">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="outline" className="text-[10px]">
-              {REQUEST_STATUS_LABELS[request.status] ?? humanize(request.status)}
+              {statusLabel}
             </Badge>
             {request.beat ? (
               <span className="text-[11px] text-muted-foreground">
@@ -186,34 +221,40 @@ function RequestRow({
             </span>
           </div>
 
-          {/* THE DOOR LAW: the journalist is a crm.party — open them, in a new
-              tab, without losing the queue. When the row has no party_id yet we
-              say so instead of rendering a door that goes nowhere. */}
+          {/* WHAT HAPPENED, for anything that can no longer be answered. */}
+          {!answerable ? (
+            <p className="rounded-md border border-border bg-muted/50 px-2 py-1.5 text-[11px] leading-4 text-muted-foreground">
+              {CLOSED_REQUEST_STORY[request.status] ??
+                "This query is closed and can no longer be answered."}
+            </p>
+          ) : closed ? (
+            <p className="rounded-md border border-border bg-muted/50 px-2 py-1.5 text-[11px] leading-4 text-muted-foreground">
+              The deadline passed {state.label.replace("Closed ", "").replace(" ago", "")}{" "}
+              ago and nothing was sent. Mark it expired so it stops competing for
+              your attention.
+            </p>
+          ) : null}
+
+          {/* THE DOOR LAW: the journalist is a crm.party when one was resolved.
+              When there is only a name, it renders as an unresolved reference
+              carrying its own fix — never a bare span. */}
           <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-md border border-border bg-background px-2 py-1.5">
-            <Newspaper className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-            {request.party_id ? (
-              <EntityRef
-                token="party"
-                id={request.party_id}
-                name={request.journalist_name ?? "This journalist"}
-                openInNewTab
-                className="min-w-0"
-              />
-            ) : (
-              <span className="min-w-0 text-[11px] text-muted-foreground">
-                <span className="font-medium text-foreground">
-                  {request.journalist_name ?? "This journalist"}
-                </span>{" "}
-                is not in your CRM yet — no contact record to open.
-              </span>
-            )}
+            <Newspaper
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+              aria-hidden
+            />
+            <JournalistRef
+              name={request.journalist_name}
+              partyId={request.party_id}
+              emptyLabel="No journalist named on this query"
+            />
             <Button
               asChild
               size="sm"
               variant="outline"
               className="ml-auto h-6 shrink-0 text-[10px]"
             >
-              <a href="/crm/outreach-lists" target="_blank" rel="noreferrer">
+              <a href={MEDIA_LISTS_HREF} target="_blank" rel="noreferrer">
                 Media lists
                 <ArrowUpRight className="ml-1 h-3 w-3" />
               </a>
@@ -231,15 +272,14 @@ function RequestRow({
             </div>
           ) : null}
 
-          {requirements.length > 0 ? (
+          {requirements.items.length > 0 ? (
             <ul className="flex flex-wrap gap-1">
-              {requirements.map((requirement, index) => (
+              {requirements.items.map((requirement, index) => (
                 <li
                   key={`req-${index}`}
                   className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
                 >
-                  {jsonText(requirement, "label", "text", "requirement") ??
-                    "Requirement"}
+                  {requirement.label}
                 </li>
               ))}
             </ul>
@@ -265,11 +305,14 @@ function RequestRow({
             </p>
           ) : null}
 
+          {/* A draft, and a send affordance, ONLY where one can honestly exist. */}
           {request.draft_response ? (
             <div className="rounded-md border border-border bg-background">
               <div className="flex items-center justify-between gap-2 border-b border-border px-2 py-1">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                  Drafted response — yours to edit and send
+                  {answerable
+                    ? "Drafted response — yours to edit and send"
+                    : "The response on file"}
                 </p>
                 <CopyButtons
                   size="xs"
@@ -285,6 +328,7 @@ function RequestRow({
                       query: request.query_body,
                       draft: request.draft_response,
                       deadline_at: request.deadline_at,
+                      status: request.status,
                     },
                     summary: request.draft_response ?? "",
                   })}
@@ -294,25 +338,65 @@ function RequestRow({
                 {request.draft_response}
               </p>
             </div>
-          ) : (
-            <p className="rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] text-muted-foreground">
-              No draft yet. Drafting runs when the request is matched to an
-              angle — this one is {REQUEST_STATUS_LABELS[request.status] ?? request.status}.
+          ) : answerable ? (
+            <p className="rounded-md border border-dashed border-border px-2 py-1.5 text-[11px] leading-4 text-muted-foreground">
+              No draft yet. Drafting runs once the request is matched to an angle
+              — this one is {statusLabel.toLowerCase()}.
             </p>
-          )}
-
-          {request.external_url ? (
-            <a
-              href={request.external_url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
-            >
-              Open the original query on{" "}
-              {PLATFORM_LABELS[request.platform] ?? humanize(request.platform)}
-              <ExternalLink className="h-3 w-3" />
-            </a>
           ) : null}
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            {answerable && !closed ? (
+              <Button
+                size="sm"
+                className="h-7 text-[11px]"
+                disabled={!request.draft_response}
+                title={
+                  request.draft_response
+                    ? undefined
+                    : "Nothing to submit yet — there is no draft."
+                }
+                onClick={() => onRule("submitted")}
+              >
+                Mark submitted
+              </Button>
+            ) : null}
+            {request.status === "submitted" ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[11px]"
+                onClick={() => onRule("won")}
+              >
+                They used it
+              </Button>
+            ) : null}
+            {answerable ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-[11px] text-muted-foreground"
+                onClick={() => onRule(closed ? "expired" : "passed")}
+              >
+                {closed ? "Mark expired" : "Pass on it"}
+              </Button>
+            ) : null}
+
+            {/* The original query stays reachable whatever the status — on a
+                closed request it is the only door left. */}
+            {request.external_url ? (
+              <a
+                href={request.external_url}
+                target="_blank"
+                rel="noreferrer"
+                className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+              >
+                Open the original query on{" "}
+                {PLATFORM_LABELS[request.platform] ?? humanize(request.platform)}
+                <ExternalLink className="h-3 w-3" />
+              </a>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </li>
@@ -325,12 +409,14 @@ export function SourceRequestRail({
   now,
   selectedId,
   onSelect,
+  onRuleRequest,
 }: {
   requests: readonly SourceRequest[];
   angles: readonly StoryAngle[];
   now: number;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  onRuleRequest: (requestId: string, status: string) => void;
 }) {
   const ordered = useMemo(() => rankRequests(requests, now), [requests, now]);
   const angleById = useMemo(
@@ -338,7 +424,9 @@ export function SourceRequestRail({
     [angles],
   );
   const critical = ordered.filter(
-    (request) => deadlineState(request.deadline_at, now).urgency === "critical",
+    (request) =>
+      isAnswerable(request) &&
+      deadlineState(request.deadline_at, now).urgency === "critical",
   );
 
   return (
@@ -355,7 +443,10 @@ export function SourceRequestRail({
       {critical.length > 0 ? (
         <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-2">
           <p className="flex items-center gap-1.5 text-[11px] font-semibold text-destructive">
-            <AlarmClock className="h-3.5 w-3.5 animate-pulse" aria-hidden />
+            <AlarmClock
+              className="h-3.5 w-3.5 animate-pulse motion-reduce:animate-none"
+              aria-hidden
+            />
             {critical.length === 1
               ? "1 request closes within 6 hours"
               : `${critical.length} requests close within 6 hours`}
@@ -387,9 +478,9 @@ export function SourceRequestRail({
             No open journalist requests
           </p>
           <p className="mx-auto mt-1 max-w-xs text-[11px] leading-4 text-muted-foreground">
-            HARO, Qwoted, Featured and SourceBottle queries land here as they
-            are published and matched against your angles. Nothing is waiting on
-            you right now.
+            HARO, Qwoted, Featured and SourceBottle queries land here as they are
+            published and matched against your angles. Nothing is waiting on you
+            right now.
           </p>
         </div>
       ) : (
@@ -403,6 +494,7 @@ export function SourceRequestRail({
               onToggle={() =>
                 onSelect(selectedId === request.id ? null : request.id)
               }
+              onRule={(status) => onRuleRequest(request.id, status)}
               angle={
                 request.story_angle_id
                   ? (angleById.get(request.story_angle_id) ?? null)

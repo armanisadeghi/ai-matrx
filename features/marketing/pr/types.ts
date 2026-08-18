@@ -229,6 +229,12 @@ export interface ParsedList<T> {
   items: T[];
   /** Entries present in the column that this reader could not understand. */
   malformed: number;
+  /**
+   * Those same entries, verbatim. Counting an unreadable requirement is honest;
+   * throwing its CONTENT away is not — a human can often read what a parser
+   * cannot, so the surface shows it rather than dropping it.
+   */
+  malformedRaw: string[];
 }
 
 export type ProofKind = "document" | "data" | "quote" | "third_party" | "metric";
@@ -242,6 +248,11 @@ export interface ProofItem {
   /** What kind of artefact satisfies it — drives the icon, nothing else. */
   kind: ProofKind;
   note: string | null;
+  /**
+   * An explicit flag from the payload, or `null` when it said nothing. An
+   * explicit `false` makes this a gap even if `missing_evidence` never named it.
+   */
+  satisfied: boolean | null;
 }
 
 /** A proof we do NOT have yet. Carries its own path to being had. */
@@ -307,16 +318,51 @@ function bool(record: { [key: string]: Json }, key: string): boolean | null {
   return typeof value === "boolean" ? value : null;
 }
 
+/** Reads the first key that carries an allowed value — key spellings vary. */
 function oneOf<T extends string>(
   record: { [key: string]: Json },
-  key: string,
+  keys: readonly string[],
   allowed: readonly T[],
   fallback: T,
 ): T {
-  const value = record[key];
-  return typeof value === "string" && (allowed as readonly string[]).includes(value)
-    ? (value as T)
-    : fallback;
+  for (const key of keys) {
+    const value = record[key];
+    if (
+      typeof value === "string" &&
+      (allowed as readonly string[]).includes(value)
+    ) {
+      return value as T;
+    }
+  }
+  return fallback;
+}
+
+const SATISFIED_WORDS = new Set([
+  "have",
+  "satisfied",
+  "in_hand",
+  "in-hand",
+  "verified",
+  "done",
+  "complete",
+]);
+
+/**
+ * An explicit satisfaction flag, when the payload carries one. `null` means the
+ * payload said nothing — the ladder then decides from `missing_evidence` and
+ * `evidence_refs`, which is the analyzer's authority. An explicit `false` is
+ * NOT the same as silence: it must never render as a green tick.
+ */
+function readSatisfied(record: { [key: string]: Json }): boolean | null {
+  for (const key of ["satisfied", "have", "is_satisfied", "met"]) {
+    const value = record[key];
+    if (typeof value === "boolean") return value;
+  }
+  const status = record["status"];
+  if (typeof status === "string" && status.trim()) {
+    return SATISFIED_WORDS.has(status.trim().toLowerCase());
+  }
+  return null;
 }
 
 /**
@@ -329,7 +375,7 @@ function readList<T>(
   read: (record: { [key: string]: Json }, index: number) => T | null,
 ): ParsedList<T> {
   const items: T[] = [];
-  let malformed = 0;
+  const malformedRaw: string[] = [];
   for (const [index, entry] of asArray(column).entries()) {
     const record: { [key: string]: Json } | null =
       typeof entry === "string" && entry.trim() !== ""
@@ -338,26 +384,27 @@ function readList<T>(
           ? entry
           : null;
     const parsed = record ? read(record, index) : null;
-    if (parsed === null) malformed += 1;
+    if (parsed === null) malformedRaw.push(JSON.stringify(entry));
     else items.push(parsed);
   }
-  return { items, malformed };
+  return { items, malformed: malformedRaw.length, malformedRaw };
 }
 
 export function readProofRequired(column: Json): ParsedList<ProofItem> {
   return readList(column, (record, index) => {
-    const label = str(record, "label", "requirement", "claim", "title", "name", "text");
+    const label = str(record, "label", "requirement", "claim", "title", "name", "text", "fact");
     if (!label) return null;
     return {
       key: str(record, "key", "id") ?? `proof_${index}`,
       label,
       kind: oneOf(
         record,
-        "kind",
+        ["kind", "type", "evidence_kind"],
         ["document", "data", "quote", "third_party", "metric"] as const,
         "document",
       ),
       note: str(record, "note", "detail", "description", "why", "reason"),
+      satisfied: readSatisfied(record),
     };
   });
 }
@@ -366,7 +413,7 @@ export function readMissingEvidence(
   column: Json,
 ): ParsedList<MissingEvidenceItem> {
   return readList(column, (record, index) => {
-    const label = str(record, "label", "requirement", "claim", "title", "name", "text");
+    const label = str(record, "label", "requirement", "claim", "title", "name", "text", "fact");
     if (!label) return null;
     return {
       key: str(record, "key", "id") ?? `missing_${index}`,
@@ -376,13 +423,13 @@ export function readMissingEvidence(
         "No path recorded yet — the analysis did not say how to get this.",
       owner: oneOf(
         record,
-        "owner",
+        ["owner", "owner_role", "who", "assignee", "responsible"],
         ["you", "team", "client", "third_party"] as const,
         "you",
       ),
       effort: oneOf(
         record,
-        "effort",
+        ["effort", "cost", "size"],
         ["quick", "medium", "heavy"] as const,
         "medium",
       ),

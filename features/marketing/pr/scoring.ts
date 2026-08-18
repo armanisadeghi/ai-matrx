@@ -122,27 +122,7 @@ export function weakestAxis(angle: StoryAngle): ScoreSpec {
   )[0];
 }
 
-// ─── Proof, as a number the strip and the pill can share ────────────────────
-
-export interface ProofProgress {
-  total: number;
-  inHand: number;
-  gaps: number;
-  percent: number;
-  complete: boolean;
-}
-
-export function proofProgress(angle: StoryAngle): ProofProgress {
-  const read = readLadder(angle);
-  const gaps = read.total - read.held;
-  return {
-    total: read.total,
-    inHand: read.held,
-    gaps,
-    percent: read.total === 0 ? 100 : Math.round((read.held / read.total) * 100),
-    complete: gaps === 0,
-  };
-}
+// ─── Proof, in the two forms other modules need ─────────────────────────────
 
 /** One gap away from pitchable — the cheapest work on the page. */
 export function isQuickWin(angle: StoryAngle): boolean {
@@ -269,4 +249,116 @@ export function rankRequests(
     if (aState.minutes !== bState.minutes) return aState.minutes - bState.minutes;
     return b.match_score - a.match_score;
   });
+}
+
+// ─── Sorting the queue ──────────────────────────────────────────────────────
+
+export type QueueSort = "ranked" | "nearly-provable";
+
+export const QUEUE_SORTS: ReadonlyArray<{
+  id: QueueSort;
+  label: string;
+  hint: string;
+}> = [
+  {
+    id: "ranked",
+    label: "Ranked",
+    hint: "Live work first, then priority, then readiness. What is most worth doing.",
+  },
+  {
+    id: "nearly-provable",
+    label: "Nearly provable",
+    hint: "Fewest missing proofs first — the shortest walk from idea to pitchable.",
+  },
+];
+
+/**
+ * The default sort DEPENDS ON THE VIEW, and that is the point. In a view where
+ * every row is by definition not yet pitchable ("Building proof", "Needs you"),
+ * raw priority answers "what is best in the abstract" when the actual question
+ * is "what can I get to press fastest". So those views open on distance-to-
+ * pitchable; everything else opens on the ranked order.
+ */
+export function defaultSortForView(viewId: string): QueueSort {
+  return viewId === "proof" || viewId === "you" ? "nearly-provable" : "ranked";
+}
+
+/**
+ * How far this angle is from being pitchable, in gaps. Angles with NO gaps sort
+ * to the BOTTOM of this order rather than the top: they are already provable,
+ * so they are not work — and this lane is a to-do list. Ties break on
+ * `evidence_quality`, so of two angles one gap away the better-proven one leads.
+ */
+export function provableDistance(angle: StoryAngle): number {
+  const read = readLadder(angle);
+  const gaps = read.total - read.held;
+  if (gaps === 0) return Number.POSITIVE_INFINITY;
+  return gaps * 1000 - clamp(angle.evidence_quality);
+}
+
+export function sortAngles(
+  angles: readonly StoryAngle[],
+  sort: QueueSort,
+): StoryAngle[] {
+  if (sort !== "nearly-provable") return rankAngles(angles);
+  // Ranked order is the stable base, so two angles at the same distance keep a
+  // deterministic order instead of shuffling between renders.
+  return rankAngles(angles).sort(
+    (a, b) => provableDistance(a) - provableDistance(b),
+  );
+}
+
+// ─── Why this row is where it is ────────────────────────────────────────────
+
+/**
+ * A ranked work queue the user cannot interrogate is just an authority. Every
+ * rank explains itself: the analyzer's call, the scores actually driving the
+ * position, any journalist window closing on it, and the distance to pitchable.
+ *
+ * Returned as lines rather than a sentence so the same content can be a tooltip
+ * on the rank chip AND a labelled block inside the open row — a hover is not a
+ * door on a touch screen.
+ */
+export function rankRationale(
+  angle: StoryAngle,
+  options: { sort: QueueSort; linkedRequests?: number; soonestDeadline?: DeadlineState | null },
+): string[] {
+  const lines: string[] = [];
+
+  lines.push(
+    options.sort === "nearly-provable"
+      ? "Sorted by distance to pitchable — fewest missing proofs first."
+      : "Sorted by what is most worth doing: live work first, then priority, then readiness.",
+  );
+
+  const read = readLadder(angle);
+  const gaps = read.total - read.held;
+  if (read.total === 0) {
+    lines.push("No proof requirements are recorded on this angle.");
+  } else if (gaps === 0) {
+    lines.push("Every proof is in hand — nothing is blocking it.");
+  } else if (gaps === 1) {
+    lines.push("One thing away from pitchable.");
+  } else {
+    lines.push(`${gaps} things away from pitchable.`);
+  }
+
+  const weakest = weakestAxis(angle);
+  lines.push(
+    `Priority ${angle.priority} · readiness ${pitchReadiness(angle)} · weakest signal: ${weakest.label} ${scoreValue(angle, weakest.key)}.`,
+  );
+
+  if (angle.action_reason) lines.push(angle.action_reason);
+
+  if (options.soonestDeadline && options.soonestDeadline.urgency !== "past") {
+    lines.push(
+      `A journalist is asking for this and their window ${options.soonestDeadline.label.toLowerCase()} — deadlines outrank everything.`,
+    );
+  } else if (options.linkedRequests && options.linkedRequests > 0) {
+    lines.push(
+      `${options.linkedRequests} journalist request${options.linkedRequests === 1 ? "" : "s"} points at this angle.`,
+    );
+  }
+
+  return lines;
 }

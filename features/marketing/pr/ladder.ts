@@ -50,6 +50,8 @@ export interface LadderRead {
   unevidenced: number;
   /** jsonb entries no reader could understand, across all three columns. */
   malformed: number;
+  /** Those entries verbatim, so their content is shown rather than dropped. */
+  malformedRaw: string[];
 }
 
 export function readLadder(angle: StoryAngle): LadderRead {
@@ -60,14 +62,34 @@ export function readLadder(angle: StoryAngle): LadderRead {
   const missingByKey = new Map(missing.items.map((item) => [item.key, item]));
   const refsByKey = new Map(refs.items.map((item) => [item.key, item]));
 
-  const rungs: LadderRung[] = proof.items.map((item) => ({
-    key: item.key,
-    label: item.label,
-    kind: item.kind,
-    note: item.note,
-    missing: missingByKey.get(item.key) ?? null,
-    evidence: refsByKey.get(item.key) ?? null,
-  }));
+  const rungs: LadderRung[] = proof.items.map((item) => {
+    const named = missingByKey.get(item.key) ?? null;
+    /**
+     * An explicit `satisfied: false` on the requirement is a gap even when
+     * `missing_evidence` never named it. Silence is different: silence lets
+     * `missing_evidence` decide. A requirement the payload says is NOT met must
+     * never render as a green tick.
+     */
+    const declaredGap =
+      named === null && item.satisfied === false
+        ? {
+            key: item.key,
+            label: item.label,
+            how_to_get:
+              "Recorded as not yet satisfied, with no path attached. Ask whoever owns this requirement what would close it.",
+            owner: "you" as const,
+            effort: "medium" as const,
+          }
+        : null;
+    return {
+      key: item.key,
+      label: item.label,
+      kind: item.kind,
+      note: item.note,
+      missing: named ?? declaredGap,
+      evidence: refsByKey.get(item.key) ?? null,
+    };
+  });
 
   // A gap the analysis named without listing it as a required proof is still a
   // gap. Dropping it would hide the honest part.
@@ -109,6 +131,11 @@ export function readLadder(angle: StoryAngle): LadderRead {
     total: rungs.length,
     unevidenced,
     malformed: proof.malformed + missing.malformed + refs.malformed,
+    malformedRaw: [
+      ...proof.malformedRaw,
+      ...missing.malformedRaw,
+      ...refs.malformedRaw,
+    ],
   };
 }
 

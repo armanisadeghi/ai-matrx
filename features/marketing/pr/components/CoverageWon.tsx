@@ -12,29 +12,33 @@
  *
  * Every author is a `crm.party` when the discovery pipeline resolved one
  * (`author_party_id`), so the journalist who wrote about you is one click from
- * the piece they wrote (THE DOOR LAW).
+ * the piece they wrote. When it did not, the author is an unresolved reference
+ * carrying its own "add to CRM" fix (THE DOOR LAW).
  */
 
 import { ArrowUpRight, ExternalLink, Link2, Link2Off } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/lib/utils";
 import { formatDateOnly } from "@/features/marketing/components/shared/MarketingUi";
-import { angleIdFromMention } from "@/features/marketing/pr/refine/data";
+import { JournalistRef } from "@/features/marketing/pr/components/JournalistRef";
+import { angleIdFromMention } from "@/features/marketing/pr/data";
 import type {
   CoverageMention,
   StoryAngle,
-} from "@/features/marketing/pr/refine/types";
+} from "@/features/marketing/pr/types";
 
 export function CoverageWon({
   coverage,
   angles,
   onOpenAngle,
+  focusedId,
 }: {
   coverage: readonly CoverageMention[];
   angles: readonly StoryAngle[];
   onOpenAngle: (angleId: string) => void;
+  /** The coverage row named in the URL, so a deep link lands somewhere visible. */
+  focusedId: string | null;
 }) {
   const angleById = new Map(angles.map((angle) => [angle.id, angle]));
 
@@ -68,7 +72,12 @@ export function CoverageWon({
             return (
               <li
                 key={mention.id}
-                className="flex min-w-0 items-start gap-3 border-b border-border px-3 py-2 last:border-b-0"
+                data-coverage-id={mention.id}
+                className={cn(
+                  "flex min-w-0 items-start gap-3 border-b border-border px-3 py-2 last:border-b-0",
+                  focusedId === mention.id &&
+                    "scroll-mt-4 bg-primary/5 ring-1 ring-inset ring-primary/30",
+                )}
               >
                 <span className="w-16 shrink-0 pt-0.5 text-[11px] tabular-nums text-muted-foreground">
                   {formatDateOnly(mention.published_at)}
@@ -89,23 +98,13 @@ export function CoverageWon({
                     <span className="shrink-0 font-medium text-foreground">
                       {mention.domain}
                     </span>
-                    {mention.author_party_id ? (
-                      <EntityRef
-                        token="party"
-                        id={mention.author_party_id}
-                        name={mention.author_name ?? "Author"}
-                        showIcon={false}
-                        openInNewTab
-                        className="min-w-0 shrink-0"
-                      />
-                    ) : mention.author_name ? (
-                      <span
-                        className="shrink-0"
-                        title="This author is not in your CRM yet, so there is no contact record to open."
-                      >
-                        {mention.author_name}
-                      </span>
-                    ) : null}
+                    <JournalistRef
+                      name={mention.author_name}
+                      partyId={mention.author_party_id}
+                      emptyLabel="No author named"
+                      compact
+                      className="shrink-0"
+                    />
                     {angle ? (
                       <button
                         type="button"
@@ -113,12 +112,13 @@ export function CoverageWon({
                         className="inline-flex min-w-0 shrink items-center gap-1 text-primary hover:underline"
                       >
                         <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden />
-                        <span className="truncate">
-                          From: {angle.headline}
-                        </span>
+                        <span className="truncate">From: {angle.headline}</span>
                       </button>
                     ) : (
-                      <span className="shrink-0 text-muted-foreground/80">
+                      <span
+                        className="shrink-0 text-muted-foreground/80"
+                        title="coverage_mention has no foreign key to story_angle; the tie lives in metadata.story_angle_id and none was recorded here."
+                      >
                         No angle recorded for this piece
                       </span>
                     )}

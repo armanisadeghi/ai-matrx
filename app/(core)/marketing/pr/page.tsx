@@ -1,9 +1,22 @@
+// app/(core)/marketing/pr/page.tsx
+//
+// THE PRESS ROOM — the hub for the Press & PR pillar of the marketing platform.
+//
+// Server Component. It owns route chrome and nothing else; everything
+// interactive lives in `features/marketing/pr/`. The workspace reads its whole
+// state from the URL (`?brand`, `?site`, `?view`, `?focus`, `?data`), so this
+// route needs no props and no server-side branch.
+//
+// `(core)` route conventions: chrome via <PageHeader>, `pr-14` on the header
+// row to clear the shell's fixed 44px user-menu avatar, and a Suspense boundary
+// because the workspace reads search params on the client.
+
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import PressRoomWorkspace from "@/features/marketing/pr/refine/PressRoomWorkspace";
+import PressRoomWorkspace from "@/features/marketing/pr/PressRoomWorkspace";
 
 export const metadata: Metadata = {
   title: "Press Room",

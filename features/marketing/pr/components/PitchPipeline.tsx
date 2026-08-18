@@ -14,11 +14,11 @@
  */
 
 import { cn } from "@/lib/utils";
-import { pitchReadiness } from "@/features/marketing/pr/refine/scoring";
+import { pitchReadiness } from "@/features/marketing/pr/scoring";
 import {
   ANGLE_STATUS_LABELS,
   type StoryAngle,
-} from "@/features/marketing/pr/refine/types";
+} from "@/features/marketing/pr/types";
 
 const STAGES = [
   {

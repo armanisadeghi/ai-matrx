@@ -8,20 +8,26 @@
  *
  * Deliberate choices:
  *  • The filter set is a visible segmented row, not a dropdown. A press queue
- *    where "needs your input" is hidden behind a menu is a queue where the
- *    expert never answers the question that unblocks three angles.
- *  • Expansion happens inside the row. Content grows DOWNWARD only, so nothing
- *    above the click point moves.
+ *    where "needs you" is hidden behind a menu is a queue where the expert
+ *    never answers the question that unblocks three angles.
+ *  • The DEFAULT view is live work, and live work is mostly angles with proof
+ *    still to gather (backend fact 1). That is the product working, not a
+ *    backlog — the copy and the colour say so.
+ *  • Expansion happens inside the row and grows DOWNWARD only, so nothing above
+ *    the click point moves.
  *  • Every row keeps its footprint whether expanded or not — fixed-width score
- *    meter, fixed-width action chip, tabular numbers.
+ *    comb, fixed-width action chip, tabular numbers.
+ *  • ↑/↓ walk the queue and Escape closes the open row, so a queue of thirty is
+ *    workable without the mouse.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   CircleDot,
   Clock3,
   FileSearch,
+  Link2,
   MessageSquareQuote,
   PauseCircle,
   Send,
@@ -36,14 +42,19 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
 import { formatDateOnly } from "@/features/marketing/components/shared/MarketingUi";
 import {
-  ProofChecklist,
+  EvidenceLadder,
   ProofPill,
-} from "@/features/marketing/pr/refine/components/ProofChecklist";
+} from "@/features/marketing/pr/components/EvidenceLadder";
 import {
   ScoreBreakdown,
-  ScoreMeter,
-} from "@/features/marketing/pr/refine/components/ScoreMeter";
-import { pitchReadiness, rankAngles } from "@/features/marketing/pr/refine/scoring";
+  ScoreComb,
+} from "@/features/marketing/pr/components/ScoreComb";
+import { readLadder } from "@/features/marketing/pr/ladder";
+import {
+  isQuickWin,
+  pitchReadiness,
+  rankAngles,
+} from "@/features/marketing/pr/scoring";
 import {
   ACTION_COPY,
   ANGLE_STATUS_LABELS,
@@ -51,11 +62,10 @@ import {
   ENDOWMENT_COPY,
   OUTLET_KIND_LABELS,
   humanize,
-  jsonRecords,
-  jsonText,
+  readFacts,
   type SourceRequest,
   type StoryAngle,
-} from "@/features/marketing/pr/refine/types";
+} from "@/features/marketing/pr/types";
 
 // ─── Views ──────────────────────────────────────────────────────────────────
 
@@ -71,7 +81,7 @@ export const ANGLE_VIEWS: readonly AngleView[] = [
   {
     id: "live",
     label: "Live work",
-    hint: "Everything not yet pitched, parked, or dismissed",
+    hint: "Everything in play. Most of it is building proof — that is the product working, not a backlog.",
     matches: (angle) =>
       ["proposed", "accepted", "developing"].includes(angle.status) &&
       angle.recommended_action !== "park",
@@ -79,19 +89,25 @@ export const ANGLE_VIEWS: readonly AngleView[] = [
   {
     id: "ready",
     label: "Ready to pitch",
-    hint: "Provable now — a journalist could be emailed today",
+    hint: "Nothing outstanding: no missing evidence, no unmet proof, no contradiction. A journalist could be emailed today.",
     matches: (angle) => angle.recommended_action === "pitch_now",
   },
   {
     id: "proof",
-    label: "Needs proof",
-    hint: "Good angles waiting on evidence you can go and get",
+    label: "Building proof",
+    hint: "The normal state of a live angle: the story is real and the evidence is being assembled.",
     matches: (angle) => angle.recommended_action === "develop_evidence",
+  },
+  {
+    id: "quick",
+    label: "One thing away",
+    hint: "A single gap between these and pitchable — the cheapest work on the page.",
+    matches: isQuickWin,
   },
   {
     id: "you",
     label: "Needs you",
-    hint: "Blocked on your expert judgment — nobody else can answer these",
+    hint: "Blocked on your expert judgment — nobody else can answer these.",
     matches: (angle) =>
       angle.recommended_action === "needs_expert_input" ||
       angle.requires_human_review,
@@ -99,7 +115,7 @@ export const ANGLE_VIEWS: readonly AngleView[] = [
   {
     id: "all",
     label: "All angles",
-    hint: "Including parked and dismissed",
+    hint: "Including parked and dismissed.",
     matches: () => true,
   },
 ];
@@ -122,10 +138,10 @@ const ACTION_TONE = {
 
 function ActionChip({ action }: { action: string }) {
   const copy = ACTION_COPY[action];
-  const Icon =
-    ACTION_ICON[action as keyof typeof ACTION_ICON] ?? CircleDot;
+  const Icon = ACTION_ICON[action as keyof typeof ACTION_ICON] ?? CircleDot;
   return (
     <span
+      title={copy?.meaning}
       className={cn(
         "inline-flex w-[124px] shrink-0 items-center gap-1.5 rounded-md border px-1.5 py-1 text-[11px] font-medium",
         ACTION_TONE[copy?.tone ?? "off"],
@@ -146,6 +162,9 @@ function AngleRow({
   onToggle,
   linkedRequests,
   onOpenRequest,
+  onRule,
+  onHoldEvidence,
+  shareHref,
 }: {
   angle: StoryAngle;
   rank: number;
@@ -153,10 +172,14 @@ function AngleRow({
   onToggle: () => void;
   linkedRequests: readonly SourceRequest[];
   onOpenRequest: (requestId: string) => void;
+  onRule: (status: string) => void;
+  onHoldEvidence: (proofKey: string) => void;
+  /** A real URL for this row — shareable, reload-safe, new-tab-able. */
+  shareHref: string;
 }) {
   const ref = useRef<HTMLLIElement>(null);
   const endowment = ENDOWMENT_COPY[angle.endowment];
-  const facts = jsonRecords(angle.facts);
+  const facts = readFacts(angle.facts);
   const actionCopy = ACTION_COPY[angle.recommended_action];
 
   useEffect(() => {
@@ -168,6 +191,7 @@ function AngleRow({
   return (
     <li
       ref={ref}
+      data-angle-id={angle.id}
       className={cn(
         "min-w-0 border-b border-border last:border-b-0",
         expanded && "bg-muted/30",
@@ -189,7 +213,10 @@ function AngleRow({
           </span>
           <span className="mt-0.5 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             {endowment ? (
-              <span className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground">
+              <span
+                title={endowment.blurb}
+                className="shrink-0 rounded bg-accent px-1.5 py-0.5 text-[10px] font-medium text-accent-foreground"
+              >
                 {endowment.label}
               </span>
             ) : null}
@@ -211,10 +238,13 @@ function AngleRow({
           </span>
         </span>
         <span className="flex shrink-0 items-center gap-2 pt-0.5">
-          <Badge variant="outline" className="hidden shrink-0 text-[10px] sm:inline-flex">
+          <Badge
+            variant="outline"
+            className="hidden shrink-0 text-[10px] sm:inline-flex"
+          >
             {ANGLE_STATUS_LABELS[angle.status] ?? humanize(angle.status)}
           </Badge>
-          <ScoreMeter angle={angle} />
+          <ScoreComb angle={angle} />
           <ChevronDown
             className={cn(
               "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
@@ -226,7 +256,7 @@ function AngleRow({
       </button>
 
       {expanded ? (
-        <div className="grid gap-4 border-t border-border px-3 py-3 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="grid gap-4 border-t border-border px-3 py-3 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="min-w-0 space-y-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -255,23 +285,29 @@ function AngleRow({
               </p>
             )}
 
-            {facts.length > 0 ? (
+            {facts.items.length > 0 ? (
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                   Facts this rests on
                 </p>
                 <ul className="mt-1 space-y-0.5">
-                  {facts.map((fact, index) => (
+                  {facts.items.map((fact, index) => (
                     <li
                       key={`fact-${index}`}
                       className="flex gap-1.5 text-[11px] leading-4 text-foreground"
                     >
                       <span className="text-muted-foreground">•</span>
-                      {jsonText(fact, "statement", "label", "fact", "text") ??
-                        "Unlabelled fact"}
+                      {fact.statement}
                     </li>
                   ))}
                 </ul>
+                {facts.malformed > 0 ? (
+                  <p className="mt-1 text-[10px] text-amber-700 dark:text-amber-300">
+                    {facts.malformed} fact{facts.malformed === 1 ? "" : "s"} could
+                    not be read and {facts.malformed === 1 ? "is" : "are"} not
+                    listed.
+                  </p>
+                ) : null}
               </div>
             ) : null}
 
@@ -280,7 +316,7 @@ function AngleRow({
                 Proof a journalist will ask for
               </p>
               <div className="mt-1.5">
-                <ProofChecklist angle={angle} />
+                <EvidenceLadder angle={angle} onHoldEvidence={onHoldEvidence} />
               </div>
             </div>
 
@@ -329,9 +365,35 @@ function AngleRow({
                   "No reasoning was recorded for this recommendation."}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                <Button size="sm" className="h-7 text-[11px]" disabled>
-                  {actionCopy?.verb ?? "Act on this"}
-                </Button>
+                {angle.status !== "accepted" && angle.status !== "developing" ? (
+                  <Button
+                    size="sm"
+                    className="h-7 text-[11px]"
+                    onClick={() => onRule("accepted")}
+                  >
+                    Accept this angle
+                  </Button>
+                ) : null}
+                {angle.status !== "pitched" && angle.status !== "landed" ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    onClick={() => onRule("pitched")}
+                  >
+                    Mark pitched
+                  </Button>
+                ) : null}
+                {angle.status !== "dismissed" ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-[11px] text-muted-foreground"
+                    onClick={() => onRule("dismissed")}
+                  >
+                    Dismiss
+                  </Button>
+                ) : null}
                 <CopyButtons
                   size="icon"
                   label={`Angle: ${angle.headline}`}
@@ -350,10 +412,11 @@ function AngleRow({
                   json={() => angle}
                 />
               </div>
-              <p className="mt-1 text-[10px] leading-4 text-muted-foreground">
-                Acting on an angle writes back to `seo.story_angle` — not wired
-                on this surface yet, so the button is disabled rather than
-                pretending. Copy the angle to hand it to an agent meanwhile.
+              <p className="mt-1.5 text-[10px] leading-4 text-muted-foreground">
+                A ruling applies across this whole page immediately. It is held
+                in this session only — there is no write path to{" "}
+                <span className="font-mono">seo.story_angle</span> from here yet,
+                and the status bar at the top says so while any are outstanding.
               </p>
             </div>
 
@@ -415,6 +478,30 @@ function AngleRow({
                   />
                 </dd>
               </div>
+              <div className="col-span-2 min-w-0">
+                <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  This angle
+                </dt>
+                <dd className="min-w-0">
+                  {/* `seo.story_angle` has no entry in the shared entity
+                      registry, and that file is not ours to edit — so the door
+                      is an EXPLICIT href onto this same page, focused on this
+                      row. Shareable, bookmarkable, reload-safe. */}
+                  <EntityRef
+                    token="seo_story_angle"
+                    id={angle.id}
+                    href={shareHref}
+                    name="Link to this angle"
+                    showIcon={false}
+                    alwaysShowActions
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      <Link2 className="h-3 w-3" aria-hidden />
+                      Link to this angle
+                    </span>
+                  </EntityRef>
+                </dd>
+              </div>
             </dl>
           </div>
         </div>
@@ -424,9 +511,10 @@ function AngleRow({
 }
 
 function angleAsText(angle: StoryAngle): string {
-  const missing = jsonRecords(angle.missing_evidence)
-    .map((record) => jsonText(record, "label", "requirement", "claim"))
-    .filter((value): value is string => value !== null);
+  const read = readLadder(angle);
+  const gaps = read.rungs
+    .filter((rung) => rung.missing)
+    .map((rung) => `${rung.label} — ${rung.missing?.how_to_get ?? ""}`.trim());
   return [
     `HEADLINE: ${angle.headline}`,
     `Angle type: ${ANGLE_TYPE_LABELS[angle.angle_type] ?? angle.angle_type}`,
@@ -439,10 +527,9 @@ function angleAsText(angle: StoryAngle): string {
     angle.summary,
     "",
     angle.why_now ? `WHY NOW: ${angle.why_now}` : null,
-    `Pitch readiness ${pitchReadiness(angle)}/100 (newsworthy ${angle.newsworthiness}, proven ${angle.evidence_quality}, timely ${angle.timeliness}, confident ${angle.confidence})`,
-    missing.length
-      ? `STILL NEEDED: ${missing.join("; ")}`
-      : "All required proof is in hand.",
+    `Pitch readiness ${pitchReadiness(angle)}/100 (newsworthy ${angle.newsworthiness}, proven ${angle.evidence_quality}, timely ${angle.timeliness}, confident ${angle.confidence}, priority ${angle.priority})`,
+    `Proof: ${read.held} of ${read.total} in hand.`,
+    gaps.length ? `STILL NEEDED:\n- ${gaps.join("\n- ")}` : null,
   ]
     .filter((line): line is string => line !== null)
     .join("\n");
@@ -458,30 +545,33 @@ export function StoryAngleQueue({
   onViewChange,
   expandedAngleId,
   onExpandAngle,
+  onRuleAngle,
+  onHoldEvidence,
+  angleHref,
 }: {
   angles: readonly StoryAngle[];
   requests: readonly SourceRequest[];
   onOpenRequest: (requestId: string) => void;
   /**
-   * The active filter is CONTROLLED by the workspace so the summary tiles above
-   * are real doors into this queue rather than decoration that reports a number
-   * and then leaves the user to find those rows themselves.
+   * The active filter is CONTROLLED by the workspace (and lives in the URL) so
+   * the summary tiles above are real doors into this queue rather than
+   * decoration that reports a number and leaves the user to find those rows.
    */
   viewId: string;
   onViewChange: (viewId: string) => void;
   /**
    * Which angle is open, owned by the workspace so the pipeline board and the
-   * coverage log can open one from outside. Controlled rather than synced in an
-   * effect: an effect that mirrors a prop into state is a second source of
-   * truth and a cascading render.
+   * coverage log can open one from outside, and so it survives a reload.
    */
   expandedAngleId: string | null;
   onExpandAngle: (angleId: string | null) => void;
+  onRuleAngle: (angleId: string, status: string) => void;
+  onHoldEvidence: (angleId: string, proofKey: string) => void;
+  angleHref: (angleId: string) => string;
 }) {
   const [search, setSearch] = useState("");
 
-  const view =
-    ANGLE_VIEWS.find((entry) => entry.id === viewId) ?? ANGLE_VIEWS[0];
+  const view = ANGLE_VIEWS.find((entry) => entry.id === viewId) ?? ANGLE_VIEWS[0];
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};
@@ -520,6 +610,61 @@ export function StoryAngleQueue({
     return rankAngles(filtered);
   }, [angles, search, view, expandedAngleId]);
 
+  /**
+   * ↑/↓ walk the queue, Escape closes the open row. Suppressed while the user
+   * is typing so the search field keeps its own arrow keys.
+   */
+  const move = useCallback(
+    (step: 1 | -1) => {
+      if (rows.length === 0) return;
+      const index = expandedAngleId
+        ? rows.findIndex((angle) => angle.id === expandedAngleId)
+        : -1;
+      const next =
+        index === -1
+          ? step === 1
+            ? 0
+            : rows.length - 1
+          : Math.min(Math.max(index + step, 0), rows.length - 1);
+      onExpandAngle(rows[next].id);
+    },
+    [rows, expandedAngleId, onExpandAngle],
+  );
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        !!target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable);
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+      if (event.key === "Escape") {
+        if (typing) {
+          (target as HTMLInputElement).blur();
+          return;
+        }
+        if (expandedAngleId) {
+          event.preventDefault();
+          onExpandAngle(null);
+        }
+        return;
+      }
+      if (typing) return;
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        move(1);
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        move(-1);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [move, expandedAngleId, onExpandAngle]);
+
   return (
     <div className="flex min-w-0 flex-col rounded-lg border border-border bg-card">
       <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
@@ -557,8 +702,11 @@ export function StoryAngleQueue({
         />
       </div>
 
-      <p className="border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-        {view.hint}
+      <p className="flex flex-wrap items-center gap-x-2 border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">
+        <span className="min-w-0">{view.hint}</span>
+        <span className="ml-auto shrink-0 text-[10px] text-muted-foreground/80">
+          ↑ ↓ to walk · Esc to close
+        </span>
       </p>
 
       {rows.length === 0 ? (
@@ -571,7 +719,9 @@ export function StoryAngleQueue({
           <p className="mx-auto mt-1 max-w-md text-[11px] leading-4 text-muted-foreground">
             {search
               ? "Try a broader term, or switch to All angles."
-              : "That is a real answer, not an error — the other views may still have work waiting."}
+              : viewId === "ready"
+                ? "Nothing is fully provable today. That is normal — an angle only reaches “ready” once every proof is in hand, so the work is in Building proof."
+                : "That is a real answer, not an error — the other views may still have work waiting."}
           </p>
           {viewId !== "all" ? (
             <Button
@@ -579,11 +729,11 @@ export function StoryAngleQueue({
               variant="outline"
               className="mt-3 h-7 text-[11px]"
               onClick={() => {
-                onViewChange("all");
+                onViewChange(viewId === "ready" ? "proof" : "all");
                 setSearch("");
               }}
             >
-              Show all angles
+              {viewId === "ready" ? "Show what is building proof" : "Show all angles"}
             </Button>
           ) : null}
         </div>
@@ -600,6 +750,9 @@ export function StoryAngleQueue({
               }
               linkedRequests={requestsByAngle.get(angle.id) ?? []}
               onOpenRequest={onOpenRequest}
+              onRule={(status) => onRuleAngle(angle.id, status)}
+              onHoldEvidence={(key) => onHoldEvidence(angle.id, key)}
+              shareHref={angleHref(angle.id)}
             />
           ))}
         </ul>

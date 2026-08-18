@@ -16,14 +16,18 @@
  * the pitch board), Prezly (the coverage log).
  *
  * House rules it follows rather than reinvents: `PageHeader` route chrome,
- * `bg-textured` body, `SectionCard`-shaped panels, `MetricCell` KPIs,
- * `LoadingSurface` / `QueryError` / `InlineQueryError` states, `EntityRef`
- * doors, `CopyButtons` on anything worth handing to an agent.
+ * `bg-textured` body, `MetricCell` KPIs, `LoadingSurface` / `QueryError` /
+ * `InlineQueryError` states, `EntityRef` doors, `CopyButtons` on anything worth
+ * handing to an agent, `useBrandSites` / `useVisibleBrandOptions` for scope.
+ *
+ * Scope first: the first persona is an agency operator running press for
+ * several client businesses, so a hub that cannot say WHICH business cannot
+ * serve them. Brand and site live in the URL beside the open row and the forced
+ * load state, so every screen here is shareable and reload-safe.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlarmClock,
   Building2,
@@ -32,6 +36,7 @@ import {
   Globe,
   Newspaper,
   Send,
+  TriangleAlert,
   Trophy,
 } from "lucide-react";
 
@@ -56,41 +61,30 @@ import {
   useBrandSites,
   useVisibleBrandOptions,
 } from "@/features/marketing/data/hooks";
-import { useMinuteClock, usePressRoom } from "@/features/marketing/pr/refine/data";
-import { CoverageWon } from "@/features/marketing/pr/refine/components/CoverageWon";
-import { PitchPipeline } from "@/features/marketing/pr/refine/components/PitchPipeline";
-import { SourceRequestRail } from "@/features/marketing/pr/refine/components/SourceRequestRail";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import {
+  applyAngleRulings,
+  applyRequestRulings,
+  useMinuteClock,
+  usePressRoom,
+  usePressRoomRulings,
+  type PressRoomData,
+} from "@/features/marketing/pr/data";
+import {
+  SCENARIO_COPY,
+  usePressRoomUrl,
+  type PressRoomScenario,
+} from "@/features/marketing/pr/routes";
+import { CoverageWon } from "@/features/marketing/pr/components/CoverageWon";
+import { PitchPipeline } from "@/features/marketing/pr/components/PitchPipeline";
+import { SourceRequestRail } from "@/features/marketing/pr/components/SourceRequestRail";
 import {
   ANGLE_VIEWS,
   StoryAngleQueue,
-} from "@/features/marketing/pr/refine/components/StoryAngleQueue";
-import { deadlineState, proofProgress } from "@/features/marketing/pr/refine/scoring";
-import type { StoryAngle } from "@/features/marketing/pr/refine/types";
-
-/** URL-synced brand + site selection: shareable and reload-safe. */
-function useUrlSelection() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const brandId = searchParams.get("brand") ?? "";
-  const siteId = searchParams.get("site") ?? "";
-  const set = useCallback(
-    (next: { brand?: string; site?: string }) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (next.brand !== undefined) {
-        if (next.brand) params.set("brand", next.brand);
-        else params.delete("brand");
-        params.delete("site");
-      }
-      if (next.site !== undefined) {
-        if (next.site) params.set("site", next.site);
-        else params.delete("site");
-      }
-      router.replace(`?${params.toString()}`, { scroll: false });
-    },
-    [router, searchParams],
-  );
-  return { brandId, siteId, set };
-}
+} from "@/features/marketing/pr/components/StoryAngleQueue";
+import { readLadder } from "@/features/marketing/pr/ladder";
+import { deadlineState } from "@/features/marketing/pr/scoring";
+import { isAnswerable, type StoryAngle } from "@/features/marketing/pr/types";
 
 function Banner({
   tone,
@@ -136,14 +130,12 @@ function Banner({
 }
 
 export default function PressRoomWorkspace() {
-  const { brandId, siteId, set } = useUrlSelection();
+  const { brandId, siteId, viewId, focus, scenario, set, href } =
+    usePressRoomUrl();
   const brands = useVisibleBrandOptions();
   const sites = useBrandSites(brandId);
   const now = useMinuteClock();
-
-  const [viewId, setViewId] = useState<string>("live");
-  const [expandedAngleId, setExpandedAngleId] = useState<string | null>(null);
-  const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
+  const rulings = usePressRoomRulings();
 
   // Default to the first brand / first site once options load; the URL wins.
   useEffect(() => {
@@ -157,29 +149,59 @@ export default function PressRoomWorkspace() {
     }
   }, [brandId, siteId, sites.data, set]);
 
-  const press = usePressRoom(siteId);
-  const { angles, requests, coverage } = press;
+  const press = usePressRoom(siteId, scenario);
+
+  // Rulings are applied OVER the loaded rows so the queue, the funnel, the KPI
+  // strip and the readiness numbers all move together the moment one is made.
+  const angles = useMemo(
+    () => applyAngleRulings(press.angles, rulings.rulings),
+    [press.angles, rulings.rulings],
+  );
+  const requests = useMemo(
+    () => applyRequestRulings(press.requests, rulings.rulings),
+    [press.requests, rulings.rulings],
+  );
+  const coverage = press.coverage;
+
+  const expandedAngleId = focus?.kind === "angle" ? focus.id : null;
+  const selectedRequestId = focus?.kind === "request" ? focus.id : null;
+  const focusedCoverageId = focus?.kind === "coverage" ? focus.id : null;
+
+  // A deep link to a request or a piece of coverage has to LAND somewhere the
+  // user can see, not just set a highlight below the fold.
+  useEffect(() => {
+    if (!focus || focus.kind === "angle") return;
+    const anchor =
+      focus.kind === "request"
+        ? document.getElementById("press-requests")
+        : document.querySelector(`[data-coverage-id="${focus.id}"]`);
+    anchor?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [focus]);
 
   /**
    * The door every other panel uses to reach an angle. Widening the filter is
    * done HERE, in the event handler that opened it — never in an effect
-   * watching a prop.
+   * watching a prop — and both halves land in ONE URL patch so the back button
+   * gets one entry, not two.
    */
-  const openAngle = useCallback((angleId: string) => {
-    setViewId("all");
-    setExpandedAngleId(angleId);
-  }, []);
+  const openAngle = useCallback(
+    (angleId: string) => {
+      set({ view: "all", focus: { kind: "angle", id: angleId } });
+    },
+    [set],
+  );
 
   const stats = useMemo(() => {
     const countFor = (id: string) => {
       const view = ANGLE_VIEWS.find((entry) => entry.id === id);
       return view ? angles.filter((angle) => view.matches(angle)).length : 0;
     };
-    const outstandingProofs = angles.reduce(
-      (sum, angle) => sum + proofProgress(angle).missing,
-      0,
-    );
+    const outstandingProofs = angles.reduce((sum, angle) => {
+      const read = readLadder(angle);
+      return sum + (read.total - read.held);
+    }, 0);
     const closingSoon = requests.filter((request) => {
+      if (!isAnswerable(request)) return false;
       const state = deadlineState(request.deadline_at, now);
       return state.urgency === "critical" || state.urgency === "urgent";
     }).length;
@@ -189,6 +211,7 @@ export default function PressRoomWorkspace() {
     return {
       ready: countFor("ready"),
       proof: countFor("proof"),
+      quick: countFor("quick"),
       you: countFor("you"),
       outstandingProofs,
       closingSoon,
@@ -200,24 +223,27 @@ export default function PressRoomWorkspace() {
   const selectedBrand = brands.data?.find((brand) => brand.id === brandId);
   const selectedSite = sites.data?.find((site) => site.id === siteId);
 
+  const snapshot = useMemo(
+    () => ({ ...press, angles, requests, coverage }),
+    [press, angles, requests, coverage],
+  );
+
   return (
     <div className="h-full overflow-y-auto bg-textured">
       <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3 p-3">
         {/* ── Scope picker ─────────────────────────────────────────────── */}
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <Building2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Building2
+            className="size-4 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
           <Label htmlFor="press-brand" className="text-xs text-muted-foreground">
             Business
           </Label>
-          <Select
-            value={brandId}
-            onValueChange={(value) => set({ brand: value })}
-          >
+          <Select value={brandId} onValueChange={(value) => set({ brand: value })}>
             <SelectTrigger id="press-brand" className="h-8 w-56">
               <SelectValue
-                placeholder={
-                  brands.isLoading ? "Loading…" : "Select a business"
-                }
+                placeholder={brands.isLoading ? "Loading…" : "Select a business"}
               />
             </SelectTrigger>
             <SelectContent>
@@ -229,7 +255,10 @@ export default function PressRoomWorkspace() {
             </SelectContent>
           </Select>
 
-          <Globe className="ml-2 size-4 shrink-0 text-muted-foreground" aria-hidden />
+          <Globe
+            className="ml-2 size-4 shrink-0 text-muted-foreground"
+            aria-hidden
+          />
           <Label htmlFor="press-site" className="text-xs text-muted-foreground">
             Site
           </Label>
@@ -269,20 +298,60 @@ export default function PressRoomWorkspace() {
             <CopyButtons
               size="sm"
               label="Press room"
-              human={() => pressRoomAsText(press, selectedBrand?.name ?? null)}
+              human={() => pressRoomAsText(snapshot, selectedBrand?.name ?? null)}
               agent={() => ({
                 kind: "press-room-snapshot",
                 location: "AI Matrx — Marketing — Press Room",
                 description:
                   "Every story angle, journalist request and piece of coverage on this business's press room.",
                 data: { angles, requests, coverage },
-                summary: pressRoomAsText(press, selectedBrand?.name ?? null),
+                summary: pressRoomAsText(snapshot, selectedBrand?.name ?? null),
                 attributes: { site_id: siteId },
               })}
               json={() => ({ angles, requests, coverage })}
             />
           </div>
         </div>
+
+        {/* ── Status bar: the honest line about anything held in memory ── */}
+        {rulings.count > 0 ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-[11px] text-amber-700 dark:text-amber-300">
+            <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span className="min-w-0">
+              {rulings.count} ruling{rulings.count === 1 ? "" : "s"} held in this
+              session — accepting, pitching, dismissing and &ldquo;I have
+              this&rdquo; all recompute the page, but there is no write path to{" "}
+              <span className="font-mono text-[10px]">seo.story_angle</span> or{" "}
+              <span className="font-mono text-[10px]">seo.source_request</span>{" "}
+              from this surface yet, so a reload loses them.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-auto h-6 shrink-0 text-[10px]"
+              onClick={rulings.discard}
+            >
+              Discard them
+            </Button>
+          </div>
+        ) : null}
+
+        {/* ── Forced load state, on the real route ─────────────────────── */}
+        {press.forcedScenario ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-[11px] text-muted-foreground">
+            <FlaskConical className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            <span className="min-w-0">
+              <span className="font-semibold text-foreground">
+                {SCENARIO_COPY[press.forcedScenario].label}
+              </span>{" "}
+              — {SCENARIO_COPY[press.forcedScenario].blurb} Nothing was read from
+              the database.
+            </span>
+            <Button asChild size="sm" variant="outline" className="ml-auto h-6 text-[10px]">
+              <Link href={href({ scenario: "live" })}>Back to live data</Link>
+            </Button>
+          </div>
+        ) : null}
 
         {brands.isError ? (
           <InlineQueryError
@@ -340,11 +409,13 @@ export default function PressRoomWorkspace() {
                 tone="sample"
                 icon={<FlaskConical className="h-4 w-4" />}
                 title={
-                  siteId
-                    ? "Sample press room — nothing has been analysed for this site yet"
-                    : hasNoBrands
-                      ? "Sample press room — you have no businesses set up yet"
-                      : "Sample press room — pick a business and site above to load your own"
+                  press.forcedScenario === "ready"
+                    ? "Sample press room — forced by ?data=ready"
+                    : siteId
+                      ? "Sample press room — nothing has been analysed for this site yet"
+                      : hasNoBrands
+                        ? "Sample press room — you have no businesses set up yet"
+                        : "Sample press room — pick a business and site above to load your own"
                 }
                 action={
                   hasNoBrands ? (
@@ -354,7 +425,7 @@ export default function PressRoomWorkspace() {
                       variant="outline"
                       className="h-7 text-[11px]"
                     >
-                      <Link href="/marketing/brands">Add a business</Link>
+                      <Link href={marketingRoutes.brands()}>Add a business</Link>
                     </Button>
                   ) : null
                 }
@@ -364,7 +435,9 @@ export default function PressRoomWorkspace() {
                   {press.sampleBrandName}
                 </span>
                 , a stand-in business, and is here to show what this surface
-                looks like with work in it. Your own analysis writes to{" "}
+                looks like with work in it. Most of its angles are still
+                gathering proof, which is what a healthy account looks like. Your
+                own analysis writes to{" "}
                 <span className="font-mono text-[10px]">seo.story_angle</span>{" "}
                 and replaces all of it.
               </Banner>
@@ -375,19 +448,28 @@ export default function PressRoomWorkspace() {
               <KpiDoor
                 label="Ready to pitch"
                 value={stats.ready}
-                detail="Provable today"
+                detail="Nothing outstanding"
                 icon={<Send className="h-4 w-4" />}
                 tone={stats.ready > 0 ? "good" : "default"}
                 active={viewId === "ready"}
-                onClick={() => setViewId("ready")}
+                onClick={() => set({ view: "ready" })}
               />
               <KpiDoor
-                label="Needs proof"
+                label="Building proof"
                 value={stats.proof}
-                detail={`${stats.outstandingProofs} proof${stats.outstandingProofs === 1 ? "" : "s"} outstanding`}
+                detail={`${stats.outstandingProofs} proof${stats.outstandingProofs === 1 ? "" : "s"} to gather`}
                 icon={<FileSearch className="h-4 w-4" />}
                 active={viewId === "proof"}
-                onClick={() => setViewId("proof")}
+                onClick={() => set({ view: "proof" })}
+              />
+              <KpiDoor
+                label="One thing away"
+                value={stats.quick}
+                detail="A single gap from pitchable"
+                icon={<Trophy className="h-4 w-4" />}
+                tone={stats.quick > 0 ? "good" : "default"}
+                active={viewId === "quick"}
+                onClick={() => set({ view: "quick" })}
               />
               <KpiDoor
                 label="Needs you"
@@ -396,7 +478,7 @@ export default function PressRoomWorkspace() {
                 icon={<Newspaper className="h-4 w-4" />}
                 tone={stats.you > 0 ? "warning" : "default"}
                 active={viewId === "you"}
-                onClick={() => setViewId("you")}
+                onClick={() => set({ view: "you" })}
               />
               <KpiDoor
                 label="Closing in 24h"
@@ -412,17 +494,6 @@ export default function PressRoomWorkspace() {
                     ?.scrollIntoView({ block: "start", behavior: "smooth" })
                 }
               />
-              {/* Spans both columns on narrow widths so five tiles never wrap
-                  to an orphaned single cell. */}
-              <div className="col-span-2 min-w-0 border-border xl:col-span-1">
-                <MetricCell
-                  label="Coverage won"
-                  value={coverage.length}
-                  detail={`${stats.inFlight} pitch${stats.inFlight === 1 ? "" : "es"} in flight`}
-                  icon={<Trophy className="h-4 w-4" />}
-                  tone={coverage.length > 0 ? "good" : "default"}
-                />
-              </div>
             </div>
 
             {/* ── The hero + the clock ────────────────────────────────── */}
@@ -431,10 +502,19 @@ export default function PressRoomWorkspace() {
                 angles={angles}
                 requests={requests}
                 viewId={viewId}
-                onViewChange={setViewId}
+                onViewChange={(next) => set({ view: next })}
                 expandedAngleId={expandedAngleId}
-                onExpandAngle={setExpandedAngleId}
-                onOpenRequest={setSelectedRequestId}
+                onExpandAngle={(angleId) =>
+                  set({ focus: angleId ? { kind: "angle", id: angleId } : null })
+                }
+                onOpenRequest={(requestId) =>
+                  set({ focus: { kind: "request", id: requestId } })
+                }
+                onRuleAngle={rulings.ruleAngle}
+                onHoldEvidence={rulings.holdEvidence}
+                angleHref={(angleId) =>
+                  href({ view: "all", focus: { kind: "angle", id: angleId } })
+                }
               />
               <div id="press-requests" className="min-w-0 scroll-mt-4">
                 <SourceRequestRail
@@ -442,7 +522,10 @@ export default function PressRoomWorkspace() {
                   angles={angles}
                   now={now}
                   selectedId={selectedRequestId}
-                  onSelect={setSelectedRequestId}
+                  onSelect={(id) =>
+                    set({ focus: id ? { kind: "request", id } : null })
+                  }
+                  onRuleRequest={rulings.ruleRequest}
                 />
               </div>
             </div>
@@ -452,14 +535,40 @@ export default function PressRoomWorkspace() {
               coverage={coverage}
               angles={angles}
               onOpenAngle={openAngle}
+              focusedId={focusedCoverageId}
             />
 
-            <p className="pb-2 text-[11px] text-muted-foreground">
+            <p className="pb-2 text-[11px] leading-4 text-muted-foreground">
               {selectedSite
                 ? `Press room for ${selectedSite.name || selectedSite.domain}.`
                 : "No site selected."}{" "}
               Angles and requests are read straight from the shared database;
-              coverage covers the last 180 days.
+              coverage covers the last 180 days. An angle only ever arrives as
+              &ldquo;ready to pitch&rdquo; when it has no missing evidence, no
+              unmet proof requirement and no contradiction — everything else
+              arrives needing work and a human look, which is why most of this
+              queue is building proof.{" "}
+              <Link
+                href={href({ scenario: "empty" as PressRoomScenario })}
+                className="text-primary hover:underline"
+              >
+                See the empty state
+              </Link>
+              {" · "}
+              <Link
+                href={href({ scenario: "error" as PressRoomScenario })}
+                className="text-primary hover:underline"
+              >
+                the failed read
+              </Link>
+              {" · "}
+              <Link
+                href={href({ scenario: "stalled" as PressRoomScenario })}
+                className="text-primary hover:underline"
+              >
+                the stalled read
+              </Link>
+              .
             </p>
           </>
         )}
@@ -518,28 +627,28 @@ function KpiDoor({
 }
 
 function pressRoomAsText(
-  press: ReturnType<typeof usePressRoom>,
+  press: PressRoomData,
   brandName: string | null,
 ): string {
   const lines: string[] = [
     `PRESS ROOM${brandName ? ` — ${brandName}` : ""}${press.isSample ? " (SAMPLE DATA)" : ""}`,
     "",
     `Story angles: ${press.angles.length}`,
-    `Journalist requests open: ${press.requests.length}`,
+    `Journalist requests: ${press.requests.length}`,
     `Coverage in the last 180 days: ${press.coverage.length}`,
     "",
     "ANGLES",
   ];
   for (const angle of press.angles) {
-    const progress = proofProgress(angle);
+    const read = readLadder(angle);
     lines.push(
-      `- [${angle.status}] ${angle.headline} (priority ${angle.priority}, ${progress.inHand}/${progress.required} proofs)`,
+      `- [${angle.status}/${angle.recommended_action}] ${angle.headline} (priority ${angle.priority}, ${read.held}/${read.total} proofs in hand)`,
     );
   }
   lines.push("", "REQUESTS");
   for (const request of press.requests) {
     lines.push(
-      `- ${request.outlet ?? "Unknown outlet"}: ${request.query_title} (match ${request.match_score}, deadline ${request.deadline_at ?? "none"})`,
+      `- [${request.status}] ${request.outlet ?? "Unknown outlet"}: ${request.query_title} (match ${request.match_score}, deadline ${request.deadline_at ?? "none"})`,
     );
   }
   return lines.join("\n");
