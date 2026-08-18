@@ -60,6 +60,14 @@ export interface CheckupFinding {
   /** 0-1. Rendered honestly: a low-confidence suggestion LOOKS low-confidence. */
   confidence: number;
   source: string;
+  /**
+   * The SAME finding as its canonical Content-IR value, projected ONCE by the
+   * server (`aidream/services/masterwork_checkup/finding_ir.py`). It rides the
+   * finding so a REJOINED checkup — where there is no live stream to promote a
+   * render block from — draws through the very same kind component as a live
+   * one. The client never builds this: a second projection is a second shape.
+   */
+  content_ir?: Record<string, unknown>;
 }
 
 /** The terminal document of a checkup run (also what the durable row stores). */
@@ -191,6 +199,9 @@ export function parseFinding(raw: unknown): CheckupFinding | null {
     ...(evidenceRef ? { evidence_ref: evidenceRef } : {}),
     confidence,
     source: typeof r.source === "string" ? r.source : "checkup_auditor",
+    ...(r.content_ir && typeof r.content_ir === "object" && !Array.isArray(r.content_ir)
+      ? { content_ir: r.content_ir as Record<string, unknown> }
+      : {}),
   };
 }
 

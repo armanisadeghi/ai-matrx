@@ -127,6 +127,16 @@ export interface UseMasterworkRunOptions<TResult> {
     data: Record<string, unknown>,
     ctx: { rejoin: boolean },
   ) => void;
+  /**
+   * Adopt the run's stream so the surface can render it through the canonical
+   * pipeline. See `DurableRunOptions.live` — pass `surfaceOwnsDisplay` when the
+   * surface IS the display for this run's output (the Final Checkup panel).
+   */
+  live?: {
+    label: string;
+    instanceId?: string;
+    surfaceOwnsDisplay?: boolean;
+  };
 }
 
 export type MasterworkRunHandle<TResult> = DurableRunHandle<TResult>;
@@ -137,6 +147,7 @@ export function useMasterworkRun<TResult>({
   path,
   parseResult,
   onDomainEvent,
+  live,
 }: UseMasterworkRunOptions<TResult>): MasterworkRunHandle<TResult> {
   return useDurableRun<TResult>({
     wire: MASTERWORK_RUN_WIRE,
@@ -147,5 +158,6 @@ export function useMasterworkRun<TResult>({
     stageFallback: STAGE_FALLBACK,
     ...(parseResult ? { parseResult } : {}),
     ...(onDomainEvent ? { onDomainEvent } : {}),
+    ...(live ? { live } : {}),
   });
 }

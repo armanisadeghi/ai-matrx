@@ -52,6 +52,9 @@ import {
 /** The verb the Expert is being asked to approve. */
 export type CheckupChange = "add" | "modify" | "retire";
 
+/** The registered kind slug — named once, never spelled by hand elsewhere. */
+export const CHECKUP_FINDING_KIND = "masterwork_checkup_finding";
+
 /** The write target the rendered finding's four verbs act through. */
 export const CHECKUP_DECISION_WRITE_TARGET = "checkup_decision";
 

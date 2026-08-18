@@ -91,6 +91,16 @@ export function useCheckupRun(rulebookId: string): CheckupRunHandle {
     path: CHECKUP_PATH,
     parseResult: parseCheckupResult,
     onDomainEvent,
+    // ADOPT the stream — this is what gives the panel a `requestId` and lets
+    // the canonical renderer draw each finding as it lands. `surfaceOwnsDisplay`
+    // keeps the generic floating window closed: the Final Checkup panel IS the
+    // display for these findings, and a second window showing the same cards
+    // without the four verbs would be strictly worse.
+    live: {
+      label: "Final checkup",
+      instanceId: `masterwork-checkup:${rulebookId}`,
+      surfaceOwnsDisplay: true,
+    },
   });
 
   // The terminal document wins: it is the complete, server-persisted set, and

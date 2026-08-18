@@ -15,13 +15,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import MarkdownStream from "@/components/MarkdownStream";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { useRetainRequestForViewer } from "@/features/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { publishSurfaceUiState } from "@/features/surfaces/runtime/surface-ui-state";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import {
   CHECKUP_DECISION_UI_STATE_KEY,
-  type CheckupChange,
+  CHECKUP_FINDING_KIND,
 } from "@/features/content-ir/kinds/masterwork-checkup-finding";
 import type { CheckupDecisionsUiState } from "@/components/mardown-display/blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
 import {
@@ -105,6 +107,11 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
     undoAvailable,
     undoApply,
   } = checkup;
+
+  // The row this panel renders from must outlive the panel — reaping it
+  // mid-stream is the recurring "my findings just disappeared" defect
+  // (features/agents/docs/LIVE_RUN_RETENTION.md).
+  useRetainRequestForViewer(run.requestId, "masterwork-checkup");
 
   // ── Clicking "Final checkup" IS the final checkup ─────────────────────────
   // The window opens already running. The one thing auto-start must never do
@@ -299,15 +306,33 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
             ) : null}
           </div>
         ) : null}
-        {/* THE ONE PIPELINE. Every finding the server releases renders here as
-            its registered kind component, live, with nothing parsed locally. */}
+        {/* THE ONE PIPELINE, two mounts, ONE component at the end of both.
+            LIVE: the adopted stream — every finding the server releases appears
+            the moment it lands, routed by `applyIrKindRoute` inside
+            MarkdownStream, with nothing parsed here.
+            REJOINED: a checkup picked up after a refresh has no stream left to
+            adopt, so its findings render through `KindInstanceRender` — the
+            same complete-envelope assembler and the same route, which is how
+            `/shapes` draws a saved instance. Never a second renderer. */}
         {run.requestId ? (
           <MarkdownStream
             requestId={run.requestId}
             isStreamActive={run.running}
             hideCopyButton
           />
-        ) : null}
+        ) : (
+          <div className="space-y-3">
+            {findings.map((finding) =>
+              finding.content_ir ? (
+                <KindInstanceRender
+                  key={finding.id}
+                  kind={CHECKUP_FINDING_KIND}
+                  value={finding.content_ir}
+                />
+              ) : null,
+            )}
+          </div>
+        )}
       </div>
     );
   })();

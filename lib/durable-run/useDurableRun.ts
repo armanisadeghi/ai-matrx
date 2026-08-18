@@ -128,7 +128,8 @@ export interface DurableRunState<TResult> {
   /**
    * The adopted stream's canonical request id — only with `live`. Everything
    * the model writes is read off this through the canonical selectors; a
-   * surface never touches the text itself.
+   * surface never touches the text itself. Populated whether the run floats
+   * or the surface owns its display (`live.surfaceOwnsDisplay`).
    */
   requestId: string | null;
 }
@@ -272,6 +273,24 @@ export interface UseDurableRunOptions<TResult> {
     label: string;
     /** Stable window id. */
     instanceId?: string;
+    /**
+     * The caller renders the adopted stream ITSELF and the generic floating
+     * window must not open.
+     *
+     * THE FLOATING LAW's earned exception, and it is narrow: a surface may
+     * claim it only when it is purpose-built for this run's output, more
+     * specialized than the generic window, and cannot shift content the user
+     * is working in. The Final Checkup is the exemplar — it is already a
+     * `WindowPanel` whose entire body IS the finding stream, with per-finding
+     * Approve / Improve / Reject / Edit that the generic window cannot offer;
+     * floating a second copy beside it would show the same findings twice.
+     *
+     * The stream is still ADOPTED — `requestId` is populated exactly as it is
+     * for a floated run, and the caller renders it through the ONE canonical
+     * pipeline (`<MarkdownStream requestId />`). This flag decides WHERE the
+     * canonical renderer is mounted; it never permits a bespoke one.
+     */
+    surfaceOwnsDisplay?: boolean;
   };
 }
 
@@ -626,7 +645,10 @@ export function useDurableRun<TResult>(
   // caller did not ask for live output (`active` stays false).
   const running = state.status === "running" || state.status === "rejoining";
   useFloatingLiveRun({
-    active: Boolean(options.live) && running,
+    active:
+      Boolean(options.live) &&
+      options.live?.surfaceOwnsDisplay !== true &&
+      running,
     instanceId: options.live?.instanceId ?? `durable-run:${options.key}`,
     requestId: state.requestId,
     label: state.stage ?? options.live?.label ?? "AI is working",
