@@ -1,6 +1,6 @@
 ---
 name: agent-copy
-description: Add "Copy" + "Copy for AI" buttons to any surface that shows data (rows, cards, lists, detail/record pages) using the shared `components/agent-copy` primitive — and build the payloads as WHAT THE USER SEES (rendered view, live form state, errors, KPIs), sized to the data (single pair / variants dropdown / custom composer). Use when wiring copy actions onto a new admin or user page/feature, continuing the app-wide rollout, reviewing or upgrading an existing Copy-for-AI payload, or extending the agent payload (screenshot, surfaces-registry context, page state). Triggers on `components/agent-copy/**`, `CopyButtons`, `AiCopyMenu`, `buildAgentPayload`, or any task like "add copy buttons", "copy this row/list/record", "copy for AI/agent", "let the agent pick up this data". NOT for the live-chat message bar (that is `AssistantActionBar` / `messageActionRegistry`) or markdown content actions (that is the `rich-document-actions` skill).
+description: Add the canonical two icon-only copy controls to any surface that shows data (rows, cards, lists, detail/record pages) using `components/agent-copy`: normal Copy and one Copy-for-AI dropdown containing JSON, AI variants, and any custom/Groomer workspace. Build payloads as WHAT THE USER SEES (rendered view, live form state, errors, KPIs), sized to the data. Use when wiring copy actions, consolidating duplicate Copy/JSON/AI/Groomer controls, continuing the app-wide rollout, reviewing or upgrading a Copy-for-AI payload, or extending agent payload context. Triggers on `components/agent-copy/**`, `CopyButtons`, `AiCopyMenu`, `AgentCopyGroomerLauncher`, `buildAgentPayload`, "add copy buttons", "copy this row/list/record", or "copy for AI/agent". NOT for the live-chat message bar (`AssistantActionBar` / `messageActionRegistry`) or markdown content actions (the `rich-document-actions` skill).
 ---
 
 # agent-copy — copy data (human + AI) anywhere
@@ -62,14 +62,20 @@ this page the moment they click this?"* — then hand the agent exactly that.
   legacy fallback) + success toasts + click-propagation stopping. You pass
   `human` (readable text) and `agent` (an `AgentPayloadInput`, a prebuilt
   string, or a builder fn) + a `label`. Sizes: `"xs"` (h-5 — dense items,
-  metric cards, per-field), `"icon"` (h-7 — rows/cards), `"sm"` (icon + text —
-  headers). Pass `human`/`agent` as **functions** — resolved at click time.
+  metric cards, per-field), `"icon"` (h-7 — rows/cards), `"sm"` (larger header
+  target). **Every size is icon-only.** Pass `human`/`agent` as **functions** —
+  resolved at click time.
 - **Copy exists at EVERY granularity** — field/entry, item, row, list, record,
   page. Never display data the user can't copy. Dense surfaces hide the pair
   until hover (`opacity-0 group-hover/x:opacity-100 focus-within:opacity-100`).
-- **Three flavors where data is structured:** human, **JSON** (pass `json` to
-  CopyButtons), and Copy-for-AI. Scalars skip JSON. JSON/download is the
-  raw-data affordance; Copy-for-AI is NEVER just the JSON in an envelope.
+- **Exactly two top-level controls:** normal Copy and one Copy-for-AI icon.
+  Normal Copy stays plain unless multiple human-readable formats exist, then
+  that same icon owns their dropdown. Pass structured data as `json`; it is an
+  item in the Copy-for-AI dropdown, never a standalone third icon. Scalars
+  skip JSON. Copy-for-AI is NEVER just JSON in an envelope.
+- **`CopyForAiIcon` is canonical.** `Sparkles`, `Sparkle`, bot, face, star, or
+  any substitute is banned for AI copy. Tooltips/accessibility names carry the
+  words; visible Copy/JSON/Copy-for-AI text is forbidden.
 - **Every data surface offers EXPORT** (`ExportMenu` + `export.ts`): lists and
   tables get JSON + CSV downloads; pages get their data JSON. Copy without
   export is half the job.
@@ -84,9 +90,9 @@ page's usage, never a global rule:
 
 | Data | Control | Menu contents |
 |---|---|---|
-| **Small / bounded** (one record, short list) | plain CopyButtons pair | just the faithful payload |
-| **Medium** (focused list, digestible page) | `aiVariants` dropdown | 2–5 shaped variants + Everything |
-| **Massive** (can reach ~10k+ chars: conversations, big tables, multi-section pages) | dropdown + **custom composer dialog** (`aiCustom`) | variants + Everything + tunable custom |
+| **Small / bounded** (one record, short list) | icon-only pair; AI icon is plain only when it has one action | faithful payload; add JSON to its dropdown when structured |
+| **Medium** (focused list, digestible page) | icon-only pair; `aiVariants` dropdown | JSON + 2–5 shaped variants + Everything |
+| **Massive** (can reach ~10k+ chars: conversations, big tables, multi-section pages) | icon-only pair; AI dropdown + **custom workspace** | JSON + variants + Everything + tunable custom/Groomer |
 
 - **A single button on a payload that can reach ~10k chars is a defect** —
   thousands of tokens the user can't see or control.
@@ -126,12 +132,13 @@ page's usage, never a global rule:
   `applyGroomerPreset` over its groomer sections — never a second list).
   `MatrxDataTable` takes `copy.aiVariants`/`copy.aiCustom` for the toolbar
   view copy.
-- **`AgentCopyGroomerLauncher`** — the page-level "Copy for AI". Opens a
-  WindowPanel where the user grooms the whole-page payload: sections with
+- **The Groomer is an item inside the page-level Copy-for-AI dropdown.** It
+  opens a WindowPanel where the user grooms the whole-page payload: sections with
   `full/compact/brief/off` dials, Everything/Balanced/Minimal presets, live
   size (chars + ~tokens), live preview. Full contract in the README. The
   page-level "everything" is **composed from the per-section builders**, never
-  a parallel implementation.
+  a parallel implementation. **Never render `AgentCopyGroomerLauncher` beside
+  `CopyButtons`; route that capability into the existing AI dropdown.**
 - The **"Copy for AI" button is a deliberate seam**: when the surfaces-registry
   + tool-injection layer lands, it flips from "copy to clipboard" to "hand
   context + callable actions to the agent" and every existing callsite comes
@@ -145,7 +152,8 @@ page's usage, never a global rule:
    ("Open composer…" per-table level dials), `conversationAiSources.ts`
    (transcript levers), `conversationTranscript.ts` (reference pure builder),
    `features/cx-explorer/model-context/wire-ai-source.ts` (honest stubs +
-   mirrored metrics). Note its separate JSON-download icon beside Copy-for-AI.
+   mirrored metrics). Its payload shaping is the reference; consolidate its
+   legacy separate JSON-copy control into the canonical AI dropdown.
 2. **Backlinks** — `features/marketing/components/backlinks/BacklinksWorkspace.tsx`:
    full-granularity page (cards + dimension lists + table + groomer), presets
    derived from the groomer sections.
@@ -175,11 +183,12 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
   })}
 />
 
-// whole-list / whole-page — icon + text, goes in the header/toolbar:
+// whole-list / whole-page — the same icon-only pair in the header/toolbar:
 <CopyButtons
   size="sm"
   label="All sandboxes"
   human={() => list.map(summary).join("\n\n")}
+  json={() => list} // becomes an AI-dropdown item, never a third control
   agent={() => ({ kind: "sandbox-instances", location, description,
                   data: list, attributes: { count: list.length },
                   context: { filter, total } })}
@@ -189,8 +198,8 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 ### Tables: use the built-in config, never hand-wire rows
 
 `MatrxDataTable` takes a `copy` config (`rowKind`/`listKind`/`humanRow`/…) and
-delivers ALL of: per-row copy+JSON+AI, toolbar this-view triple + ExportMenu
-(JSON + CSV of the current view), a record pair in the row-window header, and
+delivers ALL of: per-row two-control copy sets, toolbar this-view pair + ExportMenu
+(JSON + CSV downloads of the current view), a record pair in the row-window header, and
 per-field hover pairs in `DataRowInspector` (side panel + window). Also pass
 `window={{ title }}` so rows open the record window.
 **Page already has its own header row above the table?** Set
@@ -201,12 +210,13 @@ otherwise the table renders a near-empty toolbar row holding only copy icons
 muted `tabular-nums` beside the title, never a sentence pushing the search.
 `JsonInspector` takes `agentCopy` for raw-JSON surfaces.
 
-### Whole-page: quick pair + Groomer
+### Whole-page: one pair, Groomer inside the AI dropdown
 
-Page header gets a quick `CopyButtons` pair (human snapshot + what-I-see
-payload with an Everything variant) AND an `AgentCopyGroomerLauncher` whose
-sections mirror the page's areas. Declare sections once and derive the quick
-payload from `sections.build("full")` — never maintain two section lists.
+Page header gets one icon-only `CopyButtons` pair. Its AI dropdown contains
+JSON, the what-I-see payload, Everything, shaped variants, and the Groomer
+custom workspace whose sections mirror the page's areas. Declare sections once
+and derive the quick payload from `sections.build("full")` — never maintain two
+section lists or place another launcher beside the pair.
 
 ### Step-by-step
 
@@ -246,7 +256,7 @@ first and emit the gap list; only then wire, batch by batch:
 2. **Classify each rendered data element** as one of: **list/table** (needs
    row pair + view copy + ExportMenu), **record/detail** (header pair +
    per-field), **field group / metric cards** (hover-reveal `xs` pairs),
-   **whole page** (quick pair + Groomer when multi-section), or **non-record
+   **whole page** (one pair with Groomer inside its AI dropdown when multi-section), or **non-record
    tool** (composer/visualizer — SKIP, no forced buttons).
 3. **Size each one's AI control** (single icon / `aiVariants` dropdown /
    `+aiCustom` composer) per the sized-to-data table above, and note truncated
@@ -283,7 +293,8 @@ first and emit the gap list; only then wire, batch by batch:
 
 **Done:**
 - Primitive + README + roadmap (`components/agent-copy/`), `xs` size, groomer
-  window (`AgentCopyGroomerWindow` + launcher + `groomer-types.ts`).
+  window (`AgentCopyGroomerWindow` + `groomer-types.ts`) routed from the one AI
+  dropdown; a separate launcher beside the pair is forbidden.
 - Graded Copy-for-AI variants: `AiCopyMenu`, `CopyButtons.aiVariants`,
   `CopyButtons.aiCustom`, `MatrxDataTable copy.aiVariants/aiCustom`, shared
   `clipboard.ts`, plus `buildGroomerPresetPayload` / `groomerPresetVariants`
@@ -365,7 +376,8 @@ first and emit the gap list; only then wire, batch by batch:
   `EntityManager`'s two lists, the `PlanDriftBar` KPI strip and
   `PlanDriftSheet` worklist, `PlanAiRunsView`, `NodeRealityCard`, the
   form-heavy `BriefEditor` (payload from live `lines`, never the fetched row),
-  and the workbench's page-level pair + Groomer over six sections. Shared
+  and the workbench's page-level pair with its six-section Groomer inside the
+  AI dropdown. Shared
   summaries + the KPI mirror: `features/marketing/content-plan/format.ts`
   (`contentPlanKpis` — the module's `auditPageKpis`). Fixed while there:
   `PlanSitesList`'s `.slice(0, 4)` status chips now say "+N more".

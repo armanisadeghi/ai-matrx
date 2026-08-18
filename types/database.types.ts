@@ -40659,6 +40659,22 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      education_engagement_snapshot: {
+        Args: { p_session_id?: string }
+        Returns: {
+          badges_earned: number
+          current_streak: number
+          league_mastery_gain: number
+          league_opted_in: boolean
+          league_rank: number
+          league_size: number
+          longest_streak: number
+          next_badge_key: string
+          next_badge_progress: number
+          next_badge_target: number
+          session_points: number
+        }[]
+      }
       ensure_folder_chain: {
         Args: { p_folder_path: string; p_owner_id: string }
         Returns: string

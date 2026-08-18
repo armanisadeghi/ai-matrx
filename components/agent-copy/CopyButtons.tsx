@@ -52,16 +52,16 @@ export interface CopyButtonsProps {
    */
   agent: Resolvable<AgentPayloadInput | string>;
   /**
-   * When set, renders a third "Copy JSON" button that copies this value as
-   * pretty-printed JSON. Pass the raw record/rows — any surface showing
-   * structured data should offer it.
+   * When set, adds a JSON entry to the Copy-for-AI dropdown. It copies this
+   * value as pretty-printed JSON without adding a third top-level control.
+   * Pass the raw record/rows wherever structured data should remain available.
    */
   json?: Resolvable<unknown>;
   /** Used in toasts and tooltips, e.g. "Sandbox sbx-123" or "All sandboxes". */
   label: string;
   /**
-   * "xs" = micro icon-only pair (dense list items, metric cards, per-field);
-   * "icon" = compact icon-only pair (rows/cards); "sm" = icon + text (headers).
+   * All sizes are icon-only: "xs" = micro pair (dense list items, metric
+   * cards, per-field); "icon" = compact pair (rows/cards); "sm" = header pair.
    */
   size?: "xs" | "icon" | "sm";
   /**
@@ -114,11 +114,9 @@ export function CopyButtons({
   aiCustom,
   agentVariant,
 }: CopyButtonsProps) {
-  const [copied, setCopied] = React.useState<"human" | "agent" | "json" | null>(
-    null,
-  );
+  const [copied, setCopied] = React.useState<"human" | "agent" | null>(null);
 
-  const flash = (which: "human" | "agent" | "json") => {
+  const flash = (which: "human" | "agent") => {
     setCopied(which);
     setTimeout(() => setCopied(null), 1500);
   };
@@ -138,19 +136,12 @@ export function CopyButtons({
     toast.success(`${label} copied for AI agent`);
   };
 
-  const handleJson = async () => {
-    await writeClipboard(JSON.stringify(resolve(json), null, 2));
-    flash("json");
-    toast.success(`${label} copied as JSON`);
-  };
-
-  const isText = size === "sm";
   const buttonCls =
     size === "xs"
       ? "h-11 w-11 lg:h-5 lg:w-5"
       : size === "icon"
         ? "h-11 w-11 lg:h-7 lg:w-7"
-        : "min-h-11 lg:min-h-8";
+        : "h-11 w-11 lg:h-8 lg:w-8";
   const iconCls =
     size === "xs" ? "h-3 w-3" : size === "icon" ? "h-3.5 w-3.5" : "h-4 w-4";
 
@@ -160,10 +151,28 @@ export function CopyButtons({
     hint: agentVariant?.hint ?? "Full faithful payload — never lossy",
     build: () => resolve(agent),
   };
+  const jsonVariant: AiVariant | null =
+    json === undefined
+      ? null
+      : {
+          id: "json",
+          label: "JSON",
+          hint: "Pretty-printed structured data",
+          icon: Braces,
+          build: () => {
+            const value = resolve(json);
+            return JSON.stringify(value, null, 2) ?? String(value);
+          },
+        };
+  const derivedVariants = [
+    ...(aiVariants ?? []),
+    ...(jsonVariant ? [jsonVariant] : []),
+  ];
   const menuVariants =
     agentVariant?.position === "first"
-      ? [faithfulAgentVariant, ...(aiVariants ?? [])]
-      : [...(aiVariants ?? []), faithfulAgentVariant];
+      ? [faithfulAgentVariant, ...derivedVariants]
+      : [...derivedVariants, faithfulAgentVariant];
+  const hasAiMenu = menuVariants.length > 1 || aiCustom !== undefined;
 
   return (
     <div
@@ -177,7 +186,7 @@ export function CopyButtons({
       <Button
         type="button"
         variant="ghost"
-        size={isText ? "sm" : "icon"}
+        size="icon"
         className={buttonCls}
         disabled={disabled}
         onClick={handleHuman}
@@ -189,28 +198,8 @@ export function CopyButtons({
         ) : (
           <Copy className={iconCls} />
         )}
-        {isText && <span className="ml-1">Copy</span>}
       </Button>
-      {json !== undefined ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size={isText ? "sm" : "icon"}
-          className={buttonCls}
-          disabled={disabled}
-          onClick={handleJson}
-          aria-label={`Copy ${label} as JSON`}
-          title={`Copy ${label} as JSON`}
-        >
-          {copied === "json" ? (
-            <Check className={iconCls} />
-          ) : (
-            <Braces className={iconCls} />
-          )}
-          {isText && <span className="ml-1">JSON</span>}
-        </Button>
-      ) : null}
-      {aiVariants?.length || aiCustom ? (
+      {hasAiMenu ? (
         <AiCopyMenu
           size={size}
           label={label}
@@ -223,7 +212,7 @@ export function CopyButtons({
         <Button
           type="button"
           variant="ghost"
-          size={isText ? "sm" : "icon"}
+          size="icon"
           className={buttonCls}
           disabled={disabled}
           onClick={handleAgent}
@@ -235,7 +224,6 @@ export function CopyButtons({
           ) : (
             <CopyForAiIcon className={iconCls} />
           )}
-          {isText && <span className="ml-1">Copy for AI</span>}
         </Button>
       )}
     </div>

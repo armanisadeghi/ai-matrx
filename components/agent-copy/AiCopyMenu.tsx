@@ -142,8 +142,8 @@ export interface AiCopyMenuProps {
   label: string;
   /**
    * "xs" = micro icon (dense items / per-field); "icon" = compact icon
-   * (rows / toolbars); "sm" = icon + "Copy for AI" text (headers).
-   * Same scale as CopyButtons.
+   * (rows / toolbars); "sm" = header icon. Every size is icon-only, matching
+   * CopyButtons.
    */
   size?: "xs" | "icon" | "sm";
   /** Stop click events from bubbling (rows/cards with their own onClick). */
@@ -169,14 +169,13 @@ export function AiCopyMenu({
 }: AiCopyMenuProps) {
   const [busy, setBusy] = React.useState(false);
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const isText = size === "sm";
 
   const buttonCls =
     size === "xs"
       ? "h-11 w-11 lg:h-5 lg:w-5"
       : size === "icon"
         ? "h-11 w-11 lg:h-7 lg:w-7"
-        : "min-h-11 lg:min-h-8";
+        : "h-11 w-11 lg:h-8 lg:w-8";
   const iconCls =
     size === "xs" ? "h-3 w-3" : size === "icon" ? "h-3.5 w-3.5" : "h-4 w-4";
 
@@ -203,7 +202,6 @@ export function AiCopyMenu({
       ) : (
         <CopyForAiIcon className={iconCls} />
       )}
-      {isText && <span className="ml-1">Copy for AI</span>}
       {!single && (
         <ChevronDown
           className={cn("opacity-60", size === "sm" ? "h-3.5 w-3.5" : "h-3 w-3")}
@@ -230,7 +228,7 @@ export function AiCopyMenu({
       <Button
         type="button"
         variant="ghost"
-        size={isText ? "sm" : "icon"}
+        size="icon"
         className={cn(buttonCls, className)}
         disabled={disabled || busy}
         onClick={() => void runVariant(single)}
@@ -249,10 +247,10 @@ export function AiCopyMenu({
           <Button
             type="button"
             variant="ghost"
-            size={isText ? "sm" : "icon"}
+            size="icon"
             className={cn(
               buttonCls,
-              size !== "sm" && "w-auto gap-0 px-1.5",
+              "w-auto gap-0 px-1.5",
               className,
             )}
             disabled={disabled || busy}
