@@ -237,6 +237,9 @@ export function InvocationBody({
         kind={invocation.outputKind}
         value={invocation.output}
         showRoutingNote={false}
+        // The readout cell already draws the titled card — a second border +
+        // background + padding here is the box-in-a-box (THE WRAPPER LAW).
+        variant="bare"
         unroutableFallback={<SettledOutputBody output={invocation.output} />}
       />
     );

@@ -71,6 +71,15 @@ interface KindInstanceRenderProps {
    * Omitted → the generic viewer, exactly as before.
    */
   unroutableFallback?: React.ReactNode;
+  /**
+   * Chrome, per THE WRAPPER LAW (root CLAUDE.md): a host frame either IS the
+   * chrome or has none. "card" (default) keeps the bordered surface the studio
+   * and admin previews rely on. "bare" renders with NO border/background/pad —
+   * for a host that already draws a titled card, where the default produced the
+   * two-tone box-in-a-box with a dead band around it (the workflow run surface,
+   * reported 2026-08-18). Mirrors `LiveRunDisplay`'s `variant="bare"`.
+   */
+  variant?: "card" | "bare";
 }
 
 type RoutingStatus = "checking" | "routable" | "unroutable";
@@ -80,6 +89,7 @@ export default function KindInstanceRender({
   value,
   showRoutingNote = true,
   unroutableFallback,
+  variant = "card",
 }: KindInstanceRenderProps) {
   // Routing must be judged with the WARM tiers in (user kind definitions +
   // `kind_component` resolver rows — including source='db' user components).
@@ -131,6 +141,9 @@ export default function KindInstanceRender({
       }
     : null;
 
+  const frameClass =
+    variant === "bare" ? "" : "rounded-md border border-border bg-card p-3";
+
   // A caller that supplied a fallback gets it the moment routing SETTLES on
   // "no component" — never during "checking", so a warm-up tick can't flash
   // the fallback over a component that is about to resolve.
@@ -148,7 +161,7 @@ export default function KindInstanceRender({
         </div>
       )}
       {block ? (
-        <div className="rounded-md border border-border bg-card p-3">
+        <div className={frameClass}>
           <SafeBlockRenderer
             block={block}
             index={0}
@@ -157,7 +170,7 @@ export default function KindInstanceRender({
           />
         </div>
       ) : (
-        <div className="rounded-md border border-border bg-card p-3">
+        <div className={frameClass}>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Info className="h-3.5 w-3.5 shrink-0" />
             This value is a JSON scalar/array (workflow I/O shape) — there is no
