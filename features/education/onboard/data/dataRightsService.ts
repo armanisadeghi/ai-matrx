@@ -53,7 +53,14 @@ export const dataRightsService = {
     }
   },
 
-  /** Record that an export was downloaded (auditability; fire-and-forget). */
+  /**
+   * Legacy no-op kept for older clients. Since 2026-08-17
+   * `edu_export_study_data` writes its OWN audit row, so an export is recorded
+   * whether or not anyone calls this — a direct API caller used to walk off
+   * with the entire archive unaudited. The RPC ignores a duplicate within 30
+   * seconds, so calling it here is harmless; never make auditability depend on
+   * the client remembering to confess again.
+   */
   async logExport(): Promise<void> {
     try {
       await supabase.rpc("edu_log_data_export");
