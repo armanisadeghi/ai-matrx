@@ -36,6 +36,8 @@ import {
   X,
   Flame,
   FileSearch,
+  Download,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +46,12 @@ import { cn } from "@/lib/utils";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { fcService } from "../../data/fcService";
 import { EDGE_ROLE } from "../../data/types";
-import type { FcSetRow } from "../../data/types";
+import type { CardWithDetails, FcSetRow } from "../../data/types";
+import { toast } from "@/lib/toast";
+import {
+  buildLibraryJson,
+  downloadTextFile,
+} from "../../utils/exportDeck";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
@@ -257,9 +264,45 @@ export function FlashcardsHome() {
     {},
   );
   const [streak, setStreak] = useState<StudyStreakRow | null>(null);
+  const [exportingLibrary, setExportingLibrary] = useState(false);
   const { categories: folders } = useCategories({
     dimension: FOLDER_DIMENSION,
   });
+
+  // VISION §15 (WP3 gap 6) — account-level export: every deck the learner can
+  // list, with full cards, as one lossless JSON file. Loud on partial failure —
+  // a deck that fails to load is reported, never silently dropped.
+  const exportLibrary = async (): Promise<void> => {
+    if (!sets || sets.length === 0 || exportingLibrary) return;
+    setExportingLibrary(true);
+    try {
+      const decks: { set: FcSetRow; cards: CardWithDetails[] }[] = [];
+      const failed: string[] = [];
+      for (const set of sets) {
+        const res = await fcService.getSetWithCards(set.id);
+        if (res.data) decks.push(res.data);
+        else failed.push(set.name);
+      }
+      if (decks.length === 0) {
+        toast.error("Export failed — no deck could be loaded.");
+        return;
+      }
+      downloadTextFile(
+        `flashcard_library_${new Date().toISOString().slice(0, 10)}.json`,
+        "application/json",
+        buildLibraryJson(decks),
+      );
+      if (failed.length > 0) {
+        toast.error(
+          `Exported ${decks.length} decks — ${failed.length} failed to load: ${failed.join(", ")}`,
+        );
+      } else {
+        toast.success(`Exported ${decks.length} decks`);
+      }
+    } finally {
+      setExportingLibrary(false);
+    }
+  };
 
   // Phase 3 (daily streak): read-only — the streak row is written exclusively
   // by the education.bump_study_streak() DB trigger on study_session insert,
@@ -467,6 +510,19 @@ export function FlashcardsHome() {
             >
               <Upload className="mr-1.5 h-4 w-4" />
               Import
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => void exportLibrary()}
+              disabled={exportingLibrary || !sets || sets.length === 0}
+              title="Download every deck you own as one JSON file"
+            >
+              {exportingLibrary ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Download className="mr-1.5 h-4 w-4" />
+              )}
+              Export library
             </Button>
             <Button
               variant="outline"

@@ -65,6 +65,14 @@ import {
 import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDevTrigger";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { downloadSetCsv } from "../../utils/importExportCsv";
+import {
+  buildDeckAnkiText,
+  buildDeckJson,
+  buildDeckMarkdown,
+  downloadTextFile,
+  safeFilename,
+  type DeckExportFormat,
+} from "../../utils/exportDeck";
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { AudioOverviewSection } from "./AudioOverviewSection";
 import { EnhanceSetDialog } from "./EnhanceSetDialog";
@@ -307,10 +315,41 @@ export function SetDetailView({ setId }: { setId: string }) {
   const canEdit = access.isOwner || canEditAccess(access.level);
   const viewOnly = !access.loading && !canEdit;
 
-  const exportCsv = () => {
+  // VISION §15 (WP3 gap 6) — own your data: every promised format, per deck.
+  const exportDeck = (format: DeckExportFormat) => {
     if (!data) return;
-    downloadSetCsv(data.set, data.cards);
-    toast.success("Exported set as CSV");
+    const base = safeFilename(data.set.name, "flashcard_set");
+    switch (format) {
+      case "csv":
+        downloadSetCsv(data.set, data.cards);
+        break;
+      case "anki":
+        downloadTextFile(
+          `${base}.anki.txt`,
+          "text/plain",
+          buildDeckAnkiText(data.cards),
+        );
+        break;
+      case "markdown":
+        downloadTextFile(
+          `${base}.md`,
+          "text/markdown",
+          buildDeckMarkdown(data.set, data.cards),
+        );
+        break;
+      case "json":
+        downloadTextFile(
+          `${base}.json`,
+          "application/json",
+          buildDeckJson(data.set, data.cards),
+        );
+        break;
+    }
+    toast.success(
+      format === "anki"
+        ? "Exported for Anki (File → Import in Anki)"
+        : `Exported set as ${format.toUpperCase()}`,
+    );
   };
 
   // Single navigation helper: marks which action is in flight (so only that
@@ -568,14 +607,31 @@ export function SetDetailView({ setId }: { setId: string }) {
                   <History className="mr-1.5 h-4 w-4" />
                   History
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={exportCsv}
-                  disabled={data.cards.length === 0}
-                >
-                  <Download className="mr-1.5 h-4 w-4" />
-                  Export
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      disabled={data.cards.length === 0}
+                    >
+                      <Download className="mr-1.5 h-4 w-4" />
+                      Export
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => exportDeck("csv")}>
+                      CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportDeck("anki")}>
+                      Anki (text import)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportDeck("markdown")}>
+                      Markdown
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => exportDeck("json")}>
+                      JSON
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {canEdit && (
                   <Button
                     variant="outline"
