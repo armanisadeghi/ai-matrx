@@ -1,12 +1,12 @@
 # P4 Human Exception Review
 
-- **Prepared:** 2026-08-11; reconciled 2026-08-14 (America/Los_Angeles)
+- **Prepared:** 2026-08-11; reconciled 2026-08-18 (America/Los_Angeles)
 - **Status:** EXCEPTION APPROVAL REQUIRED FOR ACTIVE PROPOSALS
 - **Approved exceptions:** 0
-- **Pending proposals:** 46 files / 100 raw-token lines
-- **Reviewable now:** 46
+- **Pending proposals:** 48 files / 102 raw-token lines
+- **Reviewable now:** 48
 - **Resolved by feature deletion:** 5 files / 9 raw-token lines
-- **Resolved before patrol:** 1 file / 1 raw-token line
+- **Resolved before patrol:** 2 files / 2 raw-token lines
 - **Blocked on a review harness:** 0
 
 These are proposals, not exclusions. Every item stays an open P4 finding until
@@ -88,14 +88,14 @@ rejection routes the item to a normal P4 repair.
    - Normal-fix effect: A normal fix would make the board and cell chrome theme-responsive, visibly changing the immersive fixed-dark design in light mode.
    - Decision: **PENDING — Arman must approve or reject.**
 
-9. **P4-PENDING-009** — [Open review surface](https://aimatrx.com/chat/new)
+9. **P4-PENDING-009 — RESOLVED BEFORE PATROL**
 
    - Source: `components/debug/PromptExecutionDebugPanel.tsx:222`
    - Exact raw tokens by line: `222: hover:bg-white/20`
-   - Why it may be legitimate: The white-alpha close hover sits on an opaque blue gradient debug-panel header.
-   - Review state: Enable the global debug indicator, execute a prompt, open the prompt execution debug panel, and hover its dark-surface action.
-   - Normal-fix effect: A normal theme-token fix would replace the local on-blue hover overlay and could reduce hover contrast.
-   - Decision: **PENDING — Arman must approve or reject.**
+   - Why it may be legitimate: The white-alpha close hover sat on an opaque blue gradient debug-panel header.
+   - Review state: The source was deleted when its mounted successor replaced it.
+   - Normal-fix effect: None; the old token no longer exists.
+   - Decision: **RESOLVED — the unmounted prompt panel was deleted. Its mounted successor is a distinct active proposal below. No exception was approved.**
 
 10. **P4-PENDING-010** — [Open review surface](https://aimatrx.com/agents)
 
@@ -126,8 +126,8 @@ rejection routes the item to a normal P4 repair.
 
 13. **P4-PENDING-013** — [Open review surface](https://aimatrx.com/markdown-studio)
 
-   - Source: `components/mardown-display/blocks/flashcards/FlashcardMobileView.tsx:138,140,142,143,151,624,929,930,935,995,1094,1103`
-   - Exact raw tokens by line: `138: bg-white/10`; `140: bg-white/10`; `142: bg-white/5`; `143: bg-white/5`; `151: bg-white/80`; `624: bg-white/10, hover:bg-white/20`; `929: bg-white`; `930: bg-white/25`; `935: bg-white/25`; `995: bg-white/10, hover:bg-white/20`; `1094: bg-white/10`; `1103: bg-white/5`
+   - Source: `components/mardown-display/blocks/flashcards/FlashcardMobileView.tsx:156,158,160,161,169,653,960,961,966,1026,1132,1141`
+   - Exact raw tokens by line: `156: bg-white/10`; `158: bg-white/10`; `160: bg-white/5`; `161: bg-white/5`; `169: bg-white/80`; `653: bg-white/10, hover:bg-white/20`; `960: bg-white`; `961: bg-white/25`; `966: bg-white/25`; `1026: bg-white/10, hover:bg-white/20`; `1132: bg-white/10`; `1141: bg-white/5`
    - Why it may be legitimate: These classes form a fixed dark full-screen flashcard experience: white markdown, controls, progress dots, drawer chrome, and overlays on zinc or gradient card faces.
    - Review state: Render a valid flashcards payload, switch to a mobile viewport, and exercise reveal, navigation, hint, and progress states.
    - Normal-fix effect: A normal fix would make the full-screen study experience theme-responsive, substantially changing its current fixed-dark appearance in light mode.
@@ -297,8 +297,8 @@ rejection routes the item to a normal P4 repair.
 
 32. **P4-PENDING-032** — [Open review surface](https://aimatrx.com/cms)
 
-   - Source: `features/cms/components/PageEditor.tsx:756`
-   - Exact raw tokens by line: `756: bg-white`
+   - Source: `features/cms/components/PageEditor.tsx:966`
+   - Exact raw tokens by line: `966: bg-white`
    - Why it may be legitimate: The authored page preview tab gives its iframe a fixed white output canvas.
    - Review state: Open a site, then create or edit a page at /cms/{siteId}/pages/new or /cms/{siteId}/pages/{pageId}; inspect the white editor/document canvas.
    - Normal-fix effect: A semantic background would expose iframe loading and transparent regions using the current app theme.
@@ -405,8 +405,8 @@ rejection routes the item to a normal P4 repair.
 
 44. **P4-PENDING-044** — [Open review surface](https://aimatrx.com/marketing/content-plan)
 
-   - Source: `features/marketing/content-plan/setup/components/SetupBridgeSection.tsx:1120`
-   - Exact raw tokens by line: `1120: bg-white`
+   - Source: `features/marketing/content-plan/setup/components/SetupBridgeSection.tsx:1144`
+   - Exact raw tokens by line: `1144: bg-white`
    - Why it may be legitimate: The authored marketing-page iframe preview uses a fixed white output matte.
    - Review state: Open a site at /marketing/content-plan/{siteId} in setup/bridge state and inspect the embedded white surface.
    - Normal-fix effect: A semantic background would make transparent authored-page regions follow the app theme.
@@ -484,9 +484,36 @@ rejection routes the item to a normal P4 repair.
    - Normal-fix effect: A normal semantic foreground token would flip the label with the app theme and could make it unreadable on these bright fixed status colors.
    - Decision: **RESOLVED — the applet/app-builder feature and this source file were deleted before recovery certification. No exception was approved.**
 
+53. **P4-PENDING-053** — [Open review surface](https://aimatrx.com/chat/new)
+
+   - Source: `components/debug/AgentExecutionDebugPanel.tsx:356`
+   - Exact raw tokens by line: `356: hover:bg-white/20`
+   - Why it may be legitimate: The close hover is translucent white chrome on an opaque violet gradient header.
+   - Review state: Enable the global debug indicator, open Agent Execution State, and hover the close action in both app themes.
+   - Normal-fix effect: A semantic hover would follow the application theme instead of preserving local contrast on the violet header.
+   - Decision: **PENDING — Arman must approve or reject.**
+
+54. **P4-PENDING-054** — [Open review surface](https://demos.aimatrx.com/demos/draggable-cards)
+
+   - Source: `components/ui/enhanced-draggable-card.tsx:347`
+   - Exact raw tokens by line: `347: bg-white`
+   - Why it may be legitimate: The white layer is the card's pointer-driven glare highlight, not a theme surface.
+   - Review state: Hover and tilt either enhanced draggable card; inspect the moving glare over light and dark card content in both app themes.
+   - Normal-fix effect: A semantic background would make the simulated reflected light change color with the app theme.
+   - Decision: **PENDING — Arman must approve or reject.**
+
+55. **P4-PENDING-055** — [Open review surface](https://aimatrx.com/marketing/reports)
+
+   - Source: `features/marketing/reports/MarketingReportsWorkspace.tsx:298`
+   - Exact raw tokens by line: `298: print:bg-white, print:text-black`
+   - Why it may be legitimate: The fixed colors apply only to printed/PDF report output and preserve conventional white-paper readability.
+   - Review state: Open a populated marketing report, choose Print / Save PDF, and inspect the print preview from both app themes.
+   - Normal-fix effect: Semantic tokens could print the active dark app theme and produce a dark-background client PDF.
+   - Decision: **PENDING — Arman must approve or reject.**
+
 ## Non-proposals from the same full pass
 
-- 38 lines were classified compliant because they have a real property-specific
+- 34 lines were classified compliant because they have a real property-specific
   theme branch, are overridden by a consumer, are commented/non-rendered, or
   have no current consumer. They are not allowlisted and will be scanned again
   if code changes make them live.
@@ -500,4 +527,4 @@ rejection routes the item to a normal P4 repair.
   resolved by deletion with the rest of that feature. No exception was silently
   approved because it lacked a route.
 
-ARMAN, WE NEED YOU: approve or reject every listed P4 exception.
+ARMAN, WE NEED YOU: approve or reject every active P4 exception (all pending items except resolved 009, 027–031, and 052).
