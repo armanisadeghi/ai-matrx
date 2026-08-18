@@ -62,6 +62,7 @@ Remaining ranked targets from the 3-agent audit (verify before acting): PublicPr
 
 ## 5. Gotchas
 
+- **A Vercel build-time jump is NOT proof of a tree regression — prove locality first** (code-splitting skill, Step 0): compile-phase line across bracket builds, the demos/admin control projects, and a local worktree A/B at the bracket commits. 2026-08-17: main 13.4→18.3 min compile in one day, local A/B 11.7 vs 11.0 (flat), demos +64% with none of the day's code in its surface — Vercel-infra slowdown, nothing in the tree.
 - **Never mass-convert `React.lazy` → `next/dynamic`** (the OOM incident). In-gate, prefer static; where runtime weight demands a boundary, `React.lazy`.
 - **Don't stack `ssr:false` boundaries** down one render path; don't re-wrap existing front doors.
 - **SSR-safety boundaries are real** (jspdf/fflate class) — never flatten one without a server-render test.
@@ -73,6 +74,7 @@ Remaining ranked targets from the 3-agent audit (verify before acting): PublicPr
 - Parallel sessions share this tree: `git commit --only`, expect foreign staged files; dev servers only via `.claude/launch.json`.
 
 ## Change log
+- `2026-08-17` — claude: added the prove-locality-first gotcha + Step 0 in the code-splitting skill after the 13.4→18.3 min compile scare traced to Vercel infra, not the tree (local A/B flat, demos control project +64% with no new code).
 - `2026-07-28` (later) — claude: shipped the wave in the Done block (previewers, canvas, batch-2 finish, admin provider, leaflet, JsonBlock, (dev) kit relocation, dead code); v0.4.192 measured flat at 12 min; remaining list re-ranked.
 - `2026-07-28` — claude: took over; verified `/p/chat` hotfix live + 12-min green baseline; absorbed `docs/_current/bundle-optimization-tracker.md` (stale items re-verified against code, resolved items collapsed, tracker deleted).
 - `2026-07-27` — claude: doc created at campaign handoff (batches 1–3 + hotfix shipped; backlog ranked).
