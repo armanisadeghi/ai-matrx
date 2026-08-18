@@ -40,6 +40,7 @@ import {
   listRulebookInterviews,
   type RulebookInterview,
 } from "@/features/masterwork/record/service";
+import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import { InterviewChooser } from "@/features/masterwork/record/InterviewChooser";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 
@@ -165,7 +166,12 @@ function InterviewConversation({
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
-    runtime: { variables: { rulebook_id: rulebookId } },
+    // surfaceName is the binding handoff — launch resolves this surface's
+    // agent bindings + value mappings (skipping it silently resolves NONE).
+    runtime: {
+      surfaceName: MASTERWORK_RULEBOOK_SURFACE_NAME,
+      variables: { rulebook_id: rulebookId },
+    },
     config: { responseDensity: "compact" },
     // "Start a new interview" must NEVER revive the previous conversation the
     // surface was focused on — that is how a fresh start silently continues an
