@@ -12,28 +12,32 @@ import {
   findingFingerprint,
   type CheckupDisposition,
   type CheckupFinding,
-  type CheckupFindingKind,
   type CheckupProposedRule,
 } from "./types";
 
 /**
- * The Final Checkup's one state hook — hoisted at the window root so the
- * header, the split body, and the footer all read the same truth
- * (`window-panels` skill § composition root).
+ * The Final Checkup's one state hook.
  *
  * Everything the Expert does here is a DECISION, not a write. Decisions
  * accumulate (and survive a refresh), then land in ONE compare-and-swap when
- * they press Apply. That is what makes "Approve with AI" reviewable: it fills
- * in decisions the Expert can see, change, and undo before anything is saved —
- * and undo after.
+ * they press Apply — which is what makes every verb reversible in place, and
+ * what makes an AI pass reviewable rather than a fait accompli.
+ *
+ * ## What this hook stopped owning (2026-08-18)
+ *
+ * The filter tabs, the focused-finding cursor and the keyboard flow are gone.
+ * They existed to drive a single-finding split view; the findings now render
+ * as themselves, live, through the canonical pipeline
+ * (`masterwork_checkup_finding` → its ONE kind component), each carrying its
+ * own Approve / Improve / Reject / Edit. Keeping a parallel focus model beside
+ * that would be a second source of truth for "which finding are we on" — and
+ * the panel was asked to get simpler, not to grow a second navigation scheme.
  */
 
-/** Confidence at or above this is what "Approve with AI" is willing to take. */
+/** Confidence at or above this is what an AI pass is willing to take. */
 export const AI_APPROVE_THRESHOLD = 0.8;
 
 const DISPOSITION_STORE_PREFIX = "matrx.masterwork-checkup.decisions.";
-
-export type CheckupFilter = "open" | "all" | CheckupFindingKind;
 
 type DispositionMap = Record<string, CheckupDisposition>;
 
@@ -84,45 +88,35 @@ function clearStoredDispositions(rulebookId: string, runId: string): void {
   }
 }
 
-export interface CheckupAiPass {
-  /** What the AI accepted, so the Expert can read it back. */
-  entries: CheckupFinding[];
-  threshold: number;
-}
-
 export interface UseCheckupResult {
   rulebook: Rulebook | null;
   loading: boolean;
   loadError: string | null;
   run: ReturnType<typeof useCheckupRun>;
 
-  /** Findings after the current filter, in the order they arrived. */
-  visible: CheckupFinding[];
-  filter: CheckupFilter;
-  setFilter: (filter: CheckupFilter) => void;
-  counts: Record<CheckupFindingKind, number> & { open: number; all: number };
-
-  focused: CheckupFinding | null;
-  focusedIndex: number;
-  focusFinding: (id: string) => void;
-  moveFocus: (delta: number) => void;
+  /** Every finding this run has produced, in the order it arrived. */
+  findings: CheckupFinding[];
+  findingById: (id: string) => CheckupFinding | undefined;
 
   dispositions: DispositionMap;
   decide: (findingId: string, disposition: CheckupDisposition) => void;
   clearDecision: (findingId: string) => void;
-  approveFocused: () => void;
-  dismissFocused: () => void;
+  /** Approve / set aside one finding, keeping any wording the Expert chose. */
+  setDecision: (findingId: string, decision: "approve" | "dismiss") => void;
+  /** Replace the proposal for one finding (Improve's rewrite, or Edit's form). */
+  setProposal: (findingId: string, proposal: CheckupProposedRule) => void;
+  /** Pick one of the checkup's own alternative wordings (-1 = its own pick). */
+  chooseAlternative: (findingId: string, alternativeIndex: number) => void;
 
+  totalFindings: number;
   decidedCount: number;
   approvedCount: number;
 
   /** The rule a `modify` / `remove` finding is about, as it stands today. */
   ruleFor: (finding: CheckupFinding) => RulebookRule | undefined;
 
-  aiPass: CheckupAiPass | null;
   aiEligibleCount: number;
   approveWithAi: () => void;
-  undoAiPass: () => void;
 
   applying: boolean;
   apply: () => Promise<void>;
@@ -139,9 +133,6 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dispositions, setDispositions] = useState<DispositionMap>({});
-  const [filter, setFilter] = useState<CheckupFilter>("open");
-  const [focusedId, setFocusedId] = useState<string | null>(null);
-  const [aiPass, setAiPass] = useState<CheckupAiPass | null>(null);
   const [applying, setApplying] = useState(false);
   const [receipt, setReceipt] = useState<CheckupReceiptEntry[] | null>(null);
   const [undoRules, setUndoRules] = useState<RulebookRule[] | null>(null);
@@ -210,72 +201,11 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
     return set;
   }, [rulebook?.metadata]);
 
-  const counts = useMemo(() => {
-    const result = {
-      add: 0,
-      modify: 0,
-      remove: 0,
-      open: 0,
-      all: run.findings.length,
-    };
-    for (const finding of run.findings) {
-      result[finding.kind] += 1;
-      if (!dispositions[finding.id]) result.open += 1;
-    }
-    return result;
-  }, [run.findings, dispositions]);
+  const findings = run.findings;
 
-  const visible = useMemo(() => {
-    if (filter === "all") return run.findings;
-    if (filter === "open") {
-      return run.findings.filter((f) => !dispositions[f.id]);
-    }
-    return run.findings.filter((f) => f.kind === filter);
-  }, [run.findings, filter, dispositions]);
-
-  // Keep a focus at all times once there is anything to focus. When the
-  // focused finding leaves the filtered list (the Expert just decided it),
-  // focus lands on the NEXT one — that is what makes the keyboard flow work.
-  const focusedIndexInVisible = visible.findIndex((f) => f.id === focusedId);
-  const lastVisibleIdsRef = useRef<string[]>([]);
-  useEffect(() => {
-    const ids = visible.map((f) => f.id);
-    const previous = lastVisibleIdsRef.current;
-    lastVisibleIdsRef.current = ids;
-    if (ids.length === 0) {
-      if (focusedId !== null) setFocusedId(null);
-      return;
-    }
-    if (focusedId !== null && ids.includes(focusedId)) return;
-    if (focusedId === null) {
-      setFocusedId(ids[0]);
-      return;
-    }
-    // The focused one dropped out: take whatever slid into its place.
-    const previousIndex = previous.indexOf(focusedId);
-    const nextIndex = previousIndex < 0 ? 0 : Math.min(previousIndex, ids.length - 1);
-    setFocusedId(ids[nextIndex]);
-  }, [visible, focusedId]);
-
-  const focused =
-    run.findings.find((f) => f.id === focusedId) ?? null;
-
-  const focusFinding = useCallback((id: string) => setFocusedId(id), []);
-
-  const moveFocus = useCallback(
-    (delta: number) => {
-      setFocusedId((current) => {
-        const ids = lastVisibleIdsRef.current;
-        if (ids.length === 0) return current;
-        const index = current === null ? -1 : ids.indexOf(current);
-        const next = Math.min(
-          ids.length - 1,
-          Math.max(0, (index < 0 ? 0 : index) + delta),
-        );
-        return ids[next];
-      });
-    },
-    [],
+  const findingById = useCallback(
+    (id: string) => findings.find((f) => f.id === id),
+    [findings],
   );
 
   const decide = useCallback(
@@ -294,29 +224,48 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
     });
   }, []);
 
-  const approveFocused = useCallback(() => {
-    if (!focusedId) return;
-    setDispositions((prev) => ({
-      ...prev,
-      [focusedId]: {
-        ...(prev[focusedId] ?? {}),
-        decision: "approve",
-        byAi: false,
-      },
-    }));
-  }, [focusedId]);
+  const setDecision = useCallback(
+    (findingId: string, decision: "approve" | "dismiss") => {
+      setDispositions((prev) => ({
+        ...prev,
+        [findingId]: { ...(prev[findingId] ?? {}), decision, byAi: false },
+      }));
+    },
+    [],
+  );
 
-  const dismissFocused = useCallback(() => {
-    if (!focusedId) return;
-    setDispositions((prev) => ({
-      ...prev,
-      [focusedId]: {
-        ...(prev[focusedId] ?? {}),
-        decision: "dismiss",
-        byAi: false,
-      },
-    }));
-  }, [focusedId]);
+  // Improve and Edit both land here: the Expert now has a proposal they own,
+  // so the finding is approved with THAT wording. A rewrite the Expert asked
+  // for and then had to approve twice is a second gate nobody wanted.
+  const setProposal = useCallback(
+    (findingId: string, proposal: CheckupProposedRule) => {
+      setDispositions((prev) => ({
+        ...prev,
+        [findingId]: {
+          ...(prev[findingId] ?? {}),
+          decision: prev[findingId]?.decision ?? "approve",
+          edited: proposal,
+          byAi: false,
+        },
+      }));
+    },
+    [],
+  );
+
+  const chooseAlternative = useCallback(
+    (findingId: string, alternativeIndex: number) => {
+      setDispositions((prev) => ({
+        ...prev,
+        [findingId]: {
+          ...(prev[findingId] ?? {}),
+          decision: prev[findingId]?.decision ?? "approve",
+          alternativeIndex,
+          byAi: false,
+        },
+      }));
+    },
+    [],
+  );
 
   const ruleFor = useCallback(
     (finding: CheckupFinding): RulebookRule | undefined => {
@@ -326,20 +275,20 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
     [rulebook],
   );
 
-  // "Approve with AI" only ever reaches findings we are genuinely confident
-  // about AND that the Expert has not already ruled on. It never overrides a
-  // human decision, and it never touches an alternatives question — a finding
-  // that offers options is a choice only the Expert can make.
+  // An AI pass only ever reaches findings we are genuinely confident about AND
+  // that the Expert has not already ruled on. It never overrides a human
+  // decision, and it never touches a finding that offers alternative wordings
+  // — a choice between wordings is only the Expert's to make.
   const aiEligible = useMemo(
     () =>
-      run.findings.filter(
+      findings.filter(
         (f) =>
           !dispositions[f.id] &&
           confidenceBand(f.confidence) === "sure" &&
           (f.alternatives?.length ?? 0) === 0 &&
           !previouslyDismissed.has(findingFingerprint(f)),
       ),
-    [run.findings, dispositions, previouslyDismissed],
+    [findings, dispositions, previouslyDismissed],
   );
 
   const approveWithAi = useCallback(() => {
@@ -351,26 +300,14 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
       }
       return next;
     });
-    setAiPass({ entries: aiEligible, threshold: AI_APPROVE_THRESHOLD });
-    setFilter("all");
-    if (aiEligible[0]) setFocusedId(aiEligible[0].id);
+    toast.success(
+      `Approved ${aiEligible.length} ${aiEligible.length === 1 ? "suggestion" : "suggestions"}`,
+      {
+        description:
+          "They're ticked in the list — change any of them before you apply. Nothing is saved yet.",
+      },
+    );
   }, [aiEligible]);
-
-  const undoAiPass = useCallback(() => {
-    setAiPass((pass) => {
-      if (!pass) return null;
-      setDispositions((prev) => {
-        const next = { ...prev };
-        for (const finding of pass.entries) {
-          // Only take back what the AI decided — never a call the Expert has
-          // since made themselves.
-          if (next[finding.id]?.byAi === true) delete next[finding.id];
-        }
-        return next;
-      });
-      return null;
-    });
-  }, []);
 
   const apply = useCallback(async () => {
     if (!rulebook) return;
@@ -380,7 +317,7 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
     try {
       const outcome = await applyCheckup({
         rulebook,
-        findings: run.findings,
+        findings,
         dispositions,
         runId: run.runId,
       });
@@ -388,7 +325,6 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
       setReceipt(outcome.applied);
       setUndoRules(outcome.previousRules);
       setDispositions({});
-      setAiPass(null);
       if (run.runId) clearStoredDispositions(rulebookId, run.runId);
       const parts: string[] = [];
       if (outcome.applied.length > 0) {
@@ -423,7 +359,7 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
     } finally {
       setApplying(false);
     }
-  }, [rulebook, dispositions, run.findings, run.runId, rulebookId]);
+  }, [rulebook, dispositions, findings, run.runId, rulebookId]);
 
   const undoApply = useCallback(async () => {
     if (!rulebook || !undoRules) return;
@@ -456,26 +392,20 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
     loading,
     loadError,
     run,
-    visible,
-    filter,
-    setFilter,
-    counts,
-    focused,
-    focusedIndex: focusedIndexInVisible,
-    focusFinding,
-    moveFocus,
+    findings,
+    findingById,
     dispositions,
     decide,
     clearDecision,
-    approveFocused,
-    dismissFocused,
+    setDecision,
+    setProposal,
+    chooseAlternative,
+    totalFindings: findings.length,
     decidedCount,
     approvedCount,
     ruleFor,
-    aiPass,
     aiEligibleCount: aiEligible.length,
     approveWithAi,
-    undoAiPass,
     applying,
     apply,
     receipt,
@@ -483,11 +413,4 @@ export function useCheckup(rulebookId: string): UseCheckupResult {
     undoApply,
     previouslyDismissed,
   };
-}
-
-/** The proposal a finding shows by default, for surfaces that only render. */
-export function defaultProposal(
-  finding: CheckupFinding,
-): CheckupProposedRule | undefined {
-  return finding.proposed;
 }

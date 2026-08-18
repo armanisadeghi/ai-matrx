@@ -64,7 +64,7 @@ platform admin, not in a backend-repo dashboard. Do not re-create a second copy.
 | Detail | `components/EnrollmentDetailPanel.tsx` — subject, spend, cadence, findings, reviews |
 | **Internal Affairs (C-19)** | `components/ChangeHistoryPanel.tsx` (every applied change to a governed agent/tool/workflow — version from→to, provenance tier, the finding that caused it, a door on both) + `components/FindingEffectivenessPanel.tsx` (per lever per unit: proposed/applied/rejected/**reverted**, accept + revert rates, time-to-decision, cost movement). Both mounted at the bottom of `HindsightPage`; API `getChangeHistory` / `getFindingEffectiveness`; server views in aidream migration `0375`. Read-only — Internal Affairs never writes. |
 | Enroll | `components/EnrollDialog.tsx` — five enrollable kinds (agent · **orchestra** · workflow · tool · environment), real pickers, and the **lens** (which runs the reviewer reads + how much of each it sees) |
-| Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, Apply / Reject / **Guide** / **Revert** (applied state), and `components/RegressionCasesFromFinding.tsx` (C-17: turn a cited recorded call into a permanent test; admin-only) |
+| Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, the canonical adjacent Copy / Copy-for-AI controls (AI menu: contextual finding + JSON), Apply / Reject / **Guide** / **Revert** (applied state), and `components/RegressionCasesFromFinding.tsx` (C-17: turn a cited recorded call into a permanent test; admin-only). `copy.ts` owns the one rendered-view projection shared by human and agent copy. |
 | Revert | `components/RevertButton.tsx` — the ONE revert affordance (button + confirm naming "returns to v{n}" + version-diff door + receipt toast), shared by `FindingCard` and `VersionLadder`. Renders only on `status='applied'` findings; the ladder shows it only on the CURRENT `from review` row (reverting a non-current version is meaningless, so the door is hidden, not disabled). Server contract: `POST /hindsight/findings/{id}/revert` re-promotes the pre-apply version as a NEW version row — see aidream's hindsight `FEATURE.md` |
 | Discuss (admin) | `components/DiscussPanel.tsx` — the reviewer's thread + the reply box; product uses `workspace/ReviewerChat.tsx` |
 | Thread message | `components/ThreadMessageRow.tsx` — ONE renderer for reviewer-thread messages (`flat` admin / `chat` product variants) |
@@ -202,6 +202,10 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- **2026-08-18** — Findings gained the canonical two-icon Copy / Copy-for-AI
+  control. The AI icon opens contextual finding and JSON choices; both human
+  and model-ready payloads use `copy.ts`'s rendered-card projection, including
+  reasoning, evidence, proposal, verdicts, decision state, and live card state.
 - **2026-08-17** — **Workflow steps became a subject, and a finding became a
   regression case.** Two doors that were dead ends.
   - **`workflow_node` is enrollable** (`ENROLLABLE_KINDS`): C-30's per-step

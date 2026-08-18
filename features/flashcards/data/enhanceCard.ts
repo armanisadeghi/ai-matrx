@@ -30,6 +30,42 @@ export const DEPTH_TIERS: { value: Depth; label: string; blurb: string }[] = [
   { value: "exam", label: "Exam-level", blurb: "Exam-rigor depth & nuance" },
 ];
 
+// ─── Generation-time depth (VISION §1 — "every AI generation path supports
+// tiered depth", WP3 gap 8) ─────────────────────────────────────────────────
+//
+// The generation agents' declared variables carry the tier through their
+// free-text focus channel (`user_request` / `focus`) — declared variables are
+// the ONLY way values reach a bound agent (variable-binding doctrine), and
+// this needs no agent edit. When a `depth` variable is later declared on the
+// agents, this fold collapses to a plain pass-through.
+
+/** What each tier asks the GENERATOR to do — one directive sentence. */
+export const DEPTH_DIRECTIVES: Record<Depth, string> = {
+  recall:
+    "Depth tier: RECALL — foundational cards that build and test remembering " +
+    "the core facts, terms, and definitions.",
+  applied:
+    "Depth tier: APPLIED — cards that make the learner USE the material: " +
+    "solve, compute, predict, or apply it to a scenario, not just restate it.",
+  exam:
+    "Depth tier: EXAM-LEVEL — exam-rigor cards probing nuance, edge cases, " +
+    "distinctions between similar concepts, and multi-step application.",
+};
+
+/**
+ * Fold the chosen depth tier into a free-text agent variable, preserving
+ * whatever the learner already typed there. Undefined depth = unchanged.
+ */
+export function foldDepthIntoRequest(
+  depth: Depth | undefined,
+  existing?: string,
+): string | undefined {
+  if (!depth) return existing?.trim() || undefined;
+  const directive = DEPTH_DIRECTIVES[depth];
+  const rest = existing?.trim();
+  return rest ? `${directive}\n\n${rest}` : directive;
+}
+
 /** A generated detail layer, ready to persist as an `fc_detail` row. */
 export interface EnrichedDetail {
   kind: string;

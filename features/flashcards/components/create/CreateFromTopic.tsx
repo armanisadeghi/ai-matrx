@@ -36,6 +36,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LoadingSpinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+import { DEPTH_TIERS } from "../../data/enhanceCard";
+import type { Depth } from "@/features/education/assessment/data/types";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectKindEnvelope } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import type { CanonicalBlockIR } from "@/features/content-ir/core/ir-types";
@@ -99,6 +102,9 @@ export function CreateFromTopic() {
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState(10);
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
+  // Gap 8 — generation-time depth tier. Default = recall (the foundational
+  // pass), matching what generation produced before the tier existed.
+  const [depth, setDepth] = useState<Depth>("recall");
   const [gradeLevel, setGradeLevel] = useState("");
   const [userRequest, setUserRequest] = useState("");
 
@@ -131,6 +137,7 @@ export function CreateFromTopic() {
         difficulty,
         grade_level: gradeLevel.trim() || undefined,
         user_request: userRequest.trim() || undefined,
+        depth,
       });
 
       // Typed save path: the same content-ir envelope that drove the live
@@ -290,6 +297,35 @@ export function CreateFromTopic() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              {/* VISION §1 (gap 8) — generation-time depth tier. */}
+              <div className="flex flex-col gap-1.5">
+                <Label>Depth</Label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {DEPTH_TIERS.map((tier) => (
+                    <button
+                      key={tier.value}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setDepth(tier.value)}
+                      className={cn(
+                        "rounded-lg border px-2 py-1.5 text-left transition-colors disabled:opacity-50",
+                        depth === tier.value
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-background hover:bg-accent",
+                      )}
+                      aria-pressed={depth === tier.value}
+                    >
+                      <div className="text-xs font-medium text-foreground">
+                        {tier.label}
+                      </div>
+                      <div className="text-[10px] leading-tight text-muted-foreground">
+                        {tier.blurb}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
