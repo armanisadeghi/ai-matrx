@@ -18,7 +18,7 @@ import {
   selectRoomSession,
   selectRunPhase,
 } from "../redux/vision-interview.slice";
-import { ROLE_ORDER, ROLES, STAGES } from "../types";
+import { normalizeStage, ROLE_ORDER, ROLES, STAGES } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
 
 export function RoleStrip() {
@@ -27,7 +27,15 @@ export function RoleStrip() {
   const session = useAppSelector(selectRoomSession);
   const runPhase = useAppSelector(selectRunPhase);
 
-  const stageRoles = session ? (STAGES[session.stage]?.activeRoles ?? []) : [];
+  // v2: ONE primary speaks per round (plus the Scribe's silent apply);
+  // observers run silently. The stage's primary + the Scribe stay lit; a
+  // null primary (Revisit — most eager voice — or Done) lights everyone.
+  const stage = session ? STAGES[normalizeStage(session.stage)] : null;
+  const stageRoles = stage
+    ? stage.primaryRole
+      ? [stage.primaryRole, "scribe" as const]
+      : ROLE_ORDER
+    : [];
   const speaking = activeSpeaker ? ROLES[activeSpeaker] : null;
   const working = runPhase === "running" || runPhase === "starting";
 

@@ -2,7 +2,7 @@
 
 // features/vision-interview/components/RoleAvatar.tsx
 //
-// The ONE avatar disc for everyone in the room — the six roles (chart-token
+// The ONE avatar disc for everyone in the room — the seven roles (chart-token
 // accents from ROLES[key].accent) and the human (primary). Consumed by the
 // presence strip, the transcript turns, and the live in-flight cards so the
 // speaker identity reads identically everywhere (chat's avatar/chip language).

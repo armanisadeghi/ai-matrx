@@ -14,7 +14,7 @@ import {
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
-import { STAGES } from "../types";
+import { normalizeStage, STAGES } from "../types";
 import type { SessionListRow } from "./types";
 
 export const SESSION_COLUMNS: EntityColumnSpec<SessionListRow>[] = [
@@ -38,6 +38,10 @@ export const SESSION_COLUMNS: EntityColumnSpec<SessionListRow>[] = [
     id: "stage",
     label: "Stage",
     facet: "stage",
+    // Stage keys never render raw — legacy v1 values (expand/test/loop) on
+    // old rows display as their v2 labels via normalizeStage.
+    formatFacetValue: (value) =>
+      STAGES[normalizeStage(value as SessionListRow["stage"])]?.label ?? value,
     column: {
       id: "stage",
       accessorKey: "stage",
@@ -46,7 +50,7 @@ export const SESSION_COLUMNS: EntityColumnSpec<SessionListRow>[] = [
       width: 110,
       cell: (row) => (
         <Badge variant="outline" className="py-0 text-[11px]">
-          {STAGES[row.stage]?.label ?? row.stage}
+          {STAGES[normalizeStage(row.stage)]?.label ?? row.stage}
         </Badge>
       ),
     },

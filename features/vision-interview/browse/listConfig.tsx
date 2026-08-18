@@ -9,6 +9,7 @@
 import type { EntityListConfig } from "@/lib/entity-list/config";
 import { toast } from "@/lib/toast";
 import { renameSession } from "../service";
+import { normalizeStage, STAGES } from "../types";
 import { SESSION_COLUMNS } from "./columns";
 import {
   fetchSessionFacets,
@@ -66,6 +67,10 @@ export const sessionListConfig: EntityListConfig<SessionListRow> = {
       filterId: "stage",
       label: "Stage",
       noneLabel: "No stage",
+      // Same formatter as the stage column — a chip and a header never name
+      // one value twice; legacy v1 keys display as their v2 labels.
+      formatValue: (value) =>
+        STAGES[normalizeStage(value as SessionListRow["stage"])]?.label ?? value,
     },
     {
       facet: "visibility",
@@ -83,6 +88,6 @@ export const sessionListConfig: EntityListConfig<SessionListRow> = {
   emptyState: {
     title: "No interviews here",
     description:
-      "Start a vision interview — six roles extract what's in your head into a document good enough to build from.",
+      "Start a vision interview — seven roles extract what's in your head into a document good enough to build from.",
   },
 };

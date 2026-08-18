@@ -67,7 +67,7 @@ export function NewInterviewDialog({
         if (!busy) onOpenChange(next);
       }}
       title="New vision interview"
-      description="Give the room your vision in your own words — the six roles take it from there."
+      description="Give the room your vision in your own words — the seven roles take it from there."
       content={
         <div className="space-y-2">
           <Input

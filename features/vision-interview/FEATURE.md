@@ -1,21 +1,28 @@
 # Vision Interview — the multi-agent interview room
 
-**Status:** v1 frontend (2026-08-16). Cross-repo system-of-record:
+**Status:** v2 frontend (2026-08-17). Cross-repo system-of-record:
 `common-docs/systems/vision-interview/FEATURE.md` — read it first; this file is
 only the matrx-frontend half. Backend (engine, workflow, service, `interview.*`
 tables) lives in aidream (`aidream/services/vision_interview/`).
 
-Six capped roles (Amplifier, Cartographer, Archaeologist, Adversary, Architect,
-Scribe) interview a human who holds a vision; the tables are the product, the
-workflow run orchestrates. A crashed run loses nothing — the room re-hydrates
-from `interview.*`.
+Seven capped roles (Sounding Board, Archaeologist, Amplifier, Cartographer,
+Adversary, Architect, Scribe) interview a human who holds a vision; the tables
+are the product, the workflow run orchestrates. A crashed run loses nothing —
+the room re-hydrates from `interview.*`. **v2 stage arc:** capture → ground →
+enhance → articulate → stress → shape → revisit → done, ONE primary role per
+round (plus the Scribe's silent apply; observers run silently — only their
+EFFECTS land as questions/doc updates). Legacy v1 stage values
+(expand/test/loop) may still sit on old session rows until the server heals
+them — `normalizeStage` in `types.ts` maps them for display
+(expand→enhance, test→stress, loop→revisit); never render a raw stage key.
+"Sounding Board" is a PROVISIONAL name (noted in `types.ts`).
 
 ## Entry points
 
 | Surface | Route / file |
 |---|---|
 | List page | `app/(core)/vision-interview/page.tsx` → `components/VisionInterviewListPage.tsx` (canonical entity-list shell; config `browse/listConfig.tsx`) |
-| Room | `app/(core)/vision-interview/[sessionId]/page.tsx` → `components/VisionInterviewRoom.tsx` (RouteHeader + 3 resizable panes: transcript · living document · questions/holes) |
+| Room | `app/(core)/vision-interview/[sessionId]/page.tsx` → `components/VisionInterviewRoom.tsx` (RouteHeader + full-width `StageRail` + 2 resizable panes: conversation center [transcript · next-questions strip · composer] · right side pane [living document / questions-holes tabs]) |
 | New interview | `components/NewInterviewDialog.tsx` (direct Supabase insert → routes into the room) |
 
 ## Data flow
@@ -86,9 +93,12 @@ from `interview.*`.
    delete, question `state` (defer/reopen), hole
    classification/status/resolution (reclassify keeps provenance via
    `reclassified_by_human=true`; accept-risk behind a ConfirmDialog).
-5. **Stage advancement is human-controlled and rides the resume payload**
-   (`advance_stage`), so the Advance control arms only while the run waits on
-   the human (`waiting_human`).
+5. **Stage movement is human-controlled and rides the resume payload** —
+   `advance_stage` (the header's Advance control) and v2's `goto_stage`
+   (the `StageRail`'s click-to-jump, ANY stage forward or back). Both arm
+   only while the run waits on the human (`waiting_human`); disabled states
+   carry an honest tooltip, never a silent no-op. Summoning a role
+   (`summon_role`) makes it the NEXT round's primary.
 6. List page follows lib/entity-list + lib/list-scope: RPCs in
    `migrations/ivw_list_scoped.sql` (relevance-ranked search ported from the
    agx/trx scorer; scopes mine/orgs/shared/public; the config declares
@@ -105,12 +115,29 @@ from `interview.*`.
    failure path lands in `runFailed`, which re-arms Start. Busy state is
    per-button; nothing global locks.
 8. **One visual language for everyone in the room:** `RoleAvatar` (chart-token
-   accents on `ROLES[key].accent`, human = primary) is the ONE avatar disc —
+   accents on `ROLES[key].accent`, human = primary, Sounding Board =
+   chart-6 — added to globals.css for v2) is the ONE avatar disc —
    presence strip, persisted turns, live cards, summon menu. Turns follow the
    /chat message language (role turns plain, human turns primary-tinted
    bubble, hover copy); the living document splits the Scribe's H2 sections
    into an Accordion (string split on PERSISTED markdown — every body still
    renders through `RichDocument`, never a hand parser).
+9. **Question categories are stage-keyed.** `interview.question.category`
+   (core/grounding/enhancement/articulation/risk/architectural/gap; null on
+   pre-v2 rows reads as `gap` via `questionCategory()`) renders as the ONE
+   `QuestionCategoryChip` (Lucide icons, chart tokens) in both the panel and
+   the composer's `NextQuestionsStrip`. The strip (directly above the
+   composer — the last thing the Expert reads) shows open questions matching
+   the CURRENT stage's category, topped up to 3 with the oldest other open
+   questions (`selectNextQuestions`); the full panel shows ALL questions with
+   the current category grouped first (`selectQuestionsGroupedForStage`) so
+   the Expert can answer ahead of schedule. Both reuse
+   `composerInsertRequested` — never a second insert path.
+10. **Failure honesty (v2 §17):** every run/start/resume error surface must
+    SAY the Expert's words are safe — the draft persists on-device
+    (`useDurableDraft`) and a sent message lands as a turn before agents run
+    — and offer the retry in the same breath. Never lose composer content
+    (acceptance-gated clearing, invariant 7).
 
 ## Doctrine (reuse-first)
 
@@ -148,6 +175,30 @@ per-node tokens the same way.
 
 ## Change log
 
+- 2026-08-17 — **v2 room (backend v2 contract).** (1) STAGES: new arc
+  capture→ground→enhance→articulate→stress→shape→revisit→done mirrored in
+  `types.ts` (`STAGES` — label, primaryRole, questionCategory per stage);
+  legacy expand/test/loop display-mapped via `normalizeStage` everywhere a
+  stage renders (room, role strip, browse column + facet chips). (2) STAGE
+  RAIL: full-width `StageRail` under the header — every stage visible,
+  click-to-jump sends `goto_stage` on the resume payload, armed only in
+  `waiting_human` with honest tooltips; the header stepper/stage chip
+  retired (Round + Advance stay). (3) LAYOUT RE-CENTERED on the
+  conversation: 2-pane resizable group (new cookie
+  `vision-interview-room-layout-v2`) — transcript+composer center, living
+  document moved to the right pane with the questions/holes panel as a
+  sibling tab (open-count badge); mobile keeps the 3-way switcher.
+  (4) NEXT QUESTIONS: `NextQuestionsStrip` directly above the composer —
+  stage-category-matched open questions (top-up to 3 oldest others),
+  click inserts the Q/A block via `composerInsertRequested`.
+  (5) CATEGORIES: `interview.question.category` added to the hand-declared
+  row type; `QuestionCategoryChip` (Lucide + chart tokens) in panel + strip;
+  panel groups current stage's category first. (6) SOUNDING BOARD: seventh
+  role (provisional name), `role_sounding_board` node mapping, chart-6
+  accent (new token in globals.css), everywhere ROLES renders; summon copy
+  now says the summoned role LEADS the next round (v2: one primary per
+  round). (7) SAFE-WORDS failure copy: the error banner states drafts +
+  sent turns are durably saved and points at Try again.
 - 2026-08-18 — **The room made honest, from Arman's broken live session.**
   (1) RELOAD-RESUME: on hydrate, a session carrying a `run_id` while the hook
   is idle mints an `activeRequests` row (`ensureAdopted`) and follows the

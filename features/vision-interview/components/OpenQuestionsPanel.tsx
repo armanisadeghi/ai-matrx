@@ -50,10 +50,11 @@ import {
   selectHolesOrdered,
   selectOpenHoleCount,
   selectOpenQuestionCount,
-  selectQuestionsOrdered,
+  selectQuestionsGroupedForStage,
   selectRoomHydrated,
   selectRoomSession,
 } from "../redux/vision-interview.slice";
+import { QuestionCategoryChip } from "./QuestionCategoryChip";
 import {
   acceptHoleAsRisk,
   reclassifyHole,
@@ -167,6 +168,7 @@ function QuestionCard({
         >
           {QUESTION_STATE_LABELS[question.state]}
         </span>
+        <QuestionCategoryChip question={question} />
         {isLive && (
           <span
             className={cn(
@@ -461,7 +463,9 @@ function SectionHeader({
 }
 
 export function OpenQuestionsPanel() {
-  const questions = useAppSelector(selectQuestionsOrdered);
+  // ALL questions, current stage's category grouped first — the Expert can
+  // answer ahead of schedule here; the composer strip carries only "next".
+  const questions = useAppSelector(selectQuestionsGroupedForStage);
   const holes = useAppSelector(selectHolesOrdered);
   const session = useAppSelector(selectRoomSession);
   const hydrated = useAppSelector(selectRoomHydrated);

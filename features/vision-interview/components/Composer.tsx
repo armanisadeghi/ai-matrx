@@ -169,13 +169,19 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
           {hasDraft && " — your message sends on your turn"}
         </p>
       ) : runPhase === "error" && runError ? (
+        // FAILURE HONESTY (v2 §17): a run error must SAY the Expert's words
+        // are safe — the draft persists on this device (useDurableDraft) and
+        // every sent message already landed as a turn before agents ran —
+        // and offer the retry in the same breath (Try again below).
         <p className="mb-1.5 flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <span className="min-w-0">
             {runError}
-            {hasDraft
-              ? " — your draft is kept; start again when ready."
-              : " — anything you already sent is saved on the session; start again when ready."}
+            <span className="mt-0.5 block text-foreground">
+              Your words are safe: {hasDraft ? "this draft stays right here, and " : ""}
+              everything you sent is already saved on this session. Press Try
+              again when ready — nothing needs re-typing.
+            </span>
           </span>
         </p>
       ) : null}
@@ -183,8 +189,9 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
       {summon && (
         <p className="mb-1 flex items-center gap-1.5 px-1 text-xs">
           <RoleAvatar role={summon} size="sm" />
+          {/* v2: a summoned role becomes the PRIMARY of the next round. */}
           <span className={ROLES[summon].accent.text}>
-            Bringing in the {ROLES[summon].name} with this turn
+            The {ROLES[summon].name} leads the next round
           </span>
           <button
             type="button"
@@ -237,10 +244,10 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
                 size="icon"
                 className="h-7 w-7 text-muted-foreground"
                 disabled={!canAnswer || sending}
-                aria-label="Bring in a role"
+                aria-label="Choose who leads the next round"
                 title={
                   canAnswer
-                    ? "Bring in a role"
+                    ? "Bring in a role — it leads the next round"
                     : "Roles can be summoned on your turn"
                 }
               >
@@ -248,7 +255,7 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Bring in…</DropdownMenuLabel>
+              <DropdownMenuLabel>Who leads the next round…</DropdownMenuLabel>
               {ROLE_ORDER.map((key) => {
                 const role = ROLES[key];
                 return (

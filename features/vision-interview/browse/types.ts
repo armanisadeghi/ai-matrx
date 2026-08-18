@@ -10,14 +10,15 @@
 // once types regenerate.
 
 import type { ListScopeKind } from "@/lib/list-scope/types";
-import type { InterviewStage } from "../types";
+import type { InterviewStageWire } from "../types";
 
 /** One row, exactly as public.ivw_list_scoped returns it. */
 export interface SessionListRow {
   id: string;
   title: string;
   vision_statement: string;
-  stage: InterviewStage;
+  /** May still carry legacy v1 values on old rows — display via normalizeStage. */
+  stage: InterviewStageWire;
   current_round: number;
   open_questions: number;
   visibility: string;

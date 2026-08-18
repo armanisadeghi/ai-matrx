@@ -30,6 +30,7 @@ import type { ResumeInput } from "../hooks/useInterviewRun";
 import { ROLE_ORDER, ROLES, roleFromNodeId } from "../types";
 import { Composer } from "./Composer";
 import { LiveTurnCard } from "./LiveTurnCard";
+import { NextQuestionsStrip } from "./NextQuestionsStrip";
 import { RoleAvatar } from "./RoleAvatar";
 import { RoleStrip } from "./RoleStrip";
 import { TurnCard } from "./TurnCard";
@@ -139,12 +140,12 @@ export function TranscriptPane({
                   ))}
                 </div>
                 <p className="text-sm font-medium text-foreground">
-                  Six roles are waiting for your vision
+                  Seven roles are waiting for your vision
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Type or dictate an opening statement below — or press Start
-                  and the room opens from your saved vision. The Amplifier and
-                  Cartographer lead the Expand stage.
+                  and the room opens from your saved vision. The Sounding
+                  Board opens the Capture stage.
                 </p>
               </div>
             </div>
@@ -191,6 +192,9 @@ export function TranscriptPane({
           </div>
         )}
       </div>
+      {/* The last thing the Expert reads before answering — the open
+          questions the current stage is asking (v2 §8). */}
+      <NextQuestionsStrip />
       <Composer sessionId={sessionId} onResume={onResume} onStart={onStart} />
     </div>
   );
