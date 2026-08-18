@@ -175,7 +175,9 @@ export const smartExecute = createAsyncThunk<
     // and re-apply the canonical value_mappings before any execution gate or
     // request snapshot reads the instance. Conversation/focus/gate lifecycle
     // stays exactly where the launcher established it.
-    await dispatch(refreshSurfaceScope({ conversationId })).unwrap();
+    await dispatch(
+      refreshSurfaceScope({ conversationId, composerText }),
+    ).unwrap();
     state = getState();
 
     // Sandbox hard-gate. A conversation BOUND to a sandbox must never silently

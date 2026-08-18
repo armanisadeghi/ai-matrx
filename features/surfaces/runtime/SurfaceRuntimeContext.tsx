@@ -44,6 +44,11 @@ export type SurfaceWriteHandlers = Record<
   (value: unknown) => void | Promise<void>
 >;
 
+export interface SurfaceBeforeExecuteInput {
+  conversationId: string;
+  composerText: string;
+}
+
 export interface SurfaceRuntimeValue {
   /**
    * Canonical `ui_surface.name` this page is emitting. Display labels are
@@ -56,6 +61,12 @@ export interface SurfaceRuntimeValue {
    * Called only when the user hits ▶ — never on mount.
    */
   getScope: () => SurfaceScopePayload | Promise<SurfaceScopePayload>;
+  /**
+   * Optional submit-time preparation owned by the live surface. It runs before
+   * scope refresh and before the input is snapshotted, so failures preserve the
+   * draft and make no request. Use for current-turn evidence, never UI effects.
+   */
+  beforeExecute?: (input: SurfaceBeforeExecuteInput) => void | Promise<void>;
   /** Pass-through for editable surfaces (default contracts). */
   isEditable?: boolean;
   /**
@@ -349,14 +360,17 @@ export function SurfaceRuntimeProvider({
   children,
   surfaceName,
   getScope,
+  beforeExecute,
   isEditable,
   getWriteHandlers,
 }: SurfaceRuntimeValue & { children: ReactNode }) {
   const depth = useContext(SurfaceRuntimeDepthContext) + 1;
   const getScopeRef = useRef(getScope);
+  const beforeExecuteRef = useRef(beforeExecute);
   const getWriteHandlersRef = useRef(getWriteHandlers);
   useEffect(() => {
     getScopeRef.current = getScope;
+    beforeExecuteRef.current = beforeExecute;
     getWriteHandlersRef.current = getWriteHandlers;
   });
 
@@ -366,6 +380,7 @@ export function SurfaceRuntimeProvider({
         surfaceName,
         isEditable,
         getScope: () => getScopeRef.current(),
+        beforeExecute: (input) => beforeExecuteRef.current?.(input),
         getWriteHandlers: () => getWriteHandlersRef.current?.() ?? {},
       },
       depth,
@@ -426,6 +441,7 @@ export function useSurfaceRuntimeRegistration(
           }
           return current.getScope();
         },
+        beforeExecute: (input) => valueRef.current?.beforeExecute?.(input),
         getWriteHandlers: () => valueRef.current?.getWriteHandlers?.() ?? {},
       },
       depth,

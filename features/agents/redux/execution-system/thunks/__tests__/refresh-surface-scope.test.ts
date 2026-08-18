@@ -153,4 +153,43 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
       unregister();
     }
   });
+
+  test("awaits surface preparation before reading the scope", async () => {
+    const store = makeStore();
+    seedConversation(store);
+    let preparedValue = "not prepared";
+    const beforeExecute = jest.fn(async ({ composerText }) => {
+      await Promise.resolve();
+      preparedValue = `retrieved for: ${composerText}`;
+    });
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: SURFACE_NAME,
+        beforeExecute,
+        getScope: () => ({ user_input: preparedValue }),
+      },
+      1,
+    );
+
+    try {
+      await (store.dispatch as unknown as AppDispatch)(
+        refreshSurfaceScope({
+          conversationId: CONVERSATION_ID,
+          composerText: "What is on page 14?",
+        }),
+      ).unwrap();
+
+      const state = store.getState() as unknown as RootState;
+      expect(beforeExecute).toHaveBeenCalledWith({
+        conversationId: CONVERSATION_ID,
+        composerText: "What is on page 14?",
+      });
+      expect(
+        state.instanceVariableValues.byConversationId[CONVERSATION_ID]
+          ?.scopeValues.renamed_agent_input,
+      ).toBe("retrieved for: What is on page 14?");
+    } finally {
+      unregister();
+    }
+  });
 });

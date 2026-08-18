@@ -55,6 +55,11 @@ Both hang off the same `ui.ui_surface` spine and resolve server-side in aidream 
 - **Global-tier writes are super-admin only**, enforced at the DB edge by `trg_guard_global_surface_binding` on `platform.associations` (`migrations/global_surface_binding_write_guard.sql`) — a global edge broadcasts to every viewer, so a normal user's org access must not be able to publish one.
 - **Launch resolution**: `fetchSurfaceBindingLayers(agentId, surfaceName)` (same service) returns weakest→strongest `MappingLayer`s for `mergeValueMappingLayers`: inheritance parents first (see below), then per surface `global → org rows by membership (oldest→newest) → user`. Org tiers apply by RLS membership — never an "active org" filter (P3: binding scope comes from the user's EXPLICIT picker selection; `ensureOrgId` supplies only the assoc access org).
 - **Submit-time scope refresh**: a managed launcher may create its conversation at MOUNT so conversation identity, focus tracking, and the pre-execution gate exist before the form is filled. Every `smartExecute` now refreshes the live provider stamped on that conversation by exact `surfaceName`, re-fetches the same binding + shortcut layers above, and re-applies `value_mappings` before execution. It does **not** use the registry's unrelated global winner: `getSurfaceRuntimeForName` preserves the emitter laws within the named surface (deepest provider, then equal-depth recency). The refresh replaces only surface-owned variable/context keys; explicit user values retain their higher-priority tier and unrelated active-scope values survive. A conversation continued away from its original provider may skip refresh with a development warning; provider reads, binding reads, and mapping failures abort loudly so stale or empty values are never sent as success.
+- **Awaited submit preparation**: a provider may additionally declare `beforeExecute({conversationId,
+  composerText})`. `refreshSurfaceScope` awaits it before reading `getScope`, and `smartExecute`
+  calls the refresh before `markInputSubmitted`; a throw therefore makes no request and preserves
+  the draft. This is for live evidence required by the current turn (first consumer: Education
+  Tutor closed-corpus retrieval), not arbitrary UI effects.
 - **Binding id = association id** everywhere (Redux slice, shortcut seeding via `create_shortcut_from_agent_surface`, drift remediation — which updates `metadata.value_mappings` on `platform.associations` via the admin client, server-side only).
 - Redux stays `agentSurfaceBindingsSlice` + thunks in `redux/thunks.ts` — same shapes, associations-backed.
 
@@ -1891,6 +1896,12 @@ regex/uniqueness) are the second and third chips of that campaign, not blockers
 on the first.
 
 ## Change Log
+
+- **2026-08-18 — surface-owned current-turn preparation.** `SurfaceRuntimeValue` gained the
+  optional awaited `beforeExecute` seam. Provider and hook registrations retain its latest
+  closure; submit-time scope refresh runs it before `getScope`, passing the untouched composer
+  text. Failure is loud and occurs before the input snapshot. Sequencing is pinned by the real
+  refresh thunk/reducer test.
 
 - **2026-08-17 — Registration-coverage audit: 12 undeclared surfaces declared, one phantom closed.**
   Arman's ruling ("the Masterwork Rulebook surface had never been declared… that also makes me think

@@ -37,11 +37,11 @@ export interface RefreshSurfaceScopeResult {
 
 export const refreshSurfaceScope = createAsyncThunk<
   RefreshSurfaceScopeResult,
-  { conversationId: string },
+  { conversationId: string; composerText?: string },
   { state: RootState; dispatch: AppDispatch }
 >(
   "instances/refreshSurfaceScope",
-  async ({ conversationId }, { getState, dispatch }) => {
+  async ({ conversationId, composerText = "" }, { getState, dispatch }) => {
     const state = getState();
     const conversation = state.conversations.byConversationId[conversationId];
     if (!conversation) return { refreshed: false, reason: "no_conversation" };
@@ -60,6 +60,22 @@ export const refreshSurfaceScope = createAsyncThunk<
         );
       }
       return { refreshed: false, surfaceName, reason: "no_provider" };
+    }
+
+    try {
+      await runtime.beforeExecute?.({ conversationId, composerText });
+    } catch (error) {
+      const detail =
+        error instanceof Error
+          ? error.message
+          : `Could not prepare the live ${surfaceName} context.`;
+      const message = `Nothing was sent. ${detail}`;
+      console.error(
+        `[surfaces] submit-time preparation failed for conversation "${conversationId}" on "${surfaceName}"`,
+        error,
+      );
+      toast.error("Could not prepare this message", { description: message });
+      throw new Error(message, { cause: error });
     }
 
     let applicationScope: ApplicationScope;
