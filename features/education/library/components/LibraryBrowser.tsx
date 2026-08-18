@@ -53,9 +53,13 @@ export function LibraryBrowser({
       </div>
       <p className="text-sm text-muted-foreground mb-6 max-w-2xl">
         Free, public study decks from the AI Matrx community. Study a copy, or
-        suggest an improvement. Look for the{" "}
-        <span className="text-emerald-600 dark:text-emerald-400 font-medium">Certified</span>{" "}
-        mark — editorially verified decks.
+        suggest an improvement. The{" "}
+        <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+          Certified
+        </span>{" "}
+        mark means a human expert verified the deck;{" "}
+        <span className="font-medium text-foreground">AI-built starter</span>{" "}
+        means we curated it but nobody has checked it yet.
       </p>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">

@@ -13,8 +13,15 @@ export interface PublicDeck {
   topic: string | null;
   difficulty: string | null;
   cardCount: number;
+  /** A certification row exists. NOT the same as "a human checked it". */
   certified: boolean;
   certifiedNote: string | null;
+  /**
+   * A HUMAN expert signed off (`content_certification.human_verified_at`).
+   * Only this may render the "Certified" mark — `certified` alone renders
+   * "AI-built starter". Defaults to false everywhere; never infer it.
+   */
+  humanVerified: boolean;
   updatedAt: string;
 }
 
@@ -32,6 +39,7 @@ export function mapPublicDeck(row: PublicDeckRow): PublicDeck {
     cardCount: Number(row.card_count ?? 0),
     certified: row.certified ?? false,
     certifiedNote: row.certified_note,
+    humanVerified: row.human_verified ?? false,
     updatedAt: row.updated_at,
   };
 }

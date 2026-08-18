@@ -32,19 +32,35 @@ export async function ExamCuratedLibrary({
 
   if (decks.length === 0 && guides.length === 0) return null;
 
+  // The heading and the mark state what is TRUE of the decks actually on this
+  // page. Until a human expert has verified them these are AI-built starters,
+  // and saying otherwise is the one claim our whole position rests on not
+  // making. Never hardcode the verified copy back in.
+  const anyHumanVerified = decks.some((d) => d.humanVerified);
+
   return (
     <section className="border-b border-border">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-14 sm:py-20">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-3">
-            <CertifiedBadge size="md" note="Editorially verified by AI Matrx" />
+            <CertifiedBadge size="md" humanVerified={anyHumanVerified} />
           </div>
           <h2 className="text-[clamp(1.5rem,1.25rem+1.5vw,2.5rem)] font-bold tracking-tight">
-            {examName} certified study library
+            {examName} study library
           </h2>
           <p className="mt-4 text-muted-foreground text-lg max-w-2xl mx-auto">
-            Curated, exam-grade decks and study guides for {examName}. Study a
-            copy free — every card and guide is editorially reviewed.
+            {anyHumanVerified ? (
+              <>
+                Curated, exam-grade decks and study guides for {examName}. Study
+                a copy free — verified decks carry the Certified mark.
+              </>
+            ) : (
+              <>
+                Curated decks and study guides for {examName}, built by AI and
+                organised by AI Matrx. Study a copy free — a human expert
+                hasn&apos;t verified these yet, so check anything that matters.
+              </>
+            )}
           </p>
         </div>
 

@@ -53,7 +53,12 @@ export function DeckCard({
     >
       <div className="flex items-start justify-between gap-2">
         <h3 className="font-semibold leading-snug line-clamp-2">{deck.name}</h3>
-        {certified ? <CertifiedBadge note={deck.certifiedNote} /> : null}
+        {certified ? (
+          <CertifiedBadge
+            humanVerified={deck.humanVerified}
+            note={deck.certifiedNote}
+          />
+        ) : null}
       </div>
 
       {deck.description ? (
