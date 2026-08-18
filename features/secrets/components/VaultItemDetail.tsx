@@ -627,11 +627,7 @@ function AttachmentRow({
           </dd>
           <dt className="font-medium text-muted-foreground">Protection</dt>
           <dd className="text-foreground">
-            {
-              HANDLING_PRESENTATION[
-                attachment.handling as VaultHandling
-              ].label
-            }
+            {HANDLING_PRESENTATION[attachment.handling as VaultHandling].label}
           </dd>
           {attachment.description && (
             <>

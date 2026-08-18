@@ -19,14 +19,7 @@
  *     ~30s auto-clear — never Redux, storage, a query cache, or a URL.
  */
 import { useEffect, useState } from "react";
-import {
-  Check,
-  Copy,
-  Eye,
-  EyeOff,
-  Loader2,
-  LockKeyhole,
-} from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Loader2, LockKeyhole } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";

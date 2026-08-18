@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 const componentSource = [
   "SecretValue.tsx",
+  "VaultHandlingControl.tsx",
   "VaultWorkspace.tsx",
   "VaultItemDetail.tsx",
   "VaultCreateDialog.tsx",
@@ -30,6 +31,25 @@ describe("shared vault UI contract", () => {
 
     expect(valueSource).not.toContain("value_hint");
     expect(valueSource).toContain('"Hidden"');
+    expect(valueSource).toContain("Hides in {secondsLeft}s");
+  });
+
+  test("offers one plain-language protection control everywhere fields are edited", () => {
+    const handlingSource = readFileSync(
+      join(
+        process.cwd(),
+        "features/secrets/components/VaultHandlingControl.tsx",
+      ),
+      "utf8",
+    );
+
+    expect(handlingSource).toContain("ToggleGroup");
+    expect(handlingSource).toContain('label: "Standard"');
+    expect(handlingSource).toContain('label: "Restricted"');
+    expect(handlingSource).toContain('label: "Automation only"');
+    expect(
+      componentSource.match(/<VaultHandlingControl/g)?.length,
+    ).toBeGreaterThan(3);
   });
 
   test("uses one credential edit entry instead of independent edit actions", () => {
@@ -57,7 +77,7 @@ describe("shared vault UI contract", () => {
 
     expect(pageSource).toContain('presentation="full"');
     expect(workspaceSource).toContain(
-      "lg:grid-cols-[13rem_21rem_minmax(0,1fr)]",
+      "lg:grid-cols-[14rem_20rem_minmax(0,1fr)]",
     );
     expect(workspaceSource).toContain("VaultWorkspaceListRow");
     expect(workspaceSource).toContain("VAULT_LABELS.credentialName");
@@ -102,7 +122,7 @@ describe("shared vault UI contract", () => {
 
     expect(detailSource).toContain("Protected files");
     expect(detailSource).toContain("Type and size");
-    expect(detailSource).toContain("Who can download it");
+    expect(detailSource).toContain("Download protection");
     expect(typesSource).toContain("VAULT_ATTACHMENT_COLUMNS");
     expect(
       typesSource.match(/VAULT_ATTACHMENT_COLUMNS[\s\S]*?as const/)?.[0],

@@ -34,16 +34,13 @@ export const HANDLING_PRESENTATION: Record<
   },
   sealed: {
     label: "Automation only",
-    description: "No person can reveal it. Trusted automation can still use it.",
+    description:
+      "No person can reveal it. Trusted automation can still use it.",
     icon: LockKeyhole,
   },
 };
 
-const HANDLING_OPTIONS: VaultHandling[] = [
-  "visible",
-  "revealable",
-  "sealed",
-];
+const HANDLING_OPTIONS: VaultHandling[] = ["visible", "revealable", "sealed"];
 
 interface VaultHandlingControlProps {
   value: VaultHandling;
@@ -93,11 +90,7 @@ export function VaultHandlingControl({
       value={value}
       disabled={disabled}
       onValueChange={(next) => {
-        if (
-          next === "visible" ||
-          next === "revealable" ||
-          next === "sealed"
-        ) {
+        if (next === "visible" || next === "revealable" || next === "sealed") {
           onValueChange(next);
         }
       }}

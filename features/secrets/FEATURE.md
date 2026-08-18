@@ -1,6 +1,6 @@
 # Secrets — Unified Credential Vault
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-07-28
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-08-17
 
 > Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in ANY repository.
 >
@@ -129,13 +129,22 @@ worked example.
 Personal and organization credentials render through the same
 `VaultWorkspace`; their vocabulary and interaction model may not diverge.
 
-- Every datum is a labeled pair. Canonical labels live in `VAULT_LABELS`;
-  screens import them instead of inventing nearby synonyms.
+- Detailed metadata is labeled. Canonical labels live in `VAULT_LABELS`;
+  screens import them instead of inventing nearby synonyms. Familiar list and
+  detail identity headers use title + supporting metadata without repeating
+  database-form labels such as "Credential name" and "Credential type."
 - Text metadata wraps and is shown in full. The vault may not use truncation,
   line-clamping, or “+N more” collapsing.
 - A protected value has exactly two human-visible states: **Hidden**, or the
   complete transiently revealed value. `value_hint` is transport metadata and
-  must never be rendered as a partial mask.
+  must never be rendered as a partial mask. The shared `SecretValue` keeps
+  reveal/copy as small trailing icon actions, displays a visible auto-hide
+  countdown after reveal, and clears plaintext after about 30 seconds.
+- Every field edit uses the shared three-way **Protection** control: Standard,
+  Restricted, or Automation only. The UI says plainly that every value is
+  encrypted at rest; the control changes human reveal permission, not whether
+  encryption exists. Stored Automation-only values render as a locked status
+  because sealing is a permanent one-way action.
 - A credential has one **Edit credential** mode. Name, description, field
   replacement, runtime-key metadata, access, status, notes, URLs, and other
   details are edited inside it; independent rename/rotate/edit-note controls
@@ -149,9 +158,10 @@ Personal and organization credentials render through the same
   responsive Credenza. Embedded window/org hosts keep the compact presentation
   of the same workspace because they do not own a full viewport. The former
   settings host redirects to `/vault` instead of embedding the compact card grid.
-- A list row carries labeled identity only (credential name, credential type,
-  and login URLs when applicable). Encrypted fields are shown in the detail
-  pane, avoiding a card-grid wall of reveal controls.
+- A list row carries compact identity only: title, one deduplicated kind/meta
+  line, and login URLs when applicable. Encrypted fields are shown in the
+  detail pane, avoiding both repeated labels and a card-grid wall of reveal
+  controls.
 - New credential starts with four plain-purpose choices: Website login, API
   key, Environment value, Secure file, and Custom credential. The full catalog remains
   searchable behind **Browse all**.
@@ -173,6 +183,8 @@ Personal and organization credentials render through the same
 | [`vault-service.ts`](./vault-service.ts)                                       | THE service: `/api/vault/*` client + direct-Supabase masked reads + catalog definition loader.                                                                                                                                                                                                   |
 | [`vault-hooks.ts`](./vault-hooks.ts)                                           | THE hook set: `useVault` (list + all mutations + toasts/busy), `useVaultDefinitions`, `useVaultAudit`, `useTransientSecret`.                                                                                                                                                                     |
 | [`components/VaultWorkspace.tsx`](./components/VaultWorkspace.tsx)             | Full three-pane route workspace plus compact embedded presentation, both sharing the same list/search/family filters, detail, create, and import flows (Credenza = Dialog/Drawer responsive).                                                                                                    |
+| [`components/VaultHandlingControl.tsx`](./components/VaultHandlingControl.tsx) | Shared Standard / Restricted / Automation-only protection selector and current-state presentation for fields and protected files.                                                                                                                                                                |
+| [`components/SecretValue.tsx`](./components/SecretValue.tsx)                   | Canonical masked value row with audited reveal, direct copy, compact icon actions, and transient plaintext countdown/auto-clear.                                                                                                                                                                 |
 | [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | Basic-purpose picker first, searchable full catalog second, then definition-driven form + Custom builder (with `KEY=value` paste-to-fill); login passwords support local generation and Show/Hide.                                                                                               |
 | [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Labeled fields with hidden/full reveal and one credential edit mode (name, description, field values/metadata, notes, URLs, other details), plus share, transfer, fork, soft delete, and audit trail.                                                                                            |
 | [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`.                                                                                                                                                                                                                                   |
@@ -215,6 +227,13 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-17** — Reworked the canonical full Vault around established
+  password-manager patterns: full-bleed three-pane workspace, compact identity
+  rows, flat grouped field rows, icon-only reveal/copy, visible auto-hide
+  countdown, and one shared plain-language protection selector used across
+  field and protected-file editing. All encryption and service paths remain
+  unchanged.
 
 - **2026-08-11** — Added first-class Vault file attachments and the Secure file
   create purpose. Initial creation uploads atomically from the user's point of

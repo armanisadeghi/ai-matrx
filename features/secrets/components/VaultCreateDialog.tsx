@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/credenza-modal/credenza";
 
 import { generateVaultPassword, parseEnvAssignment } from "../utils";
+import { VaultHandlingControl } from "./VaultHandlingControl";
 import {
   ENV_VALUE_DEFINITION_KEY,
   FAMILY_LABELS,
@@ -1025,29 +1026,16 @@ function DefinitionForm({
                 placeholder="Used to sign App Store Connect API requests"
               />
             </div>
-            <div className="space-y-1">
-              <Label>Who can download it</Label>
-              <Select
+            <div className="space-y-1 sm:col-span-2">
+              <Label>Download protection</Label>
+              <VaultHandlingControl
                 value={attachmentHandling}
-                onValueChange={(value) =>
-                  setAttachmentHandling(value as VaultHandling)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="visible">
-                    {HANDLING_LABELS.visible}
-                  </SelectItem>
-                  <SelectItem value="revealable">
-                    {HANDLING_LABELS.revealable}
-                  </SelectItem>
-                  <SelectItem value="sealed">
-                    {HANDLING_LABELS.sealed}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={setAttachmentHandling}
+                disabled={busy}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                The file is always encrypted at rest.
+              </p>
             </div>
           </div>
         </div>
@@ -1647,32 +1635,19 @@ function CustomBuilder({
                 />
               )}
             </div>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <Select
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Protection</Label>
+                <VaultHandlingControl
                   value={field.handling}
-                  onValueChange={(next) =>
-                    setField(index, { handling: next as VaultHandling })
-                  }
-                >
-                  <SelectTrigger
-                    className="h-auto min-h-8 min-w-56 whitespace-normal text-left text-xs"
-                    aria-label={VAULT_LABELS.valueAccess}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="visible">
-                      {HANDLING_LABELS.visible}
-                    </SelectItem>
-                    <SelectItem value="revealable">
-                      {HANDLING_LABELS.revealable}
-                    </SelectItem>
-                    <SelectItem value="sealed">
-                      {HANDLING_LABELS.sealed}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                  onValueChange={(next) => setField(index, { handling: next })}
+                  disabled={busy}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Every value is encrypted at rest.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <label
                   className="flex items-center gap-2 text-xs text-muted-foreground"
                   title={
@@ -1691,23 +1666,23 @@ function CustomBuilder({
                     aria-label="Inject into sandboxes"
                   />
                 </label>
+                {fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() =>
+                      setFields((current) =>
+                        current.filter((_, i) => i !== index),
+                      )
+                    }
+                    aria-label="Remove field"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                )}
               </div>
-              {fields.length > 1 && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() =>
-                    setFields((current) =>
-                      current.filter((_, i) => i !== index),
-                    )
-                  }
-                  aria-label="Remove field"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
-              )}
             </div>
           </div>
         ))}

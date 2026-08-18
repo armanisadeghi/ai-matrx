@@ -849,9 +849,7 @@ function VaultWorkspaceListRow({
           {item.display_name}
         </p>
         <p className="mt-0.5 whitespace-normal break-words text-xs leading-4 text-muted-foreground">
-          {[identity.kindLabel, identity.subtitle]
-            .filter(Boolean)
-            .join(" · ")}
+          {[identity.kindLabel, identity.subtitle].filter(Boolean).join(" · ")}
         </p>
         {item.login_urls.length > 0 && (
           <p className="mt-1 whitespace-normal break-all text-[11px] text-muted-foreground">
