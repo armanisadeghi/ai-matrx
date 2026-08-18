@@ -70,6 +70,84 @@ export interface AssembleTutorGroundingOptions {
   userId?: string;
 }
 
+/** Request-only evidence and its compact durable citation-coordinate ledger. */
+export const TUTOR_CITATION_CONTEXT_PREFIX = "tutor_grounding_citation_";
+export const TUTOR_RETRIEVED_EVIDENCE_KEY = "tutor_retrieved_evidence";
+
+export interface TutorCitationPointer {
+  key: string;
+  value: string;
+}
+
+/**
+ * Compact coordinates persisted beside the deferred evidence. Each value stays
+ * below the platform's 200-character default inline ceiling, so the completed
+ * user turn retains enough canonical identity to validate/open citations after
+ * reload without duplicating the full passage or rerunning retrieval.
+ */
+export function tutorCitationPointers(
+  retrieval: GroundingResult | null,
+): TutorCitationPointer[] {
+  if (retrieval?.status !== "retrieved") return [];
+  return retrieval.passages.map((passage, index) => {
+    const tuple = [
+      passage.chunkId,
+      passage.fileId ?? "",
+      passage.documentId ?? "",
+      passage.page ?? null,
+      passage.title.slice(0, 60),
+    ];
+    let value = JSON.stringify(tuple);
+    if (value.length > 199) {
+      tuple[2] = "";
+      tuple[4] = passage.title.slice(0, 24);
+      value = JSON.stringify(tuple);
+    }
+    if (value.length > 199) {
+      tuple[1] = "";
+      tuple[2] = "";
+      tuple[4] = "";
+      value = JSON.stringify(tuple);
+    }
+    return {
+      key: `${TUTOR_CITATION_CONTEXT_PREFIX}${index + 1}`,
+      value,
+    };
+  });
+}
+
+export function parseTutorCitationPointer(
+  value: string,
+): SourceCitation | null {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed) || parsed.length !== 5) return null;
+    const [chunkId, fileId, documentId, page, title] = parsed;
+    if (
+      typeof chunkId !== "string" ||
+      !chunkId ||
+      typeof fileId !== "string" ||
+      typeof documentId !== "string" ||
+      (page !== null &&
+        (typeof page !== "number" || !Number.isInteger(page) || page < 1)) ||
+      typeof title !== "string"
+    ) {
+      return null;
+    }
+    return {
+      sourceId: chunkId,
+      sourceKind: "chunk",
+      title: title || "Uploaded study material",
+      locator: page !== null ? `p. ${page}` : "Retrieved passage",
+      ...(fileId ? { fileId } : {}),
+      ...(documentId ? { documentId } : {}),
+      ...(page !== null ? { page } : {}),
+    };
+  } catch {
+    return null;
+  }
+}
+
 interface WeakCard {
   id: string;
   front: string;

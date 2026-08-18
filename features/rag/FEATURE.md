@@ -184,7 +184,9 @@ Migrations: [`library_store_file_reachability_cascade.sql`](../../migrations/lib
   `GroundedPassage` records (chunk/title/excerpt/file/document/page/score), a TrustEnvelope and
   explicit `retrieved|empty|failed` status. Empty inventory never means global search. Shared
   serialization emits stable `GROUNDING_PASSAGE` markers for text-valued agent context. First
-  consumer: the Education Tutor; WP3/WP11 consume this same seam rather than building retrieval.
+  consumers: the Education Tutor and WP11's `ExamContentPipeline`; both fail closed on
+  `empty|failed`. Tutor citations add a compact persisted coordinate ledger so the exact retrieved
+  chunk/file/document/page remains verifiable after conversation reload without rerunning search.
 
 - **2026-08-15 — Shared Knowledge publishing executes again.** `rag.library_grant_publish` now calls the intended any-admin helper (`public._library_assert_admin`) while preserving its live pre-check body, and a read-only runtime probe exercises the authorization path on every broken-function audit refresh.
 - **2026-08-15 — Gemini embeddings gained an honest RAG surface.** Added the

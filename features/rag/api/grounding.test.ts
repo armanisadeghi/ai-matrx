@@ -2,6 +2,10 @@ import {
   parseGroundedPassageCitations,
   serializeGroundedPassages,
 } from "./grounding";
+import {
+  parseTutorCitationPointer,
+  tutorCitationPointers,
+} from "@/features/education/tutor/grounding";
 
 describe("serializeGroundedPassages", () => {
   test("preserves the durable citation coordinates in stable markers", () => {
@@ -55,5 +59,41 @@ describe("serializeGroundedPassages", () => {
         page: 14,
       },
     ]);
+  });
+
+  test("persists compact citation coordinates beside deferred evidence", () => {
+    const [pointer] = tutorCitationPointers({
+      status: "retrieved",
+      passages: [
+        {
+          chunkId: "chunk-14",
+          text: "evidence",
+          title: "AP World guide",
+          sourceKind: "cld_file",
+          sourceId: "file-1",
+          fileId: "file-1",
+          documentId: "document-1",
+          page: 14,
+          locator: "p. 14",
+          score: 0.9,
+        },
+      ],
+      trust: {
+        citations: [],
+        confidence: "inferred",
+        groundedIn: "uploaded material",
+      },
+    });
+
+    expect(pointer.value.length).toBeLessThan(200);
+    expect(parseTutorCitationPointer(pointer.value)).toEqual({
+      sourceId: "chunk-14",
+      sourceKind: "chunk",
+      title: "AP World guide",
+      locator: "p. 14",
+      fileId: "file-1",
+      documentId: "document-1",
+      page: 14,
+    });
   });
 });

@@ -76,6 +76,10 @@ import {
 } from "../settings";
 import {
   assembleTutorGrounding,
+  parseTutorCitationPointer,
+  tutorCitationPointers,
+  TUTOR_CITATION_CONTEXT_PREFIX,
+  TUTOR_RETRIEVED_EVIDENCE_KEY,
   type TutorGroundingSeed,
   type TutorLaunchGrounding,
 } from "../grounding";
@@ -477,9 +481,51 @@ function EducationTutorClientInner({
       const material = message.modelContext?.items.find(
         (item) => item.key === "study_material",
       )?.value;
-      return typeof material === "string"
-        ? parseGroundedPassageCitations(material)
-        : [];
+      const citations =
+        typeof material === "string"
+          ? parseGroundedPassageCitations(material)
+          : [];
+      for (const item of message.modelContext?.items ?? []) {
+        if (
+          !item.key.startsWith(TUTOR_CITATION_CONTEXT_PREFIX) ||
+          typeof item.value !== "string"
+        ) {
+          continue;
+        }
+        const citation = parseTutorCitationPointer(item.value);
+        if (citation) citations.push(citation);
+      }
+      // During the live stream the optimistic user record has not received the
+      // server's model_context column yet. Its frozen context_snapshot is the
+      // same submit-time evidence and survives URL promotion, so use the compact
+      // pointers there until the durable row replaces them.
+      const metadata = message.metadata;
+      const snapshot =
+        metadata && typeof metadata === "object" && !Array.isArray(metadata)
+          ? (metadata as { context_snapshot?: unknown }).context_snapshot
+          : undefined;
+      if (Array.isArray(snapshot)) {
+        for (const rawEntry of snapshot) {
+          if (
+            !rawEntry ||
+            typeof rawEntry !== "object" ||
+            Array.isArray(rawEntry)
+          ) {
+            continue;
+          }
+          const entry = rawEntry as { key?: unknown; value?: unknown };
+          if (
+            typeof entry.key !== "string" ||
+            !entry.key.startsWith(TUTOR_CITATION_CONTEXT_PREFIX) ||
+            typeof entry.value !== "string"
+          ) {
+            continue;
+          }
+          const citation = parseTutorCitationPointer(entry.value);
+          if (citation) citations.push(citation);
+        }
+      }
+      return citations;
     }
     return [];
   }, [conversationMessages, latestAssistantId]);
@@ -488,9 +534,14 @@ function EducationTutorClientInner({
       persistedTurnCitations.map((citation) => [citation.sourceId, citation]),
     );
     for (const citation of tutorTrust?.citations ?? []) {
-      if (!citations.has(citation.sourceId)) {
-        citations.set(citation.sourceId, citation);
-      }
+      const persisted = citations.get(citation.sourceId);
+      citations.set(citation.sourceId, {
+        ...persisted,
+        ...citation,
+        fileId: citation.fileId ?? persisted?.fileId,
+        documentId: citation.documentId ?? persisted?.documentId,
+        page: citation.page ?? persisted?.page,
+      });
     }
     return [...citations.values()];
   }, [persistedTurnCitations, tutorTrust]);
@@ -757,6 +808,12 @@ function EducationTutorClientInner({
           label: "Study material",
         },
         {
+          key: TUTOR_RETRIEVED_EVIDENCE_KEY,
+          value: grounding.study_material,
+          type: "text",
+          label: "Retrieved study evidence",
+        },
+        {
           key: "teaching_mode",
           value: grounding.teaching_mode,
           type: "text",
@@ -768,6 +825,12 @@ function EducationTutorClientInner({
           type: "text",
           label: "Personality style",
         },
+        ...tutorCitationPointers(grounding.retrieval).map((pointer) => ({
+          key: pointer.key,
+          value: pointer.value,
+          type: "text" as const,
+          label: "Grounding citation",
+        })),
       ],
     };
   };
