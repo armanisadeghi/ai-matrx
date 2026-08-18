@@ -17,6 +17,25 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D210 — `/notes` React #418 hydration mismatch has no attributable source (2026-08-18)
+
+`system_error` class `sec_41d9f15fe69070ec3a7e4f36acffc342e2ff6a03d8ffa39a98a3f7c23bd021e9`
+contains the exact unresolved ids `e8b388a3-f83c-418d-86e2-8e63f3b3edb6` and
+`cf3a5fc0-63fa-42ec-9df2-60895c16ac3d`. Both production traces stop in React runtime code: there
+is no component/source frame or hydration diff. The incident deployments used commits `f5a236b`
+and `e649a1d`, but `NotesView.tsx`, `NotesRouteBody.tsx`, and `app/(core)/notes/layout.tsx` have
+identical Git blobs at both commits and current `origin/main`, so no notes-route change is an
+attributable fix. **Do not resolve the rows or guess at a producer.**
+
+Current proof at `2026-08-18T05:45:14Z`: both exact incident URLs hydrate cleanly on authenticated
+localhost with zero browser warnings/errors; four notes suites pass (16/16), targeted ESLint
+passes, and the exact class has zero post-proof occurrences. Non-reproduction is not causal proof.
+
+Repair becomes actionable with a development hydration diff/component stack, a deterministic
+reproduction tied to browser state/cookie/viewport, or a later occurrence whose source map and
+deployment identify the changed producer. Then fix that producer, add an SSR-to-hydrate regression,
+prove no post-fix occurrence, and resolve only the two exact ids above.
+
 ### D208 — the Context Policy rename's last tail: `slotMatched` / `slot_matched` (2026-08-17)
 
 Found by the final Mandate/Context-Policy verification sweep. Every *readable* "slot" is gone and
