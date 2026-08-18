@@ -5,17 +5,13 @@
  * This module is the ONLY place that turns them into sentences, because the
  * wire formats are quirky and every quirk needs one tolerant answer:
  *
- *   kind "tool"    → the BARE tool name (`web_search`), repeated identically
- *                    for started / progress / completed / error. Humanised to
- *                    words here. (aidream's lifecycle field is dropped at the
- *                    emitter — a fix is in flight; the JSON form is already
- *                    handled below so the richer frame needs no FE change.)
+ *   kind "tool"    → JSON `{tool,event,message}`. Older servers sent only the
+ *                    bare tool name, which remains a tolerated fallback.
  *   kind "phase"   → a bare lowercase label (`processing`, `structuring`,
  *                    `reasoning:started`). Mapped to a human line.
- *   kind "warning" → json.dumps(WarningPayload) HARD-SLICED at 200 chars, so
- *                    it is usually INVALID JSON. Parsed leniently: real JSON
- *                    first, then a field scrape off the truncated blob, then
- *                    the raw text. Never throws, never shows a JSON blob.
+ *   kind "warning" → JSON `{code,user_message,level,recoverable}`. Older
+ *                    servers hard-sliced the full WarningPayload mid-JSON;
+ *                    field scraping remains only as that legacy fallback.
  *
  * Pure module — no React. Everything returns display strings.
  */
@@ -56,25 +52,7 @@ export function phaseCopy(raw: string): string {
   return PHASE_COPY[key] ?? humanizeIdentifier(key);
 }
 
-/**
- * Recover the human half of a warning payload that may be truncated JSON.
- * Order: parse → scrape `user_message` → scrape `code` → the raw text.
- */
-export function warningCopy(raw: string): string {
-  const trimmed = raw.trim();
-  try {
-    const parsed: unknown = JSON.parse(trimmed);
-    if (typeof parsed === "object" && parsed !== null) {
-      const record = parsed as Record<string, unknown>;
-      const message = record.user_message ?? record.system_message;
-      if (typeof message === "string" && message) return message;
-      if (typeof record.code === "string" && record.code) {
-        return humanizeIdentifier(record.code);
-      }
-    }
-  } catch {
-    // Expected: the emitter slices the JSON mid-string. Fall through.
-  }
+function legacyWarningCopy(trimmed: string): string {
   const scraped =
     /"user_message"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(trimmed) ??
     /"system_message"\s*:\s*"((?:[^"\\]|\\.)*)/.exec(trimmed);
@@ -89,9 +67,29 @@ export function warningCopy(raw: string): string {
     : trimmed;
 }
 
+/** Canonical JSON first; regex only for pre-summary truncated warning frames. */
+export function warningCopy(raw: string): string {
+  const trimmed = raw.trim();
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (typeof parsed === "object" && parsed !== null) {
+      const record = parsed as Record<string, unknown>;
+      if (typeof record.user_message === "string" && record.user_message) {
+        return record.user_message;
+      }
+      if (typeof record.code === "string" && record.code) {
+        return humanizeIdentifier(record.code);
+      }
+    }
+  } catch {
+    // Pre-summary servers sliced WarningPayload JSON mid-field.
+  }
+  return legacyWarningCopy(trimmed);
+}
+
 /**
- * A tool marker may arrive as a bare name (today) or as a small JSON summary
- * `{tool, event, message}` (the richer form). Both resolve to one line, and
+ * A tool marker arrives as a small JSON summary `{tool, event, message}`;
+ * legacy bare names resolve through the same path. Both resolve to one line, and
  * the human `message` wins whenever it is present because it carries the real
  * query / URL.
  */

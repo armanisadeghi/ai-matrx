@@ -33,7 +33,7 @@ that is the exit-test surface.
 | Run routes | `app/(core)/workflows/[id]/page.tsx`, `app/(core)/workflows/runs/[runId]/page.tsx` → `components/run/WorkflowRunPage.tsx` | One body, two doors: `/workflows/[id]` sets up + runs (run id rides `?run=`), `/workflows/runs/[runId]` is the run's permalink (THE DOOR LAW). Each resolves the other, so a refresh always lands back on the live run. `(core)` conformant: `RouteHeader`, body `h-full overflow-hidden`, one inner scroll. |
 | Hero + the promise | `components/run/RunHero.tsx` | Status, elapsed (from the ENGINE's start, not the attach), cost, step count, and the chip row naming every deliverable **from frame zero** — the ProductionTeaser job, generalized. Fixed heights: nothing below it moves as state changes. |
 | Journey rail | `components/run/RunJourney.tsx` | Every step of the DEFINITION present immediately (not just the ones the run has reported), each with its author's label, its own icon, and what it will produce. Three layers while a step runs: its freshest REAL signal, the authored synthetic sub-steps (the guaranteed floor — never removed), the phase. Both retire on completion; the full trace lives in the feed. |
-| **Activity truth-feed** | `components/run/RunActivityFeed.tsx` + `components/run/activity-copy.ts` | The workflow twin of the podcast's `ResearchActivityFeed`: the actual tools called, the engine's own phases, `node_progress` sentences, per-step durations. `activity-copy` is the ONE place the quirky wire formats become sentences (bare tool names, bare phase labels, warning JSON hard-sliced at 200 chars → tolerant parse). Renders nothing when the backend said nothing. |
+| **Activity truth-feed** | `components/run/RunActivityFeed.tsx` + `components/run/activity-copy.ts` | The workflow twin of the podcast's `ResearchActivityFeed`: the actual tools called, the engine's own phases, `node_progress` sentences, per-step durations. `activity-copy` is the ONE place wire markers become sentences. Tool and warning markers are parseable JSON summaries; bare tool names and mid-string warning JSON remain legacy fallbacks. Renders nothing when the backend said nothing. |
 | Deliverables | `components/run/RunDeliverables.tsx` | Every step declaring an `output_kind`, ghosted as "coming up" then becoming a real panel rendering its canonical kind component. Skips nodes the authored surface already renders — one shape, one component, once per screen. Lives at the BOTTOM so the surface only grows. |
 | Step presentation | `components/run/node-presentation.ts` | Pure derivation of label / family / lucide icon / declared `output_kind` from the definition. This is what makes "what to look forward to" possible before a single node starts. |
 | Failure card | `components/run/RunFailureCard.tsx` + `run-failure-explanation.ts` | Failure as a first-class state: plain-language headline, the failing step by its author's name, the one next action, and the technical cause one tap away. `explainRunFailure` owns the copy (add a pattern there, never a bespoke string here) and carries an optional one-click `action` — the education COPPA gate routes to the page that clears it. |
@@ -100,6 +100,10 @@ that is the exit-test surface.
   one-request singleton was a measured hazard for N concurrent lanes.
 
 ## Change Log
+
+- 2026-08-18 — Warning activity now consumes aidream's bounded
+  `{code,user_message,level,recoverable}` JSON summary directly. The old regex path remains only
+  for legacy server frames that sliced full WarningPayload JSON mid-string.
 
 - 2026-08-18 — **the Study Pack surface's deliverable page changed intent, and its forcing
   test caught up.** "Study Pack v1" grew a persisted collection tier (`flashcard_items` →
