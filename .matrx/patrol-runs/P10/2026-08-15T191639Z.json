@@ -100,6 +100,63 @@
       ],
       "previousEventHash": "05ba22bd3bd4c457874b6dfd519b41a4c76f1ed4a084fe9cbf67361ce521a5ce",
       "eventHash": "757e1fc4007ab362fd71ce2a625eaadf2726510bef18dc20861a5128b5572151"
+    },
+    {
+      "sequence": 7,
+      "state": "certified",
+      "at": "2026-08-18T19:22:51.575Z",
+      "actor": "codex-p10-certifier-resume",
+      "summary": "Independent resumed certification found no batch-caused regression.",
+      "evidence": [
+        "Exact candidate component bytes remain unchanged on current main; no later component commit exists.",
+        "Focused jsdom render proof passed recording and transcribing states across xs, sm, md, and lg.",
+        "Scoped ESLint, hatch scan, patrol contracts, and full current type-check passed."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "a4a7c03ea2db9311ee926433eb0f6f25774e03a6",
+        "certifierTaskId": "/root/p10_certifier_resume",
+        "checks": [
+          "exact candidate diff and unchanged-source history",
+          "focused Jest: 1 suite, 4 parameterized cases, 8 state-size assertions",
+          "scoped ESLint and check:hatches",
+          "pnpm check:patrol-contracts",
+          "pnpm type-check"
+        ]
+      },
+      "previousEventHash": "757e1fc4007ab362fd71ce2a625eaadf2726510bef18dc20861a5128b5572151",
+      "eventHash": "8ba1728ffc2001a99426a542b8265c34b36eb4c488ce362c0245ca893a0677af"
+    },
+    {
+      "sequence": 8,
+      "state": "delivered",
+      "at": "2026-08-18T19:22:55.471Z",
+      "actor": "codex-p10-worker",
+      "summary": "Reconciled the certified escaped-delivery candidate with its existing main integration and release.",
+      "evidence": [
+        "Candidate and integration commits are both ancestors of v0.4.703 and current origin/main.",
+        "No new release was created; later releases already contain the candidate."
+      ],
+      "delivery": {
+        "candidateSha": "a4a7c03ea2db9311ee926433eb0f6f25774e03a6",
+        "preservedRef": "refs/heads/patrol-runs/P10/2026-08-15T191639Z",
+        "integratedSha": "ce600b6536c900aefae521f24d69c2d4ea7a6d97",
+        "release": "v0.4.703"
+      },
+      "previousEventHash": "8ba1728ffc2001a99426a542b8265c34b36eb4c488ce362c0245ca893a0677af",
+      "eventHash": "1bc5252429c3e979d5642fd8c89e86a7db28ac9ae48fa592526a711b3875b8a0"
+    },
+    {
+      "sequence": 9,
+      "state": "closed",
+      "at": "2026-08-18T19:23:00.292Z",
+      "actor": "codex-p10-worker",
+      "summary": "Closed the resumed P10 run after independent certification and delivery reconciliation.",
+      "evidence": [
+        "Findings 1; fixed 1 source finding (3 suppression occurrences); CERTIFIED; approvals 0; degradation 0."
+      ],
+      "previousEventHash": "1bc5252429c3e979d5642fd8c89e86a7db28ac9ae48fa592526a711b3875b8a0",
+      "eventHash": "a33d7b50b204670bf99bca1c7d93ef4aa5ba71a5c474c003bdc43da6fc0e56d9"
     }
   ]
 }

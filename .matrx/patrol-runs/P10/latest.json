@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-15T191639Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-18T19:16:12.843Z",
-  "summary": "Resumed escaped-delivery candidate for exact-source certification.",
+  "state": "closed",
+  "updatedAt": "2026-08-18T19:23:00.292Z",
+  "summary": "Closed the resumed P10 run after independent certification and delivery reconciliation.",
   "source": "2026-08-15T191639Z.json",
-  "eventHash": "757e1fc4007ab362fd71ce2a625eaadf2726510bef18dc20861a5128b5572151"
+  "eventHash": "a33d7b50b204670bf99bca1c7d93ef4aa5ba71a5c474c003bdc43da6fc0e56d9"
 }
