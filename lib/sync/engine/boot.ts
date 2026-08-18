@@ -2,7 +2,7 @@
  * lib/sync/engine/boot.ts
  *
  * `bootSync(store, identity)` — invoked by `SyncBootstrap` in React's
- * post-hydration layout phase. Its localStorage phase dispatches synchronously
+ * post-hydration passive phase. Its localStorage phase dispatches synchronously
  * once invoked; peer hydration and IDB reads continue in the background.
  *
  * Never invoke this during a Provider render. Persisted state can change DOM
