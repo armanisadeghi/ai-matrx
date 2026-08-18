@@ -33,6 +33,42 @@ them — `normalizeStage` in `types.ts` maps them for display
   `utils/supabase/interviewDb.ts` (`.schema("interview")`) in `service.ts` —
   never through Python. Transcript/ledgers read with `readAllRows`
   (completeness-sensitive).
+- **THE ROOM'S ONE REQUIRED SERVER CALL — `POST /vision-interview/sessions/{id}/roles`.**
+  `hooks/useRoleBindings.ts` (owned by `useInterviewRoom`) fires it when the
+  room opens, for EVERY session, before the person can talk. Each role
+  resolves through Mandate `vision_interview.<role>`, and only the server may
+  resolve a mandate — so without this call `session.role_bindings` is empty
+  and all six stage tabs are dead. It needs NO workflow run and is idempotent
+  (the same conversation ids come back every time), which is why it can be
+  unconditional. The response is merged into the slice
+  (`roleBindingsResolved` → `resolvedRoleBindings`, read through
+  `selectRoleBindings`, which layers it OVER the session row) so the tabs
+  mount the instant it lands — never waiting on a realtime echo. Failure
+  retries with capped backoff (1s → 30s) for as long as the room is open and
+  is stated honestly on screen with a Try again control (`rolesPhase` /
+  `rolesError`) — never a silent dead tab.
+- **THE HIJACK — `POST /vision-interview/sessions/{id}/observe`.** The person
+  now talks to an expert down the ORDINARY agent-chat path, which deleted the
+  orchestrated round the Scribe used to ride on. `hooks/useObserveRoleTurns.ts`
+  tells the server an exchange finished and the server does the rest
+  server-side: mirror the conversation's new messages into `interview.turn`,
+  honour the `<answered_questions>` block, run the Scribe over the living
+  document, run the answer tracker over the open questions
+  (aidream `services/vision_interview/live_turns.py`).
+  **The completion signal is the real one:** the execution system's
+  `activeRequests` row for the mounted conversation
+  (`selectLatestRequestId`) reaching a terminal `status` —
+  `complete` / `error` / `timeout` / `cancelled`, the same set the slice
+  stamps `completedAt` on. Never a timer, never the send.
+  **ONE ping covers both speakers:** `ingest_role_conversation` mirrors every
+  not-yet-mirrored message keyed on `chat.message.id`, the person's and the
+  expert's, so a second ping on send would re-mirror nothing. Firing on EVERY
+  terminal value (not only `complete`) is what carries the person's words
+  through when the expert's reply fails. A second ping fires once when an
+  expert's room MOUNTS, repairing an exchange that settled after the person
+  switched tabs — free, because a pass with nothing new returns before any
+  model is called. Fire-and-forget throughout: caught failures, no toast,
+  nothing blocked; a missed ping is repaired by the next.
 - **Run orchestration only** goes to aidream via `callApi`:
   `POST /vision-interview/sessions/{id}/start` (path cast `as never` until
   api-types regenerate) and the typed `POST /runs/{run_id}/resume`
@@ -179,7 +215,10 @@ them — `normalizeStage` in `types.ts` maps them for display
     one-conversation-per-surface assumption true; switching tabs unmounts the
     old room and mounts the new one, never several live at once. A role with
     no binding (the session was never started) renders the honest
-    "hasn't joined yet" invitation with Start — never a spinner.
+    "hasn't joined yet" invitation — an EDGE CASE since the `/roles` wiring
+    landed (2026-08-18), so it names which of "still opening" / "couldn't
+    open" is true, carries the error text and a Try again, and never a
+    spinner.
 14. **THE ANSWER-APPEND RULE (v3).** Answers written in the left panel live in
     the slice (`answerDrafted` / `answerDiscarded` / `selectPendingAnswers`),
     never only in a composer, and they ride the NEXT message as an
@@ -247,6 +286,25 @@ per-node tokens the same way.
   structured marker in turn rows.
 
 ## Change log
+
+- 2026-08-18 — **v3 LAST MILE: the room opens itself, and the Scribe stays
+  current.** The v3 rewrite read `session.role_bindings` but nothing ever
+  created them and nothing told the server a reply had finished, so a new
+  session landed in six dead tabs and the living document never moved.
+  (1) `roomApi.ts` + `hooks/useRoleBindings.ts` — `POST /roles` on room open,
+  for every session, no run required, merged into the slice
+  (`resolvedRoleBindings` / `selectRoleBindings`) so tabs mount immediately;
+  capped-backoff retry with an honest failed state + Try again.
+  (2) `hooks/useObserveRoleTurns.ts` — `POST /observe` when the mounted
+  conversation's request SETTLES (terminal `activeRequests.status`), plus one
+  repair ping on room mount; one ping covers both the human's and the
+  expert's words because the server mirrors every unmirrored message.
+  (3) `StageTabs` / `RoomChatPane` read the merged bindings map.
+  VERIFIED live against a brand-new session: 8 bindings persisted with
+  `run_id` NULL, a real streamed reply, `interview.turn` rows for human +
+  expert (`source=role_conversation`), the Scribe's 1916-char `document`,
+  7 `question` rows and 1 `document_revision`, 3 turns over 2 distinct
+  `message_id`s (no double-mirror), and each expert on its own conversation.
 
 - 2026-08-18 — **v3: the three-panel room, on the canonical chat.** (1) LAYOUT:
   `VisionInterviewRoom` rebuilt as three resizable panels — questions ·
