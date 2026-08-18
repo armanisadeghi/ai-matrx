@@ -65,18 +65,19 @@ Fuller sweep when unsure (surface-drift + doctrine + types): `pnpm validate --no
 
 Plain git, per the global commit rules: review `git status` + `git diff` first, stage the **specific** files (never blind `git add -A`), write a conventional commit (`feat(...)`/`fix(...)`) via a HEREDOC, then `git push origin main`. Quality gates (`check:doctrine`, UI primitives, migrations, dead-relations) run at **release time** via `./scripts/release.sh` / `pnpm check:release-gates` — not on every commit.
 
-> `pnpm ship "msg"` is the **versioned-release** path (bumps version, notifies the ship API). Use it only when the user asks to cut a release — not for routine work.
+> `pnpm ship "msg"` is the **versioned-release** path. Use the release-freshness rule below after every push; do not leave runtime-bearing `main` changes behind an ignored Vercel commit.
 
 ### 6. If it must reach USERS, release it — `git push` alone deploys nothing
 
 **Vercel skips every commit whose first line is not release-prefixed** (`vercel.json` → `scripts/vercel-ignore-build.sh`). A plain `git push origin main` reaches GitHub and **no user, ever**: no build starts, the deployment reads `CANCELED`, and production stays on the last release. Polling the live URL will never turn green — there is nothing running to wait for.
 
-So decide explicitly, and say which you did:
+Before ending the turn, close the release gap:
 
 | Situation | Do |
 |---|---|
-| Routine work; user did not ask for it live | commit + push (§5). **Report it as pushed, NOT deployed.** |
-| User asked to ship / deploy / "get it live", or the change is user-visible and they're waiting on it | `./scripts/release.sh` (or `./ship.sh "msg"`) |
+| Latest applicable `origin/main` code is already contained in every affected target's latest `Ready` deployment | No release; record the verified target SHAs. |
+| Any affected target is missing applicable `origin/main` code | Run `./scripts/release.sh --target all` by default, then verify all three projects become `Ready`. Use a narrower target only when changed paths positively prove isolation. |
+| A release for the exact applicable SHA is already queued or building | Do not duplicate it; monitor it to `Ready`, repair failure, and re-verify freshness. |
 
 Verify a release actually landed: a `READY` production deployment whose commit is yours or a descendant (Vercel MCP `list_deployments`), then assert on a string that exists **only** in the new build — a marker the old build also contained reports a false success.
 
