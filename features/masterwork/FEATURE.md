@@ -93,6 +93,62 @@
   (Rulebook `arman-seo-method` scaffolded, draft, owned by Arman — the interview Approach
   unblocks it).
 
+## The review-verb matrix (Arman's rulings, 2026-08-17 — settled)
+
+> 🚨 **SAVING AN EDIT IS NOT APPROVING.** Arman, live-testing: _"save rule is
+> actually approving even though it shouldn't approve. You're updating the
+> data, not approving it."_ An earlier session wrote the OPPOSITE doctrine
+> into `saveRule` ("correcting and saving IS approval") — that comment and
+> behavior are WRONG and are replaced by this matrix. **Approve is ONLY the
+> Approve button.** The core verbs are **Approve / Reject / Improve**.
+
+What each action does to a rule's review state (`draft` / `rejected` /
+`feedback`; the ONE merge for edit-save is `applyManualRuleEdit` in
+`types.ts`):
+
+| Action | `draft` | `rejected` | `feedback` |
+|---|---|---|---|
+| **Approve** (button — row, wizard, Improve review) | cleared | cleared | cleared |
+| **Reject** (with written reason) | `true` | `true` | set to the reason |
+| **Request changes** | unchanged | unchanged | set to the note |
+| **Improve** (rewrite lands) | **`true` — always a draft, never auto-approved** | cleared (the feedback was consumed by the rewrite) | cleared |
+| **Edit + Save, content changed** | **preserved** (a draft stays a draft, approved stays approved) | cleared — the Expert's own hand supersedes the note they wrote for the Scout; the rule returns to THEIR draft queue | cleared |
+| **Edit + Save, nothing changed** | preserved | preserved | preserved |
+| **Reconsider** (rejected → my queue) | `true` | cleared | cleared |
+| **Retire / Restore** | preserved | preserved | preserved |
+| **Manual Add** (window, Manually tab) | absent — the Expert typing it IS the human-first act | — | — |
+| **Add With AI / Improve rewrite** | `true` — every AI-authored rule awaits the explicit Approve | — | — |
+
+**The Improve verb** (`agent-context/ruleImprove.ts` +
+`components/detail/ImproveRuleDialog.tsx`): the Expert speaks feedback
+(ProTextarea), Mandate **`masterwork.rule_improver`** rewrites that ONE rule
+with the full Rulebook as context (structured output `{name, statement,
+rationale, detection, severity, section}`), and the rewrite lands through the
+canonical `upsertRuleWithRetry` → `saveRules` CAS as a **draft revision
+keeping its id** — `quote`/`source_ref` are mechanically untouchable, section
+is validated against the Rulebook's own codes. The dialog stays mounted at
+page level so the wizard's "request changes and keep going" flow works:
+submit, press **Keep reviewing**, and the rewrite returns to the queue when
+the agent responds (`requeue` prop on `RuleReviewWizard`). The same Mandate
+drafts a brand-new rule from a plain-language description (`rule_json`
+empty) — the Add-rule window's default tab. The editor offers the AI path
+from within edit ("Have the AI apply my notes instead").
+
+**"Add rule" is a WindowPanel, never a blocking modal** (Arman: the
+project-new window panel is "how everything in our system should run"):
+overlay `masterworkAddRuleWindow` → `features/window-panels/windows/
+masterwork/AddRuleWindow.tsx` (chrome) → `components/add-rule/AddRulePanel.tsx`
+(body): **With AI** (default — describe in your own words, mic-first) +
+**Manually** (the canonical `RuleFields` form, shared with the editor — never
+re-declare the fields). Opened only through `useOpenAddRuleWindow()`; every
+human entry point on the Rulebook page routes there. `RuleEditorDialog`'s
+"new" mode survives ONLY for the `rule_draft` surface write target
+(agent-staged drafts); no human path opens it for adds.
+
+**Button icons rely on the Button's own `gap-2` — never add `mr-*` to a
+button icon** (icon + gap + margin was the "giant gap" defect Arman flagged
+on Approve/Reject).
+
 ## The landing — `/masterwork` (2026-08-17)
 
 One URL, two audiences (module-landing-pages doctrine, branch-in-page):
@@ -492,6 +548,20 @@ deliberately never produced.
    the Expert reviews the staged values and the existing `saveRules` funnel remains the only write.
 
 ## Change log
+
+- 2026-08-17 — **The review verbs settled: Approve / Reject / Improve, and
+  SAVE ≠ APPROVE** (§ The review-verb matrix). `saveRule` no longer approves
+  on save (`applyManualRuleEdit` in types.ts is the one merge); the Improve
+  verb shipped end-to-end (Mandate `masterwork.rule_improver`, agent
+  `c09465cb-…` on Gemini Flash; `ImproveRuleDialog` with live run +
+  before/after + explicit Approve/Keep editing/Discard; wizard requeue);
+  "Add rule" rebuilt as the `masterworkAddRuleWindow` WindowPanel (With AI
+  default + Manually; `AddRulePanel` + shared `RuleFields`, human entry
+  points rewired, `upsertRuleWithRetry` added to service.ts); the editor
+  gained "Have the AI apply my notes instead"; redundant `mr-*` on button
+  icons removed (the "giant gap" defect). Browser-verified on Strunk
+  (v16→v20: edit-save kept draft, improve landed as draft keeping its id,
+  explicit approve, AI-drafted add landed as draft).
 
 - 2026-08-17 — **Conversations made first-class + the interview got its URL** (Arman could not
   find his own interviews — pure discoverability; the data half was verified intact for his

@@ -21,6 +21,17 @@
 
 ## STATUS — live and verified (compressed)
 
+- **REVIEW VERBS SETTLED + SAVE≠APPROVE SHIPPED (2026-08-17, Arman's live-test rulings).** The
+  three core verbs are **Approve / Reject / Improve**. Saving an edit no longer approves
+  (`applyManualRuleEdit`, matrix in `features/masterwork/FEATURE.md` § The review-verb matrix);
+  Improve = new client Mandate `masterwork.rule_improver` (agent `c09465cb-…`, Gemini Flash tier,
+  declared in aidream `client_mandates.py`, row seeded live) — feedback + full Rulebook → full
+  structured rewrite, landing via the ONE CAS path as a draft keeping its id, wizard
+  "keep going" + requeue works; "Add rule" is now the `masterworkAddRuleWindow` WindowPanel
+  (With AI default tab — describe in your own words → same Mandate drafts the rule as a draft;
+  Manually = shared `RuleFields`); editor offers "Have the AI apply my notes instead"; the
+  icon+gap+margin button-spacing defect fixed. Browser-verified on Strunk v16→v20.
+
 - **SURFACE ROLES BEHIND MANDATES + HEADER AGENT MENU (2026-08-17, from Arman's "this surface
   hadn't even been declared" feedback).** The manifest was already declared/synced by a sibling
   session; this pass added the surface's system agents as mandate-backed roles and proved the
@@ -421,6 +432,23 @@ ritual (delivery vehicle for 9/12 and the failure lever, not a lane).
 - **Genuinely new, small:** the Triad item type (a proper content-ir kind through the quiz
   machinery, never a bespoke game engine); the Prediction Ledger's pending→resolved state
   table (scoring still via the ONE Judge mandate — never a second grader).
+
+## Transferable lessons (Arman: "everything you learn from this needs to get applied to all of those")
+
+1. **Save ≠ approve, everywhere.** Persisting a human's correction never doubles as their
+   sign-off; approval is only ever the explicit Approve action. Any review surface that
+   auto-promotes on save has this bug.
+2. **The three review verbs are Approve / Reject / Improve** — and Improve (speak feedback →
+   an agent rewrites the ONE item with the full set as context → returns fast as a draft for
+   explicit approval) is how people will actually use review. Build it into every human-review
+   loop (checkup, audition feedback, any draft queue).
+3. **Every add/create flow is AI-first**: "describe it in your own words" (mic-first
+   ProTextarea) is the DEFAULT tab, the manual form is the fallback. "We don't want to be the
+   system where you ever have to type a single word if you don't want to."
+4. **Window panels over blocking modals** — the project-new window panel is the exemplar for
+   "how everything in our system should run"; a create flow in a blocking Dialog is a defect.
+5. **Never add `mr-*` to a Button icon** — the Button base already has `gap-2`; margin on top
+   is the double-spacing defect.
 
 ## Working notes that save hours
 
