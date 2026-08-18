@@ -187,6 +187,12 @@ enforces it in code, not copy:
   league gain, or badge eligibility. The visible catalog calls these
   “Ten/Fifty Confirmed,” matching the evidence instead of claiming all-study
   mastery.
+- Live app at a 375×812 phone viewport: the engagement home rendered streak +
+  forgiveness, planned rest days, private league, and the verified badge
+  catalog. Completing a real one-card `StudyDeck` session rendered 100 learning
+  points, current/best streak, 4 badges with next progress, and private league
+  #2 of 2 on the actual “Session complete” surface. Temporary proof rows were
+  removed after verification.
 - Live migrations:
   `20260818_education_game_result_session_unique.sql` and
   `20260818_education_game_server_authority.sql`; generated DB types were
@@ -230,7 +236,8 @@ enforces it in code, not copy:
   revocation, idempotent per-session results, private
   activity-matched cohorts, provisional live labels, official-result
   replacement, and the shared study-completion engagement snapshot. Added the
-  anti-Duolingo reminder policy seam for WP8 IC-6/IC-7.
+  anti-Duolingo reminder policy seam for WP8 IC-6/IC-7; live-verified the
+  engagement home and real StudyDeck completion at a 375×812 viewport.
 
 - **2026-07-21** — Doc-only: `platform.visibility` enum value `private` renamed to
   `personal` DB-wide; updated the PRIVATE-deck references above to PERSONAL.
