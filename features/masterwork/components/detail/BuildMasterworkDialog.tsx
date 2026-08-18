@@ -54,6 +54,34 @@ function parseBuilt(raw: unknown): CompleteInfo | null {
   };
 }
 
+/** How many rules this Masterwork will actually be built from. */
+function liveRuleCount(rulebook: Rulebook): number {
+  return rulebook.rules.filter((r) => !r.draft && !r.retired).length;
+}
+
+/**
+ * Which shape to recommend, from the Expert's OWN intake answer. A goal that
+ * describes producing something ("a system that finds…", "writes…") wants the
+ * system to do the work; a goal about reviewing/checking existing work wants
+ * the reviewer. Ties go to reviewing, which is the cheaper thing to try first.
+ */
+function recommendKind(rulebook: Rulebook): MasterworkKind {
+  const goal = String(
+    (rulebook.metadata as { intake?: { goal?: unknown } } | null)?.intake?.goal ??
+      rulebook.description ??
+      "",
+  ).toLowerCase();
+  if (!goal) return "edit";
+  const reviewWords =
+    /\b(review|check|audit|proofread|edit|correct|critique|grade|score|evaluate)\b/;
+  const produceWords =
+    /\b(write|writes|writing|create|creates|draft|drafts|generate|generates|produce|produces|find|finds|build|builds|plan|plans|system that)\b/;
+  const wantsReview = reviewWords.test(goal);
+  const wantsProduce = produceWords.test(goal);
+  if (wantsProduce && !wantsReview) return "generate";
+  return "edit";
+}
+
 export function BuildMasterworkDialog({
   open,
   onOpenChange,
@@ -65,7 +93,12 @@ export function BuildMasterworkDialog({
   rulebook: Rulebook;
   onBuilt?: () => void;
 }) {
-  const [kind, setKind] = useState<MasterworkKind>("edit");
+  // THE RECOMMENDATION. The Expert already told us at intake what they wanted
+  // this to produce — asking again, cold, in our vocabulary, is what made this
+  // moment feel like a quiz (Arman, 2026-08-18). We recommend from their own
+  // words and let them change it; we never silently decide for them.
+  const recommended = recommendKind(rulebook);
+  const [kind, setKind] = useState<MasterworkKind>(recommended);
   const [name, setName] = useState("");
   const [deliverable, setDeliverable] = useState("");
 
@@ -180,9 +213,18 @@ export function BuildMasterworkDialog({
           </div>
         ) : (
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>What should the Masterwork do?</Label>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
+              <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
+                <p className="text-xs text-muted-foreground">
+                  Building from{" "}
+                  <span className="font-medium text-foreground">
+                    {liveRuleCount(rulebook)} approved rules
+                  </span>{" "}
+                  in {rulebook.name}.
+                </p>
+              </div>
+              <Label>What should it do for you?</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
                   onClick={() => setKind("edit")}
@@ -193,12 +235,20 @@ export function BuildMasterworkDialog({
                   }`}
                 >
                   <PenLine className="mb-1 h-4 w-4 text-muted-foreground" />
-                  <div className="text-sm font-medium text-foreground">
-                    Check &amp; correct
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-medium text-foreground">
+                      Review work and fix it
+                    </span>
+                    {recommended === "edit" ? (
+                      <span className="rounded border border-primary/40 px-1 py-0 text-[10px] text-primary">
+                        Recommended
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    I paste my work; the Masterwork audits it rule by rule,
-                    fixes it, and rules on it.
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    You give it something already written. It finds everything
+                    that breaks your rules, fixes it, and shows you what it
+                    changed and why.
                   </div>
                 </button>
                 <button
@@ -211,19 +261,31 @@ export function BuildMasterworkDialog({
                   }`}
                 >
                   <Hammer className="mb-1 h-4 w-4 text-muted-foreground" />
-                  <div className="text-sm font-medium text-foreground">
-                    Create &amp; check
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-medium text-foreground">
+                      Do the work for you
+                    </span>
+                    {recommended === "generate" ? (
+                      <span className="rounded border border-primary/40 px-1 py-0 text-[10px] text-primary">
+                        Recommended
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    I describe a job; the Masterwork drafts variants, audits
-                    each, and picks the winner.
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    You tell it the job. It does the work following your rules,
+                    checks its own work against them, and hands you the version
+                    that holds up.
                   </div>
                 </button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Recommended from what you told us at the start. Change it any
+                time — you can build the other one too.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="masterwork-name">
-                Masterwork name (optional)
+                Give it a name (optional)
               </Label>
               <Input
                 id="masterwork-name"
@@ -235,13 +297,13 @@ export function BuildMasterworkDialog({
             {kind === "generate" ? (
               <div className="space-y-1.5">
                 <Label htmlFor="masterwork-deliverable">
-                  What does this Masterwork produce?
+                  What should it make?
                 </Label>
                 <ProTextarea
                   id="masterwork-deliverable"
                   value={deliverable}
                   onChange={(e) => setDeliverable(e.target.value)}
-                  placeholder="e.g. advertising copy, a keyword research plan, a patient letter…"
+                  placeholder="e.g. a keyword plan for one page, advertising copy, a patient letter…"
                   rows={2}
                 />
               </div>
