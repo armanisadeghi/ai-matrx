@@ -63,6 +63,7 @@ export const OVERLAY_IDS = [
   "authGate",
   "browserFrameWindow",
   "browserWorkbenchWindow",
+  "cloudBrowserWindow",
   "canvasViewerWindow",
   "characterCounterWindow",
   "chatDebugWindow",
