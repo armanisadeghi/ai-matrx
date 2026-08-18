@@ -3,7 +3,7 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-08-17`
+**Last updated:** `2026-08-18`
 
 ---
 
@@ -118,6 +118,12 @@ become 5 linked datasets under one workbook.
 
 ## Entry points
 
+**Univer mixed-editor invariant:** `DocumentEditor` registers
+`UniverSheetsCorePreset` before `UniverDocsCorePreset`. Univer facade mixins are
+process-global: after a workbook loads in the same SPA session, sheets observers
+also attach to later document instances and require sheets services. The docs
+preset stays last so its shared UI configuration wins.
+
 **Routes**
 - `app/(core)/data/page.tsx` — list all of the user's datasets (`/data`)
 - `app/(core)/data/[id]/page.tsx` — view/edit a single dataset (`/data/{id}`)
@@ -206,10 +212,11 @@ become 5 linked datasets under one workbook.
 - `udt_structured_lists` / `udt_structured_list_items` — Structured Lists: reusable, editable item collections that
   can be consumed as dropdown/picklist choices but are not limited to that use.
 
-**RLS** — `udt_datasets` / `udt_workbooks` SELECT = owner OR `is_public` OR
-`has_permission(<table>, id, 'viewer')`; UPDATE = owner OR `has_permission(..,'editor')`.
-Fields/rows inherit via an EXISTS check against the parent dataset. Sharing integrates with
-the `shareable_resource_registry` (both `udt_datasets` and `udt_workbooks` are registered).
+**RLS** — root entities use their registered token (`dataset`, `workbook`, `udt_document`) with
+`iam.has_access`; physical `udt_*` table names are never permission keys. Dataset children inherit
+through the parent dataset. Workbook/document snapshot policies independently enforce the same
+parent-token rule for viewer reads and editor appends. Sharing integrates with the
+`shareable_resource_registry`.
 
 **RPCs**
 - *Pre-existing:* `get_user_tables`, `get_user_table_complete`, `create_new_user_table*`
@@ -540,6 +547,20 @@ into:
 Decide before agent-heavy workloads land.
 
 ## Change log
+
+- 2026-08-18 — **Document editor survives workbook-first SPA sessions.**
+  `DocumentEditor` registers sheets services before the docs preset because
+  Univer's process-global sheets facade observers otherwise resolve an absent
+  hover service when a later document reaches `Rendered`. The docs preset stays
+  last so document UI configuration remains authoritative; a source contract
+  guards preset order, locale coverage, and sheets CSS.
+
+- 2026-08-18 — codex: **Document and workbook snapshot RLS now uses canonical parent tokens.**
+  The four legacy snapshot policies still called `has_permission` with physical table names after
+  the parent entities were canonicalized, so Postgres raised P0001 while loading a document even
+  for its owner. The policies now use `udt_document` / `workbook`, canonical owner/visibility
+  columns, and `iam.has_access`; the applied migration asserts that no live RLS policy retains a
+  bare `udt_*` permission key.
 
 - 2026-08-17 — codex: **Table Settings rebuilt around zero-shift row geometry.** Removed the 800px desktop cap, oversized conditional warning, horizontal list scroll, flex wrapping, expanding inline format-option rails, and clipped outer selection ring. The dialog now uses a max-6xl edge-efficient frame; one explicit responsive grid aligns name/storage/format/flags/status/delete; every card reserves the same border and status geometry; format options use the shared picker's new popover presentation; conversion state occupies the footer's existing status slot. Browser stress tests at 1440×1000, 1024×768, 768×768, and 375×812 held dialog width/height, list scroll size/position, and every card rectangle unchanged while storage/format dropdowns opened and changed, the format popover opened, and its nested percentage dropdown opened.
 
