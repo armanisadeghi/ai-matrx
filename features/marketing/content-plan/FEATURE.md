@@ -135,11 +135,11 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
     providers inside SetupView / EntityManager / NodePanel (deepest wins
     while active), all inheriting the base.
     **`content-plan-node` is the platform's FIRST read/WRITE surface**. Its
-    draft-mode targets include identity, editorial state, phrase-level primary
-    keyword, planned meta title/description, brief, and attributes. Supporting
-    keyword add/remove targets write canonical association edges after in-place
-    confirmation; `save_node` commits the staged draft. Agent results and
-    kind-component buttons land
+    draft-mode targets include identity, editorial state, brief, and
+    attributes; `save_node` commits the staged draft. SEO-plan values are
+    page-backed read context here and are edited only through the nested
+    canonical `SeoPlanEditor` — the surface has no writer for retired
+    `plan.node` SEO copies. Agent results and kind-component buttons land
     through `applySurfaceWrite` / the `apply_surface_write` kind action —
     read `features/surfaces/FEATURE.md` § Surface writeback before touching
     any of this.
@@ -150,9 +150,9 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   `cluster_label` are TRIGGER-OWNED derived cache** (`plan._node_shape` +
   `_z_node_cascade`); `types.ts` omits them from the Insert/Update types so a
   client write is a compile error. `organization_id` is stamped from the
-  site by the DB guard. Nullable `meta_title` / `meta_description` carry the
-  planned search presentation into CMS realization and fill without burying
-  that intent in JSON metadata.
+  site by the DB guard. `primary_keyword_id`, `meta_title`, and
+  `meta_description` are retired migration copies: no client reader or writer
+  uses them. SEO intent lives only on `web.page`.
 - `plan.node_step` + `plan.node_artifact` (2026-08-12, aidream migration
   `0344`) — the Website Factory PRODUCTION axis: one `node_step` row per
   `(node, step)` (`p1_keywords`…`p7_publish`, vocabulary mirrored in
@@ -210,9 +210,9 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
 - Categories: dimensions `plan_page_type` / `plan_status` /
   `plan_person_role` / `plan_source_type` (system seeds, `visibility='public'`
   since `plan_seed_categories_public.sql`) via the canonical `useCategories`.
-- Associations (registered pairs): node→topic (`topic`), node→keyword
-  (`secondary_keyword` — the PRIMARY keyword is the `primary_keyword_id` FK,
-  never an edge), node→entity (`about`/`cites`/`embeds` — citations only),
+- Associations (registered pairs): node→topic (`topic`), retired node→keyword
+  (`secondary_keyword`, retained in the registry but with no client writer),
+  node→entity (`about`/`cites`/`embeds` — citations only),
   node→party (`about`/`cites`/`authored_by`/`reviewed_by`; reviews carry the
   schema-validated `plan_review` payload, whose binding moved to the
   (plan_node, party) pair with the fold), party→web_site (`writes_for` — the
@@ -283,31 +283,24 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
 2. **Node panel** (`NodePanel.tsx`): label/slug/type, page-type + status
    category pickers, priority, technical depth, needs-reviewer, brief
    (line-per-bullet), vertical attributes (schema-driven,
-   `AttributesEditor.tsx`), and one canonical `NodeSeoIntentEditor` for the
-   page's primary keyword, supporting keywords, meta title, and meta
-   description. Its thin `KeywordPicker` adapter wraps `KeywordInput`, accepts
-   any phrase, resolves it with `ensureKeywordId` only at the ID-backed save
-   seam, and retains site keyword-value context plus the Keyword Intelligence
-   window. Supporting phrases use the existing `secondary_keyword`
-   association; topic and entity attachments remain in `NodeAssociations`.
-   Metadata uses the same SERP-length evaluation primitives as crawled pages.
+   `AttributesEditor.tsx`), and the canonical `SeoPlanEditor` over the node's
+   `web.page` plan record. `useNodeSeoPlan` resolves the CMS id join or route
+   index; an unlinked node shows the honest state plus ONE action through
+   `ensurePlannedPages`, then mounts the editor. No fallback reads or writes
+   `plan.node` SEO fields or secondary-keyword edges. Topic and entity
+   attachments remain in `NodeAssociations`.
 
    🚨 **A KEYWORD-LESS PAGE SHOWS THE GAP ON THE PICKER, AND DRAFT BRIEF IS
    DISABLED.** A page with no target term cannot be briefed or written — the
    server refuses it (`content_plan_brief_no_keyword`, HTTP 409) rather than
    spending a paid run to return a brief-shaped refusal. So the panel never
-   offers the button into that wall: the notice sits directly on `KeywordPicker`
-   (the fix), and names the other fix too (`Deepen`, which researches the page
-   and picks its term together). A keyword-less page is a NORMAL state — the
+   offers the button into that wall: the notice sits directly below the
+   canonical SEO editor and names the other fix too (`Deepen`, which researches
+   the page and picks its term together). A keyword-less page is a NORMAL state — the
    concept scaffold mints placeholders on purpose — so this is a gap with a
    door, never an error.
 
-   Two rules that are easy to get wrong here:
-   - `keywordGap` reads the **saved** row, not the staged draft. The server's
-     precondition reads the saved row, so enabling the button on an unsaved pick
-     would send the user into a guaranteed 409. When a pick IS staged
-     (`keywordStaged`) the notice becomes "press Save" — the real next step.
-   - What counts as an assignment is `hasKeywordAssignment`
+   What counts as an assignment is `hasKeywordAssignment`
      (`plan-assists-producer.ts`), the mirror of aidream's
      `assert_brief_preconditions`: it reads the page's SEO plan from the ONE
      store (`web.page.desired_values.keyword_plan` via `SitePlanIndex`) — a
@@ -738,19 +731,13 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
-- 2026-08-17 — **The NodePanel's Targeting section now edits THE one SEO plan,
-  not a second copy on the node.** `features/marketing/seo/plan/SeoPlanEditor`
-  — the single canonical editor, also mounted in the marketing page workspace
-  and the CMS page editor's SEO tab — renders here the moment a node has a
-  `web.page` record, resolved by the CMS id join first and the site's route
-  index (`useSitePlanIndex` / `planForRoute`) second, with one click to mint the
-  record through the existing `ensurePlannedPages` endpoint when neither
-  answers. The read-only `SeoPlanSection` that used to live in
-  `PlanContextPanel` is gone from that panel (a plan you cannot edit where you
-  read it is banned); its legacy `plan.node.attributes.keyword_strategy` reader
-  moved beside `NodeSeoIntentEditor`, so the whole plan-node SEO store is now
-  one file that dies in one piece. `PAGE_ROLES` has ONE owner
-  (`seo/plan/plan-model.ts`); `setup/ai.ts` re-exports it.
+- 2026-08-17 — **The legacy plan-node SEO writer is gone.** NodePanel's
+  unlinked state offers only `ensurePlannedPages`; once the `web.page` row
+  exists it mounts the canonical `SeoPlanEditor`. Deleted the fallback editor
+  and read-only strategy summary, removed plan-node secondary-keyword edge
+  writers, and changed the node surface to page-backed SEO read context with
+  no retired-field write targets. `PAGE_ROLES` remains owned by
+  `seo/plan/plan-model.ts`; `setup/ai.ts` re-exports it.
 
 - 2026-08-16 — **The page's words became editable (P4's whole reason for
   existing).** `components/PageDraftEditor.tsx` renders the `draft`/`review`
@@ -981,8 +968,8 @@ always took `page_ids`. The defect was a surface ignoring what it had.
   Follows the reconciliation entry below (which restored the write-half docs
   and deleted the superseded validation module as debris) and adds the three
   things that were genuinely missing. `source_type_id` was refused for the
-  reason `content-plan-node` still keeps `node_primary_keyword_id` manual — a
-  `plan_source_type` UUID with no options exposed — so the fix was to publish
+  reason a `plan_source_type` UUID with no options exposed cannot be safely
+  authored by an agent — so the fix was to publish
   the vocabulary, not to relax the check: a new `source_type_options` value
   emits `{id, name}` from the same `useCategories(planSourceType)` read the
   dialog's `CategorySelect` renders, and the handler refuses any id absent from
@@ -1143,8 +1130,7 @@ z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
   (`lib/entity-write-targets.ts`, 21 tests) importing `PLAN_ENTITY_TYPES`, so
   the vocabulary the model reads, the Select renders, and the handler
   enforces cannot drift. New read values `source_type_options` (the
-  `plan_source_type` picker's real ids — the missing inventory that keeps
-  `node_primary_keyword_id` manual on the node surface) and `entity_editor`
+  `plan_source_type` picker's real ids) and `entity_editor`
   (what is typed in the open dialog). **Fixed a live defect found in the
   verification run:** applying a staged draft dismissed the editor dialog
   itself, because Radix counted the confirm alertdialog's Apply click as an
@@ -1178,7 +1164,7 @@ z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
   (`adoptForeignStream`) and render the model's tokens live in NodePanel and
   PlanGenerateBar, with real server phase/info milestones (aidream change,
   same date). Fixed the false "nodes appear as they land" copy.
-- 2026-08-09 — Claude: **Content-plan write targets are genuinely agent-writable.** The node surface uses ask-policy for nine draft fields and `save_node`; setup uses ask for family counts/names and auto for archetype; plan selection is auto; list navigation is ask. `node_primary_keyword_id` remains manual because no valid keyword UUID inventory is exposed.
+- 2026-08-09 — Claude: **Content-plan write targets became agent-writable.** The node surface used ask-policy for its draft fields and `save_node`; setup used ask for family counts/names and auto for archetype; plan selection was auto; list navigation was ask. The later page-plan migration retired the node SEO targets entirely.
 - 2026-08-09 — Claude: **Page-layer assist chips in the workspace.**
   `plan-assists-producer.ts` (deterministic missing-pages sweep: plan nodes ×
   the WF-11 CMS page map → one navigate chip to Setup's "Realize planned
@@ -1252,8 +1238,8 @@ z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
   supporting page FEEDS, and the internal links (anchored on the TARGET's
   keyword) that pass authority there, plus cannibalization warnings.
   `setup/keyword-strategy.ts` applies it through the CANONICAL
-  `ensureKeywordId` upsert + the feature's own `addNodeSecondaryKeyword`
-  edge wrapper, with each page's role/routes/reason landing on the ONE store
+  `ensureKeywordId` upsert, with every primary and secondary keyword plus the
+  page's role/routes/reason landing on the ONE store
   (`web.page.desired_values.keyword_plan`) and planned internal links on
   `outbound_links`. **Entity Attacher** (`a1a7784c-…`) —
   whole-plan E-E-A-T assignment constrained to the site's existing roster;

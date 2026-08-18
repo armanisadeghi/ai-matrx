@@ -78,12 +78,10 @@ crawl + GSC data we already have.
 the one store via `useSitePlanIndex`/`planForRoute`; raw `attributes` dropped from agent
 context in favour of the structured `seo_plan` block; `features/cms/FEATURE.md` updated.
 
-**4. Annihilate `NodeSeoIntentEditor` (chipped).** The legacy fallback editor
-(`content-plan/components/NodeSeoIntentEditor.tsx`) still WRITES retired plan.node fields for
-nodes with no `web.page` — edits land in a store nothing reads. The migration it was waiting on
-has landed: replace the NodePanel fallback branch with one-click planned-row create
-(`ensurePlannedPages`, already written) + `SeoPlanEditor`, delete the file + its
-`SeoPlanSection`.
+~~**4. Annihilate the legacy plan-node SEO writer.**~~ DONE 2026-08-17 — NodePanel now shows an
+honest missing-record state with one `ensurePlannedPages` action, then mounts the canonical
+`SeoPlanEditor`. The fallback file and its read-only strategy section are deleted; plan-node
+primary/meta and `secondary_keyword` edge write paths are gone.
 
 ~~**5. Wire the AFTER join at publish.**~~ DONE 2026-08-17 — aidream's ONE per-page publish
 path now resolves `page_urls().live_url`, prefers the linked `plan_node_id`'s existing planned

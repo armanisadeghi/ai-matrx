@@ -519,9 +519,8 @@ sal` and an invented id comes back as the handler's error. Handlers in
   label check) and `open_entity_editor` (`ui`/auto, the parent surface's
   `select_node` precedent). Deletion, node↔entity attachment and identity
   columns stay human. **THE reference for unblocking a "no option list"
-  exclusion.** `source_type_id` was refused for exactly the reason
-  `content-plan-node` still keeps `node_primary_keyword_id` manual — a category
-  UUID an agent could only guess at — and the fix was to DECLARE THE VOCABULARY
+  exclusion.** `source_type_id` was refused because a category UUID with no
+  declared options is one an agent could only guess at — and the fix was to DECLARE THE VOCABULARY
   rather than loosen the check: `source_type_options` publishes `{id, name}`
   from the same `useCategories(planSourceType)` read the dialog's
   `CategorySelect` renders, and the handler refuses any id absent from it,
@@ -1832,19 +1831,11 @@ being written, so it is not reproduced here. Read the Change Log instead; it is
 the live record, and several entries below record RULED-OUT surfaces too, which
 is the part that saves the next agent a trip.
 
-One concrete item does survive, and it now has a proven recipe:
-
-- **`content-plan-node`'s `node_primary_keyword_id`** is the campaign's one
-  deliberate `manual` holdout, for a documented reason — "the surface exposes
-  no keyword options, so an agent has no legitimate way to produce a valid
-  `seo.keyword` UUID; revisit if keyword options are declared."
-  `content-plan-entities` has now done exactly that for its sibling field:
-  declare the vocabulary as a read value, validate against it in the handler,
-  and mark it `autoContext: true` so the agent can actually read it. The
-  inventory already exists — `listSiteKeywordValues(siteId)` returns the site's
-  `seo.site_keyword_value` rows and `listKeywordLabels(ids)` maps ids →
-  phrase, both in `content-plan/data/service.ts`. Declaring a `keyword_options`
-  value is the whole job; the target then moves to `ask`.
+The last concrete holdout, `content-plan-node` SEO intent, was retired instead
+of promoted: invariant 9 moved the one SEO plan to `web.page`, so the node
+surface exposes page-backed SEO values as read context and the nested canonical
+`SeoPlanEditor` owns writes. A plan-node keyword target would be a second writer
+to retired copies, not a missing capability.
 
 ### The remainder, swept (2026-08-12) — and where the campaign goes next
 
@@ -1939,6 +1930,13 @@ on the first.
   page-data refresh client tool. Dynamic route recognition deliberately excludes the Studio
   hubs and the Rulebook's Record/Masterworks child pages. Agent roles are declared empty, so
   no agent id or definition is frozen in code.
+
+- **2026-08-17 — `content-plan-node` stopped exposing retired SEO write targets.** Its keyword,
+  supporting-keyword, and desired-meta values now come from the canonical `web.page` plan for
+  read context; the nested `SeoPlanEditor` owns writes. The former targets wrote
+  `plan.node.primary_keyword_id`, `secondary_keyword` edges, and node meta columns that no
+  downstream reader consumes, so they were deleted rather than redirected through a second
+  page-plan write path.
 
 - **2026-08-17 — AI-mapped quick bind: the "AI map" tab.** `SurfaceAgentBindPanel` step 2 is now tabbed — **AI map** (default for a NEW bind; an existing binding opens on the editor) beside **Map manually**. One button runs the `surfaces_client.binding_mapper` mandate (`useMandateRunner`; DB agent "Surface Binding Mapper" `1cc19e9f-…`, declared in aidream `client_slots.py` — code holds only the mandate key) with the surface's declared+baseline values, its manifest `writeTargets`, and the target agent's variables + context policies (kind-tagged — the agent's DB prompt carries the context-slot doctrine: mandates map aggressively to rich values for instant visibility, variables conservatively, `unmapped` deliberately for noise). The pure core is `utils/binding-suggestions.ts` (payload builder, parser with **referential validation** — a suggestion naming an undeclared value/input/write-target is discarded and reported, never saved), the review UI is `components/bind/BindingSuggestionsTab.tsx` (per-row decision + confidence dot + plain-language reason, write-policy suggestions, notes). "Use this configuration" fills the manual editor for review — nothing applies blindly, manual mapping remains a full fallback, and accepted write-policy suggestions layer over the prior tier's stored policies at save. Roadmap for phases 2-3 (surface agent-builder orchestra, Assists producers): [docs/handoffs/surface-agent-ai-binding.md](../../docs/handoffs/surface-agent-ai-binding.md).
 
