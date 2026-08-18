@@ -34,7 +34,7 @@ const textIconButtonVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-primary hover:text-primary/80",
       },
       size: {
         default: "h-9 px-4 py-2",
@@ -183,7 +183,7 @@ const iconButtonVariants = cva(
         secondary:
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-primary hover:text-primary/80",
       },
       size: {
         default: "h-9 w-9",
