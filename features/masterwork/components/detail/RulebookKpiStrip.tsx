@@ -178,6 +178,21 @@ export function RulebookKpiStrip({
             {kpis.progressPct}%
           </span>
         </div>
+        <div
+          className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuenow={kpis.progressPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Rules reviewed"
+        >
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              done ? "bg-emerald-500" : "bg-primary"
+            }`}
+            style={{ width: `${Math.max(kpis.progressPct, 2)}%` }}
+          />
+        </div>
       </div>
     </div>
   );
