@@ -20,7 +20,7 @@ export default async function PracticeOralToolPage({
 }: PracticeOralPageProps) {
   const { mode, deck } = await searchParams;
   return (
-    <div className="h-[calc(100dvh-2.5rem)] overflow-y-auto bg-textured">
+    <div className="h-full overflow-y-auto bg-textured">
       <SpokenPracticeClient initialMode={mode ?? null} initialDeckId={deck ?? null} />
     </div>
   );
