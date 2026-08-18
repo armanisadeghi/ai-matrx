@@ -16,7 +16,7 @@ Scope: first-run full inventory (routes, registered overlays, readiness, runtime
 - Human decisions required: **1 existing product decision** — whether `/education/learn` stays intentionally non-emitting, receives a thin client identity shell, or becomes client-rendered. The thin client identity shell preserves server-rendered article content and is the lowest-risk option if agent reachability is required.
 - Exceptions proposed or approved: **0**.
 - Certification: **CERTIFIED** for exact candidate `569247bedbe04ebaa55efbce82a19f5dd4d9c7b5`. The independent certifier confirmed the inventory counts, detector failure semantics, clean scoped checks, and no batch-caused type-check defect.
-- Delivery: certified candidate preserved at `refs/heads/patrol-runs/P12/20260818T161811Z` and queued for fast integration; release remains in the serialized release lane.
+- Delivery: certified candidate preserved at `refs/heads/patrol-runs/P12/20260818T161811Z` and integrated to `origin/main` with its ancestry intact. The permanent record remains `delivery_queued` until the serialized release lane supplies a release version and records `delivered`.
 - Integration reconciliation: concurrent main added `cloudBrowserWindow` after certification. The unchanged detector caught it immediately, moving live coverage from 174 ids / 149 undeclared to 175 ids / 150 undeclared before integration.
 
 ## Baseline diagnostics
