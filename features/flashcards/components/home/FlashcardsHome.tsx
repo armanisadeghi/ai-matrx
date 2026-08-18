@@ -44,6 +44,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
+import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 import { fcService } from "../../data/fcService";
 import { EDGE_ROLE } from "../../data/types";
 import type { CardWithDetails, FcSetRow } from "../../data/types";
@@ -406,6 +407,56 @@ export function FlashcardsHome() {
     });
   };
 
+  const goTo = (id: string, path: string) => {
+    if (isPending) return;
+    setNavigatingId(id);
+    startTransition(() => router.push(path));
+  };
+
+  // Secondary actions live in the shell header (IC-5): inline glass icons on
+  // `lg+`, one `…` bottom sheet below it. "Export library" is omitted rather
+  // than shown dead when there is nothing to export — HeaderAction has no
+  // disabled state, and a row that silently does nothing is worse than absent.
+  const headerActions: HeaderAction[] = [
+    {
+      icon: "Flame",
+      label: "Drill weak areas",
+      onPress: () => goTo("__weak__", `${EDU_BASE}/weak-areas`),
+    },
+    {
+      icon: "CalendarClock",
+      label: "Review due",
+      onPress: () => goTo("__review__", `${EDU_BASE}/review`),
+    },
+    {
+      icon: "TrendingUp",
+      label: "Progress",
+      onPress: () => goTo("__progress__", `${EDU_BASE}/progress`),
+    },
+    {
+      icon: "FileSearch",
+      label: "New deck from a document",
+      onPress: () => goTo("__from_source__", `${EDU_BASE}/new/from-source`),
+    },
+    {
+      icon: "Upload",
+      label: "Import decks",
+      onPress: () => goTo("__import__", `${EDU_BASE}/new/import`),
+    },
+    ...(sets && sets.length > 0
+      ? [
+          {
+            icon: "Download",
+            label: "Export library",
+            onPress: () => {
+              if (exportingLibrary) return;
+              void exportLibrary();
+            },
+          },
+        ]
+      : []),
+  ];
+
   const q = query.trim().toLowerCase();
   const visible = (sets ?? []).filter(
     (s) =>
@@ -446,9 +497,18 @@ export function FlashcardsHome() {
       }
     >
     <div className="h-full w-full overflow-y-auto bg-textured">
-      <EducationToolHeader title="Flashcards" />
+      {/* Route chrome: back + identity + every secondary action. The six
+          secondary actions used to be a seven-button row in the body; below
+          `lg` that row could not wrap and ran off the right edge with the
+          labels overlapping (375px). They now live in the header, where
+          HeaderActions renders them inline on `lg+` and behind ONE `…`
+          bottom sheet on mobile. Only the primary "New" stays in the body. */}
+      <EducationToolHeader
+        title="Flashcards"
+        sheetTitle="Flashcard actions"
+        actions={headerActions}
+      />
       <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-5 sm:pb-6 pt-[var(--shell-header-h)]">
-        {/* Action toolbar (title lives in the shell header) */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             {streak && streak.current_streak > 0 && (
@@ -462,82 +522,7 @@ export function FlashcardsHome() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (isPending) return;
-                setNavigatingId("__weak__");
-                startTransition(() => router.push(`${EDU_BASE}/weak-areas`));
-              }}
-              disabled={isPending && navigatingId === "__weak__"}
-            >
-              <Flame className="mr-1.5 h-4 w-4" />
-              Drill weak areas
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (isPending) return;
-                setNavigatingId("__review__");
-                startTransition(() => router.push(`${EDU_BASE}/review`));
-              }}
-              disabled={isPending && navigatingId === "__review__"}
-            >
-              <CalendarClock className="mr-1.5 h-4 w-4" />
-              Review due
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (isPending) return;
-                setNavigatingId("__progress__");
-                startTransition(() => router.push(`${EDU_BASE}/progress`));
-              }}
-              disabled={isPending && navigatingId === "__progress__"}
-            >
-              <TrendingUp className="mr-1.5 h-4 w-4" />
-              Progress
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (isPending) return;
-                setNavigatingId("__import__");
-                startTransition(() => router.push(`${EDU_BASE}/new/import`));
-              }}
-              disabled={isPending && navigatingId === "__import__"}
-            >
-              <Upload className="mr-1.5 h-4 w-4" />
-              Import
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => void exportLibrary()}
-              disabled={exportingLibrary || !sets || sets.length === 0}
-              title="Download every deck you own as one JSON file"
-            >
-              {exportingLibrary ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Download className="mr-1.5 h-4 w-4" />
-              )}
-              Export library
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => {
-                if (isPending) return;
-                setNavigatingId("__from_source__");
-                startTransition(() =>
-                  router.push(`${EDU_BASE}/new/from-source`),
-                );
-              }}
-              disabled={isPending && navigatingId === "__from_source__"}
-            >
-              <FileSearch className="mr-1.5 h-4 w-4" />
-              From document
-            </Button>
+          <div className="ml-auto flex items-center gap-2">
             <Button
               onClick={newSet}
               disabled={isPending && navigatingId === NEW_SET_NAV_ID}

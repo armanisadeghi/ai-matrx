@@ -11,14 +11,27 @@
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@/components/icons/tap-buttons";
+import HeaderActions from "@/features/shell/components/header/variants/shared/HeaderActions";
+import type { HeaderAction } from "@/features/shell/components/header/variants/types";
 
 export function EducationToolHeader({
   title,
+  actions,
+  sheetTitle,
   right,
 }: {
   /** The tool name — one short `text-sm` title, nothing more. */
   title: string;
-  /** Optional page-scoped header actions (tap buttons self-space). */
+  /**
+   * The tool's page-level actions. Rendered through `HeaderActions`, so they
+   * are inline glass icons on `lg+` (overflowing into a glass dropdown past
+   * three) and ONE `…` opening a bottom sheet below `lg` — a desktop action
+   * may never simply vanish on mobile (core-route-headers mobile doctrine).
+   */
+  actions?: HeaderAction[];
+  /** Title shown on the mobile bottom sheet. */
+  sheetTitle?: string;
+  /** Escape hatch for a bespoke right-slot node (tap buttons self-space). */
   right?: React.ReactNode;
 }) {
   return (
@@ -35,7 +48,14 @@ export function EducationToolHeader({
           </span>
         </div>
       }
-      right={right}
+      right={
+        <>
+          {right}
+          {actions?.length ? (
+            <HeaderActions actions={actions} sheetTitle={sheetTitle ?? title} />
+          ) : null}
+        </>
+      }
     />
   );
 }

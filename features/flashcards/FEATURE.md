@@ -55,5 +55,11 @@ system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` +
 
 ## Change log
 
+- 2026-08-17 — `/education/flashcards` route chrome (IC-5): the six secondary actions
+  (drill weak areas, review due, progress, new-from-document, import, export library) moved out
+  of the body button row — which could not wrap and overflowed the viewport at 375px — into the
+  shell header via `EducationToolHeader actions={…}` → `HeaderActions`. Export is offered only
+  when the library has decks (`HeaderAction` has no disabled state). "New" stays in the body as
+  the one labelled primary action. Verified at 1280/820/375 in both themes.
 - 2026-08-18 — Created with the images-on-faces contract (flashcard-images P0 + web
   sourcing lane shipped; see the cross-repo SoR for the full determination).
