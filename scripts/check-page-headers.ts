@@ -77,29 +77,39 @@ function isRouteFile(path: string): boolean {
 function scanFile(path: string): Violation[] {
   const rel = relative(ROOT, path);
   const src = readFileSync(path, "utf8");
+  const violations: Violation[] = [];
+
+  if (
+    relative(APP_DIR, path).startsWith("(core)/") &&
+    /h-\[calc\(100d?vh/.test(src)
+  ) {
+    violations.push({
+      file: rel,
+      reason:
+        "Uses a viewport-minus-header height on a core route. The shell already owns header height; use h-full with the route's intended overflow and add the canonical shell-header top offset only when interactive content needs it.",
+    });
+  }
 
   const hasPageHeader =
     src.includes("PageHeader") || src.includes("PageSpecificHeaderPortal");
 
   const marker = FAUX_HEADER_MARKERS.find((m) => src.includes(m));
-  if (!marker) return [];
+  if (!marker) return violations;
 
   if (hasPageHeader) {
     // Still flag when both exist — the faux bar is almost always the bug.
-    return [
-      {
-        file: rel,
-        reason: `Contains in-body faux header (\`${marker}\`) even though PageHeader is imported — move toolbar actions into <PageHeader> and keep only in-page sub-bars below the shell header offset.`,
-      },
-    ];
+    violations.push({
+      file: rel,
+      reason: `Contains in-body faux header (\`${marker}\`) even though PageHeader is imported — move toolbar actions into <PageHeader> and keep only in-page sub-bars below the shell header offset.`,
+    });
+    return violations;
   }
 
-  return [
-    {
-      file: rel,
-      reason: `Missing <PageHeader> — in-body faux header (\`${marker}\`) will overlap the shell avatar. Portal the header via PageHeader (see agent build route).`,
-    },
-  ];
+  violations.push({
+    file: rel,
+    reason: `Missing <PageHeader> — in-body faux header (\`${marker}\`) will overlap the shell avatar. Portal the header via PageHeader (see agent build route).`,
+  });
+  return violations;
 }
 
 function main() {

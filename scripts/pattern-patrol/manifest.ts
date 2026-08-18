@@ -191,6 +191,34 @@ export const PATROLS = [
     runInstruction:
       "Measure and rank debt, then apply already-proven behavior-preserving recipes automatically in bounded batches. New runtime-contract uncertainty becomes a focused proof task; never mass-edit or add a suppression.",
   },
+  {
+    patrolId: "P11",
+    slug: "core-route-header-integrity",
+    job: "Desktop and mobile header clearance",
+    automationId: "pattern-patrol-p11-desktop-and-mobile-header-clearance",
+    automationName: "Pattern Patrol P11 · Desktop and mobile header clearance",
+    tier: "M/R",
+    recipePath: ".claude/skills/core-route-headers/SKILL.md",
+    reportSlug: "core-route-header-integrity",
+    rrule: "FREQ=WEEKLY;BYDAY=WE,SA;BYHOUR=9;BYMINUTE=10",
+    cadence: "Wednesdays and Saturdays 9:10 AM",
+    runInstruction:
+      "Inspect core-route header ownership, top clearance, full-height wrappers, and avatar/action collisions at desktop, intermediate, and mobile widths. Apply canonical shell-header and body-wrapper repairs automatically when route behavior is unchanged; ask only when competing toolbar or navigation designs remain.",
+  },
+  {
+    patrolId: "P12",
+    slug: "surface-values-completeness",
+    job: "Surface Values completeness",
+    automationId: "pattern-patrol-p12-surface-values-completeness",
+    automationName: "Pattern Patrol P12 · Surface Values completeness",
+    tier: "C/R",
+    recipePath: ".claude/skills/surface-authoring/SKILL.md",
+    reportSlug: "surface-values-completeness",
+    rrule: "FREQ=WEEKLY;BYDAY=TU,FR;BYHOUR=9;BYMINUTE=10",
+    cadence: "Tuesdays and Fridays 9:10 AM",
+    runInstruction:
+      "Inventory route leaves, overlays, window panels, dialogs, drawers, tabs, and other interactive surfaces against canonical manifests, route resolution, live emitters, Locate anchors, and readiness evidence. Create or complete clear declarations automatically in bounded batches; never treat a green manifest-only drift check as proof that every surface or loaded value is declared.",
+  },
 ] as const satisfies readonly PatrolDefinition[];
 
 export const FLEET_HEALTH = {
@@ -243,7 +271,7 @@ READ FIRST: ${commonDocsRoot}/VISION.md, FEATURE.md, CODEX_OPERATOR.md, PATROL_R
 
 CHECK:
 - Run pnpm check:patrol-contracts. The typed manifest owns all patrol ids, schedules, tiers, recipe paths, common prompt contracts, and execution environments. Any live-config or registry drift is a fleet failure.
-- Inspect every new active patrol run since memory using Codex task status plus the local automation ledger. Alert on systemError, usage limits, over-two-hour stalls, blank inbox copy, missing/stale report, missing memory, or missing/invalid permanent run record.
+- Audit every registered patrol on every run, even when it has not run since the last audit. For each patrol, check its latest task, unresolved prior work, report, memory, permanent record, schedule, and human-facing inbox status. Separately count and inspect every new active patrol run since memory using Codex task status plus the local automation ledger. Alert on systemError, usage limits, over-two-hour stalls, blank inbox copy, missing/stale report, missing memory, or missing/invalid permanent run record.
 - Verify run records with pnpm patrol:run verify. Reports, memory, inbox, Git ancestry, release tags, and deployment must agree with the hash-chained record.
 - FAST INTEGRATION IS HEALTH: direct or frequent origin/main integration is normal in pre-production and must never be flagged merely for bypassing a controller. Flag owned candidate commits absent from every remote after ${PATROL_DELIVERY_POLICY.candidateRemoteDeadlineMinutes} minutes, certified candidates absent from origin/main after ${PATROL_DELIVERY_POLICY.certifiedMainDeadlineMinutes} minutes, uncommitted patrol work at task end, or any product change integrated without independent CERTIFIED evidence for its exact ancestor.
 - Deployment/version releases remain serialized through release.sh. Run pnpm patrol:delivery:check for release-record consistency, but never recommend slowing or restricting main integration before production readiness.
@@ -251,9 +279,10 @@ CHECK:
 - Findings in a successful report are not fleet failure. Unchanged baseline debt cannot reject. REJECTED names a concrete batch-caused defect. Human approval and missing machinery are distinct states.
 - Flag a patrol that withholds a verified clearly superior bounded repair or asks Arman to approve an obvious professional improvement. Missing evidence should create a focused task; only genuine product choices and exceptions belong in Arman's queue.
 - Never edit product code, another patrol's report, or another patrol's memory. Update only Fleet Health memory with audited ids, evidence, time, and one learning.
-- Speak in plain English: name the patrol's job, what happened, the recommendation, and the exact ask.
+- HUMAN-LANGUAGE CONTRACT: speak to Arman as a non-technical product owner. Never ask him to review a task id, record, ref, hash, controller, prerequisite, or other internal machinery. Translate internal evidence into: the patrol's plain-English job, what happened in the product or check, what the system will do next, and whether any real product decision remains. Keep ids and technical evidence in Fleet Health memory, not in the human ask.
+- SELF-REPAIR CONTRACT: retry, reconcile, or create focused machinery work for operational failures without asking Arman to diagnose them. Ask Arman only when a genuine product choice, policy exception, external account/capacity decision, or destructive action requires his authority. Phrase that request as one ordinary-language question with the consequences of each option.
 
-RESPONSE: if clean, write "PATTERN PATROL FLEET HEALTHY — <number> new runs checked." If unhealthy, begin "AUTOMATION DEGRADED — ACTION REQUIRED", give one terse bullet per failed patrol with job and task id, and end "ARMAN, WE NEED YOU: review the named failed patrol tasks and restore the stated prerequisite." Never make failed or incomplete work look clean.`;
+RESPONSE: always report the health of all registered patrols in plain English and separately state how many new runs were checked. If clean, begin "PATTERN PATROL FLEET HEALTHY — <number> new runs checked." If unhealthy, begin "AUTOMATION DEGRADED — ACTION REQUIRED" and give one terse bullet per affected patrol: its job, what failed, user impact if known, and the automatic next step. Do not include task ids unless Arman explicitly asks for technical evidence. End with a question only when Arman truly must make a decision; otherwise end by stating what the system is retrying or repairing. Never make failed or incomplete work look clean.`;
 }
 
 export function automationUpdateSpecs(): AutomationUpdateSpec[] {

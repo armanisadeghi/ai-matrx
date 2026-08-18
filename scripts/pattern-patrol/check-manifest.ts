@@ -53,8 +53,8 @@ function validateManifest(): string[] {
       );
     }
   }
-  if (PATROLS.length !== 10)
-    problems.push(`expected 10 product patrols, found ${PATROLS.length}`);
+  if (PATROLS.length !== 12)
+    problems.push(`expected 12 product patrols, found ${PATROLS.length}`);
 
   for (const spec of automationUpdateSpecs()) {
     for (const contract of [
