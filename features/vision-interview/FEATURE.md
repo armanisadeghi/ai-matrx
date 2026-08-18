@@ -202,6 +202,21 @@ per-node tokens the same way.
 
 ## Change log
 
+- 2026-08-18 — **The opening and the wizard, rebuilt from Arman's live review.**
+  (1) NEW-INTERVIEW EXPERIENCE: the cramped dialog is no longer the front door —
+  `/vision-interview/new` (`NewInterviewExperience`) is a full-page invitation:
+  big headline, generous dictation-first `ProTextarea` (mic called out in
+  copy), optional name (auto-derived from the vision's opening words), and the
+  room introduced as icon+name pills. Same durable-draft key as the old dialog
+  so in-flight drafts carry over. (2) THE WIZARD: `StageRail` rebuilt as big
+  buttons — role icon in its accent disc + stage label + leader line TOGETHER
+  ("Amplifier is with you"), check badges on past steps, chevron separators,
+  accurate v2 steps; the separate icon-only `RoleStrip` row is unmounted from
+  `TranscriptPane` (icons never float apart from their text). (3) FAILURE COPY:
+  the composer's error banner leads with a human sentence + the safe-words
+  guarantee; the raw error moved behind a "Technical details" expander — a
+  Pydantic dump is never the headline.
+
 - 2026-08-18 — **v2 remainder: raw audio + deliverables.** (1) RAW-AUDIO
   CAPTURE (§13.1): new generic primitive
   `features/audio/dictationAudioRegistry.ts` — the shared recorder's

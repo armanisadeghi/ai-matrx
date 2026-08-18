@@ -263,17 +263,31 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
         // are safe — the draft persists on this device (useDurableDraft) and
         // every sent message already landed as a turn before agents ran —
         // and offer the retry in the same breath (Try again below).
-        <p className="mb-1.5 flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+        <div className="mb-1.5 flex items-start gap-1.5 rounded-lg border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs">
+          <AlertTriangle
+            className="mt-0.5 h-3.5 w-3.5 shrink-0 text-destructive"
+            aria-hidden
+          />
           <span className="min-w-0">
-            {runError}
+            <span className="font-medium text-destructive">
+              Something went wrong on our side.
+            </span>
             <span className="mt-0.5 block text-foreground">
               Your words are safe: {hasDraft ? "this draft stays right here, and " : ""}
               everything you sent is already saved on this session. Press Try
               again when ready — nothing needs re-typing.
             </span>
+            {/* Raw error text is for us, never the headline — the Expert is
+                a non-technical SME; a Pydantic dump reading as the message
+                was rejected on sight (Arman, 2026-08-18). */}
+            <details className="mt-0.5 text-muted-foreground">
+              <summary className="cursor-pointer select-none text-[11px]">
+                Technical details
+              </summary>
+              <span className="block break-words text-[11px]">{runError}</span>
+            </details>
           </span>
-        </p>
+        </div>
       ) : null}
 
       {summon && (

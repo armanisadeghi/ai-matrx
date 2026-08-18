@@ -382,6 +382,8 @@ export interface StageMeta {
   primaryRole: RoleKey | null;
   /** Question category this stage's asking produces (null for done). */
   questionCategory: QuestionCategory | null;
+  /** One short human line for the wizard — what happens at this step. */
+  hint: string;
   next: InterviewStage | null;
 }
 
@@ -399,6 +401,7 @@ export const STAGE_ORDER: InterviewStage[] = [
 export const STAGES: Record<InterviewStage, StageMeta> = {
   capture: {
     key: "capture",
+    hint: "Say it all, in your words",
     label: "Capture",
     primaryRole: "sounding_board",
     questionCategory: "core",
@@ -406,6 +409,7 @@ export const STAGES: Record<InterviewStage, StageMeta> = {
   },
   ground: {
     key: "ground",
+    hint: "Find the real problem",
     label: "Ground",
     primaryRole: "archaeologist",
     questionCategory: "grounding",
@@ -413,6 +417,7 @@ export const STAGES: Record<InterviewStage, StageMeta> = {
   },
   enhance: {
     key: "enhance",
+    hint: "Make it bigger and better",
     label: "Enhance",
     primaryRole: "amplifier",
     questionCategory: "enhancement",
@@ -420,6 +425,7 @@ export const STAGES: Record<InterviewStage, StageMeta> = {
   },
   articulate: {
     key: "articulate",
+    hint: "Give it proper names",
     label: "Articulate",
     primaryRole: "cartographer",
     questionCategory: "articulation",
@@ -427,6 +433,7 @@ export const STAGES: Record<InterviewStage, StageMeta> = {
   },
   stress: {
     key: "stress",
+    hint: "Find the cracks early",
     label: "Stress",
     primaryRole: "adversary",
     questionCategory: "risk",
@@ -434,6 +441,7 @@ export const STAGES: Record<InterviewStage, StageMeta> = {
   },
   shape: {
     key: "shape",
+    hint: "Make it buildable",
     label: "Shape",
     primaryRole: "architect",
     questionCategory: "architectural",
@@ -441,6 +449,7 @@ export const STAGES: Record<InterviewStage, StageMeta> = {
   },
   revisit: {
     key: "revisit",
+    hint: "Open floor — loose ends",
     label: "Revisit",
     primaryRole: null, // dynamic — the most eager voice leads
     questionCategory: "gap",
@@ -448,6 +457,7 @@ export const STAGES: Record<InterviewStage, StageMeta> = {
   },
   done: {
     key: "done",
+    hint: "The vision, delivered",
     label: "Done",
     primaryRole: null,
     questionCategory: null,

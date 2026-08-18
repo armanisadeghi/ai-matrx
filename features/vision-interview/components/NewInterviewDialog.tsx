@@ -97,15 +97,20 @@ export function NewInterviewDialog({
   );
 }
 
-/** The list page's New button + its dialog, as one drop-in. */
+/** The list page's New button — routes to the full-page opening experience
+ *  (/vision-interview/new). The dialog above stays for embedded callers but
+ *  is no longer the front door (Arman, 2026-08-18: a vision deserves a page,
+ *  not a cramped dialog). */
 export function NewInterviewButton() {
-  const [open, setOpen] = useState(false);
+  const router = useRouter();
+  const [, startTransition] = useTransition();
   return (
-    <>
-      <Button size="sm" className="h-11 lg:h-7" onClick={() => setOpen(true)}>
-        New
-      </Button>
-      <NewInterviewDialog open={open} onOpenChange={setOpen} />
-    </>
+    <Button
+      size="sm"
+      className="h-11 lg:h-7"
+      onClick={() => startTransition(() => router.push("/vision-interview/new"))}
+    >
+      New
+    </Button>
   );
 }

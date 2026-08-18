@@ -32,7 +32,6 @@ import { Composer } from "./Composer";
 import { LiveTurnCard } from "./LiveTurnCard";
 import { NextQuestionsStrip } from "./NextQuestionsStrip";
 import { RoleAvatar } from "./RoleAvatar";
-import { RoleStrip } from "./RoleStrip";
 import { TurnCard } from "./TurnCard";
 
 import type { WorkflowNodeStreamEntry } from "@/features/agents/types/request.types";
@@ -102,7 +101,9 @@ export function TranscriptPane({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <RoleStrip />
+      {/* The wizard rail above carries the room's identity (icon + name per
+          step) — the old separate icon-only RoleStrip was rejected
+          (Arman, 2026-08-18: icons must never float apart from their text). */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-2 py-1">
         {!hydrated ? (
           <div className="space-y-2 p-1">
