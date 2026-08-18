@@ -1,6 +1,14 @@
 # P10 — Type suppression debt
 
-## Full pass — 2026-08-15
+## Full pass — 2026-08-15 · closed 2026-08-18
+
+### Resumed lifecycle resolution — 2026-08-18
+
+- Resumed permanent run `2026-08-15T191639Z` from `escaped_delivery` before opening a new scan. Exact candidate `a4a7c03ea2db9311ee926433eb0f6f25774e03a6` was already an ancestor of `origin/main` and `v0.4.703`; the changed microphone component has no later source commit.
+- **CERTIFIED** by independent certifier `/root/p10_certifier_resume`. Scoped ESLint, `check:hatches`, `check:patrol-contracts`, and the current full type-check passed. A focused jsdom render test passed four parameterized cases covering recording and transcribing states for `xs`, `sm`, `md`, and `lg` (eight state-size assertions).
+- The resumed proof confirmed `xs → sm` only for the status children and preserved `sm`, `md`, and `lg`. No batch-caused defect was found, no approval or exception was needed, and no new release was created.
+- Permanent lifecycle now records `certified → delivered → closed`; the hash-chained authority is published at `refs/heads/patrol-runs/P10/2026-08-15T191639Z`. Outcome: **1 verified source finding fixed / 3 suppression occurrences removed / CERTIFIED / 0 approvals / 0 degradation**.
+- Recursive learning: preserve a focused state-matrix regression test when a finite UI-union cast hides a missing lookup. That test is the smallest reusable proof path when an unrelated preview lease blocks browser startup.
 
 ### Scope and lifecycle
 
@@ -26,8 +34,8 @@
 | `pnpm check:patrol-contracts` | PASS | PASS | unchanged |
 
 - The whole-repo hatch ratchet remains red on the unchanged four growth categories; reductions never offset those breaches.
-- Candidate `a4a7c03ea2db9311ee926433eb0f6f25774e03a6` is preserved at `origin/codex/p10-20260815`.
-- Independent verdict: **INFRASTRUCTURE BLOCKED**. Certifier `/root/p10_certifier` found no static, type, detector, or focused-render regression and verified the exact candidate, but `pnpm preview:status` reported port 3001 owned by `/Users/armanisadeghi/code/matrx-frontend` (93.4 GB RSS). The certifier correctly refused to reuse or stop that foreign preview, so exact-worktree live microphone-state interaction proof remains pending. The candidate is preserved for retry and is neither rejected nor integrated.
+- Candidate `a4a7c03ea2db9311ee926433eb0f6f25774e03a6` is preserved by the permanent authority ref and remains an ancestor of current `origin/main`.
+- Final independent verdict: **CERTIFIED**. The 2026-08-15 infrastructure block is retained in the permanent history, but the 2026-08-18 focused component proof closed it without reusing the foreign preview.
 
 ### Current explicit-suppression inventory
 
