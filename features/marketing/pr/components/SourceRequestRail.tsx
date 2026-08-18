@@ -22,6 +22,9 @@
  * chip reserves its widest width, so a row can never resize as time passes.
  */
 
+import Link from "next/link";
+
+import { pressRoomHref } from "@/features/marketing/pr/routes";
 import { useEffect, useMemo, useRef } from "react";
 import {
   AlarmClock,
@@ -297,13 +300,16 @@ function RequestRow({
           ) : null}
 
           {angle ? (
-            <p className="text-[11px] text-muted-foreground">
-              Answers your angle:{" "}
-              <span className="font-medium text-foreground">
-                {angle.headline}
-              </span>
-            </p>
-          ) : null}
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Answers your angle:{" "}
+                    <Link
+                      href={pressRoomHref({ focus: { kind: "angle", id: angle.id } })}
+                      className="font-medium text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
+                    >
+                      {angle.headline}
+                    </Link>
+                  </p>
+                ) : null}
 
           {/* A draft, and a send affordance, ONLY where one can honestly exist. */}
           {request.draft_response ? (

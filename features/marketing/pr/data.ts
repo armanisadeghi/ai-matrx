@@ -276,9 +276,13 @@ export function usePressRoom(
 
 /**
  * Accept / Mark pitched / Dismiss / "I have this" all WORK — the queue, the
- * funnel and the readiness numbers move together the moment one is made. What
- * Rulings persist: status changes write straight to `seo.story_angle`
- * from this surface.
+ * funnel and the readiness numbers move together the moment one is made.
+ *
+ * Status rulings PERSIST: they write straight to `seo.story_angle` /
+ * `seo.source_request` on the canonical client path (browser → Supabase
+ * direct), optimistically, with any failure surfaced rather than silently
+ * reverted. "I have this" is still session-only — it recomputes the ladder but
+ * has no column of its own to land in yet.
  *
  * ONE honest treatment, applied everywhere: the ruling applies, and the status
  * bar says out loud how many rulings are held in this session and offers to
