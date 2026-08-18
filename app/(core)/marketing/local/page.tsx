@@ -1,9 +1,29 @@
-// Reserved Marketing route. Body, copy, and status come from the shared
-// placeholder — see features/marketing/components/MarketingComingSoon.tsx.
-// The promise is tracked as `marketing.local` in lib/coming-soon/registry.ts.
+import type { Metadata } from "next";
+import { Suspense } from "react";
 
-import { MarketingComingSoon } from "@/features/marketing/components/MarketingComingSoon";
+import PageHeader from "@/features/shell/components/header/PageHeader";
+import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
+import LocalListingsWorkspace from "@/features/marketing/local/LocalListingsWorkspace";
 
-export default function Page() {
-  return <MarketingComingSoon comingSoonId="marketing.local" />;
+export const metadata: Metadata = {
+  title: "Local & Listings",
+  description:
+    "Manage every physical location's canonical profile, track its presence across the directories that drive local rank, and keep name/address/phone consistent everywhere.",
+};
+
+export default function MarketingLocalPage() {
+  return (
+    <>
+      <PageHeader>
+        <div className="flex w-full min-w-0 items-center">
+          <h1 className="truncate text-sm font-medium text-foreground">
+            Local &amp; Listings
+          </h1>
+        </div>
+      </PageHeader>
+      <Suspense fallback={<LoadingSurface label="Loading locations…" />}>
+        <LocalListingsWorkspace />
+      </Suspense>
+    </>
+  );
 }

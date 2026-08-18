@@ -374,8 +374,6 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Google Business Profiles, directory listings, reviews, and map-pack rank.",
         iconName: "MapPin",
-        status: "coming-soon",
-        comingSoonId: "marketing.local",
       },
     ],
   },

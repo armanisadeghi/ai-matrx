@@ -1,0 +1,726 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowUpRight,
+  Building2,
+  Check,
+  Copy,
+  MapPin,
+  Plus,
+  Star,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  InlineQueryError,
+  LoadingSurface,
+  SectionCard,
+} from "@/features/marketing/components/shared/MarketingUi";
+import {
+  useBrandOptions,
+  useBusinessLocations,
+  useCreateBusinessLocation,
+  useListingPublishers,
+  useLocationListings,
+  useUpdateBusinessLocation,
+  useUpsertLocationListing,
+} from "@/features/marketing/data/hooks";
+import { buildListingMatrix } from "@/features/marketing/data/service";
+import {
+  auditListingNap,
+  computeCitationCoverage,
+  findProfileGaps,
+} from "@/features/marketing/lib/local-listings-audit";
+import {
+  buildLocalBusinessJsonLd,
+  localBusinessJsonLdScript,
+} from "@/features/marketing/lib/local-business-jsonld";
+import {
+  LISTING_STATUSES,
+  LISTING_STATUS_LABELS,
+  LOCATION_STATUSES,
+  LOCATION_STATUS_LABELS,
+  PUBLISHER_API_ACCESS_LABELS,
+  PUBLISHER_TIER_LABELS,
+  isListingStatus,
+  type BusinessLocation,
+  type ListingMatrixRow,
+  type ListingStatus,
+  type PublisherTier,
+} from "@/features/marketing/types";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { toast } from "@/lib/toast";
+
+const TIER_BADGE_CLASS: Record<PublisherTier, string> = {
+  critical: "bg-primary/15 text-primary",
+  aggregator: "bg-accent text-accent-foreground",
+  high_value: "bg-muted text-foreground",
+  vertical: "bg-muted text-muted-foreground",
+  long_tail: "bg-muted text-muted-foreground",
+};
+
+function scoreTone(score: number): string {
+  if (score >= 80) return "text-emerald-600 dark:text-emerald-400";
+  if (score >= 50) return "text-amber-600 dark:text-amber-400";
+  return "text-destructive";
+}
+
+/** URL-synced brand + location selection: shareable, reload-safe. */
+function useUrlSelection() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const brandId = searchParams.get("brand") ?? "";
+  const locationId = searchParams.get("location") ?? "";
+  const set = (next: { brand?: string; location?: string }) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next.brand !== undefined) {
+      if (next.brand) params.set("brand", next.brand);
+      else params.delete("brand");
+      params.delete("location");
+    }
+    if (next.location !== undefined) {
+      if (next.location) params.set("location", next.location);
+      else params.delete("location");
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+  return { brandId, locationId, set };
+}
+
+export default function LocalListingsWorkspace() {
+  const organizationId = useAppSelector(selectActiveOrganizationId);
+  const { brandId, locationId, set } = useUrlSelection();
+  const brandsQuery = useBrandOptions(organizationId);
+
+  // Default to the first brand once options load (URL wins when present).
+  useEffect(() => {
+    if (!brandId && brandsQuery.data && brandsQuery.data.length > 0) {
+      set({ brand: brandsQuery.data[0].id });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- default once per load; `set` identity churns with searchParams
+  }, [brandId, brandsQuery.data]);
+
+  return (
+    <div className="h-full overflow-y-auto bg-textured">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Building2 className="size-4 text-muted-foreground" aria-hidden />
+          <Label htmlFor="local-brand-picker" className="text-xs text-muted-foreground">
+            Brand
+          </Label>
+          <Select value={brandId} onValueChange={(value) => set({ brand: value })}>
+            <SelectTrigger id="local-brand-picker" className="h-8 w-64">
+              <SelectValue placeholder="Pick a brand" />
+            </SelectTrigger>
+            <SelectContent>
+              {(brandsQuery.data ?? []).map((brand) => (
+                <SelectItem key={brand.id} value={brand.id}>
+                  {brand.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {brandId ? (
+            <Button asChild variant="ghost" size="sm" className="h-8 gap-1 px-2 text-xs">
+              <Link href={`/marketing/brands/${brandId}`}>
+                Open brand
+                <ArrowUpRight className="size-3.5" aria-hidden />
+              </Link>
+            </Button>
+          ) : null}
+        </div>
+        {brandsQuery.isError ? (
+          <InlineQueryError what="brands" error={brandsQuery.error} onRetry={() => void brandsQuery.refetch()} />
+        ) : null}
+        {brandId ? (
+          <BrandLocations
+            organizationId={organizationId ?? ""}
+            brandId={brandId}
+            locationId={locationId}
+            onSelectLocation={(id) => set({ location: id })}
+          />
+        ) : brandsQuery.isSuccess && (brandsQuery.data ?? []).length === 0 ? (
+          <SectionCard title="No brands yet">
+            <p className="text-sm text-muted-foreground">
+              Locations belong to a brand. Create one under{" "}
+              <Link className="text-primary underline-offset-2 hover:underline" href="/marketing/brands">
+                Brands &amp; Websites
+              </Link>{" "}
+              first, then manage its locations and listings here.
+            </p>
+          </SectionCard>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function BrandLocations({
+  organizationId,
+  brandId,
+  locationId,
+  onSelectLocation,
+}: {
+  organizationId: string;
+  brandId: string;
+  locationId: string;
+  onSelectLocation: (id: string) => void;
+}) {
+  const locationsQuery = useBusinessLocations(brandId);
+  const createLocation = useCreateBusinessLocation();
+  const [newName, setNewName] = useState("");
+
+  const locations = locationsQuery.data ?? [];
+  const selected = locations.find((location) => location.id === locationId) ?? locations[0] ?? null;
+
+  const handleCreate = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    try {
+      const created = await createLocation.mutateAsync({ organizationId, brandId, name });
+      setNewName("");
+      onSelectLocation(created.id);
+      toast.success(`Location "${created.name}" created`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create the location.");
+    }
+  };
+
+  if (locationsQuery.isPending) return <LoadingSurface label="Loading locations…" />;
+  if (locationsQuery.isError) {
+    return (
+      <InlineQueryError
+        what="locations"
+        error={locationsQuery.error}
+        onRetry={() => void locationsQuery.refetch()}
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3 lg:flex-row">
+      <div className="flex w-full shrink-0 flex-col gap-2 lg:w-64">
+        <div className="flex items-center gap-1.5">
+          <Input
+            value={newName}
+            onChange={(event) => setNewName(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void handleCreate();
+            }}
+            placeholder="New location name"
+            className="h-8 text-sm"
+          />
+          <Button
+            size="sm"
+            className="h-8 shrink-0 gap-1 px-2"
+            onClick={() => void handleCreate()}
+            disabled={createLocation.isPending || newName.trim() === ""}
+          >
+            <Plus className="size-3.5" aria-hidden />
+            Add
+          </Button>
+        </div>
+        <nav aria-label="Locations" className="flex flex-col gap-1">
+          {locations.map((location) => (
+            <button
+              key={location.id}
+              type="button"
+              onClick={() => onSelectLocation(location.id)}
+              className={`flex items-center gap-2 rounded-md border px-2 py-1.5 text-left text-sm transition-colors ${
+                selected?.id === location.id
+                  ? "border-primary/40 bg-primary/10 text-foreground"
+                  : "border-border bg-card text-foreground hover:bg-muted"
+              }`}
+            >
+              <MapPin className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="min-w-0 flex-1 truncate">{location.name}</span>
+              {location.is_primary ? (
+                <Star className="size-3 shrink-0 text-amber-500" aria-label="Primary location" />
+              ) : null}
+            </button>
+          ))}
+          {locations.length === 0 ? (
+            <p className="rounded-md border border-dashed border-border px-2 py-3 text-xs text-muted-foreground">
+              No locations yet. Add the first physical or service location above — it becomes the
+              canonical profile every directory listing is checked against.
+            </p>
+          ) : null}
+        </nav>
+      </div>
+      {selected ? (
+        <LocationWorkspace key={selected.id} organizationId={organizationId} location={selected} />
+      ) : null}
+    </div>
+  );
+}
+
+function LocationWorkspace({
+  organizationId,
+  location,
+}: {
+  organizationId: string;
+  location: BusinessLocation;
+}) {
+  const publishersQuery = useListingPublishers();
+  const listingsQuery = useLocationListings(location.id);
+
+  const matrix = useMemo(
+    () => buildListingMatrix(publishersQuery.data ?? [], listingsQuery.data ?? []),
+    [publishersQuery.data, listingsQuery.data],
+  );
+  const coverage = useMemo(() => computeCitationCoverage(matrix), [matrix]);
+  const gaps = useMemo(() => findProfileGaps(location), [location]);
+
+  const napScores = useMemo(() => {
+    const scores: number[] = [];
+    for (const row of matrix) {
+      if (!row.listing) continue;
+      const audit = auditListingNap(location, row.listing.observed);
+      if (audit.score !== null) scores.push(audit.score);
+    }
+    return scores;
+  }, [matrix, location]);
+  const napAverage =
+    napScores.length === 0 ? null : Math.round(napScores.reduce((sum, score) => sum + score, 0) / napScores.length);
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <KpiTile
+          label="Citation coverage"
+          value={`${coverage.score}%`}
+          tone={scoreTone(coverage.score)}
+          detail={`${coverage.presentCount} of ${coverage.totalPublishers} publishers`}
+        />
+        <KpiTile
+          label="Profile completeness"
+          value={`${Math.max(0, 11 - gaps.length)}/11`}
+          tone={scoreTone(Math.round(((11 - gaps.length) / 11) * 100))}
+          detail={gaps.length === 0 ? "Submission-ready" : `${gaps.length} field${gaps.length === 1 ? "" : "s"} missing`}
+        />
+        <KpiTile
+          label="NAP consistency"
+          value={napAverage === null ? "—" : `${napAverage}%`}
+          tone={napAverage === null ? "text-muted-foreground" : scoreTone(napAverage)}
+          detail={napAverage === null ? "No observed listing data yet" : `${napScores.length} listing${napScores.length === 1 ? "" : "s"} audited`}
+        />
+        <KpiTile
+          label="Needs attention"
+          value={String(coverage.attention.length)}
+          tone={coverage.attention.length === 0 ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400"}
+          detail="Updates, duplicates, rejections"
+        />
+      </div>
+
+      <ProfileEditor location={location} gaps={gaps} />
+      <ListingsMatrix organizationId={organizationId} location={location} matrix={matrix} />
+      <JsonLdCard location={location} />
+    </div>
+  );
+}
+
+function KpiTile({
+  label,
+  value,
+  tone,
+  detail,
+}: {
+  label: string;
+  value: string;
+  tone: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-card px-3 py-2">
+      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className={`text-xl font-semibold tabular-nums ${tone}`}>{value}</p>
+      <p className="truncate text-xs text-muted-foreground">{detail}</p>
+    </div>
+  );
+}
+
+type ProfileDraft = {
+  name: string;
+  status: string;
+  street_address: string;
+  address_line2: string;
+  locality: string;
+  region: string;
+  postal_code: string;
+  country_code: string;
+  phone: string;
+  email: string;
+  website_url: string;
+  business_type: string;
+  description: string;
+};
+
+function draftFrom(location: BusinessLocation): ProfileDraft {
+  return {
+    name: location.name,
+    status: location.status,
+    street_address: location.street_address ?? "",
+    address_line2: location.address_line2 ?? "",
+    locality: location.locality ?? "",
+    region: location.region ?? "",
+    postal_code: location.postal_code ?? "",
+    country_code: location.country_code ?? "",
+    phone: location.phone ?? "",
+    email: location.email ?? "",
+    website_url: location.website_url ?? "",
+    business_type: location.business_type ?? "",
+    description: location.description ?? "",
+  };
+}
+
+function ProfileEditor({
+  location,
+  gaps,
+}: {
+  location: BusinessLocation;
+  gaps: ReturnType<typeof findProfileGaps>;
+}) {
+  const updateLocation = useUpdateBusinessLocation();
+  const [draft, setDraft] = useState<ProfileDraft>(() => draftFrom(location));
+  const dirty = useMemo(
+    () => JSON.stringify(draft) !== JSON.stringify(draftFrom(location)),
+    [draft, location],
+  );
+
+  const field = (key: keyof ProfileDraft) => ({
+    value: draft[key],
+    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setDraft((current) => ({ ...current, [key]: event.target.value })),
+  });
+
+  const handleSave = async () => {
+    const toNullable = (value: string) => (value.trim() === "" ? null : value.trim());
+    try {
+      await updateLocation.mutateAsync({
+        locationId: location.id,
+        expectedVersion: location.version,
+        patch: {
+          name: draft.name.trim() || location.name,
+          status: draft.status,
+          street_address: toNullable(draft.street_address),
+          address_line2: toNullable(draft.address_line2),
+          locality: toNullable(draft.locality),
+          region: toNullable(draft.region),
+          postal_code: toNullable(draft.postal_code),
+          country_code: toNullable(draft.country_code),
+          phone: toNullable(draft.phone),
+          email: toNullable(draft.email),
+          website_url: toNullable(draft.website_url),
+          business_type: toNullable(draft.business_type),
+          description: toNullable(draft.description),
+        },
+      });
+      toast.success("Location profile saved");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save the profile.");
+    }
+  };
+
+  return (
+    <SectionCard
+      title="Canonical profile"
+      anchor="local-profile"
+      headerExtra={
+        <Button
+          size="sm"
+          className="h-7 px-3 text-xs"
+          onClick={() => void handleSave()}
+          disabled={!dirty || updateLocation.isPending}
+        >
+          {updateLocation.isPending ? "Saving…" : "Save"}
+        </Button>
+      }
+    >
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <LabeledInput label="Location name" required {...field("name")} />
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Status</Label>
+          <Select
+            value={draft.status}
+            onValueChange={(value) => setDraft((current) => ({ ...current, status: value }))}
+          >
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LOCATION_STATUSES.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {LOCATION_STATUS_LABELS[status]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <LabeledInput label="Business type (schema.org)" placeholder="e.g. MedicalClinic, Restaurant" {...field("business_type")} />
+        <LabeledInput label="Street address" {...field("street_address")} />
+        <LabeledInput label="Suite / line 2" {...field("address_line2")} />
+        <LabeledInput label="City" {...field("locality")} />
+        <LabeledInput label="State / region" {...field("region")} />
+        <LabeledInput label="Postal code" {...field("postal_code")} />
+        <LabeledInput label="Country code" placeholder="US" {...field("country_code")} />
+        <LabeledInput label="Phone" placeholder="+1 555 555 5555" {...field("phone")} />
+        <LabeledInput label="Email" {...field("email")} />
+        <LabeledInput label="Website URL" {...field("website_url")} />
+      </div>
+      <div className="mt-2 flex flex-col gap-1">
+        <Label className="text-xs text-muted-foreground">Description (used for submissions)</Label>
+        <Textarea rows={2} className="text-sm" {...field("description")} />
+      </div>
+      {gaps.length > 0 ? (
+        <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2">
+          <p className="text-xs font-medium text-foreground">
+            Before submitting anywhere, complete {gaps.length} field{gaps.length === 1 ? "" : "s"}:
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {gaps.map((gap) => (
+              <li key={gap.field} className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{gap.label}</span> — {gap.why}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+          <Check className="size-3.5" aria-hidden />
+          Profile is submission-ready — every field publishers require is filled.
+        </p>
+      )}
+    </SectionCard>
+  );
+}
+
+function LabeledInput({
+  label,
+  required,
+  ...inputProps
+}: { label: string; required?: boolean } & React.ComponentProps<typeof Input>) {
+  return (
+    <div className="flex flex-col gap-1">
+      <Label className="text-xs text-muted-foreground">
+        {label}
+        {required ? <span className="text-destructive"> *</span> : null}
+      </Label>
+      <Input className="h-8 text-sm" {...inputProps} />
+    </div>
+  );
+}
+
+function ListingsMatrix({
+  organizationId,
+  location,
+  matrix,
+}: {
+  organizationId: string;
+  location: BusinessLocation;
+  matrix: ListingMatrixRow[];
+}) {
+  const upsertListing = useUpsertLocationListing();
+  const [savingPublisherId, setSavingPublisherId] = useState<string | null>(null);
+
+  const handleStatus = async (publisherId: string, status: ListingStatus) => {
+    setSavingPublisherId(publisherId);
+    try {
+      await upsertListing.mutateAsync({
+        organizationId,
+        locationId: location.id,
+        publisherId,
+        status,
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save the listing status.");
+    } finally {
+      setSavingPublisherId(null);
+    }
+  };
+
+  const handleUrl = async (publisherId: string, currentStatus: ListingStatus, listingUrl: string) => {
+    setSavingPublisherId(publisherId);
+    try {
+      await upsertListing.mutateAsync({
+        organizationId,
+        locationId: location.id,
+        publisherId,
+        status: currentStatus === "unknown" || currentStatus === "not_listed" ? "listed" : currentStatus,
+        listingUrl: listingUrl.trim() === "" ? null : listingUrl.trim(),
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save the listing URL.");
+    } finally {
+      setSavingPublisherId(null);
+    }
+  };
+
+  return (
+    <SectionCard title="Listings by publisher" anchor="local-listings-matrix">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] border-collapse text-sm">
+          <thead>
+            <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+              <th className="py-1.5 pr-2 font-medium">Publisher</th>
+              <th className="py-1.5 pr-2 font-medium">Tier</th>
+              <th className="py-1.5 pr-2 font-medium">API access</th>
+              <th className="py-1.5 pr-2 text-right font-medium">Impact</th>
+              <th className="py-1.5 pr-2 font-medium">Status</th>
+              <th className="py-1.5 font-medium">Listing URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {matrix.map(({ publisher, listing }) => {
+              const status: ListingStatus =
+                listing && isListingStatus(listing.status) ? listing.status : "unknown";
+              const tier = publisher.tier as PublisherTier;
+              return (
+                <tr key={publisher.id} className="border-b border-border/60 last:border-b-0">
+                  <td className="py-1.5 pr-2">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate font-medium text-foreground" title={publisher.api_notes ?? undefined}>
+                        {publisher.name}
+                      </span>
+                      {publisher.manage_url ? (
+                        <a
+                          href={publisher.manage_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-muted-foreground hover:text-primary"
+                          aria-label={`Open ${publisher.name} listing manager`}
+                        >
+                          <ArrowUpRight className="size-3.5" aria-hidden />
+                        </a>
+                      ) : null}
+                    </div>
+                    {publisher.api_notes ? (
+                      <p className="mt-0.5 line-clamp-1 max-w-96 text-[11px] text-muted-foreground" title={publisher.api_notes}>
+                        {publisher.api_notes}
+                      </p>
+                    ) : null}
+                  </td>
+                  <td className="py-1.5 pr-2">
+                    <Badge variant="outline" className={`border-transparent text-[11px] ${TIER_BADGE_CLASS[tier] ?? "bg-muted"}`}>
+                      {PUBLISHER_TIER_LABELS[tier] ?? publisher.tier}
+                      {publisher.is_aggregator ? " · feeds others" : ""}
+                    </Badge>
+                  </td>
+                  <td className="py-1.5 pr-2 text-xs text-muted-foreground">
+                    {PUBLISHER_API_ACCESS_LABELS[publisher.api_access] ?? publisher.api_access}
+                  </td>
+                  <td className="py-1.5 pr-2 text-right text-xs tabular-nums text-muted-foreground">
+                    {publisher.citation_weight}
+                  </td>
+                  <td className="py-1.5 pr-2">
+                    <Select
+                      value={status}
+                      onValueChange={(value) => {
+                        if (isListingStatus(value)) void handleStatus(publisher.id, value);
+                      }}
+                      disabled={savingPublisherId === publisher.id}
+                    >
+                      <SelectTrigger className="h-7 w-36 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LISTING_STATUSES.map((option) => (
+                          <SelectItem key={option} value={option}>
+                            {LISTING_STATUS_LABELS[option]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
+                  <td className="py-1.5">
+                    <div className="flex items-center gap-1">
+                      <Input
+                        defaultValue={listing?.listing_url ?? ""}
+                        placeholder="https://…"
+                        className="h-7 w-56 text-xs"
+                        onBlur={(event) => {
+                          const next = event.target.value;
+                          if ((listing?.listing_url ?? "") !== next.trim()) {
+                            void handleUrl(publisher.id, status, next);
+                          }
+                        }}
+                      />
+                      {listing?.listing_url ? (
+                        <a
+                          href={listing.listing_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-muted-foreground hover:text-primary"
+                          aria-label={`Open the live listing on ${publisher.name}`}
+                        >
+                          <ArrowUpRight className="size-3.5" aria-hidden />
+                        </a>
+                      ) : null}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        Impact is each publisher&apos;s relative citation weight (0–100). Aggregators feed dozens of
+        secondary directories, so covering them closes long-tail gaps automatically.
+      </p>
+    </SectionCard>
+  );
+}
+
+function JsonLdCard({ location }: { location: BusinessLocation }) {
+  const [copied, setCopied] = useState(false);
+  const script = useMemo(
+    () => localBusinessJsonLdScript(buildLocalBusinessJsonLd(location)),
+    [location],
+  );
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(script);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      toast.error("Could not copy — select the code and copy manually.");
+    }
+  };
+
+  return (
+    <SectionCard
+      title="LocalBusiness structured data"
+      anchor="local-jsonld"
+      headerExtra={
+        <Button variant="outline" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => void handleCopy()}>
+          {copied ? <Check className="size-3.5" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
+          {copied ? "Copied" : "Copy"}
+        </Button>
+      }
+    >
+      <p className="mb-2 text-xs text-muted-foreground">
+        Paste this on the location&apos;s page. It is generated from the canonical profile above, so
+        it can never drift from the record — update the profile and re-copy.
+      </p>
+      <pre className="max-h-64 overflow-auto rounded-md border border-border bg-muted/50 p-2 text-xs leading-relaxed">
+        {script}
+      </pre>
+    </SectionCard>
+  );
+}

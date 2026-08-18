@@ -71,6 +71,12 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
       "Manage brand identity, properties, assets, and business facts.",
     letter: "Br",
   },
+  "/marketing/local": {
+    titlePrefix: "Local & Listings",
+    description:
+      "Manage location profiles, directory listings, and NAP consistency.",
+    letter: "Lo",
+  },
   "/marketing/capabilities": {
     titlePrefix: "SEO Capabilities",
     description:

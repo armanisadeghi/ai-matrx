@@ -123,15 +123,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/audience route"],
   },
-  "marketing.local": {
-    id: "marketing.local",
-    label: "Local & Listings",
-    owner: "marketing",
-    promise:
-      "Manage Google Business Profiles, directory listings, review responses, and map-pack rank for every physical location of a brand.",
-    stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/local route"],
-  },
   "marketing.content-studio": {
     id: "marketing.content-studio",
     label: "Content Studio",

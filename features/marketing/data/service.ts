@@ -3793,10 +3793,10 @@ const BUSINESS_LOCATION_COLUMNS =
   "id, organization_id, brand_id, name, status, is_primary, street_address, address_line2, locality, region, postal_code, country_code, phone, email, website_url, latitude, longitude, business_type, categories, opening_hours, special_hours, attributes, identifiers, description, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata";
 
 const LISTING_PUBLISHER_COLUMNS =
-  "id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility, created_at, updated_at, version, metadata";
+  "id, organization_id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata";
 
 const LOCATION_LISTING_COLUMNS =
-  "id, organization_id, location_id, publisher_id, status, listing_url, observed, nap_match, match_score, last_checked_at, source, notes, created_at, updated_at, deleted_at, version, metadata";
+  "id, organization_id, location_id, publisher_id, status, listing_url, observed, nap_match, match_score, last_checked_at, source, notes, created_at, updated_at, created_by, updated_by, deleted_at, version, metadata";
 
 export async function listBusinessLocations(
   brandId: string,
@@ -3818,18 +3818,26 @@ export async function getBusinessLocation(
   locationId: string,
   signal?: AbortSignal,
 ): Promise<BusinessLocation> {
-  const response = await (await authenticatedWebDb(supabase))
+  const db = await authenticatedWebDb(supabase);
+  const response = await db
     .from("business_location")
     .select(BUSINESS_LOCATION_COLUMNS)
     .eq("id", locationId)
     .is("deleted_at", null)
-    .maybeSingle()
-    .abortSignal(signal ?? new AbortController().signal);
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
   return assertFoundOrProbeDeleted(
     response.data,
     response.error,
-    "web_business_location",
+    "location",
     locationId,
+    () =>
+      db
+        .from("business_location")
+        .select("deleted_at")
+        .eq("id", locationId)
+        .maybeSingle(),
+    "web_business_location",
   );
 }
 
@@ -3941,7 +3949,9 @@ export async function upsertLocationListing(
     throw operationFailed("load this listing", existing.error);
   }
   if (existing.data) {
-    const patch: Record<string, Json | null> = { status: input.status };
+    const patch: Database["web"]["Tables"]["location_listing"]["Update"] = {
+      status: input.status,
+    };
     if (input.listingUrl !== undefined) patch.listing_url = input.listingUrl;
     if (input.notes !== undefined) patch.notes = input.notes;
     const response = await db
