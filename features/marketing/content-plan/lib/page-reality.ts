@@ -169,7 +169,7 @@ export function judgePageReality(input: RealityInput): RealityVerdict {
     if (!hasContent) {
         return {
             state: "empty",
-            headline: "The page exists but is empty — nothing has been written into it.",
+            headline: "Empty — nothing written yet.",
             action: "write-content",
             actionLabel: "Write the content",
             settled: false,

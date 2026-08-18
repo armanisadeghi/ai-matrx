@@ -503,7 +503,7 @@ export function NodeStepRail({
       ) : null}
       {!anyRun && !tabMode ? (
         <p className="text-[11px] text-muted-foreground">
-          No steps have run yet. Family, Write and Review run here.
+          No pipeline steps yet.
         </p>
       ) : null}
       {/* Live model output renders in a FLOATING window, never as a block in

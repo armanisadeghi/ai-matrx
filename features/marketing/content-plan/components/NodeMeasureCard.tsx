@@ -63,20 +63,14 @@ export function NodeMeasureCard({
 
   if (state === "no-page") {
     return (
-      <Note>
-        Nothing to measure yet — this page does not exist on the website. Build
-        and publish it above, and its Search Console data, analysis and findings
-        appear here.
-      </Note>
+      <Note>Not built yet — measurement starts after publish.</Note>
     );
   }
 
   if (state === "unpublished") {
     return (
       <Note>
-        This page is not published, so there is nothing live to measure. Its
-        search data, analysis and findings start here once it goes live and the
-        site is crawled.
+        Not live yet — measurement starts after publish.
         {cmsMeasureHref ? <DoorRow measureHref={cmsMeasureHref} /> : null}
       </Note>
     );
@@ -96,10 +90,7 @@ export function NodeMeasureCard({
   if (state === "unjoined") {
     return (
       <Note>
-        This page is live, but nothing measures it yet — it is not joined to a
-        crawled page. The join is stamped when the site is crawled and the live
-        URL is matched; until then there is no Search Console data, analysis or
-        findings for it.
+        Not measured yet — waiting for the next site crawl.
         {cmsMeasureHref ? <DoorRow measureHref={cmsMeasureHref} /> : null}
       </Note>
     );
@@ -162,9 +153,7 @@ export function NodeMeasureCard({
           </div>
           {performance && !performance.in_gsc ? (
             <p className="text-xs text-muted-foreground">
-              Google Search Console has no rows for this URL yet — the page is
-              measured, but it has not been served in search results (or the
-              data has not synced) since it went live.
+              No Search Console data yet.
             </p>
           ) : null}
         </>

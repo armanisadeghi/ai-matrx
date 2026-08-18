@@ -330,6 +330,9 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    page with the same predicate since the same date; the bulk fill records
    that refusal as a readable SKIP.
 
+   **Empty and status states are one short line.** Keep every action and name
+   the fixing tab when needed; never explain an absence with a paragraph.
+
 3. **Pillar map** (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
    behind the view switch with `ssr:false`): three user-switchable pure
    layouts (radial orbit / tidy tree / pillar columns — `pillar-map/layouts.ts`,
@@ -753,6 +756,10 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-18 — **Content-plan empty states stopped telling life stories.**
+  NodePanel cards and adjacent content-plan surfaces now state absence or
+  waiting states in one short line while preserving every action and tab
+  pointer.
 - 2026-08-18 — **Tree copy chrome collapsed to the canonical two-icon pair.**
   `CopyButtons` now places JSON inside the Copy-for-AI dropdown and renders no
   text at header size; the workbench's Groomer is a menu option on that same

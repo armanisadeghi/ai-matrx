@@ -401,7 +401,7 @@ export function NodePanel({
 
     // The exact amber sentence rendered under the canonical SEO editor.
     const keywordNotice = keywordGap
-      ? "This page has no target search term yet, so nothing tells it apart from its sibling pages — and briefs and drafts can't be written without one. Create its plan record if needed, then choose a target keyword above, or use Deepen to research this page and choose its term together."
+      ? "No keyword targeted — set one on the Keywords tab."
       : null;
     const blockers = [
       keywordNotice,
@@ -1200,11 +1200,8 @@ export function NodePanel({
                   />
                   {keywordGap ? (
                     <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-500">
-                      This page has no target search term yet, so nothing tells
-                      it apart from its sibling pages — and briefs and drafts
-                      can&apos;t be written without one. Choose one above, or
-                      use <span className="font-medium">Deepen</span> to
-                      research this page and choose its term together.
+                      No keyword targeted — choose one above or use{" "}
+                      <span className="font-medium">Deepen</span>.
                     </p>
                   ) : null}
                 </div>
@@ -1213,9 +1210,7 @@ export function NodePanel({
                   {nodeSeoPlan.state === "creatable" ? (
                     <>
                       <p className="text-xs text-muted-foreground">
-                        This page has no SEO plan record yet. Create its planned
-                        page record to set keywords and desired search
-                        appearance in the one place every surface reads.
+                        No SEO plan yet.
                       </p>
                       <Button
                         size="sm"

@@ -498,9 +498,7 @@ export function PageDraftEditor({
     return (
       <div className="space-y-1.5">
         <p className="text-xs text-muted-foreground">
-          This page has no content yet. Run <strong>Write content</strong> on the
-          pipeline above and the words will appear here, ready to edit — or start
-          typing and save your own.
+          No content yet.
         </p>
         <Button
           type="button"
@@ -565,9 +563,8 @@ export function PageDraftEditor({
           <p className="flex items-start gap-1.5 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
             <span>
-              These words are newer than the last AI review, so the review no
-              longer describes what this page says. Use{" "}
-              <strong>Check the facts</strong> below to review them again.
+              Page changed since review — use <strong>Check the facts</strong>{" "}
+              below.
             </span>
           </p>
         ) : null}

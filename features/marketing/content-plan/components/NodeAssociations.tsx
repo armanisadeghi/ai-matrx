@@ -364,7 +364,7 @@ function EntitySection({
         })}
         {entityEdges.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Nothing attached. Authors, reviewers, and sources power E-E-A-T.
+            Nothing attached yet.
           </p>
         ) : null}
       </div>

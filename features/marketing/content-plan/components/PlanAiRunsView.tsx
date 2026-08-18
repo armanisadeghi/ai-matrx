@@ -192,9 +192,7 @@ export function PlanAiRunsView({
 
       {!runs.isLoading && !runs.error && (runs.data ?? []).length === 0 ? (
         <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-          No AI runs recorded for this site yet. Generate a plan, draft a page
-          brief, or run one of the Setup passes — each one is recorded here in
-          full.
+          No AI runs yet.
         </div>
       ) : null}
 

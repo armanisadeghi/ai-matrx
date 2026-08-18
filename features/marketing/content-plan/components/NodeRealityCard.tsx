@@ -175,7 +175,7 @@ export function NodeRealityCard({
                             realityVerdictSummary(verdict),
                             cmsPage ? (cmsPage.route ?? cmsPage.title) : null,
                             missingKeyword
-                                ? "No keyword is targeted yet — the writer will pick its own angle."
+                                ? "No keyword targeted — set one on the Keywords tab."
                                 : null,
                             reality.pageError
                                 ? `Could not read the live page: ${reality.pageError.message}`
@@ -198,7 +198,7 @@ export function NodeRealityCard({
                             action_label: verdict.actionLabel || null,
                             blockers: [
                                 missingKeyword
-                                    ? "No keyword is targeted yet — the writer will pick its own angle."
+                                    ? "No keyword targeted — set one on the Keywords tab."
                                     : null,
                                 reality.pageError
                                     ? `Could not read the live page: ${reality.pageError.message}`
@@ -247,9 +247,7 @@ export function NodeRealityCard({
 
             {missingKeyword ? (
                 <p className="text-[11px] leading-snug text-amber-700 dark:text-amber-400">
-                    No keyword is targeted yet — the writer will pick its own angle.
-                    Set the primary keyword below first for a page that aims at
-                    something.
+                    No keyword targeted — set one on the Keywords tab.
                 </p>
             ) : null}
 

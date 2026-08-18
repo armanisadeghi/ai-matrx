@@ -907,8 +907,7 @@ export function EntityManager({
             </p>
           ) : partyRows.length === 0 ? (
             <p className="rounded-lg border border-dashed border-border px-3 py-3 text-xs text-muted-foreground">
-              No people or companies linked yet. Authors and reviewers are CRM
-              records — create one here or link an existing contact.
+              No people or companies yet.
             </p>
           ) : (
             <div className="overflow-hidden rounded-lg border border-border bg-card">
@@ -1028,10 +1027,6 @@ export function EntityManager({
               <Users className="mx-auto h-8 w-8 text-muted-foreground" />
               <p className="mt-3 text-sm font-medium text-foreground">
                 No sources yet
-              </p>
-              <p className="mx-auto mt-1 max-w-xs text-sm text-muted-foreground">
-                Add the studies, guidelines, and media this site's content will
-                cite — nodes attach to them from the tree.
               </p>
               <Button
                 size="sm"

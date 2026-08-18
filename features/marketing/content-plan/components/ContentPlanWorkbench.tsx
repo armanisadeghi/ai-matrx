@@ -766,8 +766,7 @@ export function ContentPlanWorkbench({
         />
         {site && !site.brand_id ? (
           <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-            This site has no brand — the database rejects plan rows for it
-            (loudly, by design). Assign a brand in Marketing → Sites, then plan.
+            No brand assigned — set one in Marketing → Sites.
           </div>
         ) : null}
 

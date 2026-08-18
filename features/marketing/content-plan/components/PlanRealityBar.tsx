@@ -108,9 +108,7 @@ export function PlanRealityBar({
             <SheetTitle>Live URLs the plan doesn&rsquo;t know</SheetTitle>
           </SheetHeader>
           <p className="px-4 text-xs text-muted-foreground">
-            Crawled pages on the real site with no matching planned route.
-            Adopt them into the plan (create the node at that route) or let
-            a future disposition pass retire/redirect them.
+            Live pages missing from the plan — adopt them here.
           </p>
           <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-2">
             {orphans.slice(0, ORPHAN_RENDER_CAP).map((record, index) => (

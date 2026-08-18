@@ -54,8 +54,7 @@ export function PlanDriftBar({
     return (
       <div className="flex items-center gap-2 border-b border-border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
         <Radar className="h-3.5 w-3.5 shrink-0" />
-        No connected website yet — connect one in Setup and this line starts
-        reporting how the plan and the real site differ.
+        No website connected — connect one in Setup.
       </div>
     );
   }
