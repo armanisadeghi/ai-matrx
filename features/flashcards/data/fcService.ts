@@ -697,6 +697,8 @@ export const fcService = {
     text: string,
     opts: {
       audio_file_id?: string;
+      image_file_id?: string;
+      image_url?: string;
       generated_by?: "agent" | "user";
       position?: number;
       /**
@@ -717,9 +719,15 @@ export const fcService = {
         kind,
         text,
         audio_file_id: opts.audio_file_id ?? null,
+        image_file_id: opts.image_file_id ?? null,
+        image_url: opts.image_url ?? null,
         generated_by: opts.generated_by ?? "agent",
         position: opts.position ?? 0,
-        generation_status: opts.audio_file_id ? "audio_ready" : "text_ready",
+        generation_status: opts.audio_file_id
+          ? "audio_ready"
+          : opts.image_file_id || opts.image_url
+            ? "image_ready"
+            : "text_ready",
         ...(opts.metadata ? { metadata: opts.metadata } : {}),
       };
       const { data, error } = await EDU()
@@ -731,6 +739,80 @@ export const fcService = {
       return { data: data as FcDetailRow, error: null };
     } catch (e) {
       return fail("addDetail", e);
+    }
+  },
+
+  /** Soft-delete one detail row (all reads filter `deleted_at is null`). */
+  async softDeleteDetail(detailId: string): Promise<FcResult<null>> {
+    try {
+      const { error } = await EDU()
+        .from("fc_detail")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("id", detailId);
+      if (error) return fail("softDeleteDetail", error);
+      return { data: null, error: null };
+    } catch (e) {
+      return fail("softDeleteDetail", e);
+    }
+  },
+
+  /**
+   * THE face-image writer — one active `front_image`/`back_image` row per
+   * face. Soft-deletes any prior rows of the kind, then inserts the new one.
+   * Exactly one of `file_id` / `url` should be set (stored vs hotlinked web
+   * image); `alt` lands in `text` (accessibility is not optional here).
+   * Cross-repo contract: common-docs/systems/flashcard-images/VISION_AND_PLAN.md.
+   */
+  async setCardImage(
+    cardId: string,
+    face: "front" | "back",
+    image: {
+      file_id?: string;
+      url?: string;
+      alt: string;
+      generated_by?: "agent" | "user";
+      metadata?: JsonObject;
+    },
+  ): Promise<FcResult<FcDetailRow>> {
+    const kind = `${face}_image`;
+    if (!image.file_id && !image.url) {
+      return fail("setCardImage", "setCardImage needs a file_id or a url");
+    }
+    try {
+      const { error: supersedeErr } = await EDU()
+        .from("fc_detail")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("card_id", cardId)
+        .eq("kind", kind)
+        .is("deleted_at", null);
+      if (supersedeErr) return fail("setCardImage", supersedeErr);
+      return await this.addDetail(cardId, kind, image.alt, {
+        image_file_id: image.file_id,
+        image_url: image.url,
+        generated_by: image.generated_by ?? "user",
+        metadata: image.metadata,
+      });
+    } catch (e) {
+      return fail("setCardImage", e);
+    }
+  },
+
+  /** Remove a face's image (soft-deletes every active row of the kind). */
+  async removeCardImage(
+    cardId: string,
+    face: "front" | "back",
+  ): Promise<FcResult<null>> {
+    try {
+      const { error } = await EDU()
+        .from("fc_detail")
+        .update({ deleted_at: new Date().toISOString() })
+        .eq("card_id", cardId)
+        .eq("kind", `${face}_image`)
+        .is("deleted_at", null);
+      if (error) return fail("removeCardImage", error);
+      return { data: null, error: null };
+    } catch (e) {
+      return fail("removeCardImage", e);
     }
   },
 
