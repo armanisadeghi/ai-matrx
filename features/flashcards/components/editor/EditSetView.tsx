@@ -770,6 +770,11 @@ function CardEditor({
   // Live edits — never mutate the card prop. Autosave debounces persistence.
   const [front, setFront] = useState(card.front);
   const [back, setBack] = useState(card.back);
+  // The per-card TOPIC. Not decoration: it is the axis FastFire's live
+  // adaptation reorders on (VISION §3) and what weak-area analytics group by,
+  // so a deck with no topics silently loses both. AI-generated cards arrive
+  // with one; hand-built and CSV-imported decks had no way to set it until now.
+  const [topic, setTopic] = useState(card.topic ?? "");
   const [pairs, setPairs] = useState<MatchingPair[]>(() => matchingPairs(card));
   const [preview, setPreview] = useState(false);
 
@@ -780,23 +785,27 @@ function CardEditor({
   const autosave = useAutosave<{
     front: string;
     back: string;
+    topic: string;
     pairs: MatchingPair[];
   }>({
     save: async (v) => {
+      const base = { topic: v.topic.trim() || null };
       const patch =
         kind === CARD_KIND.matching
           ? {
+              ...base,
               front: v.front.trim(),
               card_kind: CARD_KIND.matching,
               dynamic_content: matchingDynamicContent(v.pairs),
             }
           : kind === CARD_KIND.cloze
             ? {
+                ...base,
                 front: v.front.trim(),
                 back: v.back.trim(),
                 card_kind: CARD_KIND.cloze,
               }
-            : { front: v.front.trim(), back: v.back.trim() };
+            : { ...base, front: v.front.trim(), back: v.back.trim() };
       const res = await fcService.updateCard(card.id, patch);
       return { error: res.error };
     },
@@ -809,15 +818,18 @@ function CardEditor({
   const editCard = (patch: {
     front?: string;
     back?: string;
+    topic?: string;
     pairs?: MatchingPair[];
   }): void => {
     const next = {
       front: patch.front ?? front,
       back: patch.back ?? back,
+      topic: patch.topic ?? topic,
       pairs: patch.pairs ?? pairs,
     };
     if (patch.front !== undefined) setFront(patch.front);
     if (patch.back !== undefined) setBack(patch.back);
+    if (patch.topic !== undefined) setTopic(patch.topic);
     if (patch.pairs !== undefined) setPairs(patch.pairs);
     autosave.schedule(next);
   };
@@ -991,6 +1003,21 @@ function CardEditor({
           </div>
         </div>
       )}
+
+      {/* The card's TOPIC — the axis FastFire's live adaptation reorders on and
+          weak-area analytics group by. A deck with no topics loses both, which
+          is exactly what happened to every hand-built and CSV-imported deck. */}
+      <div className="mt-2">
+        <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
+          Topic
+        </label>
+        <Input
+          value={topic}
+          onChange={(e) => editCard({ topic: e.target.value })}
+          placeholder="e.g. Photosynthesis — groups this card for adaptive drills"
+          className="h-8 text-sm"
+        />
+      </div>
 
       {/* P0 Trust — for an AI-generated card, show where it came from and let
           the author re-check it against its cited source (drift detection).

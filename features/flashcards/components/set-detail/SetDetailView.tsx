@@ -20,6 +20,7 @@ import {
   Lightbulb,
   Quote,
   Volume2,
+  Image as ImageIcon,
   Zap,
   Pencil,
   Expand,
@@ -52,6 +53,8 @@ import { useAccess } from "@/utils/permissions/access";
 import { canEditAccess } from "@/utils/permissions/access-core";
 import { DuplicateToEditButton } from "@/features/sharing/components/DuplicateToEditButton";
 import { fcService } from "../../data/fcService";
+import { getCardImages } from "../study/cardImages";
+import { FlashcardFaceImage } from "@/components/mardown-display/blocks/flashcards/FlashcardFaceImage";
 import type { SetWithCards, CardWithDetails } from "../../data/types";
 import {
   asCardKind,
@@ -67,11 +70,9 @@ import {
 } from "@/features/education/study/components/MasteryDisplay";
 import { FlashcardStudyWindowDevTrigger } from "../study/FlashcardStudyWindowDevTrigger";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
-import { downloadSetCsv } from "../../utils/importExportCsv";
 import {
-  buildDeckAnkiText,
-  buildDeckJson,
-  buildDeckMarkdown,
+  buildDeckFile,
+  DECK_EXPORT_FILE,
   downloadTextFile,
   safeFilename,
   type DeckExportFormat,
@@ -157,6 +158,7 @@ function CardPeek({
   const hasHelper = card.details.some((d) => d.kind === "helper");
   const hasExample = card.details.some((d) => d.kind === "example");
   const hasAudio = card.details.some((d) => !!d.audio_file_id);
+  const images = getCardImages(card);
   const kind = asCardKind(card.card_kind);
   const pairs = kind === CARD_KIND.matching ? matchingPairs(card) : [];
   const faces = kind === CARD_KIND.cloze ? clozeFaces(card.front) : null;
@@ -229,6 +231,14 @@ function CardPeek({
               <Volume2 className="h-2.5 w-2.5" />
             </span>
           )}
+          {(images.front || images.back) && (
+            <span
+              title="Has image"
+              className="inline-flex items-center rounded border border-border px-1 py-0 text-[10px] text-muted-foreground"
+            >
+              <ImageIcon className="h-2.5 w-2.5" />
+            </span>
+          )}
         </div>
       </div>
       {kind === CARD_KIND.matching ? (
@@ -255,12 +265,17 @@ function CardPeek({
         </div>
       ) : (
         <>
-          <div className="mt-1.5 text-sm font-medium text-foreground">
-            <CardFaceContent
-              content={faces ? faces.front : card.front}
-              variant="inline"
-              className="line-clamp-3"
-            />
+          <div className="mt-1.5 flex items-start gap-2 text-sm font-medium text-foreground">
+            {images.front && (
+              <FlashcardFaceImage image={images.front} size="thumb" />
+            )}
+            <div className="min-w-0 flex-1">
+              <CardFaceContent
+                content={faces ? faces.front : card.front}
+                variant="inline"
+                className="line-clamp-3"
+              />
+            </div>
           </div>
           <div className="mt-2 border-t border-border pt-2 text-xs text-muted-foreground">
             <CardFaceContent
@@ -349,40 +364,21 @@ export function SetDetailView({ setId }: { setId: string }) {
   const canEdit = access.isOwner || canEditAccess(access.level);
   const viewOnly = !access.loading && !canEdit;
 
-  // VISION §15 (WP3 gap 6) — own your data: every promised format, per deck.
+  // VISION §15 (WP3 gap 6) — own your data. Every byte comes from the ONE
+  // canonical writer (`deckFormats.buildDeckExport`), which the importer
+  // round-trips; this handler only names the file and hands it over.
   const exportDeck = (format: DeckExportFormat) => {
     if (!data) return;
-    const base = safeFilename(data.set.name, "flashcard_set");
-    switch (format) {
-      case "csv":
-        downloadSetCsv(data.set, data.cards);
-        break;
-      case "anki":
-        downloadTextFile(
-          `${base}.anki.txt`,
-          "text/plain",
-          buildDeckAnkiText(data.cards),
-        );
-        break;
-      case "markdown":
-        downloadTextFile(
-          `${base}.md`,
-          "text/markdown",
-          buildDeckMarkdown(data.set, data.cards),
-        );
-        break;
-      case "json":
-        downloadTextFile(
-          `${base}.json`,
-          "application/json",
-          buildDeckJson(data.set, data.cards),
-        );
-        break;
-    }
+    const spec = DECK_EXPORT_FILE[format];
+    downloadTextFile(
+      `${safeFilename(data.set.name, "flashcard_set")}.${spec.ext}`,
+      spec.mime,
+      buildDeckFile(data.set, data.cards, format),
+    );
     toast.success(
       format === "anki"
         ? "Exported for Anki (File → Import in Anki)"
-        : `Exported set as ${format.toUpperCase()}`,
+        : `Exported set as ${spec.label}`,
     );
   };
 
@@ -658,7 +654,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                     <DropdownMenuItem onClick={() => exportDeck("anki")}>
                       Anki (text import)
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => exportDeck("markdown")}>
+                    <DropdownMenuItem onClick={() => exportDeck("md")}>
                       Markdown
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => exportDeck("json")}>

@@ -27,6 +27,7 @@ import {
   History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -171,12 +172,20 @@ export function FastFireScoreboard({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {card.front}
-                    </p>
-                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                      {card.back}
-                    </p>
+                    <div className="text-sm font-medium text-foreground">
+                      <CardFaceContent
+                        content={card.front}
+                        variant="inline"
+                        className="line-clamp-1"
+                      />
+                    </div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      <CardFaceContent
+                        content={card.back}
+                        variant="inline"
+                        className="line-clamp-1"
+                      />
+                    </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     {grade?.status === "pending" && (
