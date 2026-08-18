@@ -16,7 +16,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
+import { loginHref } from "@/utils/auth/auth-destination";
 import { callApi } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 import { WorkflowRunBoard } from "@/features/workflow-runtime/components/WorkflowRunBoard";
@@ -192,6 +194,8 @@ function WorkflowRuntimeDemo() {
   const effectiveView: ViewMode =
     !viewChosen && surfaceLoaded && runId && surface ? "surface" : view;
 
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
   const [pendingStart, setPendingStart] = useState<{
     stepMode: boolean;
   } | null>(null);
@@ -268,6 +272,21 @@ function WorkflowRuntimeDemo() {
           <span className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading workflows…
           </span>
+        ) : listError && !isAuthenticated ? (
+          // Signed out, the list read failed for lack of credentials — a raw
+          // "could not be loaded" here was the 2026-08-18 morning dead end.
+          // The true state gets the door (auth-destination carries this page).
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Sign in to see and run your workflows.
+            </span>
+            <a
+              href={loginHref("/demos/workflow-runtime")}
+              className="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground"
+            >
+              Sign in
+            </a>
+          </div>
         ) : listError ? (
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-destructive">{listError}</span>
