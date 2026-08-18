@@ -93,10 +93,6 @@ has landed: replace the NodePanel fallback branch with one-click planned-row cre
 site served at `mymatrx.com/c/{slug}` those are two URLs → two rows for one page. Unify the
 derivation as part of this item; every paired site with its own domain agrees today.
 
-**6. Fix ContextMenuV3 mobile wrapper breaking table rows (chipped).** cloneElement fix for the
-`display:contents` div that is invalid around `<tr>` (hydration errors on /cms/html-pages at
-mobile widths). `features/context-menu-v3/ContextMenuV3.tsx` ~L663.
-
 **Lower priority:** research CMS-array reverse filter (`client_pages.research_topic_ids`, CMS
 DB — 0 rows carry data today, wire when research artifacts flow); CMS components→page usage join
 (join doesn't exist); Research tab (blocked on website-factory p3/p4/p5 artifact flow).
