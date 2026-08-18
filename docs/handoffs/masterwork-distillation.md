@@ -21,6 +21,33 @@
 
 ## STATUS — live and verified (compressed)
 
+- **🚨 A RULE THAT HIDES ITS RELATIONSHIP TO ANOTHER RULE IS MISLEADING (2026-08-18, from Arman
+  reading all 28 rules of the SEO Rulebook `8d1d4f08-…` by hand before approving them:
+  _"they're representing the rule as though it's a standalone thing… on a few of the rules, I
+  found that they were misleading, and I fixed them"_).** A correctness defect, not a style nit:
+  a rule applied alone fires in the case he would have refused. His own repair is the standard —
+  *"Before committing to a keyword, check the backlink profiles of the top-10 competitors"* became
+  *"…**if you notice a page that seems beatable because your website has higher authority than
+  theirs**, examine how many links it took them to get that spot"* (one clause naming the
+  condition its sibling produces; not a merge). **Shipped:** optional `relates_to`
+  `[{rule_id, kind, note}]` on the rules JSONB (no migration), `kind` a closed four-value
+  vocabulary earned from his 28 rules — `refines` | `depends_on` | `exception_to` |
+  `contrast_with`; ONE resolver (`distill.resolve_rule_relations`) shared by
+  `build_draft_rules`, the Scout's `rulebook` tool and the Checkup, which DROPS and COUNTS any
+  reference it cannot resolve so a door never opens onto nothing; **THE CONNECTION RULE**
+  published into all seven rule-producing agents' DB definitions (scout v9, source v8, exemplar
+  v9, monologue v2, transcript v3, corpus synthesizer v2, rule improver v4) — check the existing
+  rules, carry the connecting aspect INLINE in the statement, *and* stamp `relates_to`, never one
+  without the other; FE `RulebookRule.relates_to` + `RuleRelations.tsx` rendering each sibling as
+  a real door (`#rule-<id>` anchor on every rule row, named with the sibling's real name);
+  **Final Checkup producer #3, the Relationship Auditor** (`masterwork.relationship_auditor`,
+  agent `c3c6ceeb-…`) for the debt already in Rulebooks. **Live-proved both ways:** the producer
+  on `8d1d4f08-…` returned **2 findings / 0 evidence rejections** out of 28 rules — both real
+  (`profile-every-top-10-serp-result…` silently `refines` the rankability verdict;
+  `use-confusedmisspelled-keywords…` silently `depends_on` the taxonomy pass) — and a source
+  distiller run on a two-related-judgments chunk emitted "…**overriding the usual
+  number-in-headline requirement**" with `{"kind": "exception_to"}` stamped, 0 relations dropped.
+
 - **THE UNDERSTUDY ACTUALLY RUNS, AND IT SAYS WHAT IT IS (2026-08-18, from Arman pressing
   Run it and getting a bare error: _"No explanation of what the fuck is going on… It doesn't
   have anything to run"_).** It DID have something to run — the Understudy workflow existed.
