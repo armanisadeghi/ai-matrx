@@ -196,7 +196,10 @@ export function MandatesConsole() {
               ? truthResult.reason.message
               : String(truthResult.reason);
           setCodeTruthError(message);
-          console.error(
+          // `callApi` already records the request-level failure once with the
+          // endpoint and transport class. Keep the local breadcrumb without
+          // creating a second, poorer system_error for the same request.
+          console.warn(
             "[mandates] code truth unavailable",
             truthResult.reason,
           );

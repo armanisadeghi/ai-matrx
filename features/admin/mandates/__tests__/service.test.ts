@@ -164,6 +164,7 @@ describe("mandate owner bench service", () => {
     expect(callApiMock).toHaveBeenCalledWith({
       path: "/mandates/code-truth",
       method: "GET",
+      connectTimeoutMs: 60_000,
     });
   });
 

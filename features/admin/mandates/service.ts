@@ -29,6 +29,7 @@ import type { components } from "@/types/python-generated/api-types";
 
 /** Mandate/exemplar rows are platform rows owned by the system org. */
 const SYSTEM_ORGANIZATION_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
+const MANDATE_CODE_TRUTH_CONNECT_TIMEOUT_MS = 60_000;
 
 export type MandateDefinitionRow =
   Database["agent"]["Tables"]["mandate"]["Row"];
@@ -600,6 +601,7 @@ export async function fetchMandateCodeTruthReport(
     callApi({
       path: "/mandates/code-truth",
       method: "GET",
+      connectTimeoutMs: MANDATE_CODE_TRUTH_CONNECT_TIMEOUT_MS,
     }),
   );
   if (response.error) throw new Error(response.error.message);
