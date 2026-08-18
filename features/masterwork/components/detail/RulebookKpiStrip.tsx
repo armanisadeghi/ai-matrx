@@ -156,39 +156,28 @@ export function RulebookKpiStrip({
         ) : null}
       </div>
       <div>
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="flex items-center gap-1 font-medium text-foreground">
-            {done ? <Trophy className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : null}
-            Review progress
+        {/* ONE line, not three. Arman, 2026-08-18: "We don't need to write a
+            goddamn novel about everything. Pick your favorite one, and that's
+            all we write." The favourite is the next step — a "Review progress"
+            label restates the bar, and a second sentence about the system
+            being live restates the Understudy card below. */}
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+            {done ? (
+              <Trophy className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            ) : null}
             {live ? (
-              // The system being live is SHOWN by the Understudy card below —
-              // a second sentence saying so here is the "novel about
-              // everything" Arman deleted (2026-08-18). One dot, no prose.
               <span
-                className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500"
+                className="inline-flex h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500"
                 title="Your system is already running — every approval improves it"
               />
             ) : null}
+            <span className="truncate">{nextStepLine(kpis)}</span>
           </span>
-          <span className="tabular-nums text-muted-foreground">
+          <span className="shrink-0 tabular-nums text-muted-foreground">
             {kpis.progressPct}%
           </span>
         </div>
-        <div
-          className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted"
-          role="progressbar"
-          aria-valuenow={kpis.progressPct}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${
-              done ? "bg-emerald-500" : "bg-primary"
-            }`}
-            style={{ width: `${Math.max(kpis.progressPct, 2)}%` }}
-          />
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">{nextStepLine(kpis)}</p>
       </div>
     </div>
   );

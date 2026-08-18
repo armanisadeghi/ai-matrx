@@ -6,8 +6,9 @@
 // Understudy (vision doc 13: the system runs from the first minute, and
 // everything after is improvement). Renders the SAME TryMasterworkBox the
 // Studio and Encore use — never a second run surface — over the Understudy
-// workflow, plus the one line that makes the reframe land: it gets better as
-// rules are approved.
+// workflow, plus the two lines that make the reframe land: it is a STAND-IN
+// (say the word — the name is the explanation), and it gets better as rules
+// are approved.
 //
 // Self-heals: a Rulebook created before the Understudy existed has no row yet;
 // when the editor opens it, one free refresh call mints it.
@@ -66,7 +67,7 @@ export function UnderstudyCard({
       return (
         <div className="rounded-lg border border-border bg-card p-3">
           <p className="text-sm text-foreground">
-            We couldn&apos;t start your Understudy just now.
+            We couldn&apos;t bring your understudy on just now.
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
             Your rules are safe — nothing was lost. Try again, or reload the
@@ -93,7 +94,7 @@ export function UnderstudyCard({
           ) : (
             <PlayCircle className="h-4 w-4" />
           )}
-          Building your Understudy — one AI that does this whole job now…
+          Bringing your understudy on — the stand-in that does this job today…
         </div>
       </div>
     );
@@ -107,27 +108,30 @@ export function UnderstudyCard({
           <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
         </span>
         <h3 className="text-sm font-semibold text-foreground">
-          Your system is already running — try it
+          Your understudy is ready — try it
         </h3>
       </div>
-      {/* WHAT it is, WHAT it does with the box below, and WHAT it is not.
-          Two lines, because a button that runs something the Expert can't
-          name is the same defect as a run that fails without saying why. */}
+      {/* THE NAME IS THE EXPLANATION (Arman, 2026-08-18). An understudy is the
+          stand-in who goes on tonight, not the star — so "your system is
+          already running" claimed the exact opposite of the word and threw
+          away the one term that teaches the Understudy/Masterwork pair for
+          free. Say the name, then be honest that it isn't good yet: that
+          honesty is what makes "Build a Masterwork" mean something. */}
       <p className="mb-1 text-xs text-muted-foreground">
-        Describe a job below and one AI does the whole thing right now —{" "}
+        A rough stand-in that already does this whole job —{" "}
         {approvedCount === 0
-          ? "improvising, because you haven't approved any rules yet"
-          : `working from the ${approvedCount} ${approvedCount === 1 ? "rule" : "rules"} you've approved`}
-        .
+          ? "improvising, since you haven't approved any rules yet"
+          : `from the ${approvedCount} ${approvedCount === 1 ? "rule" : "rules"} you've approved`}
+        . Describe a job below and watch it work.
       </p>
       <p className="mb-2 text-xs text-muted-foreground">
-        It&apos;s a rough stand-in, not your finished Masterwork — and it gets
-        sharper with every rule you approve.
+        It won&apos;t be as good as the real thing — that&apos;s what building
+        your Masterwork is for.
       </p>
       <TryMasterworkBox
         masterworkId={understudy.id}
         masterworkKind="generate"
-        whatItRuns="Your Understudy"
+        whatItRuns="Your understudy"
         onRunFinished={() => undefined}
       />
     </div>

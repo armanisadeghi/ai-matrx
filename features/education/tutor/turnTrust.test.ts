@@ -56,14 +56,14 @@ describe("reconcileTurnTrust", () => {
     const claimed: TrustEnvelope = {
       confidence: "grounded",
       groundedIn: "student material",
-      citations: [{ sourceId: "card-1", sourceKind: "fc_card" }],
+      citations: [{ sourceId: "card-1", sourceKind: "scope" }],
     };
 
     expect(
       reconcileTurnTrust(claimed, [
         {
           sourceId: "card-1",
-          sourceKind: "fc_card",
+          sourceKind: "scope",
           title: "Current card",
         },
       ]),

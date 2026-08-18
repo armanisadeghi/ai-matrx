@@ -17,8 +17,8 @@
 // welded onto the rules toolbar at the bottom. Now every one of them lives
 // here, and NOWHERE else on the page:
 //
-//   header  — Your words (the record) · Add ▾ (document · published work · AI
-//             chats) · New interview (the primary way in)
+//   header  — Your words (the record) · Add ▾ (a document · published work ·
+//             AI chats) · New interview (the primary way in)
 //   body    — the interview list (ConversationsSection) then the attached
 //             sources + capture + "Turn this into rules"
 //             (RulebookSourcesPanel, variant="bare")
@@ -41,8 +41,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -131,22 +129,19 @@ export function RulebookInputsSection({
                   rules from it
                 </TooltipContent>
               </Tooltip>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                  Turn what you already have into rules
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
+              {/* Icon + one to three words, every row the same shape. */}
+              <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onSelect={() => onAddDocument()}>
                   <FileUp className="h-4 w-4" />
-                  A document or recording
+                  A document
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onAddPublishedWork()}>
                   <BookOpen className="h-4 w-4" />
-                  Your published work
+                  Published work
                 </DropdownMenuItem>
                 <DropdownMenuItem onSelect={() => onAddChats()}>
                   <MessagesSquare className="h-4 w-4" />
-                  Your AI chats
+                  AI chats
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

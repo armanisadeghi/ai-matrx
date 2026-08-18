@@ -207,7 +207,7 @@ function deriveGroundingTrust(
   if (seed?.material) {
     citations.push({
       sourceId: "tutor-seed",
-      sourceKind: "chunk",
+      sourceKind: "scope",
       title: seed.title || "The item you're on",
       excerpt: seed.material,
     });
@@ -215,7 +215,7 @@ function deriveGroundingTrust(
   for (const c of weakCards) {
     citations.push({
       sourceId: c.id,
-      sourceKind: "chunk",
+      sourceKind: "scope",
       title: c.front,
       excerpt: `${c.front} → ${c.back}`,
       locator: c.topic ?? undefined,

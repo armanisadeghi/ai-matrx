@@ -34,7 +34,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -1228,13 +1227,17 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                       Everything else you can do with this Rulebook
                     </TooltipContent>
                   </Tooltip>
-                  <DropdownMenuContent align="end" className="w-72">
+                  {/* A dropdown row is an icon plus ONE TO THREE WORDS, every
+                      row the same shape. Arman, 2026-08-18, on the first
+                      attempt: "look at how horrible and ugly the text and icon
+                      combination is that you're putting in the dropdown."
+                      Explanations belong on the destination, never as
+                      paragraph subtext inside a menu item. */}
+                  <DropdownMenuContent align="end" className="w-52">
                     <DropdownMenuItem asChild>
                       <Link href={`/masterwork/${rulebook.id}/masterworks`}>
                         <Workflow className="h-4 w-4" />
-                        <span className="flex-1">
-                          Systems built from this Rulebook
-                        </span>
+                        <span className="flex-1">Systems</span>
                         {builtCount > 0 ? (
                           <span className="text-xs text-muted-foreground">
                             {builtCount}
@@ -1251,31 +1254,19 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                         onSelect={() => openCheckup({ rulebookId: rulebook.id })}
                       >
                         <Stethoscope className="h-4 w-4" />
-                        Check my rules against everything I said
+                        Final checkup
                       </DropdownMenuItem>
                     ) : null}
+                    {/* Status is a LABEL, not a gate — nothing reads `active`
+                        except the badge and the browse list, and Build works
+                        in either state. The confirm dialog says exactly that. */}
                     {canEdit && rulebook.status === "draft" ? (
-                      <>
-                        <DropdownMenuSeparator />
-                        {/* Status is a LABEL, not a gate — nothing in the
-                            platform reads `active` except the badge and the
-                            browse list, and Build works in either state. The
-                            copy says exactly that instead of implying the
-                            Rulebook is switched off. */}
-                        <DropdownMenuItem
-                          onSelect={() => setConfirmActivate(true)}
-                          className="flex-col items-start gap-0.5"
-                        >
-                          <span className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4" />
-                            Mark as ready
-                          </span>
-                          <span className="pl-6 text-xs text-muted-foreground">
-                            Changes the Draft badge to Active. Building works
-                            either way.
-                          </span>
-                        </DropdownMenuItem>
-                      </>
+                      <DropdownMenuItem
+                        onSelect={() => setConfirmActivate(true)}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        Mark as ready
+                      </DropdownMenuItem>
                     ) : null}
                   </DropdownMenuContent>
                 </DropdownMenu>
