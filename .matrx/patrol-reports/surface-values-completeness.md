@@ -15,7 +15,8 @@ Scope: first-run full inventory (routes, registered overlays, readiness, runtime
 - Patrol machinery fixed: **1**. `pnpm check:surface-overlays` now performs the missing overlay-id ↔ manifest comparison and prints the exact 149-item backlog on every run.
 - Human decisions required: **1 existing product decision** — whether `/education/learn` stays intentionally non-emitting, receives a thin client identity shell, or becomes client-rendered. The thin client identity shell preserves server-rendered article content and is the lowest-risk option if agent reachability is required.
 - Exceptions proposed or approved: **0**.
-- Certification: **pending exact-candidate adversarial review**.
+- Certification: **CERTIFIED** for exact candidate `569247bedbe04ebaa55efbce82a19f5dd4d9c7b5`. The independent certifier confirmed the inventory counts, detector failure semantics, clean scoped checks, and no batch-caused type-check defect.
+- Delivery: certified candidate preserved at `refs/heads/patrol-runs/P12/20260818T161811Z` and queued for fast integration; release remains in the serialized release lane.
 
 ## Baseline diagnostics
 
@@ -27,6 +28,14 @@ Scope: first-run full inventory (routes, registered overlays, readiness, runtime
 - `pnpm check:reuse-index`: command PASS with an unrelated four-path stale-index warning; no changed P12 path is involved.
 - `pnpm check:migrations`: command PASS with two unrelated pre-existing drift warnings (`agx_config_normalization_matrx_actions_ui_gates.sql`, `crm_ui_surface_outreach_lists.sql`).
 - Managed preview: no machine-wide preview was running at baseline.
+
+## Independent certification
+
+- Verdict: **CERTIFIED** — no concrete batch-caused defect.
+- Counts reproduced independently: 174 unique overlay ids, 25 unique manifest claims, 149 missing, 0 phantom, 0 duplicate.
+- Mutation proof: an injected phantom claim failed and named `contextPreviewPanel`; an injected duplicate claim failed and named both conflicting surfaces. The real missing-only backlog exited successfully as designed.
+- Scoped ESLint, Prettier, `git diff --check`, `check:surface-drift`, and `check:surface-routes` passed.
+- Baseline and candidate type-check outputs were byte-identical: 31 diagnostics across the same 14 unrelated files, with no changed-path diagnostic.
 
 ## Inventory evidence
 
