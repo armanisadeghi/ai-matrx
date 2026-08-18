@@ -21,6 +21,29 @@
 
 ## STATUS — live and verified (compressed)
 
+- **🚨 THE EXPERT NOW OWNS THE AGENTS THEIR BUILD AUTHORS (2026-08-18, aidream).** Build was
+  creating every Masterwork's Maker / Editor / Chief through the **platform-builtin** path, so
+  they landed `agent_type='builtin'`, `created_by` NULL, in the ownerless **Matrx System org**,
+  with `card_visibility='public'` — i.e. **in every user's agent browse list**, and the Expert did
+  not own the distillation of their own method. That is the privileged internal path
+  `common-docs/policies/we-are-our-own-customer.md` forbids. **Fixed in the CREATION path**, not
+  in `build.py`'s templating, so the Masterwork Conductor inherits it: `AgentSpec.owner`
+  (new `AgentOwnership`) → `agent_factory.builder._persist_agent` decides the class, exposed on
+  the service contract as `CreateAgentInput.owner_user_id` / `owner_organization_id` (org resolved
+  through the ONE resolver, never NULL). `_author_agent` now REQUIRES `owner_user_id` and
+  `build_masterwork` refuses (`masterwork_build_unauthenticated`) rather than build a Masterwork
+  nobody owns. **Guards (two, both loud):** `agent_factory.guards.assert_ownership_class` raises at
+  the birth choke point if an owned agent would be stamped `builtin`; `scripts/check_customer_agent_ownership.py`
+  (in `release.sh`, non-blocking) screams on any builtin carrying a customer Rulebook provenance
+  tag. The DB trigger `agent._enforce_builtin_system_org` was **not weakened** — it is correct for
+  a genuine platform builtin (the shared Rulebook Auditor, the Understudy, the distillers).
+  **18 live agents reclaimed** (12 tagged `rulebook:<slug>`, 6 from the older `pack:<slug>`
+  generation) to their source Rulebook's owner + the Build's org, `agent_type='user'`,
+  `card_visibility='internal'`. Verified: 0 remain builtin / system-org / ownerless / public-card;
+  all 14 referencing Masterwork workflows still resolve every `ai.agent.start` agent and every one
+  is runnable by the workflow's owner (`iam.has_access_for` viewer). No mandate, surface, shortcut
+  or app binding pointed at any of them.
+
 - **🚨 THE BUILD IS A WINDOW PANEL — the last blocking modal on the payoff moment is gone
   (2026-08-18).** Arman, on finding the Build still in a `sm:max-w-lg` dialog a day after the
   Add-rule conversion: *"you're telling me all of it's gonna render inside of that shitty little
