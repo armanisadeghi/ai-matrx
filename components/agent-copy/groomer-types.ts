@@ -6,7 +6,7 @@
  *
  * Kept separate from the window component so pages can declare their sections
  * without pulling the WindowPanel stack into their chunk (the window itself is
- * loaded via `AgentCopyGroomerLauncher`'s dynamic import).
+ * loaded via `AgentCopyGroomerHost`'s dynamic import).
  */
 
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";

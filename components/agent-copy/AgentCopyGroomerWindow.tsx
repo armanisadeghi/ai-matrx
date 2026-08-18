@@ -9,8 +9,8 @@
  * estimates, and a live preview of the exact payload that will be copied.
  *
  * NEVER static-import this from a page — render it via
- * `AgentCopyGroomerLauncher` (dynamic, ssr:false) so the WindowPanel stack
- * stays out of the route chunk.
+ * `AgentCopyGroomerHost` (dynamic, ssr:false) so the WindowPanel stack stays
+ * out of the route chunk.
  */
 
 import { useMemo, useState } from "react";
@@ -22,10 +22,7 @@ import { toast } from "@/lib/toast";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
-import {
-  jsonExportItem,
-  textExportItem,
-} from "@/components/agent-copy/export";
+import { jsonExportItem, textExportItem } from "@/components/agent-copy/export";
 import {
   applyGroomerPreset,
   defaultGroomerSelections,

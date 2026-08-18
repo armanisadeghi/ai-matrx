@@ -29,6 +29,8 @@ import {
   type AgentPayloadInput,
 } from "@/components/agent-copy/buildAgentPayload";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
+import { AgentCopyGroomerHost } from "@/components/agent-copy/AgentCopyGroomerHost";
+import type { AgentCopyGroomerConfig } from "@/components/agent-copy/groomer-types";
 import {
   approxTokens,
   fmtBytes,
@@ -138,6 +140,8 @@ export interface AiCopyMenuProps {
   variants: AiVariant[];
   /** Optional custom-preview source ("Open custom view…"). */
   custom?: AiCustomSource;
+  /** Optional whole-page Groomer, opened from a single menu item. */
+  groomer?: () => AgentCopyGroomerConfig;
   /** Human label for tooltips / toasts, e.g. "Backlinks", "All sandboxes". */
   label: string;
   /**
@@ -160,6 +164,7 @@ function toText(resolved: AgentPayloadInput | string): string {
 export function AiCopyMenu({
   variants,
   custom,
+  groomer,
   label,
   size = "icon",
   stopPropagation = true,
@@ -169,6 +174,9 @@ export function AiCopyMenu({
 }: AiCopyMenuProps) {
   const [busy, setBusy] = React.useState(false);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [groomerOpen, setGroomerOpen] = React.useState(false);
+  const [groomerConfig, setGroomerConfig] =
+    React.useState<AgentCopyGroomerConfig | null>(null);
 
   const buttonCls =
     size === "xs"
@@ -193,7 +201,14 @@ export function AiCopyMenu({
     }
   };
 
-  const single = variants.length === 1 && !custom ? variants[0] : null;
+  const single =
+    variants.length === 1 && !custom && !groomer ? variants[0] : null;
+
+  const openGroomer = () => {
+    if (!groomer) return;
+    setGroomerConfig(groomer());
+    setGroomerOpen(true);
+  };
 
   const triggerBody = (
     <>
@@ -298,6 +313,20 @@ export function AiCopyMenu({
               </DropdownMenuItem>
             </>
           )}
+          {groomer && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={openGroomer} className="gap-2">
+                <CopyForAiIcon className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col">
+                  <span>Customize…</span>
+                  <span className="text-xs text-muted-foreground">
+                    Choose sections and detail before copying
+                  </span>
+                </div>
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -309,6 +338,11 @@ export function AiCopyMenu({
           label={label}
         />
       )}
+      <AgentCopyGroomerHost
+        open={groomerOpen}
+        config={groomerConfig}
+        onClose={() => setGroomerOpen(false)}
+      />
     </>,
   );
 }

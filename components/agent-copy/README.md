@@ -6,6 +6,7 @@ legacy `execCommand` fallback), success toasts, and the AI payload envelope so
 no page reimplements them.
 
 **Pieces:**
+
 - `CopyButtons` — **exactly two top-level, icon-only controls at every size**:
   the normal Copy icon and one `CopyForAiIcon`. Every size keeps a 44px phone/tablet
   tap target and collapses to its dense visual size at `lg+`. `size`: `"xs"` (h-5, dense list items /
@@ -27,7 +28,8 @@ no page reimplements them.
 - `AgentCopyGroomerWindow` + `groomer-types.ts` — the page-level custom
   workspace opened from the **one Copy-for-AI dropdown**. It grooms the
   whole-page payload before copying; its footer also exports payload `.md` /
-  data `.json`. **Never place `AgentCopyGroomerLauncher` beside `CopyButtons`.**
+  data `.json`. Pass `groomer={() => config}` to `CopyButtons`; **never place
+  `AgentCopyGroomerLauncher` beside it.**
   See "Whole-page copy" below.
 
 **Truncated lists must offer the rest.** A "top 8" list with no way to see all
@@ -75,6 +77,7 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
     attributes: { count: list.length },
     context: { filter, total },            // extra <context> entries
   })}
+  groomer={() => getWholePageGroomerConfig()}
 />
 ```
 
@@ -124,21 +127,21 @@ survives.
 
 A "Copy for AI" control is an **AI context source**, not a copy button — and it
 must scale to its data. There is no one-size-fits-all; for every surface ask
-*"what would someone actually hand an AI here?"*:
+_"what would someone actually hand an AI here?"_:
 
-| Data | Control | Variants |
-|---|---|---|
-| **Small / bounded** (one record, a short list) | AI icon is plain only when it owns one action; otherwise dropdown | Faithful payload; add JSON when structured |
-| **Medium** (a focused list, a digestible page) | AI dropdown | JSON + focused/short view + Everything |
-| **Massive / unbounded** (giant payloads, full histories) | AI dropdown + non-blocking custom workspace | JSON + Short + Everything + tunable custom/Groomer |
+| Data                                                     | Control                                                           | Variants                                           |
+| -------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------- |
+| **Small / bounded** (one record, a short list)           | AI icon is plain only when it owns one action; otherwise dropdown | Faithful payload; add JSON when structured         |
+| **Medium** (a focused list, a digestible page)           | AI dropdown                                                       | JSON + focused/short view + Everything             |
+| **Massive / unbounded** (giant payloads, full histories) | AI dropdown + non-blocking custom workspace                       | JSON + Short + Everything + tunable custom/Groomer |
 
 - **`AiCopyMenu`** (`AiCopyMenu.tsx`) is the chrome: pass `variants`
   (pure `build()` → envelope-or-string, may be async) and optionally `custom`
   (an options schema — toggle/preset/slider/number — plus pure `build(opts)` +
-  `wrap`). One variant + no custom renders a single icon button; anything more
-  renders the dropdown, and `custom` adds the preview dialog with live
-  char / byte / ~token counts. Shortening logic NEVER lives in the chrome —
-  write a pure per-data builder.
+  `wrap`) or `groomer` (`() => AgentCopyGroomerConfig`). One variant with no
+  custom/Groomer renders a single icon button; anything more renders the
+  dropdown. Shortening logic NEVER lives in the chrome — write a pure
+  per-data builder.
 - **`CopyButtons` upgrades in place**: pass `aiVariants` / `aiCustom` and its
   AI icon becomes the menu, with `json`, the existing `agent` payload as the
   never-lossy **Everything** escape hatch, and the page Groomer/custom
@@ -175,9 +178,9 @@ must scale to its data. There is no one-size-fits-all; for every surface ask
 ## Whole-page copy — the Groomer inside the AI dropdown
 
 The page header still renders only `CopyButtons`. Its Copy-for-AI dropdown opens
-`AgentCopyGroomerWindow` as the custom option (WindowPanel; keep the window
-behind its existing client-only loading boundary). The user grooms the payload
-before copying:
+`AgentCopyGroomerWindow` when `groomer={() => config}` is supplied (WindowPanel;
+the shared `AgentCopyGroomerHost` owns the one client-only loading boundary).
+The user grooms the payload before copying:
 
 - **Sections** (`AgentCopyGroomerSection[]`): each page area declares
   `build(level)` for `full | compact | brief`, optional per-level labels, and
@@ -238,9 +241,9 @@ high-leverage for "what is the user looking at."
 Imagine a page declares, in a registry: (a) its current state (including the
 relevant Redux slices — the mother of all state) and (b) the set of callbacks
 it can perform ("create sandbox", "stop instance", "promote admin", … ~15
-actions per page) with their argument schemas. We then tell an agent: *here is
+actions per page) with their argument schemas. We then tell an agent: _here is
 where the user is, here is everything you can see, and here is everything you
-can do — call any of these with these args.* The agent becomes a real
+can do — call any of these with these args._ The agent becomes a real
 co-pilot on the page, not just a reader.
 
 The "Copy for AI" button is deliberately the seam for this: when the registry +

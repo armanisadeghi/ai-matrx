@@ -35,8 +35,8 @@ two skills and the two `AiCopyMenu`s in step.
 ## 🚨 THE MISSION — a Copy-for-AI is an AI context source, not a copy button
 
 The user clicks it because they are **getting AI help with what they are doing
-right now**. Before writing any payload, answer: *"what is the user doing on
-this page the moment they click this?"* — then hand the agent exactly that.
+right now**. Before writing any payload, answer: _"what is the user doing on
+this page the moment they click this?"_ — then hand the agent exactly that.
 
 - **THE WHAT-I-SEE LAW (Arman, 2026-08-12, in anger):** the PRIMARY payload is
   the **rendered surface converted to data** — never a raw record/snapshot
@@ -101,11 +101,11 @@ It is impossible to guess what the user wants to share when there is real
 data. Judge the size class for EVERY surface — a judgment call about the
 page's usage, never a global rule:
 
-| Data | Control | Menu contents |
-|---|---|---|
-| **Small / bounded** (one record, short list) | icon-only pair; AI icon is plain only when it has one action | faithful payload; add JSON to its dropdown when structured |
-| **Medium** (focused list, digestible page) | icon-only pair; `aiVariants` dropdown | JSON + 2–5 shaped variants + Everything |
-| **Massive** (can reach ~10k+ chars: conversations, big tables, multi-section pages) | icon-only pair; AI dropdown + **custom workspace** | JSON + variants + Everything + tunable custom/Groomer |
+| Data                                                                                | Control                                                      | Menu contents                                              |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------- |
+| **Small / bounded** (one record, short list)                                        | icon-only pair; AI icon is plain only when it has one action | faithful payload; add JSON to its dropdown when structured |
+| **Medium** (focused list, digestible page)                                          | icon-only pair; `aiVariants` dropdown                        | JSON + 2–5 shaped variants + Everything                    |
+| **Massive** (can reach ~10k+ chars: conversations, big tables, multi-section pages) | icon-only pair; AI dropdown + **custom workspace**           | JSON + variants + Everything + tunable custom/Groomer      |
 
 - **A single button on a payload that can reach ~10k chars is a defect** —
   thousands of tokens the user can't see or control.
@@ -150,12 +150,12 @@ page's usage, never a global rule:
   `full/compact/brief/off` dials, Everything/Balanced/Minimal presets, live
   size (chars + ~tokens), live preview. Full contract in the README. The
   page-level "everything" is **composed from the per-section builders**, never
-  a parallel implementation. **Never render `AgentCopyGroomerLauncher` beside
-  `CopyButtons`; route that capability into the existing AI dropdown.**
+  a parallel implementation. Pass `groomer={getGroomerConfig}` to
+  `CopyButtons`. **Never render `AgentCopyGroomerLauncher` beside it.**
 - The **"Copy for AI" button is a deliberate seam**: when the surfaces-registry
-  + tool-injection layer lands, it flips from "copy to clipboard" to "hand
-  context + callable actions to the agent" and every existing callsite comes
-  along for free. Keep `kind` slugs stable and `attributes` meaningful.
+  - tool-injection layer lands, it flips from "copy to clipboard" to "hand
+    context + callable actions to the agent" and every existing callsite comes
+    along for free. Keep `kind` slugs stable and `attributes` meaningful.
 
 ## Exemplars — study before building, best first
 
@@ -229,7 +229,8 @@ Page header gets one icon-only `CopyButtons` pair. Its AI dropdown contains
 JSON, the what-I-see payload, Everything, shaped variants, and the Groomer
 custom workspace whose sections mirror the page's areas. Declare sections once
 and derive the quick payload from `sections.build("full")` — never maintain two
-section lists or place another launcher beside the pair.
+section lists or place another launcher beside the pair. Supply the workspace
+through `groomer={getGroomerConfig}` on that same `CopyButtons`.
 
 ### Step-by-step
 
@@ -305,6 +306,7 @@ first and emit the gap list; only then wire, batch by batch:
 ## Rollout status (update this as you go)
 
 **Done:**
+
 - Primitive + README + roadmap (`components/agent-copy/`), `xs` size, groomer
   window (`AgentCopyGroomerWindow` + `groomer-types.ts`) routed from the one AI
   dropdown; a separate launcher beside the pair is forbidden.
@@ -415,6 +417,7 @@ These are verified against THE WHAT-I-SEE LAW: payload built inside the click
 handler from LIVE inputs, explicit `unsaved_changes` diff vs the saved record,
 rendered validation/error text captured verbatim, and the page's leading strip
 carried in the body AND envelope `attributes`.
+
 - `agent-apps/route/AgentAppSettingsContent` — six staged fields + dirty diff,
   rate-limit validation verbatim, commit-on-change controls reported as saved,
   tabs made controlled so the payload names the open tab.
@@ -449,8 +452,9 @@ is step 4 of the module-audit protocol. Any you touch is boy-scout territory:
 upgrade the payload while you're there. The 2026-08-15 pass paid down the
 FORM surfaces only; **known remaining offenders**, all raw `data: record`
 dumps with no page KPIs in `attributes`:
+
 - `agent-apps/route/AgentAppOverviewContent` — `data: { app, agent, variables,
-  contextSlots }`; the page renders a six-chip stat strip that no payload
+contextSlots }`; the page renders a six-chip stat strip that no payload
   carries. Its per-variable and per-context-slot section pairs also lack
   parent context.
 - `mcp-tools/ToolViewPage` — `data: tool` (read-only, so the record largely IS

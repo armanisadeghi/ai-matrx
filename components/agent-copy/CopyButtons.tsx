@@ -17,6 +17,7 @@ import {
   type AiCustomSource,
   type AiVariant,
 } from "@/components/agent-copy/AiCopyMenu";
+import type { AgentCopyGroomerConfig } from "@/components/agent-copy/groomer-types";
 
 /**
  * CopyButtons — the reusable "copy this data" primitive.
@@ -99,6 +100,8 @@ export interface CopyButtonsProps {
    * dropdown upgrade. Reserve for data with real shortening knobs.
    */
   aiCustom?: AiCustomSource;
+  /** Whole-page Groomer added as "Customize…" inside the AI dropdown. */
+  groomer?: () => AgentCopyGroomerConfig;
 }
 
 export function CopyButtons({
@@ -113,6 +116,7 @@ export function CopyButtons({
   aiVariants,
   aiCustom,
   agentVariant,
+  groomer,
 }: CopyButtonsProps) {
   const [copied, setCopied] = React.useState<"human" | "agent" | null>(null);
 
@@ -172,7 +176,8 @@ export function CopyButtons({
     agentVariant?.position === "first"
       ? [faithfulAgentVariant, ...derivedVariants]
       : [...derivedVariants, faithfulAgentVariant];
-  const hasAiMenu = menuVariants.length > 1 || aiCustom !== undefined;
+  const hasAiMenu =
+    menuVariants.length > 1 || aiCustom !== undefined || groomer !== undefined;
 
   return (
     <div
@@ -207,6 +212,7 @@ export function CopyButtons({
           stopPropagation={false}
           variants={menuVariants}
           custom={aiCustom}
+          groomer={groomer}
         />
       ) : (
         <Button

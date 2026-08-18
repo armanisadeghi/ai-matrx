@@ -7,11 +7,17 @@ jest.mock("@/components/agent-copy/AiCopyMenu", () => ({
   AiCopyMenu: ({
     variants,
     size,
+    groomer,
   }: {
     variants: Array<{ id: string; label: string; build: () => unknown }>;
     size: "xs" | "icon" | "sm";
+    groomer?: () => unknown;
   }) => (
-    <div data-testid="ai-menu" data-size={size}>
+    <div
+      data-testid="ai-menu"
+      data-size={size}
+      data-has-groomer={String(groomer !== undefined)}
+    >
       <button type="button" aria-label="Mock Copy for AI menu" />
       <ol data-testid="ai-variants">
         {variants.map((variant) => (
@@ -120,5 +126,32 @@ describe("CopyButtons AI variants", () => {
     expect(
       container.querySelector("[data-testid='json-payload']")?.textContent,
     ).toBe('{\n  "node": "pillar",\n  "depth": 1\n}');
+  });
+
+  it("folds a whole-page Groomer into the same AI control", () => {
+    act(() => {
+      root.render(
+        <CopyButtons
+          size="sm"
+          label="Content plan"
+          human="human plan"
+          agent="agent plan"
+          groomer={() => ({
+            label: "Content plan",
+            kind: "content-plan",
+            location: "Content plan",
+            description: "The visible content plan.",
+            sections: [],
+          })}
+        />,
+      );
+    });
+
+    expect(container.querySelectorAll("button")).toHaveLength(2);
+    expect(
+      container
+        .querySelector("[data-testid='ai-menu']")
+        ?.getAttribute("data-has-groomer"),
+    ).toBe("true");
   });
 });

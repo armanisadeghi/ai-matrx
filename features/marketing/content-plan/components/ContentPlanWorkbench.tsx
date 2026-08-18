@@ -16,7 +16,6 @@ import dynamic from "next/dynamic";
 import { useQueryClient } from "@tanstack/react-query";
 import { Panel, type Layout } from "react-resizable-panels";
 
-import { AgentCopyGroomerLauncher } from "@/components/agent-copy/AgentCopyGroomerLauncher";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import {
   buildGroomerPresetPayload,
@@ -775,11 +774,11 @@ export function ContentPlanWorkbench({
         {/* THE one chrome row (Arman ruling 2026-08-17): identity + honest
           KPIs, transient run narration in place of the KPIs (never a second
           row), inline assist chips, and one action cluster — generate,
-          deepen, the status-truthful Edit/Live pair, and the page-level copy
-          pair + Groomer. Four stacked bars died for this row; do not add a
+          deepen, the status-truthful Edit/Live pair, and the page-level
+          two-icon copy pair (the AI dropdown owns the Groomer). Four stacked
+          bars died for this row; do not add a
           new full-width strip here, extend the toolbar. */}
-        {siteId &&
-        (view === "tree" || view === "table" || view === "map") ? (
+        {siteId && (view === "tree" || view === "table" || view === "map") ? (
           <PlanToolbar
             nodeCount={nodeRows.length}
             run={generate.run}
@@ -825,10 +824,7 @@ export function ContentPlanWorkbench({
                     buildGroomerPresetPayload(getGroomerConfig(), "everything")
                   }
                   aiVariants={groomerPresetVariants(getGroomerConfig)}
-                />
-                <AgentCopyGroomerLauncher
-                  config={getGroomerConfig}
-                  className="h-6 px-1.5 text-[11px] text-muted-foreground"
+                  groomer={getGroomerConfig}
                 />
               </>
             }
@@ -1059,22 +1055,22 @@ export function ContentPlanWorkbench({
             {/* The mobile presentation is a portaled Drawer, so it sits
               outside this body's touch-target root and needs its own. */}
             <div className="matrx-touch-targets h-full min-h-0">
-            <NodePanel
-              key={selectedNode.id}
-              node={selectedNode}
-              siteId={siteId}
-              entities={entities.data ?? []}
-              parties={siteParties.data ?? []}
-              profiles={profiles.data ?? []}
-              onDeleted={() => setSelectedNodeId(null)}
-              deepen={deepen}
-              cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
-              cmsSiteId={resolvedCmsSiteId}
-              cmsPagesByNodeId={cmsPages.pagesByNodeId}
-              pipelineProgress={pipelineByNodeId.get(selectedNode.id) ?? null}
-              pageKpis={pageKpis}
-              hosted
-            />
+              <NodePanel
+                key={selectedNode.id}
+                node={selectedNode}
+                siteId={siteId}
+                entities={entities.data ?? []}
+                parties={siteParties.data ?? []}
+                profiles={profiles.data ?? []}
+                onDeleted={() => setSelectedNodeId(null)}
+                deepen={deepen}
+                cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}
+                cmsSiteId={resolvedCmsSiteId}
+                cmsPagesByNodeId={cmsPages.pagesByNodeId}
+                pipelineProgress={pipelineByNodeId.get(selectedNode.id) ?? null}
+                pageKpis={pageKpis}
+                hosted
+              />
             </div>
           </SidePanelSurface>
         ) : null}

@@ -11,18 +11,10 @@
  */
 
 import { useState } from "react";
-import nextDynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
+import { AgentCopyGroomerHost } from "@/components/agent-copy/AgentCopyGroomerHost";
 import type { AgentCopyGroomerConfig } from "@/components/agent-copy/groomer-types";
-
-const AgentCopyGroomerWindow = nextDynamic(
-  () =>
-    import("@/components/agent-copy/AgentCopyGroomerWindow").then(
-      (m) => m.AgentCopyGroomerWindow,
-    ),
-  { ssr: false },
-);
 
 export interface AgentCopyGroomerLauncherProps {
   config: () => AgentCopyGroomerConfig;
@@ -31,6 +23,7 @@ export interface AgentCopyGroomerLauncherProps {
   className?: string;
 }
 
+/** @deprecated Pass `groomer={config}` to `CopyButtons` instead. */
 export function AgentCopyGroomerLauncher({
   config,
   buttonLabel = "Copy for AI",
@@ -44,23 +37,22 @@ export function AgentCopyGroomerLauncher({
       <Button
         type="button"
         variant="ghost"
-        size="sm"
+        size="icon"
         className={className}
-        title="Groom and copy this whole page for an AI agent"
+        aria-label={buttonLabel}
+        title={`${buttonLabel} — groom and copy this whole page for an AI agent`}
         onClick={() => {
           setResolved(config());
           setOpen(true);
         }}
       >
         <CopyForAiIcon className="h-4 w-4" />
-        <span className="ml-1">{buttonLabel}</span>
       </Button>
-      {open && resolved ? (
-        <AgentCopyGroomerWindow
-          config={resolved}
-          onClose={() => setOpen(false)}
-        />
-      ) : null}
+      <AgentCopyGroomerHost
+        open={open}
+        config={resolved}
+        onClose={() => setOpen(false)}
+      />
     </>
   );
 }

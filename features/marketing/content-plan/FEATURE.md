@@ -2,7 +2,7 @@
 
 **Status:** active
 **Tier:** 1
-**Last updated:** 2026-08-15
+**Last updated:** 2026-08-18
 
 ## Draft brief — SERVER-side, persisted on arrival
 
@@ -259,6 +259,10 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    collapse set is bypassed so every match is visible; all of it is
    client-side over the already-loaded plan. Nodes with any pipeline rows show
    one dense semantic-color `done/7` badge; untouched nodes show nothing.
+   **Copy chrome is exactly two icon-only controls** at both page and tree
+   level: Copy plus the canonical Copy-for-AI dropdown. JSON, view variants,
+   and the whole-page Groomer live inside that one AI menu; a standalone JSON
+   icon, adjacent Groomer launcher, or text-labeled copy button is forbidden.
    1b. **Table view** (`PlanNodesTable.tsx`, `?view=table`): every planned URL
    as one `MatrxDataTable` row — CONTROLLED mode over the canonical local
    engine (`filterAndSortRows`) since the plan is fully client-loaded.
@@ -749,6 +753,10 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-18 — **Tree copy chrome collapsed to the canonical two-icon pair.**
+  `CopyButtons` now places JSON inside the Copy-for-AI dropdown and renders no
+  text at header size; the workbench's Groomer is a menu option on that same
+  AI control instead of a third adjacent launcher.
 - 2026-08-17 — **Bulk deepen now fans out the full selected set.** The
   five-worker cap still serialized larger batches in waves; the worker count
   now equals the selected page count, and Stop aborts every active stream.
