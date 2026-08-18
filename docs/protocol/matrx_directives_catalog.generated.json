@@ -10684,6 +10684,1138 @@
    "view": "no"
   },
   {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Account Binding",
+   "noun": "browser_account_binding",
+   "reference": "no",
+   "schemas": null,
+   "table": "browser.account_binding",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Action Event",
+   "noun": "browser_action_event",
+   "reference": "no",
+   "schemas": null,
+   "table": "browser.action_event",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Capture",
+   "noun": "browser_capture",
+   "reference": "no",
+   "schemas": null,
+   "table": "browser.capture",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Control Request",
+   "noun": "browser_control_request",
+   "reference": "no",
+   "schemas": null,
+   "table": "browser.control_request",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Handoff",
+   "noun": "browser_handoff",
+   "reference": "no",
+   "schemas": null,
+   "table": "browser.handoff",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Login Attempt",
+   "noun": "browser_login_attempt",
+   "reference": "no",
+   "schemas": null,
+   "table": "browser.login_attempt",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Login Recipe",
+   "noun": "browser_login_recipe",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "challenge_signals": {
+       "default": [],
+       "title": "Challenge Signals"
+      },
+      "confidence_floor": {
+       "default": null,
+       "title": "Confidence Floor"
+      },
+      "failure_signals": {
+       "default": [],
+       "title": "Failure Signals"
+      },
+      "field_map": {
+       "title": "Field Map"
+      },
+      "match_pattern": {
+       "default": null,
+       "title": "Match Pattern"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "normalized_origin": {
+       "title": "Normalized Origin"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "provenance": {
+       "default": "human",
+       "title": "Provenance"
+      },
+      "provider_key": {
+       "default": null,
+       "title": "Provider Key"
+      },
+      "recipe_version": {
+       "default": 1,
+       "title": "Recipe Version"
+      },
+      "source_finding_id": {
+       "default": null,
+       "title": "Source Finding Id"
+      },
+      "status": {
+       "default": "proposed",
+       "title": "Status"
+      },
+      "submit": {
+       "title": "Submit"
+      },
+      "success_signals": {
+       "default": [],
+       "title": "Success Signals"
+      }
+     },
+     "required": [
+      "normalized_origin",
+      "field_map",
+      "submit"
+     ],
+     "title": "CreateBrowserLoginRecipeItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBrowserLoginRecipeItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "challenge_signals": {
+       "default": null,
+       "title": "Challenge Signals"
+      },
+      "confidence_floor": {
+       "default": null,
+       "title": "Confidence Floor"
+      },
+      "failure_signals": {
+       "default": null,
+       "title": "Failure Signals"
+      },
+      "field_map": {
+       "default": null,
+       "title": "Field Map"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "match_pattern": {
+       "default": null,
+       "title": "Match Pattern"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "normalized_origin": {
+       "default": null,
+       "title": "Normalized Origin"
+      },
+      "notes": {
+       "default": null,
+       "title": "Notes"
+      },
+      "provenance": {
+       "default": null,
+       "title": "Provenance"
+      },
+      "provider_key": {
+       "default": null,
+       "title": "Provider Key"
+      },
+      "recipe_version": {
+       "default": null,
+       "title": "Recipe Version"
+      },
+      "source_finding_id": {
+       "default": null,
+       "title": "Source Finding Id"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "submit": {
+       "default": null,
+       "title": "Submit"
+      },
+      "success_signals": {
+       "default": null,
+       "title": "Success Signals"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBrowserLoginRecipeItem",
+     "type": "object"
+    }
+   },
+   "table": "browser.login_recipe",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Cloud Browser Profile",
+   "noun": "browser_profile",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "capture_retention_days": {
+       "default": null,
+       "title": "Capture Retention Days"
+      },
+      "checkpoint_status": {
+       "default": "none",
+       "title": "Checkpoint Status"
+      },
+      "chromium_version": {
+       "default": null,
+       "title": "Chromium Version"
+      },
+      "current_checkpoint_at": {
+       "default": null,
+       "title": "Current Checkpoint At"
+      },
+      "current_checkpoint_bytes": {
+       "default": null,
+       "title": "Current Checkpoint Bytes"
+      },
+      "current_checkpoint_id": {
+       "default": null,
+       "title": "Current Checkpoint Id"
+      },
+      "current_checkpoint_revision": {
+       "default": 0,
+       "title": "Current Checkpoint Revision"
+      },
+      "current_manifest_hash": {
+       "default": null,
+       "title": "Current Manifest Hash"
+      },
+      "display_name": {
+       "title": "Display Name"
+      },
+      "egress_class": {
+       "title": "Egress Class"
+      },
+      "event_retention_days": {
+       "default": null,
+       "title": "Event Retention Days"
+      },
+      "expires_at": {
+       "default": null,
+       "title": "Expires At"
+      },
+      "home_region": {
+       "title": "Home Region"
+      },
+      "is_default": {
+       "default": false,
+       "title": "Is Default"
+      },
+      "last_started_at": {
+       "default": null,
+       "title": "Last Started At"
+      },
+      "last_stopped_at": {
+       "default": null,
+       "title": "Last Stopped At"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "org_access_mode": {
+       "default": "all_members",
+       "title": "Org Access Mode"
+      },
+      "owner_type": {
+       "default": "user",
+       "title": "Owner Type"
+      },
+      "owner_user_id": {
+       "default": null,
+       "title": "Owner User Id"
+      },
+      "profile_format_version": {
+       "default": null,
+       "title": "Profile Format Version"
+      },
+      "status": {
+       "default": "active",
+       "title": "Status"
+      },
+      "trace_retention_days": {
+       "default": null,
+       "title": "Trace Retention Days"
+      },
+      "video_retention_days": {
+       "default": null,
+       "title": "Video Retention Days"
+      }
+     },
+     "required": [
+      "display_name",
+      "home_region",
+      "egress_class"
+     ],
+     "title": "CreateBrowserProfileItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBrowserProfileItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "capture_retention_days": {
+       "default": null,
+       "title": "Capture Retention Days"
+      },
+      "checkpoint_status": {
+       "default": null,
+       "title": "Checkpoint Status"
+      },
+      "chromium_version": {
+       "default": null,
+       "title": "Chromium Version"
+      },
+      "current_checkpoint_at": {
+       "default": null,
+       "title": "Current Checkpoint At"
+      },
+      "current_checkpoint_bytes": {
+       "default": null,
+       "title": "Current Checkpoint Bytes"
+      },
+      "current_checkpoint_id": {
+       "default": null,
+       "title": "Current Checkpoint Id"
+      },
+      "current_checkpoint_revision": {
+       "default": null,
+       "title": "Current Checkpoint Revision"
+      },
+      "current_manifest_hash": {
+       "default": null,
+       "title": "Current Manifest Hash"
+      },
+      "display_name": {
+       "default": null,
+       "title": "Display Name"
+      },
+      "egress_class": {
+       "default": null,
+       "title": "Egress Class"
+      },
+      "event_retention_days": {
+       "default": null,
+       "title": "Event Retention Days"
+      },
+      "expires_at": {
+       "default": null,
+       "title": "Expires At"
+      },
+      "home_region": {
+       "default": null,
+       "title": "Home Region"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_default": {
+       "default": null,
+       "title": "Is Default"
+      },
+      "last_started_at": {
+       "default": null,
+       "title": "Last Started At"
+      },
+      "last_stopped_at": {
+       "default": null,
+       "title": "Last Stopped At"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "org_access_mode": {
+       "default": null,
+       "title": "Org Access Mode"
+      },
+      "owner_type": {
+       "default": null,
+       "title": "Owner Type"
+      },
+      "owner_user_id": {
+       "default": null,
+       "title": "Owner User Id"
+      },
+      "profile_format_version": {
+       "default": null,
+       "title": "Profile Format Version"
+      },
+      "status": {
+       "default": null,
+       "title": "Status"
+      },
+      "trace_retention_days": {
+       "default": null,
+       "title": "Trace Retention Days"
+      },
+      "video_retention_days": {
+       "default": null,
+       "title": "Video Retention Days"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBrowserProfileItem",
+     "type": "object"
+    }
+   },
+   "table": "browser.profile",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Profile Checkpoint",
+   "noun": "browser_profile_checkpoint",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "archive_format_version": {
+       "title": "Archive Format Version"
+      },
+      "byte_count": {
+       "title": "Byte Count"
+      },
+      "chromium_version": {
+       "title": "Chromium Version"
+      },
+      "deletion_proof": {
+       "default": null,
+       "title": "Deletion Proof"
+      },
+      "is_current": {
+       "default": false,
+       "title": "Is Current"
+      },
+      "kms_key_version": {
+       "title": "Kms Key Version"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "nonce": {
+       "title": "Nonce"
+      },
+      "object_bucket": {
+       "title": "Object Bucket"
+      },
+      "object_key": {
+       "title": "Object Key"
+      },
+      "profile_format_version": {
+       "title": "Profile Format Version"
+      },
+      "profile_id": {
+       "title": "Profile Id"
+      },
+      "retention_expires_at": {
+       "default": null,
+       "title": "Retention Expires At"
+      },
+      "revision": {
+       "title": "Revision"
+      },
+      "state": {
+       "default": "creating",
+       "title": "State"
+      },
+      "superseded_at": {
+       "default": null,
+       "title": "Superseded At"
+      },
+      "uploaded_at": {
+       "default": null,
+       "title": "Uploaded At"
+      },
+      "verified_at": {
+       "default": null,
+       "title": "Verified At"
+      },
+      "verify_failure_code": {
+       "default": null,
+       "title": "Verify Failure Code"
+      },
+      "verify_failure_detail": {
+       "default": null,
+       "title": "Verify Failure Detail"
+      },
+      "wrapped_dek": {
+       "title": "Wrapped Dek"
+      }
+     },
+     "required": [
+      "profile_id",
+      "revision",
+      "object_bucket",
+      "object_key",
+      "wrapped_dek",
+      "nonce",
+      "kms_key_version",
+      "archive_format_version",
+      "byte_count",
+      "chromium_version",
+      "profile_format_version"
+     ],
+     "title": "CreateBrowserProfileCheckpointItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBrowserProfileCheckpointItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "archive_format_version": {
+       "default": null,
+       "title": "Archive Format Version"
+      },
+      "byte_count": {
+       "default": null,
+       "title": "Byte Count"
+      },
+      "chromium_version": {
+       "default": null,
+       "title": "Chromium Version"
+      },
+      "deletion_proof": {
+       "default": null,
+       "title": "Deletion Proof"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_current": {
+       "default": null,
+       "title": "Is Current"
+      },
+      "kms_key_version": {
+       "default": null,
+       "title": "Kms Key Version"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "nonce": {
+       "default": null,
+       "title": "Nonce"
+      },
+      "object_bucket": {
+       "default": null,
+       "title": "Object Bucket"
+      },
+      "object_key": {
+       "default": null,
+       "title": "Object Key"
+      },
+      "profile_format_version": {
+       "default": null,
+       "title": "Profile Format Version"
+      },
+      "profile_id": {
+       "default": null,
+       "title": "Profile Id"
+      },
+      "retention_expires_at": {
+       "default": null,
+       "title": "Retention Expires At"
+      },
+      "revision": {
+       "default": null,
+       "title": "Revision"
+      },
+      "state": {
+       "default": null,
+       "title": "State"
+      },
+      "superseded_at": {
+       "default": null,
+       "title": "Superseded At"
+      },
+      "uploaded_at": {
+       "default": null,
+       "title": "Uploaded At"
+      },
+      "verified_at": {
+       "default": null,
+       "title": "Verified At"
+      },
+      "verify_failure_code": {
+       "default": null,
+       "title": "Verify Failure Code"
+      },
+      "verify_failure_detail": {
+       "default": null,
+       "title": "Verify Failure Detail"
+      },
+      "wrapped_dek": {
+       "default": null,
+       "title": "Wrapped Dek"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBrowserProfileCheckpointItem",
+     "type": "object"
+    }
+   },
+   "table": "browser.profile_checkpoint",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Cloud Browser Run",
+   "noun": "browser_run",
+   "reference": "no",
+   "schemas": null,
+   "table": "browser.run",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Site Observation",
+   "noun": "browser_site_observation",
+   "reference": "no",
+   "schemas": null,
+   "table": "browser.site_observation",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Site Policy",
+   "noun": "browser_site_policy",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "adapter_version": {
+       "default": null,
+       "title": "Adapter Version"
+      },
+      "applies_to_edition": {
+       "default": null,
+       "title": "Applies To Edition"
+      },
+      "automation_policy_note": {
+       "default": null,
+       "title": "Automation Policy Note"
+      },
+      "background_access_allowed": {
+       "default": null,
+       "title": "Background Access Allowed"
+      },
+      "claim": {
+       "title": "Claim"
+      },
+      "default_seconds": {
+       "default": null,
+       "title": "Default Seconds"
+      },
+      "domain": {
+       "title": "Domain"
+      },
+      "evidence_confidence": {
+       "default": "anecdotal",
+       "title": "Evidence Confidence"
+      },
+      "is_active": {
+       "default": true,
+       "title": "Is Active"
+      },
+      "last_verified_at": {
+       "default": null,
+       "title": "Last Verified At"
+      },
+      "long_lived_mechanism": {
+       "default": null,
+       "title": "Long Lived Mechanism"
+      },
+      "maximum_seconds": {
+       "default": null,
+       "title": "Maximum Seconds"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "minimum_seconds": {
+       "default": null,
+       "title": "Minimum Seconds"
+      },
+      "provider_key": {
+       "title": "Provider Key"
+      },
+      "refresh_due_at": {
+       "default": null,
+       "title": "Refresh Due At"
+      },
+      "resets_on": {
+       "default": null,
+       "title": "Resets On"
+      },
+      "reviewed_at": {
+       "default": null,
+       "title": "Reviewed At"
+      },
+      "reviewed_by": {
+       "default": null,
+       "title": "Reviewed By"
+      },
+      "source_url": {
+       "default": null,
+       "title": "Source Url"
+      },
+      "timeout_type": {
+       "default": null,
+       "title": "Timeout Type"
+      }
+     },
+     "required": [
+      "provider_key",
+      "domain",
+      "claim"
+     ],
+     "title": "CreateBrowserSitePolicyItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBrowserSitePolicyItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "adapter_version": {
+       "default": null,
+       "title": "Adapter Version"
+      },
+      "applies_to_edition": {
+       "default": null,
+       "title": "Applies To Edition"
+      },
+      "automation_policy_note": {
+       "default": null,
+       "title": "Automation Policy Note"
+      },
+      "background_access_allowed": {
+       "default": null,
+       "title": "Background Access Allowed"
+      },
+      "claim": {
+       "default": null,
+       "title": "Claim"
+      },
+      "default_seconds": {
+       "default": null,
+       "title": "Default Seconds"
+      },
+      "domain": {
+       "default": null,
+       "title": "Domain"
+      },
+      "evidence_confidence": {
+       "default": null,
+       "title": "Evidence Confidence"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "is_active": {
+       "default": null,
+       "title": "Is Active"
+      },
+      "last_verified_at": {
+       "default": null,
+       "title": "Last Verified At"
+      },
+      "long_lived_mechanism": {
+       "default": null,
+       "title": "Long Lived Mechanism"
+      },
+      "maximum_seconds": {
+       "default": null,
+       "title": "Maximum Seconds"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "minimum_seconds": {
+       "default": null,
+       "title": "Minimum Seconds"
+      },
+      "provider_key": {
+       "default": null,
+       "title": "Provider Key"
+      },
+      "refresh_due_at": {
+       "default": null,
+       "title": "Refresh Due At"
+      },
+      "resets_on": {
+       "default": null,
+       "title": "Resets On"
+      },
+      "reviewed_at": {
+       "default": null,
+       "title": "Reviewed At"
+      },
+      "reviewed_by": {
+       "default": null,
+       "title": "Reviewed By"
+      },
+      "source_url": {
+       "default": null,
+       "title": "Source Url"
+      },
+      "timeout_type": {
+       "default": null,
+       "title": "Timeout Type"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBrowserSitePolicyItem",
+     "type": "object"
+    }
+   },
+   "table": "browser.site_policy",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Browser Stream Ticket",
+   "noun": "browser_stream_ticket",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "claimed_at": {
+       "default": null,
+       "title": "Claimed At"
+      },
+      "control_revision": {
+       "default": null,
+       "title": "Control Revision"
+      },
+      "expires_at": {
+       "title": "Expires At"
+      },
+      "grant_revision": {
+       "default": null,
+       "title": "Grant Revision"
+      },
+      "handoff_id": {
+       "default": null,
+       "title": "Handoff Id"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "minted_at": {
+       "title": "Minted At"
+      },
+      "mode": {
+       "title": "Mode"
+      },
+      "profile_id": {
+       "title": "Profile Id"
+      },
+      "revoke_reason": {
+       "default": null,
+       "title": "Revoke Reason"
+      },
+      "revoked_at": {
+       "default": null,
+       "title": "Revoked At"
+      },
+      "run_id": {
+       "title": "Run Id"
+      },
+      "stream_session_id": {
+       "default": null,
+       "title": "Stream Session Id"
+      },
+      "ticket_hash": {
+       "title": "Ticket Hash"
+      }
+     },
+     "required": [
+      "ticket_hash",
+      "run_id",
+      "profile_id",
+      "mode",
+      "minted_at",
+      "expires_at"
+     ],
+     "title": "CreateBrowserStreamTicketItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteBrowserStreamTicketItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "claimed_at": {
+       "default": null,
+       "title": "Claimed At"
+      },
+      "control_revision": {
+       "default": null,
+       "title": "Control Revision"
+      },
+      "expires_at": {
+       "default": null,
+       "title": "Expires At"
+      },
+      "grant_revision": {
+       "default": null,
+       "title": "Grant Revision"
+      },
+      "handoff_id": {
+       "default": null,
+       "title": "Handoff Id"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "minted_at": {
+       "default": null,
+       "title": "Minted At"
+      },
+      "mode": {
+       "default": null,
+       "title": "Mode"
+      },
+      "profile_id": {
+       "default": null,
+       "title": "Profile Id"
+      },
+      "revoke_reason": {
+       "default": null,
+       "title": "Revoke Reason"
+      },
+      "revoked_at": {
+       "default": null,
+       "title": "Revoked At"
+      },
+      "run_id": {
+       "default": null,
+       "title": "Run Id"
+      },
+      "stream_session_id": {
+       "default": null,
+       "title": "Stream Session Id"
+      },
+      "ticket_hash": {
+       "default": null,
+       "title": "Ticket Hash"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateBrowserStreamTicketItem",
+     "type": "object"
+    }
+   },
+   "table": "browser.stream_ticket",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
    "create": "planned",
    "delete": "planned",
    "family": "Other",
