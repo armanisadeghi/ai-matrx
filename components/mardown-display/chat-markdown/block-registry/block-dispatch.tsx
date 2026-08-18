@@ -283,6 +283,13 @@ export function isBlockLoading(block: {
  *    fields within one do not. Carries the Approve/Improve/Reject/Edit verbs
  *    through the `checkup_decision` surface write target when the page it
  *    landed on offers it.
+ *  - `agent_result` — produced ONLY by `applyIrKindRoute`'s compiled-bridge
+ *    flip for the registered `agent_result` kind (`__kind` JSON arrival only —
+ *    no tag/fence surface); never emitted upstream. COMPLETE bridge: an
+ *    agent-run envelope is the settled record of a finished run, so there is
+ *    no half-written one. The bridge hands the component what the agent
+ *    PRODUCED plus the run's numbers — never `messages`, which is why the
+ *    envelope's verbatim prompt cannot reach a reader through this path.
  *  - `episode_title_options` — produced ONLY by `applyIrKindRoute`'s
  *    compiled-bridge flip for the registered `episode_title_options` kind
  *    (`__kind` JSON arrival only — no tag/fence surface); never emitted
@@ -318,6 +325,7 @@ export type FeSynthesizedBlockType =
   | "memory_hint"
   | "episode_title_options"
   | "masterwork_checkup_finding"
+  | "agent_result"
   | "seo_package"
   | "plan_page_research"
   | "plan_page_outline"
@@ -408,6 +416,7 @@ export type ShapeBlockType =
   | "memory_hint"
   | "episode_title_options"
   | "masterwork_checkup_finding"
+  | "agent_result"
   | "seo_package"
   | "plan_page_research"
   | "plan_page_outline"
@@ -1601,6 +1610,31 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.MasterworkCheckupFindingBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return (
+      <BlockComponents.CodeBlock
+        key={index}
+        code={block.content}
+        language="json"
+      />
+    );
+  },
+
+  // Kind-routed (agent_result): COMPLETE bridge — what an agent RUN produced,
+  // with the run's numbers behind one collapsed row and the envelope's
+  // `messages` nowhere in the data. Same three-branch contract as every other
+  // kind-routed entry.
+  agent_result: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.AgentResultBlock
           key={index}
           serverData={block.serverData}
         />
