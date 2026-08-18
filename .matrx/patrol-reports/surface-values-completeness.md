@@ -8,14 +8,16 @@ Scope: first-run full inventory (routes, registered overlays, readiness, runtime
 
 ## Outcome
 
-- Verified open surface units: **254**
-  - **149** registered overlay ids have no canonical Surface manifest.
+- Verified open surface units: **255**
+  - **150** registered overlay ids have no canonical Surface manifest.
   - **105** declared surfaces have not earned verified readiness: 92 partial + 13 stub.
 - Product findings fixed: **0**. The declaration backlog requires per-surface data-meaning audits and bounded family batches; mass-generating manifests would violate the completeness law.
-- Patrol machinery fixed: **1**. `pnpm check:surface-overlays` now performs the missing overlay-id ↔ manifest comparison and prints the exact 149-item backlog on every run.
+- Patrol machinery fixed: **1**. `pnpm check:surface-overlays` now performs the missing overlay-id ↔ manifest comparison and prints the exact live backlog on every run.
 - Human decisions required: **1 existing product decision** — whether `/education/learn` stays intentionally non-emitting, receives a thin client identity shell, or becomes client-rendered. The thin client identity shell preserves server-rendered article content and is the lowest-risk option if agent reachability is required.
 - Exceptions proposed or approved: **0**.
-- Certification: **pending exact-candidate adversarial review**.
+- Certification: **CERTIFIED** for exact candidate `569247bedbe04ebaa55efbce82a19f5dd4d9c7b5`. The independent certifier confirmed the inventory counts, detector failure semantics, clean scoped checks, and no batch-caused type-check defect.
+- Delivery: certified candidate preserved at `refs/heads/patrol-runs/P12/20260818T161811Z` and integrated to `origin/main` with its ancestry intact. The permanent record remains `delivery_queued` until the serialized release lane supplies a release version and records `delivered`.
+- Integration reconciliation: concurrent main added `cloudBrowserWindow` after certification. The unchanged detector caught it immediately, moving live coverage from 174 ids / 149 undeclared to 175 ids / 150 undeclared before integration.
 
 ## Baseline diagnostics
 
@@ -27,6 +29,18 @@ Scope: first-run full inventory (routes, registered overlays, readiness, runtime
 - `pnpm check:reuse-index`: command PASS with an unrelated four-path stale-index warning; no changed P12 path is involved.
 - `pnpm check:migrations`: command PASS with two unrelated pre-existing drift warnings (`agx_config_normalization_matrx_actions_ui_gates.sql`, `crm_ui_surface_outreach_lists.sql`).
 - Managed preview: no machine-wide preview was running at baseline.
+
+## Independent certification
+
+- Verdict: **CERTIFIED** — no concrete batch-caused defect.
+- Counts reproduced independently: 174 unique overlay ids, 25 unique manifest claims, 149 missing, 0 phantom, 0 duplicate.
+- Mutation proof: an injected phantom claim failed and named `contextPreviewPanel`; an injected duplicate claim failed and named both conflicting surfaces. The real missing-only backlog exited successfully as designed.
+- Scoped ESLint, Prettier, `git diff --check`, `check:surface-drift`, and `check:surface-routes` passed.
+- Baseline and candidate type-check outputs were byte-identical: 31 diagnostics across the same 14 unrelated files, with no changed-path diagnostic.
+
+## Delivery degradation
+
+`pnpm patrol:delivery:check -- --head HEAD` is blocked by two report-only commits (`fe1ded5764f521f7f918ed04c8b5543a2f0cc2cd` and `d2d21a011e7391e00e2b18930fd39acab643599c`) whose messages include `Patrol-Id`, `Patrol-Run`, and `Patrol-Candidate` but omit the required `Patrol-Delivery: none|certified` trailer. Both commits change only this `.matrx` report, so this is not a product or certification defect. They are already on shared `origin/main`; rewriting shared history is unsafe. The serialized release lane must apply the canonical recovery for malformed historical patrol trailers before release certification can pass.
 
 ## Inventory evidence
 
@@ -43,11 +57,11 @@ The 13 stubs are `agent-shortcuts`, `ai-work`, `ai-work-composer`, `ai-work-conv
 
 ### Registered overlays
 
-- `OVERLAY_IDS`: 174 canonical ids.
+- `OVERLAY_IDS`: 175 canonical ids after integration reconciliation; the exact certified candidate contained 174.
 - Manifests declaring `overlayId`: 25.
-- Undeclared overlay ids: **149**.
+- Undeclared overlay ids: **150** after `cloudBrowserWindow` joined the canonical union without a manifest; the exact certified candidate contained 149.
 - The static registry corroborates 160 interactive entries. Of those, **136** lack manifests: 102 windows, 23 widgets, 6 modals, and 5 sheets.
-- Fourteen controller ids are not in the static metadata registry. One (`contextPreviewPanel`) has a manifest; the other 13 remain in the 149-item declaration backlog.
+- Fifteen controller ids are not in the static metadata registry. One (`contextPreviewPanel`) has a manifest; the other 14 remain in the declaration backlog.
 
 The complete exact backlog is the output of:
 
@@ -90,4 +104,4 @@ These 443 files are a triage pool, not 443 verified findings: many are subordina
 
 ## Recursive learning
 
-The route detector closed only one inventory axis. Comparing the canonical overlay-id union directly to manifest `overlayId` declarations is the smallest stable next axis; the new detector turns a 149-item blind spot into a repeatable, environment-free patrol input.
+The route detector closed only one inventory axis. Comparing the canonical overlay-id union directly to manifest `overlayId` declarations is the smallest stable next axis; the new detector turned a 149-item blind spot into a repeatable, environment-free patrol input and caught a 150th item introduced concurrently before integration.
