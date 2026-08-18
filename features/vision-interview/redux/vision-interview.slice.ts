@@ -45,6 +45,9 @@ export type RunPhase =
 
 export type RoleActivity = "active" | "done";
 
+/** Lifecycle of the room's one required server call (see `resolvedRoleBindings`). */
+export type RolesPhase = "idle" | "resolving" | "ready" | "failed";
+
 export interface PendingInterrupt {
   checkpointId: string;
   /** What the run is asking the human, when the interrupt payload carries it. */
@@ -97,6 +100,20 @@ interface VisionInterviewState {
   activeRoleTab: RoleKey;
 
   /**
+   * Role bindings the SERVER resolved for this session via
+   * `POST /vision-interview/sessions/{id}/roles` (v3). Every role's mandate
+   * resolves to an agent + a stable conversation id there; nothing in the
+   * client can resolve a mandate, so without this call every stage tab is a
+   * dead room. Held here and merged OVER the session row's own
+   * `role_bindings` (`selectRoleBindings`) so the tabs mount the moment the
+   * call returns — never waiting on a realtime echo of the server's write.
+   */
+  resolvedRoleBindings: Record<string, unknown>;
+  rolesPhase: RolesPhase;
+  /** Honest failure text for the room — never a silent dead tab. */
+  rolesError: string | null;
+
+  /**
    * Answers the Expert wrote in the left-hand questions panel that have not
    * ridden a message yet. They are held HERE — never only in a composer —
    * so a failed send can never eat them (v3 answer-append rule). Keyed by
@@ -133,6 +150,9 @@ const initialState: VisionInterviewState = {
   awaitingTurnAudio: null,
   activeRoleTab: "sounding_board",
   pendingAnswers: {},
+  resolvedRoleBindings: {},
+  rolesPhase: "idle",
+  rolesError: null,
 };
 
 /** A send this old can no longer claim a late-finishing upload. */
@@ -251,6 +271,33 @@ const visionInterviewSlice = createSlice({
         state.roleActivity = {};
       }
       state.session = row;
+    },
+
+    // ── Role bindings (v3: the room's one required server call) ────────────
+
+    roleBindingsResolving(state) {
+      state.rolesPhase = "resolving";
+      state.rolesError = null;
+    },
+
+    /** The server resolved every role's mandate. Merged (never replaced) so a
+     *  later partial response can only ever ADD a room, never remove one. */
+    roleBindingsResolved(
+      state,
+      action: PayloadAction<{ sessionId: string; roles: Record<string, unknown> }>,
+    ) {
+      if (state.sessionId !== action.payload.sessionId) return;
+      state.resolvedRoleBindings = {
+        ...state.resolvedRoleBindings,
+        ...action.payload.roles,
+      };
+      state.rolesPhase = "ready";
+      state.rolesError = null;
+    },
+
+    roleBindingsFailed(state, action: PayloadAction<string>) {
+      state.rolesPhase = "failed";
+      state.rolesError = action.payload;
     },
 
     revisionsLoaded(state, action: PayloadAction<RevisionSummary[]>) {
@@ -437,6 +484,9 @@ export const {
   holeForced,
   sessionMerged,
   revisionsLoaded,
+  roleBindingsResolving,
+  roleBindingsResolved,
+  roleBindingsFailed,
   runStarting,
   runStarted,
   nodeStarted,
@@ -482,6 +532,24 @@ export const selectPendingAudioFileIds = (state: RootState) =>
   selectSelf(state).pendingAudioFileIds;
 export const selectAwaitingTurnAudio = (state: RootState) =>
   selectSelf(state).awaitingTurnAudio;
+
+/**
+ * Every role binding known for this session: the server's `/roles` response
+ * merged OVER whatever the session row carried. The room reads THIS, never
+ * `session.role_bindings` directly, so a freshly-created session becomes
+ * talkable the instant `/roles` returns instead of waiting for the realtime
+ * echo of the server's write.
+ */
+export const selectRoleBindings = createSelector(
+  [selectRoomSession, (state: RootState) => selectSelf(state).resolvedRoleBindings],
+  (session, resolved): Record<string, unknown> => ({
+    ...(session?.role_bindings ?? {}),
+    ...resolved,
+  }),
+);
+
+export const selectRolesPhase = (state: RootState) => selectSelf(state).rolesPhase;
+export const selectRolesError = (state: RootState) => selectSelf(state).rolesError;
 
 export const selectActiveRoleTab = (state: RootState): RoleKey =>
   selectSelf(state).activeRoleTab;

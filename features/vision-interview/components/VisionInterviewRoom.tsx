@@ -47,7 +47,7 @@ const LAYOUT_COOKIE = "vision-interview-room-layout-v3";
 type MobilePane = "questions" | "room" | "feed";
 
 export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
-  useInterviewRoom(sessionId);
+  const { retryRoles } = useInterviewRoom(sessionId);
   // Stamps dictation audio (already durably saved) onto the human turn the
   // server creates — v2 §13.1 raw-audio capture.
   useTurnAudioAttachment(sessionId);
@@ -124,7 +124,11 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
               ) : mobilePane === "feed" ? (
                 <ExpertFeedPanel />
               ) : (
-                <RoomChatPane onStart={startInterview} onGotoStage={gotoStage} />
+                <RoomChatPane
+                  onStart={startInterview}
+                  onGotoStage={gotoStage}
+                  onRetryRoles={retryRoles}
+                />
               )}
             </div>
           </div>
@@ -144,7 +148,11 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
               <Handle />
               <Panel id="room" defaultSize="50%" minSize="32%">
                 <div className="h-full overflow-hidden">
-                  <RoomChatPane onStart={startInterview} onGotoStage={gotoStage} />
+                  <RoomChatPane
+                  onStart={startInterview}
+                  onGotoStage={gotoStage}
+                  onRetryRoles={retryRoles}
+                />
                 </div>
               </Panel>
               <Handle />

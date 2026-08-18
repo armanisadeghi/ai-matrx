@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import {
   activeRoleTabChanged,
   selectActiveRoleTab,
+  selectRoleBindings,
   selectRoomSession,
 } from "../redux/vision-interview.slice";
 import {
@@ -32,6 +33,9 @@ export function StageTabs({ className }: { className?: string }) {
   const dispatch = useAppDispatch();
   const activeRole = useAppSelector(selectActiveRoleTab);
   const session = useAppSelector(selectRoomSession);
+  // Server-resolved bindings merged over the session row — the tab is "joined"
+  // the instant `/roles` lands, without waiting on a realtime echo.
+  const roleBindings = useAppSelector(selectRoleBindings);
   const currentStage = session ? normalizeStage(session.stage) : null;
 
   const select = (role: RoleKey) => {
@@ -52,7 +56,7 @@ export function StageTabs({ className }: { className?: string }) {
         const Icon = meta.icon;
         const isActive = role === activeRole;
         const isCurrentStage = stage === currentStage;
-        const hasJoined = roleBinding(session, role) !== null;
+        const hasJoined = roleBinding({ role_bindings: roleBindings }, role) !== null;
         return (
           <button
             key={role}

@@ -9,10 +9,15 @@
 //   3. On channel drop: exponential backoff (1s → 30s), resubscribe, then a
 //      catch-up hydration — realtime has no replay (rule 3). The attempt
 //      counter only resets after the channel stays healthy for 30s.
+//   4. Ask the SERVER for this session's role bindings (`useRoleBindings`),
+//      unconditionally, before the person can talk — that is the ONE thing
+//      the browser cannot produce for itself and the difference between a
+//      talkable room and six dead tabs.
 
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import { useRoleBindings } from "./useRoleBindings";
 import {
   getSession,
   listHoles,
@@ -40,6 +45,10 @@ export function useInterviewRoom(sessionId: string) {
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectRoomSession);
   const hydrated = useAppSelector(selectRoomHydrated);
+
+  // Every stage tab is a real conversation only once the server has resolved
+  // its mandate — so this runs for EVERY session, run or no run.
+  const { retryRoles } = useRoleBindings(sessionId);
 
   const attemptRef = useRef(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -129,5 +138,5 @@ export function useInterviewRoom(sessionId: string) {
     };
   }, [dispatch, sessionId]);
 
-  return { session, hydrated };
+  return { session, hydrated, retryRoles };
 }

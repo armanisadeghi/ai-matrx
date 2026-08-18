@@ -40,10 +40,15 @@ import {
   pendingAnswersCleared,
   selectActiveRoleTab,
   selectPendingAnswers,
+  selectRoleBindings,
+  selectRolesError,
+  selectRolesPhase,
   selectRoomSession,
   selectRunPhase,
   type PendingAnswer,
+  type RolesPhase,
 } from "../redux/vision-interview.slice";
+import { useObserveRoleTurns } from "../hooks/useObserveRoleTurns";
 import {
   normalizeStage,
   ROLES,
@@ -51,6 +56,7 @@ import {
   stageForRole,
   STAGES,
   type InterviewStage,
+  type RoleKey,
 } from "../types";
 import { DeliverablePane } from "./DeliverablePane";
 import { DocumentPane } from "./DocumentPane";
@@ -176,53 +182,111 @@ function useDocTabs(): { tabs: DocTab[]; finalizedAt: string | null } {
   return { tabs, finalizedAt: session?.finalized_at ?? null };
 }
 
-/** The expert has not joined yet — say so plainly, and offer the way in. */
+/**
+ * The expert's room is not open yet. In v3 this is a genuine EDGE CASE — the
+ * room resolves every role through `POST /roles` the moment it opens, for
+ * every session, before the person can talk. Reaching this state means that
+ * call has not landed yet (or is failing), so it says WHICH of those is true
+ * and offers the way forward, never a spinner and never a dead tab.
+ */
 function ExpertNotJoined({
   roleName,
   roleDescription,
   stageLabel,
+  rolesPhase,
+  rolesError,
+  onRetryRoles,
   onStart,
   starting,
 }: {
   roleName: string;
   roleDescription: string;
   stageLabel: string;
+  rolesPhase: RolesPhase;
+  rolesError: string | null;
+  onRetryRoles: () => void;
   onStart: () => void;
   starting: boolean;
 }) {
+  const failed = rolesPhase === "failed";
   return (
     <div className="flex h-full items-center justify-center overflow-y-auto p-6">
       <div className="max-w-md text-center">
         <h2 className="text-lg font-semibold text-foreground">
-          {roleName} hasn&apos;t joined this room yet
+          {failed
+            ? `Opening ${roleName}'s room didn't work`
+            : `Opening ${roleName}'s room…`}
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">{roleDescription}</p>
         <p className="mt-3 text-sm text-muted-foreground">
-          Every expert gets their own room the moment this interview starts —
-          {roleName} arrives at the {stageLabel} step, and everything they say
-          stays here.
+          {roleName} leads the {stageLabel} step. Every expert gets their own
+          room in this interview, and everything they say stays there.
         </p>
-        <Button className="mt-5" onClick={onStart} disabled={starting}>
-          {starting ? "Starting the interview…" : "Start the interview"}
-        </Button>
+        {failed ? (
+          <>
+            <p className="mt-3 text-sm text-muted-foreground">
+              The room is still trying on its own — nothing you have written is
+              lost. You can also try again right now.
+            </p>
+            {rolesError && (
+              <p className="mt-2 break-words text-xs text-muted-foreground/80">
+                {rolesError}
+              </p>
+            )}
+            <div className="mt-5 flex items-center justify-center gap-2">
+              <Button variant="outline" onClick={onRetryRoles}>
+                Try again
+              </Button>
+              <Button variant="ghost" onClick={onStart} disabled={starting}>
+                {starting ? "Starting the interview…" : "Start the interview"}
+              </Button>
+            </div>
+          </>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">
+            One moment — the experts are taking their seats.
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
+/** Mounted beside the chat: reports a finished exchange to the Scribe. */
+function RoleTurnObserver({
+  sessionId,
+  role,
+  conversationId,
+}: {
+  sessionId: string;
+  role: RoleKey;
+  conversationId: string;
+}) {
+  useObserveRoleTurns({ sessionId, role, conversationId });
+  return null;
+}
+
 export function RoomChatPane({
   onStart,
   onGotoStage,
+  onRetryRoles,
 }: {
   onStart: () => void;
   /** Human-controlled stage movement (v2 `goto_stage`) — armed only while the
    *  run is waiting on the human, exactly as the retired stage rail was. */
   onGotoStage: (stage: InterviewStage) => void;
+  /** Ask the server for the role bindings again, now (see useRoleBindings). */
+  onRetryRoles: () => void;
 }) {
   const role = useAppSelector(selectActiveRoleTab);
   const session = useAppSelector(selectRoomSession);
   const runPhase = useAppSelector(selectRunPhase);
-  const binding = roleBinding(session, role);
+  // The SERVER's `/roles` response merged over the session row — so the tab
+  // mounts the instant that call lands, not when realtime echoes the write.
+  const roleBindings = useAppSelector(selectRoleBindings);
+  const rolesPhase = useAppSelector(selectRolesPhase);
+  const rolesError = useAppSelector(selectRolesError);
+  const binding = roleBinding({ role_bindings: roleBindings }, role);
   const [docView, setDocView] = useState<DocView | null>(null);
   const { tabs: docTabs, finalizedAt } = useDocTabs();
   const activeDoc = docTabs.find((t) => t.key === docView) ?? null;
@@ -306,12 +370,24 @@ export function RoomChatPane({
                 conversationId={binding.conversationId}
               />
               <PendingAnswersRider conversationId={binding.conversationId} />
+              {/* A finished exchange is reported to the Scribe from here —
+                  the hijack's client half (useObserveRoleTurns). */}
+              {session && (
+                <RoleTurnObserver
+                  sessionId={session.id}
+                  role={role}
+                  conversationId={binding.conversationId}
+                />
+              )}
             </RecordingOriginProvider>
           ) : (
             <ExpertNotJoined
               roleName={meta.name}
               roleDescription={meta.description}
               stageLabel={stage ? STAGES[stage].label : "right"}
+              rolesPhase={rolesPhase}
+              rolesError={rolesError}
+              onRetryRoles={onRetryRoles}
               onStart={onStart}
               starting={runPhase === "starting"}
             />
