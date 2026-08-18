@@ -8,6 +8,7 @@
 import type { Metadata } from "next";
 import { toolMetadata } from "@/features/education/route-helpers";
 import { SpokenPracticeClient } from "@/features/education/spoken-practice/components/SpokenPracticeClient";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 
 export const metadata: Metadata = toolMetadata("practice-oral");
 
@@ -20,8 +21,11 @@ export default async function PracticeOralToolPage({
 }: PracticeOralPageProps) {
   const { mode, deck } = await searchParams;
   return (
-    <div className="h-full overflow-y-auto bg-textured">
-      <SpokenPracticeClient initialMode={mode ?? null} initialDeckId={deck ?? null} />
-    </div>
+    <>
+      <EducationToolHeader title="Spoken Practice" />
+      <div className="h-full overflow-y-auto bg-textured">
+        <SpokenPracticeClient initialMode={mode ?? null} initialDeckId={deck ?? null} />
+      </div>
+    </>
   );
 }

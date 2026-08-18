@@ -5,5 +5,9 @@ import { ClassesHome } from "@/features/education/classes/components/ClassesHome
 export const metadata: Metadata = toolMetadata("classes");
 
 export default function ClassesPage() {
-  return <ClassesHome />;
+  return (
+    <div className="h-full overflow-y-auto bg-textured">
+      <ClassesHome />
+    </div>
+  );
 }

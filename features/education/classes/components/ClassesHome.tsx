@@ -13,6 +13,7 @@ import Link from "next/link";
 import { GraduationCap, Plus, CalendarClock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { useClasses } from "../hooks/useClasses";
 import { useMyClasses } from "../hooks/useMyClasses";
 import { ClassFormDialog, type ClassFormValue } from "./ClassFormDialog";
@@ -105,23 +106,15 @@ export function ClassesHome() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <GraduationCap className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">My Classes</h1>
-        </div>
+    <>
+    <EducationToolHeader title="My Classes" />
+    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4 pt-[var(--shell-header-h)]">
+      <div className="flex items-center justify-end">
         <Button size="sm" className="gap-1.5" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" />
           New class
         </Button>
       </div>
-
-      <p className="text-sm text-muted-foreground">
-        One workspace per course. Everything you generate or upload can be tagged
-        to a class, and each class hub gathers its decks, quizzes, notes, media,
-        and exam dates in one place.
-      </p>
 
       {loading ? (
         <div className="space-y-2">
@@ -184,5 +177,6 @@ export function ClassesHome() {
         onSubmit={handleCreate}
       />
     </div>
+    </>
   );
 }

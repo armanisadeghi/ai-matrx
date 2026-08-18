@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { cn } from "@/lib/utils";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -222,7 +223,6 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
   const visible = (rows ?? []).filter(
     (r) => matchesVisibility(visibility, r.visibility) && matchesQuery(r, q),
   );
-  const Icon = config.icon;
 
   // Live surface scope for the Agents chrome (matrx-user/education-assessment,
   // list view). Plain function reading the live render values at Run time —
@@ -259,17 +259,10 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
       surfaceName="matrx-user/education-assessment"
       getScope={getScope}
     >
-    <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-5 sm:py-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Icon className="h-5 w-5" />
-            </div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              {config.pluralLabel}
-            </h1>
-          </div>
+    <div className="h-full w-full overflow-y-auto bg-textured">
+      <EducationToolHeader title={config.pluralLabel} />
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-5 sm:pb-6 pt-[var(--shell-header-h)]">
+        <div className="flex items-center justify-end">
           <Button onClick={create} disabled={isPending && navId === "__new__"}>
             <Plus className="mr-1.5 h-4 w-4" />
             New {config.label.toLowerCase()}

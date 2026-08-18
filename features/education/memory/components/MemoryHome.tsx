@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Brain, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -65,12 +66,9 @@ export function MemoryHome() {
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
-    <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">Memory Aids</h1>
-        </div>
+    <EducationToolHeader title="Memory Aids" />
+    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4 pt-[var(--shell-header-h)]">
+      <div className="flex items-center justify-end">
         <Button
           size="sm"
           className="gap-1.5"
@@ -80,11 +78,6 @@ export function MemoryHome() {
           New memory aid
         </Button>
       </div>
-
-      <p className="text-sm text-muted-foreground">
-        Mnemonics, analogies, and memory-palace scaffolds from your material — turn
-        hard-to-retain lists and abstract concepts into things that stick.
-      </p>
 
       {loading ? (
         <div className="space-y-2">

@@ -9,42 +9,31 @@
 // it never drifts from /chat's list behavior.
 
 import Link from "next/link";
-import { GraduationCap, Plus, Settings2, ShieldCheck, Sparkles } from "lucide-react";
+import { BrainCircuit, Plus, Settings2, ShieldCheck } from "lucide-react";
 import { ConversationHistorySidebar } from "@/features/agents/components/conversation-history/ConversationHistorySidebar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { DEFAULT_TUTOR_AGENT_ID } from "../agents";
 import { TutorSettingsPanel } from "./TutorSettingsPanel";
 
 export function TutorHome() {
   return (
     <div className="h-full overflow-y-auto bg-textured">
-      <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8">
+      <EducationToolHeader title="AI Tutor" />
+      <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 pb-8 pt-[var(--shell-header-h)]">
         {/* Hero */}
         <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <GraduationCap className="h-6 w-6" aria-hidden />
-            </div>
-            <div className="min-w-0 space-y-1">
-              <h1 className="text-xl font-semibold text-foreground">AI Tutor</h1>
-              <p className="text-sm text-muted-foreground">
-                A personal tutor that remembers what you&apos;ve studied, grounds
-                its answers in your own material, and is honest about what it
-                doesn&apos;t know.
-              </p>
-            </div>
-          </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
               <ShieldCheck className="h-3.5 w-3.5 text-green-600" aria-hidden />
               Cites your material
             </span>
             <span className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1">
-              <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden />
+              <BrainCircuit className="h-3.5 w-3.5 text-primary" aria-hidden />
               Remembers your progress
             </span>
           </div>

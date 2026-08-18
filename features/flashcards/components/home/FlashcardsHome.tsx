@@ -41,6 +41,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { fcService } from "../../data/fcService";
 import { EDGE_ROLE } from "../../data/types";
 import type { FcSetRow } from "../../data/types";
@@ -401,17 +402,12 @@ export function FlashcardsHome() {
         })
       }
     >
-    <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-5 sm:py-6">
-        {/* Header */}
+    <div className="h-full w-full overflow-y-auto bg-textured">
+      <EducationToolHeader title="Flashcards" />
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-5 sm:pb-6 pt-[var(--shell-header-h)]">
+        {/* Action toolbar (title lives in the shell header) */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Layers className="h-5 w-5" />
-            </div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              Flashcards
-            </h1>
             {streak && streak.current_streak > 0 && (
               <span
                 className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300"

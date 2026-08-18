@@ -11,8 +11,9 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Gamepad2, Users, LogIn, Zap, Loader2 } from "lucide-react";
+import { Users, LogIn, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationGameScope } from "@/features/surfaces/manifests/education-game.manifest";
 import { ENGAGE_ROUTES } from "../constants";
@@ -31,17 +32,8 @@ export function EngageHome() {
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
-    <div className="mx-auto flex h-full w-full max-w-4xl flex-col gap-5 overflow-y-auto p-4">
-      <header>
-        <h1 className="flex items-center gap-2 text-xl font-bold text-foreground">
-          <Gamepad2 className="h-5 w-5 text-primary" /> Study Games
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Play is review. Every question is scheduled by the spaced-repetition
-          engine, so having fun moves your mastery — no speed-shame, ever.
-        </p>
-      </header>
-
+    <EducationToolHeader title="Study Games" />
+    <div className="mx-auto flex h-full w-full max-w-4xl flex-col gap-5 overflow-y-auto px-4 pb-4 pt-[var(--shell-header-h)]">
       {/* Primary actions */}
       <div className="grid gap-3 sm:grid-cols-3">
         <ActionCard

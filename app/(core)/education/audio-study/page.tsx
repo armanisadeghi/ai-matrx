@@ -5,5 +5,9 @@ import { AudioStudyHome } from "@/features/education/media/audio/components/Audi
 export const metadata: Metadata = toolMetadata("audio-study");
 
 export default function AudioStudyToolPage() {
-  return <AudioStudyHome />;
+  return (
+    <div className="h-full overflow-y-auto bg-textured">
+      <AudioStudyHome />
+    </div>
+  );
 }

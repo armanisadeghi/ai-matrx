@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { cn } from "@/lib/utils";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -83,28 +84,18 @@ export function AudioStudyHome() {
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
-    <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Headphones className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">Audio Study</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => router.push("/education/audio-study/review")}>
-            <Mic className="h-4 w-4" />
-            Audio review
-          </Button>
-          <Button size="sm" className="gap-1.5" onClick={() => router.push("/education/audio-study/new")}>
-            <Plus className="h-4 w-4" />
-            New audio
-          </Button>
-        </div>
+    <EducationToolHeader title="Audio Study" />
+    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4 pt-[var(--shell-header-h)]">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => router.push("/education/audio-study/review")}>
+          <Mic className="h-4 w-4" />
+          Audio review
+        </Button>
+        <Button size="sm" className="gap-1.5" onClick={() => router.push("/education/audio-study/new")}>
+          <Plus className="h-4 w-4" />
+          New audio
+        </Button>
       </div>
-
-      <p className="text-sm text-muted-foreground">
-        Produced audio from your material — narrated overviews, two-voice debates, and expert
-        panels — plus spoken review sessions that quiz you out loud.
-      </p>
 
       {loading ? (
         <div className="space-y-2">

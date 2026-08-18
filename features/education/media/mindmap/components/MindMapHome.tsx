@@ -12,6 +12,7 @@ import Link from "next/link";
 import { Network, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationMindMapsScope } from "@/features/surfaces/manifests/education-mind-maps.manifest";
 import { studyMediaService } from "../../service";
@@ -63,22 +64,14 @@ export function MindMapHome() {
       surfaceName="matrx-user/education-mind-maps"
       getScope={getScope}
     >
-    <div className="mx-auto w-full max-w-3xl space-y-5 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Network className="h-5 w-5 text-primary" />
-          <h1 className="text-lg font-semibold text-foreground">Mind Maps</h1>
-        </div>
+    <EducationToolHeader title="Mind Maps" />
+    <div className="mx-auto w-full max-w-3xl space-y-5 px-4 pb-4 pt-[var(--shell-header-h)]">
+      <div className="flex items-center justify-end">
         <Button size="sm" className="gap-1.5" onClick={() => router.push("/education/mind-maps/new")}>
           <Plus className="h-4 w-4" />
           New mind map
         </Button>
       </div>
-
-      <p className="text-sm text-muted-foreground">
-        Visual concept maps from your material — the key ideas as nodes, their relationships as
-        labeled connections.
-      </p>
 
       {loading ? (
         <div className="space-y-2">

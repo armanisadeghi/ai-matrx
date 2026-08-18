@@ -16,21 +16,11 @@ export function SpokenPracticeHome({
   onPick: (mode: SpokenPracticeMode) => void;
 }) {
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 p-4 sm:p-6">
-      <header className="space-y-2">
-        <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          <Mic className="h-3.5 w-3.5" />
-          Voice-first · graded on meaning
-        </div>
-        <h1 className="text-2xl font-semibold text-foreground">
-          Spoken Practice
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Answer out loud. An AI examiner, interviewer, or debate opponent poses
-          real questions grounded in your material and grades every spoken
-          answer — then closes with a full review.
-        </p>
-      </header>
+    <div className="mx-auto w-full max-w-2xl space-y-6 px-4 pb-4 pt-[var(--shell-header-h)] sm:px-6 sm:pb-6">
+      <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+        <Mic className="h-3.5 w-3.5" />
+        Voice-first · graded on meaning
+      </div>
 
       <div className="grid gap-3">
         {SPOKEN_PRACTICE_MODES.map((mode) => {

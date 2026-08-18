@@ -15,6 +15,7 @@ import { Plus, Search, Clock, AlertCircle, NotebookPen, Folder } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { cn } from "@/lib/utils";
 import { NotesAPI } from "@/features/notes/service/notesApi";
 import type { NoteListItem } from "@/features/notes/types";
@@ -127,22 +128,10 @@ export function EduNotesHome() {
   );
 
   return (
-    <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-5 sm:py-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <NotebookPen className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight text-foreground">
-                Smart Notes
-              </h1>
-              <p className="text-xs text-muted-foreground">
-                Notes, live lecture capture, and one-click conversion to any study tool.
-              </p>
-            </div>
-          </div>
+    <div className="h-full w-full overflow-y-auto bg-textured">
+      <EducationToolHeader title="Smart Notes" />
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-5 sm:pb-6 pt-[var(--shell-header-h)]">
+        <div className="flex items-center justify-end">
           <Button onClick={createNote} disabled={creating || isPending}>
             <Plus className="mr-1.5 h-4 w-4" />
             New note

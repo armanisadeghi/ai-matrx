@@ -5,5 +5,9 @@ import { MindMapHome } from "@/features/education/media/mindmap/components/MindM
 export const metadata: Metadata = toolMetadata("mind-maps");
 
 export default function MindMapsToolPage() {
-  return <MindMapHome />;
+  return (
+    <div className="h-full overflow-y-auto bg-textured">
+      <MindMapHome />
+    </div>
+  );
 }
