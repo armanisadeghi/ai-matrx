@@ -14,16 +14,29 @@
 
 import { useState } from "react";
 import { Panel } from "react-resizable-panels";
-import { FileText, ListTodo, MessagesSquare } from "lucide-react";
+import {
+  BookOpenText,
+  FileText,
+  ListChecks,
+  ListTodo,
+  MessagesSquare,
+  ScrollText,
+  type LucideIcon,
+} from "lucide-react";
 import { ClientGroup } from "@/features/resizable-panels/ClientGroup";
 import { Handle } from "@/features/resizable-panels/Handle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOpenQuestionCount } from "../redux/vision-interview.slice";
+import {
+  selectOpenQuestionCount,
+  selectRoomSession,
+} from "../redux/vision-interview.slice";
 import { useInterviewRoom } from "../hooks/useInterviewRoom";
 import { useInterviewRun } from "../hooks/useInterviewRun";
+import { useTurnAudioAttachment } from "../hooks/useTurnAudioAttachment";
 import type { InterviewStage } from "../types";
+import { DeliverablePane } from "./DeliverablePane";
 import { DocumentPane } from "./DocumentPane";
 import { OpenQuestionsPanel } from "./OpenQuestionsPanel";
 import { RoomHeader } from "./RoomHeader";
@@ -35,22 +48,78 @@ import { TranscriptPane } from "./TranscriptPane";
 // misshaping the new 2-pane group.
 const LAYOUT_COOKIE = "vision-interview-room-layout-v2";
 
-type MobilePane = "room" | "document" | "questions";
-type SideTab = "document" | "questions";
+type DeliverableKey = "vision" | "requirements" | "transcript";
+type MobilePane = "room" | "document" | "questions" | DeliverableKey;
+type SideTab = "document" | "questions" | DeliverableKey;
 
-/** Right pane: living document + questions/holes as sibling tabs. */
+interface DeliverableMeta {
+  key: DeliverableKey;
+  label: string;
+  icon: LucideIcon;
+  filename: string;
+  content: string;
+}
+
+/**
+ * Final deliverables (v2 §13.3) — present on the session row only after the
+ * server's finalize step writes them; before that, no tab renders. The
+ * session-row realtime subscription delivers them live the moment finalize
+ * lands, no reload needed.
+ */
+function useDeliverables(): {
+  deliverables: DeliverableMeta[];
+  finalizedAt: string | null;
+} {
+  const session = useAppSelector(selectRoomSession);
+  const deliverables: DeliverableMeta[] = [];
+  if (session?.vision_document?.trim()) {
+    deliverables.push({
+      key: "vision",
+      label: "Vision",
+      icon: BookOpenText,
+      filename: "vision",
+      content: session.vision_document,
+    });
+  }
+  if (session?.requirements_document?.trim()) {
+    deliverables.push({
+      key: "requirements",
+      label: "Requirements",
+      icon: ListChecks,
+      filename: "requirements",
+      content: session.requirements_document,
+    });
+  }
+  if (session?.cleaned_transcript?.trim()) {
+    deliverables.push({
+      key: "transcript",
+      label: "Transcript",
+      icon: ScrollText,
+      filename: "transcript",
+      content: session.cleaned_transcript,
+    });
+  }
+  return { deliverables, finalizedAt: session?.finalized_at ?? null };
+}
+
+/** Right pane: living document + questions/holes — and, once the interview
+ *  is finalized, the deliverable tabs (Vision · Requirements · Transcript). */
 function SidePane() {
   const [tab, setTab] = useState<SideTab>("document");
   const openQuestions = useAppSelector(selectOpenQuestionCount);
+  const { deliverables, finalizedAt } = useDeliverables();
+
+  const tabs: { key: SideTab; label: string; icon: LucideIcon }[] = [
+    { key: "document", label: "Document", icon: FileText },
+    { key: "questions", label: "Questions", icon: ListTodo },
+    ...deliverables.map((d) => ({ key: d.key, label: d.label, icon: d.icon })),
+  ];
+  const activeDeliverable = deliverables.find((d) => d.key === tab) ?? null;
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
-        {(
-          [
-            ["document", "Document", FileText],
-            ["questions", "Questions", ListTodo],
-          ] as const
-        ).map(([key, label, Icon]) => (
+      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b border-border px-2 py-1">
+        {tabs.map(({ key, label, icon: Icon }) => (
           <button
             key={key}
             type="button"
@@ -73,7 +142,19 @@ function SidePane() {
         ))}
       </div>
       <div className="min-h-0 flex-1">
-        {tab === "document" ? <DocumentPane /> : <OpenQuestionsPanel />}
+        {activeDeliverable ? (
+          <DeliverablePane
+            label={activeDeliverable.label}
+            icon={activeDeliverable.icon}
+            content={activeDeliverable.content}
+            filename={activeDeliverable.filename}
+            finalizedAt={finalizedAt}
+          />
+        ) : tab === "questions" ? (
+          <OpenQuestionsPanel />
+        ) : (
+          <DocumentPane />
+        )}
       </div>
     </div>
   );
@@ -81,9 +162,15 @@ function SidePane() {
 
 export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
   useInterviewRoom(sessionId);
+  // Stamps dictation audio (already durably saved) onto the human turn the
+  // server creates — v2 §13.1 raw-audio capture.
+  useTurnAudioAttachment(sessionId);
   const { start, resume } = useInterviewRun(sessionId);
   const isMobile = useIsMobile();
   const [mobilePane, setMobilePane] = useState<MobilePane>("room");
+  const { deliverables, finalizedAt } = useDeliverables();
+  const activeMobileDeliverable =
+    deliverables.find((d) => d.key === mobilePane) ?? null;
 
   const advanceStage = async () => {
     await resume({ message: "", advanceStage: true });
@@ -103,13 +190,16 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
         <StageRail onGotoStage={gotoStage} />
         {isMobile ? (
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex items-center gap-1 border-b border-border px-2 py-1">
+            <div className="flex items-center gap-1 overflow-x-auto border-b border-border px-2 py-1">
               {(
                 [
                   ["room", "Room", MessagesSquare],
                   ["document", "Document", FileText],
                   ["questions", "Questions", ListTodo],
-                ] as const
+                  ...deliverables.map(
+                    (d) => [d.key, d.label, d.icon] as const,
+                  ),
+                ] as readonly (readonly [MobilePane, string, LucideIcon])[]
               ).map(([key, label, Icon]) => (
                 <button
                   key={key}
@@ -128,7 +218,15 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
               ))}
             </div>
             <div className="min-h-0 flex-1">
-              {mobilePane === "room" ? (
+              {activeMobileDeliverable ? (
+                <DeliverablePane
+                  label={activeMobileDeliverable.label}
+                  icon={activeMobileDeliverable.icon}
+                  content={activeMobileDeliverable.content}
+                  filename={activeMobileDeliverable.filename}
+                  finalizedAt={finalizedAt}
+                />
+              ) : mobilePane === "room" ? (
                 <TranscriptPane sessionId={sessionId} onResume={resume} onStart={start} />
               ) : mobilePane === "document" ? (
                 <DocumentPane />

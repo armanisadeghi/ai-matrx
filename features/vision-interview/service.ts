@@ -262,6 +262,29 @@ export function acceptHoleAsRisk(
   });
 }
 
+// ── Raw-audio capture (v2 §13.1) ────────────────────────────────────────────
+
+/**
+ * Stamp the dictation recording's cld_files id onto a human turn. Guarded:
+ * only lands on a turn that has no audio yet (`audio_file_id IS NULL`), so a
+ * late retry or a second client can never clobber an existing association.
+ * Returns the fresh row, or null when the guard refused (already stamped).
+ */
+export async function attachTurnAudio(
+  turnId: string,
+  fileId: string,
+): Promise<InterviewTurnRow | null> {
+  const { data, error } = await interviewDb(supabase)
+    .from("turn")
+    .update({ audio_file_id: fileId })
+    .eq("id", turnId)
+    .is("audio_file_id", null)
+    .select("*")
+    .maybeSingle();
+  if (error) throw pgError(error);
+  return (data as InterviewTurnRow | null) ?? null;
+}
+
 // ── Realtime ────────────────────────────────────────────────────────────────
 
 export interface RoomRealtimeHandlers {

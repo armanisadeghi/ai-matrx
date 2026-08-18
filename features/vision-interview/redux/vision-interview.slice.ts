@@ -67,6 +67,22 @@ interface VisionInterviewState {
   /** Text another surface (e.g. a question's Answer button) asked the
    *  composer to append. The composer consumes and clears it. */
   composerInsert: string | null;
+
+  /**
+   * Raw-audio capture (v2 §13.1). File ids of dictation recordings the
+   * canonical recorder already saved durably (announced via
+   * `dictationAudioRegistry`) that belong to the message currently being
+   * composed — not yet tied to a sent turn.
+   */
+  pendingAudioFileIds: string[];
+  /**
+   * Snapshot taken the moment a send/start was ACCEPTED: these recordings
+   * belong to the human turn the server is about to create. The attachment
+   * effect stamps `interview.turn.audio_file_id` when that turn lands.
+   * A dictation whose upload finishes AFTER the send joins here too (the
+   * upload is independent of — and must never gate — the send, v2 §17.1).
+   */
+  awaitingTurnAudio: { fileIds: string[]; sentAtMs: number } | null;
 }
 
 const initialState: VisionInterviewState = {
@@ -85,7 +101,12 @@ const initialState: VisionInterviewState = {
   pendingInterrupt: null,
   requestIdBySession: {},
   composerInsert: null,
+  pendingAudioFileIds: [],
+  awaitingTurnAudio: null,
 };
+
+/** A send this old can no longer claim a late-finishing upload. */
+const AWAITING_AUDIO_TTL_MS = 5 * 60_000;
 
 /**
  * Timestamp-monotonic echo guard (skill rule 1):
@@ -278,6 +299,57 @@ const visionInterviewSlice = createSlice({
     composerInsertConsumed(state) {
       state.composerInsert = null;
     },
+
+    // ── Raw-audio capture (v2 §13.1) ────────────────────────────────────────
+
+    /** The recorder's canonical upload landed for a composer dictation. If a
+     *  send was already accepted moments ago (upload finished late), the
+     *  recording joins that send's awaiting set — otherwise it waits with the
+     *  draft. Ids only; the audio itself is durably in cld_files. */
+    dictationAudioSaved(
+      state,
+      action: PayloadAction<{ fileId: string; savedAtMs: number }>,
+    ) {
+      const { fileId, savedAtMs } = action.payload;
+      const awaiting = state.awaitingTurnAudio;
+      if (awaiting && savedAtMs - awaiting.sentAtMs < AWAITING_AUDIO_TTL_MS) {
+        if (!awaiting.fileIds.includes(fileId)) awaiting.fileIds.push(fileId);
+        return;
+      }
+      if (!state.pendingAudioFileIds.includes(fileId)) {
+        state.pendingAudioFileIds.push(fileId);
+      }
+    },
+
+    /** A send/start was ACCEPTED — the pending recordings now belong to the
+     *  human turn the server creates for it. */
+    dictationAudioQueuedForTurn(
+      state,
+      action: PayloadAction<{ sentAtMs: number }>,
+    ) {
+      if (state.pendingAudioFileIds.length === 0 && !state.awaitingTurnAudio) {
+        // Nothing recorded for this send — but keep a marker so a dictation
+        // whose upload lands seconds later still reaches this turn.
+        state.awaitingTurnAudio = {
+          fileIds: [],
+          sentAtMs: action.payload.sentAtMs,
+        };
+        return;
+      }
+      state.awaitingTurnAudio = {
+        fileIds: [
+          ...(state.awaitingTurnAudio?.fileIds ?? []),
+          ...state.pendingAudioFileIds,
+        ],
+        sentAtMs: action.payload.sentAtMs,
+      };
+      state.pendingAudioFileIds = [];
+    },
+
+    /** The awaiting recordings were stamped onto their turn (or expired). */
+    turnAudioSettled(state) {
+      state.awaitingTurnAudio = null;
+    },
   },
 });
 
@@ -302,6 +374,9 @@ export const {
   streamAdopted,
   composerInsertRequested,
   composerInsertConsumed,
+  dictationAudioSaved,
+  dictationAudioQueuedForTurn,
+  turnAudioSettled,
 } = visionInterviewSlice.actions;
 
 export default visionInterviewSlice.reducer;
@@ -328,6 +403,10 @@ export const selectRevisions = (state: RootState) =>
   selectSelf(state).revisions;
 export const selectComposerInsert = (state: RootState) =>
   selectSelf(state).composerInsert;
+export const selectPendingAudioFileIds = (state: RootState) =>
+  selectSelf(state).pendingAudioFileIds;
+export const selectAwaitingTurnAudio = (state: RootState) =>
+  selectSelf(state).awaitingTurnAudio;
 
 export const selectRoomRequestId = (state: RootState): string | null => {
   const s = selectSelf(state);

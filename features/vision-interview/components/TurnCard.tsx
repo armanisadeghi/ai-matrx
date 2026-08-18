@@ -11,10 +11,13 @@
 // messages get in /chat. Never a hand-rolled markdown/stream parser here.
 
 import { useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { AudioLines, Check, Copy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { RichDocument } from "@/features/rich-document/RichDocument";
+// Canonical media renderer — re-mints from file_id (media-durability
+// doctrine); never a raw <audio src> of a signed URL.
+import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
 import { ROLES, type InterviewTurnRow, type RoleKey } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
 
@@ -90,6 +93,9 @@ export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
   const role = isHuman ? null : ROLES[turn.speaker as RoleKey];
   const name = role?.name ?? "You";
   const [copied, setCopied] = useState(false);
+  // Raw-audio capture (v2 §13.1): a dictated turn carries its recording.
+  // The player mounts on demand (no URL minting for turns nobody plays).
+  const [showAudio, setShowAudio] = useState(false);
   const content = displayContent(turn);
 
   const copyTurn = async () => {
@@ -120,6 +126,33 @@ export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
             Round {turn.round}
             {turnTime(turn.created_at) && ` · ${turnTime(turn.created_at)}`}
           </span>
+          {turn.audio_file_id && (
+            <button
+              type="button"
+              onClick={() => setShowAudio((v) => !v)}
+              aria-label={
+                showAudio ? "Hide the recording" : "Listen to the recording"
+              }
+              title={
+                showAudio
+                  ? "Hide the recording"
+                  : "This turn was dictated — listen to the original recording"
+              }
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-1.5 py-px text-[10px] font-medium",
+                showAudio
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {showAudio ? (
+                <X className="h-3 w-3" aria-hidden />
+              ) : (
+                <AudioLines className="h-3 w-3" aria-hidden />
+              )}
+              {showAudio ? "Hide audio" : "Listen"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => void copyTurn()}
@@ -150,6 +183,17 @@ export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
               "rounded-lg border border-border/60 bg-muted/40 px-3 py-2",
           )}
         >
+          {turn.audio_file_id && showAudio && (
+            // `size="fill"` is h-full — the parent must state a height or the
+            // player renders at 0px (ExpertRecordPage precedent).
+            <div className="mb-1.5 h-[54px] w-full">
+              <InlineMediaRef
+                ref={turn.audio_file_id}
+                as="audio"
+                size="fill"
+              />
+            </div>
+          )}
           <RichDocument
             content={content}
             source={{ type: "raw" }}
