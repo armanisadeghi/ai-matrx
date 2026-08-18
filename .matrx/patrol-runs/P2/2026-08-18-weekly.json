@@ -71,6 +71,22 @@
       },
       "previousEventHash": "4e105a556b5b982833ec8351c2efd20836e3149f962cd08f1cfc249b48b051fe",
       "eventHash": "51dcc3b00a1bce309ddc6511ccc29618af7e126545049636f8ebdc9f0af2dc61"
+    },
+    {
+      "sequence": 5,
+      "state": "delivery_queued",
+      "at": "2026-08-18T07:23:14.279Z",
+      "actor": "codex-pattern-patrol-p2",
+      "summary": "Certified candidate preserved and queued for fast integration; release remains serialized.",
+      "evidence": [
+        "authority-ref:refs/heads/patrol-runs/P2/2026-08-18-weekly"
+      ],
+      "delivery": {
+        "candidateSha": "2f491773093442f46036fe14cbb266fe79466311",
+        "preservedRef": "refs/heads/patrol-runs/P2/2026-08-18-weekly"
+      },
+      "previousEventHash": "51dcc3b00a1bce309ddc6511ccc29618af7e126545049636f8ebdc9f0af2dc61",
+      "eventHash": "1081cb9714a2bb00881286704eec02004b1391f2dc492408d79d8b29124ab45e"
     }
   ]
 }
