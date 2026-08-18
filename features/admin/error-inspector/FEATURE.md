@@ -28,7 +28,7 @@ the safety net, not the main event.
 
 - **Sonner toasts** — `lib/toast.ts`, the captured wrapper around sonner's
   `toast`. `toast.error`/`toast.warning` feed `captureError` (source
-  `user-toast`, orange). A bare `import { toast } from "sonner"` is INVISIBLE
+  `user-toast`, red unless a specific rule downgrades it). A bare `import { toast } from "sonner"` is INVISIBLE
   to the inspector — only the legacy `lib/toast-service.ts` and this wrapper
   capture; migrate sonner imports to `@/lib/toast` opportunistically (repo-wide
   sweep pending, ~580 files).
@@ -102,7 +102,7 @@ the safety net, not the main event.
   noisy one, by matching `relation` in `errorTierRules.ts`.
 - **Domain** — `lib/media/durability.ts` (`reportMediaDurabilityViolation` →
   `media-durability`) and `lib/toast-service.ts` (`toast.error` → `user-toast`,
-  tiered orange: already handled + shown to the user).
+  red unless a specific rule proves the condition expected).
 - **Record reads** — `lib/records/recordUnavailable.ts` captures an ambiguous
   zero-row read immediately as red, then AccessGate reconciles the resolver's
   definite state onto that same entry via `resolveCapturedError`. A handled
@@ -159,14 +159,17 @@ time. Default is `red` — nearly everything is loud until tuned.
 
 Seeded defaults (in `DOWNGRADE_RULES`): **tool errors → yellow** (a failed tool
 call is normal agent operation — the agent adapts; e.g. the sql guard rejecting
-`grant`/`delete from`), **redux-rejected → orange**, **user-toast → orange**.
+`grant`/`delete from`) and **redux-rejected → orange**. User toasts stay red by
+default: showing a failure to the user does not prove it expected or harmless.
 Resolved+handled AccessGate denials → yellow; the original unknown capture and
 all other resolved record states stay red. Vision Interview's exact Safari
 `Load failed` transport class is yellow because its drafts are durable, its room
 rehydrates, and retry after a server swap is expected; the route-scoped rule
-does not quiet the same wording elsewhere. Everything else stays red until
-tuned. Promote a specific tool/slice to red with a `relation` rule ABOVE the
-broad source rule.
+does not quiet the same wording elsewhere. CMS `cms_write_policy_denied` 403s
+and their explicit `site policy ... forbids ...` toasts are yellow: the policy
+is working and the toast remains visible, while neither expected signal enters
+the repair queue. Everything else stays red until tuned. Promote a specific
+tool/slice to red with a `relation` rule ABOVE the broad source rule.
 
 **To quiet an error**, add a rule to `DOWNGRADE_RULES` in `errorTierRules.ts`
 pointing a match at `orange`/`yellow`. Rules are evaluated top-down, first match
@@ -256,6 +259,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-17 — **Expected CMS write-policy refusals stay user-visible and local.** Structured `cms_write_policy_denied` 403s and the duplicate `site policy ... forbids ...` toast are yellow, so the policy still blocks the write and explains why without creating two repair-queue rows; unrelated 403s and toasts remain red.
 - 2026-08-17 — **Recoverable Vision Interview deploy-window transport loss stays local.** Route-scoped `api-network` / `network_error` / Safari `Load failed` captures are yellow: durable drafts and room rehydration make retry the complete recovery, so repeated mic/start attempts no longer persist duplicate `system_error` rows. The same wording remains red outside this proven surface; adapter tests pin all three observed endpoints.
 - 2026-08-17 — **A Content IR recovery no longer creates a second persisted symptom through the console fallback.** The kind-registry fieldless-schema guard now emits only its structured `content-ir` capture, with a named `operation`, `relation`, `callSite`, recovery data, and an adapter-specific hint. The global `console.error` adapter remains the production safety net, but structured producers must not mirror the same incident into it; source is part of the capture signature, so that mirror previously bypassed in-memory dedupe and persisted one logical incident twice.
 - 2026-08-13 — **Captured errors can be reconciled in place.** AccessGate uses

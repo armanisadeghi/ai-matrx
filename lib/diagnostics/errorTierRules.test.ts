@@ -151,6 +151,54 @@ describe("classifyTier", () => {
     expect(c.tier).toBe("red");
   });
 
+  it("keeps an intentional CMS write-policy denial local and silent", () => {
+    const c = classifyTier(
+      captured({
+        source: "api-http",
+        relation: "POST /content-plan/cms-sites/{cms_site_id}/starter-kit",
+        code: "cms_write_policy_denied",
+        status: 403,
+        message: "site policy 'blocked' forbids 'update_live'",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("cms-write-policy-denial");
+  });
+
+  it("keeps the duplicate user-visible CMS policy explanation local", () => {
+    const c = classifyTier(
+      captured({
+        source: "user-toast",
+        message: "site policy 'blocked' forbids 'update_live'",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("cms-write-policy-denial-toast");
+  });
+
+  it("keeps unrelated API 403s and toast errors RED", () => {
+    const api = classifyTier(
+      captured({
+        source: "api-http",
+        relation: "POST /content-plan/cms-sites/{cms_site_id}/starter-kit",
+        code: "permission_denied",
+        status: 403,
+        message: "Forbidden",
+      }),
+    );
+    const toast = classifyTier(
+      captured({
+        source: "user-toast",
+        message: "Starter kit failed",
+      }),
+    );
+
+    expect(api.tier).toBe("red");
+    expect(toast.tier).toBe("red");
+  });
+
   it("silences a record-unavailable capture only after AccessGate resolves denial", () => {
     const c = classifyTier(
       captured({

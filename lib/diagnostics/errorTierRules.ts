@@ -148,6 +148,29 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "cms-write-policy-denial",
+    tier: "yellow",
+    reason:
+      "The CMS write policy intentionally refused this operation and the caller surfaces the server's explanation to the user. Keep the local diagnostic, but do not persist an expected product-control decision to the repair queue.",
+    addedAt: "2026-08-17",
+    match: {
+      source: "api-http",
+      code: "cms_write_policy_denied",
+      status: 403,
+    },
+  },
+  {
+    id: "cms-write-policy-denial-toast",
+    tier: "yellow",
+    reason:
+      "This toast is the user-visible explanation for an intentional CMS write-policy refusal already represented by the structured API response. Keep it visible to the user and local inspector without persisting a duplicate repair-queue row.",
+    addedAt: "2026-08-17",
+    match: {
+      source: "user-toast",
+      messagePattern: "site policy ['\"](?:blocked|draft_only)['\"] forbids ['\"][^'\"]+['\"]",
+    },
+  },
+  {
     id: "request-aborted",
     tier: "yellow",
     reason:
