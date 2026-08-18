@@ -66,7 +66,10 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
   offers the same source-verification pass again. A subsequent run generates only missing plans;
   recovery never changes visibility or duplicates an existing draft. Persisted verdicts are
   reused only while they are `verified` and `verifiedBack` exactly matches the current answer;
-  an edit or any negative verdict forces a new check.
+  an edit or any negative verdict forces a new check. Recovery inspects card membership before it
+  accepts a draft: an interrupted zero-card set shell is visibly rejected and the plan becomes
+  generatable again. Verification also refuses zero-card sets explicitly instead of reporting the
+  nonsensical “0 cards failed.”
 
 ## Open / next
 

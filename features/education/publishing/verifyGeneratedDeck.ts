@@ -24,6 +24,14 @@ export interface DeckVerificationResult {
   cards: DeckCardVerification[];
 }
 
+export function assertGeneratedDeckHasCards(cardCount: number): void {
+  if (cardCount === 0) {
+    throw new Error(
+      "The generated draft contains no cards. Generate this plan again before verification.",
+    );
+  }
+}
+
 /** Reuse a paid verdict only while it is still about the card's exact answer. */
 export function currentStoredVerdict(
   metadata: unknown,
@@ -60,6 +68,7 @@ export async function verifyGeneratedDeck(
   if (loaded.error || !loaded.data) {
     throw new Error(loaded.error ?? "The generated deck could not be loaded.");
   }
+  assertGeneratedDeckHasCards(loaded.data.cards.length);
 
   const allowed = new Set(allowedChunkIds);
   const results: DeckCardVerification[] = [];

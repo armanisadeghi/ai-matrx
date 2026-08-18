@@ -101,6 +101,7 @@ export function ExamContentPipeline() {
           setSources(next);
           if (existing.data) {
             const recoveredByPlan = new Map<string, GeneratedDraft>();
+            const emptyByPlan = new Map<string, GeneratedDraft>();
             for (const set of existing.data) {
               const metadata = asJsonObject(set.metadata);
               if (
@@ -139,6 +140,26 @@ export function ExamContentPipeline() {
               ) {
                 continue;
               }
+              const loadedDraft = await fcService.getSetWithCards(set.id);
+              if (loadedDraft.error || !loadedDraft.data) {
+                throw new Error(
+                  loadedDraft.error ??
+                    `Could not inspect interrupted draft ${set.id}.`,
+                );
+              }
+              if (loadedDraft.data.cards.length === 0) {
+                if (!emptyByPlan.has(recoveryKey)) {
+                  emptyByPlan.set(recoveryKey, {
+                    examSlug: recoveredExamSlug,
+                    plan,
+                    status: "failed",
+                    title: set.name,
+                    error:
+                      "An interrupted run left an empty draft. It was excluded from recovery; generate this missing plan again.",
+                  });
+                }
+                continue;
+              }
               recoveredByPlan.set(recoveryKey, {
                 examSlug: recoveredExamSlug,
                 plan,
@@ -150,8 +171,14 @@ export function ExamContentPipeline() {
                 error:
                   "Recovered a private draft from an interrupted run. Resume source verification before publishing.",
               });
+              emptyByPlan.delete(recoveryKey);
             }
-            const recovered = [...recoveredByPlan.values()];
+            const recovered = [
+              ...recoveredByPlan.values(),
+              ...[...emptyByPlan.entries()]
+                .filter(([key]) => !recoveredByPlan.has(key))
+                .map(([, draft]) => draft),
+            ];
             if (recovered.length > 0) setDrafts(recovered);
           }
         }

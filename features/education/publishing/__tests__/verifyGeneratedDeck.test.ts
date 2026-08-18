@@ -1,4 +1,19 @@
-import { currentStoredVerdict } from "../verifyGeneratedDeck";
+import {
+  assertGeneratedDeckHasCards,
+  currentStoredVerdict,
+} from "../verifyGeneratedDeck";
+
+describe("assertGeneratedDeckHasCards", () => {
+  it("refuses an interrupted draft shell with no cards", () => {
+    expect(() => assertGeneratedDeckHasCards(0)).toThrow(
+      "The generated draft contains no cards",
+    );
+  });
+
+  it("accepts a populated draft", () => {
+    expect(() => assertGeneratedDeckHasCards(1)).not.toThrow();
+  });
+});
 
 describe("currentStoredVerdict", () => {
   const metadata = {
