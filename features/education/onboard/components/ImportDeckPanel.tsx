@@ -146,6 +146,9 @@ export function ImportDeckPanel() {
         </div>
       )}
 
+      {result?.note && (
+        <p className="mt-3 text-xs text-muted-foreground">{result.note}</p>
+      )}
       {result && (
         <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2">
           {/* The deck we JUST created is a real record with a real page, and

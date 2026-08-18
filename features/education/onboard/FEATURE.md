@@ -44,11 +44,21 @@ input ──useIngest──▶ { text, title, cld_files anchor } ──useKitGen
 
 - **Export** (`export/deckFormats.ts`): `json` (full-fidelity, round-trips), `md`, `anki` (TSV
   Anki imports natively), `csv`. Per-deck or the whole library as a zip (`useDataOwnership`).
-- **Import** (`import/importDeck.ts`, `import/importAnki.ts`): Quizlet/CSV/TSV, Matrx JSON
-  round-trip, pasted pairs, and **Anki `.apkg`** (jszip + sql.js, **dynamically imported** so the
-  WASM never enters the page bundle — see the `code-splitting` note below). Import lands a native
-  deck; what was/wasn't preserved is surfaced honestly (Anki media + review history are not yet
-  mapped — stated, not silently dropped).
+- **Import** (`import/importDeck.ts`, `import/importAnki.ts`): Quizlet/CSV/TSV (RFC-4180 CSV
+  files via `parseCsvRecords` — our own CSV export re-imports), Matrx JSON round-trip
+  (deck-level description/topic/difficulty preserved), pasted pairs, and **Anki `.apkg`**
+  (jszip + sql.js, **dynamically imported** — see the `code-splitting` note below).
+  **IC-11 (education-platform INTEGRATION_MAP): `persistImportedDeck` is THE one import
+  entry** — every source (including `ImportSetView` and future extension capture) lands
+  through it; never `createSetWithCards` direct. **Anki now keeps media AND review history**
+  (2026-08-17, verified live end-to-end): decks/subdecks → card topic, tags → metadata,
+  cloze → native cloze kind, embedded media uploaded via `fileHandler` + attached as
+  fc_card → file edges (`NewCardInput.media`; no card-face renderer yet — the render seam is
+  the image-lane work), and per-card interval/ease/due/reps/lapses mapped to FSRS and seeded
+  through the ONE sanctioned RPC `edu_import_review_history`
+  (`migrations/edu_import_review_history.sql`; owner-checked, never overwrites existing
+  mastery, writes no attempts). Still honest: zstd `collection.anki21b` is refused with
+  re-export instructions.
 - **Pledge** (`DataOwnershipPage`): every line is backed by a real button on the page.
 - **Data rights (FERPA/COPPA)** (`data/dataRightsService.ts`, extends `useDataOwnership`): the
   page is now **"Your data & privacy"** — the per-deck exporter is joined by a full study-spine
@@ -167,6 +177,14 @@ When a gap closes, extend `formatSupport.ts` (classifier + note + `INGEST_ACCEPT
 
 ## Change log
 
+- **2026-08-17** — WP5 (education-platform program): IC-11 one-entry law
+  (`persistImportedDeck`; `ImportSetView` folded in), lossless JSON round-trip
+  (deck-level fields), RFC-4180 CSV file import, and the full Anki completion —
+  media uploaded + edged, cloze/tags/deck-paths preserved, review history seeded
+  into FSRS via `edu_import_review_history` so due dates survive the switch.
+  Verified live: a generated legacy-schema `.apkg` (4 notes, 3 with review
+  state, 2 media files) imported through the UI; DB shows exact due-date, ease→
+  difficulty, reps/lapses mapping and both media edges.
 - **2026-07-15** — `/education/data` → **"Your data & privacy"**: full study-spine export +
   reversible-window delete/restore (FERPA/COPPA data rights) via `data/dataRightsService.ts` +
   the `edu_export_study_data`/`edu_delete_study_data`/`edu_restore_study_data` RPCs
