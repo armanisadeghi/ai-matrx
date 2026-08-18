@@ -17,6 +17,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { callApi } from "@/lib/api/call-api";
+import { siteConfig } from "@/config/extras/site";
 import type { Json } from "@/types/database.types";
 import { decideAssist, snoozeAssist, suppressAssistSource } from "../service";
 import { snoozeUntilIso, type SnoozeWindowKey } from "../constants";
@@ -72,9 +73,7 @@ export function useAssistRunner(): AssistRunnerApi {
         const target = resolveAssistNavigation(href, {
           profile: process.env.NEXT_PUBLIC_MATRX_PROFILE || "full",
           currentOrigin: window.location.origin,
-          mainOrigin:
-            process.env.NEXT_PUBLIC_MAIN_ORIGIN?.trim() ||
-            "https://www.aimatrx.com",
+          mainOrigin: siteConfig.url,
           adminOrigin:
             process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.trim() ||
             "https://manage.aimatrx.com",

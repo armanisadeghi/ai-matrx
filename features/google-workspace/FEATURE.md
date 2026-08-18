@@ -76,11 +76,23 @@ it into a one-click "Connect" offer. Never render a failure there.
 
 ## Invariants
 
+- The settings surface leads with a compact account inventory: every personal
+  connection shows its Docs/Sheets grant, Gmail-send grant, connection health,
+  and current browser Picker session. Selecting the account name or Manage
+  action opens that account's controls; Add account starts the existing OAuth
+  path.
+- File and email verification controls are collapsed under **Test the file
+  connection** and **Test the email connection**. They prove the grants; they
+  are not the page's primary account-management workflow.
 - No Drive list or search endpoint exists in the service, and no agent tool
   accepts a `connection_id` — reach always resolves from a registered
   Picker-selected resource.
 - No Gmail read scope or endpoint exists in this feature.
 - No file content or email body is stored by the Workspace service.
+- **A range without a tab name targets the spreadsheet's first tab.** The UI
+  defaults to `A1:C10`; never assume a selected spreadsheet contains `Sheet1`.
+  Backend 4xx input errors stay in the page's actionable alert and do not emit a
+  duplicate captured error toast; server failures remain loud.
 - Re-consent for Gmail must preserve existing Picker-selected resource rows.
 - Marketing scopes are not bundled into the reviewer workflow.
 - The dedicated reviewer route prepopulates Picker with the review-fixture query so unrelated Drive file names do not appear in the verification video. The normal Settings surface remains unfiltered.
@@ -89,6 +101,14 @@ it into a one-click "Connect" offer. Never render a failure there.
 
 ## Change log
 
+- 2026-08-18: Reworked the settings/reviewer workspace around a compact
+  connected-account permission/status table, concise policy copy, per-account
+  management, and collapsed file/email connection tests. Repeated Picker opens
+  reuse the same account's still-valid in-memory token, avoiding redundant
+  OAuth popup flashes while keeping first-use authorization explicit.
+- 2026-08-18: Removed the `Sheet1` assumption from the Sheet range default,
+  trimmed submitted A1 ranges, and kept backend input errors inline instead of
+  filing a duplicate `user-toast` error.
 - 2026-08-18: Added the in-app half — `export/sendToGoogle.ts`, "Send to Google
   Doc" on the shared content-action registry, and an optional Google Sheet
   destination on `ExportMenu` (passed by `MatrxDataTable`, so every canonical

@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { parseHttpError } from "@/lib/api/errors";
 import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
@@ -165,12 +166,10 @@ export async function postGoogleBackend(
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as {
-      detail?: unknown;
-    };
-    throw new Error(
-      typeof payload.detail === "string" ? payload.detail : fallback,
-    );
+    const error = await parseHttpError(response);
+    throw error.message === `Request failed (${response.status})`
+      ? new Error(fallback, { cause: error })
+      : error;
   }
   return response;
 }

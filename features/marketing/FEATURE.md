@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-08-17
+**Last updated:** 2026-08-18
 
 ## Internal Authority Router
 
@@ -513,6 +513,9 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-18 — Google backend commands now throw the canonical typed
+  `BackendApiError`, preserving HTTP status so feature UIs can distinguish
+  actionable 4xx input from server failures without hiding either.
 - 2026-08-18 — Claude: **First real listing READ path: live Google data, one click.** aidream `POST /seo/local/locations/{id}/google-listing` (DataForSEO Business Data, budget-guarded, cid-learning keyword ladder) → `web.location_listing.observed` with `source='dataforseo'`; FE "Fetch live data" button on the Google matrix row + per-listing observed-NAP verdict line (match % + exact disagreements). Also: on-site structured-data card reads real homepage crawl snapshots (path='/'-keyed) — measured baseline: 3 of 12 crawled sites declare LocalBusiness; aimatrx.com declares none. Live-proven end-to-end with Titanium Success's actual Google listing.
 - 2026-08-18 — Claude: **Local & Listings pillar went LIVE** (`marketing.local` promise delivered and deleted). Three certified-canonical tables (`web.business_location`, `web.listing_publisher` + 29-publisher research seed, `web.location_listing`), guarded service CRUD + hooks, NAP audit + weighted citation coverage + LocalBusiness JSON-LD engines (14 tests), and the `/marketing/local` workspace (URL-synced brand/location selection, canonical profile editor with gap explainers, per-publisher listings matrix with manage/listing doors, KPI strip). Brand picker is deliberately org-agnostic (access never gates on the active org); writes carry the brand's own `organization_id`. Browser-verified end-to-end: create location → save NAP → claim Google → coverage KPI 0%→7% with rows confirmed live in the DB.
 - 2026-08-17 — Codex: **Compact search-provider naming and the keyword-performance header are clean.** `lib/provider-names.ts` now owns `Bing` beside `GSC`; pills, filters, cards, buttons, navigation, and surface labels consume the compact name while explanatory prose may retain `Bing Webmaster Tools`. The keyword workspace has one concise subtitle and one aligned 32px action row; Matching queries no longer enlarges the header.

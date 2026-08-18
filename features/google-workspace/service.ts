@@ -1,10 +1,22 @@
 import { postGoogleBackend } from "@/features/marketing/google/service";
+import { BackendApiError } from "@/lib/api/errors";
 import type {
   GoogleDocumentContent,
   GoogleSheetValues,
   ReviewedGmailDraft,
   SelectedGoogleFile,
 } from "@/features/google-workspace/types";
+
+export const DEFAULT_GOOGLE_SHEET_RANGE = "A1:C10";
+
+export function isGoogleWorkspaceInputError(error: unknown): boolean {
+  return (
+    error instanceof BackendApiError &&
+    error.status !== null &&
+    error.status >= 400 &&
+    error.status < 500
+  );
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
