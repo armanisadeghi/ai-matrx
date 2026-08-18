@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P4",
   "runId": "2026-08-18T131537Z",
-  "state": "certifying",
-  "updatedAt": "2026-08-18T13:18:50.575Z",
-  "summary": "Detector-scope repair and 48-item exception projection are ready for exact-candidate adversarial review",
+  "state": "certified",
+  "updatedAt": "2026-08-18T13:24:34.672Z",
+  "summary": "CERTIFIED: detector-scope repair introduces no detected regression",
   "source": "2026-08-18T131537Z.json",
-  "eventHash": "863d56cb879a253336b0996a8645d5af71c6bc593d1accb9e8f9f32c33b6b9b9"
+  "eventHash": "3313b6892ffdd24c122dea31a954626a9007d63fc08c51ed99ebde89454fd4d9"
 }
