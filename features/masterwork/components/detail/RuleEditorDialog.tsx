@@ -1,7 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PencilLine, RotateCcw } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+  clearWizardDraft,
+  patchWizardDraft,
+  selectWizardDraft,
+} from "@/lib/redux/slices/wizardDraftSlice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,9 +30,17 @@ import {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
+import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { nextRuleId } from "../../ruleIds";
 import type { RulebookDraftSnapshot } from "../../agent-context/rulebookSurfaceScope";
+import {
+  applyRuleCleanup,
+  coerceRuleCleanupResult,
+  MASTERWORK_RULE_CLEANUP_MANDATE,
+  readRuleEditorDraft,
+} from "../../agent-context/ruleCleanup";
 import type { RulebookRule, RulebookSections, RuleSeverity } from "../../types";
 
 /**
@@ -51,6 +66,9 @@ export interface RuleEditorDialogProps {
   onSave: (result: RuleEditorResult) => Promise<void>;
   surfaceName: string;
   getSurfaceScope: () => SurfaceScopePayload;
+  rulebookId: string;
+  rulebookVersion: number;
+  organizationId: string;
   stagedDraft?: Partial<RulebookDraftSnapshot>;
   draftRevision: number;
   onDraftChange: (draft: RulebookDraftSnapshot) => void;
@@ -80,11 +98,31 @@ function RuleEditorForm({
   onSave,
   surfaceName,
   getSurfaceScope,
+  rulebookId,
+  rulebookVersion,
+  organizationId,
   stagedDraft,
   onDraftChange,
+  open,
 }: RuleEditorDialogProps) {
+  const dispatch = useAppDispatch();
+  const cleanupRun = useLiveAgentRun();
   const isNew = !initial;
-  const sectionCodes = Object.keys(sections);
+  const sectionCodes = useMemo(() => Object.keys(sections), [sections]);
+  const wizardId = `masterwork-rule-editor:${rulebookId}:${initial?.id ?? "new"}`;
+  const persistedEntry = useAppSelector((state) =>
+    selectWizardDraft(wizardId)(state),
+  );
+  const persistedDraft = useMemo(
+    () =>
+      readRuleEditorDraft(persistedEntry?.data, {
+        rulebookVersion,
+        mode: isNew ? "new" : "edit",
+        ruleId: initial?.id ?? null,
+      }),
+    [initial?.id, isNew, persistedEntry?.data, rulebookVersion],
+  );
+  const wasOpen = useRef(open);
   const [name, setName] = useState(stagedDraft?.name ?? initial?.name ?? "");
   const [statement, setStatement] = useState(
     stagedDraft?.statement ?? initial?.statement ?? "",
@@ -109,6 +147,10 @@ function RuleEditorForm({
       "G",
   );
   const [saving, setSaving] = useState(false);
+  const [beforeCleanup, setBeforeCleanup] =
+    useState<RulebookDraftSnapshot | null>(
+      persistedDraft?.beforeCleanup ?? null,
+    );
 
   const draftSnapshot = useCallback(
     (): RulebookDraftSnapshot => ({
@@ -136,8 +178,55 @@ function RuleEditorForm({
   );
 
   useEffect(() => {
+    if (!open) return;
     onDraftChange(draftSnapshot());
-  }, [draftSnapshot, onDraftChange]);
+    dispatch(
+      patchWizardDraft({
+        wizardId,
+        patch: {
+          baseVersion: rulebookVersion,
+          fields: draftSnapshot(),
+          beforeCleanup,
+        },
+      }),
+    );
+  }, [
+    beforeCleanup,
+    dispatch,
+    draftSnapshot,
+    onDraftChange,
+    open,
+    rulebookVersion,
+    wizardId,
+  ]);
+
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      const restored = stagedDraft ?? persistedDraft?.fields;
+      setName(restored?.name ?? initial?.name ?? "");
+      setStatement(restored?.statement ?? initial?.statement ?? "");
+      setRationale(restored?.rationale ?? initial?.rationale ?? "");
+      setDetection(restored?.detection ?? initial?.detection ?? "");
+      setQuote(restored?.quote ?? initial?.quote ?? "");
+      setSeverity(restored?.severity ?? initial?.severity ?? "major");
+      setSection(
+        restored?.section ??
+          initial?.section ??
+          defaultSection ??
+          sectionCodes[0] ??
+          "G",
+      );
+      setBeforeCleanup(persistedDraft?.beforeCleanup ?? null);
+    }
+    wasOpen.current = open;
+  }, [
+    defaultSection,
+    initial,
+    open,
+    persistedDraft,
+    sectionCodes,
+    stagedDraft,
+  ]);
 
   const getApplicationScope = useCallback(() => {
     const active = document.activeElement;
@@ -189,6 +278,7 @@ function RuleEditorForm({
           section,
         },
       });
+      dispatch(clearWizardDraft(wizardId));
       onOpenChange(false);
     } catch (err) {
       toast.error(
@@ -199,8 +289,101 @@ function RuleEditorForm({
     }
   };
 
+  const applyCleanedDraft = useCallback(
+    (cleaned: RulebookDraftSnapshot, before: RulebookDraftSnapshot) => {
+      setName(cleaned.name);
+      setStatement(cleaned.statement);
+      setRationale(cleaned.rationale);
+      setDetection(cleaned.detection);
+      setQuote(cleaned.quote);
+      setSeverity(cleaned.severity);
+      setSection(cleaned.section);
+      setBeforeCleanup(before);
+    },
+    [],
+  );
+
+  const cleanupWithAi = async () => {
+    const before = draftSnapshot();
+    if (!before.name.trim() || !before.statement.trim()) {
+      toast.error("Add a short name and the rule itself before cleaning it up.");
+      return;
+    }
+
+    const context = getSurfaceScope();
+    try {
+      const cleaned = await cleanupRun.run<RulebookDraftSnapshot>({
+        mandateKey: MASTERWORK_RULE_CLEANUP_MANDATE,
+        surfaceKey: "masterwork-rule-cleanup",
+        sourceFeature: "masterwork",
+        surfaceName,
+        organizationId,
+        contextAnchor: {
+          resource_type: "rulebook",
+          resource_id: rulebookId,
+        },
+        variables: {
+          rule_draft: JSON.stringify(before),
+          rulebook_context: JSON.stringify(context),
+        },
+        expect: "json",
+        timeoutMs: 120_000,
+        coerce: (value) =>
+          applyRuleCleanup(before, coerceRuleCleanupResult(value, before)),
+        onResult: (result) => {
+          if (!result.data) return;
+          const durable = applyRuleCleanup(
+            before,
+            coerceRuleCleanupResult(result.data, before),
+          );
+          dispatch(
+            patchWizardDraft({
+              wizardId,
+              patch: {
+                baseVersion: rulebookVersion,
+                fields: durable,
+                beforeCleanup: before,
+              },
+            }),
+          );
+        },
+        failureMessages: {
+          noJson: "AI cleanup finished without returning a usable rule.",
+          timeout: "AI cleanup took too long. Your draft is still here.",
+        },
+      });
+      applyCleanedDraft(cleaned, before);
+      toast.success("AI cleanup is ready — review it, then save the rule.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not clean up the rule",
+      );
+    }
+  };
+
+  const undoCleanup = () => {
+    if (!beforeCleanup) return;
+    const restored = beforeCleanup;
+    setName(restored.name);
+    setStatement(restored.statement);
+    setRationale(restored.rationale);
+    setDetection(restored.detection);
+    setQuote(restored.quote);
+    setSeverity(restored.severity);
+    setSection(restored.section);
+    setBeforeCleanup(null);
+    cleanupRun.dismiss();
+    toast.success("AI cleanup undone.");
+  };
+
+  const cancel = () => {
+    dispatch(clearWizardDraft(wizardId));
+    cleanupRun.dismiss();
+    onOpenChange(false);
+  };
+
   return (
-    <DialogContent className="sm:max-w-lg max-h-[85dvh] overflow-y-auto">
+    <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
       <EditableContextMenu
         sourceFeature="masterwork"
         surfaceName={surfaceName}
@@ -242,7 +425,7 @@ function RuleEditorForm({
                 value={statement}
                 onChange={(e) => setStatement(e.target.value)}
                 placeholder="The rule itself, as an instruction."
-                rows={3}
+                rows={6}
               />
             </div>
             <div className="space-y-1.5">
@@ -252,7 +435,7 @@ function RuleEditorForm({
                 value={rationale}
                 onChange={(e) => setRationale(e.target.value)}
                 placeholder="The reasoning behind it — optional but it makes rulings much better."
-                rows={2}
+                rows={6}
               />
             </div>
             <div className="space-y-1.5">
@@ -264,7 +447,7 @@ function RuleEditorForm({
                 value={detection}
                 onChange={(e) => setDetection(e.target.value)}
                 placeholder="What a violation looks like in practice."
-                rows={2}
+                rows={6}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -313,21 +496,55 @@ function RuleEditorForm({
                 value={quote}
                 onChange={(e) => setQuote(e.target.value)}
                 placeholder="An exact quote from the book or document this rule comes from."
-                rows={2}
+                rows={6}
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={saving}
-            >
-              Cancel
-            </Button>
-            <Button onClick={() => void save()} disabled={saving}>
-              {saving ? "Saving…" : isNew ? "Add rule" : "Save rule"}
-            </Button>
+          {cleanupRun.hasLiveRun ? (
+            <LiveRunDisplay
+              conversationId={cleanupRun.conversationId}
+              pending={cleanupRun.isRunning}
+              label="Cleaning up this rule"
+              onDismiss={cleanupRun.dismiss}
+              bodyClassName="max-h-40"
+            />
+          ) : null}
+          <DialogFooter className="gap-2 sm:justify-between">
+            <div className="flex flex-wrap gap-2 sm:mr-auto">
+              <Button
+                variant="secondary"
+                onClick={() => void cleanupWithAi()}
+                disabled={saving || cleanupRun.isRunning}
+              >
+                <PencilLine className="mr-1.5 h-4 w-4" />
+                {cleanupRun.isRunning ? "Cleaning up…" : "Clean up with AI"}
+              </Button>
+              {beforeCleanup ? (
+                <Button
+                  variant="ghost"
+                  onClick={undoCleanup}
+                  disabled={saving || cleanupRun.isRunning}
+                >
+                  <RotateCcw className="mr-1.5 h-4 w-4" />
+                  Undo AI cleanup
+                </Button>
+              ) : null}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={cancel}
+                disabled={saving || cleanupRun.isRunning}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => void save()}
+                disabled={saving || cleanupRun.isRunning}
+              >
+                {saving ? "Saving…" : isNew ? "Add rule" : "Save rule"}
+              </Button>
+            </div>
           </DialogFooter>
         </div>
       </EditableContextMenu>

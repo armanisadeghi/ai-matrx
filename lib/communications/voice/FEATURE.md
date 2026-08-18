@@ -60,6 +60,14 @@ long-lived media and agent execution stay in aidream.
   24-hour freshness window. A fresh exact pass derives the four storage/custody gates; a missing,
   failed, malformed, future-dated, or stale receipt fails closed. Visibility exposes only event
   identity and expiry—not credential fingerprints, object paths, storage URIs, or secrets.
+- `provider-configuration-readiness.ts` reads the latest operator verification or invalidation from
+  that same activity ledger. It validates the exact AI Matrx organization/operator, Twilio
+  account fingerprint and region, external-storage credential fingerprint and S3 target, confirms capture is
+  still off, and independently expires email verification after 24 hours and the reviewed
+  external configuration after 30 days. The Voice response exposes only readiness, receipt id,
+  and validity times—never provider, credential, account, or storage identifiers. This evidence
+  supplies only the provider-email and external-configuration gates; recording disclosure and
+  affirmative consent remain a separate false gate until the recording flow itself is exercised.
 
 ## Visibility
 
@@ -71,6 +79,11 @@ readiness from the durable canary receipt; it still reports recording disabled r
 receipt because provider verification, external configuration, and disclosure proof are separate
 gates.
 
+The main Voice GET also derives provider email-verification and external-storage readiness from an
+exact durable operator receipt instead of hard-coded booleans. Missing, invalidated, malformed,
+future-dated, or stale evidence fails closed, and the route still reports recording disabled while
+recording disclosure has not been verified.
+
 The main Voice GET also exposes the ConversationRelay launch inventory through the same readiness
 primitive. It reports the six inert aidream foundations, canonical call lifecycle, durable bounded
 playback-activity claim, and hard-disabled public WSS mount as ready. Exact provider playback
@@ -80,6 +93,10 @@ content, phone, provider URL, session reference, signature, or credential is ret
 
 ## Change log
 
+- **2026-08-17** — Replaced the two provider-configuration placeholder gates with exact,
+  secret-free `platform.activity_log` evidence. Email verification expires after 24 hours,
+  reviewed external configuration after 30 days, invalidations win by recency, and recording
+  disclosure remains false.
 - **2026-08-16** — Marked the reviewed aidream public WSS mount ready while preserving separate
   false owned-number, code, provider, program, and provider-decoder gates. Voice readiness is nine
   of fourteen and remains disabled.

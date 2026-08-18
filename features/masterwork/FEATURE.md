@@ -173,7 +173,12 @@ rulebook.version` → the Masterworks page flags "rebuild" AND opens the rule-le
   run (one dialog, one answer, one pointer). Never fork it — add a `DurableRunWire` instead.
 - `components/detail/RulebookDetailPage.tsx` + `RuleEditorDialog.tsx` — the Expert surface. Plain
   language only: "rules", "how to spot a violation", "how bad is breaking it". Zero jargon is a
-  requirement, not a style choice (THE MISMATCH RULE).
+  requirement, not a style choice (THE MISMATCH RULE). Rule textareas open at six rows. **Clean
+  up with AI** runs Mandate `masterwork.rule_cleanup` with the current draft plus the complete
+  `buildRulebookSurfaceScope` payload, streams through `LiveRunDisplay`, and stages the validated
+  result for review; only Save writes. The source quote, severity, and section are mechanically
+  protected from AI changes. The generic `wizardDraftSlice` preserves a paid cleanup until Save,
+  explicit Cancel, or Undo.
 - `components/detail/BuildMasterworkDialog.tsx` — "Build a Masterwork" (streams
   `POST /masterworks/build` as a durable run).
 - `components/detail/IngestSourceDialog.tsx` — "From a source" (paste →
@@ -457,9 +462,19 @@ deliberately never produced.
    `draft: true` so a Build can never include it. Approve-all never touches rejected rules.
 5. **Every textarea in this module is `ProTextarea`** (mic + transcription) — the Expert talks,
    never types, unless they want to.
+6. **Rule cleanup is a proposal, never a write.** `masterwork.rule_cleanup` may polish authored
+   text, but `RuleEditorDialog` refuses any AI change to the verbatim quote, severity, or section;
+   the Expert reviews the staged values and the existing `saveRules` funnel remains the only write.
 
 ## Change log
 
+- 2026-08-17 — **The Rule Editor now offers reviewable AI cleanup.** Its four
+  `ProTextarea` fields default to six rows in a wider dialog. `Clean up with AI`
+  sends the current rule and complete Rulebook surface scope through the new
+  `masterwork.rule_cleanup` Mandate, renders the live run, restores the validated
+  fields into the form, and offers Undo; source evidence and Expert
+  classifications are mechanically immutable. Paid results use the shared
+  persisted draft store and nothing reaches `saveRules` until the Expert clicks Save.
 - 2026-08-17 — **The Rulebook detail page is now a complete declared surface.**
   `matrx-user/masterwork-rulebook` has a verified code manifest, exact dynamic-route
   recognition, a live `SurfaceRuntimeProvider`, canonical v3 context menus on the page and

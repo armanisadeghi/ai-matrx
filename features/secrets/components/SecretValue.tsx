@@ -19,7 +19,14 @@
  *     ~30s auto-clear — never Redux, storage, a query cache, or a URL.
  */
 import { useEffect, useState } from "react";
-import { Check, Copy, Eye, EyeOff, Loader2, Lock } from "lucide-react";
+import {
+  Check,
+  Copy,
+  Eye,
+  EyeOff,
+  Loader2,
+  LockKeyhole,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
@@ -193,18 +200,18 @@ export function SecretValue({
   const controls = secret.sealed ? (
     // Sealed: a lock and nothing else. There is no unseal control to hide.
     <span
-      className="flex shrink-0 items-center gap-1 rounded-md border border-border px-2 py-1 text-xs font-medium text-muted-foreground"
+      className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted/50 px-2 py-1 text-[11px] font-medium text-muted-foreground"
       title="Sealed — this value can never be shown to a human. Only trusted server execution can use it."
     >
-      <Lock className="h-3.5 w-3.5" />
-      Sealed
+      <LockKeyhole className="h-3.5 w-3.5" />
+      Automation only
     </span>
   ) : secret.allowed ? (
     <>
       <Button
         size="sm"
-        variant="outline"
-        className="h-8 shrink-0 px-2.5 text-xs"
+        variant="ghost"
+        className="h-7 w-7 shrink-0 px-0 text-muted-foreground hover:text-foreground"
         disabled={secret.working}
         onClick={() => secret.toggle()}
         aria-label={
@@ -213,19 +220,18 @@ export function SecretValue({
         title={revealed ? "Hide" : "Show"}
       >
         {secret.working && !revealed ? (
-          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
         ) : revealed ? (
-          <EyeOff className="mr-1.5 h-3.5 w-3.5" />
+          <EyeOff className="h-3.5 w-3.5" />
         ) : (
-          <Eye className="mr-1.5 h-3.5 w-3.5" />
+          <Eye className="h-3.5 w-3.5" />
         )}
-        {revealed ? "Hide" : "Show"}
       </Button>
       <Button
         size="sm"
-        variant="outline"
+        variant="ghost"
         className={cn(
-          "h-8 shrink-0 px-2.5 text-xs",
+          "h-7 w-7 shrink-0 px-0 text-muted-foreground hover:text-foreground",
           secret.copied && "text-success hover:text-success",
         )}
         disabled={secret.working}
@@ -234,11 +240,10 @@ export function SecretValue({
         title="Copy"
       >
         {secret.copied ? (
-          <Check className="mr-1.5 h-3.5 w-3.5" />
+          <Check className="h-3.5 w-3.5" />
         ) : (
-          <Copy className="mr-1.5 h-3.5 w-3.5" />
+          <Copy className="h-3.5 w-3.5" />
         )}
-        {secret.copied ? "Copied" : "Copy"}
       </Button>
     </>
   ) : null;
@@ -253,25 +258,40 @@ export function SecretValue({
   }
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      <p
+    <div
+      className={cn(
+        "group/value flex min-h-8 min-w-0 items-center gap-1.5",
+        className,
+      )}
+    >
+      <div
         className={cn(
-          "min-w-0 flex-1 whitespace-pre-wrap break-all font-mono text-[13px] leading-6",
+          "min-w-0 flex-1 whitespace-pre-wrap break-all font-mono text-[13px] leading-5",
           revealed ? "text-foreground" : "text-muted-foreground",
         )}
       >
-        {revealed
-          ? secret.value
-          : field.is_active
-            ? "Hidden"
-            : "Hidden — field is inactive"}
-      </p>
+        {revealed ? (
+          secret.value
+        ) : (
+          <>
+            <span className="sr-only">
+              {field.is_active ? "Hidden" : "Hidden — field is inactive"}
+            </span>
+            <span
+              aria-hidden="true"
+              className="select-none text-base tracking-[0.18em]"
+            >
+              ••••••••••••
+            </span>
+          </>
+        )}
+      </div>
       {showCountdown && revealed && secondsLeft !== null && (
         <span
-          className="shrink-0 rounded px-1 font-mono text-[11px] tabular-nums text-muted-foreground"
+          className="shrink-0 rounded-full bg-muted/50 px-2 py-0.5 text-[10px] tabular-nums text-muted-foreground"
           title="This value hides itself automatically"
         >
-          {secondsLeft}s
+          Hides in {secondsLeft}s
         </span>
       )}
       {controls}

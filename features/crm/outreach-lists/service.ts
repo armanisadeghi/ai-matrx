@@ -21,6 +21,7 @@
 
 import type { Json } from "@/types/database.types";
 import { supabase } from "@/utils/supabase/client";
+import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import {
   applyPartyListPredicates,
   fetchPartyDetail,
@@ -102,8 +103,17 @@ export async function fetchOutreachList(id: string): Promise<OutreachListRow> {
     .from("outreach_list")
     .select("*")
     .eq("id", id)
-    .single();
+    .maybeSingle();
   if (error) throw pgError(error);
+  if (!data) {
+    throw recordUnavailable({
+      entity: "outreach list",
+      reason: "unknown",
+      recordId: id,
+      token: "crm_outreach_list",
+      relation: "crm.outreach_list",
+    });
+  }
   return data;
 }
 

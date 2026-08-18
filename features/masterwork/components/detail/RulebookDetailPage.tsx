@@ -1352,6 +1352,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             onSave={saveRule}
             surfaceName={MASTERWORK_RULEBOOK_SURFACE_NAME}
             getSurfaceScope={buildSurfaceScope}
+            rulebookId={rulebook.id}
+            rulebookVersion={rulebook.version}
+            organizationId={rulebook.organization_id}
             stagedDraft={stagedRuleDraft}
             draftRevision={draftRevision}
             onDraftChange={setActiveRuleDraft}

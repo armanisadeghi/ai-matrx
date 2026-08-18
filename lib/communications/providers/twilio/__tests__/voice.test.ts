@@ -43,14 +43,15 @@ describe("Twilio Voice provider adapter", () => {
     });
   });
 
-  test("returns a branded affirmative consent gate without any capture point", () => {
+  test("discloses exact post-consent recording before any capture point", () => {
     const twiml = buildOwnerBetaConsentPromptTwiml(
       "https://www.aimatrx.com/api/webhooks/twilio/voice?stage=owner-beta-consent",
     );
 
     expect(twiml).toContain("A.I. Matrix");
-    expect(twiml).toContain("not being recorded right now");
-    expect(twiml).toContain("Twilio may record the call");
+    expect(twiml).toContain("not being recorded yet");
+    expect(twiml).toContain("Twilio will record the call");
+    expect(twiml).toContain("retained for up to 30 days");
     expect(twiml).toContain("press 1 or say, I agree");
     expect(twiml).toContain('input="dtmf speech"');
     expect(twiml).toContain('actionOnEmptyResult="true"');
@@ -60,7 +61,7 @@ describe("Twilio Voice provider adapter", () => {
     expect(twiml).not.toContain("<Stream");
   });
 
-  test("keeps every terminal owner-beta response explicitly non-recording", () => {
+  test("keeps disabled and non-consent terminal responses explicitly non-recording", () => {
     for (const twiml of [
       buildOwnerBetaConsentAcceptedTwiml(),
       buildOwnerBetaNoConsentTwiml(),
@@ -72,6 +73,31 @@ describe("Twilio Voice provider adapter", () => {
       expect(twiml).not.toContain("<Connect");
       expect(twiml).not.toContain("<Stream");
     }
+  });
+
+  test("starts dual-channel recording only in the explicitly enabled accepted response", () => {
+    const twiml = buildOwnerBetaConsentAcceptedTwiml({
+      recording: {
+        recordingStatusCallbackUrl:
+          "https://www.aimatrx.com/api/webhooks/twilio/voice/recording",
+      },
+    });
+
+    expect(twiml).toContain("<Start><Recording");
+    expect(twiml).toContain('channels="dual"');
+    expect(twiml).toContain('track="both"');
+    expect(twiml).toContain('trim="do-not-trim"');
+    expect(twiml).toContain(
+      'recordingStatusCallback="https://www.aimatrx.com/api/webhooks/twilio/voice/recording"',
+    );
+    expect(twiml).toContain(
+      'recordingStatusCallbackEvent="in-progress completed absent"',
+    );
+    expect(twiml).toContain('recordingStatusCallbackMethod="POST"');
+    expect(twiml.indexOf("<Start>")).toBeLessThan(twiml.indexOf("Recording starts now"));
+    expect(twiml).toContain("<Hangup/>");
+    expect(twiml).not.toContain("<Connect");
+    expect(twiml).not.toContain("<Stream");
   });
 
   test("accepts only exact affirmative DTMF or narrow speech consent", () => {

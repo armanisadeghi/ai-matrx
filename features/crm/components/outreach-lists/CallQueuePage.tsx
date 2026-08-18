@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { isRecordUnavailableError } from "@/lib/records/recordUnavailable";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -100,6 +101,7 @@ export function CallQueuePage({ listId }: { listId: string }) {
   const [notes, setNotes] = useState("");
   const [stats, setStats] = useState<DialSessionStats>(EMPTY_SESSION_STATS);
   const [error, setError] = useState<string | null>(null);
+  const [listError, setListError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   // Auto-suppressed records carry their id: a name the dialer skipped is a
   // record the rep may need to go fix, so it must be a door (THE DOOR LAW).
@@ -193,27 +195,30 @@ export function CallQueuePage({ listId }: { listId: string }) {
     }
   }, [listId, userId, refreshCounts]);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const c = await fetchOutreachList(listId);
-        if (!cancelled) setOutreachList(c);
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : String(e));
-          setPhase("error");
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+  const loadList = useCallback(async () => {
+    try {
+      const next = await fetchOutreachList(listId);
+      setOutreachList(next);
+      setListError(null);
+      setError(null);
+    } catch (e) {
+      setOutreachList(null);
+      setListError(e);
+      setError(e instanceof Error ? e.message : String(e));
+      setPhase("error");
+    }
   }, [listId]);
 
   useEffect(() => {
-    if (userId) void advance();
-  }, [userId, advance]);
+    const timer = window.setTimeout(() => void loadList(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadList]);
+
+  useEffect(() => {
+    if (!userId || !list) return;
+    const timer = window.setTimeout(() => void advance(), 0);
+    return () => window.clearTimeout(timer);
+  }, [userId, list, advance]);
 
   // Leaving the dialer releases the held claim so colleagues get the member
   // back immediately instead of waiting out the lease.
@@ -430,7 +435,16 @@ export function CallQueuePage({ listId }: { listId: string }) {
 
       {/* ── Body ───────────────────────────────────────────────────────── */}
       <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3 pt-2">
-        {phase === "error" ? (
+        {phase === "error" && !list && listError ? (
+          <AccessGate
+            token="crm_outreach_list"
+            id={listId}
+            error={listError}
+            onRetry={() => void loadList()}
+            fallbackHref="/crm/outreach-lists"
+            fallbackLabel="All outreach lists"
+          />
+        ) : phase === "error" ? (
           <div className="mx-auto mt-8 max-w-lg rounded-md border border-destructive/20 bg-destructive/10 px-4 py-3">
             <div className="text-sm font-medium text-destructive">
               The dialer hit a problem

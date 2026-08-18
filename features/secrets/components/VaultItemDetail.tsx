@@ -71,6 +71,10 @@ import {
 } from "../credential-identity";
 import { SecretValue } from "./SecretValue";
 import {
+  HANDLING_PRESENTATION,
+  VaultHandlingControl,
+} from "./VaultHandlingControl";
+import {
   FIELD_KEY_RE,
   HANDLING_LABELS,
   PROMOTABLE_URL_FIELD_KEYS,
@@ -174,51 +178,40 @@ export function VaultItemDetail({
   const overflowActions = allOverflowActions.filter((entry) => entry.show);
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <dl className="grid min-w-0 flex-1 gap-x-4 gap-y-2 text-xs sm:grid-cols-2">
-          <div>
-            <dt className="font-medium text-muted-foreground">
-              {VAULT_LABELS.credentialType}
-            </dt>
-            <dd className="mt-0.5 whitespace-normal break-words text-foreground">
-              {definition?.payload.label ?? item.definition_key}
-            </dd>
-          </div>
-          <div>
-            <dt className="font-medium text-muted-foreground">Status</dt>
-            <dd className="mt-0.5 capitalize text-foreground">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge
+              variant="outline"
+              className={cn(
+                "h-5 rounded-full px-2 text-[10px] font-medium capitalize",
+                item.status === "active"
+                  ? "border-success/30 text-success"
+                  : "border-warning/30 text-warning",
+              )}
+            >
               {item.status.replaceAll("_", " ")}
-            </dd>
-          </div>
-          {item.organization_id && (
-            <div>
-              <dt className="font-medium text-muted-foreground">
-                {VAULT_LABELS.access}
-              </dt>
-              <dd className="mt-0.5 text-foreground">
+            </Badge>
+            {item.organization_id && (
+              <span className="text-[11px] text-muted-foreground">
                 {item.access_mode === "all_members"
-                  ? "All organization members"
-                  : "Only selected members"}
-              </dd>
-            </div>
-          )}
+                  ? "Available to all organization members"
+                  : "Available to selected members"}
+              </span>
+            )}
+          </div>
           {item.description && !editingCredential && (
-            <div className="sm:col-span-2">
-              <dt className="font-medium text-muted-foreground">
-                {VAULT_LABELS.description}
-              </dt>
-              <dd className="mt-0.5 whitespace-pre-wrap break-words text-foreground">
-                {item.description}
-              </dd>
-            </div>
+            <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-5 text-muted-foreground">
+              {item.description}
+            </p>
           )}
-        </dl>
+        </div>
         {caps.can_edit && (
           <Button
             size="sm"
             variant={editingCredential ? "default" : "outline"}
-            className="h-8 shrink-0"
+            className="h-7 shrink-0 rounded-full px-3"
             onClick={() => {
               setNameDraft(item.display_name);
               setDescriptionDraft(item.description ?? "");
@@ -285,24 +278,27 @@ export function VaultItemDetail({
 
       {/* The credential itself — always first, always the loudest thing here */}
       {item.fields.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
+        <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
           No active fields on this credential.
         </p>
       ) : (
-        <div className="space-y-1.5">
+        <section
+          aria-label="Credential fields"
+          className="overflow-hidden rounded-xl border border-border bg-card"
+        >
           {identityField && renderField(identityField, true)}
           {secretField && renderField(secretField, true)}
           {otherFields.length > 0 && (
-            <div className="space-y-1.5 pt-1.5">
+            <div>
               {primaryIds.size > 0 && (
-                <p className="px-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                <p className="border-y border-border bg-muted/25 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                   Other fields
                 </p>
               )}
               {otherFields.map((field) => renderField(field, false))}
             </div>
           )}
-        </div>
+        </section>
       )}
       {editingCredential && (
         <AddFieldPanel
@@ -888,78 +884,80 @@ function FieldRow({
     Boolean(valueDraft) ||
     envDraft !== (field.env_key ?? "") ||
     descDraft !== (field.description ?? "");
+  const protection = HANDLING_PRESENTATION[field.handling];
+  const ProtectionIcon = protection.icon;
 
   return (
     <div
       className={cn(
-        "rounded-lg border transition-colors",
-        emphasis
-          ? "border-border bg-card px-3 py-2.5"
-          : "border-border/70 bg-card/50 px-3 py-2",
+        "border-b border-border px-4 py-3.5 transition-colors last:border-b-0",
+        emphasis ? "bg-card" : "bg-card/70",
       )}
     >
-      <dl
-        className={cn(
-          "grid min-w-0 gap-x-4 gap-y-2 text-xs sm:grid-cols-[8rem_minmax(0,1fr)]",
-          emphasis && "text-[13px]",
-        )}
-      >
-        <dt className="font-medium text-muted-foreground">
-          {VAULT_LABELS.fieldName}
-        </dt>
-        <dd className="flex min-w-0 flex-wrap items-center gap-1.5 whitespace-normal break-words text-foreground">
-          {displayLabel}
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+          <p
+            className={cn(
+              "min-w-0 whitespace-normal break-words font-medium text-foreground",
+              emphasis ? "text-sm" : "text-xs",
+            )}
+          >
+            {displayLabel}
+          </p>
           {!field.editable && (
-            <Badge variant="outline" className="font-normal">
+            <Badge
+              variant="outline"
+              className="h-5 rounded-full px-1.5 text-[10px] font-normal"
+            >
               Managed
             </Badge>
           )}
           {!field.is_active && (
-            <Badge variant="outline" className="font-normal">
+            <Badge
+              variant="outline"
+              className="h-5 rounded-full px-1.5 text-[10px] font-normal"
+            >
               Inactive
             </Badge>
           )}
-        </dd>
-        {showEnvAlias && (
-          <>
-            <dt className="font-medium text-muted-foreground">
-              {VAULT_LABELS.runtimeKey}
-            </dt>
-            <dd className="min-w-0 whitespace-normal break-all text-foreground">
-              <code className="font-mono">{field.env_key}</code>
-            </dd>
-          </>
-        )}
-        <dt className="font-medium text-muted-foreground">
-          {VAULT_LABELS.value}
-        </dt>
-        <dd className="min-w-0">
-          {/* THE control — identical here, on the list card, and anywhere
-              else a value is shown. Hidden until asked; sealed stays locked. */}
-          <SecretValue
-            item={item}
-            field={field}
-            showCountdown
-            className="min-w-0"
-          />
-        </dd>
-        <dt className="font-medium text-muted-foreground">
-          {VAULT_LABELS.sandboxAccess}
-        </dt>
-        <dd className="text-foreground">
-          {field.inject_into_sandbox ? "Enabled" : "Disabled"}
-        </dd>
-        {field.description && (
-          <>
-            <dt className="font-medium text-muted-foreground">
-              {VAULT_LABELS.description}
-            </dt>
-            <dd className="whitespace-pre-wrap break-words text-foreground">
+        </div>
+        <span
+          className="flex shrink-0 items-center gap-1 rounded-full bg-muted/45 px-2 py-1 text-[10px] font-medium text-muted-foreground"
+          title={protection.description}
+        >
+          <ProtectionIcon className="h-3 w-3" />
+          {protection.label}
+        </span>
+      </div>
+
+      {/* THE control — identical here and anywhere else a value is shown.
+          It begins concealed, reveals only on demand, and clears itself. */}
+      <SecretValue
+        item={item}
+        field={field}
+        showCountdown
+        className="mt-1 min-w-0"
+      />
+
+      {(showEnvAlias || field.inject_into_sandbox || field.description) && (
+        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+          {showEnvAlias && (
+            <code className="max-w-full whitespace-normal break-all rounded bg-muted/45 px-1.5 py-0.5 font-mono">
+              {field.env_key}
+            </code>
+          )}
+          {field.inject_into_sandbox && (
+            <span className="rounded bg-muted/45 px-1.5 py-0.5">
+              Available to sandboxes
+            </span>
+          )}
+          {field.description && (
+            <span className="min-w-0 whitespace-pre-wrap break-words">
               {field.description}
-            </dd>
-          </>
-        )}
-      </dl>
+            </span>
+          )}
+        </div>
+      )}
 
       {editMode && caps.can_edit && (
         <div className="mt-3 space-y-3 rounded-md border border-border bg-muted/40 p-3">
@@ -1079,50 +1077,28 @@ function FieldRow({
               />
             </label>
           </div>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {field.handling === "sealed" ? (
-              <span className="flex items-center gap-1 whitespace-normal text-xs text-muted-foreground">
-                <Lock className="h-3 w-3" />
-                {HANDLING_LABELS.sealed}
+          <div className="space-y-1.5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <Label className="text-xs">Protection</Label>
+              <span className="text-[11px] text-muted-foreground">
+                Every value is encrypted at rest.
               </span>
-            ) : (
-              <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                <Label className="text-xs text-muted-foreground">
-                  {VAULT_LABELS.valueAccess}
-                </Label>
-                <Select
-                  value={field.handling}
-                  onValueChange={(next) => {
-                    if (next === field.handling) return;
-                    if (next === "sealed") {
-                      setConfirmSeal(true);
-                      return;
-                    }
-                    void actions.updateFieldMeta(item.id, field.id, {
-                      handling: next as "visible" | "revealable",
-                    });
-                  }}
-                >
-                  <SelectTrigger
-                    className="h-auto min-h-8 min-w-56 flex-1 whitespace-normal text-left text-xs"
-                    aria-label={VAULT_LABELS.valueAccess}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="visible">
-                      {HANDLING_LABELS.visible}
-                    </SelectItem>
-                    <SelectItem value="revealable">
-                      {HANDLING_LABELS.revealable}
-                    </SelectItem>
-                    <SelectItem value="sealed">
-                      {HANDLING_LABELS.sealed}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            </div>
+            <VaultHandlingControl
+              value={field.handling}
+              disabled={busy}
+              sealedLocked
+              onValueChange={(next) => {
+                if (next === field.handling) return;
+                if (next === "sealed") {
+                  setConfirmSeal(true);
+                  return;
+                }
+                void actions.updateFieldMeta(item.id, field.id, {
+                  handling: next,
+                });
+              }}
+            />
           </div>
           <div className="flex justify-end border-t border-border pt-3">
             <Button

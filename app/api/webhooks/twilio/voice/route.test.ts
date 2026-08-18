@@ -13,6 +13,7 @@ import {
   registerVoiceCallInteraction,
   resolveVoiceOwnerCallContext,
 } from "@/lib/communications/voice/persistence";
+import { getVoiceProviderConfigurationReadiness } from "@/lib/communications/voice/provider-configuration-readiness";
 import { getVoiceStorageCanaryReadiness } from "@/lib/communications/voice/storage-canary-readiness";
 import { OWNER_BETA_VOICE_DISCLOSURE_VERSION } from "@/lib/communications/providers/twilio/voice-twiml";
 
@@ -32,6 +33,12 @@ jest.mock("@/lib/communications/voice/persistence", () => ({
 jest.mock("@/lib/communications/voice/storage-canary-readiness", () => ({
   getVoiceStorageCanaryReadiness: jest.fn(),
 }));
+jest.mock(
+  "@/lib/communications/voice/provider-configuration-readiness",
+  () => ({
+    getVoiceProviderConfigurationReadiness: jest.fn(),
+  }),
+);
 
 const WEBHOOK_URL = "https://www.aimatrx.com/api/webhooks/twilio/voice";
 const AUTH_TOKEN = "voice-route-test-auth-token";
@@ -96,6 +103,16 @@ describe("POST /api/webhooks/twilio/voice", () => {
       completedAt: null,
       validUntil: null,
     });
+    jest.mocked(getVoiceProviderConfigurationReadiness).mockResolvedValue({
+      ready: false,
+      status: "missing",
+      evidenceId: null,
+      verifiedAt: null,
+      emailVerificationCurrent: false,
+      externalStorageConfigured: false,
+      emailVerificationValidUntil: null,
+      configurationValidUntil: null,
+    });
     jest.mocked(resolveVoiceOwnerCallContext).mockResolvedValue({
       party_id: "party-1",
       contact_point_id: "contact-point-1",
@@ -141,7 +158,9 @@ describe("POST /api/webhooks/twilio/voice", () => {
     );
     expect(response.headers.get("cache-control")).toBe("no-store");
     expect(body).toContain("A.I. Matrix");
-    expect(body).toContain("not being recorded right now");
+    expect(body).toContain("not being recorded yet");
+    expect(body).toContain("Twilio will record the call");
+    expect(body).toContain("retained for up to 30 days");
     expect(body).toContain("press 1 or say, I agree");
     expect(body).toContain("<Gather");
     expect(body).not.toContain("<Record");
@@ -332,7 +351,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
     expect(body).not.toContain("<Record");
   });
 
-  test("accepts an affirmative response into structured evidence without recording", async () => {
+  test("accepts consent but remains non-recording when launch readiness is incomplete", async () => {
     const disclosedAt = new Date().toISOString();
     const consentUrl = new URL(WEBHOOK_URL);
     consentUrl.searchParams.set("stage", "owner-beta-consent");
@@ -360,14 +379,14 @@ describe("POST /api/webhooks/twilio/voice", () => {
 
     expect(response.status).toBe(200);
     expect(body).toContain("consent was received");
-    expect(body).toContain("not recording this call");
+    expect(body).toContain("recording is not available right now");
     expect(body).not.toContain("<Record");
     expect(claimVoiceCallConsentEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         providerAccountId: "AC123",
         providerCallId: "CA123",
         providerEventKey:
-          "twilio:voice-consent:AC123:CA123:owner-beta-2026-08-15-v1",
+          "twilio:voice-consent:AC123:CA123:owner-beta-2026-08-17-v2",
         consented: true,
       }),
     );
@@ -381,6 +400,79 @@ describe("POST /api/webhooks/twilio/voice", () => {
         responseValue: "1",
         consented: true,
         recordingStarted: false,
+        recordingBlockedGateKeys: expect.arrayContaining([
+          "provider_email_verification_current",
+          "dedicated_storage_identity_ready",
+          "external_storage_configured",
+        ]),
+      }),
+    );
+  });
+
+  test("starts exact dual-channel capture only after durable consent and every launch gate", async () => {
+    jest.mocked(getVoiceStorageCanaryReadiness).mockResolvedValue({
+      ready: true,
+      status: "ready",
+      evidenceId: 1234,
+      completedAt: "2026-08-17T23:00:00.000Z",
+      validUntil: "2026-08-18T23:00:00.000Z",
+    });
+    jest.mocked(getVoiceProviderConfigurationReadiness).mockResolvedValue({
+      ready: true,
+      status: "ready",
+      evidenceId: 5678,
+      verifiedAt: "2026-08-17T23:00:00.000Z",
+      emailVerificationCurrent: true,
+      externalStorageConfigured: true,
+      emailVerificationValidUntil: "2026-08-18T22:50:00.000Z",
+      configurationValidUntil: "2026-09-16T23:00:00.000Z",
+    });
+    const disclosedAt = new Date().toISOString();
+    const consentUrl = new URL(WEBHOOK_URL);
+    consentUrl.searchParams.set("stage", "owner-beta-consent");
+    consentUrl.searchParams.set("call", "CA123");
+    consentUrl.searchParams.set("disclosed_at", disclosedAt);
+    consentUrl.searchParams.set(
+      "disclosure_version",
+      OWNER_BETA_VOICE_DISCLOSURE_VERSION,
+    );
+
+    const response = await POST(
+      signedRequest(
+        {
+          AccountSid: "AC123",
+          CallSid: "CA123",
+          From: "+14155550100",
+          To: "+14158059951",
+          Direction: "inbound",
+          Digits: "1",
+        },
+        undefined,
+        consentUrl.toString(),
+      ),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("<Start><Recording");
+    expect(body).toContain('channels="dual"');
+    expect(body).toContain('track="both"');
+    expect(body).toContain(
+      'recordingStatusCallback="https://www.aimatrx.com/api/webhooks/twilio/voice/recording"',
+    );
+    expect(body).toContain("Recording starts now");
+    expect(claimVoiceCallConsentEvent).toHaveBeenCalledTimes(1);
+    expect(
+      jest.mocked(claimVoiceCallConsentEvent).mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      jest.mocked(getVoiceStorageCanaryReadiness).mock.invocationCallOrder[0],
+    );
+    expect(console.info).toHaveBeenCalledWith(
+      "Twilio Voice owner beta consent accepted",
+      expect.objectContaining({
+        providerCallId: "CA123",
+        recordingStarted: true,
+        recordingBlockedGateKeys: [],
       }),
     );
   });
@@ -434,6 +526,16 @@ describe("POST /api/webhooks/twilio/voice", () => {
       evidenceId: null,
       completedAt: null,
       validUntil: null,
+    });
+    expect(body.recording.providerConfiguration).toEqual({
+      ready: false,
+      status: "missing",
+      evidenceId: null,
+      verifiedAt: null,
+      emailVerificationCurrent: false,
+      externalStorageConfigured: false,
+      emailVerificationValidUntil: null,
+      configurationValidUntil: null,
     });
     expect(body.recording.readiness.gates).toEqual(
       expect.arrayContaining([
@@ -492,6 +594,45 @@ describe("POST /api/webhooks/twilio/voice", () => {
         expect.objectContaining({
           key: "retention_access_deletion_ready",
           passed: true,
+        }),
+      ]),
+    );
+  });
+
+  test("derives the two provider gates from one fresh exact operator receipt", async () => {
+    jest.mocked(getVoiceProviderConfigurationReadiness).mockResolvedValueOnce({
+      ready: true,
+      status: "ready",
+      evidenceId: 5678,
+      verifiedAt: "2026-08-17T23:00:00.000Z",
+      emailVerificationCurrent: true,
+      externalStorageConfigured: true,
+      emailVerificationValidUntil: "2026-08-18T22:50:00.000Z",
+      configurationValidUntil: "2026-09-16T23:00:00.000Z",
+    });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(body.recording.enabled).toBe(false);
+    expect(body.recording.readiness).toMatchObject({
+      ready: false,
+      passedGateCount: 4,
+      totalGateCount: 9,
+    });
+    expect(body.recording.readiness.gates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: "provider_email_verification_current",
+          passed: true,
+        }),
+        expect.objectContaining({
+          key: "external_storage_configured",
+          passed: true,
+        }),
+        expect.objectContaining({
+          key: "disclosure_and_consent_verified",
+          passed: false,
         }),
       ]),
     );

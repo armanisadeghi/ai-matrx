@@ -2,6 +2,7 @@
 // in (core) so it is publicly crawlable AND inherits the app shell + sign-up
 // CTA + authed continuity (see FEATURE.md "Why (core), not (public)").
 import { createRouteMetadata } from "@/utils/route-metadata";
+import { EducationHeader } from "@/features/education/components/EducationHeader";
 
 export const metadata = createRouteMetadata("/education", {
   title: "Education",
@@ -16,5 +17,10 @@ export default function EducationLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      <EducationHeader />
+      {children}
+    </>
+  );
 }

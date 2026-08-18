@@ -44,6 +44,7 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { CRM_OUTREACH_LISTS_SURFACE_NAME } from "@/features/surfaces/manifests/crm-outreach-lists.manifest";
+import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { UnresolvedEntityRef } from "@/features/access-gate/components/UnresolvedEntityRef";
 import { useAccessStates } from "@/features/access-gate/hooks/useAccessStates";
 import { formatRelativeTime } from "@/utils/datetime";
@@ -106,6 +107,8 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [headerError, setHeaderError] = useState<unknown>(null);
+  const [headerLoading, setHeaderLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [singleSendMember, setSingleSendMember] =
     useState<OutreachListMemberWithParty | null>(null);
@@ -118,6 +121,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
   const enrollmentSource = list ? readEnrollmentSource(list) : null;
 
   const loadHeader = useCallback(async () => {
+    setHeaderLoading(true);
     try {
       const [c, sc] = await Promise.all([
         fetchOutreachList(listId),
@@ -125,8 +129,11 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       ]);
       setOutreachList(c);
       setCounts(sc);
+      setHeaderError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setHeaderError(e);
+    } finally {
+      setHeaderLoading(false);
     }
   }, [listId]);
 
@@ -615,6 +622,21 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       ))}
     </div>
   ) : null;
+
+  if (!headerLoading && !list && headerError) {
+    return (
+      <div className="h-full overflow-y-auto bg-textured px-3 pb-6 pt-[calc(var(--shell-header-h)+0.5rem)]">
+        <AccessGate
+          token="crm_outreach_list"
+          id={listId}
+          error={headerError}
+          onRetry={() => void loadHeader()}
+          fallbackHref="/crm/outreach-lists"
+          fallbackLabel="All outreach lists"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden">

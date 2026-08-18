@@ -1,4 +1,4 @@
-/** Signed Twilio Voice webhook for the disclosed, non-recording owner beta. */
+/** Signed Twilio Voice webhook for the disclosed owner beta. */
 
 import { NextResponse } from "next/server";
 
@@ -31,8 +31,15 @@ import {
   registerVoiceCallInteraction,
   resolveVoiceOwnerCallContext,
 } from "@/lib/communications/voice/persistence";
-import { evaluateVoiceRecordingReadiness } from "@/lib/communications/voice/recording-readiness";
+import {
+  evaluateVoiceRecordingReadiness,
+  type VoiceRecordingReadiness,
+} from "@/lib/communications/voice/recording-readiness";
 import { evaluateConversationRelayReadiness } from "@/lib/communications/voice/conversation-relay-readiness";
+import {
+  getVoiceProviderConfigurationReadiness,
+  type VoiceProviderConfigurationReadiness,
+} from "@/lib/communications/voice/provider-configuration-readiness";
 import {
   getVoiceStorageCanaryReadiness,
   type VoiceStorageCanaryReadiness,
@@ -43,6 +50,8 @@ export const runtime = "nodejs";
 const WEBHOOK_PATH = "/api/webhooks/twilio/voice";
 const CONSENT_STAGE = "owner-beta-consent";
 const CONSENT_WINDOW_MS = 5 * 60 * 1000;
+const RECORDING_STATUS_CALLBACK_URL =
+  "https://www.aimatrx.com/api/webhooks/twilio/voice/recording";
 
 function twimlResponse(body: string): NextResponse {
   return new NextResponse(body, {
@@ -251,11 +260,48 @@ export async function POST(request: Request): Promise<NextResponse> {
     return twimlResponse(buildOwnerBetaNoConsentTwiml());
   }
 
+  let recordingReadiness: VoiceRecordingReadiness | null = null;
+  try {
+    const [providerConfiguration, storageCanary, persistence] =
+      await Promise.all([
+        getVoiceProviderConfigurationReadiness(),
+        getVoiceStorageCanaryReadiness(),
+        getVoiceRecordingPersistenceReadiness(),
+      ]);
+    recordingReadiness = evaluateVoiceRecordingReadiness({
+      owner_only_program_bound: true,
+      disclosure_and_consent_verified: true,
+      provider_email_verification_current:
+        providerConfiguration.emailVerificationCurrent,
+      dedicated_storage_identity_ready: storageCanary.ready,
+      external_storage_configured:
+        providerConfiguration.externalStorageConfigured,
+      external_storage_canary_passed: storageCanary.ready,
+      lifecycle_persistence_ready: persistence.ready,
+      canonical_file_ingest_ready: storageCanary.ready,
+      retention_access_deletion_ready: storageCanary.ready,
+    });
+  } catch {
+    recordingReadiness = null;
+  }
+
+  const recordingStarted = recordingReadiness?.ready === true;
+
   console.info("Twilio Voice owner beta consent accepted", {
     ...consentEvidence,
-    recordingStarted: false,
+    recordingStarted,
+    recordingBlockedGateKeys:
+      recordingReadiness?.gates
+        .filter((gate) => !gate.passed)
+        .map((gate) => gate.key) ?? ["readiness_unavailable"],
   });
-  return twimlResponse(buildOwnerBetaConsentAcceptedTwiml());
+  return twimlResponse(
+    buildOwnerBetaConsentAcceptedTwiml({
+      recording: recordingStarted
+        ? { recordingStatusCallbackUrl: RECORDING_STATUS_CALLBACK_URL }
+        : null,
+    }),
+  );
 }
 
 export async function GET(): Promise<NextResponse> {
@@ -297,6 +343,30 @@ export async function GET(): Promise<NextResponse> {
   } catch {
     consentPersistenceReady = false;
   }
+  let providerConfiguration: VoiceProviderConfigurationReadiness = {
+    ready: false,
+    status: "missing",
+    evidenceId: null,
+    verifiedAt: null,
+    emailVerificationCurrent: false,
+    externalStorageConfigured: false,
+    emailVerificationValidUntil: null,
+    configurationValidUntil: null,
+  };
+  try {
+    providerConfiguration = await getVoiceProviderConfigurationReadiness();
+  } catch {
+    providerConfiguration = {
+      ready: false,
+      status: "missing",
+      evidenceId: null,
+      verifiedAt: null,
+      emailVerificationCurrent: false,
+      externalStorageConfigured: false,
+      emailVerificationValidUntil: null,
+      configurationValidUntil: null,
+    };
+  }
   let storageCanary: VoiceStorageCanaryReadiness = {
     ready: false,
     status: "missing",
@@ -318,9 +388,11 @@ export async function GET(): Promise<NextResponse> {
   const recordingReadiness = evaluateVoiceRecordingReadiness({
     owner_only_program_bound: ownerBeta.ready,
     disclosure_and_consent_verified: false,
-    provider_email_verification_current: false,
+    provider_email_verification_current:
+      providerConfiguration.emailVerificationCurrent,
     dedicated_storage_identity_ready: storageCanary.ready,
-    external_storage_configured: false,
+    external_storage_configured:
+      providerConfiguration.externalStorageConfigured,
     external_storage_canary_passed: storageCanary.ready,
     lifecycle_persistence_ready: lifecyclePersistenceReady,
     canonical_file_ingest_ready: storageCanary.ready,
@@ -370,8 +442,8 @@ export async function GET(): Promise<NextResponse> {
       enabled: false,
       mode: "blocked_until_all_gates_pass",
       durableSystemOfRecord: "AI Matrx canonical file storage",
-      plannedStatusCallback:
-        "https://www.aimatrx.com/api/webhooks/twilio/voice/recording",
+      plannedStatusCallback: RECORDING_STATUS_CALLBACK_URL,
+      providerConfiguration,
       storageCanary,
       readiness: recordingReadiness,
     },

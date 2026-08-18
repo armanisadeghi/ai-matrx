@@ -1,6 +1,6 @@
 # FEATURE.md — `crm`
 
-**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live` · **Tier:** `1` · **Last updated:** `2026-08-15`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live` · **Tier:** `1` · **Last updated:** `2026-08-17`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/FEATURE.md` — read it before touching this feature in ANY repo.
 
@@ -406,6 +406,12 @@ for once:
   (5000) rather than truncating.
 - **Outreach-list scope is blended mine + my orgs** (declared, THE VIEW LAW) — a
   sales-floor work console, not a browse surface.
+- **The outreach-list row is an access state, never PostgREST prose.**
+  `fetchOutreachList` uses `maybeSingle` and raises the canonical
+  `recordUnavailable(token="crm_outreach_list")` for zero rows. The workspace
+  and dialer render `<AccessGate>` so denied / deleted / missing / signed-out /
+  transient each get the true explanation and a way forward. The dialer does
+  not claim a member until this parent row is readable.
 - **The one-email door is data-gated to Lane B.** The member action renders only
   when the persisted `outreach_list.lane` is `cold_outreach`; there is no lane
   boolean in the request. The workspace attaches a real org sending identity to
@@ -667,6 +673,13 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 
 ## Change log
 
+- 2026-08-17 — **Missing or unreadable outreach lists stopped entering the
+  repair queue as PGRST116.** The shared reader now uses `maybeSingle` plus the
+  canonical `recordUnavailable` contract; the workspace and dialer render the
+  existing `AccessGate`, and the dialer waits for the parent list before
+  claiming work. A stale, deleted, denied, or signed-out list route therefore
+  resolves to its true state instead of printing "Cannot coerce the result to a
+  single JSON object" or touching child rows.
 - 2026-08-16 — **The candidate queue and journalist intelligence landed on the
   party record (WP3, round 2).** `ContactCandidatesCard` is the human half of
   enrichment — the ONE persisted candidate list with one-click confirm through

@@ -25,7 +25,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ArrowRight,
-  Sparkles,
+  PackageOpen,
   ShieldCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -150,7 +150,7 @@ export function StartHero() {
     <div className="mx-auto w-full max-w-3xl space-y-6 p-4 sm:p-6">
       <header className="space-y-2 text-center">
         <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <PackageOpen className="h-3.5 w-3.5 text-primary" />
           One upload → a full study kit
         </div>
         <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
@@ -196,7 +196,7 @@ export function StartHero() {
               value={focus}
               onChange={(e) => setFocus(e.target.value)}
               placeholder="e.g. focus on the causes, or I have an exam on chapter 3"
-              className="text-sm"
+              className="text-base"
             />
           </div>
 
@@ -246,7 +246,10 @@ export function StartHero() {
 
 // ─── Input panel ─────────────────────────────────────────────────────────────
 
-function InputPanel(props: {
+function InputPanel({
+  fileInputRef,
+  ...props
+}: {
   mode: InputMode;
   onMode: (m: InputMode) => void;
   file: File | null;
@@ -272,7 +275,7 @@ function InputPanel(props: {
             key={m.id}
             onClick={() => props.onMode(m.id)}
             className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               props.mode === m.id
                 ? "bg-accent text-accent-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -297,7 +300,7 @@ function InputPanel(props: {
               const f = e.dataTransfer.files?.[0];
               if (f) props.onFile(f);
             }}
-            onClick={() => props.fileInputRef.current?.click()}
+            onClick={() => fileInputRef.current?.click()}
             className={cn(
               "flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-10 text-center transition-colors",
               props.dragOver
@@ -306,7 +309,7 @@ function InputPanel(props: {
             )}
           >
             <input
-              ref={props.fileInputRef}
+              ref={fileInputRef}
               type="file"
               accept={INGEST_ACCEPT}
               className="hidden"
@@ -342,7 +345,7 @@ function InputPanel(props: {
             value={props.pasteText}
             onChange={(e) => props.onPaste(e.target.value)}
             placeholder="Paste your notes, an article, a transcript — anything you want to study."
-            className="min-h-[180px] resize-y text-sm"
+            className="min-h-[180px] resize-y text-base"
           />
         )}
 
@@ -352,7 +355,7 @@ function InputPanel(props: {
               value={props.url}
               onChange={(e) => props.onUrl(e.target.value)}
               placeholder="https://… or a YouTube link"
-              className="text-sm"
+              className="text-base"
             />
             <p className="text-xs text-muted-foreground">
               {describeUrlSupport(props.url).note}
@@ -413,7 +416,7 @@ function KitPicker(props: {
               disabled={!available}
               onClick={() => props.onToggle(kind)}
               className={cn(
-                "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
+                "flex min-h-11 items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-sm transition-colors",
                 !available && "cursor-not-allowed opacity-50",
                 available && on
                   ? "border-primary bg-primary/5 text-foreground"
