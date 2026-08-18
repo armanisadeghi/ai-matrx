@@ -68,7 +68,10 @@ BEGIN
      ORDER BY count(*) DESC, lm.cohort_key
      LIMIT 1;
 
-    v_cohort := coalesce(v_cohort, v_band || '-' || encode(gen_random_bytes(4), 'hex'));
+    v_cohort := coalesce(
+      v_cohort,
+      v_band || '-' || substr(md5(v_user::text || clock_timestamp()::text), 1, 8)
+    );
   END IF;
 
   SELECT *
@@ -395,15 +398,117 @@ AS $function$
    LIMIT 30;
 $function$;
 
+CREATE OR REPLACE FUNCTION public.education_engagement_snapshot(p_session_id uuid DEFAULT NULL)
+RETURNS TABLE(
+  session_points integer,
+  current_streak integer,
+  longest_streak integer,
+  badges_earned integer,
+  next_badge_key text,
+  next_badge_progress integer,
+  next_badge_target integer,
+  league_rank integer,
+  league_size integer,
+  league_mastery_gain numeric,
+  league_opted_in boolean
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, education, pg_temp
+AS $function$
+DECLARE
+  v_user uuid := auth.uid();
+  v_week date := date_trunc('week', now() AT TIME ZONE 'utc')::date;
+  v_mastered integer;
+BEGIN
+  IF v_user IS NULL THEN
+    RAISE EXCEPTION 'education_engagement_snapshot requires authentication' USING ERRCODE = '42501';
+  END IF;
+  IF p_session_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM education.study_session s
+     WHERE s.id = p_session_id AND s.created_by = v_user AND s.deleted_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'Study session is missing or foreign' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT count(*)::integer INTO v_mastered
+    FROM education.item_mastery m
+   WHERE m.created_by = v_user AND m.deleted_at IS NULL AND m.retrievability >= 0.9;
+
+  RETURN QUERY
+  WITH mine AS (
+    SELECT lm.*
+      FROM education.league_membership lm
+     WHERE lm.created_by = v_user AND lm.week_start = v_week AND lm.deleted_at IS NULL
+     LIMIT 1
+  ), ranked AS (
+    SELECT lm.created_by,
+           row_number() OVER (ORDER BY lm.mastery_gain DESC, lm.games_played DESC, lm.created_at)::integer AS rank,
+           count(*) OVER ()::integer AS size
+      FROM education.league_membership lm
+      JOIN mine ON mine.cohort_key = lm.cohort_key
+     WHERE lm.week_start = v_week AND lm.opted_in = true AND lm.deleted_at IS NULL
+  ), signals AS (
+    SELECT coalesce(st.current_streak, 0)::integer AS streak_now,
+           coalesce(st.longest_streak, 0)::integer AS streak_best,
+           (SELECT count(*)::integer FROM education.game_badge b
+             WHERE b.created_by = v_user AND b.deleted_at IS NULL) AS badge_count
+      FROM (SELECT 1) seed
+      LEFT JOIN education.study_streak st ON st.user_id = v_user
+  )
+  SELECT
+    coalesce((
+      SELECT sum(CASE a.result WHEN 'correct' THEN 100 WHEN 'partial' THEN 50 ELSE 20 END)::integer
+        FROM education.study_attempt a
+       WHERE a.session_id = p_session_id AND a.created_by = v_user
+         AND a.deleted_at IS NULL AND a.is_manually_edited = false
+         AND a.result IN ('incorrect', 'partial', 'correct')
+    ), 0) AS session_points,
+    signals.streak_now,
+    signals.streak_best,
+    signals.badge_count,
+    CASE
+      WHEN signals.streak_now < 7 THEN 'streak_7'
+      WHEN v_mastered < 10 THEN 'mastery_10'
+      WHEN signals.streak_now < 30 THEN 'streak_30'
+      WHEN v_mastered < 50 THEN 'mastery_50'
+      ELSE NULL
+    END AS next_badge_key,
+    CASE
+      WHEN signals.streak_now < 7 THEN signals.streak_now
+      WHEN v_mastered < 10 THEN v_mastered
+      WHEN signals.streak_now < 30 THEN signals.streak_now
+      WHEN v_mastered < 50 THEN v_mastered
+      ELSE NULL
+    END AS next_badge_progress,
+    CASE
+      WHEN signals.streak_now < 7 THEN 7
+      WHEN v_mastered < 10 THEN 10
+      WHEN signals.streak_now < 30 THEN 30
+      WHEN v_mastered < 50 THEN 50
+      ELSE NULL
+    END AS next_badge_target,
+    ranked.rank,
+    ranked.size,
+    coalesce(mine.mastery_gain, 0),
+    coalesce(mine.opted_in, false)
+  FROM signals
+  LEFT JOIN mine ON true
+  LEFT JOIN ranked ON ranked.created_by = v_user;
+END;
+$function$;
+
 REVOKE INSERT, UPDATE, DELETE ON education.game_result FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON education.game_badge FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON education.league_membership FROM authenticated;
 
 REVOKE ALL ON FUNCTION public.game_finalize_result(uuid, text) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.league_set_opt_in(boolean, text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.education_engagement_snapshot(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.game_finalize_result(uuid, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.league_set_opt_in(boolean, text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.league_leaderboard(date) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.education_engagement_snapshot(uuid) TO authenticated;
 
 COMMENT ON FUNCTION public.game_finalize_result(uuid, text) IS
   'IC-14 authority: derives a durable game result, league gain, and badges only from the owned unedited study-attempt ledger.';

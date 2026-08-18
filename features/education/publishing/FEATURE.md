@@ -24,15 +24,15 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 
 ## Entry points
 
-| File | Role |
-|---|---|
-| `queries.ts` | Public server reads (anon cookie-free client, `unstable_cache` tagged `education-learn-docs`, ISR). `listPublishedLearnDocs` / `getPublishedLearnDoc` (**derived from the list — a per-slug `unstable_cache` collapses on static keyParts**) / `getPublishedLearnDocTitles` / `getExamLearnDocs(examSlug)` (docs keyworded with an exam slug — powers the exam-prep hub's curated study-guide block, derived from the cached list). |
-| `actions.ts` | `"use server"` admin mutations → RPC → `updateTag('education-learn-docs')` (read-your-own-writes) → public surfaces update without a deploy. |
-| `sitemap.ts` | Every axis index/entry + published learn doc + live tool → `app/sitemap.xml/route.ts`. |
-| `ogImage.tsx` | Shared branded OG renderer; thin `opengraph-image.tsx` routes for axis families; learn docs use `/education/learn/og/[...slug]` route handler (catch-all can't host file-based OG). |
-| `components/LearnDocAdmin.tsx` | The authoring UI (list + visual `EduSection` block editor + optional Advanced JSON + live `SectionRenderer` preview). |
-| `components/SectionBlockEditor.tsx` | The reusable non-technical editor for all seven `EduSection` kinds: add, edit, reorder and remove blocks/items without touching JSON. |
-| `app/(core)/education/learn/admin/page.tsx` | Self-gating super-admin route (explicit segment beats the `[...slug]` catch-all). |
+| File                                        | Role                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `queries.ts`                                | Public server reads (anon cookie-free client, `unstable_cache` tagged `education-learn-docs`, ISR). `listPublishedLearnDocs` / `getPublishedLearnDoc` (**derived from the list — a per-slug `unstable_cache` collapses on static keyParts**) / `getPublishedLearnDocTitles` / `getExamLearnDocs(examSlug)` (docs keyworded with an exam slug — powers the exam-prep hub's curated study-guide block, derived from the cached list). |
+| `actions.ts`                                | `"use server"` admin mutations → RPC → `updateTag('education-learn-docs')` (read-your-own-writes) → public surfaces update without a deploy.                                                                                                                                                                                                                                                                                        |
+| `sitemap.ts`                                | Every axis index/entry + published learn doc + live tool → `app/sitemap.xml/route.ts`.                                                                                                                                                                                                                                                                                                                                              |
+| `ogImage.tsx`                               | Shared branded OG renderer; thin `opengraph-image.tsx` routes for axis families; learn docs use `/education/learn/og/[...slug]` route handler (catch-all can't host file-based OG).                                                                                                                                                                                                                                                 |
+| `components/LearnDocAdmin.tsx`              | The authoring UI (list + visual `EduSection` block editor + optional Advanced JSON + live `SectionRenderer` preview).                                                                                                                                                                                                                                                                                                               |
+| `components/SectionBlockEditor.tsx`         | The reusable non-technical editor for all seven `EduSection` kinds: add, edit, reorder and remove blocks/items without touching JSON.                                                                                                                                                                                                                                                                                               |
+| `app/(core)/education/learn/admin/page.tsx` | Self-gating super-admin route (explicit segment beats the `[...slug]` catch-all).                                                                                                                                                                                                                                                                                                                                                   |
 
 ## SEO surfaces (Phase A deliverables)
 
@@ -58,6 +58,7 @@ All authoring flows through `public.` SECURITY DEFINER RPCs gated by `is_super_a
 - Phase B (exam hub, consumes P1) and Phase C (community library, consumes P7) — see `docs/proposals/education-projects/P6-content-publishing.md`.
 
 ## Change log
+
 - **2026-08-17** — Replaced JSON-first authoring with the reusable visual `SectionBlockEditor`
   across all seven `EduSection` kinds; Advanced JSON remains optional. Added one strict save gate
   shared with agent writes, so the known `{question, answer}` FAQ shape is refused before save.

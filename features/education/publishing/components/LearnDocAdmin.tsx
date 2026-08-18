@@ -5,10 +5,10 @@
 // the public cache, so "publish without a deploy" is the whole point: publish
 // here, refresh /education/learn, the article is live.
 //
-// Sections are edited as raw JSON (the canonical EduSection[] vocabulary) with
-// live validation + a real SectionRenderer preview — the same renderer the
-// public page uses, so the preview is exact. Raw JSON is also the natural
-// hand-off shape for agent-assisted drafting.
+// Sections use a visual block editor over the canonical EduSection[]
+// vocabulary, with optional Advanced JSON for experts. One strict save gate +
+// the real SectionRenderer preview keep the authored shape identical to the
+// public render shape. Agent drafts stage into the same state.
 //
 // This component is also the EMITTER for `matrx-user/education-learn-authoring`
 // and the home of its four write targets. The provider lives here, on the
@@ -382,9 +382,24 @@ export function LearnDocAdmin({ initialDocs }: Props) {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium truncate">
-                          {doc.title}
-                        </span>
+                        {doc.status === "published" ? (
+                          <a
+                            href={eduHref("learn", doc.slug)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="font-medium truncate hover:text-primary hover:underline"
+                          >
+                            {doc.title}
+                          </a>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setState({ mode: "edit", doc })}
+                            className="font-medium truncate text-left hover:text-primary hover:underline"
+                          >
+                            {doc.title}
+                          </button>
+                        )}
                         <Badge
                           variant={
                             doc.status === "published" ? "default" : "secondary"
