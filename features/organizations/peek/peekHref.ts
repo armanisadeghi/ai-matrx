@@ -4,7 +4,8 @@
  * Every peek used to hand-write its own route string. Six of the nineteen were
  * wrong and shipped a 404 as the peek's primary action (`/quizzes/{id}`,
  * `/flashcards/{id}`, `/skills/{id}`, `/transcripts/{id}`, `/workflows/{id}`,
- * `/canvas/{id}` — none of those routes exist), and two more passed no href at
+ * `/canvas/{id}` — none of those routes existed at the time; `/workflows/{id}`
+ * has since shipped and is registered), and two more passed no href at
  * all for kinds that DO have a route. That is nineteen private copies of a fact
  * the registry already owns, drifting independently — the exact defect THE
  * INVENTORY LAW names.

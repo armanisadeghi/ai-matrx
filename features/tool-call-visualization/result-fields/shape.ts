@@ -63,12 +63,27 @@ export type ResultShape =
 
 // ─── Primitive guards ───────────────────────────────────────────────────────
 
-/** A plain object: not null, not an array, not a Date/Map/Set/etc. */
+/**
+ * A plain object: not null, not an array, not a Date/Map/Set/class instance.
+ *
+ * CROSS-REALM SAFE, and that is load-bearing. This used to compare against
+ * `Object.prototype` by identity, which is false for any object built in a
+ * different realm — and `structuredClone` produces exactly that (the envelope
+ * round-trip `reconstructRegionValue` runs on every value the structured floor
+ * renders). A same-realm-only check therefore sent perfectly ordinary objects
+ * down the `json` branch, i.e. back to a JSON tree — the very dump this
+ * library exists to replace. Found 2026-08-18 wiring the floor.
+ *
+ * The shape test instead of the identity test: `[object Object]` excludes
+ * Date/Map/Set/RegExp/Error, and a prototype whose OWN prototype is null is
+ * "some realm's Object.prototype" — which a class instance never has.
+ */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
     if (value === null || typeof value !== "object") return false;
     if (Array.isArray(value)) return false;
-    const proto = Object.getPrototypeOf(value) as unknown;
-    return proto === Object.prototype || proto === null;
+    if (Object.prototype.toString.call(value) !== "[object Object]") return false;
+    const proto = Object.getPrototypeOf(value) as object | null;
+    return proto === null || Object.getPrototypeOf(proto) === null;
 }
 
 function isScalar(value: unknown): value is string | number | boolean {

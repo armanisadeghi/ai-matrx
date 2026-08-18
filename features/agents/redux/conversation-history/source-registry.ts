@@ -48,6 +48,7 @@ import {
   Tag,
   Video,
   Webhook,
+  Workflow,
 } from "lucide-react";
 
 /**
@@ -165,6 +166,15 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   // Product features (canonical allow-list lives in source-attribution.ts)
   chat: { label: "Chat", icon: MessageSquare },
   "voice-agent": { label: "Voice Agent", icon: Mic },
+
+  // Workflows. `workflow_run` is the engine's own stamp on every node/run
+  // conversation (128 rows the filter tree could not name before this entry —
+  // an unregistered feature renders ungrouped and cannot be selected at all in
+  // Settings -> Conversation Filters, whose options come from FEATURE_META).
+  // NOT `system: true`: those rows already read as automated from their source
+  // APP ("workflow" / "workflow-studio"), while the same key on a human action
+  // launched from /workflows/all is a real person's conversation.
+  workflow_run: { label: "Workflows", icon: Workflow },
 
   // Agents (high-traffic kept; sparse chrome → agents-other)
   "agent-runner": { label: "Agent Runner", icon: Play },

@@ -19,7 +19,8 @@
  * THE DOOR LAW: the card's destination comes from the ENTITY REGISTRY, keyed by
  * `resourceType` (which is the canonical token for every consumer). Each page
  * used to carry its own `getHref` one-liner; those drifted — the workflows tile
- * linked every row to `/workflows/<id>`, a route that does not exist. Cards are
+ * linked every row to `/workflows/<id>`, which did not exist then (it does now,
+ * and the registry is what says so). Cards are
  * real anchors (cmd/middle-click opens a new tab) and offer a peek when one is
  * registered, so a resource with no detail route is still readable instead of
  * being a fake button that goes nowhere.

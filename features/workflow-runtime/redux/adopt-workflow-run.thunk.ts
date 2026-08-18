@@ -56,6 +56,7 @@ import {
   attachRun,
   detachRun,
   seedRunRow,
+  refreshHeartbeatTails,
   setLastEventSeq,
   setTransportMode,
 } from "./workflow-runs.slice";
@@ -69,6 +70,10 @@ const REPLAY_MAX_EVENTS = 5000;
 const MAX_CHILD_DEPTH = 3;
 /** How many child runs one adoption tree may follow in total. */
 const MAX_CHILD_RUNS = 10;
+/** Durable-tail refresh cadence while the run is on the poller. Sits just
+ * above the server's 1.5s `_heartbeat._streaming` write so each refresh has
+ * new text, without one extra request per durable-event poll. */
+const HEARTBEAT_TAIL_REFRESH_MS = 3_000;
 
 export interface AdoptWorkflowRunOptions {
   runId: string;
@@ -415,8 +420,20 @@ export function adoptWorkflowRun(
 
       let stopped = false;
       let stopTransport: (() => void) | null = null;
+      // While the run is on the POLLER, `node_stream` frames never arrive
+      // (SSE-only, never replayed) — the durable heartbeat tail is the only
+      // source of streamed text, so it has to be re-read, not read once.
+      let transportMode: RunTransportMode = "idle";
+      let tailTimer: ReturnType<typeof setInterval> | null = null;
+      const stopTailRefresh = (): void => {
+        if (tailTimer !== null) {
+          clearInterval(tailTimer);
+          tailTimer = null;
+        }
+      };
       tree.stops.set(runId, () => {
         stopped = true;
+        stopTailRefresh();
         stopTransport?.();
       });
 
@@ -459,15 +476,36 @@ export function adoptWorkflowRun(
               }
             },
             onMode: (mode: RunTransportMode) => {
+              transportMode = mode;
               if (!stopped) dispatch(setTransportMode({ runId, mode }));
             },
             onEnd: () => {
               if (stopped) return;
+              transportMode = "idle";
+              stopTailRefresh();
               dispatch(setTransportMode({ runId, mode: "idle" }));
               tree.laneManager.disposeRun(runId);
             },
           });
           stopTransport = source.stop;
+
+          // Re-read the durable tail on the poller's behalf. Cadence sits just
+          // above the server's 1.5s heartbeat write so a refresh always has
+          // something new, without adding a request per event poll. Skipped
+          // entirely while SSE owns the wire — an SSE tail is assembled from
+          // deltas and must never be rolled back to a throttled snapshot.
+          tailTimer = setInterval(() => {
+            if (stopped || transportMode !== "polling") return;
+            void (async () => {
+              try {
+                const fresh = await fetchJson<RunRow>(`/runs/${runId}`);
+                if (!stopped) dispatch(refreshHeartbeatTails({ runId, row: fresh }));
+              } catch {
+                // Narration is best-effort: a failed tail refresh must never
+                // disturb the durable event poller that shares this run.
+              }
+            })();
+          }, HEARTBEAT_TAIL_REFRESH_MS);
         } catch (error) {
           const message =
             error instanceof Error ? error.message : "adoption failed";

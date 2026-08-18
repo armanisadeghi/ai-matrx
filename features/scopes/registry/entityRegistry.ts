@@ -233,17 +233,21 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Rulebooks",
     hrefFor: (id) => `/masterwork/${id}`,
   },
-  // `skill` and `workflow` have peeks but NO detail route anywhere in `app/`
-  // (`/agent-connections/skills` is a list; workflows only appear nested under
-  // an org). Until a detail route exists they stay peek-only — do not invent an
-  // `hrefFor` that 404s. Tracked in docs/handoffs/inventory-law-sweep.md.
+  // `skill` has a peek but NO detail route anywhere in `app/`
+  // (`/agent-connections/skills` is a list), so it stays peek-only — do not
+  // invent an `hrefFor` that 404s. Tracked in
+  // docs/handoffs/inventory-law-sweep.md.
   skill: {
     Icon: Sparkles,
     labelPlural: "Skills",
   },
+  // `workflow` HAS a detail route: /workflows/[id] sets one up, runs it, and
+  // watches it live. It sat peek-only here long after that route shipped, so
+  // every EntityRef, peek and toast door for a workflow was dark for no reason.
   workflow: {
     Icon: Workflow,
     labelPlural: "Workflows",
+    hrefFor: (id) => `/workflows/${id}`,
   },
   tool: {
     Icon: Wrench,

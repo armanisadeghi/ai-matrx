@@ -827,7 +827,9 @@ export const primaryNavItems: ShellNavItem[] = [
   },
   {
     label: "Workflows",
-    href: "/workflows",
+    // /workflows is reserved for the marketing page; the signed-in catalog is
+    // /workflows/all (it redirects, but nav should not spend a hop on it).
+    href: "/workflows/all",
     iconName: "Workflow",
     section: "primary",
     profileMenu: true,

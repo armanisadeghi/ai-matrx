@@ -12,7 +12,8 @@
  * THE DOOR LAW: a peek's footer is the door to the full record, so pass
  * `token` + `id` and let the ENTITY REGISTRY answer where that record lives.
  * Hard-coding `href` per peek is how six of them ended up shipping "Open"
- * buttons that 404'd (`/workflows/<id>`, `/skills/<id>`, `/flashcards/<id>`,
+ * buttons that 404'd at the time (`/workflows/<id>` — since shipped and
+ * registered — plus `/skills/<id>`, `/flashcards/<id>`,
  * `/quizzes/<id>`, `/canvas/<id>`, `/transcripts/<id>`) — the routes were
  * renamed and nothing tied the peek back to the truth. `href` still wins when
  * a peek genuinely has no registered token (e.g. sandbox instances).

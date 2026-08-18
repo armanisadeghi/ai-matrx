@@ -62,6 +62,7 @@ import {
 } from "../redux/workflow-runs.selectors";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
 import { InvocationBody, PhaseIcon, PHASE_LABEL } from "./readout-parts";
+import { RUN_STATUS_LABEL, RUN_STATUS_PHASE } from "../run-status";
 import { ProgressRailReadout } from "./ProgressRailReadout";
 import { definitionNodeLabels, RunSurfaceView } from "./RunSurfaceView";
 import { WorkflowRunBoard } from "./WorkflowRunBoard";
@@ -314,35 +315,9 @@ function GroupMemberReadout({
   );
 }
 
-/** Run status → node-phase vocabulary for PhaseIcon, + human labels. The
- * child summary renders a RUN's status; PhaseIcon/PHASE_LABEL are keyed on
- * node phases — unmapped, a completed child showed the idle circle and raw
- * status text (adversarial finding 10). */
-const RUN_STATUS_PHASE: Record<string, string> = {
-  pending: "idle",
-  running: "running",
-  cancelling: "running",
-  pausing: "running",
-  paused: "waiting",
-  interrupted: "waiting",
-  errored: "failed",
-  completed: "settled",
-  failed: "failed",
-  cancelled: "skipped",
-};
-
-const RUN_STATUS_LABEL: Record<string, string> = {
-  pending: "Not started",
-  running: "Working",
-  cancelling: "Stopping",
-  pausing: "Pausing",
-  paused: "Paused",
-  interrupted: "Waiting for input",
-  errored: "Needs attention",
-  completed: "Done",
-  failed: "Needs attention",
-  cancelled: "Stopped",
-};
+/* Run status → node-phase vocabulary for PhaseIcon, + human labels, now
+ * shared: the workflow LIST names the same statuses, and a third copy would
+ * have made three vocabularies for one enum. See ../run-status.tsx. */
 
 interface CompactChildSurface {
   /** Which child definition this was loaded for (guards stale results). */

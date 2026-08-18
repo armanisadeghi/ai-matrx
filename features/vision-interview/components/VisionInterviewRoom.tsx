@@ -76,13 +76,21 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
     void resume({ message: "", gotoStage: stage });
   };
 
-  const startInterview = () => {
-    void start();
-  };
+  // The guided run's ONE door is the header's Finish control: in v3 the
+  // person holds the conversation themselves, so the run exists only to reach
+  // `interview.finalize` (the Vision + Requirements documents). Both halves of
+  // that journey live here — start the run, then tell the waiting run the
+  // interview is done. See FinishInterviewDialog.
+  const startInterview = () => start();
+  const finishInterview = () => resume({ message: "", done: true });
 
   return (
     <>
-      <RoomHeader onAdvanceStage={advanceStage} />
+      <RoomHeader
+        onAdvanceStage={advanceStage}
+        onStartRun={startInterview}
+        onFinishRun={finishInterview}
+      />
       <div
         className="matrx-touch-targets flex h-full flex-col overflow-hidden"
         style={{ paddingTop: "var(--shell-header-h)" }}
@@ -125,7 +133,6 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
                 <ExpertFeedPanel />
               ) : (
                 <RoomChatPane
-                  onStart={startInterview}
                   onGotoStage={gotoStage}
                   onRetryRoles={retryRoles}
                 />
@@ -149,10 +156,9 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
               <Panel id="room" defaultSize="50%" minSize="32%">
                 <div className="h-full overflow-hidden">
                   <RoomChatPane
-                  onStart={startInterview}
-                  onGotoStage={gotoStage}
-                  onRetryRoles={retryRoles}
-                />
+                    onGotoStage={gotoStage}
+                    onRetryRoles={retryRoles}
+                  />
                 </div>
               </Panel>
               <Handle />

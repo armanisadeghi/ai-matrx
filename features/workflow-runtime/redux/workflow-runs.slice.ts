@@ -1028,6 +1028,40 @@ const workflowRunsSlice = createSlice({
       if (run) run.transportMode = action.payload.mode;
     },
 
+    /** Re-adopt the durable heartbeat tails while the run is on the POLLER.
+     *
+     * `node_stream` frames are SSE-only and are never replayed, so a client
+     * that lost (or never won) SSE has exactly one source of streamed text:
+     * `metadata._heartbeat._streaming_by_node`, which the server keeps
+     * writing throughout the run. `seedRunRow` reads it once at attach —
+     * that is a reconnect BASELINE, and at attach time it is empty, so a
+     * poller-bound client showed a skeleton for the whole run no matter how
+     * much text the server streamed.
+     *
+     * Unlike `seedRunRow` this OVERWRITES the tail, because on the poller
+     * there is no live delta that could be newer. Guarded to polling mode for
+     * exactly that reason: an SSE client's tail is assembled from deltas and
+     * must never be rolled back to a throttled snapshot. */
+    refreshHeartbeatTails(
+      state,
+      action: PayloadAction<{ runId: string; row: RunRow }>,
+    ) {
+      const run = state.byRunId[action.payload.runId];
+      if (!run || run.transportMode !== "polling") return;
+      const tails = readHeartbeatTails(action.payload.row);
+      for (const [nodeId, snapshot] of Object.entries(tails)) {
+        const tail = snapshot.live_text_tail;
+        if (!tail) continue;
+        const key = streamTargetKey(run, nodeId);
+        const invocation = key ? run.nodes[key] : undefined;
+        if (!invocation) continue;
+        invocation.textTail =
+          tail.length > TEXT_TAIL_CAP
+            ? tail.slice(tail.length - TEXT_TAIL_CAP)
+            : tail;
+      }
+    },
+
     /** Monotonic — a lower/equal seq never rolls the cursor back. */
     setLastEventSeq(
       state,
@@ -1052,6 +1086,7 @@ export const {
   registerLane,
   releaseLane,
   setTransportMode,
+  refreshHeartbeatTails,
   setLastEventSeq,
 } = workflowRunsSlice.actions;
 

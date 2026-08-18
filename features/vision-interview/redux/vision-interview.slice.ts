@@ -12,7 +12,11 @@
 // this slice never duplicates the execution system; it only remembers which
 // requestId a session's run was adopted under.
 
-import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import {
+  createSelector,
+  createSlice,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { RevisionSummary } from "../service";
 import {
@@ -25,6 +29,7 @@ import {
   type InterviewSessionRow,
   type InterviewStageWire,
   type InterviewTurnRow,
+  type DocView,
   type QuestionCategory,
   type RoleKey,
 } from "../types";
@@ -36,12 +41,7 @@ import {
 } from "../pendingAnswersStorage";
 
 export type RunPhase =
-  | "idle"
-  | "starting"
-  | "running"
-  | "waiting_human"
-  | "complete"
-  | "error";
+  "idle" | "starting" | "running" | "waiting_human" | "complete" | "error";
 
 export type RoleActivity = "active" | "done";
 
@@ -100,6 +100,14 @@ interface VisionInterviewState {
   activeRoleTab: RoleKey;
 
   /**
+   * Which record is on screen over the chat — the Scribe's living document or
+   * one of the finalize deliverables; `null` = the expert's chat. It lives
+   * here rather than in `RoomChatPane`'s local state so the finish dialog can
+   * OPEN a document it just told the Expert about (no dead ends).
+   */
+  docView: DocView | null;
+
+  /**
    * Role bindings the SERVER resolved for this session via
    * `POST /vision-interview/sessions/{id}/roles` (v3). Every role's mandate
    * resolves to an agent + a stable conversation id there; nothing in the
@@ -149,6 +157,7 @@ const initialState: VisionInterviewState = {
   pendingAudioFileIds: [],
   awaitingTurnAudio: null,
   activeRoleTab: "sounding_board",
+  docView: null,
   pendingAnswers: {},
   resolvedRoleBindings: {},
   rolesPhase: "idle",
@@ -284,7 +293,10 @@ const visionInterviewSlice = createSlice({
      *  later partial response can only ever ADD a room, never remove one. */
     roleBindingsResolved(
       state,
-      action: PayloadAction<{ sessionId: string; roles: Record<string, unknown> }>,
+      action: PayloadAction<{
+        sessionId: string;
+        roles: Record<string, unknown>;
+      }>,
     ) {
       if (state.sessionId !== action.payload.sessionId) return;
       state.resolvedRoleBindings = {
@@ -420,9 +432,16 @@ const visionInterviewSlice = createSlice({
 
     // ── v3 room: stage tabs + pending answers ──────────────────────────────
 
+    /** Show a record over the chat (or `null` to return to the chat). */
+    docViewChanged(state, action: PayloadAction<DocView | null>) {
+      state.docView = action.payload;
+    },
+
     /** The Expert moved to another expert's room (stage tab click). */
     activeRoleTabChanged(state, action: PayloadAction<RoleKey>) {
       state.activeRoleTab = action.payload;
+      // Moving to another expert always returns to their conversation.
+      state.docView = null;
     },
 
     /** The tab a session opens on — its current stage's primary role. Only
@@ -501,6 +520,7 @@ export const {
   turnAudioSettled,
   activeRoleTabChanged,
   activeRoleTabDefaulted,
+  docViewChanged,
   answerDrafted,
   answerDiscarded,
   pendingAnswersCleared,
@@ -514,7 +534,8 @@ const selectSelf = (state: RootState) => state.visionInterview;
 
 export const selectRoomSessionId = (state: RootState) =>
   selectSelf(state).sessionId;
-export const selectRoomSession = (state: RootState) => selectSelf(state).session;
+export const selectRoomSession = (state: RootState) =>
+  selectSelf(state).session;
 export const selectRoomHydrated = (state: RootState) =>
   selectSelf(state).hydrated;
 export const selectRunPhase = (state: RootState) => selectSelf(state).runPhase;
@@ -541,18 +562,26 @@ export const selectAwaitingTurnAudio = (state: RootState) =>
  * echo of the server's write.
  */
 export const selectRoleBindings = createSelector(
-  [selectRoomSession, (state: RootState) => selectSelf(state).resolvedRoleBindings],
+  [
+    selectRoomSession,
+    (state: RootState) => selectSelf(state).resolvedRoleBindings,
+  ],
   (session, resolved): Record<string, unknown> => ({
     ...(session?.role_bindings ?? {}),
     ...resolved,
   }),
 );
 
-export const selectRolesPhase = (state: RootState) => selectSelf(state).rolesPhase;
-export const selectRolesError = (state: RootState) => selectSelf(state).rolesError;
+export const selectRolesPhase = (state: RootState) =>
+  selectSelf(state).rolesPhase;
+export const selectRolesError = (state: RootState) =>
+  selectSelf(state).rolesError;
 
 export const selectActiveRoleTab = (state: RootState): RoleKey =>
   selectSelf(state).activeRoleTab;
+
+export const selectDocView = (state: RootState): DocView | null =>
+  selectSelf(state).docView;
 
 const selectPendingAnswersMap = (state: RootState) =>
   selectSelf(state).pendingAnswers;
@@ -562,7 +591,8 @@ export const selectPendingAnswers = createSelector(
   [selectPendingAnswersMap],
   (answers): PendingAnswer[] =>
     Object.values(answers).sort(
-      (a, b) => a.updatedAt - b.updatedAt || a.questionId.localeCompare(b.questionId),
+      (a, b) =>
+        a.updatedAt - b.updatedAt || a.questionId.localeCompare(b.questionId),
     ),
 );
 
@@ -592,9 +622,7 @@ const selectHolesMap = (state: RootState) => selectSelf(state).holes;
 export const selectTurnsOrdered = createSelector([selectTurnsMap], (turns) =>
   Object.values(turns).sort(
     (a, b) =>
-      a.round - b.round ||
-      a.position - b.position ||
-      a.id.localeCompare(b.id),
+      a.round - b.round || a.position - b.position || a.id.localeCompare(b.id),
   ),
 );
 
@@ -666,18 +694,19 @@ export const selectOpenQuestionCount = createSelector(
 /** Holes: arbitration-needed first, then open, then the rest; stable by id. */
 export const selectHolesOrdered = createSelector([selectHolesMap], (holes) => {
   const rank = (h: InterviewHoleRow): number =>
-    h.status === "needs_human_arbitration"
-      ? 0
-      : h.status === "open"
-        ? 1
-        : 2;
+    h.status === "needs_human_arbitration" ? 0 : h.status === "open" ? 1 : 2;
   return Object.values(holes).sort(
-    (a, b) => rank(a) - rank(b) || a.round_opened - b.round_opened || a.id.localeCompare(b.id),
+    (a, b) =>
+      rank(a) - rank(b) ||
+      a.round_opened - b.round_opened ||
+      a.id.localeCompare(b.id),
   );
 });
 
-export const selectOpenHoleCount = createSelector([selectHolesMap], (holes) =>
-  Object.values(holes).filter(
-    (h) => h.status === "open" || h.status === "needs_human_arbitration",
-  ).length,
+export const selectOpenHoleCount = createSelector(
+  [selectHolesMap],
+  (holes) =>
+    Object.values(holes).filter(
+      (h) => h.status === "open" || h.status === "needs_human_arbitration",
+    ).length,
 );
