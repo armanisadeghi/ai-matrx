@@ -10,52 +10,20 @@ drop function if exists communication.configure_my_sms_assistant_version(text, b
 drop function if exists communication.disconnect_my_sms_assistant(text);
 drop function if exists communication._configure_my_sms_assistant(text, boolean, uuid, uuid);
 
-do $$
-begin
-  if exists (
-    select 1
-    from communication.sms_notification_preferences preference
-    where preference.deleted_at is null
-      and preference.preferred_agent_id is not null
-      and not exists (
-        select 1
-        from agent.mandate mandate
-        join agent.mandate_binding binding
-          on binding.mandate_id = mandate.id
-         and binding.principal_type = 'user'
-         and binding.subject_user_id = preference.user_id
-         and binding.organization_id = preference.organization_id
-         and binding.agent_id = preference.preferred_agent_id
-         and binding.agent_version_id is not distinct from preference.preferred_agent_version_id
-         and binding.use_latest = (preference.preferred_agent_version_id is null)
-         and binding.is_enabled
-         and binding.deleted_at is null
-        where mandate.mandate_key = 'sms.owner_beta'
-          and mandate.is_enabled
-          and mandate.deleted_at is null
-      )
-  ) then
-    raise exception 'Cannot retire SMS direct authority before every selection has an exact enabled sms.owner_beta user Binding';
-  end if;
-end;
-$$;
-
-update agent.mandate_binding binding
-set visibility = 'personal',
-    updated_at = now()
-from agent.mandate mandate
-where binding.mandate_id = mandate.id
-  and mandate.mandate_key = 'sms.owner_beta'
-  and binding.principal_type = 'user'
-  and binding.deleted_at is null
-  and binding.visibility <> 'personal';
-
 update communication.sms_notification_preferences
 set preferred_agent_id = null,
     preferred_agent_version_id = null,
     updated_at = now()
 where preferred_agent_id is not null
    or preferred_agent_version_id is not null;
+
+update communication.sms_conversations
+set agent_id = null,
+    canonical_agent_version_id = null,
+    updated_at = now()
+where program_key = 'ai_matrx_owner_beta'
+  and (agent_id is not null or canonical_agent_version_id is not null)
+  and deleted_at is null;
 
 alter table communication.sms_notification_preferences
   drop constraint if exists sms_notification_preferences_mandate_only_agent_chk;
@@ -67,40 +35,6 @@ comment on column communication.sms_notification_preferences.preferred_agent_id 
   'Retired compatibility field; constrained NULL. SMS agent identity resolves only through sms.owner_beta Mandate Bindings.';
 comment on column communication.sms_notification_preferences.preferred_agent_version_id is
   'Retired compatibility field; constrained NULL. Version policy belongs to sms.owner_beta Mandate Bindings.';
-
-alter table communication.sms_notification_preferences
-  drop column if exists preferred_ai_agent_id,
-  drop column if exists preferred_ai_agent_version_id;
-
-create or replace function communication.sms_fill_canonical_context()
-returns trigger
-language plpgsql
-set search_path = ''
-as $$
-declare
-  destination communication.sms_phone_numbers%rowtype;
-begin
-  select p.* into destination
-  from communication.sms_phone_numbers p
-  where p.phone_number = new.our_phone_number
-    and p.provider = new.provider
-    and p.is_active
-    and p.deleted_at is null
-  limit 1;
-
-  new.provider_account_id := coalesce(new.provider_account_id, destination.provider_account_id);
-  new.destination_identity_id := coalesce(new.destination_identity_id, destination.id);
-  new.program_key := coalesce(new.program_key, destination.program_key);
-  new.chat_conversation_id := coalesce(new.chat_conversation_id, gen_random_uuid());
-  if new.identity_status = 'unresolved' then
-    new.identity_status := case
-      when new.user_id is not null and destination.id is not null then 'resolved'
-      else 'not_found'
-    end;
-  end if;
-  return new;
-end;
-$$;
 
 create or replace function communication.get_my_sms_assistant_program(p_program_key text)
 returns table (
@@ -172,6 +106,9 @@ begin
       and preference.sms_enabled
       and preference.ai_agent_messages
       and preference.phone_number is not null
+      and sms_mandate.is_enabled
+      and (sms_mandate.default_agent_id is not null
+        or sms_mandate.default_agent_version_id is not null)
       and coalesce(consent.status, 'unknown') <> 'opted_out',
     array_remove(array[
       case when not destination.is_active or destination.provider_account_id is null
@@ -180,6 +117,10 @@ begin
       case when not preference.sms_enabled then 'sms_disabled' end,
       case when not preference.ai_agent_messages then 'user_paused' end,
       case when preference.phone_number is null then 'verified_phone_missing' end,
+      case when not sms_mandate.is_enabled
+          or (sms_mandate.default_agent_id is null
+            and sms_mandate.default_agent_version_id is null)
+        then 'mandate_unavailable' end,
       case when coalesce(consent.status, 'unknown') = 'opted_out'
         then 'consent_opted_out' end
     ]::text[], null)
@@ -189,6 +130,9 @@ begin
    and destination.program_key = preference.assistant_program_key
    and destination.program_key = p_program_key
    and destination.deleted_at is null
+  join agent.mandate sms_mandate
+    on sms_mandate.mandate_key = 'sms.owner_beta'
+   and sms_mandate.deleted_at is null
   left join lateral (
     select c.id, c.chat_conversation_id, c.identity_status
     from communication.sms_conversations c
@@ -240,6 +184,17 @@ begin
   if nullif(btrim(p_idempotency_key), '') is null then
     raise exception 'Idempotency key is required' using errcode = '22023';
   end if;
+  if not exists (
+    select 1 from agent.mandate mandate
+    where mandate.mandate_key = 'sms.owner_beta'
+      and mandate.is_enabled
+      and mandate.deleted_at is null
+      and (mandate.default_agent_id is not null
+        or mandate.default_agent_version_id is not null)
+  ) then
+    raise exception 'SMS assistant Mandate is unavailable' using errcode = '55000';
+  end if;
+
   select destination_row.* into strict destination
   from communication.sms_phone_numbers destination_row
   where destination_row.id = p_destination_identity_id
