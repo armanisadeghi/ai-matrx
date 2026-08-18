@@ -16,7 +16,7 @@
 // lands as a draft and returns to the review queue.
 
 import { useRef, useState } from "react";
-import { ArrowRight, Check, Pencil, Trash2, Wand2 } from "lucide-react";
+import { ArrowRight, Wand2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,15 +30,12 @@ import {
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
-import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
-import {
-  applyRuleImprove,
-  coerceRuleImproveResult,
-  MASTERWORK_RULE_IMPROVER_MANDATE,
-} from "../../agent-context/ruleImprove";
+import { applyRuleImprove } from "../../agent-context/ruleImprove";
+import { RuleDecisionActions } from "../../review/RuleDecisionActions";
+import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import type { RulebookRule, RulebookSections } from "../../types";
-import { RULE_CONTENT_FIELDS, SEVERITY_LABELS } from "../../types";
+import { SEVERITY_LABELS } from "../../types";
 
 export interface ImproveRuleDialogProps {
   open: boolean;
@@ -117,7 +114,12 @@ export function ImproveRuleDialog({
   onApproveRevised,
   onEditRevised,
 }: ImproveRuleDialogProps) {
-  const improveRun = useLiveAgentRun();
+  const improveRun = useRuleImproveRun({
+    rulebookId,
+    organizationId,
+    sections,
+    surfaceName,
+  });
   const [feedback, setFeedback] = useState("");
   const [review, setReview] = useState<ImproveReview | null>(null);
   const [busy, setBusy] = useState(false);
@@ -127,55 +129,38 @@ export function ImproveRuleDialog({
   openRef.current = open;
   const runningForRef = useRef<string | null>(null);
   const [lastRule, setLastRule] = useState<RulebookRule | null>(null);
+  // IMPROVE AGAIN: after a rewrite lands, the Expert can keep pushing on the
+  // REVISED rule rather than the one they opened the dialog with.
+  const [reimproving, setReimproving] = useState<RulebookRule | null>(null);
 
   // Reset per-target compose state when the dialog opens on a new rule.
   if (open && rule && rule.id !== lastRule?.id) {
     setLastRule(rule);
     setFeedback(rule.feedback ?? "");
     setReview(null);
+    setReimproving(null);
   }
 
+  const target = reimproving ?? rule;
+
   const submit = async () => {
-    if (!rule || !feedback.trim()) return;
-    const target = rule;
+    if (!target || !feedback.trim()) return;
     runningForRef.current = target.id;
     try {
       const revised = await improveRun.run<RulebookRule>({
-        mandateKey: MASTERWORK_RULE_IMPROVER_MANDATE,
         surfaceKey: "masterwork-rule-improve",
-        sourceFeature: "masterwork",
-        surfaceName,
-        organizationId,
-        contextAnchor: { resource_type: "rulebook", resource_id: rulebookId },
-        variables: {
-          rule_json: JSON.stringify(
-            Object.fromEntries(
-              RULE_CONTENT_FIELDS.map((f) => [f, target[f] ?? ""]),
-            ),
-          ),
-          expert_input: feedback.trim(),
-          rulebook_context: JSON.stringify(getSurfaceScope()),
-        },
-        expect: "json",
-        timeoutMs: 120_000,
-        coerce: (value) =>
-          applyRuleImprove(
-            target,
-            coerceRuleImproveResult(value, {
-              sections,
-              fallbackSection: target.section,
-            }),
-          ),
-        failureMessages: {
-          noJson: "The AI finished without returning a usable rule.",
-          timeout: "The rewrite took too long. Your rule is unchanged.",
-        },
+        fields: target,
+        expertInput: feedback.trim(),
+        context: getSurfaceScope(),
+        fallbackSection: target.section,
+        apply: (result) => applyRuleImprove(target, result),
       });
       // Land immediately as a DRAFT revision — the rewrite must never live
       // only in this dialog's memory.
       await onLanded(revised);
       if (openRef.current && runningForRef.current === target.id) {
         setReview({ original: target, revised });
+        setFeedback("");
       } else {
         toast.success(`"${revised.name}" was rewritten`, {
           description:
@@ -209,7 +194,7 @@ export function ImproveRuleDialog({
     if (!review) return;
     setBusy(true);
     try {
-      await onDiscard(review.original);
+      await onDiscard(rule ?? review.original);
       toast.success("Rewrite discarded — the rule is back the way it was.");
       onOpenChange(false);
       setReview(null);
@@ -239,19 +224,19 @@ export function ImproveRuleDialog({
         </DialogHeader>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
-          {rule && !review ? (
+          {target && !review ? (
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-muted/30 p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-semibold text-foreground">
-                    {rule.name}
+                    {target.name}
                   </span>
                   <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                    {SEVERITY_LABELS[rule.severity]}
+                    {SEVERITY_LABELS[target.severity]}
                   </Badge>
                 </div>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  {rule.statement}
+                  {target.statement}
                 </p>
               </div>
               <ProTextarea
@@ -267,7 +252,7 @@ export function ImproveRuleDialog({
                 <LiveRunDisplay
                   conversationId={improveRun.conversationId}
                   pending={running}
-                  label={`Rewriting "${rule.name}"`}
+                  label={`Rewriting "${target.name}"`}
                   onDismiss={improveRun.dismiss}
                   bodyClassName="max-h-40"
                 />
@@ -319,35 +304,26 @@ export function ImproveRuleDialog({
 
         <DialogFooter className="gap-2 border-t border-border bg-muted/20 px-6 py-3 sm:justify-between">
           {review ? (
-            <>
-              <Button
-                variant="ghost"
-                onClick={() => void discard()}
-                disabled={busy}
-                className="text-destructive hover:text-destructive sm:mr-auto"
-              >
-                <Trash2 className="h-4 w-4" />
-                Discard
-              </Button>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  disabled={busy}
-                  onClick={() => {
-                    onEditRevised(review.revised);
-                    onOpenChange(false);
-                    setReview(null);
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                  Keep editing
-                </Button>
-                <Button onClick={() => void approve()} disabled={busy}>
-                  <Check className="h-4 w-4" />
-                  Approve
-                </Button>
-              </div>
-            </>
+            /* The four verbs, same contract as every other review surface —
+               Improve here means "keep pushing on the REWRITE". */
+            <RuleDecisionActions
+              className="sm:justify-end"
+              disabled={busy}
+              labels={{ reject: "Discard", edit: "Keep editing" }}
+              onApprove={() => void approve()}
+              onImprove={() => {
+                setReimproving(review.revised);
+                setReview(null);
+                setFeedback("");
+              }}
+              onReject={() => void discard()}
+              onEdit={() => {
+                onEditRevised(review.revised);
+                onOpenChange(false);
+                setReview(null);
+                setReimproving(null);
+              }}
+            />
           ) : (
             <>
               <Button
@@ -366,7 +342,7 @@ export function ImproveRuleDialog({
               </Button>
               <Button
                 onClick={() => void submit()}
-                disabled={running || !feedback.trim() || !rule}
+                disabled={running || !feedback.trim() || !target}
               >
                 <Wand2 className="h-4 w-4" />
                 {running ? "Rewriting…" : "Improve this rule"}

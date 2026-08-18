@@ -257,7 +257,9 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
           composerText: "Do not send without current evidence",
         }),
       ).unwrap(),
-    ).rejects.toThrow("current-turn evidence can be prepared");
+    ).rejects.toMatchObject({
+      message: expect.stringContaining("current-turn evidence can be prepared"),
+    });
     expect(mockFetchSurfaceBindingLayers).not.toHaveBeenCalled();
   });
 });
