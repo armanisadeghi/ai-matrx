@@ -383,10 +383,20 @@ export function NodeStepRail({
           // the click, not as an error after it. Review's input lives in the
           // artifacts this rail already reads; Write's lives on the node row,
           // so the panel hands it in.
+          //
+          // 🚨 NOT-LOADED IS UNKNOWN, NEVER A GAP. `artifacts.data` is
+          // undefined for the ~1s the fetch takes, and asserting "this page
+          // has no written content" from an empty map is a confident lie the
+          // user reads before the truth arrives — the same trap
+          // `hasKeywordAssignment` documents for a null plan index. Only a
+          // SETTLED read may block; while it is in flight the arrow stays
+          // live and the server (which never guesses) is the backstop.
+          const draftsLoaded = artifacts.isSuccess;
           const blockedReason =
             runnable === "p4_write"
               ? writeBlockedReason
               : runnable === "p5_review" &&
+                  draftsLoaded &&
                   !artifactsByStep
                     .get("p4_write")
                     ?.some((a) => a.valid_to === null)
