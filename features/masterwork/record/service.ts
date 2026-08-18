@@ -318,8 +318,13 @@ async function interviewConversationIds(rulebookId: string): Promise<string[]> {
     );
     return [];
   }
+  // ROLE MATTERS. A Rulebook now carries more than one kind of conversation
+  // edge — `interview` (the Scout, the Expert's own words) and `conducting`
+  // (the Conductor, a build session ABOUT the rules). Only interviews belong
+  // in the Record and in `getExpertCorpus`; a Conductor session swallowed as
+  // interview material would put words in the Expert's mouth.
   return res.data.edges
-    .filter((e) => e.otherType === "conversation")
+    .filter((e) => e.otherType === "conversation" && e.role === "interview")
     .map((e) => e.otherId);
 }
 

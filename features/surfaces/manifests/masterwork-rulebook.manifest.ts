@@ -451,6 +451,21 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
       sortOrder: 300,
     },
     {
+      name: "conductor",
+      label: "Conductor",
+      // THE ONE canonical Masterwork system (2026-08-18). Nothing else makes a
+      // Masterwork. Held as a live streaming conversation on this surface and
+      // at /masterwork/[id]/conduct.
+      description:
+        "The one system that turns what the Expert already has into a working Masterwork: reads what is attached, learns what the platform can really do, pokes holes in the method input by input, turns anything unresolved into a real Plan step, and authors the workflow — or refuses and says what is missing.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "masterwork.conductor",
+      allowCustom: true,
+      autoRun: "never",
+      sortOrder: 310,
+    },
+    {
       name: "rule_improver",
       label: "Rule improver",
       // The ONE rule-rewrite Mandate (live in agent.mandate since 2026-08-17):
