@@ -794,7 +794,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "plan_context",
     label: "Plan behind this page",
     description:
-      "The plan node this page was realized from, resolved through the CMS page that serves the URL (client_pages.web_page_id → plan_node_id): label, planned route, brief lines, planned meta title/description, primary keyword phrase, and the applied site-wide keyword_strategy (page role, supported money routes, planned internal links). Absent when the page was built directly in the CMS or no CMS page serves this URL — never infer a brief that isn't here.",
+      "The plan node this page was realized from, resolved through the CMS page that serves the URL (client_pages.web_page_id → plan_node_id): label, planned route, brief lines, primary keyword phrase, and the page's SEO plan from the one store (web.page desired_values.keyword_plan — page role, supported money routes, planned internal links). Absent when the page was built directly in the CMS or no CMS page serves this URL — never infer a brief that isn't here.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 900,

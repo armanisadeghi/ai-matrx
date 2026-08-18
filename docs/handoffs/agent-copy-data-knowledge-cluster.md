@@ -116,7 +116,7 @@ these surfaces cannot be meaningfully exercised until D128 is fixed.
 | `/cms/[siteId]/collections` | `collections.map` (L351) + `PolicyBadges` | **list/table** | none | row pair + view copy + `ExportMenu` |
 | `/cms/[siteId]/collections` | `SiteDataKeyCard` (masked key) | field group | masked + copy | **SKIP the key itself** — never widen; leave existing masked-copy alone |
 | `/cms/[siteId]/collections/[collectionId]` | items viewer (schema-driven, CSV export exists) | **list/table** | CSV export only | row pair + view copy + **add JSON to the existing** `ExportMenu` |
-| `/cms/[siteId]/pages/[pageId]` | `PageEditor` (HTML/CSS/JS/Preview/Plan/SEO/Measure/Settings/History) | **record/detail** | none | header pair from **LIVE editor state** + `unsaved_changes` diff |
+| `/cms/[siteId]/pages/[pageId]` | `PageEditor` (7 URL-synced tabs: Preview/Code[HTML·CSS·JS]/Plan/SEO/Measure/Settings/History) | **record/detail** | none | header pair from **LIVE editor state** + `unsaved_changes` diff |
 | `/cms/[siteId]/components` | component CRUD list | list | none | row pair + view copy + `ExportMenu` |
 | `/cms/[siteId]/settings` | `SiteAdvancedSettings`, `SiteDomainSettings` | field group | none | `xs` pairs from live form state |
 | `/cms/admin` | `ActivityFeedPanel`, `ApprovalsQueuePanel`, `SitePageTreePanel`, `AssetsPanel` | **list/table** ×4 | none | row pair + view copy + `ExportMenu` |

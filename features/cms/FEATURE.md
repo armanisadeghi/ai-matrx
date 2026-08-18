@@ -37,16 +37,17 @@ build plan this feature is part of (project P5).
   `history.replaceState` at the buffer grain (`html`/`css`/`js` while on Code), so any tab is
   deep-linkable and pre-fold `?tab=html|css|js` links land on the right buffer. **Plan**
   (`components/PagePlanTab.tsx`, `React.lazy` in-gate) is the page's BEFORE per
-  `docs/handoffs/cms-page-hub.md`. The plan context itself is the canonical
-  `features/marketing/content-plan/components/PlanContextPanel` (2026-08-15) — the SAME component
-  the measured page's workspace renders as ITS before; never fork a second one. With
-  `plan_node_id` set it reads the `plan.node` direct from
-  Supabase and shows label/route, status, brief, target keyword, the **SEO plan** (the applied
-  `attributes.keyword_strategy` — page role, secondary keywords, supported money routes, and the
-  strategist's planned internal links with anchor text, each route rendered as a plan-node door
-  when the plan knows it), and the canonical `NodeStepRail`
-  with an "Open in plan workspace" door (`/marketing/content-plan/{site_id}?node={id}`); editing
-  stays in the plan workspace's NodePanel. With no node but a paired `web_site_id`, it runs the
+  `docs/handoffs/cms-page-hub.md`, and it is the REAL editor, not a partial view (Arman ruling
+  2026-08-16): with `plan_node_id` set it mounts the canonical
+  `features/marketing/content-plan/components/NodePanel` (hosted) with the workspace's own hook
+  composition — full control, pipeline rail at the top, identical to the plan workspace. (The
+  read-only `PlanContextPanel` branch is gone from the CMS; that component remains the measured
+  page workspace's BEFORE card only.) The **SEO plan** is NOT on the Plan tab: it lives on the
+  SEO tab as `components/PageSeoPlanSection.tsx` → the ONE canonical
+  `features/marketing/seo/plan/SeoPlanEditor` over `web.page.desired_values.keyword_plan`
+  (invariant 9, `common-docs/systems/content-planning/FEATURE.md`), resolved via
+  `useCmsPageSeoPlan` on the `client_pages.web_page_id` join — with a one-click "create the plan
+  record" when the join is absent. With no node but a paired `web_site_id`, the Plan tab runs the
   real adopt (`bridgeAdopt` → aidream `cms-align`) behind a confirm and prints the server's
   per-item result verbatim; with no pairing it says so and links `/marketing/content-plan`.
   **Measure** (`components/measure/CmsPageMeasure.tsx`, `React.lazy` in-gate) is the page's AFTER:

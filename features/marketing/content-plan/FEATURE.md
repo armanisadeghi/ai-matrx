@@ -309,11 +309,11 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
      (`keywordStaged`) the notice becomes "press Save" — the real next step.
    - What counts as an assignment is `hasKeywordAssignment`
      (`plan-assists-producer.ts`), the mirror of aidream's
-     `assert_brief_preconditions`: the `primary_keyword_id` FK **or**
-     `attributes.keyword_strategy` (a supporting page's role + the money routes
-     it feeds). **Change one predicate and you must change the other** — if they
-     disagree, the UI offers a fix for a gap the server does not see, or blocks
-     a page the server would happily brief.
+     `assert_brief_preconditions`: it reads the page's SEO plan from the ONE
+     store (`web.page.desired_values.keyword_plan` via `SitePlanIndex`) — a
+     primary keyword **or** a page role. **Change one predicate and you must
+     change the other** — if they disagree, the UI offers a fix for a gap the
+     server does not see, or blocks a page the server would happily brief.
 
 3. **Pillar map** (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
    behind the view switch with `ssr:false`): three user-switchable pure
@@ -557,9 +557,10 @@ DISTINCT`, resolved parent-first down the tree (`setup/service.ts#identityKey`,
   `SetupDraft`, its serializer to `draftToStorage`, its rehydration to the seed
   effect, and its `onDismiss` — not a `useState`.
 - **What an Apply leaves behind that no plan row can hold goes on the site.**
-  Applying keywords writes each page's own share to
-  `plan.node.attributes.keyword_strategy`; applying entities writes association
-  edges. The WHOLE-PLAN half — the strategist's summary and warnings, the
+  Applying keywords writes each page's own share to the ONE per-page SEO plan
+  store — `web.page.desired_values` (`keyword_plan` slice + `outbound_links`,
+  invariant 9) via `updatePageDesiredValues`; applying entities writes
+  association edges. The WHOLE-PLAN half — the strategist's summary and warnings, the
   attacher's roster gaps and notes — belongs to no page, so it is recorded once
   in the same guarded settings block
   (`content_plan.keyword_strategy_applied` / `.entity_attach_applied`, via
@@ -1252,8 +1253,9 @@ z-[10000]` `aria-hidden` overlay covers the header "Agents for this page"
   keyword) that pass authority there, plus cannibalization warnings.
   `setup/keyword-strategy.ts` applies it through the CANONICAL
   `ensureKeywordId` upsert + the feature's own `addNodeSecondaryKeyword`
-  edge wrapper, with the cross-page relationships on
-  `attributes.keyword_strategy`. **Entity Attacher** (`a1a7784c-…`) —
+  edge wrapper, with each page's role/routes/reason landing on the ONE store
+  (`web.page.desired_values.keyword_plan`) and planned internal links on
+  `outbound_links`. **Entity Attacher** (`a1a7784c-…`) —
   whole-plan E-E-A-T assignment constrained to the site's existing roster;
   gaps come back as `missing_entities`, never invented
   (`setup/entity-attach.ts`). **Brief Writer** (`711d29b5-…`) — NodePanel
