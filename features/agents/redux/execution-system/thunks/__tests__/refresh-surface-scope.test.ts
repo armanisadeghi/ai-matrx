@@ -192,4 +192,37 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
       unregister();
     }
   });
+
+  test("fails closed before reading or mapping scope when preparation fails", async () => {
+    const store = makeStore();
+    seedConversation(store);
+    const getScope = jest.fn(() => ({ user_input: "must not be read" }));
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: SURFACE_NAME,
+        beforeExecute: async () => {
+          throw new Error("retrieval unavailable");
+        },
+        getScope,
+      },
+      1,
+    );
+
+    try {
+      await expect(
+        (store.dispatch as unknown as AppDispatch)(
+          refreshSurfaceScope({
+            conversationId: CONVERSATION_ID,
+            composerText: "Keep this draft intact",
+          }),
+        ).unwrap(),
+      ).rejects.toMatchObject({
+        message: "Nothing was sent. retrieval unavailable",
+      });
+      expect(getScope).not.toHaveBeenCalled();
+      expect(mockFetchSurfaceBindingLayers).not.toHaveBeenCalled();
+    } finally {
+      unregister();
+    }
+  });
 });
