@@ -895,7 +895,6 @@ export interface MasterworkCheckupFindingData {
   type?: "masterwork_checkup_finding";
   rulebook_id: string;
   finding: CheckupFinding;
-  content_ir?: Record<string, unknown> | null;
 }
 
 export interface MasterworkCheckupProgressData {

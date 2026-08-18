@@ -149,8 +149,6 @@ export function AddRulePanel({
         // Stay open for the next rule — reset both lanes.
         setDescribe("");
         setAiDraft(null);
-        setRefining(false);
-        setRefineInput("");
         draftRun.dismiss();
         setFields(EMPTY_FIELDS(values.section));
       } catch (err) {
@@ -310,15 +308,6 @@ export function AddRulePanel({
               </>
             ) : (
               <div className="space-y-4">
-                {draftRun.hasLiveRun ? (
-                  <LiveRunDisplay
-                    conversationId={draftRun.conversationId}
-                    pending={draftRun.isRunning}
-                    label="Rewriting your rule"
-                    onDismiss={draftRun.dismiss}
-                    bodyClassName="max-h-40"
-                  />
-                ) : null}
                 <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-semibold text-foreground">
@@ -351,52 +340,39 @@ export function AddRulePanel({
                     </p>
                   ) : null}
                 </div>
-                {refining ? (
-                  <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-3">
-                    <p className="text-sm font-medium text-foreground">
-                      What should change?
-                    </p>
-                    <ProTextarea
-                      value={refineInput}
-                      onChange={(e) => setRefineInput(e.target.value)}
-                      placeholder="Talk or type — we rewrite the draft to match…"
-                      autoGrow
-                      minHeight={90}
-                      maxHeight={240}
-                      disabled={draftRun.isRunning}
-                    />
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        disabled={draftRun.isRunning}
-                        onClick={() => {
-                          setRefining(false);
-                          setRefineInput("");
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                      <Button
-                        onClick={() => void improveDraft()}
-                        disabled={draftRun.isRunning || !refineInput.trim()}
-                      >
-                        <Wand2 className="h-4 w-4" />
-                        {draftRun.isRunning ? "Rewriting…" : "Rewrite it"}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  /* The four verbs — the ONE shared contract
-                     (features/masterwork/review/RuleDecisionActions). */
-                  <RuleDecisionActions
-                    className="justify-end"
-                    disabled={saving || draftRun.isRunning}
-                    labels={{
-                      approve: saving ? "Adding…" : "Add as a draft",
-                      reject: "Start over",
-                      edit: "Edit before adding",
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    disabled={saving}
+                    onClick={() => {
+                      setAiDraft(null);
+                      draftRun.dismiss();
                     }}
-                    onApprove={() =>
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Start over
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={saving}
+                    onClick={() => {
+                      setFields({
+                        name: aiDraft.name,
+                        statement: aiDraft.statement,
+                        rationale: aiDraft.rationale,
+                        detection: aiDraft.detection,
+                        quote: "",
+                        severity: aiDraft.severity,
+                        section: aiDraft.section,
+                      });
+                      setMode("manual");
+                    }}
+                  >
+                    Edit before adding
+                  </Button>
+                  <Button
+                    disabled={saving}
+                    onClick={() =>
                       void landRule(
                         {
                           name: aiDraft.name,
@@ -413,27 +389,11 @@ export function AddRulePanel({
                         },
                       )
                     }
-                    onImprove={() => setRefining(true)}
-                    onReject={() => {
-                      setAiDraft(null);
-                      setRefineInput("");
-                      setRefining(false);
-                      draftRun.dismiss();
-                    }}
-                    onEdit={() => {
-                      setFields({
-                        name: aiDraft.name,
-                        statement: aiDraft.statement,
-                        rationale: aiDraft.rationale,
-                        detection: aiDraft.detection,
-                        quote: "",
-                        severity: aiDraft.severity,
-                        section: aiDraft.section,
-                      });
-                      setMode("manual");
-                    }}
-                  />
-                )}
+                  >
+                    <Check className="h-4 w-4" />
+                    {saving ? "Adding…" : "Add as a draft"}
+                  </Button>
+                </div>
               </div>
             )}
           </div>

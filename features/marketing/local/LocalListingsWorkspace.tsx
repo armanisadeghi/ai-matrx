@@ -64,13 +64,8 @@ import {
   type BusinessLocation,
   type ListingMatrixRow,
   type ListingStatus,
-  type LocationListing,
   type PublisherTier,
 } from "@/features/marketing/types";
-import { useQueryClient } from "@tanstack/react-query";
-import { marketingKeys } from "@/features/marketing/data/hooks";
-import { checkGoogleListing } from "@/features/marketing/local/data";
-import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
 const TIER_BADGE_CLASS: Record<PublisherTier, string> = {
@@ -526,8 +521,6 @@ function LabeledInput({
   );
 }
 
-const GOOGLE_PUBLISHER_SLUG = "google-business-profile";
-
 function ListingsMatrix({
   organizationId,
   location,
@@ -539,31 +532,6 @@ function ListingsMatrix({
 }) {
   const upsertListing = useUpsertLocationListing();
   const [savingPublisherId, setSavingPublisherId] = useState<string | null>(null);
-  const dispatch = useAppDispatch();
-  const queryClient = useQueryClient();
-  const [checkingGoogle, setCheckingGoogle] = useState(false);
-
-  const handleGoogleCheck = async () => {
-    setCheckingGoogle(true);
-    try {
-      const result = await checkGoogleListing(location.id, dispatch);
-      if (result.snapshot.found) {
-        toast.success(
-          `Google listing found: ${result.snapshot.name ?? "unnamed"} — live data saved, NAP audit updated.`,
-        );
-      } else {
-        toast.info(
-          `No Google listing found for "${result.snapshot.keyword}". Recorded as not listed; try a different search phrase from the location profile if the business exists under another name.`,
-        );
-      }
-      void queryClient.invalidateQueries({ queryKey: [...marketingKeys.root, "location"] });
-      void queryClient.invalidateQueries({ queryKey: [...marketingKeys.root, "brand"] });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Google listing check failed.");
-    } finally {
-      setCheckingGoogle(false);
-    }
-  };
 
   const handleStatus = async (publisherId: string, status: ListingStatus) => {
     setSavingPublisherId(publisherId);
@@ -624,17 +592,6 @@ function ListingsMatrix({
                       <span className="truncate font-medium text-foreground" title={publisher.api_notes ?? undefined}>
                         {publisher.name}
                       </span>
-                      {publisher.slug === GOOGLE_PUBLISHER_SLUG ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-6 shrink-0 px-2 text-[11px]"
-                          onClick={() => void handleGoogleCheck()}
-                          disabled={checkingGoogle}
-                        >
-                          {checkingGoogle ? "Checking live…" : "Fetch live data"}
-                        </Button>
-                      ) : null}
                       {publisher.manage_url ? (
                         <a
                           href={publisher.manage_url}
@@ -647,9 +604,7 @@ function ListingsMatrix({
                         </a>
                       ) : null}
                     </div>
-                    {listing && listing.observed && Object.keys(listing.observed as object).length > 0 ? (
-                      <ObservedVerdictLine location={location} listing={listing} />
-                    ) : publisher.api_notes ? (
+                    {publisher.api_notes ? (
                       <p className="mt-0.5 line-clamp-1 max-w-96 text-[11px] text-muted-foreground" title={publisher.api_notes}>
                         {publisher.api_notes}
                       </p>
@@ -812,44 +767,6 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
         </div>
       )}
     </SectionCard>
-  );
-}
-
-/** One-line verdict over a listing's extracted data: match score + the exact disagreements. */
-function ObservedVerdictLine({
-  location,
-  listing,
-}: {
-  location: BusinessLocation;
-  listing: LocationListing;
-}) {
-  const audit = auditListingNap(location, listing.observed);
-  const checked = listing.last_checked_at
-    ? new Date(listing.last_checked_at).toLocaleDateString()
-    : null;
-  if (audit.score === null) {
-    return (
-      <p className="mt-0.5 text-[11px] text-muted-foreground">
-        Live data captured{checked ? ` ${checked}` : ""} ({listing.source}) — no comparable NAP fields yet.
-      </p>
-    );
-  }
-  return (
-    <p className="mt-0.5 max-w-96 text-[11px]">
-      <span className={audit.mismatches.length === 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
-        Live NAP match {audit.score}%
-      </span>
-      <span className="text-muted-foreground">
-        {" "}
-        ({listing.source}
-        {checked ? `, ${checked}` : ""})
-        {audit.mismatches.length > 0
-          ? ` — ${audit.mismatches
-              .map((m) => `${m.field}: listing says "${m.observed}", profile says "${m.canonical}"`)
-              .join("; ")}`
-          : " — every comparable field agrees"}
-      </span>
-    </p>
   );
 }
 

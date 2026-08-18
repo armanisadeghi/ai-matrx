@@ -14,16 +14,9 @@ import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
 
 import { applyFinding, rejectFinding } from "../api";
-import {
-  findingProposalBody,
-  hindsightFindingAgentPayload,
-  hindsightFindingHuman,
-  hindsightFindingIsDecided,
-} from "../copy";
 import { conversationHref } from "../subject-doors";
 import { useDoorAudience } from "./door-audience";
 import { evidenceLine, splitEvidenceIds, type Finding } from "../types";
@@ -31,6 +24,19 @@ import { DiscussPanel } from "./DiscussPanel";
 import { RegressionCasesFromFinding } from "./RegressionCasesFromFinding";
 import { RevertButton } from "./RevertButton";
 import { LEVER_COLOR, LEVER_LABEL, VERDICT_COLOR } from "./tokens";
+
+const DECIDED = new Set(["applied", "rejected", "superseded", "approved", "reverted"]);
+
+function proposalBody(finding: Finding): string {
+  const p = finding.proposal;
+  return (
+    p?.proposed_system_text ??
+    p?.section_content ??
+    p?.content ??
+    p?.details ??
+    ""
+  );
+}
 
 export function FindingCard({
   finding,
@@ -76,8 +82,8 @@ export function FindingCard({
   });
 
   const verdicts = finding.proposal?.replay_verdicts ?? {};
-  const decided = hindsightFindingIsDecided(finding);
-  const body = findingProposalBody(finding);
+  const decided = DECIDED.has(finding.status);
+  const body = proposalBody(finding);
   const busy = apply.isPending || reject.isPending;
 
   return (
@@ -138,19 +144,6 @@ export function FindingCard({
           </div>
         </button>
         <div className="flex shrink-0 items-start gap-1.5">
-          <CopyButtons
-            size="icon"
-            label={`Hindsight finding “${finding.title}”`}
-            human={() => hindsightFindingHuman(finding)}
-            json={() => finding}
-            agent={() => hindsightFindingAgentPayload(finding, expanded)}
-            agentVariant={{
-              id: "finding-with-context",
-              label: "Finding with context",
-              hint: "What this Hindsight card shows, with its page and record identity",
-              position: "first",
-            }}
-          />
           <Button
             size="sm"
             variant="outline"

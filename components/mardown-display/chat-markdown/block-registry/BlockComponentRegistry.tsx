@@ -22,7 +22,6 @@ import KeywordClassificationBatchBlock from "../../blocks/keyword-research/Keywo
 import KeywordSerpIntentAnalysisBlock from "../../blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
 import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
-import MasterworkCheckupFindingBlock from "../../blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
 import MediaChaptersBlock from "../../blocks/media-chapters/MediaChaptersBlock";
 import GeneratedImageSetBlock from "../../blocks/media-io/GeneratedImageSetBlock";
 import GeneratedVideoSetBlock from "../../blocks/media-io/GeneratedVideoSetBlock";
@@ -317,13 +316,6 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <EpisodeTitleOptionsBlock {...props} />
-    </LazyBlockWrapper>
-  ),
-  MasterworkCheckupFindingBlock: (
-    props: React.ComponentProps<typeof MasterworkCheckupFindingBlock>,
-  ) => (
-    <LazyBlockWrapper>
-      <MasterworkCheckupFindingBlock {...props} />
     </LazyBlockWrapper>
   ),
   MediaChaptersBlock: (

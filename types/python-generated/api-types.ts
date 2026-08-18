@@ -4630,28 +4630,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/seo/local/locations/{location_id}/google-listing": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Check Google Listing For Location
-         * @description Fetch the location's LIVE public Google listing (DataForSEO Business
-         *     Data) and persist it as observed evidence on web.location_listing — the
-         *     frontend NAP audit then runs against real extracted data.
-         */
-        post: operations["check_google_listing_for_location_seo_local_locations__location_id__google_listing_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/seo/sites/{site_id}/competitors/lookup": {
         parameters: {
             query?: never;
@@ -38089,73 +38067,6 @@ export interface components {
             /** File Id */
             file_id: string;
         };
-        /** GoogleListingCheckBody */
-        GoogleListingCheckBody: {
-            /**
-             * Force Refresh
-             * @default false
-             */
-            force_refresh?: boolean;
-            /** Keyword Override */
-            keyword_override?: string | null;
-        };
-        /** GoogleListingCheckResult */
-        GoogleListingCheckResult: {
-            /** Location Id */
-            location_id: string;
-            /** Listing Id */
-            listing_id?: string | null;
-            snapshot: components["schemas"]["GoogleListingSnapshot"];
-            /** Listing Status */
-            listing_status: string;
-            /**
-             * Persisted
-             * @description observed evidence written to web.location_listing
-             */
-            persisted: boolean;
-        };
-        /**
-         * GoogleListingSnapshot
-         * @description Flat observed payload — the exact field names the FE NAP audit compares.
-         */
-        GoogleListingSnapshot: {
-            /** Found */
-            found: boolean;
-            /** Keyword */
-            keyword: string;
-            /** Name */
-            name?: string | null;
-            /** Street Address */
-            street_address?: string | null;
-            /** Locality */
-            locality?: string | null;
-            /** Region */
-            region?: string | null;
-            /** Postal Code */
-            postal_code?: string | null;
-            /** Country Code */
-            country_code?: string | null;
-            /** Phone */
-            phone?: string | null;
-            /** Website Url */
-            website_url?: string | null;
-            /** Place Id */
-            place_id?: string | null;
-            /** Cid */
-            cid?: string | null;
-            /** Rating */
-            rating?: number | null;
-            /** Rating Count */
-            rating_count?: number | null;
-            /** Category */
-            category?: string | null;
-            /** Latitude */
-            latitude?: number | null;
-            /** Longitude */
-            longitude?: number | null;
-            /** Raw Payload Id */
-            raw_payload_id?: string | null;
-        };
         /** GrantPermissionRequest */
         GrantPermissionRequest: {
             /** Grantee Id */
@@ -51975,21 +51886,6 @@ export interface components {
         };
         /** RunWorkflowRequest */
         RunWorkflowRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
             /** Inputs */
             inputs?: {
                 [key: string]: unknown;
@@ -70607,41 +70503,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LandscapeBriefResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    check_google_listing_for_location_seo_local_locations__location_id__google_listing_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                location_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GoogleListingCheckBody"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["GoogleListingCheckResult"];
                 };
             };
             /** @description Validation Error */

@@ -171,29 +171,28 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       name: "Final Checkup — CheckupWindow",
       filePath: "features/masterwork/checkup/CheckupWindow.tsx",
       description:
-        "The window itself: composition root. Opens already RUNNING, renders every finding live through the ONE pipeline (MarkdownStream over the adopted stream → the masterwork_checkup_finding kind component), registers the checkup_decision surface write target, and carries ONE footer row (progress, the AI pass, Apply).",
+        "The window itself: composition root, the split, the keyboard model, the footer (progress, Approve with AI, Apply, Undo).",
       tier: "candidate",
     },
     {
-      name: "Final Checkup — MasterworkCheckupFindingBlock",
-      filePath:
-        "components/mardown-display/blocks/masterwork-checkup/MasterworkCheckupFindingBlock.tsx",
+      name: "Final Checkup — CheckupPanes",
+      filePath: "features/masterwork/checkup/CheckupPanes.tsx",
       description:
-        "THE renderer for the masterwork_checkup_finding kind — Arman's four-step order (You said this / They created this / What's missing or wrong / The recommended version) with the four verbs from RuleDecisionActions. Rendered by the canonical pipeline, never by the window.",
-      tier: "official",
+        "The two halves of the split: the Rulebook as it stands vs. the proposal, the reason, the Expert's VERBATIM evidence quote with doors to the conversation / source file, the confidence meter, alternatives, and the ProTextarea rewrite.",
+      tier: "internal",
     },
     {
-      name: "Final Checkup — CheckupSuggestionDialog",
-      filePath: "features/masterwork/checkup/CheckupSuggestionDialog.tsx",
+      name: "Final Checkup — CheckupFindingList",
+      filePath: "features/masterwork/checkup/CheckupFindingList.tsx",
       description:
-        "Improve / Edit / Reject one suggestion. Improve runs THE ONE masterwork.rule_improver Mandate through useRuleImproveRun (streamed); Edit uses THE ONE RuleFields form; Reject captures the reason that teaches the next checkup.",
+        "The queue: one row per finding with its kind, honest confidence badge, and the Expert's decision (with an AI mark when Approve with AI made the call).",
       tier: "internal",
     },
     {
       name: "Final Checkup — useCheckup",
       filePath: "features/masterwork/checkup/useCheckup.ts",
       description:
-        "The one state hook: decisions (kept per run, restored after a refresh), the AI pass, apply and undo-apply.",
+        "The one state hook: decisions (kept per run, restored after a refresh), filters, focus, Approve with AI + its undo, apply and undo-apply.",
       tier: "internal",
     },
     {

@@ -39,13 +39,6 @@ export interface CheckupRunHandle {
   runId: string | null;
   /** Everything found so far — live during the run, complete when it ends. */
   findings: CheckupFinding[];
-  /**
-   * The adopted stream's requestId. `useDurableRun` adopts the endpoint's
-   * stream into `activeRequests` for us, so this is all the canonical renderer
-   * needs: `<MarkdownStream requestId />` draws every finding the server
-   * releases, through the ONE pipeline, with nothing parsed here.
-   */
-  requestId: string | null;
   summary: string | null;
   start: () => Promise<void>;
 }
@@ -114,7 +107,6 @@ export function useCheckupRun(rulebookId: string): CheckupRunHandle {
     stage: run.stage,
     error: run.error,
     runId: run.runId,
-    requestId: run.requestId,
     findings,
     summary: run.result?.summary ?? null,
     start,

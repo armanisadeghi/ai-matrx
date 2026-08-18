@@ -36,7 +36,6 @@ export function RuleFields({
   sections,
   autoFocusName = true,
   idPrefix = "rule",
-  omitFields,
 }: {
   values: RuleFieldValues;
   onChange: (patch: Partial<RuleFieldValues>) => void;
@@ -45,16 +44,7 @@ export function RuleFields({
   /** Field ids are `${idPrefix}-name` etc. — the editor's context-menu text
    * replacement targets these ids, so keep the default there. */
   idPrefix?: string;
-  /**
-   * Fields this surface genuinely cannot own. The Final Checkup edits a
-   * SUGGESTION, whose source quote is the Expert's mechanically-verified
-   * verbatim evidence — rendering an editable box whose edits are discarded is
-   * worse than not rendering it. Omitting a field here is the sanctioned way to
-   * say so; forking this form is not.
-   */
-  omitFields?: ReadonlyArray<keyof RuleFieldValues>;
 }) {
-  const omitted = new Set(omitFields ?? []);
   const sectionCodes = Object.keys(sections);
   return (
     <div className="space-y-3">
@@ -138,20 +128,18 @@ export function RuleFields({
           </Select>
         </div>
       </div>
-      {omitted.has("quote") ? null : (
-        <div className="space-y-1.5">
-          <Label htmlFor={`${idPrefix}-quote`}>
-            In the source&apos;s own words (optional)
-          </Label>
-          <ProTextarea
-            id={`${idPrefix}-quote`}
-            value={values.quote}
-            onChange={(e) => onChange({ quote: e.target.value })}
-            placeholder="An exact quote from the book or document this rule comes from."
-            rows={6}
-          />
-        </div>
-      )}
+      <div className="space-y-1.5">
+        <Label htmlFor={`${idPrefix}-quote`}>
+          In the source&apos;s own words (optional)
+        </Label>
+        <ProTextarea
+          id={`${idPrefix}-quote`}
+          value={values.quote}
+          onChange={(e) => onChange({ quote: e.target.value })}
+          placeholder="An exact quote from the book or document this rule comes from."
+          rows={6}
+        />
+      </div>
     </div>
   );
 }

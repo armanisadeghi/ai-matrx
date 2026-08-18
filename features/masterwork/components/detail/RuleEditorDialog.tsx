@@ -21,14 +21,16 @@ import {
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
+import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { nextRuleId } from "../../ruleIds";
 import type { RulebookDraftSnapshot } from "../../agent-context/rulebookSurfaceScope";
 import {
   applyRuleTidy,
+  coerceRuleImproveResult,
+  MASTERWORK_RULE_IMPROVER_MANDATE,
   readRuleEditorDraft,
 } from "../../agent-context/ruleImprove";
-import { useRuleImproveRun } from "../../review/useRuleImproveRun";
 import { RuleFields } from "./RuleFields";
 import type { RulebookRule, RulebookSections, RuleSeverity } from "../../types";
 
@@ -103,12 +105,7 @@ function RuleEditorForm({
   open,
 }: RuleEditorDialogProps) {
   const dispatch = useAppDispatch();
-  const cleanupRun = useRuleImproveRun({
-    rulebookId,
-    organizationId,
-    sections,
-    surfaceName,
-  });
+  const cleanupRun = useLiveAgentRun();
   const isNew = !initial;
   const sectionCodes = useMemo(() => Object.keys(sections), [sections]);
   const wizardId = `masterwork-rule-editor:${rulebookId}:${initial?.id ?? "new"}`;
@@ -318,22 +315,56 @@ function RuleEditorForm({
     }
 
     const context = getSurfaceScope();
+    const ruleJson = JSON.stringify({
+      name: before.name,
+      statement: before.statement,
+      rationale: before.rationale,
+      detection: before.detection,
+      quote: before.quote,
+      severity: before.severity,
+      section: before.section,
+    });
     try {
       const cleaned = await cleanupRun.run<RulebookDraftSnapshot>({
+        mandateKey: MASTERWORK_RULE_IMPROVER_MANDATE,
         surfaceKey: "masterwork-rule-tidy",
-        fields: before,
-        // Empty guidance IS the tidy shape — see useRuleImproveRun.
-        expertInput: "",
-        context,
-        fallbackSection: before.section,
-        apply: (result) => applyRuleTidy(before, result),
-        onDurableResult: (result) => {
+        sourceFeature: "masterwork",
+        surfaceName,
+        organizationId,
+        contextAnchor: {
+          resource_type: "rulebook",
+          resource_id: rulebookId,
+        },
+        variables: {
+          rule_json: ruleJson,
+          expert_input: "",
+          rulebook_context: JSON.stringify(context),
+        },
+        expect: "json",
+        timeoutMs: 120_000,
+        coerce: (value) =>
+          applyRuleTidy(
+            before,
+            coerceRuleImproveResult(value, {
+              sections,
+              fallbackSection: before.section,
+            }),
+          ),
+        onResult: (result) => {
+          if (!result.data) return;
+          const durable = applyRuleTidy(
+            before,
+            coerceRuleImproveResult(result.data, {
+              sections,
+              fallbackSection: before.section,
+            }),
+          );
           dispatch(
             patchWizardDraft({
               wizardId,
               patch: {
                 baseVersion: rulebookVersion,
-                fields: applyRuleTidy(before, result),
+                fields: durable,
                 beforeTidy: before,
               },
             }),

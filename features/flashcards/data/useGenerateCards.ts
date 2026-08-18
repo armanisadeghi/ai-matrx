@@ -22,8 +22,6 @@
 
 import { useHeadlessAgentJson } from "@/features/agents/hooks/useHeadlessAgentJson";
 import { coerceTrustEnvelope } from "@/features/education/trust/types";
-import type { Depth } from "@/features/education/assessment/data/types";
-import { foldDepthIntoRequest } from "./enhanceCard";
 import type { NewCardInput } from "./types";
 
 /**
@@ -45,12 +43,6 @@ export interface GenerateCardsVariables {
   grade_level?: string;
   /** Optional freeform focus / emphasis. */
   user_request?: string;
-  /**
-   * VISION §1 (gap 8) — generation-time depth tier. Reaches the agent through
-   * its declared `user_request` variable (foldDepthIntoRequest); becomes a
-   * pass-through when the agents declare a `depth` variable.
-   */
-  depth?: Depth;
 }
 
 /**
@@ -64,8 +56,6 @@ export interface GenerateFromSourceVariables {
   document_id: string;
   count: number;
   difficulty: string;
-  /** Gap 8 — reaches this agent through its declared `focus` variable. */
-  depth?: Depth;
 }
 
 function isFromSourceVars(
@@ -232,17 +222,13 @@ export function useGenerateCards(): GenerateCardsResult {
             document_id: vars.document_id,
             count: String(vars.count),
             difficulty: vars.difficulty,
-            // Gap 8 — the tier rides this agent's declared `focus` channel.
-            focus: foldDepthIntoRequest(vars.depth) ?? "",
           }
         : {
             topic: vars.topic,
             count: String(vars.count),
             difficulty: vars.difficulty,
             grade_level: vars.grade_level ?? "",
-            // Gap 8 — the tier leads; the learner's own request follows.
-            user_request:
-              foldDepthIntoRequest(vars.depth, vars.user_request) ?? "",
+            user_request: vars.user_request ?? "",
           },
       timeoutMs: EXTRACTION_TIMEOUT_MS,
       pollIntervalMs: POLL_INTERVAL_MS,

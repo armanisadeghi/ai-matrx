@@ -119,7 +119,6 @@ describe("compiled bootstrap (system-components)", () => {
       generated_audio: "generated_audio",
       podcast_episode: "podcast_episode",
       episode_title_options: "episode_title_options",
-      masterwork_checkup_finding: "masterwork_checkup_finding",
       seo_package: "seo_package",
       keyword_serp_intent_analysis_v1: "keyword_serp_intent_analysis",
       memory_aid: "memory_aid",
