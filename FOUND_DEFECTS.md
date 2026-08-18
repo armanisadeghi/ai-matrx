@@ -17,18 +17,6 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
-### D213 — every AI flashcard generation from the create surfaces persists TWO identical sets (2026-08-18)
-
-One generation → two `education.fc_set` rows ~500ms apart, proven live (a depth-tier
-verification run produced twins `49880ec0…` / `d2a9e78b…`; the flashcards home shows many
-historical pairs). Two independent writers: `CreateFromTopic`/`CreateFromSource` persist
-explicitly via `fcService.createSetWithCards`, AND `process-stream.ts:2989` auto-materializes
-every completed stream's render blocks → `FLASHCARDS_CANONICAL_ADAPTER.onMaterialize` persists
-the same `flashcard_set` block again (`metadata.generation="chat_render_block"`). The adapter's
-dedupe is per message-id source and cannot see the surface's save. Fix = pick ONE canonical
-writer (options + full diagnosis in chip `task_a876e306`, which owns the fix + live-data
-cleanup of existing pairs). Held here only so the finding survives if the chip is dismissed.
-
 ### D211 — org/project invitation email templates interpolate unescaped user text into HTML (2026-08-18)
 
 `lib/email/client.ts` — `organizationInvitation` and `projectInvitation` interpolate the org/project name and inviter name (user-controlled: `user_metadata.full_name`, org/project `name`) straight into the email HTML. A user can set a name containing markup/links and produce attacker-crafted HTML in real email sent from the aimatrx.com domain (branded-phishing vector). Found by the WP6 adversarial review; the NEW `classInvitation` template escapes via `escapeEmailHtml` (same file) and is the model — the fix is wrapping the same helper around each interpolated name in the two older templates plus any template that takes user text (`welcome`, sharing/feedback templates worth an audit). Not fixed in the WP6 session because those templates belong to the org/project invite flows (out of scope); the helper is exported and ready.
@@ -1082,6 +1070,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D213 — every AI flashcard generation persisted TWO identical sets (2026-08-18):** single-writer contract D-WP3-4 — surfaces (from-topic / from-source / convert deck) save via `fcService.createGeneratedSetForConversation` (adopt the adapter's set or create one stamped `cx_conversation`/`<cid>`); `FLASHCARDS_CANONICAL_ADAPTER` links to a surface-saved set instead of twinning. 20 live duplicate pairs soft-deleted, canvas links repointed; live-verified one generation → one set. Guard `features/flashcards/data/__tests__/generated-set-single-writer.test.ts`; contract in flashcards `FEATURE.md`.
 - **D209 — an adopted stream's output vanished when the run ended (2026-08-17):** `selectUnifiedSlots` hid every `sub_agent` block range unconditionally; a server-orchestrated run adopted via `adoptForeignStream` has no owning `agent_call`, so its only content block was hidden at operation completion — the hide is now gated on `toolCallId` (`features/agents/redux/execution-system/active-requests/active-requests.selectors.ts`, guard `__tests__/adopted-sub-agent-visibility.test.ts`). Fixing it surfaced a second class: a fieldless warm `kind_definition` row was erasing compiled schemas, rendering the finished kind card EMPTY (`features/content-ir/registry/kind-registry.ts`, guard `features/content-ir/__tests__/warm-fieldless-schema.test.ts`).
 
 - **D202 — A conversation can be filed directly under a project (2026-08-16):** Arman ruled direct filing IS allowed; `conversation → project` registered in `platform.association_types` (`container_side=target`, `conveys_max=editor`, matching every other `* → project` pair) and `project` restored to `HOME_TOKENS` / `WorkHomeToken` — `migrations/conversation_project_association_pair.sql`, `features/ai-work/compose/components/HomeStep.tsx`.
