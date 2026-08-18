@@ -24,6 +24,13 @@ import {
   formatConversationReference,
 } from "./ConversationReferencePicker";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
+import { GoogleResourcePicker } from "./GoogleResourcePicker";
+import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import {
+  GOOGLE_FILES_CONTEXT_KEY,
+  EMPTY_GOOGLE_FILE_IDS,
+  selectGoogleFileIds,
+} from "@/features/google-workspace/attach/googleFileContext";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -83,6 +90,40 @@ export function ResourcePickerMenu({
     attachmentCapabilities,
     { conversationId, allowedViewIds },
   );
+  /**
+   * Attached Google files ride the reserved `__google_files` context key rather
+   * than a `content[]` block, because the server side of this is a context
+   * directive: it names the files for the agent AND injects the Google tool for
+   * the turn (aidream `services/google_workspace/attachments.py`). A content
+   * block would deliver the first half and not the second.
+   */
+  const attachedGoogleFileIds = useAppSelector((state) =>
+    conversationId
+      ? selectGoogleFileIds(state, conversationId)
+      : EMPTY_GOOGLE_FILE_IDS,
+  );
+
+  const attachGoogleFile = (file: {
+    fileId: string;
+    name: string;
+    isSheet: boolean;
+  }) => {
+    if (!conversationId) return;
+    const next = attachedGoogleFileIds.includes(file.fileId)
+      ? [...attachedGoogleFileIds]
+      : [...attachedGoogleFileIds, file.fileId];
+    dispatch(
+      setContextEntry({
+        conversationId,
+        key: GOOGLE_FILES_CONTEXT_KEY,
+        value: next,
+        label: "Attached Google files",
+      }),
+    );
+    toast.success(`${file.name} attached.`);
+    onClose();
+  };
+
   const selectOne = async (resource: Resource) => {
     const selected = await onResourceSelected(resource);
     if (selected !== false) onClose();
@@ -176,6 +217,16 @@ export function ResourcePickerMenu({
           onSelect={(selection) => {
             void selectOne(selection);
           }}
+        />
+      );
+    }
+
+    if (activeView === "google") {
+      return (
+        <GoogleResourcePicker
+          onBack={() => setActiveView(null)}
+          attachedFileIds={attachedGoogleFileIds}
+          onSelect={(file) => attachGoogleFile(file)}
         />
       );
     }

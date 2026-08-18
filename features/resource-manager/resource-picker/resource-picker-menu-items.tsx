@@ -15,7 +15,7 @@ import {
   Table2,
   Wrench,
 } from "lucide-react";
-import { Youtube } from "@/components/icons/brand-icons";
+import { Google, Youtube } from "@/components/icons/brand-icons";
 
 export type ResourcePickerViewId =
   | "files"
@@ -30,6 +30,7 @@ export type ResourcePickerViewId =
   | "image_url"
   | "file_url"
   | "audio"
+  | "google"
   | "context_values"
   | "tools"
   | "skills"
@@ -38,7 +39,7 @@ export type ResourcePickerViewId =
 export type ResourcePickerMenuItem = {
   id: Exclude<ResourcePickerViewId, null>;
   label: string;
-  icon: LucideIcon | typeof Youtube;
+  icon: LucideIcon | typeof Youtube | typeof Google;
   /** Tailwind classes on the menu row icon — module / brand tint. */
   iconClassName: string;
   requiresCapability:
@@ -90,6 +91,16 @@ export const RESOURCE_PICKER_MENU_CATEGORIES: ResourcePickerMenuCategory[] = [
         label: "Webpage",
         icon: Globe,
         iconClassName: "text-teal-600 dark:text-teal-400",
+        requiresCapability: null,
+      },
+      {
+        // Always offered, even with nothing connected — a user cannot ask for a
+        // capability they do not know exists. The unconnected state is the
+        // pitch plus a one-click connect, never an error.
+        id: "google",
+        label: "Google",
+        icon: Google,
+        iconClassName: "text-blue-600 dark:text-blue-400",
         requiresCapability: null,
       },
       {
