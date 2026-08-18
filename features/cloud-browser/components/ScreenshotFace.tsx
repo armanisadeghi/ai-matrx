@@ -15,13 +15,13 @@ import { Camera, CameraOff, RefreshCw, Eye } from "lucide-react";
 import type { ScreenshotFrame } from "../types";
 
 function Countdown({ autoOffAt }: { autoOffAt: number | null }) {
-  const [, tick] = useState(0);
+  const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
-    const id = setInterval(() => tick((n) => n + 1), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
-  if (!autoOffAt) return null;
-  const secs = Math.max(0, Math.round((autoOffAt - Date.now()) / 1000));
+  if (!autoOffAt || now === null) return null;
+  const secs = Math.max(0, Math.round((autoOffAt - now) / 1000));
   const m = Math.floor(secs / 60);
   const s = secs % 60;
   return (

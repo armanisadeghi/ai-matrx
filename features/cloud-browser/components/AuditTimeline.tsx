@@ -12,14 +12,14 @@ import React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
-import { Bot, User, Cog } from "lucide-react";
+import { Cpu, User, Cog } from "lucide-react";
 import { CHECKPOINT_RETENTION_DAYS } from "../constants";
 import type { ProgressEvent } from "../types";
 
 function actorIcon(actor: ProgressEvent["actor"]) {
   if (actor === "human") return <User className="h-3.5 w-3.5 text-primary" aria-label="Person" />;
   if (actor === "system") return <Cog className="h-3.5 w-3.5 text-muted-foreground" aria-label="System" />;
-  return <Bot className="h-3.5 w-3.5 text-primary" aria-label="Agent" />;
+  return <Cpu className="h-3.5 w-3.5 text-primary" aria-label="Agent" />;
 }
 
 const RESULT_TONE: Record<ProgressEvent["resultClass"], string> = {

@@ -11,7 +11,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
-import { Bot, User, Cog, Hand, LogOut, MousePointerClick } from "lucide-react";
+import { Cpu, User, Cog, Hand, LogOut, MousePointerClick } from "lucide-react";
 import type { ControllerState } from "../types";
 
 export function ControllerBanner({
@@ -33,7 +33,7 @@ export function ControllerBanner({
 
   const { kind, isMe, displayName } = controller;
 
-  let icon = <Bot className="h-4 w-4" aria-hidden />;
+  let icon = <Cpu className="h-4 w-4" aria-hidden />;
   let label = "The agent is driving.";
   let tone = "border-border bg-muted";
 

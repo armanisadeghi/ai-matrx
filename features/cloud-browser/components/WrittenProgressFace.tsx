@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { cn } from "@/utils/cn";
 import {
-  Bot,
+  Cpu,
   CircleDot,
   User,
   Cog,
@@ -29,7 +29,7 @@ import type { ProgressEvent } from "../types";
 function ActorIcon({ actor }: { actor: ProgressEvent["actor"] }) {
   if (actor === "human") return <User className="h-3.5 w-3.5 text-primary" aria-label="Person" />;
   if (actor === "system") return <Cog className="h-3.5 w-3.5 text-muted-foreground" aria-label="System" />;
-  return <Bot className="h-3.5 w-3.5 text-primary" aria-label="Agent" />;
+  return <Cpu className="h-3.5 w-3.5 text-primary" aria-label="Agent" />;
 }
 
 function ResultIcon({ result }: { result: ProgressEvent["resultClass"] }) {

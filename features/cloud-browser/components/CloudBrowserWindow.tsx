@@ -146,7 +146,9 @@ export function CloudBrowserWindow({ onClose, initialProfileId }: CloudBrowserWi
             variant="prompt"
             consent={cb.notificationConsent}
             onChange={cb.updateNotificationConsent}
-            onAcknowledge={() => void cb.updateNotificationConsent(cb.notificationConsent!)}
+            onAcknowledge={() => {
+              if (cb.notificationConsent) void cb.updateNotificationConsent(cb.notificationConsent);
+            }}
           />
         ) : null}
 
