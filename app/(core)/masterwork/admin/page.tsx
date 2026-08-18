@@ -131,6 +131,18 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
   ],
   windowPanels: [
     {
+      overlayId: "masterworkBuildWindow",
+      description:
+        "BUILD A MASTERWORK — the payoff moment, on a window panel (was a blocking dialog until 2026-08-18). Setup (review-and-fix vs do-the-work, recommended from the Expert's own intake goal) → live progress through the canonical LiveRunProgress over the durable masterwork_run spine → the finished Masterwork with real doors (studio, sibling Masterworks, source Rulebook) and the canonical TryMasterworkBox to run it in place. Opened from the Rulebook page header via useOpenBuildWindow().",
+      status: "Live",
+    },
+    {
+      overlayId: "masterworkAddRuleWindow",
+      description:
+        "ADD A RULE — With AI (default, mic-first) + Manually (the canonical RuleFields form). Opened from every human add-rule entry point on the Rulebook page via useOpenAddRuleWindow().",
+      status: "Live",
+    },
+    {
       overlayId: "masterworkCheckupWindow",
       description:
         "THE FINAL CHECKUP — split down the middle (your Rulebook today | what we suggest). Streams add / modify / remove findings from POST /masterworks/checkup over the durable masterwork_run spine, keyboard disposition (Y / N / arrows), Approve with AI above 80% confidence, and ONE compare-and-swap apply through saveRules. Opened from the Rulebook page header.",

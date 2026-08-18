@@ -217,6 +217,41 @@ human entry point on the Rulebook page routes there. `RuleEditorDialog`'s
 "new" mode survives ONLY for the `rule_draft` surface write target
 (agent-staged drafts); no human path opens it for adds.
 
+🚨 **The BUILD is a WindowPanel too — and it is the one that mattered most.**
+Arman, 2026-08-18, on finding the Build still in a `sm:max-w-lg` dialog a day
+after the Add-rule conversion: *"the beautiful, incredible, highly dynamic …
+world-changing user interface I envision for the day I build this incredible
+system — you're telling me all of it's gonna render inside of that shitty
+little fucking model that blocks the page."* Overlay `masterworkBuildWindow` →
+`features/masterwork/build/BuildWindow.tsx`, opened only through
+`useOpenBuildWindow()`; `BuildMasterworkDialog` is **deleted**. Three rules it
+encodes:
+
+- **The page stays usable.** `78dvh` tall, not a fixed pixel wall: the Rulebook
+  is visible and editable behind the Build while the Build runs, and the panel
+  never overflows on first paint on a laptop. Minimise it and the Build carries
+  on in the tray.
+- **Progress renders through the canonical NON-TOKEN renderer.**
+  `POST /masterworks/build` emits no tokens at all — every emit in aidream's
+  `services/masterworks/build.py` is a typed data event (`rulebook_loaded`,
+  `agent_created`, `workflow_validated`, then the terminal complete). THE
+  FLOATING LAW's answer for that is `LiveRunProgress`: stable rows updating in
+  place, event narration banned. `features/masterwork/build/useBuildRun.ts`
+  translates the typed steps into `LiveRunProgressState` and nothing else —
+  no text parsed, no chunks bucketed, no kinds routed. `MarkdownStream` would
+  be the wrong half of the law here and would render an empty box. The old
+  dialog appended each `message` as a fresh `<p>` in a `max-h-48` scroller,
+  which is exactly the banned narration.
+- **The finished Masterwork gets doors and a run box, not a success line.**
+  Open it in the studio · All Masterworks from this Rulebook · See what it was
+  built from — and the canonical `TryMasterworkBox` right inside the panel, so
+  the Expert runs the thing they just built without leaving the moment.
+
+The Build is a durable run (`platform.masterwork_run`, surface `build`), so
+opening the window after a reload restores the finished Masterwork off the
+durable row, and an HMR/route remount mid-Build rejoins the live run — both
+verified live on Strunk (`e492a07f-…`) 2026-08-18.
+
 **Button icons rely on the Button's own `gap-2` — never add `mr-*` to a
 button icon** (icon + gap + margin was the "giant gap" defect Arman flagged
 on Approve/Reject).
@@ -312,8 +347,11 @@ rulebook.version` → the Masterworks page flags "rebuild" AND opens the rule-le
   result for review; only Save writes. The source quote, severity, and section are mechanically
   protected from AI changes. The generic `wizardDraftSlice` preserves a paid cleanup until Save,
   explicit Cancel, or Undo.
-- `components/detail/BuildMasterworkDialog.tsx` — "Build a Masterwork" (streams
-  `POST /masterworks/build` as a durable run).
+- `build/BuildWindow.tsx` — "Build a Masterwork" as a WindowPanel (streams
+  `POST /masterworks/build` as a durable run; progress through
+  `LiveRunProgress`; result carries doors + `TryMasterworkBox`). Openers:
+  `features/overlays/openers/masterworkBuildWindow.tsx`; run + progress
+  translation: `build/useBuildRun.ts`; page callbacks: `build/callbacks.ts`.
 - `components/detail/IngestSourceDialog.tsx` — "From a source" (paste →
   `POST /masterworks/ingest`; upload → `POST /masterworks/ingest-file`).
 - `components/detail/ScoutInterviewPanel.tsx` — the Scout interview Approach (side sheet).

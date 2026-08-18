@@ -21,6 +21,31 @@
 
 ## STATUS — live and verified (compressed)
 
+- **🚨 THE BUILD IS A WINDOW PANEL — the last blocking modal on the payoff moment is gone
+  (2026-08-18).** Arman, on finding the Build still in a `sm:max-w-lg` dialog a day after the
+  Add-rule conversion: *"you're telling me all of it's gonna render inside of that shitty little
+  fucking model that blocks the page and sits there … and just has so much fucking text that it
+  shits on itself every time it moves."* `BuildMasterworkDialog` is **deleted**; the Build is
+  overlay `masterworkBuildWindow` → `features/masterwork/build/BuildWindow.tsx`, opened only
+  through `useOpenBuildWindow()`. **(1)** `78dvh` — the Rulebook stays visible and editable behind
+  the running Build, and the panel never overflows on first paint; minimise/maximise/tray all work.
+  **(2)** Progress renders through **`LiveRunProgress`**, the canonical NON-token renderer THE
+  FLOATING LAW names, because `POST /masterworks/build` emits no tokens at all — only typed
+  `rulebook_loaded` / `agent_created` / `workflow_validated` data events. `build/useBuildRun.ts`
+  translates them into `LiveRunProgressState`; three stable rows update in place and the parts
+  accumulate as a detail line. The old hand-drawn `<p>` log in a `max-h-48` scroller was the
+  banned event narration, in the cramped frame he was describing. **(3)** The finished Masterwork
+  gets **doors** (studio · sibling Masterworks · source Rulebook) and the canonical
+  `TryMasterworkBox` INSIDE the panel — build it and run it without leaving the moment.
+  **Verified live on Strunk (`e492a07f-…`) against the local stack**: two real Builds ran to
+  completion (workflow `fd6cea24-…`), the page behind stayed typeable mid-Build, a reload +
+  reopen restored the finished Masterwork off the durable row, and a remount mid-Build rejoined
+  the live run ("This Build kept running while you were away"). Desktop + 375px both proved.
+  Fixed in passing: `LiveRunProgress`'s status word shattered into "Run nin g" at 375px — the
+  shared component now holds it `shrink-0 whitespace-nowrap`.
+  **Not proved:** `TryMasterworkBox` was already inline everywhere it appears (MasterworksPage,
+  EncoreRunPage, UnderstudyCard) — no run surface was trapped in a dialog, so nothing to convert.
+
 - **🚨 THE FINAL CHECKUP WAS REBUILT — it broke four of our own laws and Arman caught all four
   on his first run (2026-08-18).** *"It forced me to stare at a blank page in a window panel for
   approximately a minute and a half and then magically all the content appeared… we have a policy

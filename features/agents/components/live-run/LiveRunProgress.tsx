@@ -138,11 +138,15 @@ export function LiveRunProgress({
                 <StatusIcon status={item.status} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium">{item.label}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 font-medium">{item.label}</p>
                   <span
                     className={cn(
-                      "text-xs font-medium capitalize",
+                      // shrink-0 + nowrap: at 375px the status shattered into
+                      // "Run nin g" beside a two-line label (found live in the
+                      // Masterwork Build panel, 2026-08-18). A status word is
+                      // never the thing that should wrap.
+                      "shrink-0 whitespace-nowrap text-xs font-medium capitalize",
                       item.status === "running" && "text-primary",
                       item.status === "completed" && "text-emerald-600",
                       item.status === "failed" && "text-destructive",

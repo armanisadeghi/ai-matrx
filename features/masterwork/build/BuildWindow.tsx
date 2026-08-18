@@ -136,6 +136,10 @@ function BuildWindowInner({
           setLoadError("That Rulebook isn't there any more.");
           return;
         }
+        // Clear on success, not before the fetch: a stale error from a
+        // previous Rulebook must not survive, and an unconditional reset at
+        // the top of the effect trips the setState-in-effect guard.
+        setLoadError(null);
         setRulebook(row);
         setKind((current) => current ?? recommendKind(row));
       })
@@ -419,7 +423,11 @@ function BuildWindowInner({
         </span>
       }
       width={880}
-      height={760}
+      /* Viewport-relative, so the payoff moment never opens as a wall that
+         hides the Rulebook behind it — and never overflows on first paint on a
+         laptop. The setup form, the three progress rows and the finished state
+         all fit inside this with room left over. */
+      height="78dvh"
       minWidth={360}
       minHeight={420}
       footer={footer}
