@@ -28,6 +28,11 @@ export function isBuiltIn(id: string): boolean {
   return BUILT_IN_CONFIGS.some((config) => config.id === id);
 }
 
+/** `typeof null === "object"` and so is an array. Neither is a config object. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function readOverrides(): Record<string, LinkValuationConfig> {
   if (typeof window === "undefined") return {};
   try {
@@ -148,8 +153,16 @@ export function parseConfig(
       error: "`money.roles` and `money.authorization` must each be an array.",
     };
   }
-  if (candidate.labels === undefined || typeof candidate.labels !== "object") {
-    return { error: "Missing the `labels` block." };
+  if (!isPlainObject(candidate.labels)) {
+    return { error: "`labels` must be an object of label sets." };
+  }
+  for (const [key, set] of Object.entries(candidate.labels)) {
+    if (
+      !isPlainObject(set) ||
+      !Array.isArray((set as { bands?: unknown }).bands)
+    ) {
+      return { error: `Label set "${key}" needs a \`bands\` array.` };
+    }
   }
 
   return { config: candidate as LinkValuationConfig };

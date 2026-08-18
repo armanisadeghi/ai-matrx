@@ -354,3 +354,29 @@ describe("each config opens on its own worked example", () => {
     ).toBeCloseTo(35.52, 2);
   });
 });
+
+describe("a null is not an object — the trap the first validation fell into", () => {
+  it.each(["labels", "money", "signals", "groups", "gates"])(
+    "rejects %s: null rather than accepting it and throwing later",
+    (field) => {
+      const result = parseConfig(
+        JSON.stringify({ ...MATRX_V1_CONFIG, [field]: null }),
+      );
+      expect(result).toHaveProperty("error");
+    },
+  );
+
+  it("rejects an array where an object belongs", () => {
+    expect(
+      parseConfig(JSON.stringify({ ...MATRX_V1_CONFIG, labels: [] })),
+    ).toHaveProperty("error");
+  });
+
+  it("rejects a label set with no bands", () => {
+    const broken = {
+      ...MATRX_V1_CONFIG,
+      labels: { quality: { source: "total" } },
+    };
+    expect(parseConfig(JSON.stringify(broken))).toHaveProperty("error");
+  });
+});

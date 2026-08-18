@@ -36,8 +36,13 @@ import {
   writeActiveConfigId,
 } from "../storage";
 import { seedFor } from "../configs/seeds";
-import type { EvaluationInput, LinkValuationConfig } from "../types";
+import type {
+  EvaluationInput,
+  EvaluationResult,
+  LinkValuationConfig,
+} from "../types";
 import { CandidateForm } from "./CandidateForm";
+import { ConfigRecovery } from "./ConfigRecovery";
 import { ResultPanel } from "./ResultPanel";
 import { TuningPanel } from "./TuningPanel";
 
@@ -67,7 +72,36 @@ export function LinkValuationWorkspace() {
     configs.find((entry) => entry.id === activeId) ?? BUILT_IN_CONFIGS[0];
   if (!config) return null;
 
-  const result = evaluateLink(config, input);
+  // LOUD RECOVERY. Validation runs at import, but a config can still reach the
+  // engine broken — hand-edited storage, a blob written by an older schema, a
+  // field a future version adds. Without this, one bad object saved to
+  // localStorage throws on every render and the page stays dead until someone
+  // clears storage by hand. Recovering silently would be just as bad: a scoring
+  // engine quietly running a config you did not choose is worse than an error.
+  let result: EvaluationResult;
+  try {
+    result = evaluateLink(config, input);
+  } catch (error) {
+    return (
+      <ConfigRecovery
+        configName={config.name}
+        reason={(error as Error).message}
+        onRecover={() => {
+          // Inlined deliberately: this render returns here, so the helpers
+          // declared further down are still in their temporal dead zone and
+          // calling one would throw the moment the button is pressed.
+          resetConfig(config.id);
+          const fallback = BUILT_IN_CONFIGS[0];
+          if (!fallback) return;
+          setConfigs([...BUILT_IN_CONFIGS]);
+          setActiveId(fallback.id);
+          writeActiveConfigId(fallback.id);
+          setInput(seedFor(fallback.id));
+          setDirty(false);
+        }}
+      />
+    );
+  }
 
   const updateConfig = (next: LinkValuationConfig) => {
     setConfigs(configs.map((entry) => (entry.id === next.id ? next : entry)));
