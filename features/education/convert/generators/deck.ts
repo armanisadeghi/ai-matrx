@@ -168,7 +168,11 @@ async function run(
   }
 
   const setName = title || source.title || "Study deck";
-  const created = await fcService.createSetWithCards(
+  // Single-writer contract (D-WP3): this headless run's stream also
+  // materializes its flashcard render block via the canonical adapter — go
+  // through the conversation-scoped dedupe path so exactly ONE fc_set exists.
+  const created = await fcService.createGeneratedSetForConversation(
+    extracted.conversationId,
     {
       name: setName,
       description: source.title ? `Generated from ${source.title}` : null,

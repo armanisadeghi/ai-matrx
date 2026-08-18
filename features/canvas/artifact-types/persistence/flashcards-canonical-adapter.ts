@@ -116,6 +116,23 @@ export const FLASHCARDS_CANONICAL_ADAPTER: ArtifactPersistenceAdapter<Flashcards
       if (existing?.id) {
         return { externalSystem: EXTERNAL_SYSTEM, externalId: existing.id };
       }
+      // D-WP3 single-writer contract: a generation SURFACE (from-topic /
+      // from-source / convert deck) may have already saved this run's deck,
+      // stamped with the run's conversation identity. Link to it — never
+      // create a twin. Only surface saves stamp cx_conversation, so ordinary
+      // multi-deck chat conversations never hit this branch.
+      if (info.source.system === "cx_message" && info.conversationId) {
+        const surfaceSaved =
+          await fcService.findSurfaceSavedSetForConversation(
+            info.conversationId,
+          );
+        if (surfaceSaved.data?.id) {
+          return {
+            externalSystem: EXTERNAL_SYSTEM,
+            externalId: surfaceSaved.data.id,
+          };
+        }
+      }
       // Legacy fallback: chat-era sets carry only metadata.source_message_id.
       if (info.source.system === "cx_message") {
         const { data: legacy } = await supabase

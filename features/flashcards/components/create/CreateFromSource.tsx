@@ -243,7 +243,11 @@ export function CreateFromSource() {
         }),
       }));
 
-      const setRes = await fcService.createSetWithCards(
+      // Single-writer contract (D-WP3): converge with the stream's own
+      // render-block materialization on ONE fc_set for this run — adopt the
+      // adapter's set or create one stamped with the run's conversation id.
+      const setRes = await fcService.createGeneratedSetForConversation(
+        result.conversationId,
         {
           name: result.set_title?.trim() || selectedDoc.name,
           topic: selectedDoc.name,

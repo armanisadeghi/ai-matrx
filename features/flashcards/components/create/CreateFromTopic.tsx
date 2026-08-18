@@ -152,7 +152,13 @@ export function CreateFromTopic() {
       const result =
         fromEnvelope && fromEnvelope.cards.length > 0 ? fromEnvelope : extracted;
 
-      const setRes = await fcService.createSetWithCards(
+      // Single-writer contract (D-WP3): the run's stream ALSO materializes its
+      // render block into an fc_set (FLASHCARDS_CANONICAL_ADAPTER). This call
+      // adopts that set if the adapter won the race, else creates one stamped
+      // with the run's conversation id so the adapter links instead of
+      // double-creating. Never call createSetWithCards directly here.
+      const setRes = await fcService.createGeneratedSetForConversation(
+        extracted.conversationId,
         {
           name: result.set_title?.trim() || trimmedTopic,
           topic: trimmedTopic,

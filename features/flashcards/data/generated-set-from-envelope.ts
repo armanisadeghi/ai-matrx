@@ -54,7 +54,7 @@ function sourceFromRaw(value: unknown): NewCardInput["source"] {
  */
 export function generatedSetFromEnvelope(
   envelope: CanonicalBlockIR,
-): GeneratedCardSet | null {
+): Omit<GeneratedCardSet, "conversationId"> | null {
   if (envelope.root.kind !== "flashcard_set") return null;
   if (envelope.root.status !== "complete") return null;
 

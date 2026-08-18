@@ -34,6 +34,13 @@ import type { NewCardInput } from "./types";
 export interface GeneratedCardSet {
   set_title: string;
   cards: NewCardInput[];
+  /**
+   * The headless run's conversation id — the run's IDENTITY for the
+   * single-writer dedupe contract (D-WP3). Persistence callers MUST pass it
+   * to `fcService.createGeneratedSetForConversation` so the surface save and
+   * the chat-materialization adapter converge on ONE fc_set.
+   */
+  conversationId: string | null;
 }
 
 /** Variables the generateCards agent declares (keys must match exactly). */
@@ -171,7 +178,7 @@ function coerceCard(raw: unknown): NewCardInput | null {
  * prompt tweak doesn't break the flow silently. Throws (caught by the
  * caller) only when no cards can be recovered at all.
  */
-function coerceGeneratedSet(value: unknown): GeneratedCardSet {
+function coerceGeneratedSet(value: unknown): Omit<GeneratedCardSet, "conversationId"> {
   // Bare array → treat as the cards list with no title.
   if (Array.isArray(value)) {
     const cards = value
@@ -251,7 +258,10 @@ export function useGenerateCards(): GenerateCardsResult {
         noJson: "Agent finished but produced no structured JSON",
         timeout: "Timed out waiting for the flashcard agent to respond",
       },
-      coerce: coerceGeneratedSet,
+      coerce: (value, result) => ({
+        ...coerceGeneratedSet(value),
+        conversationId: result.conversationId ?? null,
+      }),
     });
   }
 

@@ -426,6 +426,117 @@ export const fcService = {
     return this.getSetWithCards(set.id);
   },
 
+  // ─── Single-writer contract for agent-generated decks (D-WP3) ────────────
+  //
+  // A generation surface (from-topic / from-source / convert deck) runs a
+  // headless agent whose stream ALSO materializes its flashcard render block
+  // through FLASHCARDS_CANONICAL_ADAPTER — two independent writers for one
+  // deck. The contract that keeps them to ONE fc_set row:
+  //   • every headless generation runs in its own fresh conversation, so the
+  //     conversation id IS the run's identity;
+  //   • a surface save goes through `createGeneratedSetForConversation`, which
+  //     ADOPTS the adapter's set if the adapter won the race (updates
+  //     name/topic/difficulty on it) and otherwise creates the set stamped
+  //     `metadata.source_system="cx_conversation"` / `source_id=<cid>`;
+  //   • the adapter, before creating, looks up that cx_conversation stamp and
+  //     LINKS to the surface's set instead of creating a twin.
+  // Ordinary multi-deck chat conversations are untouched: only surface saves
+  // ever stamp cx_conversation, and the adopt lookup matches only
+  // adapter-generated rows (`metadata.generation="chat_render_block"`).
+
+  /**
+   * The set the chat-materialization adapter created for this conversation's
+   * render block, if it won the race (adopt target for a surface save).
+   */
+  async findChatGeneratedSetForConversation(
+    conversationId: string,
+  ): Promise<FcResult<FcSetRow | null>> {
+    try {
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .select("*")
+        .eq("metadata->>conversation_id", conversationId)
+        .eq("metadata->>generation", "chat_render_block")
+        .is("deleted_at", null)
+        .limit(1)
+        .maybeSingle();
+      if (error) return fail("findChatGeneratedSetForConversation", error);
+      return { data: (data as FcSetRow | null) ?? null, error: null };
+    } catch (e) {
+      return fail("findChatGeneratedSetForConversation", e);
+    }
+  },
+
+  /**
+   * The set a generation SURFACE saved for this conversation's run, if any
+   * (dedupe target for the materialization adapter — link, don't create).
+   */
+  async findSurfaceSavedSetForConversation(
+    conversationId: string,
+  ): Promise<FcResult<FcSetRow | null>> {
+    try {
+      const { data, error } = await EDU()
+        .from("fc_set")
+        .select("*")
+        .eq("metadata->>source_system", "cx_conversation")
+        .eq("metadata->>source_id", conversationId)
+        .is("deleted_at", null)
+        .limit(1)
+        .maybeSingle();
+      if (error) return fail("findSurfaceSavedSetForConversation", error);
+      return { data: (data as FcSetRow | null) ?? null, error: null };
+    } catch (e) {
+      return fail("findSurfaceSavedSetForConversation", e);
+    }
+  },
+
+  /**
+   * THE canonical surface-save path for an agent-generated deck. Adopt the
+   * adapter's set when it already exists for this run's conversation
+   * (enriching it with the surface's name/topic/difficulty — the cards are
+   * byte-identical, both writers persist the same envelope); otherwise create
+   * the set stamped with the run's conversation identity so the adapter's
+   * dedupe finds it and links instead of double-creating.
+   */
+  async createGeneratedSetForConversation(
+    conversationId: string | null,
+    input: NewSetInput,
+    cards: NewCardInput[],
+  ): Promise<FcResult<SetWithCards>> {
+    if (conversationId) {
+      const twin = await this.findChatGeneratedSetForConversation(conversationId);
+      if (twin.data) {
+        const updated = await this.updateSet(twin.data.id, {
+          name: input.name,
+          topic: input.topic ?? null,
+          difficulty: input.difficulty ?? null,
+          ...(input.description !== undefined
+            ? { description: input.description }
+            : {}),
+        });
+        if (!updated.data) return { data: null, error: updated.error };
+        return this.getSetWithCards(twin.data.id);
+      }
+    }
+    return this.createSetWithCards(
+      {
+        ...input,
+        metadata: {
+          ...(input.metadata ?? {}),
+          ...(conversationId
+            ? {
+                source_system: "cx_conversation",
+                source_id: conversationId,
+                conversation_id: conversationId,
+              }
+            : {}),
+          generation: "surface_save",
+        },
+      },
+      cards,
+    );
+  },
+
   /**
    * "Make this deeper" — persist agent-generated sub-cards for ONE parent card.
    * Each sub-card is inserted as a normal set member (so it's studyable in the
