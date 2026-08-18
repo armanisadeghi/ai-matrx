@@ -112,6 +112,20 @@ export async function sendEmail(options: SendEmailOptions) {
   }
 }
 
+/**
+ * Escape user-controlled text before interpolating it into template HTML.
+ * Names (class/org/project/inviter) are arbitrary user input — unescaped they
+ * are an HTML-injection vector into real email sent from our domain.
+ */
+export function escapeEmailHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Email templates
 export const emailTemplates = {
   welcome: (name: string) => ({
@@ -155,12 +169,15 @@ export const emailTemplates = {
   }),
 
   classInvitation: (
-    className: string,
-    inviterName: string,
+    classNameRaw: string,
+    inviterNameRaw: string,
     invitationUrl: string,
     expiresAt: Date
-  ) => ({
-    subject: `${inviterName} invited you to join ${className}`,
+  ) => {
+    const className = escapeEmailHtml(classNameRaw);
+    const inviterName = escapeEmailHtml(inviterNameRaw);
+    return {
+    subject: `${inviterNameRaw} invited you to join ${classNameRaw}`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h1 style="color: #3b82f6;">You're invited to a class</h1>
@@ -174,7 +191,8 @@ export const emailTemplates = {
         <p style="color: #666; font-size: 14px;">If you didn't expect this invitation, you can safely ignore this email.</p>
       </div>
     `,
-  }),
+    };
+  },
 
   projectInvitation: (
     projectName: string,
