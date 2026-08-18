@@ -38,6 +38,11 @@ export interface VoiceRelayBarProps {
   sourceFeature: SourceFeature;
   /** Surface default per ruling 3. */
   questionPacing?: QuestionPacing;
+  /**
+   * `bar` draws the standalone section chrome. `toolbar` embeds the same
+   * controls in an existing toolbar without adding another layout row.
+   */
+  variant?: "bar" | "toolbar";
 }
 
 function ActiveVoiceRelay({
@@ -99,7 +104,13 @@ export function VoiceRelayBar(props: VoiceRelayBarProps) {
   const communicator = useMandate(VOICE_COMMUNICATOR_MANDATE_KEY);
 
   return (
-    <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
+    <div
+      className={
+        props.variant === "toolbar"
+          ? "flex items-center gap-1"
+          : "flex items-center gap-2 border-b border-border px-3 py-1.5"
+      }
+    >
       {!enabled ? (
         <Button size="sm" variant="ghost" onClick={() => setEnabled(true)}>
           <AudioLines className="mr-1.5 h-3.5 w-3.5" /> Voice

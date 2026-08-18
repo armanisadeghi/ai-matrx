@@ -34,7 +34,7 @@
   signed-in Experts get the Masterwork HOME; see § The landing below),
   `/masterwork/all` (Masterwork Studio — entity-list shell over platform.rulebook),
   `/masterwork/[id]` (rule editor + Conversations section + "Build a Masterwork"
-  dialog + "From a source" ingest dialog + "Interview me" side sheet),
+  dialog + "From a source" ingest dialog + "Interview me" dynamic side panel),
   `/masterwork/[id]/interview` (the Scout interview as a full page — see § The
   Record), `/masterwork/[id]/sources` (the dump lane — the same
   `RulebookSourcesPanel` the detail page renders inline),
@@ -64,10 +64,10 @@
   `record/ExpertRecordPage.tsx`, `record/InterviewChooser.tsx`, `record/copy.ts`. See § The Record
   below for the association and the corpus contract.
 - **The Scout interview Approach:** `ScoutInterviewPanel` (AskTutor pattern — useAgentLauncher +
-  AgentConversationColumn in a Sheet) talks to the **Scout** agent
+  AgentConversationColumn in the canonical `MatrxDynamicPanelHost`) talks to the **Scout** agent
   (`4a0b2f8e-18d0-4ade-8b88-7f5610f1d0c8`, Sonnet 5, variable `rulebook_id`), which holds the
   server-side `rulebook` tool and lands draft rules on the Rulebook AS the Expert talks; the
-  panel watches the Rulebook row's `version` while open and refreshes the page behind the sheet.
+  panel watches the Rulebook row's `version` while open and refreshes the page beside it.
 - **The file Approach (2026-08-16):** "From a source" offers _Paste the text_ or _Upload a file_.
   An upload goes through the canonical file handler (`useFileUpload` — never a hand-rolled
   upload) and then `POST /masterworks/ingest-file`: a document is read page by page
