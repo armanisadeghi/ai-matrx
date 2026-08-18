@@ -34,12 +34,11 @@ export function SmsAssistantSettingsSection() {
   const state = assistant.state;
   const resolvedAgentId = mandate.mandate?.agentId ?? null;
   const selectedAgent = useAppSelector((rootState) =>
-    resolvedAgentId
-      ? selectAgentById(rootState, resolvedAgentId)
-      : undefined,
+    resolvedAgentId ? selectAgentById(rootState, resolvedAgentId) : undefined,
   );
   const transportBlockedReasons =
-    state?.blockedReasons.filter((reason) => reason !== "agent_not_selected") ?? [];
+    state?.blockedReasons.filter((reason) => reason !== "agent_not_selected") ??
+    [];
   const effectiveReady = Boolean(
     state && mandate.mandate && transportBlockedReasons.length === 0,
   );
@@ -62,8 +61,8 @@ export function SmsAssistantSettingsSection() {
                 ? `The SMS Mandate could not resolve: ${mandate.error}`
                 : transportBlockedReasons.length
                   ? transportBlockedReasons
-                    .map(assistantBlockedReasonLabel)
-                    .join(" ")
+                      .map(assistantBlockedReasonLabel)
+                      .join(" ")
                   : mandate.loading
                     ? "Resolving the SMS Mandate and your Binding."
                     : "The verified phone, sender, program, and Mandate Binding are ready."
@@ -118,9 +117,7 @@ export function SmsAssistantSettingsSection() {
                 openInNewTab
               />
             ) : null}
-            <MandateAgentPicker
-              mandateKey={SMS_ASSISTANT_OWNER_BETA_MANDATE}
-            />
+            <MandateAgentPicker mandateKey={SMS_ASSISTANT_OWNER_BETA_MANDATE} />
           </div>
         </SettingsRow>
         <SettingsLink

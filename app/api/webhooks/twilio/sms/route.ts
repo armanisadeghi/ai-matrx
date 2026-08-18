@@ -6,9 +6,9 @@
  * and responds with TwiML.
  */
 
-import { NextResponse } from 'next/server';
-import twilio from 'twilio';
-import { validateTwilioWebhook } from '@/lib/communications/providers/twilio/webhook-validation';
+import { NextResponse } from "next/server";
+import twilio from "twilio";
+import { validateTwilioWebhook } from "@/lib/communications/providers/twilio/webhook-validation";
 import {
   claimInboundSmsReceipt,
   classifySmsPolicyKeyword,
@@ -18,20 +18,24 @@ import {
   processInboundSms,
   releaseInboundSmsReceipt,
   resolveSmsInboundContext,
-} from '@/lib/sms/receive';
-import { isSmsCommandCandidate } from '@/lib/sms/identity';
+} from "@/lib/sms/receive";
+import { isSmsCommandCandidate } from "@/lib/sms/identity";
 
-const WEBHOOK_PATH = '/api/webhooks/twilio/sms';
+const WEBHOOK_PATH = "/api/webhooks/twilio/sms";
 
 export async function POST(request: Request) {
   let claimedReceiptId: string | null = null;
   try {
     // Validate Twilio signature
-    const { valid, params, error: validationError } = await validateTwilioWebhook(request, WEBHOOK_PATH);
+    const {
+      valid,
+      params,
+      error: validationError,
+    } = await validateTwilioWebhook(request, WEBHOOK_PATH);
 
     if (!valid) {
-      console.error('Twilio webhook validation failed:', validationError);
-      return new NextResponse('Forbidden', { status: 403 });
+      console.error("Twilio webhook validation failed:", validationError);
+      return new NextResponse("Forbidden", { status: 403 });
     }
 
     const payload = parseInboundSmsPayload(params);
@@ -40,19 +44,19 @@ export async function POST(request: Request) {
     claimedReceiptId = receipt.receiptId;
     if (!receipt.processable) {
       return new NextResponse(twiml.toString(), {
-        headers: { 'Content-Type': 'text/xml' },
+        headers: { "Content-Type": "text/xml" },
       });
     }
 
     const context = await resolveSmsInboundContext(payload);
-    if (context.status !== 'resolved') {
+    if (context.status !== "resolved") {
       await completeInboundSmsReceipt(
         receipt.receiptId,
         null,
         `${context.status}:${context.reason}`,
       );
       return new NextResponse(twiml.toString(), {
-        headers: { 'Content-Type': 'text/xml' },
+        headers: { "Content-Type": "text/xml" },
       });
     }
 
@@ -64,34 +68,48 @@ export async function POST(request: Request) {
       await processInboundSms(payload, {
         receipt,
         context,
-        aiProcessingStatus: 'skipped',
+        aiProcessingStatus: "skipped",
         skipReason: `policy_keyword_${policyKeyword}`,
       });
       return new NextResponse(twiml.toString(), {
-        headers: { 'Content-Type': 'text/xml' },
+        headers: { "Content-Type": "text/xml" },
       });
     }
 
-    const optedOut = await isPhoneNumberOptedOut(context.source, context.organizationId);
+    const optedOut = await isPhoneNumberOptedOut(
+      context.source,
+      context.organizationId,
+    );
     if (optedOut) {
-      await completeInboundSmsReceipt(receipt.receiptId, null, 'sender_opted_out');
+      await completeInboundSmsReceipt(
+        receipt.receiptId,
+        null,
+        "sender_opted_out",
+      );
       return new NextResponse(twiml.toString(), {
-        headers: { 'Content-Type': 'text/xml' },
+        headers: { "Content-Type": "text/xml" },
       });
     }
 
+    // This boundary resolves the verified person/program only. The worker
+    // resolves sms.owner_beta through canonical Mandate Bindings; transport
+    // preference rows and conversation snapshots may never choose the Holder.
     const assistantReady =
-      context.assistantEnabled && context.agentMessagesEnabled && Boolean(context.agentId);
+      context.assistantEnabled && context.agentMessagesEnabled;
     const commandCandidate = isSmsCommandCandidate(payload.Body);
     await processInboundSms(payload, {
       receipt,
       context,
-      aiProcessingStatus: commandCandidate ? 'skipped' : assistantReady ? 'pending' : 'skipped',
+      aiProcessingStatus: commandCandidate
+        ? "skipped"
+        : assistantReady
+          ? "pending"
+          : "skipped",
       skipReason: commandCandidate
-        ? 'sms_command_offer_unverified'
+        ? "sms_command_offer_unverified"
         : assistantReady
           ? undefined
-          : 'assistant_not_configured_or_paused',
+          : "assistant_not_configured_or_paused",
       commandCandidate,
     });
 
@@ -102,20 +120,22 @@ export async function POST(request: Request) {
 
     // Return empty TwiML (no auto-reply in the webhook itself)
     return new NextResponse(twiml.toString(), {
-      headers: { 'Content-Type': 'text/xml' },
+      headers: { "Content-Type": "text/xml" },
     });
   } catch (err) {
-    console.error('Error processing inbound SMS webhook:', err);
+    console.error("Error processing inbound SMS webhook:", err);
 
     if (claimedReceiptId) {
       await releaseInboundSmsReceipt(
         claimedReceiptId,
-        err instanceof Error ? err.message : 'Unknown inbound SMS processing error',
+        err instanceof Error
+          ? err.message
+          : "Unknown inbound SMS processing error",
       );
     }
     const twiml = new twilio.twiml.MessagingResponse();
     return new NextResponse(twiml.toString(), {
-      headers: { 'Content-Type': 'text/xml' },
+      headers: { "Content-Type": "text/xml" },
       status: claimedReceiptId ? 500 : 400,
     });
   }
@@ -127,10 +147,11 @@ export async function POST(request: Request) {
  */
 export async function GET() {
   return NextResponse.json({
-    webhook: 'Twilio Inbound SMS Webhook',
-    method: 'POST',
-    contentType: 'application/x-www-form-urlencoded',
-    description: 'Receives inbound SMS/MMS from Twilio and processes them.',
-    documentation: 'https://www.twilio.com/docs/messaging/guides/webhook-request',
+    webhook: "Twilio Inbound SMS Webhook",
+    method: "POST",
+    contentType: "application/x-www-form-urlencoded",
+    description: "Receives inbound SMS/MMS from Twilio and processes them.",
+    documentation:
+      "https://www.twilio.com/docs/messaging/guides/webhook-request",
   });
 }

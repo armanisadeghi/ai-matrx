@@ -121,7 +121,9 @@ describe("POST /api/webhooks/twilio/sms with shared Twilio validation", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("text/xml");
-    expect(await response.text()).toBe("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response/>");
+    expect(await response.text()).toBe(
+      '<?xml version="1.0" encoding="UTF-8"?><Response/>',
+    );
     expect(claimInboundSmsReceipt).toHaveBeenCalled();
     expect(resolveSmsInboundContext).toHaveBeenCalled();
     expect(isPhoneNumberOptedOut).toHaveBeenCalledWith(
@@ -130,7 +132,12 @@ describe("POST /api/webhooks/twilio/sms with shared Twilio validation", () => {
     );
     expect(processInboundSms).toHaveBeenCalledWith(
       expect.objectContaining({ MessageSid: payload.MessageSid }),
-      { receipt, context, aiProcessingStatus: "pending", commandCandidate: false },
+      {
+        receipt,
+        context,
+        aiProcessingStatus: "pending",
+        commandCandidate: false,
+      },
     );
   });
 
@@ -141,15 +148,12 @@ describe("POST /api/webhooks/twilio/sms with shared Twilio validation", () => {
 
     expect(response.status).toBe(200);
     expect(isPhoneNumberOptedOut).not.toHaveBeenCalled();
-    expect(processInboundSms).toHaveBeenCalledWith(
-      expect.any(Object),
-      {
-        receipt,
-        context,
-        aiProcessingStatus: "skipped",
-        skipReason: "policy_keyword_opt_in",
-      },
-    );
+    expect(processInboundSms).toHaveBeenCalledWith(expect.any(Object), {
+      receipt,
+      context,
+      aiProcessingStatus: "skipped",
+      skipReason: "policy_keyword_opt_in",
+    });
   });
 
   test("never queues an agent turn when the user-level assistant preference is off", async () => {
@@ -159,16 +163,34 @@ describe("POST /api/webhooks/twilio/sms with shared Twilio validation", () => {
     const response = await POST(signedRequest());
 
     expect(response.status).toBe(200);
-    expect(processInboundSms).toHaveBeenCalledWith(
-      expect.any(Object),
-      {
-        receipt,
-        context: userPausedContext,
-        aiProcessingStatus: "skipped",
-        skipReason: "assistant_not_configured_or_paused",
-        commandCandidate: false,
-      },
-    );
+    expect(processInboundSms).toHaveBeenCalledWith(expect.any(Object), {
+      receipt,
+      context: userPausedContext,
+      aiProcessingStatus: "skipped",
+      skipReason: "assistant_not_configured_or_paused",
+      commandCandidate: false,
+    });
+  });
+
+  test("queues an agent turn without a transport-level agent pointer", async () => {
+    const mandateResolvedLater = {
+      ...context,
+      agentId: null,
+      agentVersionId: null,
+    };
+    jest
+      .mocked(resolveSmsInboundContext)
+      .mockResolvedValue(mandateResolvedLater);
+
+    const response = await POST(signedRequest());
+
+    expect(response.status).toBe(200);
+    expect(processInboundSms).toHaveBeenCalledWith(expect.any(Object), {
+      receipt,
+      context: mandateResolvedLater,
+      aiProcessingStatus: "pending",
+      commandCandidate: false,
+    });
   });
 
   test("queues exact DONE for command correlation without an assistant binding", async () => {
@@ -225,7 +247,9 @@ describe("POST /api/webhooks/twilio/sms with shared Twilio validation", () => {
   });
 
   test("releases a durable receipt and asks Twilio to retry after processing failure", async () => {
-    jest.mocked(resolveSmsInboundContext).mockRejectedValue(new Error("database unavailable"));
+    jest
+      .mocked(resolveSmsInboundContext)
+      .mockRejectedValue(new Error("database unavailable"));
 
     const response = await POST(signedRequest());
 
