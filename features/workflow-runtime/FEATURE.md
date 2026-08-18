@@ -101,6 +101,21 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-18 — **the Study Pack surface's deliverable page changed intent, and its forcing
+  test caught up.** "Study Pack v1" grew a persisted collection tier (`flashcard_items` →
+  `flashcard_set`, `quiz_mcq_items`/`quiz_free_response_items`/`quiz_fill_in_blank_items` →
+  `quiz_set` → `study_pack_set`), and the stored surface row (c797a1c1…) was re-authored to
+  match: the `pack` page no longer renders one `final` readout over the `show` node, it renders
+  TWO persisted readouts side by side — `final-flashcards` (node `flashcard_set`) and
+  `final-quiz` (node `quiz_set`), 12×12 each. `deliverableNodeId` stays `show` (the page still
+  activates on `deliverable:ready`); what changed is WHAT the finished pack shows — the two
+  structured sets a learner actually uses, not the terminal render node. The live row is the
+  source of truth and this was deliberate, so `surface/__tests__/study-pack-surface.test.ts` was
+  refreshed to pin it: the verbatim config (now 11 readouts) AND the `STUDY_PACK_DEF` skeleton,
+  which had drifted far worse than the config — it was missing 9 real nodes and all 32 edges,
+  so "every readout source names a real node" was being checked against a definition that no
+  longer existed. The test was not weakened; it is stricter now that the skeleton is real.
+
 - 2026-08-18 — **the live run experience rebuilt** after Arman's verdict ("ugly and terrible",
   "treats you like an idiot who's waiting", "none of the excitement of the podcast page"). The
   failure was presentational and INFORMATIONAL, not structural: the slice/adapter/lanes were
