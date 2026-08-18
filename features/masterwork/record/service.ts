@@ -174,11 +174,10 @@ function firstLine(text: string, max = 140): string | null {
 // =============================================================================
 
 /**
- * Record that a conversation IS an interview for this Rulebook. Called the
- * moment the Scout panel knows both ids — the FIRST thing that happens, so a
- * conversation can never exist un-associated even if the Expert closes the
- * panel before saying a word. Idempotent (the DB unique constraint revives a
- * tombstone rather than duplicating).
+ * Record that a persisted conversation IS an interview for this Rulebook.
+ * Called after the first turn makes the conversation real; an untouched
+ * client-only draft correctly leaves no durable trace. Idempotent (the DB
+ * unique constraint revives a tombstone rather than duplicating).
  *
  * Failure is LOUD but non-fatal: the interview still works; we scream because
  * an unlinked conversation is exactly the defect this closes.
@@ -213,7 +212,9 @@ export async function linkInterviewConversation(args: {
  * The edge cannot be written at mint time — `assoc_add` requires real access to
  * both endpoints and the server writes `chat.conversation` atomically at stream
  * end, so an early write fails 42501 (verified live 2026-08-17). We therefore
- * wait for the row. That wait must NOT be tied to the interview sheet's React
+ * wait for the row. An untouched client-minted conversation is only a draft,
+ * so the caller starts this job only after the Expert sends the first turn.
+ * That wait must NOT be tied to the interview sheet's React
  * lifetime: the Expert closing the panel mid-turn is exactly the case where
  * losing the link hurts most. Deduped per conversation; bounded by the
  * persistence poll's own timeout.
@@ -224,7 +225,10 @@ export function associateInterviewWhenPersisted(args: {
   rulebookId: string;
   conversationId: string;
   rulebookName: string;
+  /** True once the execution system has created the first request. */
+  turnStarted: boolean;
 }): void {
+  if (!args.turnStarted) return;
   if (pendingAssociations.has(args.conversationId)) return;
   pendingAssociations.add(args.conversationId);
   void (async () => {
@@ -238,7 +242,11 @@ export function associateInterviewWhenPersisted(args: {
           "[masterwork/record] interview conversation never persisted — it " +
             "cannot be associated with its Rulebook, so the Expert would have " +
             "no way back to it.",
-          args,
+          {
+            rulebookId: args.rulebookId,
+            conversationId: args.conversationId,
+            rulebookName: args.rulebookName,
+          },
         );
         return;
       }

@@ -289,11 +289,12 @@ no junction table, and adding one is the defect this replaced.**
 
 **When the edge is written.** NOT at mint time: `assoc_add` requires real access to both endpoints,
 and the server writes `chat.conversation` atomically at stream end, so an early write fails 42501
-(verified live). `associateInterviewWhenPersisted()` is a MODULE-LEVEL job — deliberately not tied to
-the panel's React lifetime, because the Expert closing the sheet mid-turn is exactly the case where
-losing the link hurts most. It waits on the canonical `waitForConversationPersisted`, writes the
-edge, then replaces the auto-generated title ("Auto: expertise_interviewer") with
-`"<Rulebook name> — interview, <date>"`.
+(verified live). A client-minted id the Expert never sends into is an untouched draft, not a failed
+conversation. The first execution-system request starts `associateInterviewWhenPersisted()` as a
+MODULE-LEVEL job — deliberately not tied to the panel's React lifetime, because the Expert closing
+the sheet mid-turn is exactly the case where losing the link hurts most. It waits on the canonical
+`waitForConversationPersisted`, writes the edge, then replaces the auto-generated title
+("Auto: expertise_interviewer") with `"<Rulebook name> — interview, <date>"`.
 
 **Loud recovery.** `listRulebookInterviews` cross-checks the edges against rule provenance
 (`source_ref.conversation_id`). A conversation named by a rule but missing its edge is HEALED on
@@ -565,6 +566,9 @@ deliberately never produced.
 
 ## Change log
 
+- 2026-08-18 — Interview association waiting now begins with the first real request, not when the
+  launcher mints an untouched client-only draft; unused “New interview” openings no longer report
+  false persistence failures, while the module-level waiter still survives closing the panel.
 - 2026-08-17 — **Duplicate rule-rewrite Mandate retired: `masterwork.rule_cleanup` →
   `masterwork.rule_improver`.** Two concurrent sessions had built siblings; the ruled verb set
   (Approve / Reject / IMPROVE) keeps the improver. The editor's "Clean up with AI" now runs the

@@ -29,7 +29,8 @@ import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkel
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
-import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useMandate } from "@/features/agents/mandates/useMandate";
 import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { supabase } from "@/utils/supabase/client";
@@ -179,20 +180,37 @@ function InterviewConversation({
     retainOnUnmount: true,
   });
 
+  // A launcher mints a client-only id before the Expert says anything. That
+  // untouched draft is intentionally not persisted and must not start the
+  // association watchdog. The first request is the durable-intent boundary:
+  // start the module-level waiter then, so it still survives panel closure.
+  const turnStarted = useAppSelector((state) =>
+    conversationId
+      ? Boolean(selectPrimaryRequest(conversationId)(state))
+      : false,
+  );
+
   // THE ASSOCIATION — the whole point of this change. Handed to a module-level
   // job so it survives the Expert closing this panel mid-turn (see
   // `associateInterviewWhenPersisted`); it cannot be written at mint time
   // because `assoc_add` needs the conversation row to exist.
   const linkedRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!conversationId || linkedRef.current === conversationId) return;
+    if (
+      !conversationId ||
+      !turnStarted ||
+      linkedRef.current === conversationId
+    ) {
+      return;
+    }
     linkedRef.current = conversationId;
     associateInterviewWhenPersisted({
       rulebookId,
       conversationId,
       rulebookName,
+      turnStarted,
     });
-  }, [conversationId, rulebookId, rulebookName]);
+  }, [conversationId, rulebookId, rulebookName, turnStarted]);
 
   if (!conversationId) return <ChatRoomSkeleton />;
   return (
