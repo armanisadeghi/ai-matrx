@@ -332,7 +332,16 @@ per-node tokens the same way.
   (`docViewChanged` / `selectDocView`; cleared on tab change) so the dialog can
   open a document rather than just naming it.
   (4) `ExpertNotJoined` lost its Start button — it keeps Try again only.
-  VERIFIED live in the browser against a real session (see below).
+  VERIFIED live in the browser against a real session: Finish → the run
+  starts, the dialog names the real speaker as each role node runs
+  (Sounding Board → Archaeologist → … → Scribe), the run's interrupt flips the
+  header control to primary and the dialog to "Write the documents" with the
+  room's own words shown, an accepted `done` resumes the run, and a second one
+  renders the "Finish anyway" state; the slice-driven `docView` opens the
+  living document over a live chat. `interview.finalize` itself was NOT
+  observed end-to-end here — the backend that room reached still answers
+  `POST /roles` with 404 and its gate ignores a flat `done`, both of which the
+  same day's aidream work fixes.
 
 - 2026-08-18 — **v3 LAST MILE: the room opens itself, and the Scribe stays
   current.** The v3 rewrite read `session.role_bindings` but nothing ever
