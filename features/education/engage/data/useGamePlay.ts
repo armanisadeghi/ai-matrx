@@ -139,7 +139,6 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
   // the display state below but are the source of truth for the outcome.
   const masteryGainRef = useRef(0);
   const pendingAttemptsRef = useRef<Promise<unknown>[]>([]);
-  const pendingSessionCloseRef = useRef<Promise<unknown> | null>(null);
 
   // ── Load the queue + open a session. ──────────────────────────────────────
   useEffect(() => {
@@ -347,8 +346,12 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       })
       .then((res) => {
         if (res.error || !res.data) {
-          console.error("[useGamePlay] recordAttempt:", res.error);
-          return;
+          throw new Error(res.error ?? "The answer was not persisted");
+        }
+        if (res.data.result !== (correct ? "correct" : "incorrect")) {
+          throw new Error(
+            "The card changed while this round was active. Start a fresh round.",
+          );
         }
         masteryRef.current[q.card.id] = res.data.mastery;
         const newR =
@@ -408,12 +411,6 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
     finishedRef.current = true;
     setStatus("finished");
     setRemainingMs(0);
-    if (session) {
-      pendingSessionCloseRef.current = studyService.updateSession(session.id, {
-        status: "completed",
-        ended_at: new Date().toISOString(),
-      });
-    }
   }
 
   // Report the finalized outcome exactly once, reading live state. Await any
@@ -437,20 +434,38 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       sourceSetId: sourceSetId ?? null,
       sourceTitle: args.sourceTitle ?? null,
     };
-    void Promise.allSettled(pendingAttemptsRef.current).then(async () => {
-      const close = await pendingSessionCloseRef.current;
-      if (
-        close &&
-        typeof close === "object" &&
-        "error" in close &&
-        close.error
-      ) {
-        setError(String(close.error));
-        setStatus("error");
-        return;
-      }
-      onFinish?.({ ...outcomeBase, masteryGain: masteryGainRef.current });
-    });
+    void Promise.allSettled(pendingAttemptsRef.current).then(
+      async (attempts) => {
+        const failed = attempts.find(
+          (attempt): attempt is PromiseRejectedResult =>
+            attempt.status === "rejected",
+        );
+        if (failed) {
+          setError(
+            failed.reason instanceof Error
+              ? failed.reason.message
+              : "One or more answers could not be saved.",
+          );
+          setStatus("error");
+          return;
+        }
+        if (!session) {
+          setError("The game session is unavailable. Start a new round.");
+          setStatus("error");
+          return;
+        }
+        const close = await studyService.updateSession(session.id, {
+          status: "completed",
+          ended_at: new Date().toISOString(),
+        });
+        if (close.error || !close.data) {
+          setError(close.error ?? "The game session could not be completed.");
+          setStatus("error");
+          return;
+        }
+        onFinish?.({ ...outcomeBase, masteryGain: masteryGainRef.current });
+      },
+    );
   }, [status]);
 
   // Close an abandoned session on unmount if we never finished.

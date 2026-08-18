@@ -170,13 +170,21 @@ enforces it in code, not copy:
 ## Verification (2026-08-18 live integrity run)
 
 - Two real authenticated learners completed one live room through PostgREST.
-  Server-graded official results were 478 (3/3) and 299 (2/3), and
+  Server-graded official results were 478 (3/3) and 297 (2/3), and
   `game_room_players` returned exactly those two persisted rows in rank order.
 - A tampered generic RPC request for an extra correct 0ms game attempt returned
   HTTP 403. A direct rewrite of the real wrong answer to correct/0ms also
   returned 403. Duplicate-card answer farming returned 409.
 - An authenticated direct official-score rewrite returned HTTP 403. The
   tampered values did not land in either result or the room scoreboard.
+- The play loop awaits every answer write before it closes the active session;
+  any failed/mismatched answer refuses the round instead of finalizing a strict
+  subset. Finalization nulls fail loudly, retry is explicit/idempotent, and the
+  atomic result metadata identifies only badges awarded by that transaction.
+- Competitive mastery badge progress counts distinct correct server-graded
+  game items. Browser-authored FSRS transitions are bounded and must match the
+  server-derived answer/lapse direction; they do not feed official score,
+  league gain, or badge eligibility.
 - Live migrations:
   `20260818_education_game_result_session_unique.sql` and
   `20260818_education_game_server_authority.sql`; generated DB types were

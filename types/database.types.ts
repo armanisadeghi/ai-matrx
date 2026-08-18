@@ -40924,6 +40924,7 @@ export type Database = {
         Args: {
           p_difficulty: number
           p_due_at: string
+          p_expected_result: string
           p_item_id: string
           p_lapses: number
           p_retrievability: number

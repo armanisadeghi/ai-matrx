@@ -497,6 +497,7 @@ export const studyService = {
         p_session_id: input.sessionId,
         p_item_id: input.itemId,
         p_selected_answer: input.selectedAnswer,
+        p_expected_result: input.localResult,
         p_difficulty: next.difficulty,
         p_stability: next.stability,
         p_due_at: next.due,
