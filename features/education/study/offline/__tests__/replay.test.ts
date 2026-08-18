@@ -22,14 +22,24 @@ const spine = {
   mastery: new Map<string, { attempt_count: number; correct_count: number }>(),
 };
 
-const recordAttempt = jest.fn(
-  async (input: {
-    itemType: string;
-    itemId: string;
-    result?: string | null;
-    attemptId?: string | null;
-    reviewedAt?: string | null;
-  }) => {
+interface FakeAttemptInput {
+  itemType: string;
+  itemId: string;
+  result?: string | null;
+  attemptId?: string | null;
+  reviewedAt?: string | null;
+}
+interface FakeMastery {
+  attempt_count: number;
+  correct_count: number;
+}
+type FakeResult = {
+  data: { attemptId: string; mastery: FakeMastery } | null;
+  error: string | null;
+};
+
+const recordAttempt = jest.fn<Promise<FakeResult>, [FakeAttemptInput]>(
+  async (input: FakeAttemptInput) => {
     const id = input.attemptId ?? `server-${spine.attempts.size}`;
     const key = `${input.itemType}:${input.itemId}`;
 

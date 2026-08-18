@@ -70,7 +70,9 @@ export async function recordAttemptOfflineAware(
 
   if (!offlineNow) {
     const result = await studyService.recordAttempt({ ...attempt, attemptId });
-    if (!result.error) {
+    // StudyResult is not a discriminated union, so `data` must be checked
+    // directly — a null-error/null-data result would otherwise read as success.
+    if (!result.error && result.data) {
       return {
         attemptId: result.data.attemptId,
         mastery: result.data.mastery,
@@ -78,7 +80,7 @@ export async function recordAttemptOfflineAware(
         error: null,
       };
     }
-    if (!isNetworkFailure(result.error)) {
+    if (result.error && !isNetworkFailure(result.error)) {
       // A real refusal — surface it. Never queue what the server rejected.
       return {
         attemptId,
