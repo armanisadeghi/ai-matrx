@@ -42,7 +42,7 @@ import {
 } from "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { isTransportFailure } from "@/lib/net/errors";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { appendVisionStatement } from "../service";
 import { roleFromNodeId, type InterviewStage, type RoleKey } from "../types";
 import {
@@ -305,10 +305,13 @@ export function useInterviewRun(sessionId: string) {
       const result = await dispatch(call());
       const error = (result as { error?: { message?: string } }).error;
       if (error) {
-        dispatch(
-          runFailed({ message: error.message ?? "The run request failed." }),
-        );
-        toast.error(error.message ?? "The interview run could not start.");
+        // callApi already captured and classified this returned error. The
+        // toast is user guidance, not a second context-free queue incident.
+        const message = isTransportFailure(error)
+          ? "The server could not be reached — it may be restarting for an update. Wait a moment and try again; nothing you typed is lost."
+          : error.message ?? "The interview run could not start.";
+        dispatch(runFailed({ message }));
+        toastErrorAlreadyCaptured(message);
         return false;
       }
       return true;

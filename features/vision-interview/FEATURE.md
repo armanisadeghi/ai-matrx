@@ -222,7 +222,10 @@ them — `normalizeStage` in `types.ts` maps them for display
     SAY the Expert's words are safe — the draft persists on-device
     (`useDurableDraft`) and a sent message lands as a turn before agents run
     — and offer the retry in the same breath. Never lose composer content
-    (acceptance-gated clearing, invariant 7).
+    (acceptance-gated clearing, invariant 7). `callApi` owns capture and
+    classification; its returned `{error}` is rendered with
+    `toastErrorAlreadyCaptured`, never filed again as a context-free
+    `user-toast` row.
 
 13. **ONE STAGE TAB == ONE ROLE == ONE ORDINARY AGENT CONVERSATION (v3).**
     `interview.session.role_bindings` already holds, per role,
@@ -312,6 +315,9 @@ per-node tokens the same way.
 
 ## Change log
 
+- 2026-08-18 — Vision-run transport failures now keep `callApi` as the single
+  diagnostic boundary: returned errors get safe retry copy and a visible toast
+  without a duplicate `user-toast` repair-queue row.
 - 2026-08-18 — **FINISH: the guided run gets a home, and the documents stop
   being unreachable.** `/roles` (same day) made every stage tab mount without
   a run, which turned `ExpertNotJoined` — the only place a Start control ever
