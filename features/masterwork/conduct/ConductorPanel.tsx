@@ -558,14 +558,25 @@ export function ConductorPanel({
           Full page
         </Link>
       }
+      // THE SCROLL CHAIN. `flex-1 min-h-0` inside the conversation column only
+      // bounds anything if EVERY ancestor is a full-height flex column — without
+      // this the panel body sits at height:auto, the message list collapses to
+      // nothing, and the composer floats at the top of an empty panel while the
+      // run streams invisibly behind it.
+      contentClassName="flex h-full min-h-0 flex-col overflow-hidden p-0"
     >
-      <ConductorContent
-        rulebookId={rulebookId}
-        rulebookName={rulebookName}
-        attachments={attachments}
-        initialConversationId={initialConversationId}
-        startNew={startNew}
-      />
+      {open ? (
+        <ConductorContent
+          // Remount when the target changes so Continue-on-another-row and a
+          // repeated "start a new one" both actually switch conversations.
+          key={`${initialConversationId ?? "-"}:${startNew ? "new" : ""}`}
+          rulebookId={rulebookId}
+          rulebookName={rulebookName}
+          attachments={attachments}
+          initialConversationId={initialConversationId}
+          startNew={startNew}
+        />
+      ) : null}
     </MatrxDynamicPanelHost>
   );
 }
