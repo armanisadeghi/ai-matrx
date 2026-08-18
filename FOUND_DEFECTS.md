@@ -17,6 +17,18 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D213 — every AI flashcard generation from the create surfaces persists TWO identical sets (2026-08-18)
+
+One generation → two `education.fc_set` rows ~500ms apart, proven live (a depth-tier
+verification run produced twins `49880ec0…` / `d2a9e78b…`; the flashcards home shows many
+historical pairs). Two independent writers: `CreateFromTopic`/`CreateFromSource` persist
+explicitly via `fcService.createSetWithCards`, AND `process-stream.ts:2989` auto-materializes
+every completed stream's render blocks → `FLASHCARDS_CANONICAL_ADAPTER.onMaterialize` persists
+the same `flashcard_set` block again (`metadata.generation="chat_render_block"`). The adapter's
+dedupe is per message-id source and cannot see the surface's save. Fix = pick ONE canonical
+writer (options + full diagnosis in chip `task_a876e306`, which owns the fix + live-data
+cleanup of existing pairs). Held here only so the finding survives if the chip is dismissed.
+
 ### D211 — org/project invitation email templates interpolate unescaped user text into HTML (2026-08-18)
 
 `lib/email/client.ts` — `organizationInvitation` and `projectInvitation` interpolate the org/project name and inviter name (user-controlled: `user_metadata.full_name`, org/project `name`) straight into the email HTML. A user can set a name containing markup/links and produce attacker-crafted HTML in real email sent from the aimatrx.com domain (branded-phishing vector). Found by the WP6 adversarial review; the NEW `classInvitation` template escapes via `escapeEmailHtml` (same file) and is the model — the fix is wrapping the same helper around each interpolated name in the two older templates plus any template that takes user text (`welcome`, sharing/feedback templates worth an audit). Not fixed in the WP6 session because those templates belong to the org/project invite flows (out of scope); the helper is exported and ready.

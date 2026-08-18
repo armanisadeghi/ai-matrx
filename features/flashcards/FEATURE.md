@@ -66,6 +66,19 @@ system: text layers (`helper`/`example`/`hint`/…), audio (`spoken_front` +
   `fc_set.metadata`. Public-library classification and grounding provenance no longer need a blind
   read/spread/write that can erase import, folder, or concurrent metadata keys. First consumer:
   WP11's grounded exam-content pipeline (`exam_slug`, curation state, retrieved chunk ids).
+- 2026-08-18 — WP3 gaps 4/8/12/14 closed. **Formula card kind** (VISION §17: latex +
+  variable definitions + worked example in `dynamic_content.formula`; composed by
+  `studyFaces` so every surface renders it; editor Add→Formula + FormulaFields; fixing it
+  exposed and fixed the platform-wide `\(…\)` inline-math promotion defect in
+  `ConfigurableMarkdownContent`). **Generation-time depth tiers** (Depth picker on both
+  create surfaces; `foldDepthIntoRequest` carries the tier through the agents' declared
+  `user_request`/`focus` variables; 5 forcing tests; exam-tier proven live). **Semantic
+  Write grading** (`gradeTypedSemantic` lane on the `flashcards.grade_typed_answer`
+  mandate; Levenshtein stays instant, verdict+reason upgrade it; live-proven on a
+  paraphrase). **Deck-level card-audio prep** ("Prepare card audio" on set detail,
+  batch generator with N/M progress). Known limit: D213 — AI generation currently
+  persists duplicate sets (surface save + stream-end artifact materialization); fix
+  owned by chip `task_a876e306`.
 - 2026-08-18 — Fast Fire spoken-front generation dispatches every missing card at
   once. Provider admission, cooldowns, and rate-limit adaptation belong to the
   central matrx-ai dispatch boundary; this feature no longer maintains a five-call
