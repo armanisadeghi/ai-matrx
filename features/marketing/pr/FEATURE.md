@@ -12,6 +12,36 @@ real Supabase read path, its brand/site scoping and its depth of reuse, and the
 best ideas from the other three were grafted in during consolidation. What was
 grafted, and from where, is listed at the bottom.
 
+## Known gaps — the honest list
+
+**1. There is no "analyse this site" button.** `POST /sites/{site_id}/press/angles/generate`
+exists on aidream and is gated and tested, but this surface never calls it. So a real user on a
+never-analysed site sees the sample banner with no action — a detected problem whose one-click fix
+exists on the server and is not offered. **This is a no-dead-ends violation and the top follow-up.**
+Wiring it needs the `seoRequest(serverUrl, accessToken, path)` pattern from
+`features/marketing/seo/dataforseo/client.ts` plus `selectActiveServer` from
+`lib/redux/slices/apiConfigSlice.ts`; generation is an agent run, so it correctly goes to aidream
+rather than direct to Supabase.
+
+**2. "I have this" is session-only.** Status rulings persist; held evidence does not, because there
+is no column for "the user says they hold this proof". It recomputes the ladder and is discarded on
+reload. Either a real column or a clearer affordance is needed.
+
+**3. `seo.source_request.site_id` is nullable** while every RLS policy keys on it, so a request
+ingested before it is matched to a site is invisible to users. Ingestion is unbuilt; this must be
+settled when it is.
+
+**4. Not visually verified.** No dev server was run in this build (a hard constraint), so
+everything here is code + type-check + jest only. The sort control at narrow widths, the rationale
+block's length in an open row, and the KPI grid's border behaviour at 2 columns are unproven.
+
+**5. Smaller, logged not fixed:** `fixtures.ts` (944 lines) is statically imported so the sample
+dataset ships in every bundle; `ScoreComb`'s tooltip trigger is a non-focusable div inside a
+button, so the five-score breakdown is keyboard-unreachable (the expanded row does carry it);
+`SourceRequestRail` uses `vh` where `dvh` is required; `JournalistRef` hand-builds `/crm` paths;
+the dismissed count in `PitchPipeline` is a count that is not a door.
+
+
 ## Two backend facts the UI is honest about
 
 These are live and final. They shape the default view, the ranking, the empty
