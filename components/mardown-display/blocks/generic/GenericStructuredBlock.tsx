@@ -29,6 +29,14 @@
  * whether R6 fired (`marker.by === "generic"`) or a `kind_component` row names
  * `generic_structured` as the kind's web output component (`marker.by ===
  * "db"`), because both mean "no custom view".
+ *
+ * ## Bare by construction (THE WRAPPER LAW)
+ *
+ * Every host that routes a block here already draws chrome — a chat message
+ * surface, a workflow readout step box, the studio's preview card. This block
+ * used to add a card of its own on top, which on `/shapes/<kind>` produced the
+ * literal two-border, two-`p-3` box-in-a-box. It contributes flow spacing and
+ * nothing else; the host owns the frame.
  */
 
 import React from "react";
@@ -91,12 +99,7 @@ const GenericStructuredBlock: React.FC<GenericStructuredBlockProps> = ({
       : "no custom view yet";
 
   return (
-    <div
-      className={cn(
-        "my-2 overflow-hidden rounded-lg border border-border bg-card p-3",
-        className,
-      )}
-    >
+    <div className={cn("my-2 min-w-0", className)}>
       {status === "streaming" ? (
         <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
           <Braces className="h-3.5 w-3.5 shrink-0 animate-pulse" />

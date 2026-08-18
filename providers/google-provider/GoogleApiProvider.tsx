@@ -159,6 +159,8 @@ export default function GoogleAPIProvider({
   const [authInProgress, setAuthInProgress] = useState(false);
 
   const tokenClientRef = useRef<TokenClient | null>(null);
+  const tokenExpiresAtRef = useRef(0);
+  const tokenAccountHintRef = useRef<string | null>(null);
 
   const resetError = useCallback(() => setError(null), []);
 
@@ -238,6 +240,14 @@ export default function GoogleAPIProvider({
       setError("Google client ID is not configured.");
       return null;
     }
+    const finalScopes =
+      scopesToRequest.length > 0 ? scopesToRequest : allScopes;
+    const cachedTokenIsUsable =
+      Boolean(token) &&
+      Date.now() < tokenExpiresAtRef.current - 60_000 &&
+      finalScopes.every((scope) => grantedScopes.includes(scope)) &&
+      (!loginHint || tokenAccountHintRef.current === loginHint);
+    if (cachedTokenIsUsable) return token;
     if (authInProgress) {
       console.log("Auth in progress, skipping...");
       return null;
@@ -247,9 +257,6 @@ export default function GoogleAPIProvider({
     setAuthInProgress(true);
 
     return new Promise<string | null>((resolve) => {
-      const finalScopes =
-        scopesToRequest.length > 0 ? scopesToRequest : allScopes;
-
       tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: finalScopes.join(" "),
@@ -260,6 +267,11 @@ export default function GoogleAPIProvider({
         ...(loginHint ? { login_hint: loginHint } : {}),
         callback: (response: TokenResponse) => {
           const accessToken = handleCredentialResponse(response);
+          if (accessToken) {
+            tokenExpiresAtRef.current =
+              Date.now() + Math.max(response.expires_in, 0) * 1_000;
+            tokenAccountHintRef.current = loginHint ?? null;
+          }
           resolve(accessToken);
           setAuthInProgress(false);
         },
@@ -343,11 +355,15 @@ export default function GoogleAPIProvider({
           setToken(null);
           setIsAuthenticated(false);
           setGrantedScopes([]);
+          tokenExpiresAtRef.current = 0;
+          tokenAccountHintRef.current = null;
           resetError();
         });
       } else {
         setIsAuthenticated(false);
         setGrantedScopes([]);
+        tokenExpiresAtRef.current = 0;
+        tokenAccountHintRef.current = null;
         resetError();
       }
     } catch (err: unknown) {

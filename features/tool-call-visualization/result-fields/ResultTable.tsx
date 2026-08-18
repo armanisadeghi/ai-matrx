@@ -131,6 +131,26 @@ const LongTextCell: React.FC<{ value: string }> = ({ value }) => {
 
 const LONG_CELL_CHARS = 80;
 
+/** Chip-able cell list: at most this many items, each this short. */
+const CHIP_LIST_MAX_ITEMS = 4;
+const CHIP_LIST_MAX_CHARS = 24;
+
+function isShortScalarList(
+    value: unknown,
+): value is Array<string | number | boolean> {
+    return (
+        Array.isArray(value) &&
+        value.length > 0 &&
+        value.length <= CHIP_LIST_MAX_ITEMS &&
+        value.every(
+            (item) =>
+                (typeof item === "string" && item.length <= CHIP_LIST_MAX_CHARS) ||
+                typeof item === "number" ||
+                typeof item === "boolean",
+        )
+    );
+}
+
 /** Render a single cell — scalar inline, structure collapsed behind a toggle. */
 const Cell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => {
     if (value === null || value === undefined) {
@@ -151,6 +171,25 @@ const Cell: React.FC<{ value: unknown; depth: number }> = ({ value, depth }) => 
     }
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
         return <ResultValue value={value} density="inline" depth={depth + 1} />;
+    }
+    // A SHORT list of short scalars is the cell — tags, labels, aliases. It
+    // reads as chips; collapsing it to "[1 item]" made the reader click to
+    // learn the word "definition" (seen 2026-08-18 on the Study Pack
+    // flashcards table). Anything longer stays behind the toggle, which is
+    // what keeps one cell from swallowing the page.
+    if (isShortScalarList(value)) {
+        return (
+            <span className="flex flex-wrap gap-1">
+                {value.map((item, i) => (
+                    <span
+                        key={i}
+                        className="rounded bg-muted px-1 py-px text-[11px] leading-tight text-muted-foreground"
+                    >
+                        {String(item)}
+                    </span>
+                ))}
+            </span>
+        );
     }
     if (Array.isArray(value) || isPlainObject(value)) {
         return <NestedCell value={value} depth={depth} />;

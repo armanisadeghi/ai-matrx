@@ -15,12 +15,17 @@
  * ## The split
  *
  * CONTENT is what the agent produced: `final_text` through the canonical
- * markdown pipeline (`MarkdownStream` — a bare JSON document arrives fenced so
- * it lands in the platform's real JSON viewer), or `structured_output` when
- * the agent was schema-bound. A `structured_output` carrying a `__kind` of its
- * own is fenced as JSON too, which means the pipeline routes it to ITS kind
- * component — a schema-bound flashcard set renders as flashcards here, for
- * free, exactly as THE CANONICAL COMPONENT LAW requires.
+ * markdown pipeline (`MarkdownStream`), or `structured_output` when the agent
+ * was schema-bound. A payload carrying a `__kind` of its own is fenced as JSON,
+ * which means the pipeline routes it to ITS kind component — a schema-bound
+ * flashcard set renders as flashcards here, for free, exactly as THE CANONICAL
+ * COMPONENT LAW requires.
+ *
+ * A payload with NO `__kind` has no component to reach, so fencing it only
+ * produced a ```json code block — which is what the "Flashcards" step of the
+ * Study Pack run still showed a learner on 2026-08-18, after this component
+ * shipped. Those land on the platform floor (`StructuredValueView`) instead:
+ * a human document, raw data one click away.
  *
  * SECONDARY is one collapsed row of run FACTS — duration, iterations, tool
  * calls, cost, tokens. Never above the content, never expanded by default: it
@@ -45,6 +50,8 @@ import { ChevronDown, ChevronRight, MessagesSquare } from "lucide-react";
 
 import MarkdownStream from "@/components/MarkdownStream";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
+import { KIND_KEY } from "@/features/content-ir/core/kind-schema.types";
 import { cn } from "@/lib/utils";
 import type { AgentResultData } from "@/features/content-ir/kinds/agent-result";
 import type { AgentRunFacts } from "@/features/workflow-runtime/agent-run-output";
@@ -67,6 +74,33 @@ function readData(serverData: unknown): AgentResultData | null {
 
 function fenceJson(text: string): string {
   return `\`\`\`json\n${text}\n\`\`\``;
+}
+
+/** Depth past which a nested `__kind` would not route anyway. */
+const KIND_SCAN_DEPTH = 4;
+
+/**
+ * True when this payload names a kind somewhere the pipeline can reach — the
+ * ONLY reason to fence it rather than render it. Without one, the fence is a
+ * code block and nothing more.
+ */
+function carriesKind(value: unknown, depth = 0): boolean {
+  if (depth > KIND_SCAN_DEPTH) return false;
+  if (Array.isArray(value)) {
+    return value.some((item) => carriesKind(item, depth + 1));
+  }
+  if (!isRecord(value)) return false;
+  if (typeof value[KIND_KEY] === "string") return true;
+  return Object.values(value).some((item) => carriesKind(item, depth + 1));
+}
+
+/** Parse or null — a string that only LOOKS like JSON stays text. */
+function safeParse(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 /** ms → the shortest honest reading. `0` means "not tracked", not "instant". */
@@ -217,21 +251,30 @@ const AgentResultBlock: React.FC<AgentResultBlockProps> = ({
   const { finalText, finalTextIsJson, structured, facts } = data;
 
   // Schema-bound runs put the answer in `structured_output` and leave
-  // `final_text` empty or duplicated; the bound payload wins, and it goes
-  // through the pipeline fenced so a `__kind` inside it reaches its own
-  // component.
-  const body = structured
-    ? fenceJson(JSON.stringify(structured, null, 2))
-    : finalText
-      ? finalTextIsJson
-        ? fenceJson(finalText)
-        : finalText
+  // `final_text` empty or duplicated; the bound payload wins. It goes through
+  // the pipeline FENCED only when it names a kind — that is what lets a
+  // schema-bound flashcard set render as flashcards. With no kind to reach,
+  // the fence is just a code block, so the payload goes to the floor instead.
+  const jsonText = structured
+    ? JSON.stringify(structured, null, 2)
+    : finalText && finalTextIsJson
+      ? finalText
       : null;
+  const jsonValue = structured ?? (jsonText === null ? null : safeParse(jsonText));
+  // Zero data loss: text that only LOOKED like JSON never parsed, so it keeps
+  // the fence rather than becoming an empty document.
+  const onTheFloor = jsonValue !== null && !carriesKind(jsonValue);
 
   return (
     <div className={cn("w-full", className)}>
-      {body ? (
-        <MarkdownStream content={body} />
+      {jsonText !== null ? (
+        onTheFloor ? (
+          <StructuredValueView value={jsonValue} />
+        ) : (
+          <MarkdownStream content={fenceJson(jsonText)} />
+        )
+      ) : finalText ? (
+        <MarkdownStream content={finalText} />
       ) : (
         <p className="text-xs text-muted-foreground">
           This step ran, and handed its result to the next one.

@@ -211,23 +211,36 @@ export function InvocationBody({
   // output, which is the blank box a finished step showed beside its own green
   // tick. Empty lane + still working → the honest working state; empty lane +
   // settled → fall through to the output it actually produced.
-  const laneHasContent =
-    invocation.chunksReceived > 0 || invocation.textTail !== "";
-  if (
-    invocation.laneRequestId &&
-    (laneHasContent || working) &&
-    !(prefer === "persisted" && settledOutput)
-  ) {
-    if (!laneHasContent) {
-      return <WorkingBody message={invocation.progress?.message ?? null} />;
-    }
+  //
+  // Lane content and the durable tail are DIFFERENT TIERS and must not be
+  // conflated. `LiveRunDisplay` renders the LANE; `textTail` lives in this
+  // slice. Counting a tail as "the lane has content" makes an empty lane
+  // render as an empty pane that hides the very text we do have — and on the
+  // POLLER that is the normal case, because `node_stream` deltas are SSE-only
+  // while the heartbeat tail keeps arriving. So the lane speaks only once it
+  // has actually carried a chunk; otherwise the tail gets its turn below.
+  const laneCarriedContent = invocation.chunksReceived > 0;
+  const laneOwnsDisplay =
+    Boolean(invocation.laneRequestId) &&
+    !(prefer === "persisted" && settledOutput);
+  if (laneOwnsDisplay && laneCarriedContent) {
     return (
       <LiveRunDisplay
-        requestId={invocation.laneRequestId}
+        requestId={invocation.laneRequestId!}
         label={invocation.nodeId}
         variant="bare"
       />
     );
+  }
+  if (invocation.textTail && !(prefer === "persisted" && settledOutput)) {
+    return (
+      <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+        {invocation.textTail}
+      </p>
+    );
+  }
+  if (laneOwnsDisplay && working) {
+    return <WorkingBody message={invocation.progress?.message ?? null} />;
   }
   if (
     invocation.phase === "settled" &&

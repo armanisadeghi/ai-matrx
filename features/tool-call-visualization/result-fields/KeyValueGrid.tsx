@@ -87,6 +87,16 @@ function renderFieldValue(
   density: ResultDensity,
   depth: number,
 ): React.ReactNode {
+  // A FIELD that is empty is one word, never the roomy empty STATE. `full`
+  // density renders every key (that is what full means), and `EmptyResult`
+  // at that density is a 40px centred icon block — so an ingest step whose
+  // `errors` array was empty opened with a giant "No result returned" as the
+  // most prominent thing on the page, above the material the reader came for
+  // (seen 2026-08-18 on the Study Pack readout). The roomy state still owns
+  // the top level, where "this returned nothing" IS the whole answer.
+  if (detectResultShape(val).kind === "empty") {
+    return <span className="text-sm text-muted-foreground/70">None</span>;
+  }
   if (typeof val === "string" && isIdentifierKey(key) && looksLikeUuid(val)) {
     return <ShortId value={val} variant="full" />;
   }
