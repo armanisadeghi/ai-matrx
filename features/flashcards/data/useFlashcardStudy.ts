@@ -469,6 +469,44 @@ export function useFlashcardStudy(
         correct: correctCount,
       };
 
+  // ── Close the session terminal-first. Without this, classic/learn/write
+  //    sessions NEVER reached a terminal state by their own action: the live DB
+  //    held 142 `classic_review` sessions and ZERO completed ones, so every
+  //    session in the most-used study mode was eventually stamped 'abandoned'
+  //    by the 6h reaper — making session-level truth (completion rate, duration,
+  //    aggregate score) wrong for the primary mode. Mirrors the proven
+  //    due-review / weak-area / FastFire close. The reaper stays a backstop for
+  //    a hard tab-kill, never the normal path.
+  const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
+  useEffect(() => {
+    closeRef.current = session ? { id: session.id, closed: false } : null;
+  }, [session]);
+
+  useEffect(() => {
+    const ref = closeRef.current;
+    if (!ref || ref.closed || !session) return;
+    if (progress.total > 0 && progress.done >= progress.total) {
+      ref.closed = true;
+      void studyService.updateSession(session.id, {
+        status: "completed",
+        ended_at: new Date().toISOString(),
+      });
+    }
+  }, [session, progress.done, progress.total]);
+
+  useEffect(() => {
+    return () => {
+      const ref = closeRef.current;
+      if (ref && !ref.closed) {
+        ref.closed = true;
+        void studyService.updateSession(ref.id, {
+          status: "abandoned",
+          ended_at: new Date().toISOString(),
+        });
+      }
+    };
+  }, []);
+
   return {
     set,
     cards,

@@ -10,7 +10,15 @@
 import { supabase } from "@/utils/supabase/client";
 import { fail } from "@/features/education/study/service/serviceError";
 import type { StudyResult } from "@/features/education/study/types";
-import { mapCoppaGate, type AgeBand, type CoppaGate, type CoppaGateRow } from "./types";
+import {
+  mapAgeBandWrite,
+  mapCoppaGate,
+  type AgeBand,
+  type AgeBandWriteResult,
+  type AgeBandWriteRow,
+  type CoppaGate,
+  type CoppaGateRow,
+} from "./types";
 
 export const coppaService = {
   /** The authoritative AI/data gate for the current user. */
@@ -42,16 +50,52 @@ export const coppaService = {
     }
   },
 
-  /** Set the caller's own age band (validated server-side to the allowed set). */
-  async setAgeBand(band: AgeBand): Promise<StudyResult<AgeBand>> {
+  /**
+   * Set the caller's own age band (validated server-side to the allowed set).
+   *
+   * Returns an outcome, not a bare band: a child may never self-declare out of
+   * `under_13`, so that write comes back `status: "blocked"` with the band
+   * unchanged and the refusal audited. Callers MUST read `status` — a block is
+   * not an error and does not populate `result.error`. The sanctioned route for
+   * a real birthday is `guardianSetAgeBand`, performed by a verified guardian.
+   */
+  async setAgeBand(band: AgeBand): Promise<StudyResult<AgeBandWriteResult>> {
     try {
       const { data, error } = await supabase.rpc("edu_set_age_band", {
         p_band: band,
       });
       if (error) return fail("coppa.setAgeBand", error);
-      return { data: (data as AgeBand) ?? band, error: null };
+      return {
+        data: mapAgeBandWrite(data as unknown as AgeBandWriteRow),
+        error: null,
+      };
     } catch (e) {
       return fail("coppa.setAgeBand", e);
+    }
+  },
+
+  /**
+   * A VERIFIED guardian sets their student's age band — the one route out of
+   * `under_13`, and the reason the self-declaration hard block is not a dead
+   * end. The RPC refuses (42501) unless the caller holds an active guardian
+   * link with `verified_at` set.
+   */
+  async guardianSetAgeBand(
+    studentUserId: string,
+    band: AgeBand,
+  ): Promise<StudyResult<AgeBandWriteResult>> {
+    try {
+      const { data, error } = await supabase.rpc("edu_guardian_set_age_band", {
+        p_student_user_id: studentUserId,
+        p_band: band,
+      });
+      if (error) return fail("coppa.guardianSetAgeBand", error);
+      return {
+        data: mapAgeBandWrite(data as unknown as AgeBandWriteRow),
+        error: null,
+      };
+    } catch (e) {
+      return fail("coppa.guardianSetAgeBand", e);
     }
   },
 };

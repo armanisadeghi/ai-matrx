@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
@@ -239,6 +239,40 @@ export function useQuizStudy(
 
   const doneCount = Object.keys(selectedByIndex).length;
   const correctCount = Object.values(correctByIndex).filter(Boolean).length;
+
+  // ── Terminal-first session close (WP8). Test mode used to create a session
+  //    and never close it — the live DB held test sessions that were only ever
+  //    'active' until the 6h reaper stamped them 'abandoned'. Same latch the
+  //    due-review / weak-area / FastFire paths use.
+  const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
+  useEffect(() => {
+    closeRef.current = session ? { id: session.id, closed: false } : null;
+  }, [session]);
+
+  useEffect(() => {
+    const ref = closeRef.current;
+    if (!ref || ref.closed || !session) return;
+    if (questions.length > 0 && doneCount >= questions.length) {
+      ref.closed = true;
+      void studyService.updateSession(session.id, {
+        status: "completed",
+        ended_at: new Date().toISOString(),
+      });
+    }
+  }, [session, doneCount, questions.length]);
+
+  useEffect(() => {
+    return () => {
+      const ref = closeRef.current;
+      if (ref && !ref.closed) {
+        ref.closed = true;
+        void studyService.updateSession(ref.id, {
+          status: "abandoned",
+          ended_at: new Date().toISOString(),
+        });
+      }
+    };
+  }, []);
 
   return {
     set,

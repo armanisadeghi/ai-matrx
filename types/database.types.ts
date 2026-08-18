@@ -40463,8 +40463,13 @@ export type Database = {
         Returns: Json
       }
       edu_coppa_gate: { Args: never; Returns: Json }
+      edu_coppa_gate_for: { Args: { p_user_id: string }; Returns: Json }
       edu_delete_study_data: { Args: never; Returns: Json }
       edu_export_study_data: { Args: never; Returns: Json }
+      edu_guardian_set_age_band: {
+        Args: { p_band: string; p_student_user_id: string }
+        Returns: Json
+      }
       edu_import_review_history: { Args: { p_items: Json }; Returns: Json }
       edu_learn_doc_admin_list: {
         Args: never
@@ -40540,7 +40545,7 @@ export type Database = {
         }
       }
       edu_restore_study_data: { Args: never; Returns: Json }
-      edu_set_age_band: { Args: { p_band: string }; Returns: string }
+      edu_set_age_band: { Args: { p_band: string }; Returns: Json }
       edu_suggest_edit: {
         Args: {
           p_body: string

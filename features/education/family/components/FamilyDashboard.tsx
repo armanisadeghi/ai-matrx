@@ -41,6 +41,7 @@ import { useGuardianStudents } from "../useGuardianStudents";
 import { needsConsentVerification } from "../types";
 import type { GuardianLinkView } from "../types";
 import { GuardianConsentVerifyDialog } from "./GuardianConsentVerifyDialog";
+import { StudentAgeBandControl } from "./StudentAgeBandControl";
 
 function displayName(link: GuardianLinkView): string {
   return link.counterpart_name?.trim() || link.counterpart_email || "Learner";
@@ -238,7 +239,7 @@ export function FamilyDashboard() {
                     className={cn(
                       "group flex items-center gap-3 rounded-lg border border-border bg-background px-3 py-2.5 transition-colors hover:border-primary/40",
                       navigating && "opacity-60",
-                      needsVerify && "rounded-b-none border-b-0",
+                      (needsVerify || isVerified) && "rounded-b-none border-b-0",
                     )}
                   >
                     <button
@@ -295,6 +296,13 @@ export function FamilyDashboard() {
                         Verify consent
                       </Button>
                     </div>
+                  )}
+                  {isVerified && (
+                    <StudentAgeBandControl
+                      studentUserId={link.counterpart_user_id}
+                      studentLabel={displayName(link)}
+                      onChanged={reload}
+                    />
                   )}
                 </li>
               );

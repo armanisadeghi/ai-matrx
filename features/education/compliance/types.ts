@@ -15,6 +15,10 @@ export type AgeBand = "under_13" | "13_17" | "adult";
  * - `guardian_verification_pending` — under-13 with an active link, but the parent
  *   has NOT yet completed a *verifiable* consent step (COPPA §312.5). The child is
  *   still blocked; the UI shows "waiting for a parent to verify".
+ * - `age_undeclared` — no age band on the account. Since 2026-08-17 this BLOCKS a
+ *   signed-in learner (declaration is mandatory, or the gate protects nobody), and
+ *   the fix is one tap: `useAiComplianceGate` asks for the band inline and resumes
+ *   the original action. Anonymous visitors are never the gate's subject.
  */
 export type CoppaGateReason =
   | "allowed"
@@ -35,6 +39,8 @@ export interface CoppaGate {
   hasActiveGuardian: boolean;
   /** An active guardian link that completed a verifiable-consent method. */
   hasVerifiedGuardian: boolean;
+  /** An anonymous (guest) session — allowed, and never asked to declare an age. */
+  isAnonymous: boolean;
   aiAllowed: boolean;
   reason: CoppaGateReason;
 }
@@ -45,6 +51,7 @@ export interface CoppaGateRow {
   requires_consent: boolean | null;
   has_active_guardian: boolean;
   has_verified_guardian: boolean;
+  is_anonymous?: boolean;
   ai_allowed: boolean;
   reason: CoppaGateReason;
 }
@@ -55,7 +62,43 @@ export function mapCoppaGate(row: CoppaGateRow): CoppaGate {
     requiresConsent: Boolean(row.requires_consent),
     hasActiveGuardian: Boolean(row.has_active_guardian),
     hasVerifiedGuardian: Boolean(row.has_verified_guardian),
+    isAnonymous: Boolean(row.is_anonymous),
     aiAllowed: Boolean(row.ai_allowed),
     reason: row.reason,
+  };
+}
+
+/**
+ * Outcome of an age-band write. `blocked` is the COPPA hard block: a child may
+ * never self-declare out of `under_13` — that change is refused (band unchanged,
+ * refusal audited) and routed to a VERIFIED guardian via
+ * `coppaService.guardianSetAgeBand`. Downgrades and first declarations always
+ * proceed, and `13_17 → adult` stays open (it is not a COPPA escape).
+ */
+export type AgeBandWriteStatus = "ok" | "blocked";
+
+export interface AgeBandWriteResult {
+  status: AgeBandWriteStatus;
+  /** The band now stored — unchanged from before when `status === "blocked"`. */
+  ageBand: AgeBand | null;
+  reason: string;
+  /** Present on a block: safe to show the learner verbatim. */
+  message?: string;
+}
+
+/** Raw jsonb returned by `edu_set_age_band` / `edu_guardian_set_age_band`. */
+export interface AgeBandWriteRow {
+  status: AgeBandWriteStatus;
+  age_band: AgeBand | null;
+  reason: string;
+  message?: string;
+}
+
+export function mapAgeBandWrite(row: AgeBandWriteRow): AgeBandWriteResult {
+  return {
+    status: row.status,
+    ageBand: row.age_band,
+    reason: row.reason,
+    message: row.message,
   };
 }

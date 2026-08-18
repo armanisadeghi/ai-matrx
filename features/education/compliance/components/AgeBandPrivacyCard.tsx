@@ -27,12 +27,24 @@ export function AgeBandPrivacyCard() {
   const gate = useAiComplianceGate();
   const [saving, setSaving] = useState<AgeBand | null>(null);
 
+  const [refused, setRefused] = useState<string | null>(null);
+
   const setBand = async (band: AgeBand) => {
     setSaving(band);
+    setRefused(null);
     const res = await coppaService.setAgeBand(band);
     setSaving(null);
     if (res.error) {
       toast.error(res.error);
+      return;
+    }
+    // A child may never self-declare out of under_13 — the band is unchanged and
+    // the refusal is audited. Explain it and point at the one route that works.
+    if (res.data?.status === "blocked") {
+      setRefused(
+        res.data.message ??
+          "A parent or guardian has to confirm this change from their Family page.",
+      );
       return;
     }
     gate.reload();
@@ -68,6 +80,22 @@ export function AgeBandPrivacyCard() {
           </Button>
         ))}
       </div>
+
+      {refused ? (
+        <div className="mb-3 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-foreground">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <div className="space-y-1">
+            <p className="font-medium">That change needs a parent.</p>
+            <p className="text-muted-foreground">
+              {refused} Once a parent has verified consent on the{" "}
+              <Link href="/education/family" className="text-primary hover:underline">
+                Family page
+              </Link>
+              , they can update it there.
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {gate.loading ? (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -16,7 +16,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fcService } from "./fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { FcSetRow, CardWithDetails } from "./types";
@@ -253,6 +253,38 @@ export function useMatchGame(
       setCompleted(true);
     }
   }, [matchedCardIds.size, roundCards.length, completed]);
+
+  // ── Terminal-first session close (WP8). Match used to create a session and
+  //    never close it, leaving it 'active' until the 6h reaper. `completed` is
+  //    the round latch above, so the session closes the moment the board is
+  //    cleared — before the summary renders.
+  const closeRef = useRef<{ id: string; closed: boolean } | null>(null);
+  useEffect(() => {
+    closeRef.current = session ? { id: session.id, closed: false } : null;
+  }, [session]);
+
+  useEffect(() => {
+    const ref = closeRef.current;
+    if (!ref || ref.closed || !session || !completed) return;
+    ref.closed = true;
+    void studyService.updateSession(session.id, {
+      status: "completed",
+      ended_at: new Date().toISOString(),
+    });
+  }, [session, completed]);
+
+  useEffect(() => {
+    return () => {
+      const ref = closeRef.current;
+      if (ref && !ref.closed) {
+        ref.closed = true;
+        void studyService.updateSession(ref.id, {
+          status: "abandoned",
+          ended_at: new Date().toISOString(),
+        });
+      }
+    };
+  }, []);
 
   const restart = (): void => {
     setRoundKey((k) => k + 1);
