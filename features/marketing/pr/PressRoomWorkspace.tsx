@@ -308,16 +308,31 @@ export default function PressRoomWorkspace() {
               size="sm"
               label="Press room"
               human={() => pressRoomAsText(snapshot, selectedBrand?.name ?? null)}
+              // The human payload already prefixes "(SAMPLE DATA)". The agent
+              // and json payloads did not, so a downstream agent received ten
+              // fictional angles stamped with the user's REAL site_id and no way
+              // to tell. Both now carry the flag, and the sample payload does not
+              // claim a site it is not about.
               agent={() => ({
                 kind: "press-room-snapshot",
                 location: "AI Matrx — Marketing — Press Room",
-                description:
-                  "Every story angle, journalist request and piece of coverage on this business's press room.",
+                description: snapshot.isSample
+                  ? "SAMPLE DATA — an illustrative press room. This business has no analysed angles yet; nothing here describes it."
+                  : "Every story angle, journalist request and piece of coverage on this business's press room.",
                 data: { angles, requests, coverage },
                 summary: pressRoomAsText(snapshot, selectedBrand?.name ?? null),
-                attributes: { site_id: siteId },
+                attributes: {
+                  site_id: snapshot.isSample ? null : siteId,
+                  is_sample: snapshot.isSample,
+                },
               })}
-              json={() => ({ angles, requests, coverage })}
+              json={() => ({
+                is_sample: snapshot.isSample,
+                site_id: snapshot.isSample ? null : siteId,
+                angles,
+                requests,
+                coverage,
+              })}
             />
           </div>
         </div>

@@ -16,7 +16,10 @@
  * carrying its own "add to CRM" fix (THE DOOR LAW).
  */
 
+import Link from "next/link";
 import { ArrowUpRight, ExternalLink, Link2, Link2Off } from "lucide-react";
+
+import { pressRoomHref } from "@/features/marketing/pr/routes";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -114,10 +117,26 @@ export function CoverageWon({
                         <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden />
                         <span className="truncate">From: {angle.headline}</span>
                       </button>
+                    ) : angleId ? (
+                      // An angle WAS recorded, we just could not resolve it in
+                      // the loaded set (soft-deleted, out of scope, or past the
+                      // read limit). Saying "none was recorded" here would be a
+                      // lie about a twin we know exists — so name the id and
+                      // offer the door.
+                      <Link
+                        href={pressRoomHref({ focus: { kind: "angle", id: angleId } })}
+                        className="inline-flex min-w-0 shrink items-center gap-1 text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
+                        title={`This piece records story angle ${angleId}, which is not in the angles loaded for this scope. Open it directly.`}
+                      >
+                        <ArrowUpRight className="h-3 w-3 shrink-0" aria-hidden />
+                        <span className="truncate">
+                          Angle recorded but not loaded here
+                        </span>
+                      </Link>
                     ) : (
                       <span
                         className="shrink-0 text-muted-foreground/80"
-                        title="coverage_mention has no foreign key to story_angle; the tie lives in metadata.story_angle_id and none was recorded here."
+                        title="coverage_mention has no foreign key to story_angle; the tie lives in metadata.story_angle_id and this piece records none."
                       >
                         No angle recorded for this piece
                       </span>

@@ -701,6 +701,8 @@ export function StoryAngleQueue({
     [rows, expandedAngleId, onExpandAngle],
   );
 
+  const queueRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
@@ -723,6 +725,19 @@ export function StoryAngleQueue({
         return;
       }
       if (typing) return;
+      // Scope the arrow shortcut to the queue. It was bound to the whole
+      // document, so reading the coverage log at the bottom of the page could
+      // not be scrolled with the arrow keys (the page jumped back up and
+      // expanded a row), and arrowing through the Radix site picker — whose
+      // options are role="option", not inputs — walked the queue and rewrote
+      // the URL on every keystroke.
+      const withinQueue =
+        target instanceof Node && queueRef.current?.contains(target);
+      const queueHasFocus =
+        withinQueue ||
+        (document.activeElement instanceof Node &&
+          queueRef.current?.contains(document.activeElement));
+      if (!queueHasFocus) return;
       if (event.key === "ArrowDown") {
         event.preventDefault();
         move(1);
@@ -736,7 +751,10 @@ export function StoryAngleQueue({
   }, [move, expandedAngleId, onExpandAngle]);
 
   return (
-    <div className="flex min-w-0 flex-col rounded-lg border border-border bg-card">
+    <div
+      ref={queueRef}
+      className="flex min-w-0 flex-col rounded-lg border border-border bg-card"
+    >
       <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-border px-3 py-2">
         <h2 className="mr-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Story angles
