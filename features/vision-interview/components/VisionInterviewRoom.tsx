@@ -206,7 +206,7 @@ export function VisionInterviewRoom({ sessionId }: { sessionId: string }) {
                   type="button"
                   onClick={() => setMobilePane(key)}
                   className={cn(
-                    "inline-flex min-h-[44px] items-center gap-1 rounded-md px-3 text-sm",
+                    "inline-flex min-h-[44px] shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-3 text-sm",
                     mobilePane === key
                       ? "bg-muted font-medium text-foreground"
                       : "text-muted-foreground",

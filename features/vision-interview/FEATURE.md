@@ -133,7 +133,34 @@ them — `normalizeStage` in `types.ts` maps them for display
    the current category grouped first (`selectQuestionsGroupedForStage`) so
    the Expert can answer ahead of schedule. Both reuse
    `composerInsertRequested` — never a second insert path.
-10. **Failure honesty (v2 §17):** every run/start/resume error surface must
+10. **Raw-audio capture (v2 §13.1) — never lose the speaker's audio.** Every
+    composer dictation's full recording is uploaded by the SHARED recorder's
+    canonical path (fileHandler via `saveAudioToStorage` — never a hand-rolled
+    upload) independently of any agent call (§17.1 ordering: a failed run
+    never touches the audio). The composer wraps its subtree in
+    `RecordingOriginProvider` (`surface: "vision-interview.composer"`,
+    `entityId` = session) so the transcripts row is attributed, and listens on
+    `features/audio/dictationAudioRegistry` (generic primitive contributed by
+    this feature — the recorder announces each save outcome) for the
+    `cld_files` id. An ACCEPTED send/start moves the pending ids to
+    `awaitingTurnAudio`; `useTurnAudioAttachment` stamps
+    `interview.turn.audio_file_id` on the server-created human turn (guarded
+    `IS NULL` write, robust to either arrival order; several dictations in one
+    message → the LAST id is stamped, all recordings stay in transcripts). A
+    failed upload keeps the blob retryable IN MEMORY (registry `retry()`;
+    localStorage can't hold blobs) behind an honest composer banner; the
+    IndexedDB chunk safety store still covers a crash. Playback: `TurnCard`'s
+    Listen chip → `<InlineMediaRef as="audio">` (re-mints from file_id —
+    never a raw `<audio src>`).
+11. **Final deliverables (v2 §13.3).** `session.cleaned_transcript` /
+    `vision_document` / `requirements_document` / `finalized_at` are
+    server-written (finalize step in aidream). When present, the side pane
+    (and the mobile switcher) grow Vision / Requirements / Transcript tabs —
+    `DeliverablePane` renders each read-only through `<RichDocument>` with
+    copy + markdown download (`downloadBlob`). Before finalize nothing
+    renders; the existing session-row realtime subscription delivers them
+    live the moment finalize lands.
+12. **Failure honesty (v2 §17):** every run/start/resume error surface must
     SAY the Expert's words are safe — the draft persists on-device
     (`useDurableDraft`) and a sent message lands as a turn before agents run
     — and offer the retry in the same breath. Never lose composer content
@@ -175,6 +202,24 @@ per-node tokens the same way.
 
 ## Change log
 
+- 2026-08-18 — **v2 remainder: raw audio + deliverables.** (1) RAW-AUDIO
+  CAPTURE (§13.1): new generic primitive
+  `features/audio/dictationAudioRegistry.ts` — the shared recorder's
+  canonical upload path now announces each dictation-audio save (fileId +
+  origin) or failure (in-memory blob + retry). Composer declares a
+  `RecordingOrigin`, shows a saved-audio chip and an honest
+  failed-upload/retry banner; accepted send/start queues the ids;
+  `useTurnAudioAttachment` stamps `interview.turn.audio_file_id` (guarded
+  IS NULL write) onto the server-created human turn; `TurnCard` grows a
+  Listen chip → `<InlineMediaRef as="audio">`. (2) DELIVERABLES (§13.3):
+  `session.cleaned_transcript`/`vision_document`/`requirements_document`/
+  `finalized_at` hand-declared; side pane + mobile switcher grow
+  Vision/Requirements/Transcript tabs (`DeliverablePane`: RichDocument +
+  copy + .md download), rendered only once finalize writes them; fields
+  flow live through the existing session realtime. (3) Question aging
+  (v1 §14) verified as already shipped (age-in-rounds, louder past 2/3).
+  Verified in the browser (desktop + mobile) against a session with
+  deliverables + a stamped audio turn set via SQL.
 - 2026-08-17 — **v2 room (backend v2 contract).** (1) STAGES: new arc
   capture→ground→enhance→articulate→stress→shape→revisit→done mirrored in
   `types.ts` (`STAGES` — label, primaryRole, questionCategory per stage);
