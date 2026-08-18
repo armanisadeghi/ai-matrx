@@ -8,6 +8,7 @@ import { useNoteAccess } from "../../hooks/useNoteAccess";
 import { NoteEditorDock } from "./NoteEditorDock";
 import { useNoteDelete } from "../../hooks/useNoteDelete";
 import { useToastManager } from "@/hooks/useToastManager";
+import { toastErrorAlreadyCaptured } from "@/lib/toast";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -248,7 +249,10 @@ export default function MobileNoteEditor({
       };
       setIsDirty(false);
     } catch {
-      toast.error("Failed to save note");
+      // `updateNote` delegates to the canonical save thunk, which owns
+      // failure classification/capture. Keep this derived notice visible
+      // without filing a duplicate, context-free system_error.
+      toastErrorAlreadyCaptured("Failed to save note");
     } finally {
       setIsSaving(false);
     }
