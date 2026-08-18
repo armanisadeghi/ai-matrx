@@ -182,7 +182,7 @@ export function sampleRunFrames(
     events.push({ ...base, event: "node_started", inputs: {} });
     emitStream(
       nodeId,
-      `Sample preview — what "${info.label}" produced appears here.`,
+      "Sample output.",
       i * 2,
     );
     events.push({
@@ -209,7 +209,7 @@ export function sampleRunFrames(
       });
       emitStream(
         runningId,
-        `Sample preview — "${info.label}" writes here as it works.`,
+        "Sample output, streaming…",
         (finishedCount + 1) * 2,
       );
     }

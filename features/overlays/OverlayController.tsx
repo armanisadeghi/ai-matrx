@@ -175,6 +175,9 @@ const AgentCreateAppWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentCreateAppWindow"),
   { ssr: false },
 );
+const GoogleConnectWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/google/GoogleConnectWindow"),
+);
 const AgentSkillsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentSkillsWindow"),
   { ssr: false },
@@ -1062,6 +1065,9 @@ export default function OverlayController() {
     agentSkillsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentSkillsWindow"),
     ),
+    googleConnectWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleConnectWindow"),
+    ),
     agentDataStorageWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentDataStorageWindow"),
     ),
@@ -1409,6 +1415,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     agentSkillsWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentSkillsWindow"),
+    ) as Record<string, unknown> | null,
+    googleConnectWindow: useAppSelector((s) =>
+      selectOverlayData(s, "googleConnectWindow"),
     ) as Record<string, unknown> | null,
     agentDataStorageWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentDataStorageWindow"),
@@ -2245,6 +2254,25 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "agentCreateAppWindow" }))
             }
             agentId={typeof data?.agentId === "string" ? data.agentId : null}
+          />
+        );
+      })()}
+
+      {/* googleConnectWindow */}
+      {(() => {
+        const isOpen = isOpenById.googleConnectWindow;
+        const data = dataById.googleConnectWindow as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <GoogleConnectWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "googleConnectWindow" }))
+            }
+            reason={typeof data?.reason === "string" ? data.reason : null}
           />
         );
       })()}

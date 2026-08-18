@@ -249,11 +249,10 @@ export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
             <BrainCircuit className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
             <div className="min-w-0 space-y-2">
               <h2 className="text-sm font-semibold text-foreground">
-                Nobody has designed this workflow&apos;s run page yet
+                Ready
               </h2>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                We&apos;ve laid one out for you from the steps in this workflow —
-                it&apos;s on the right. Make it yours, or take it as it is.
+                Review the preview, then use it.
               </p>
               <button
                 type="button"

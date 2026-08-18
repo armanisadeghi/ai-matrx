@@ -437,6 +437,15 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "The live Stripe checkout endpoint returns 503 until Education Premium billing is configured.",
     surfaces: ["/pricing Premium plan action"],
   },
+  "connectors.notion": {
+    id: "connectors.notion",
+    label: "Notion",
+    owner: "connectors",
+    promise:
+      "Connect your Notion workspace so an agent can read the pages you pick and write results back into Notion.",
+    stage: "planned",
+    surfaces: ["Connector strip under the agent input", "/demos/connector-strip"],
+  },
 };
 
 export function getComingSoon(id: string): ComingSoonEntry | undefined {

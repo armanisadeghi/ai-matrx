@@ -2169,6 +2169,20 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     instanceMode: "singleton",
   },
 
+  // ── Connect Google ────────────────────────────────────────────────────────
+  {
+    slug: "google-connect-window",
+    overlayId: "googleConnectWindow",
+    kind: "window",
+    label: "Connect Google",
+    defaultData: { reason: null },
+    // Pure connect/pick flow — nothing worth restoring after a reload, and a
+    // stale "connect Google" window reappearing would be noise.
+    ephemeral: true,
+    mobilePresentation: "fullscreen",
+    instanceMode: "singleton",
+  },
+
   // ── Agent Skills ──────────────────────────────────────────────────────────
   {
     slug: "agent-skills-window",

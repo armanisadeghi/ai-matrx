@@ -215,6 +215,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  googleConnectWindow: {
+    label: "Connect Google",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   agentSidebarOverlay: {
     label: "Agent Sidebar Overlay",
     instanceMode: "multi",

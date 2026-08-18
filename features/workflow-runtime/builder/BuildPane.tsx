@@ -187,7 +187,7 @@ export function BuildPane({
       <Section
         number={1}
         title="Screens"
-        hint="A long job is easier to watch in chapters. Each screen takes over on its own cue."
+        hint="Split the run into stages."
         action={
           <button
             type="button"
@@ -200,8 +200,8 @@ export function BuildPane({
       >
         {config.pages.length === 0 ? (
           <ChoiceCard
-            title="Everything on one screen"
-            detail="People see the whole page from start to finish. Add a screen to split it into chapters."
+            title="Single screen"
+            detail="One continuous page."
             selected
             onClick={() => onScreenChange(null)}
           />
@@ -278,7 +278,7 @@ export function BuildPane({
       <Section
         number={2}
         title={config.pages.length > 0 ? `On "${screenLabel}"` : "What people watch"}
-        hint="Pick the moments worth showing. Everything else keeps running quietly in the background."
+        hint="Choose what stays visible."
         action={
           <button
             type="button"
@@ -336,7 +336,7 @@ export function BuildPane({
                     ariaLabel="What to call this box"
                     onChange={(v) => updatePanel(panel.id, { title: v || undefined })}
                   />
-                  <p className="text-xs leading-snug text-muted-foreground">
+                  <p className="truncate text-xs leading-snug text-muted-foreground">
                     {described.detail}
                   </p>
                   <Segmented<PanelWidth>
@@ -476,13 +476,13 @@ export function BuildPane({
       <Section
         number={3}
         title="The finish line"
-        hint="The step that produces the thing people are waiting for. Screens and boxes can wait for this moment."
+        hint="Choose the final step."
       >
         <SelectField
           ariaLabel="The step that produces the result"
           value={config.deliverableNodeId ?? ""}
           options={[
-            { value: "", label: "Not set — wait for the whole run instead" },
+            { value: "", label: "Whole run" },
             ...steps.map((s) => ({ value: s.id, label: s.label })),
           ]}
           onChange={(v) => {
@@ -497,7 +497,7 @@ export function BuildPane({
       {/* 4 — Details ------------------------------------------------------ */}
       <Section number={4} title="Details">
         <label className="block space-y-1">
-          <FieldLabel>Name this view</FieldLabel>
+          <FieldLabel>View name</FieldLabel>
           <TextField
             value={meta.name}
             ariaLabel="Name this view"
@@ -505,26 +505,26 @@ export function BuildPane({
           />
         </label>
         <div className="space-y-1">
-          <FieldLabel>Who is it for</FieldLabel>
+          <FieldLabel>Audience</FieldLabel>
           <Segmented<SurfaceAudience>
             ariaLabel="Who is it for"
             value={meta.audience}
             options={[
-              { value: "consumer", label: "The person running it" },
-              { value: "creator", label: "Me, while I build" },
+              { value: "consumer", label: "Runner" },
+              { value: "creator", label: "Builder" },
             ]}
             onChange={(v) => onMetaChange({ audience: v })}
           />
         </div>
         <div className="space-y-1">
-          <FieldLabel>How much room does it get</FieldLabel>
+          <FieldLabel>Size</FieldLabel>
           <Segmented<SurfaceProfile>
             ariaLabel="How much room does it get"
             value={meta.profile}
             options={[
-              { value: "full", label: "A whole page" },
-              { value: "compact", label: "A panel" },
-              { value: "summary", label: "A single line" },
+              { value: "full", label: "Page" },
+              { value: "compact", label: "Panel" },
+              { value: "summary", label: "Line" },
             ]}
             onChange={(v) => onMetaChange({ profile: v })}
           />

@@ -102,38 +102,34 @@ export function describePanel(
       const step = steps.find((s) => s.id === source.nodeId);
       return {
         title: step?.label ?? stepLabel(steps, source.nodeId),
-        detail: step ? `Shows what "${step.label}" produces` : "This step is no longer in the workflow",
+        detail: step ? "Step output" : "Step removed",
       };
     }
     case "childRun":
       return {
         title: stepLabel(steps, source.nodeId),
-        detail: `Shows the whole workflow that "${stepLabel(steps, source.nodeId)}" runs`,
+        detail: "Nested run",
       };
     case "group":
       return {
         title: source.label,
-        detail: `Shows ${source.nodeIds.length} steps together`,
+        detail: `${source.nodeIds.length} steps`,
       };
     case "progressRail":
       return {
         title: "Progress",
-        detail: source.nodeIds?.length
-          ? `A checklist of ${source.nodeIds.length} steps, ticking off as they finish`
-          : "A checklist of every step, ticking off as it finishes",
+        detail: source.nodeIds?.length ? `${source.nodeIds.length} steps, live` : "All steps, live",
       };
     case "static":
       return {
         title: "A note for the reader",
-        detail: source.markdown.trim().split("\n")[0]?.slice(0, 80) || "Your own words",
+        detail: source.markdown.trim().split("\n")[0]?.slice(0, 40) || "Custom note",
       };
     case "action":
       return {
         title: source.label,
         detail:
-          source.mode === "auto"
-            ? `Runs "${stepLabel(steps, source.nodeId)}" on its own as soon as it can`
-            : `A button that runs "${stepLabel(steps, source.nodeId)}"`,
+          source.mode === "auto" ? "Runs automatically" : "Run button",
       };
   }
 }
