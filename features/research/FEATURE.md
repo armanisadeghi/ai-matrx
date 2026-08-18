@@ -32,7 +32,7 @@ AI research pipeline with human-in-the-loop curation: search the web by keyword 
 
 **Hooks** (`features/research/hooks/`)
 
-- `useResearchStream()` — NDJSON/SSE stream consumer (chunk/data/info/end callbacks).
+- `useResearchStream()` — adopts the pipeline stream (`adoptForeignStream`): content renders from `activeRequests` off the exposed `requestId`; the research domain events (data/info/phase/end) ride `onEvent` into the per-call callbacks. Never hand-render its text.
 - `usePipelineProgress({ topic })` — reduces stream events into the per-stage `PipelineState` the pipeline graph renders. Owns the terminal sweep (see Invariants).
 - `useResearchApi()` — compute-only Python backend calls (run/search/scrape/analyzeAll/synthesize/generateDocument/consolidateTag/**rankSourceAuthority**/…).
 - `useResearchState.ts` — Supabase read hooks (`useResearchSources`, `useAnalysesForTopic`, `useResearchSynthesis`, `useResearchDocument`, `useResearchTags`, `useSourceTags`, …).
@@ -304,6 +304,33 @@ find yourself writing code to add an output, something above is wrong.
 ---
 
 ## Change log
+
+- 2026-08-17 — **Every research stream is now ADOPTED; the last hand-rendered
+  stream in this feature is gone.** `useResearchStream` no longer parses the
+  pipeline `Response` with `consumeStream`: it runs it through
+  `adoptForeignStream`, so search / scrape / analyze / synthesize / auto-tag /
+  auto-consolidate content lands in `state.activeRequests.byRequestId[...]` and
+  renders through the canonical pipeline, exactly like a chat stream. The
+  research DOMAIN events (`data` / `phase` / `info` / `completion` /
+  `tool_event` / `error` / `end`) ride `adoptForeignStream`'s `onEvent` — the
+  callback that exists for a caller's own typed progress events — so every
+  consumer's `onData` / `onInfo` / `onStatusUpdate` / `onEnd` callbacks,
+  `rawEvents`, `infos`, `messages`, and `currentStep` behave as before. The hook
+  now also exposes `requestId` / `conversationId` and a per-call `onAdopted`,
+  which fires the INSTANT the ids exist (never after the await). `AnalysisList`
+  deleted its `streamingText` state and the `<p>` that painted 200 truncated
+  characters beside a spinner; it floats the run instead with
+  `useFloatingLiveRun` on the stable instance id `research-analyze-all:${topicId}`,
+  keeping the phase narration as the window `label` (the window never
+  auto-closes). `startStream` gained an optional `abortController` — it must be
+  the FETCH's own controller, so the watchdog and `cancel()` actually close the
+  body; `PipelineGraph` and `useRunPipeline` (the two surfaces with a Cancel
+  control) now create it and hand its signal to the api call. Verified live on
+  `/research/topics/{id}/analysis`: window opens on click bound to the adopted
+  request id, renders the run's narration as content with no page shift, the
+  analyses list still refreshes on `analysis_complete` /
+  `analyze_all_complete`, and the Stream Debug overlay still receives
+  `rawEvents`.
 
 - 2026-08-15 — **Long-running Google Interactions became observable and
   reload-safe.** The topic Agents surface can start Deep Research, Deep
