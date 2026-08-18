@@ -46,6 +46,8 @@ export type Capability =
   | "outreach.send_volume"
   | "marketing.automation_run"
   | "education.generate_cards"
+  | "education.card_image_source"
+  | "education.card_image_generate"
   | "education.card_enrichment"
   | "education.tutor_message"
   | "education.audio_generate"
@@ -228,6 +230,30 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     enforced: false,
     upgradeMessage:
       "You've used your flashcard generations this month. Upgrade for unlimited decks.",
+  }),
+  "education.card_image_source": def({
+    id: "education.card_image_source",
+    label: "Find card images",
+    description:
+      "An agent finds an expert image on the open web for a card face — search plus a vision judgment per card.",
+    period: "month",
+    defaultFreeLimit: null,
+    minTier: "free",
+    enforced: false,
+    upgradeMessage:
+      "You've used your card image searches this month. Upgrade to keep illustrating your decks.",
+  }),
+  "education.card_image_generate": def({
+    id: "education.card_image_generate",
+    label: "Generate card images",
+    description:
+      "AI-generate a verified image for a card face — generation plus adversarial accuracy checking, with retries.",
+    period: "month",
+    defaultFreeLimit: null,
+    minTier: "free",
+    enforced: false,
+    upgradeMessage:
+      "You've used your card image generations this month. Upgrade for more verified images.",
   }),
   "education.card_enrichment": def({
     id: "education.card_enrichment",

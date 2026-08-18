@@ -35,6 +35,7 @@ import {
 } from "@/features/rag/api/grounding";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
+import { asJsonObject } from "@/lib/supabase/mergeJsonColumn";
 import { supabase } from "@/utils/supabase/client";
 
 type DraftStatus =
@@ -48,6 +49,7 @@ interface GeneratedDraft {
   title?: string;
   verifiedCards?: number;
   totalCards?: number;
+  allowedChunkIds?: string[];
   error?: string;
 }
 
@@ -90,8 +92,55 @@ export function ExamContentPipeline() {
         return;
       }
       try {
-        const next = await listLearnerOwnedGroundingSources(user.id);
-        if (!cancelled) setSources(next);
+        const [next, existing] = await Promise.all([
+          listLearnerOwnedGroundingSources(user.id),
+          fcService.listSets(),
+        ]);
+        if (!cancelled) {
+          setSources(next);
+          if (existing.data) {
+            const recovered = existing.data.flatMap((set): GeneratedDraft[] => {
+              const metadata = asJsonObject(set.metadata);
+              if (
+                metadata.generation_pipeline !==
+                  "education-grounded-content-v1" ||
+                metadata.content_status !== "draft"
+              ) {
+                return [];
+              }
+              const key =
+                typeof metadata.generation_plan === "string"
+                  ? metadata.generation_plan
+                  : set.name.toLowerCase().includes("foundation")
+                    ? "foundations"
+                    : set.name.toLowerCase().includes("reason")
+                      ? "reasoning"
+                      : "practice";
+              const plan = EXAM_DECK_PLANS.find(
+                (candidate) => candidate.key === key,
+              );
+              const chunkIds = Array.isArray(metadata.grounding_chunk_ids)
+                ? metadata.grounding_chunk_ids.filter(
+                    (value): value is string => typeof value === "string",
+                  )
+                : [];
+              if (!plan || chunkIds.length === 0) return [];
+              return [
+                {
+                  plan,
+                  status: "failed",
+                  setId: set.id,
+                  href: `/education/flashcards/${set.id}`,
+                  title: set.name,
+                  allowedChunkIds: chunkIds,
+                  error:
+                    "Recovered a private draft from an interrupted run. Resume source verification before publishing.",
+                },
+              ];
+            });
+            if (recovered.length > 0) setDrafts(recovered);
+          }
+        }
       } catch (loadError) {
         if (!cancelled) setSourceError(messageFor(loadError));
       } finally {
@@ -157,6 +206,7 @@ export function ExamContentPipeline() {
             curated: true,
             content_status: "draft",
             generation_pipeline: "education-grounded-content-v1",
+            generation_plan: plan.key,
             grounding_chunk_ids: readiness.chunkIds,
           }),
         );
@@ -167,6 +217,7 @@ export function ExamContentPipeline() {
           setId: result.artifactId,
           href: result.href,
           title: result.title,
+          allowedChunkIds: readiness.chunkIds,
           verifiedCards: 0,
         });
         const verification = await verifyGeneratedDeck(
@@ -195,6 +246,43 @@ export function ExamContentPipeline() {
       }
     }
     setRunning(false);
+  }
+
+  async function resumeVerification(draft: GeneratedDraft) {
+    if (!draft.setId || !draft.allowedChunkIds?.length) return;
+    patchDraft(draft.plan, {
+      status: "verifying",
+      error: undefined,
+      verifiedCards: 0,
+    });
+    try {
+      const verification = await verifyGeneratedDeck(
+        draft.setId,
+        draft.allowedChunkIds,
+        dispatch,
+        store,
+        (completed, total) =>
+          patchDraft(draft.plan, {
+            verifiedCards: completed,
+            totalCards: total,
+          }),
+      );
+      if (!verification.ready) {
+        const failed = verification.cards.filter(
+          (card) => card.verdict.status !== "verified",
+        );
+        throw new Error(
+          `${failed.length} card${failed.length === 1 ? "" : "s"} failed source verification. Open the draft to correct or remove them.`,
+        );
+      }
+      patchDraft(draft.plan, {
+        status: "ready",
+        verifiedCards: verification.cards.length,
+        totalCards: verification.cards.length,
+      });
+    } catch (error) {
+      patchDraft(draft.plan, { status: "failed", error: messageFor(error) });
+    }
   }
 
   async function publish(draft: GeneratedDraft) {
@@ -384,6 +472,16 @@ export function ExamContentPipeline() {
                     onClick={() => void publish(draft)}
                   >
                     Publish as AI-built starter
+                  </Button>
+                ) : null}
+                {draft.status === "failed" && draft.allowedChunkIds?.length ? (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="min-h-11"
+                    onClick={() => void resumeVerification(draft)}
+                  >
+                    Resume verification
                   </Button>
                 ) : null}
                 {draft.status === "published" ? (

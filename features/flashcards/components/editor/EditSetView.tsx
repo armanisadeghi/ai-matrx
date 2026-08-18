@@ -33,6 +33,7 @@ import {
   Grid3x3,
   X,
   History,
+  Sigma,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -77,11 +78,17 @@ import {
   asCardKind,
   CARD_KIND,
   clozeFaces,
+  formulaBack,
+  formulaContent,
+  formulaDynamicContent,
   matchingDynamicContent,
   matchingPairs,
   type CardKind,
+  type FormulaContent,
+  type FormulaVariable,
   type MatchingPair,
 } from "../../utils/cardVariants";
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -876,7 +883,9 @@ function CardEditor({
       ? "Cloze"
       : kind === CARD_KIND.matching
         ? "Matching"
-        : "Basic";
+        : kind === CARD_KIND.formula
+          ? "Formula"
+          : "Basic";
   const clozePreview = kind === CARD_KIND.cloze ? clozeFaces(front) : null;
 
   return (
@@ -888,6 +897,8 @@ function CardEditor({
             <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-primary">
               {kind === CARD_KIND.cloze ? (
                 <Scissors className="h-2.5 w-2.5" />
+              ) : kind === CARD_KIND.formula ? (
+                <Sigma className="h-2.5 w-2.5" />
               ) : (
                 <Grid3x3 className="h-2.5 w-2.5" />
               )}
@@ -1152,6 +1163,177 @@ function MatchingPairsEditor({
           <Plus className="mr-1 h-3.5 w-3.5" />
           Add pair
         </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * VISION §17 — the formula-card editor: the question, the LaTeX body, the
+ * variable definitions, and a worked example. Preview renders the SAME composed
+ * back face students study (formulaBack → CardFaceContent), so what the author
+ * sees is exactly what the learner gets.
+ */
+function FormulaFields({
+  front,
+  onFrontChange,
+  formula,
+  onFormulaChange,
+  notes,
+  onNotesChange,
+  preview,
+}: {
+  front: string;
+  onFrontChange: (v: string) => void;
+  formula: FormulaContent;
+  onFormulaChange: (f: FormulaContent) => void;
+  notes: string;
+  onNotesChange: (v: string) => void;
+  preview: boolean;
+}) {
+  const editVariable = (
+    i: number,
+    patch: Partial<FormulaVariable>,
+  ): void => {
+    const variables = formula.variables.map((v, idx) =>
+      idx === i ? { ...v, ...patch } : v,
+    );
+    onFormulaChange({ ...formula, variables });
+  };
+
+  if (preview) {
+    return (
+      <div className="space-y-2">
+        <div className="rounded-md border border-border bg-muted/30 p-2">
+          <div className="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+            Front
+          </div>
+          <CardFaceContent content={front || "*empty*"} variant="inline" />
+          <div className="mb-1 mt-2 border-t border-border pt-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+            Back (as studied)
+          </div>
+          <CardFaceContent
+            content={formulaBack(formula, notes)}
+            variant="inline"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <div>
+        <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
+          Question (front)
+        </label>
+        <Textarea
+          value={front}
+          onChange={(e) => onFrontChange(e.target.value)}
+          rows={2}
+          className="resize-y text-sm"
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
+          Formula (LaTeX, no delimiters — e.g. x = \frac{"{-b}"}{"{2a}"})
+        </label>
+        <Textarea
+          value={formula.latex}
+          onChange={(e) =>
+            onFormulaChange({ ...formula, latex: e.target.value })
+          }
+          rows={2}
+          className="resize-y font-mono text-sm"
+        />
+        {formula.latex.trim() && (
+          <div className="mt-1.5 rounded-md border border-border bg-muted/30 p-2">
+            <CardFaceContent
+              content={`$$${formula.latex}$$`}
+              variant="inline"
+            />
+          </div>
+        )}
+      </div>
+      <div>
+        <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
+          Variables — what each symbol means
+        </label>
+        <div className="space-y-1.5">
+          {formula.variables.map((v, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <Input
+                value={v.symbol}
+                onChange={(e) => editVariable(i, { symbol: e.target.value })}
+                placeholder="x"
+                className="h-8 w-24 font-mono text-sm"
+                aria-label={`Variable ${i + 1} symbol`}
+              />
+              <Input
+                value={v.meaning}
+                onChange={(e) => editVariable(i, { meaning: e.target.value })}
+                placeholder="what it represents"
+                className="h-8 flex-1 text-sm"
+                aria-label={`Variable ${i + 1} meaning`}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                aria-label={`Remove variable ${i + 1}`}
+                onClick={() =>
+                  onFormulaChange({
+                    ...formula,
+                    variables: formula.variables.filter((_, idx) => idx !== i),
+                  })
+                }
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          ))}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() =>
+              onFormulaChange({
+                ...formula,
+                variables: [...formula.variables, { symbol: "", meaning: "" }],
+              })
+            }
+          >
+            <Plus className="mr-1 h-3 w-3" />
+            Add variable
+          </Button>
+        </div>
+      </div>
+      <div>
+        <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
+          Worked example (markdown + LaTeX)
+        </label>
+        <Textarea
+          value={formula.example ?? ""}
+          onChange={(e) =>
+            onFormulaChange({
+              ...formula,
+              example: e.target.value || null,
+            })
+          }
+          rows={2}
+          className="resize-y text-sm"
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-[10px] uppercase tracking-wider text-muted-foreground">
+          Extra notes (optional — shown after the example)
+        </label>
+        <Textarea
+          value={notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          rows={2}
+          className="resize-y text-sm"
+        />
       </div>
     </div>
   );
