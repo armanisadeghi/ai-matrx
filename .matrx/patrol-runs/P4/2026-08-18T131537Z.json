@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P4",
+  "runId": "2026-08-18T131537Z",
+  "baseSha": "612f1a3c32bb62db4b5ff8a821ef7685331855f9",
+  "createdAt": "2026-08-18T13:15:38.583Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-18T13:15:38.583Z",
+      "actor": "codex-p4-worker",
+      "summary": "P4 structural and source-only full pass found 136 review candidates; default scan is polluted by parked build copies",
+      "evidence": [
+        "source-scan:6941-files/674-lines/538-paired/136-review",
+        "structural-scan:1230-files/85-lines/68-paired/17-review",
+        "baseline-type-check:failed-pre-existing-context-policy-transition",
+        "detector-tests:4/4-pass",
+        "default-scan:7619-files/804-lines/138-review-invalid-scope"
+      ],
+      "previousEventHash": null,
+      "eventHash": "e4d7d79da7f674e3c6d067ada1fd16f45e7fb6527354f61850735e56767d001b"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-18T13:15:39.178Z",
+      "actor": "codex-p4-worker",
+      "summary": "Repair detector scope to ignore Next build parks and stale quarantines",
+      "evidence": [
+        "professional-improvement:default-detector-counts-generated-copies"
+      ],
+      "previousEventHash": "e4d7d79da7f674e3c6d067ada1fd16f45e7fb6527354f61850735e56767d001b",
+      "eventHash": "79176c7641e87b1b1f7dfc275331f5fbb56430aca534bdc21b8f7fed18e9cd76"
+    }
+  ]
+}

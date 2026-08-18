@@ -125,7 +125,14 @@ function collectFiles(target) {
   if (stat.isFile()) return extname(absolute) === ".tsx" ? [absolute] : [];
 
   return readdirSync(absolute, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.isDirectory() && SKIP_DIRS.has(entry.name)) return [];
+    if (
+      entry.isDirectory() &&
+      (SKIP_DIRS.has(entry.name) ||
+        entry.name.startsWith(".next") ||
+        /^_.*_build_excluded(?:\.stale-\d+)?$/.test(entry.name))
+    ) {
+      return [];
+    }
     const child = join(absolute, entry.name);
     if (entry.isDirectory()) return collectFiles(child);
     return entry.isFile() && extname(entry.name) === ".tsx" ? [child] : [];

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P4",
+  "runId": "2026-08-18T131537Z",
+  "state": "fixing",
+  "updatedAt": "2026-08-18T13:15:39.178Z",
+  "summary": "Repair detector scope to ignore Next build parks and stale quarantines",
+  "source": "2026-08-18T131537Z.json",
+  "eventHash": "79176c7641e87b1b1f7dfc275331f5fbb56430aca534bdc21b8f7fed18e9cd76"
+}

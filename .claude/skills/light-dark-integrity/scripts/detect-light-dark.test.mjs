@@ -8,7 +8,7 @@ import test from "node:test";
 
 const DETECTOR = join(dirname(fileURLToPath(import.meta.url)), "detect-light-dark.mjs");
 
-function runFixture(source, approved = []) {
+function runFixture(source, approved = [], extraFiles = {}, target = "sample.tsx") {
   const root = mkdtempSync(join(tmpdir(), "p4-detector-"));
   const ledgerDir = join(root, ".claude/skills/light-dark-integrity");
   mkdirSync(ledgerDir, { recursive: true });
@@ -17,10 +17,15 @@ function runFixture(source, approved = []) {
     JSON.stringify({ version: 1, approved }),
   );
   writeFileSync(join(root, "sample.tsx"), source);
+  for (const [file, contents] of Object.entries(extraFiles)) {
+    const path = join(root, file);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, contents);
+  }
 
   try {
     return JSON.parse(
-      execFileSync(process.execPath, [DETECTOR, "--json", "sample.tsx"], {
+      execFileSync(process.execPath, [DETECTOR, "--json", target], {
         cwd: root,
         encoding: "utf8",
       }),
@@ -116,4 +121,23 @@ test("duplicate ledger ids are loud and never approve", () => {
   assert.equal(result.summary.approvedExceptions, 0);
   assert.ok(result.summary.invalidExceptions > 0);
   assert.equal(result.matches[0].status, "needs_review");
+});
+
+test("ignores active and stale Next build parks during a full scan", () => {
+  const generatedCandidate = `<div className="bg-white" />\n`;
+  const result = runFixture(
+    `<div className="text-black dark:text-white" />\n`,
+    [],
+    {
+      ".next-preview/copied.tsx": generatedCandidate,
+      "_admin_build_excluded/copied.tsx": generatedCandidate,
+      "_admin_build_excluded.stale-1787040308216/copied.tsx": generatedCandidate,
+    },
+    ".",
+  );
+
+  assert.equal(result.summary.scannedFiles, 1);
+  assert.equal(result.summary.matchingLines, 1);
+  assert.equal(result.summary.sameLinePaired, 1);
+  assert.equal(result.summary.reviewCandidates, 0);
 });
