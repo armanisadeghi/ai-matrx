@@ -9,6 +9,7 @@
  *   ?brand=<id>          which business (the agency operator manages several)
  *   &site=<id>           which of that business's sites
  *   &view=<queue view>   which slice of the angle queue is showing
+ *   &sort=<queue sort>   how that slice is ordered (absent = the view's default)
  *   &focus=angle:<id>    the open record — angle | request | coverage
  *   &data=<scenario>     force a load state (see `PRESS_ROOM_SCENARIOS`)
  *
@@ -30,6 +31,11 @@ import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import {
+  QUEUE_SORTS,
+  defaultSortForView,
+  type QueueSort,
+} from "@/features/marketing/pr/scoring";
 
 // ─── Scenario switch ────────────────────────────────────────────────────────
 
@@ -104,10 +110,21 @@ export function serializeFocus(focus: FocusRef | null): string | null {
 
 // ─── Hrefs ──────────────────────────────────────────────────────────────────
 
+export function parseSort(
+  value: string | null,
+  viewId: string,
+): { sort: QueueSort; isDefault: boolean } {
+  const match = QUEUE_SORTS.find((entry) => entry.id === value);
+  return match
+    ? { sort: match.id, isDefault: false }
+    : { sort: defaultSortForView(viewId), isDefault: true };
+}
+
 export interface PressRoomHrefOptions {
   brand?: string | null;
   site?: string | null;
   view?: string | null;
+  sort?: QueueSort | null;
   focus?: FocusRef | null;
   scenario?: PressRoomScenario | null;
 }
@@ -117,6 +134,7 @@ export function pressRoomHref(options: PressRoomHrefOptions): string {
   if (options.brand) params.set("brand", options.brand);
   if (options.site) params.set("site", options.site);
   if (options.view && options.view !== "live") params.set("view", options.view);
+  if (options.sort) params.set("sort", options.sort);
   const focus = serializeFocus(options.focus ?? null);
   if (focus) params.set("focus", focus);
   if (options.scenario && options.scenario !== "live") {
@@ -133,6 +151,10 @@ export interface PressRoomUrlState {
   brandId: string;
   siteId: string;
   viewId: string;
+  /** Resolved: the explicit `?sort=`, or the view's own default. */
+  sort: QueueSort;
+  /** True when no `?sort=` is present and the view's default is in force. */
+  sortIsDefault: boolean;
   focus: FocusRef | null;
   scenario: PressRoomScenario;
   /** Patch any subset. Changing the brand always clears the site AND the focus. */
@@ -140,6 +162,7 @@ export interface PressRoomUrlState {
     brand?: string;
     site?: string;
     view?: string;
+    sort?: QueueSort | null;
     focus?: FocusRef | null;
     scenario?: PressRoomScenario;
   }) => void;
@@ -154,6 +177,10 @@ export function usePressRoomUrl(): PressRoomUrlState {
   const brandId = searchParams.get("brand") ?? "";
   const siteId = searchParams.get("site") ?? "";
   const viewId = searchParams.get("view") ?? "live";
+  const { sort, isDefault: sortIsDefault } = parseSort(
+    searchParams.get("sort"),
+    viewId,
+  );
   // Memoised on the RAW string: `parseFocus` returns a fresh object every call,
   // and a new object identity every render would invalidate every consumer.
   const focusRaw = searchParams.get("focus");
@@ -178,6 +205,13 @@ export function usePressRoomUrl(): PressRoomUrlState {
       if (next.view !== undefined) {
         if (next.view && next.view !== "live") params.set("view", next.view);
         else params.delete("view");
+        // Each view carries its own default order; an explicit choice made in
+        // one view must not silently govern the next one.
+        params.delete("sort");
+      }
+      if (next.sort !== undefined) {
+        if (next.sort) params.set("sort", next.sort);
+        else params.delete("sort");
       }
       if (next.focus !== undefined) {
         const value = serializeFocus(next.focus);
@@ -205,15 +239,26 @@ export function usePressRoomUrl(): PressRoomUrlState {
         brand: brandId,
         site: siteId,
         view: viewId,
+        sort: sortIsDefault ? null : sort,
         focus,
         scenario,
         ...overrides,
       }),
-    [brandId, siteId, viewId, focus, scenario],
+    [brandId, siteId, viewId, sort, sortIsDefault, focus, scenario],
   );
 
   return useMemo(
-    () => ({ brandId, siteId, viewId, focus, scenario, set, href }),
-    [brandId, siteId, viewId, focus, scenario, set, href],
+    () => ({
+      brandId,
+      siteId,
+      viewId,
+      sort,
+      sortIsDefault,
+      focus,
+      scenario,
+      set,
+      href,
+    }),
+    [brandId, siteId, viewId, sort, sortIsDefault, focus, scenario, set, href],
   );
 }

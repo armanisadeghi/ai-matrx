@@ -34,7 +34,7 @@ import {
   Gauge,
   Quote,
   ShieldCheck,
-  TriangleAlert,
+  Scale,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -202,13 +202,26 @@ export function EvidenceLadder({
       {read.total > 0 ? <LadderHeader read={read} /> : null}
 
       {read.malformed > 0 ? (
-        <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5 text-[11px] leading-4 text-amber-700 dark:text-amber-300">
-          {read.malformed} evidence {read.malformed === 1 ? "entry" : "entries"} on
-          this angle could not be read and{" "}
-          {read.malformed === 1 ? "is" : "are"} not counted above — the stored
-          payload does not match any shape this surface understands. Nothing was
-          dropped silently.
-        </p>
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1.5">
+          <p className="text-[11px] leading-4 text-amber-700 dark:text-amber-300">
+            {read.malformed} evidence {read.malformed === 1 ? "entry" : "entries"}{" "}
+            on this angle could not be read and{" "}
+            {read.malformed === 1 ? "is" : "are"} not counted above — the stored
+            payload does not match any shape this surface understands. Counting
+            it is not enough, so here it is verbatim: a person can often read
+            what a parser cannot.
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {read.malformedRaw.map((raw, index) => (
+              <li
+                key={`malformed-${index}`}
+                className="overflow-x-auto whitespace-pre rounded bg-background/60 px-1.5 py-0.5 font-mono text-[10px] text-foreground scrollbar-thin"
+              >
+                {raw}
+              </li>
+            ))}
+          </ul>
+        </div>
       ) : null}
 
       <ul className="space-y-1.5">
@@ -341,10 +354,21 @@ export function EvidenceLadder({
 
       {contradictions.items.length > 0 ? (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5">
+          {/* Named in the USER's language, not the column's. Nobody who has
+              never pitched a reporter knows what a `contradictions` field is —
+              but everybody understands being challenged on a claim. This stays
+              the one warning-coloured thing in the proof area, because a gap is
+              work and this is something actually wrong. */}
           <p className="flex items-center gap-1.5 text-[11px] font-semibold text-destructive">
-            <TriangleAlert className="h-3.5 w-3.5" aria-hidden />
-            {contradictions.items.length} contradiction
-            {contradictions.items.length === 1 ? "" : "s"} found in your own data
+            <Scale className="h-3.5 w-3.5" aria-hidden />
+            A reporter will push back on{" "}
+            {contradictions.items.length === 1
+              ? "this"
+              : `these ${contradictions.items.length}`}
+          </p>
+          <p className="mt-0.5 text-[10px] leading-4 text-destructive/80">
+            Your own data disagrees with the story. Settle it before you pitch —
+            a reporter who finds it first will not run the piece.
           </p>
           <ul className="mt-1 space-y-1">
             {contradictions.items.map((item, index) => (

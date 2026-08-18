@@ -130,8 +130,17 @@ function Banner({
 }
 
 export default function PressRoomWorkspace() {
-  const { brandId, siteId, viewId, focus, scenario, set, href } =
-    usePressRoomUrl();
+  const {
+    brandId,
+    siteId,
+    viewId,
+    sort,
+    sortIsDefault,
+    focus,
+    scenario,
+    set,
+    href,
+  } = usePressRoomUrl();
   const brands = useVisibleBrandOptions();
   const sites = useBrandSites(brandId);
   const now = useMinuteClock();
@@ -503,6 +512,10 @@ export default function PressRoomWorkspace() {
                 requests={requests}
                 viewId={viewId}
                 onViewChange={(next) => set({ view: next })}
+                sort={sort}
+                sortIsDefault={sortIsDefault}
+                onSortChange={(next) => set({ sort: next })}
+                now={now}
                 expandedAngleId={expandedAngleId}
                 onExpandAngle={(angleId) =>
                   set({ focus: angleId ? { kind: "angle", id: angleId } : null })

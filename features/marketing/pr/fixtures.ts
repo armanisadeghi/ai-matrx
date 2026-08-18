@@ -52,8 +52,8 @@ const iso = (ms: number) => new Date(ms).toISOString();
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-/** [key, label, kind, note] */
-type ProofSeed = readonly [string, string, string, string | null];
+/** [key, label, kind, note, satisfied?] — an explicit `false` is a declared gap. */
+type ProofSeed = readonly [string, string, string, string | null, boolean?];
 /** [key, label, how_to_get, owner, effort] */
 type GapSeed = readonly [string, string, string, string, string];
 /** [key, label, source, url | null] */
@@ -420,7 +420,15 @@ const ANGLE_SEEDS: readonly AngleSeed[] = [
     proof: [
       ["employee-consent", "A named employee willing to be interviewed", "quote", null],
       ["retention-figures", "Retention figures versus sector average", "data", null],
-      ["program-confirmation", "Confirmation from the veterans' program", "third_party", null],
+      // Recorded as NOT satisfied, and `missing_evidence` never names it — the
+      // ladder must still treat it as a gap rather than a silent green tick.
+      [
+        "program-confirmation",
+        "Confirmation from the veterans' program",
+        "third_party",
+        null,
+        false,
+      ],
     ],
     missing: [
       [
@@ -537,11 +545,14 @@ const ANGLE_SEEDS: readonly AngleSeed[] = [
 ];
 
 function proofJson(items: readonly ProofSeed[], malformed = 0): Json {
-  const parsed = items.map(([key, label, kind, note]) => ({
+  const parsed = items.map(([key, label, kind, note, satisfied]) => ({
     key,
     label,
     kind,
     note,
+    // Only emitted when the seed says something. Silence lets
+    // `missing_evidence` decide, which is the analyzer's authority.
+    ...(satisfied === undefined ? {} : { satisfied }),
   }));
   // Entries with no readable label at all — exactly what an older analyzer
   // version or a hand-edited row leaves behind.

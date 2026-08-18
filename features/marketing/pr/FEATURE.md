@@ -69,15 +69,27 @@ loading/error states (`LoadingSurface`, `QueryError`, `InlineQueryError`),
    owner, the effort, a one-click "I have this" that moves the item into
    `evidence_refs` and recomputes readiness across the page, and a copy pair
    that writes the exact request to send to whoever owns the gap. Nothing here
-   is destructive-red except `contradictions`, the only field that means
-   something is actually wrong.
+   is destructive-red except `contradictions` — the only field that means
+   something is actually wrong — and that block is titled in the USER's language
+   ("A reporter will push back on this"), not the column's, because the persona
+   has never pitched a reporter and does not know what a "contradiction" field
+   is.
 3. **Honesty about what we can and cannot read.** A proof marked satisfied with
-   no artefact linked says so instead of rendering a tick it did not earn.
-   `jsonb` entries the readers cannot parse are COUNTED and surfaced rather than
-   silently dropped. A journalist name with no `party_id` renders as an
+   no artefact linked says so instead of rendering a tick it did not earn; a
+   requirement whose payload says `satisfied: false` is a gap even when
+   `missing_evidence` never named it (silence is different — silence lets
+   `missing_evidence`, the analyzer's authority, decide). `jsonb` entries the
+   readers cannot parse are counted AND printed verbatim, because a person can
+   often read what a parser cannot. A journalist name with no `party_id` renders as an
    unresolved reference carrying a one-click "not in CRM — add", never a bare
    `<span>` (`components/JournalistRef.tsx`).
-4. **Deadlines are the one time-critical thing.** One page clock
+4. **A rank is never an unexplained authority.** Every row's rank chip carries
+   its rationale — the sort in force, the distance to pitchable, the driving
+   scores and the weakest signal, the analyzer's own reason, and any journalist
+   window closing on it — and the same lines appear as a labelled "Why it is
+   ranked #N" block inside the open row, because a hover is not a door on a
+   touch screen (`rankRationale` in `scoring.ts`).
+5. **Deadlines are the one time-critical thing.** One page clock
    (`useMinuteClock`, an external store so SSR and hydration agree), fixed-width
    countdown chips so a ticking row never reflows, a panel-level escalation bar
    for anything inside six hours, and a red KPI door beside it.
@@ -105,8 +117,18 @@ record and the forced load state all live in the query string, so every screen
 here is shareable, bookmarkable and reload-safe:
 
 ```
-/marketing/pr?brand=<id>&site=<id>&view=proof&focus=angle:<id>&data=empty
+/marketing/pr?brand=<id>&site=<id>&view=proof&sort=nearly-provable&focus=angle:<id>&data=empty
 ```
+
+**Order.** Two sorts (`QUEUE_SORTS`): **Ranked** (live work, then priority, then
+readiness) and **Nearly provable** (fewest missing proofs first — the shortest
+walk from idea to pitchable; angles with no gaps fall to the BOTTOM, because
+they are not work). The default DEPENDS ON THE VIEW: "Building proof" and
+"Needs you" open on *Nearly provable*, since in those views every row is by
+definition not yet pitchable and raw priority answers "what is best in the
+abstract" when the question is "what can I get to press fastest". Everything
+else opens on *Ranked*. An explicit `?sort=` overrides, and is cleared when the
+view changes so one view's choice never silently governs the next.
 
 `?data=ready|empty|error|stalled` forces a load state so the unglamorous ones
 are reachable and reviewable on the real route; a strip says the state is forced
@@ -181,11 +203,18 @@ From **`ui-dense`**: deep-link focus routing (folded into refine's brand/site UR
 sync so there is ONE URL module); keyboard navigation; and the status-bar
 treatment for unpersisted rulings, with its discard control.
 
-From **`ui-reimagine`**: the tolerance of its `lib/proof.ts` readers — bare
-strings and several key spellings (`label` / `claim` / `requirement` / `title` /
-`name` / `text`, `detail` / `note` / `why` / `reason`, …) all parse, because the
-analyzer and hand-entered rows do not agree on one shape. Its `ProofLedger` and
-`ReadinessMeter` were otherwise superseded by the two components above.
+From **`ui-reimagine`** (which finished after consolidation began, and was
+re-harvested): the **"nearly provable" sort** (`lib/desk.ts`), rebuilt on the
+evidence ladder rather than a raw `missing_evidence.length` and made the default
+for the two views where nothing is yet pitchable; the principle that **every
+rank explains itself** (`rankReasons`), rebuilt as `rankRationale` and surfaced
+both on the chip and in the open row; the **"A reporter will push back on this"**
+framing of `contradictions` from its `ProofLedger`; and the tolerance of its
+`lib/proof.ts` readers — bare strings, several key spellings (`label` / `claim` /
+`requirement` / `title` / `name` / `text` / `fact`, `owner` / `owner_role` /
+`who` / `assignee`, `detail` / `note` / `why` / `reason`, …), explicit
+satisfaction flags, and never discarding an unreadable entry's content. Its
+`ProofLedger`, `ReadinessMeter` and desk shell were otherwise superseded.
 
 Dropped: sharp's separate `press-model.ts` vocabulary (duplicated `types.ts`),
 dense's four-tab shell (the consolidated surface shows all four things at once),

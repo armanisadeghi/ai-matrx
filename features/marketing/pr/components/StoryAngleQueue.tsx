@@ -51,9 +51,14 @@ import {
 } from "@/features/marketing/pr/components/ScoreComb";
 import { readLadder } from "@/features/marketing/pr/ladder";
 import {
+  QUEUE_SORTS,
+  deadlineState,
   isQuickWin,
   pitchReadiness,
-  rankAngles,
+  rankRationale,
+  sortAngles,
+  type DeadlineState,
+  type QueueSort,
 } from "@/features/marketing/pr/scoring";
 import {
   ACTION_COPY,
@@ -165,6 +170,7 @@ function AngleRow({
   onRule,
   onHoldEvidence,
   shareHref,
+  rationale,
 }: {
   angle: StoryAngle;
   rank: number;
@@ -176,6 +182,8 @@ function AngleRow({
   onHoldEvidence: (proofKey: string) => void;
   /** A real URL for this row — shareable, reload-safe, new-tab-able. */
   shareHref: string;
+  /** Why this row is at this position. Never rank without saying why. */
+  rationale: string[];
 }) {
   const ref = useRef<HTMLLIElement>(null);
   const endowment = ENDOWMENT_COPY[angle.endowment];
@@ -203,7 +211,10 @@ function AngleRow({
         aria-expanded={expanded}
         className="flex w-full min-w-0 items-start gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
       >
-        <span className="w-5 shrink-0 pt-0.5 text-right text-[11px] font-semibold tabular-nums text-muted-foreground">
+        <span
+          className="w-5 shrink-0 pt-0.5 text-right text-[11px] font-semibold tabular-nums text-muted-foreground underline decoration-dotted decoration-muted-foreground/40 underline-offset-2"
+          title={`Why #${rank}?\n\n${rationale.join("\n")}`}
+        >
           {rank}
         </span>
         <ActionChip action={angle.recommended_action} />
@@ -422,6 +433,23 @@ function AngleRow({
 
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Why it is ranked #{rank}
+              </p>
+              <ul className="mt-1 space-y-0.5">
+                {rationale.map((line, index) => (
+                  <li
+                    key={`rationale-${index}`}
+                    className="flex gap-1.5 text-[11px] leading-4 text-muted-foreground"
+                  >
+                    <span aria-hidden>·</span>
+                    <span className="min-w-0">{line}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Signals
               </p>
               <div className="mt-1.5">
@@ -543,6 +571,10 @@ export function StoryAngleQueue({
   onOpenRequest,
   viewId,
   onViewChange,
+  sort,
+  sortIsDefault,
+  onSortChange,
+  now,
   expandedAngleId,
   onExpandAngle,
   onRuleAngle,
@@ -559,6 +591,13 @@ export function StoryAngleQueue({
    */
   viewId: string;
   onViewChange: (viewId: string) => void;
+  /** Resolved order — an explicit `?sort=`, or this view's own default. */
+  sort: QueueSort;
+  /** True when the view's default is in force, so the UI can say which it is. */
+  sortIsDefault: boolean;
+  onSortChange: (sort: QueueSort) => void;
+  /** One page clock, for the "a window is closing on this" rationale line. */
+  now: number;
   /**
    * Which angle is open, owned by the workspace so the pipeline board and the
    * coverage log can open one from outside, and so it survives a reload.
@@ -607,8 +646,23 @@ export function StoryAngleQueue({
         (angle.target_beat ?? "").toLowerCase().includes(term)
       );
     });
-    return rankAngles(filtered);
-  }, [angles, search, view, expandedAngleId]);
+    return sortAngles(filtered, sort);
+  }, [angles, search, view, expandedAngleId, sort]);
+
+  /** The soonest live journalist window pointing at each angle. */
+  const soonestByAngle = useMemo(() => {
+    const map = new Map<string, DeadlineState>();
+    for (const [angleId, list] of requestsByAngle.entries()) {
+      let soonest: DeadlineState | null = null;
+      for (const request of list) {
+        const state = deadlineState(request.deadline_at, now);
+        if (state.urgency === "past") continue;
+        if (!soonest || state.minutes < soonest.minutes) soonest = state;
+      }
+      if (soonest) map.set(angleId, soonest);
+    }
+    return map;
+  }, [requestsByAngle, now]);
 
   /**
    * ↑/↓ walk the queue, Escape closes the open row. Suppressed while the user
@@ -692,8 +746,34 @@ export function StoryAngleQueue({
             </button>
           ))}
         </div>
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            Order
+          </span>
+          {QUEUE_SORTS.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              title={entry.hint}
+              onClick={() => onSortChange(entry.id)}
+              className={cn(
+                "rounded-md border px-1.5 py-1 text-[11px] font-medium transition-colors",
+                entry.id === sort
+                  ? "border-border bg-muted text-foreground"
+                  : "border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+              )}
+            >
+              {entry.label}
+              {entry.id === sort && sortIsDefault ? (
+                <span className="ml-1 text-[9px] uppercase tracking-wide text-muted-foreground/80">
+                  default here
+                </span>
+              ) : null}
+            </button>
+          ))}
+        </div>
         <SearchInput
-          className="ml-auto w-full sm:w-56"
+          className="w-full sm:w-56"
           inputClassName="h-7 text-xs"
           placeholder="Search angles…"
           value={search}
@@ -753,6 +833,11 @@ export function StoryAngleQueue({
               onRule={(status) => onRuleAngle(angle.id, status)}
               onHoldEvidence={(key) => onHoldEvidence(angle.id, key)}
               shareHref={angleHref(angle.id)}
+              rationale={rankRationale(angle, {
+                sort,
+                linkedRequests: (requestsByAngle.get(angle.id) ?? []).length,
+                soonestDeadline: soonestByAngle.get(angle.id) ?? null,
+              })}
             />
           ))}
         </ul>
