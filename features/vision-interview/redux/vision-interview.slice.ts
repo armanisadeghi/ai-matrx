@@ -16,12 +16,14 @@ import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolki
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { RevisionSummary } from "../service";
 import {
+  defaultRoleTab,
   normalizeStage,
   questionCategory,
   STAGES,
   type InterviewHoleRow,
   type InterviewQuestionRow,
   type InterviewSessionRow,
+  type InterviewStageWire,
   type InterviewTurnRow,
   type QuestionCategory,
   type RoleKey,
@@ -64,10 +66,6 @@ interface VisionInterviewState {
   /** sessionId → requestId the run stream was adopted under (activeRequests). */
   requestIdBySession: Record<string, string>;
 
-  /** Text another surface (e.g. a question's Answer button) asked the
-   *  composer to append. The composer consumes and clears it. */
-  composerInsert: string | null;
-
   /**
    * Raw-audio capture (v2 §13.1). File ids of dictation recordings the
    * canonical recorder already saved durably (announced via
@@ -83,6 +81,31 @@ interface VisionInterviewState {
    * upload is independent of — and must never gate — the send, v2 §17.1).
    */
   awaitingTurnAudio: { fileIds: string[]; sentAtMs: number } | null;
+
+  /**
+   * Which stage tab is live in the centre panel — ONE role, ONE ordinary
+   * agent conversation. Only this tab's chat is mounted (Redux holds one
+   * conversation focus per surface), and the right-hand expert feed reads it
+   * to know which role it must NOT duplicate.
+   */
+  activeRoleTab: RoleKey;
+
+  /**
+   * Answers the Expert wrote in the left-hand questions panel that have not
+   * ridden a message yet. They are held HERE — never only in a composer —
+   * so a failed send can never eat them (v3 answer-append rule). Keyed by
+   * question id; the last write for a question wins.
+   */
+  pendingAnswers: Record<string, PendingAnswer>;
+}
+
+/** One answer written in the questions panel, waiting for the next message. */
+export interface PendingAnswer {
+  questionId: string;
+  questionText: string;
+  answerText: string;
+  /** epoch ms of the last edit — the ledger order answers ride in. */
+  updatedAt: number;
 }
 
 const initialState: VisionInterviewState = {
@@ -100,9 +123,10 @@ const initialState: VisionInterviewState = {
   roleActivity: {},
   pendingInterrupt: null,
   requestIdBySession: {},
-  composerInsert: null,
   pendingAudioFileIds: [],
   awaitingTurnAudio: null,
+  activeRoleTab: "sounding_board",
+  pendingAnswers: {},
 };
 
 /** A send this old can no longer claim a late-finishing upload. */
@@ -288,18 +312,6 @@ const visionInterviewSlice = createSlice({
         action.payload.requestId;
     },
 
-    /** A surface (e.g. a question's Answer button) hands text to the
-     *  composer. Appends when an insert is already pending un-consumed. */
-    composerInsertRequested(state, action: PayloadAction<{ text: string }>) {
-      state.composerInsert = state.composerInsert
-        ? `${state.composerInsert}\n\n${action.payload.text}`
-        : action.payload.text;
-    },
-
-    composerInsertConsumed(state) {
-      state.composerInsert = null;
-    },
-
     // ── Raw-audio capture (v2 §13.1) ────────────────────────────────────────
 
     /** The recorder's canonical upload landed for a composer dictation. If a
@@ -350,6 +362,56 @@ const visionInterviewSlice = createSlice({
     turnAudioSettled(state) {
       state.awaitingTurnAudio = null;
     },
+
+    // ── v3 room: stage tabs + pending answers ──────────────────────────────
+
+    /** The Expert moved to another expert's room (stage tab click). */
+    activeRoleTabChanged(state, action: PayloadAction<RoleKey>) {
+      state.activeRoleTab = action.payload;
+    },
+
+    /** The tab a session opens on — its current stage's primary role. Only
+     *  moves the tab while the Expert has not chosen one themselves (the
+     *  caller owns that decision). */
+    activeRoleTabDefaulted(
+      state,
+      action: PayloadAction<{ stage: InterviewStageWire }>,
+    ) {
+      state.activeRoleTab = defaultRoleTab(action.payload.stage);
+    },
+
+    /** An answer written in the questions panel — upsert, newest edit wins. */
+    answerDrafted(
+      state,
+      action: PayloadAction<{
+        questionId: string;
+        questionText: string;
+        answerText: string;
+      }>,
+    ) {
+      const { questionId, questionText, answerText } = action.payload;
+      if (!answerText.trim()) {
+        delete state.pendingAnswers[questionId];
+        return;
+      }
+      state.pendingAnswers[questionId] = {
+        questionId,
+        questionText,
+        answerText,
+        updatedAt: Date.now(),
+      };
+    },
+
+    /** The Expert threw an answer away before it rode a message. */
+    answerDiscarded(state, action: PayloadAction<{ questionId: string }>) {
+      delete state.pendingAnswers[action.payload.questionId];
+    },
+
+    /** The answers reached the room — dispatched ONLY once the message they
+     *  rode is durably persisted, never on send-click. */
+    pendingAnswersCleared(state) {
+      state.pendingAnswers = {};
+    },
   },
 });
 
@@ -372,11 +434,14 @@ export const {
   runCompleted,
   runFailed,
   streamAdopted,
-  composerInsertRequested,
-  composerInsertConsumed,
   dictationAudioSaved,
   dictationAudioQueuedForTurn,
   turnAudioSettled,
+  activeRoleTabChanged,
+  activeRoleTabDefaulted,
+  answerDrafted,
+  answerDiscarded,
+  pendingAnswersCleared,
 } = visionInterviewSlice.actions;
 
 export default visionInterviewSlice.reducer;
@@ -401,12 +466,38 @@ export const selectPendingInterrupt = (state: RootState) =>
   selectSelf(state).pendingInterrupt;
 export const selectRevisions = (state: RootState) =>
   selectSelf(state).revisions;
-export const selectComposerInsert = (state: RootState) =>
-  selectSelf(state).composerInsert;
 export const selectPendingAudioFileIds = (state: RootState) =>
   selectSelf(state).pendingAudioFileIds;
 export const selectAwaitingTurnAudio = (state: RootState) =>
   selectSelf(state).awaitingTurnAudio;
+
+export const selectActiveRoleTab = (state: RootState): RoleKey =>
+  selectSelf(state).activeRoleTab;
+
+const selectPendingAnswersMap = (state: RootState) =>
+  selectSelf(state).pendingAnswers;
+
+/** Pending answers in the order they were written — the order they ride in. */
+export const selectPendingAnswers = createSelector(
+  [selectPendingAnswersMap],
+  (answers): PendingAnswer[] =>
+    Object.values(answers).sort(
+      (a, b) => a.updatedAt - b.updatedAt || a.questionId.localeCompare(b.questionId),
+    ),
+);
+
+export const selectPendingAnswerCount = createSelector(
+  [selectPendingAnswersMap],
+  (answers) => Object.keys(answers).length,
+);
+
+/** The answer already written for one question, if any (answer-in-place).
+ *  Plain lookup — the stored entry's identity is stable, so no memoization
+ *  (and no per-question selector instance) is needed. */
+export const selectPendingAnswerFor =
+  (questionId: string) =>
+  (state: RootState): PendingAnswer | null =>
+    selectSelf(state).pendingAnswers[questionId] ?? null;
 
 export const selectRoomRequestId = (state: RootState): string | null => {
   const s = selectSelf(state);

@@ -561,3 +561,70 @@ export const HOLE_STATUS_LABELS: Record<HoleStatus, string> = {
   accepted_risk: "Accepted risk",
   needs_human_arbitration: "Needs arbitration",
 };
+
+// ── Role bindings (the load-bearing v3 fact) ────────────────────────────────
+// `interview.session.role_bindings` (jsonb) holds, per role key, the agent
+// the server bound for THIS session and the conversation that role speaks in.
+// The conversation_id is stable per role, per session, across runs — so one
+// stage tab is one role is one ORDINARY agent conversation, and the room
+// mounts the canonical chat for it rather than a bespoke transcript.
+
+export interface RoleBinding {
+  agentId: string;
+  /** True when `agentId` points at an agent VERSION row rather than a live agent. */
+  isVersion: boolean;
+  /** The live agent the bound version was cut from (equal to agentId when not a version). */
+  definitionAgentId: string;
+  conversationId: string;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+/**
+ * The binding for one role on this session, or null when the server has not
+ * bound it yet (the session has never been started). Never throws — an
+ * unparseable entry reads as "not bound yet" so the room shows its honest
+ * empty state instead of crashing.
+ */
+export function roleBinding(
+  session: Pick<InterviewSessionRow, "role_bindings"> | null,
+  role: RoleKey,
+): RoleBinding | null {
+  const raw = session?.role_bindings?.[role];
+  if (!raw || typeof raw !== "object") return null;
+  const entry = raw as Record<string, unknown>;
+  const agentId = asString(entry["agent_id"]);
+  const conversationId = asString(entry["conversation_id"]);
+  if (!agentId || !conversationId) return null;
+  return {
+    agentId,
+    isVersion: entry["is_version"] === true,
+    definitionAgentId: asString(entry["definition_agent_id"]) ?? agentId,
+    conversationId,
+  };
+}
+
+/**
+ * The stage tabs of the v3 room, in stage order: every stage that has a
+ * PRIMARY role speaks through one tab (capture · ground · enhance ·
+ * articulate · stress · shape). `revisit` / `done` have no fixed primary and
+ * are stage state, not a room; scribe + answer_tracker run in the background
+ * and are never a tab.
+ */
+export const ROLE_TABS: { stage: InterviewStage; role: RoleKey }[] =
+  STAGE_ORDER.flatMap((stage) => {
+    const role = STAGES[stage].primaryRole;
+    return role ? [{ stage, role }] : [];
+  });
+
+/** The stage whose primary is this role (for tab labelling). */
+export function stageForRole(role: RoleKey): InterviewStage | null {
+  return ROLE_TABS.find((t) => t.role === role)?.stage ?? null;
+}
+
+/** The default tab for a session at `stage` — its primary, else the first tab. */
+export function defaultRoleTab(stage: InterviewStageWire): RoleKey {
+  return STAGES[normalizeStage(stage)].primaryRole ?? ROLE_TABS[0].role;
+}
