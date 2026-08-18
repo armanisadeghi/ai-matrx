@@ -186,7 +186,10 @@ Hindsight assists point here, and the page honours them:
 `?enrollment=<id>&finding=<id>` selects that enrollment;
 `?enroll_tool=<name>` opens the enroll dialog pre-set to that tool. Written by
 `aidream/services/hindsight/review.py` and `detector.py` — change both sides
-together.
+together. **The URL enrollment wins synchronously over mounted selection
+state.** Route transitions reuse the page; effect-based synchronization can
+briefly fetch the previous enrollment and turn a stale selection into a queued
+404.
 
 ## Verified (2026-08-11, real clicks, real data)
 
@@ -202,6 +205,9 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- **2026-08-18** — Deep-linked enrollment selection now wins during render,
+  preventing reused admin pages from fetching the previous selection during a
+  route transition and emitting an expected `enrollment not found` error.
 - **2026-08-18** — Findings gained the canonical two-icon Copy / Copy-for-AI
   control. The AI icon opens contextual finding and JSON choices; both human
   and model-ready payloads use `copy.ts`'s rendered-card projection, including
