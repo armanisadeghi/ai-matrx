@@ -30,8 +30,20 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
@@ -66,10 +78,8 @@ import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { BuildMasterworkDialog } from "./BuildMasterworkDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
-import { RulebookSourcesPanel } from "./RulebookSourcesPanel";
-import { InterviewButton, ScoutInterviewPanel } from "./ScoutInterviewPanel";
-import { ConversationsSection } from "../../record/ConversationsSection";
-import { YourWordsActions } from "../../record/YourWordsActions";
+import { RulebookInputsSection } from "./RulebookInputsSection";
+import { ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 import {
   RuleFeedbackDialog,
@@ -1457,6 +1467,18 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               )
             )}
           </div>
+
+          {/* AMBIENT, NEVER THE HEADLINE — the improvement brain's chips
+          (aidream/services/masterwork_assists/) sit BELOW the work, not in the
+          prime slot above it (Arman, 2026-08-18). Renders nothing when the
+          producer has nothing to say; a chip only ever expands on click, and
+          its verb button navigates back here with ?assist=… which opens the
+          right lane seeded (never auto-sent). */}
+          <AssistStrip
+            surfaceName={MASTERWORK_RULEBOOK_SURFACE}
+            filter={(a) => a.entityId === rulebookId}
+            className="pt-1"
+          />
 
           <RuleEditorDialog
             open={editorOpen}

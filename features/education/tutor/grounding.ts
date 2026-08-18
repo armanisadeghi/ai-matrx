@@ -73,6 +73,7 @@ export interface AssembleTutorGroundingOptions {
 /** Request-only evidence and its compact durable citation-coordinate ledger. */
 export const TUTOR_CITATION_CONTEXT_PREFIX = "tutor_grounding_citation_";
 export const TUTOR_RETRIEVED_EVIDENCE_KEY = "tutor_retrieved_evidence";
+export const TUTOR_MAX_CITATION_POINTERS = 4;
 
 export interface TutorCitationPointer {
   key: string;
@@ -88,8 +89,15 @@ export interface TutorCitationPointer {
 export function tutorCitationPointers(
   retrieval: GroundingResult | null,
 ): TutorCitationPointer[] {
-  if (retrieval?.status !== "retrieved") return [];
-  return retrieval.passages.map((passage, index) => {
+  const passages = retrieval?.status === "retrieved" ? retrieval.passages : [];
+  return Array.from({ length: TUTOR_MAX_CITATION_POINTERS }, (_, index) => {
+    const passage = passages[index];
+    if (!passage) {
+      return {
+        key: `${TUTOR_CITATION_CONTEXT_PREFIX}${index + 1}`,
+        value: "",
+      };
+    }
     const tuple = [
       passage.chunkId,
       passage.fileId ?? "",

@@ -12,8 +12,9 @@
 // Self-heals: a Rulebook created before the Understudy existed has no row yet;
 // when the editor opens it, one free refresh call mints it.
 
-import { Loader2, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Loader2, PlayCircle, RotateCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Masterwork } from "../types";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { refreshUnderstudy } from "./refresh";
@@ -34,33 +35,65 @@ export function UnderstudyCard({
   onCreated: () => void;
 }) {
   const [healing, setHealing] = useState(false);
+  const [healFailed, setHealFailed] = useState(false);
   const healedRef = useRef(false);
 
   // Self-heal exactly once per mount: no Understudy + an editor looking at the
   // page → mint it (free, idempotent) and let the parent re-list.
-  useEffect(() => {
-    if (understudy || !canEdit || healedRef.current) return;
-    healedRef.current = true;
+  const heal = useCallback(() => {
     setHealing(true);
+    setHealFailed(false);
     void refreshUnderstudy(rulebookId)
       .then(() => onCreated())
       .catch((err) => {
+        // Never leave the card spinning on "Starting your system…" forever —
+        // that silent dead end is the same defect as a bare error toast.
         console.error("[understudy] self-heal refresh failed", err);
+        setHealFailed(true);
       })
       .finally(() => setHealing(false));
-  }, [understudy, canEdit, rulebookId, onCreated]);
+  }, [rulebookId, onCreated]);
+
+  useEffect(() => {
+    if (understudy || !canEdit || healedRef.current) return;
+    healedRef.current = true;
+    heal();
+  }, [understudy, canEdit, heal]);
 
   if (!understudy) {
     if (!canEdit) return null;
+    if (healFailed) {
+      return (
+        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-sm text-foreground">
+            We couldn&apos;t start your Understudy just now.
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Your rules are safe — nothing was lost. Try again, or reload the
+            page; it costs nothing and takes a second.
+          </p>
+          <Button
+            size="sm"
+            variant="outline"
+            className="mt-2"
+            onClick={heal}
+            disabled={healing}
+          >
+            <RotateCw className="mr-1 h-3.5 w-3.5" />
+            Try again
+          </Button>
+        </div>
+      );
+    }
     return (
       <div className="rounded-lg border border-border bg-card p-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           {healing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
-            <Sparkles className="h-4 w-4" />
+            <PlayCircle className="h-4 w-4" />
           )}
-          Starting your system…
+          Building your Understudy — one AI that does this whole job now…
         </div>
       </div>
     );
@@ -76,15 +109,25 @@ export function UnderstudyCard({
         <h3 className="text-sm font-semibold text-foreground">
           Your system is already running — try it
         </h3>
-        <span className="text-xs text-muted-foreground">
-          {approvedCount === 0
-            ? "No approved rules yet, so it improvises the whole job. Every rule you approve makes it sharper."
-            : `Performing from your ${approvedCount} approved ${approvedCount === 1 ? "rule" : "rules"} — it gets sharper with every approval.`}
-        </span>
       </div>
+      {/* WHAT it is, WHAT it does with the box below, and WHAT it is not.
+          Two lines, because a button that runs something the Expert can't
+          name is the same defect as a run that fails without saying why. */}
+      <p className="mb-1 text-xs text-muted-foreground">
+        Describe a job below and one AI does the whole thing right now —{" "}
+        {approvedCount === 0
+          ? "improvising, because you haven't approved any rules yet"
+          : `working from the ${approvedCount} ${approvedCount === 1 ? "rule" : "rules"} you've approved`}
+        .
+      </p>
+      <p className="mb-2 text-xs text-muted-foreground">
+        It&apos;s a rough stand-in, not your finished Masterwork — and it gets
+        sharper with every rule you approve.
+      </p>
       <TryMasterworkBox
         masterworkId={understudy.id}
         masterworkKind="generate"
+        whatItRuns="Your Understudy"
         onRunFinished={() => undefined}
       />
     </div>

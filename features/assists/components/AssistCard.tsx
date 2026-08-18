@@ -311,7 +311,10 @@ export function AssistCard({
             app.
           </p>
         )}
-        <div className="flex items-center gap-2">
+        {/* WRAPS — four controls at 26rem used to overflow horizontally, so
+            the popover scrolled sideways AND down at once. Nothing here has a
+            fixed width; the row reflows instead. */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <Button
             size="sm"
             onClick={run}
@@ -369,7 +372,7 @@ export function AssistCard({
                   size="sm"
                   variant="ghost"
                   disabled={busy !== null}
-                  className="ml-auto h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                  className="ml-auto h-7 shrink-0 px-2 text-xs text-muted-foreground hover:text-destructive"
                 >
                   {busy === "dismiss" || busy === "silence" ? (
                     <Loader2 className="mr-1 h-3 w-3 animate-spin" />

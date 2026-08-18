@@ -71,6 +71,51 @@ export interface RuleSourceRef {
   url?: string;
 }
 
+/**
+ * THE RELATIONSHIP VOCABULARY — four kinds, and only four. Mirrors
+ * `aidream/services/distillation/distill.py::RELATION_KINDS`; keep them
+ * byte-identical.
+ */
+export const RULE_RELATION_KINDS = [
+  "refines",
+  "depends_on",
+  "exception_to",
+  "contrast_with",
+] as const;
+
+export type RuleRelationKind = (typeof RULE_RELATION_KINDS)[number];
+
+/** How the connection reads to the Expert, in their language — never jargon. */
+export const RULE_RELATION_LABELS: Record<RuleRelationKind, string> = {
+  refines: "Narrows down",
+  depends_on: "Only applies after",
+  exception_to: "Is the exception to",
+  contrast_with: "Easy to confuse with",
+};
+
+/**
+ * One documented connection from this rule to a SIBLING rule.
+ *
+ * 🚨 THE ANTI-MISLEADING LAW (Arman, 2026-08-18, after reading all 28 rules of
+ * the SEO Rulebook by hand): a rule that silently refines, qualifies, depends
+ * on, or contradicts another rule — and presents itself as standalone — is a
+ * CORRECTNESS defect, not a style nit.
+ *
+ * This is the SECOND half of the fix, never the first: the connecting aspect
+ * must ALSO be carried concisely inside `statement`, so the rule is not
+ * misleading anywhere `relates_to` is not rendered (a printed Masterwork, an
+ * audit verdict, an export). This object makes the connection machine-readable
+ * and gives the UI a door to the sibling.
+ */
+export interface RuleRelation {
+  /** The sibling rule's `id` — guaranteed to exist in this Rulebook: the
+   * server drops an unresolvable reference rather than write a dead link. */
+  rule_id: string;
+  kind: RuleRelationKind;
+  /** One short clause naming WHAT connects them — the link's label. */
+  note?: string;
+}
+
 /** One rule of the Rulebook. `id` is the citable handle every audit verdict points at. */
 export interface RulebookRule {
   id: string;
@@ -106,6 +151,13 @@ export interface RulebookRule {
   feedback?: string;
   /** Back-reference to the source location this rule was distilled from. */
   source_ref?: RuleSourceRef;
+  /**
+   * Documented connections to sibling rules — see `RuleRelation`. Additive and
+   * optional; a genuinely standalone rule has none. Deliberately NOT in
+   * `RULE_CONTENT_FIELDS`: that list is the string fields a manual edit
+   * compares, and relations are structural, not prose.
+   */
+  relates_to?: RuleRelation[];
 }
 
 /** The one review state of a rule — precedence retired > rejected > draft > approved. */

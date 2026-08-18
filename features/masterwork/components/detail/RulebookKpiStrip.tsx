@@ -161,10 +161,13 @@ export function RulebookKpiStrip({
             {done ? <Trophy className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> : null}
             Review progress
             {live ? (
-              <span className="ml-1 flex items-center gap-1 text-[10px] font-normal text-emerald-600 dark:text-emerald-400">
-                <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                system live — every approval improves it
-              </span>
+              // The system being live is SHOWN by the Understudy card below —
+              // a second sentence saying so here is the "novel about
+              // everything" Arman deleted (2026-08-18). One dot, no prose.
+              <span
+                className="ml-1 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500"
+                title="Your system is already running — every approval improves it"
+              />
             ) : null}
           </span>
           <span className="tabular-nums text-muted-foreground">
