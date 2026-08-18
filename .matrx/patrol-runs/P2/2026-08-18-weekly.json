@@ -31,6 +31,21 @@
       ],
       "previousEventHash": "88e686e95c72cc804cbe29880df3fdff405ea2589d12833ac428d66a0fa56587",
       "eventHash": "fee55fd5b2d8717a3e9c1b00a6415c46a73fec3a3d377612bc138a71fd047f95"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-18T07:17:09.883Z",
+      "actor": "codex-pattern-patrol-p2",
+      "summary": "Two-file EntityRef batch ready for exact-SHA adversarial certification.",
+      "evidence": [
+        "Detector improved 9 to 7 and removed both changed files.",
+        "Type-check failure set unchanged from baseline context-slot schema drift.",
+        "EntityRef Jest suite passed 5 of 5; git diff check passed.",
+        "Focused lint has two pre-existing set-state-in-effect errors outside changed lines in SurfaceAgentBindPanel."
+      ],
+      "previousEventHash": "fee55fd5b2d8717a3e9c1b00a6415c46a73fec3a3d377612bc138a71fd047f95",
+      "eventHash": "4e105a556b5b982833ec8351c2efd20836e3149f962cd08f1cfc249b48b051fe"
     }
   ]
 }
