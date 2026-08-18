@@ -200,6 +200,8 @@ All in-app Cartesia text-to-speech routes through **`lib/cartesia/config.ts`** �
 
 Batch STT and durable TTS use `features/audio/services/speechApi.ts`, which calls the authenticated aidream routes `/audio/transcribe`, `/audio/transcribe-url`, and `/audio/text-to-speech`. Aidream resolves the `stt-default` and `tts-default` catalog aliases, owns provider retries and metering, filters likely Whisper silence hallucinations, and returns typed durable media references. Components and hooks must never import provider SDKs or pin STT/TTS model IDs for these flows. Old persisted PlayAI voice values are dropped at this boundary so the current catalog default can take over.
 
+**A live-chunk transport loss is recovery state, not a repair-queue error.** The chunk remains in the durable safety store and stop-time full-recording fallback decides the outcome. `transcriptionErrorPolicy.ts` keeps `CHUNK_FAILED` network failures local at both the client producer and server logger; an actionable chunk rejection or final `FALLBACK_FAILED` still persists.
+
 The retired Next middle-tier routes under `app/api/audio/*` and `app/api/voice*` no longer exist. Legacy development voice-assistant URLs redirect to `/voice/playground`; their compatibility actions fail closed and contain no provider credentials or calls. Browser-realtime Cartesia and xAI voice-agent transports remain separate low-latency systems and follow their own documented config/token seams.
 
 ## Recorded audio MIME — single source of truth (never send a raw recorder type)
@@ -228,6 +230,8 @@ The canonical "what mic/speaker is selected and is the mic permission granted" s
 Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and transcription finalization decisions; the device manager is covered in `features/media-devices/__tests__/deviceManager.test.ts`. MediaRecorder lifecycle, playback queue, session registry, TTS hooks, and providers still require manual/in-browser verification — do not claim otherwise.
 
 ## Change log
+
+- `2026-08-17` — Recoverable live-chunk transport failures no longer create duplicate `audio_transcription` repair-queue rows. The client producer and server logger share the typed policy; actionable chunk failures and final fallback failures remain loud.
 
 - `2026-08-17` — Voice-test mic denial now uses the canonical microphone classifier, stays visible as actionable inline guidance, and no longer enters the `system_error` queue as a red console fault. Unexpected capture failures remain loud.
 

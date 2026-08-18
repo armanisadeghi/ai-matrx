@@ -11,6 +11,7 @@
 
 import { createAdminClient } from '@/utils/supabase/adminClient';
 import { resolveSystemOrgId } from '@/lib/organizations/systemOrg';
+import { shouldPersistTranscriptionError } from './transcriptionErrorPolicy';
 
 export interface TranscriptionErrorLog {
   userId: string;
@@ -28,6 +29,8 @@ export interface TranscriptionErrorLog {
  * Fails silently to avoid cascading errors during transcription.
  */
 export async function logTranscriptionError(entry: TranscriptionErrorLog): Promise<void> {
+  if (!shouldPersistTranscriptionError(entry)) return;
+
   try {
     const supabase = createAdminClient();
 

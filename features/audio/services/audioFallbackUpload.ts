@@ -31,6 +31,7 @@ import {
   normalizeAudioContentType,
   audioExtensionForType,
 } from "../utils/audio-mime";
+import { shouldPersistTranscriptionError } from "./transcriptionErrorPolicy";
 
 function generateFileName(ext: string): string {
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
@@ -128,6 +129,8 @@ export async function logClientError(entry: {
   apiRoute?: string;
   metadata?: Record<string, unknown>;
 }): Promise<void> {
+  if (!shouldPersistTranscriptionError(entry)) return;
+
   try {
     await fetch(AUDIO_API_ROUTES.LOG_ERROR, {
       method: "POST",
