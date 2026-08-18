@@ -39,7 +39,7 @@ through the `google` tool bundle:
   *prepares* an email. It never sends.
 - **`google_email_send`** (client-only) — `handlers/google-email-send.handler.ts`
   in `features/agents/ui-first-tools/` resolves the sending mailbox with
-  `agent/connection.ts`, then raises an `email_review` pending ask that
+  `connection.ts`, then raises an `email_review` pending ask that
   `agent/GmailReviewCard.tsx` renders.
 
 🚨 **`<GmailReviewCard>` IS the authorization.** It shows the sender, recipient,
@@ -49,6 +49,30 @@ user has changed them. There is no "always send", no pre-checked consent, and no
 path that sends without a click; approval covers ONE message. On the server side
 the tool has no executor binding at all, so an agent cannot assert consent even
 in principle. Preview every state at `/demos/agent-cards`.
+
+## The in-app half — `export/sendToGoogle.ts`
+
+The ONE path any surface uses to push what the user is looking at into their own
+Drive. `sendContentToGoogleDoc(content, title)` and
+`sendRowsToGoogleSheet(rows, title)` resolve the connected account, create the
+file, and return a link. **No surface owns Google code of its own** — that is
+the whole point, and a second per-feature Google client would be a defect.
+
+Two wires carry it almost everywhere:
+
+| Wire | Reaches |
+|---|---|
+| `components/content-actions/contentActionRegistry.ts` → "Send to Google Doc" | every `ContentActionBar` / `RichDocument` surface: the agent working-document panel, research outputs, transcripts, the Masterwork Record, … |
+| `components/agent-copy/ExportMenu.tsx` → optional `sheetRows` | every surface that already exports rows. `MatrxDataTable` passes it, so every canonical list page can send the view it is showing. |
+
+The Sheet's columns come from `rowsToRecordsFromColumns`, which shares the CSV
+export's column selection and cell stringification — a user who downloads the
+CSV and a user who sends the Sheet must get the SAME answer, and two independent
+row builders is how those two answers start disagreeing.
+
+**Not connected is a normal state, not an error.** Both entry points return a
+typed `not_connected` result carrying the settings link, and every caller turns
+it into a one-click "Connect" offer. Never render a failure there.
 
 ## Invariants
 
@@ -65,6 +89,12 @@ in principle. Preview every state at `/demos/agent-cards`.
 
 ## Change log
 
+- 2026-08-18: Added the in-app half — `export/sendToGoogle.ts`, "Send to Google
+  Doc" on the shared content-action registry, and an optional Google Sheet
+  destination on `ExportMenu` (passed by `MatrxDataTable`, so every canonical
+  list page gains it). Promoted the connection resolver out of `agent/` since
+  both halves use it. Verified in the browser: the destination renders on a real
+  list page, runs, and offers Connect when no Google account is linked.
 - 2026-08-18: Added the agent half — the client-only `google_email_send` tool
   and `<GmailReviewCard>`, the surface that turns an agent-proposed message into
   a user-confirmed send. Added it to the `/demos/agent-cards` gallery.
