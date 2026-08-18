@@ -21,6 +21,10 @@ export type AdminNavSurface = "sidebar" | "headerMenu";
  * opt in. Add the next action's id to this union and register its handler.
  */
 import { MARKETING_PILLARS } from "@/features/marketing/lib/marketing-nav";
+import {
+  EDU_TOOL_NAV,
+  eduToolHref,
+} from "@/features/education/lib/education-nav";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 import type { ShellNavPanelActionId } from "./nav-window-panels";
 import { SHAPES_ROUTE_BASE } from "@/features/content-ir/studio/constants";
@@ -169,6 +173,97 @@ function marketingNavChildren(): ShellNavChild[] {
     }));
   });
   return [hub, ...fromPillars];
+}
+
+/**
+ * The Education Hub's sidebar children: the 16 application TOOLS a learner
+ * actually studies in, followed by the public browse axes.
+ *
+ * Derived from `EDU_TOOL_NAV` so the shell menu and the education hub can never
+ * disagree about which tools exist — the same guarantee `marketingNavChildren`
+ * gives Marketing. Guarded by `education-nav.test.ts` (slug parity with the
+ * `EDU_TOOLS` registry) and by this file's icon-registration test.
+ *
+ * Before 2026-08-17 this list held ONLY the browse axes, so a signed-in learner
+ * had no path from the shell to flashcards, the tutor, or FastFire — all 16
+ * tools were reachable by typed URL only. (WP1, launch gate G12.)
+ */
+function educationNavChildren(): ShellNavChild[] {
+  const tools = EDU_TOOL_NAV.map((tool): ShellNavChild => ({
+    label: tool.label,
+    href: eduToolHref(tool.slug),
+    iconName: tool.iconName,
+    group: tool.group,
+    description: tool.description,
+    color: "emerald",
+    profileMenu: true,
+    dashboard: true,
+  }));
+
+  const browse: ShellNavChild[] = [
+    {
+      label: "Browse the Hub",
+      href: "/education",
+      iconName: "GraduationCap",
+      group: "Browse",
+      description: "Every subject, level, exam, study aid, and feature",
+      color: "emerald",
+      profileMenu: true,
+      dashboard: true,
+    },
+    {
+      label: "Subjects",
+      href: "/education/subjects",
+      iconName: "BookOpen",
+      group: "Browse",
+      description: "Math, science, history, languages, and more",
+      color: "emerald",
+      profileMenu: true,
+      dashboard: true,
+    },
+    {
+      label: "Levels",
+      href: "/education/levels",
+      iconName: "GraduationCap",
+      group: "Browse",
+      description: "Elementary through college and professional boards",
+      color: "emerald",
+      profileMenu: true,
+      dashboard: true,
+    },
+    {
+      label: "Exam Prep",
+      href: "/education/exam-prep",
+      iconName: "Target",
+      group: "Browse",
+      description: "SAT, ACT, AP, MCAT, LSAT, bar, NCLEX, CPA",
+      color: "emerald",
+      profileMenu: true,
+      dashboard: true,
+    },
+    {
+      label: "Study Aids",
+      href: "/education/study-aids",
+      iconName: "Layers",
+      group: "Browse",
+      description: "Flashcards, quizzes, podcasts, mind maps",
+      color: "teal",
+      profileMenu: true,
+      dashboard: true,
+    },
+    {
+      label: "Quick Math",
+      href: "/education/subjects/quick-math",
+      iconName: "BookOpen",
+      group: "Browse",
+      description: "Interactive algebra lessons (preview content)",
+      color: "emerald",
+      profileMenu: true,
+      dashboard: true,
+    },
+  ];
+
+  return [...tools, ...browse];
 }
 
 export interface ShellNavItem {
@@ -1321,62 +1416,7 @@ export const primaryNavItems: ShellNavItem[] = [
     dashboard: false,
     description: "AI study platform — flashcards, quizzes, tutor, and more",
     color: "emerald",
-    children: [
-      {
-        label: "Browse the Hub",
-        href: "/education",
-        iconName: "GraduationCap",
-        description: "Every subject, level, exam, study aid, and feature",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Subjects",
-        href: "/education/subjects",
-        iconName: "BookOpen",
-        description: "Math, science, history, languages, and more",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Levels",
-        href: "/education/levels",
-        iconName: "GraduationCap",
-        description: "Elementary through college and professional boards",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Exam Prep",
-        href: "/education/exam-prep",
-        iconName: "Target",
-        description: "SAT, ACT, AP, MCAT, LSAT, bar, NCLEX, CPA",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Study Aids",
-        href: "/education/study-aids",
-        iconName: "Layers",
-        description: "Flashcards, quizzes, podcasts, mind maps",
-        color: "teal",
-        profileMenu: true,
-        dashboard: true,
-      },
-      {
-        label: "Quick Math",
-        href: "/education/subjects/quick-math",
-        iconName: "BookOpen",
-        description: "Interactive algebra lessons (preview content)",
-        color: "emerald",
-        profileMenu: true,
-        dashboard: true,
-      },
-    ],
+    children: educationNavChildren(),
   },
   {
     label: "Marketing",
