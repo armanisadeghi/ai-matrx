@@ -28,7 +28,10 @@ export type PendingAskKind =
   | "plan_approval"
   | "takeover"
   // Structured agent-edit approval rendered by <ApprovalCard> (not <AskCard>).
-  | "approval";
+  | "approval"
+  // One Gmail message the user reviews, may edit, and sends themselves —
+  // rendered by <GmailReviewCard>. See features/google-workspace/agent/.
+  | "email_review";
 
 export type PendingAskStatus = "pending" | "resolved" | "cancelled" | "expired";
 
@@ -68,6 +71,19 @@ export interface PendingAsk {
   approval?: ApprovalChange;
   /** kind:"approval" — the tile this change acts on (drives "always approve"). */
   threadId?: string;
+  /**
+   * kind:"email_review" — the message the agent composed. The card renders these
+   * exact values, lets the user edit them, and sends whatever is on screen at
+   * the moment they confirm. Nothing here is consent; the click is.
+   */
+  email?: {
+    connectionId: string;
+    fromEmail: string | null;
+    to: string;
+    cc: string[];
+    subject: string;
+    body: string;
+  };
   /** Batched-question metadata (0-based). When set, the card shows "N of M". */
   batchIndex?: number;
   batchTotal?: number;

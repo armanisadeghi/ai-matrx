@@ -297,6 +297,40 @@ export const userTodosArgsSchema = z.object({
 export type UserTodosArgs = z.infer<typeof userTodosArgsSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// google_email_send — the reviewed Gmail send
+//
+// The agent supplies the message; the USER reviews, may edit any field, and
+// confirms. There is deliberately NO `user_confirmed` argument: the agent has
+// no way to assert consent, because consent is produced by the card, not by the
+// call. The server has no executor for this tool at all — its only binding is
+// `matrx-user` — so this client is the only thing that can perform the send.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const googleEmailSendArgsSchema = z.object({
+  to: z.string().min(3).max(320),
+  cc: z.array(z.string()).max(20).optional(),
+  subject: z.string().min(1).max(998),
+  body: z.string().min(1).max(100_000),
+});
+
+export type GoogleEmailSendArgs = z.infer<typeof googleEmailSendArgsSchema>;
+
+/** What the handler POSTs back as the tool result. */
+export interface GoogleEmailSendResult {
+  sent: boolean;
+  declined?: boolean;
+  cancelled?: boolean;
+  message_id?: string;
+  to?: string;
+  cc?: string[];
+  subject?: string;
+  /** True when the user changed any field before sending. */
+  edited?: boolean;
+  from_email?: string | null;
+  error?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Response envelopes
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -315,6 +349,11 @@ export interface AskUserResponse {
   additional_instructions: string | null;
   /** True when the user declined the structured question(s) and typed a freeform reply (in `freeform`). */
   wrote_instead: boolean;
+  /**
+   * Structured payload from a card that carries its own shape (the Gmail review
+   * card returns the exact bytes it sent). Null for every plain ask.
+   */
+  data: Record<string, unknown> | null;
   cancelled: boolean;
   timed_out: boolean;
 }
@@ -327,6 +366,7 @@ export const EMPTY_ASK_RESPONSE: AskUserResponse = {
   freeform: null,
   additional_instructions: null,
   wrote_instead: false,
+  data: null,
   cancelled: false,
   timed_out: false,
 };

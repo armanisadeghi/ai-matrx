@@ -181,8 +181,10 @@ export function presentation(ask: PendingAsk): AskPresentation {
         title: ask.plan?.title,
       };
     case "approval":
-      // Rendered by <ApprovalCard> (PendingAsksZone routes it there) — never
-      // reaches <AskCard>. Present only to keep the switch exhaustive.
+    case "email_review":
+      // Rendered by <ApprovalCard> / <GmailReviewCard> (PendingAsksZone routes
+      // them there) — never reaches <AskCard>. Present only to keep the switch
+      // exhaustive.
       return { tone: "neutral", Icon: ShieldCheck };
   }
 }
@@ -410,6 +412,7 @@ export function AskBody({ ask, onAnswer, isLast }: AskBodyProps) {
         />
       );
     case "approval":
+    case "email_review":
       return null;
   }
 }

@@ -22,6 +22,10 @@ export const UI_FIRST_TOOL_NAMES = [
   // loop on every task update. The TaskPanel still renders the list via its
   // Supabase Realtime subscription; the agent's writes now happen server-side.
   "user_todos",
+  // The reviewed Gmail send. Client-only BY DESIGN: it has no server executor,
+  // so the only way this message can be sent is the user confirming the exact
+  // bytes in <GmailReviewCard>.
+  "google_email_send",
 ] as const;
 
 export type UiFirstToolName = (typeof UI_FIRST_TOOL_NAMES)[number];

@@ -34,6 +34,7 @@ import {
 import { AskCard } from "./AskCard";
 import { ApprovalCard } from "./ApprovalCard";
 import { BatchAskCard } from "./BatchAskCard";
+import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
 
 interface PendingAsksZoneProps {
   conversationId: string;
@@ -59,11 +60,13 @@ export function PendingAsksZone({
       return <BatchAskCard key={group.key} asks={group.asks} />;
     }
     const ask = group.asks[0];
-    return ask.kind === "approval" ? (
-      <ApprovalCard key={ask.callId} ask={ask} />
-    ) : (
-      <AskCard key={ask.callId} ask={ask} />
-    );
+    if (ask.kind === "approval") {
+      return <ApprovalCard key={ask.callId} ask={ask} />;
+    }
+    if (ask.kind === "email_review") {
+      return <GmailReviewCard key={ask.callId} ask={ask} />;
+    }
+    return <AskCard key={ask.callId} ask={ask} />;
   });
 
   if (isMobile) {

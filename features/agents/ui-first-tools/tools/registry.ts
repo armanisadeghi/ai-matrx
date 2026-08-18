@@ -15,6 +15,7 @@ import {
   updatePlanArgsSchema,
   requestTakeoverArgsSchema,
   userTodosArgsSchema,
+  googleEmailSendArgsSchema,
 } from "./schemas";
 import { userHandler } from "../handlers/user.handler";
 import { updatePlanHandler } from "../handlers/update-plan.handler";
@@ -22,6 +23,7 @@ import { requestTakeoverHandler } from "../handlers/request-takeover.handler";
 // `tasks` is intentionally absent — it is server-executed in aidream now (see
 // names.ts). Do not re-add a client handler for it.
 import { userTodosHandler } from "../handlers/user-todos.handler";
+import { googleEmailSendHandler } from "../handlers/google-email-send.handler";
 
 export interface ToolRegistryEntry {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,6 +40,10 @@ const registry: Record<string, ToolRegistryEntry> = {
     handler: requestTakeoverHandler,
   },
   user_todos: { schema: userTodosArgsSchema, handler: userTodosHandler },
+  google_email_send: {
+    schema: googleEmailSendArgsSchema,
+    handler: googleEmailSendHandler,
+  },
 };
 
 export function getUiFirstToolEntry(
