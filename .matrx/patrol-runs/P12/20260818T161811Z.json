@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P12",
+  "runId": "20260818T161811Z",
+  "baseSha": "e855e0e0788f4c9055a7eaf7f46ee0877486d9a9",
+  "createdAt": "2026-08-18T16:18:33.817Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-18T16:18:33.817Z",
+      "actor": "codex-p12-worker",
+      "summary": "First full P12 inventory found 149 registered overlays without Surface manifests and 105 declared surfaces below verified readiness.",
+      "evidence": [
+        "check:surface-drift PASS: 184 manifests, 4402 values, 372 write targets, 6 client tools",
+        "check:surface-routes PASS: 556 routes, 0 undeclared",
+        "overlay cross-check: 174 ids, 25 declared, 149 undeclared"
+      ],
+      "previousEventHash": null,
+      "eventHash": "b67093700cb2da32c547b82bcf0232257854ae6623fa0f167c84576fb7c4e303"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-18T16:18:34.684Z",
+      "actor": "codex-p12-worker",
+      "summary": "Added the missing reusable overlay-to-manifest coverage detector as a bounded process repair.",
+      "evidence": [
+        "New pnpm check:surface-overlays reports the full 149-item backlog without failing on expected campaign debt."
+      ],
+      "previousEventHash": "b67093700cb2da32c547b82bcf0232257854ae6623fa0f167c84576fb7c4e303",
+      "eventHash": "893b9db79acbc4146f818375ffeeb0e5861b47c48275250c0b2ea11012a13350"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-18T16:18:35.541Z",
+      "actor": "codex-p12-worker",
+      "summary": "Detector batch is ready for exact-candidate adversarial certification.",
+      "evidence": [
+        "Pre-edit surface checks passed; baseline type-check failures are unrelated context-policy migration and education/flashcard/SMS debt."
+      ],
+      "previousEventHash": "893b9db79acbc4146f818375ffeeb0e5861b47c48275250c0b2ea11012a13350",
+      "eventHash": "c141451d6f3415abc54bc2337134487890e4c36d3bd1ab120d3cfa189a22a19b"
+    }
+  ]
+}

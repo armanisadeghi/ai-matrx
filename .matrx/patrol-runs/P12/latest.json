@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P12",
+  "runId": "20260818T161811Z",
+  "state": "certifying",
+  "updatedAt": "2026-08-18T16:18:35.541Z",
+  "summary": "Detector batch is ready for exact-candidate adversarial certification.",
+  "source": "20260818T161811Z.json",
+  "eventHash": "c141451d6f3415abc54bc2337134487890e4c36d3bd1ab120d3cfa189a22a19b"
+}
