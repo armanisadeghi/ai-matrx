@@ -502,6 +502,10 @@ export function ContextMenuV3({
     // shipped on the three pointer paths and missed this one, so the stated
     // invariant held on desktop only.
     if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
+    // Nested menus are deliberate (for example, a page-list menu around
+    // per-row menus). The innermost eligible trigger owns the gesture; without
+    // this both long-press timers fire and two mobile sheets open.
+    e.stopPropagation();
     const t = e.touches[0];
     if (!t) return;
     touchStart.current = {
@@ -626,6 +630,9 @@ export function ContextMenuV3({
         // Same rule as the desktop capture guard below: a read-only menu
         // never steals a live text field's native menu.
         if (!isEditable && yieldsToNativeTextMenu(e.target)) return;
+        // Match the long-press path: a nested row trigger wins over its
+        // surrounding list-level trigger instead of opening both sheets.
+        e.stopPropagation();
         e.preventDefault();
         captureContext(e.target as HTMLElement, e.currentTarget);
         setSheetOpen(true);

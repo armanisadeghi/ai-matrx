@@ -22,7 +22,7 @@ vision: [features/context-menu-v3/FEATURE.md]
 - Skills: `context-menu-v3` (surface rollout recipe), `agent-execution-redux` (launch/runtime contract), `agent-review-queue`.
 - Test: log in at `/login` (admin@admin.com / Password1234#), demos at `/demos/context-menu` (hub = core-vs-per-surface guide), `/demos/context-menu/inline-edit`, `/demos/context-menu/surface-mappings`, `/demos/context-menu/launch-inspector`.
 - Retest agent: **"Inline Widget Editor"** — `agent.definition c4adab96-fac5-4f75-90f9-e8d5eb2c200d` (prompt mandates widget-tool edits). Diagram-side sibling: `bdaf5ee0-…`.
-- Environment trap: dev servers on this volume repeatedly crash or WEDGE mid-compile (`Interrupted system call` reading node_modules; a route "Compiling…" for 10+ min). Use `.claude/launch.json` `next-dev-qa2` (port 3011, own distdir); `pnpm clean:next` clears stale build dirs. If it wedges, verify on the auto-deployed Vercel build instead.
+- Browser harness: use `pnpm preview:start` on port 3001 and the in-app browser; `docs/official/browser-testing.md` is canonical.
 
 ## Remaining work
 
@@ -39,6 +39,7 @@ vision: [features/context-menu-v3/FEATURE.md]
 - PDF region right-click menu finished — `features/file-analysis/components/RegionContextMenu.tsx`.
 - Demo pages shipped + browser-verified: hub guide, `surface-mappings`, `launch-inspector`.
 - Adversarial multi-agent review; 4 defects fixed — commit `4a7e9eea4`.
+- Mobile triggers attach directly to a single non-Fragment child through Radix `Slot` (`React.cloneElement` with composed handlers/ref); the `display:contents` fallback never wraps a lone table row. Verified on `/cms/html-pages` at 375px with zero hydration errors and a working row long-press menu — commit `afd20a936`.
 
 ## Decisions needed
 
