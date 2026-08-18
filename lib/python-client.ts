@@ -290,6 +290,12 @@ export interface RequestOptions {
    */
   timeoutMs?: number;
   /**
+   * Whether this transport should enter the global Error Inspector when it
+   * rejects. Defaults to true. Set false only when the caller owns a durable
+   * recovery path and classifies the final outcome itself.
+   */
+  captureErrors?: boolean;
+  /**
    * Override the guest fingerprint sent as `X-Guest-Fingerprint`. By default
    * we read it synchronously from the fingerprint service. Pass an explicit
    * value when calling from a context that has a different guest identity
@@ -739,6 +745,7 @@ export async function postMultipart<T>(
     const data = (await response.json()) as T;
     return { data, meta: meta(response, requestId) };
   } catch (err) {
+    if (opts.captureErrors === false) throw err;
     failClient(err, "POST", path, url, requestId);
   }
 }

@@ -34,7 +34,11 @@ const CATALOG_TTS_VOICES = new Set<string>(CATALOG_VOICES);
 export async function transcribeAudioFile(
   file: File,
   options?: TranscriptionOptions,
-  request?: { signal?: AbortSignal; timeoutMs?: number },
+  request?: {
+    signal?: AbortSignal;
+    timeoutMs?: number;
+    captureErrors?: boolean;
+  },
 ): Promise<TranscriptionResult> {
   const form = new FormData();
   form.append("file", file);

@@ -27,6 +27,17 @@ describe("logClientError", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("does not send the bounded live-chunk deadline to the server logger", async () => {
+    await logClientError({
+      errorCode: "CHUNK_FAILED",
+      errorMessage: "The request timed out — please retry.",
+      fileSizeBytes: 35_535,
+      chunkIndex: 3,
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("still sends an actionable chunk failure", async () => {
     await logClientError({
       errorCode: "CHUNK_FAILED",

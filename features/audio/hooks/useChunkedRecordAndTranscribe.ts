@@ -570,7 +570,13 @@ export function useChunkedRecordAndTranscribe({
         const data = await transcribeAudioFile(
           audioFile,
           { language: opts?.language },
-          { timeoutMs: AUDIO_LIMITS.CHUNK_FETCH_TIMEOUT_MS },
+          {
+            timeoutMs: AUDIO_LIMITS.CHUNK_FETCH_TIMEOUT_MS,
+            // A missed live chunk is durable recovery state. The stop-time
+            // full-recording fallback owns the final outcome and logs only if
+            // that recovery also fails.
+            captureErrors: false,
+          },
         );
 
         if (data.success && data.text?.trim()) {

@@ -94,12 +94,15 @@ describe("speechApi", () => {
     });
 
     const file = new File(["audio"], "chunk.webm", { type: "audio/webm" });
-    await transcribeAudioFile(file, undefined, { timeoutMs: 30_000 });
+    await transcribeAudioFile(file, undefined, {
+      timeoutMs: 30_000,
+      captureErrors: false,
+    });
 
     expect(apiMultipartMock).toHaveBeenCalledWith(
       "/audio/transcribe",
       expect.any(FormData),
-      { timeoutMs: 30_000 },
+      { timeoutMs: 30_000, captureErrors: false },
     );
   });
 });

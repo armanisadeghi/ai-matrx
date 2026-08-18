@@ -13,6 +13,15 @@ describe("shouldPersistTranscriptionError", () => {
     },
   );
 
+  it("keeps the bounded live-chunk deadline local", () => {
+    expect(
+      shouldPersistTranscriptionError({
+        errorCode: "CHUNK_FAILED",
+        errorMessage: "The request timed out — please retry.",
+      }),
+    ).toBe(false);
+  });
+
   it("persists actionable chunk failures", () => {
     expect(
       shouldPersistTranscriptionError({
