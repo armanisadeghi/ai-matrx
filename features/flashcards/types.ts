@@ -70,16 +70,10 @@ export interface FlashcardSetWithStats extends FlashcardSetRow {
   masteryPercent: number; // 0-100
 }
 
-// ============================================================================
-// Spaced repetition box assignment
-// ============================================================================
-
-export type LeitnerBox = 1 | 2 | 3;
-
-export interface CardStudyState {
-  cardIndex: number;
-  box: LeitnerBox;
-  isDue: boolean;
-  lastReviewedAt: string | null;
-  lastResult: ReviewResult | null;
-}
+// Spaced repetition lives in ONE place: the FSRS scheduler (`lib/srs/fsrs.ts`),
+// persisted on `education.item_mastery` and driven by `features/flashcards/data/`.
+// The 3-box Leitner scheduler that used to live in `features/flashcards/hooks/`
+// (with its `LeitnerBox` / `CardStudyState` types) was a SECOND, competing SRS
+// algorithm over the legacy `users.user_flashcard_*` tables. It had zero
+// importers and was deleted 2026-08-17 (WP8). Do not reintroduce a second
+// scheduler here — extend the FSRS one.
