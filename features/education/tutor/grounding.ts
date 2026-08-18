@@ -43,6 +43,7 @@ export interface TutorLaunchGrounding {
   study_material: string;
   teaching_mode: string;
   personality_style: string;
+  response_language: string;
   /**
    * P0 TrustEnvelope for the conversation surface — derived from the KNOWN
    * grounding sources (the seed item + the learner's weak-card digest), NOT
@@ -68,6 +69,8 @@ export interface AssembleTutorGroundingOptions {
   query?: string;
   /** Required with query so learner_owned corpus selection is exact. */
   userId?: string;
+  /** Canonical generated-text language preference from Settings. */
+  responseLanguage?: string;
 }
 
 /** Request-only evidence and its compact durable citation-coordinate ledger. */
@@ -273,6 +276,7 @@ export async function assembleTutorGrounding(
     study_material: materialParts.join("\n\n"),
     teaching_mode: settings.teachingMode,
     personality_style: settings.personalityStyle,
+    response_language: opts.responseLanguage?.trim() || "English",
     trust: deriveGroundingTrust(opts.seed, weakCards, retrieval),
     retrieval,
   };

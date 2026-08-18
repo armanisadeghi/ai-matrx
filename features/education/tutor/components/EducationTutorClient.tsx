@@ -165,6 +165,9 @@ function EducationTutorClientInner({
     : `${SOURCE_FEATURE}:${agentId}`;
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
+  const [responseLanguage] = useSetting<string>(
+    "userPreferences.textGeneration.language",
+  );
   const isFreshRoute = !conversationIdProp;
 
   // ── Entitlement gate (P8): tutor messages are a metered capability ────────
@@ -289,7 +292,10 @@ function EducationTutorClientInner({
       // the disabled composer above then keeps the account out of the AI flow.
       if (!(await coppa.ensureAllowed())) return;
       try {
-        const grounding = await assembleTutorGrounding({ seed });
+        const grounding = await assembleTutorGrounding({
+          seed,
+          responseLanguage,
+        });
         if (cancelled) return;
         groundingRef.current = grounding;
         setTutorTrust(grounding.trust);
@@ -321,6 +327,12 @@ function EducationTutorClientInner({
                 type: "text",
                 label: "Personality style",
               },
+              {
+                key: "response_language",
+                value: grounding.response_language,
+                type: "text",
+                label: "Response language",
+              },
             ],
           }),
         );
@@ -338,6 +350,7 @@ function EducationTutorClientInner({
     authReady,
     dispatch,
     seed,
+    responseLanguage,
     coppa.ensureAllowed,
   ]);
 
@@ -351,7 +364,10 @@ function EducationTutorClientInner({
     let cancelled = false;
     (async () => {
       try {
-        const grounding = await assembleTutorGrounding({ seed });
+        const grounding = await assembleTutorGrounding({
+          seed,
+          responseLanguage,
+        });
         if (cancelled) return;
         groundingRef.current = grounding;
         setTutorTrust(grounding.trust);
@@ -362,7 +378,7 @@ function EducationTutorClientInner({
     return () => {
       cancelled = true;
     };
-  }, [conversationIdProp, authReady, seed]);
+  }, [conversationIdProp, authReady, seed, responseLanguage]);
 
   // ── Existing-conversation load (only on /education/tutor/[id]) ────────────
   const loadAbortRef = useRef<AbortController | null>(null);
@@ -610,7 +626,10 @@ function EducationTutorClientInner({
     let cancelled = false;
     (async () => {
       try {
-        const grounding = await assembleTutorGrounding({ seed });
+        const grounding = await assembleTutorGrounding({
+          seed,
+          responseLanguage,
+        });
         if (cancelled) return;
         groundingRef.current = groundingRef.current
           ? {
@@ -639,7 +658,15 @@ function EducationTutorClientInner({
     return () => {
       cancelled = true;
     };
-  }, [conversationId, messageCount, authReady, isSharedView, seed, dispatch]);
+  }, [
+    conversationId,
+    messageCount,
+    authReady,
+    isSharedView,
+    seed,
+    responseLanguage,
+    dispatch,
+  ]);
 
   // ── The learner's two durable tutor knobs ─────────────────────────────────
   // The SAME setting path `TutorSettingsPanel` writes through, so an agent
@@ -786,7 +813,12 @@ function EducationTutorClientInner({
         "Your learner account is still loading. Please try again.",
       );
 
-    const grounding = await assembleTutorGrounding({ seed, query, userId });
+    const grounding = await assembleTutorGrounding({
+      seed,
+      query,
+      userId,
+      responseLanguage,
+    });
     if (grounding.retrieval?.status === "failed") {
       throw new Error(
         grounding.retrieval.error ??
@@ -826,6 +858,12 @@ function EducationTutorClientInner({
           value: grounding.personality_style,
           type: "text",
           label: "Personality style",
+        },
+        {
+          key: "response_language",
+          value: grounding.response_language,
+          type: "text",
+          label: "Response language",
         },
         ...tutorCitationPointers(grounding.retrieval).map((pointer) => ({
           key: pointer.key,
