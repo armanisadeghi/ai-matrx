@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-15`
+**Last updated:** `2026-08-17`
 
 ---
 
@@ -91,8 +91,8 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 ### Actionable task reminder
 
 1. From the canonical task editor, the user confirms **Text reminder**.
-2. The authenticated `communication.enqueue_my_task_sms_reminder` RPC checks task access, non-recurring/open status, explicit task-notification enrollment, verified consent, quiet hours, source suppression, and hourly/daily caps.
-3. One transaction creates the notification, durable queued outbound message, and one `platform.assists` offer whose only SMS alias is `DONE`; duplicate clicks return the same durable identities.
+2. The authenticated `communication.enqueue_my_task_sms_reminder` RPC proves task edit access, then requires exactly one caller+program enrollment independently of the task's workspace. Missing or ambiguous enrollment creates no durable intent.
+3. After non-recurring/open-task, consent, quiet-hours, suppression, and rate-limit checks, one transaction creates the notification, durable queued outbound message, and one `platform.assists` offer whose only SMS alias is `DONE`; every communications row belongs to the enrollment organization, while the task id remains the exact action target. Duplicate clicks return the same durable identities.
 4. An inbound `DONE` is initially stored as skipped/unverified. The service-role admission RPC promotes it only when exactly one well-formed offer matches the same user, organization, conversation, and outbound message. Missing, malformed, or ambiguous offers remain terminally skipped.
 5. Aidream drains expired command recovery first, then fresh exact commands, then ordinary agent turns. Command execution does not require or fabricate a saved-agent binding; generic text still does.
 
@@ -112,6 +112,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - **Consent, notification families, and assistant replies are independent controls.** Overall verified SMS consent is the delivery prerequisite; `task_notifications` is an explicit family opt-in; `ai_agent_messages` governs only assistant replies.
 - **Consequential tools stay disabled in the owner beta.** The SMS worker invokes the canonical agent with an empty replacement tool set.
 - **A word is never authority.** `DONE` executes only through one exact durable offer; zero, malformed, or ambiguous offers never enter the worker queue.
+- **Task workspace is not transport tenancy.** An editable task may belong to any workspace; the caller's one active program enrollment owns the notification, conversation, message, and assist rows. Zero or multiple enrollments fail before durable intent.
 - A worker crash must not mint a second chat turn or Twilio send. Expired processing/sending claims become explicit stuck/uncertain work for repair, never automatic retries.
 - Twilio accepting an API request is not proof of delivery; delivery status comes from the status webhook.
 - Message reads page newest-first, but conversation surfaces render each page oldest-to-newest.
@@ -129,6 +130,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 
 ## Change log
 
+- `2026-08-17` — Removed the task-workspace coupling from `enqueue_my_task_sms_reminder`: exact caller+program enrollment now resolves independently, all communication artifacts stay in the enrollment organization, and zero/multiple enrollments fail closed before any durable intent.
 - `2026-08-15` — Added the production Task reminders preference: a direct authenticated getter/setter pair that can change only the caller's task-notification family, a novice-facing checkbox on Messaging, and an exact setting-door recovery from a blocked task reminder.
 - `2026-08-15` — Added the first canonical actionable notification: the task editor queues a branded, consent/quiet-hours/rate-limited non-recurring task reminder through a direct authenticated RPC, with exact `DONE` offer correlation, command-first no-agent admission, crash recovery, and fail-closed zero/malformed/ambiguous handling.
 - `2026-08-15` — Aligned the inbound webhook test with the canonical `www.aimatrx.com` signing host and current processor result contract; the route now accepts the standard `Request` surface it actually consumes.
