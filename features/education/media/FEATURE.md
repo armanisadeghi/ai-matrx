@@ -98,9 +98,15 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
   unreachable by every server recovery path — `/podcast/resume` 404s on it); and a tab that dies
   mid-run leaves the row stamped `generating` forever, because the terminal status is written
   client-side, best-effort. Live proof: a row still says `generating` while its run says `failed`.
-  **WP8 fix in flight:** an `education_media_reconcile` system job on aidream's scheduler mirrors
-  terminal run state onto `study_media` and starts never-started rows headlessly (bounded,
-  once-only). Contract: IC-6 in `common-docs/projects/education-platform/INTEGRATION_MAP.md`.
+  **WP8 fix LANDED 2026-08-17:** `education_media_reconcile` (aidream
+  `services/education_media/reconcile.py`, scheduler task `…388`, every 10 min) mirrors terminal
+  run state onto `study_media` and starts never-started rows headlessly (bounded: <24h old,
+  once-only via a CAS-stamped `metadata.reconcile_started_at`, 5 starts/sweep). Proven on the live
+  divergent row — `generating`+run `failed` → `error` carrying the run's own reason. **Live audio
+  rows claiming `generating` falsely: 0.** The seed ships handler-gated (`enabled=false`) and
+  `activate_registered_system_tasks()` flips it at boot — no manual step. Contract: IC-6 in
+  `common-docs/projects/education-platform/INTEGRATION_MAP.md`. **Still unverified at runtime: the
+  headless START branch**, which spends money and was proven only up to its pre-launch guards.
 - **[CLOSED 2026-08-17] A failed audio study is no longer a dead end.** The detail surface now
   shows what failed plus a real retry (re-runs the stored request, reusing the row) or a
   regenerate door when there is no request to replay, and writes `status` back to `generating`
@@ -122,6 +128,8 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
 
 ## Change log
 
+- **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
+  (`mindmap/agents.ts` → `mindmap/mandates.ts`, `education.mindmap_generate`).
 - **2026-08-17** — **Status header corrected (WP12, education-platform program):** "blocked by a
   backend outage" was stale — generation runs but the audio TTS stage fails ~86% live (5 error /
   1 generating / 1 ready measured). WP8 owns the pipeline fix + user-visible retry.
