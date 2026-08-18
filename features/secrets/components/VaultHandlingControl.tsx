@@ -23,13 +23,13 @@ export const HANDLING_PRESENTATION: Record<
   HandlingPresentation
 > = {
   visible: {
-    label: "Visible",
-    description: "Anyone who can use this credential may reveal the value.",
+    label: "Standard",
+    description: "Anyone who can use this credential may show or copy it.",
     icon: Eye,
   },
   revealable: {
-    label: "Hidden",
-    description: "Only people with reveal access may show the value.",
+    label: "Restricted",
+    description: "Showing or copying requires extra reveal access.",
     icon: EyeOff,
   },
   sealed: {

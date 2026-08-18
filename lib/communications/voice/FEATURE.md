@@ -52,8 +52,11 @@ long-lived media and agent execution stay in aidream.
   returning success. Forged, malformed, uncorrelated, ambiguous, or persistence-failed requests
   return non-success. Provider media URLs are retained only in evidence, never in
   `crm.interaction.recording_url` or as playback identity.
-- The static Voice TwiML remains non-recording. External storage configuration is an account-wide
-  provider mutation and stays off until the readiness response reports every gate passed.
+- The accepted owner-beta TwiML emits Twilio `<Start><Recording>` only after the v2 disclosure,
+  exact affirmative input, durable consent claim, and a fresh runtime pass of every recording
+  gate. Capture is dual-channel/both-track, begins after consent, and posts `in-progress`,
+  `completed`, and `absent` events to the existing signed recording callback. Any missing or
+  unavailable readiness evidence returns explicit non-recording TwiML.
 - `storage-canary-readiness.ts` reads the latest owner-program pass/fail receipt from the existing
   `platform.activity_log` ledger and validates the exact bucket, prefix, writer ARN, retention
   policy, deny checks, application HEAD/read/hash, canonical index/access/delete receipts, and a
@@ -81,8 +84,9 @@ gates.
 
 The main Voice GET also derives provider email-verification and external-storage readiness from an
 exact durable operator receipt instead of hard-coded booleans. Missing, invalidated, malformed,
-future-dated, or stale evidence fails closed, and the route still reports recording disabled while
-recording disclosure has not been verified.
+future-dated, or stale evidence fails closed. It keeps the disclosure-proof gate false until an
+actual v2 consented recording proves the complete live path; the POST route independently requires
+that exact disclosure and durable consent before it can emit capture TwiML.
 
 The main Voice GET also exposes the ConversationRelay launch inventory through the same readiness
 primitive. It reports the six inert aidream foundations, canonical call lifecycle, durable bounded
@@ -93,6 +97,9 @@ content, phone, provider URL, session reference, signature, or credential is ret
 
 ## Change log
 
+- **2026-08-17** — Upgraded the owner-beta disclosure to exact current-call recording consent and
+  added fail-closed post-consent `<Start><Recording>` with dual-channel/both-track capture plus the
+  existing signed lifecycle callback. Missing runtime evidence still returns non-recording TwiML.
 - **2026-08-17** — Replaced the two provider-configuration placeholder gates with exact,
   secret-free `platform.activity_log` evidence. Email verification expires after 24 hours,
   reviewed external configuration after 30 days, invalidations win by recency, and recording

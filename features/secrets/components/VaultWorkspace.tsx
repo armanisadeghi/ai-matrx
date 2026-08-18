@@ -835,7 +835,7 @@ function VaultWorkspaceListRow({
       aria-selected={selected}
       onClick={onOpen}
       className={cn(
-        "flex w-full min-w-0 items-start gap-2.5 rounded-lg border p-3 text-left transition-colors",
+        "flex w-full min-w-0 items-start gap-2.5 rounded-md border px-2.5 py-2.5 text-left transition-colors",
         selected
           ? "border-primary/40 bg-primary/5"
           : "border-transparent hover:border-border hover:bg-accent/50",
@@ -844,30 +844,21 @@ function VaultWorkspaceListRow({
       <span className={cn(IDENTITY_TILE_CLASS, "mt-0.5 h-9 w-9")}>
         <Icon className={cn("h-4.5 w-4.5", identity.iconClass)} />
       </span>
-      <dl className="min-w-0 flex-1">
-        <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          {VAULT_LABELS.credentialName}
-        </dt>
-        <dd className="whitespace-normal break-words text-sm font-semibold text-foreground">
+      <div className="min-w-0 flex-1">
+        <p className="whitespace-normal break-words text-sm font-semibold leading-5 text-foreground">
           {item.display_name}
-        </dd>
-        <dt className="mt-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          {VAULT_LABELS.credentialType}
-        </dt>
-        <dd className="whitespace-normal break-words text-xs text-muted-foreground">
-          {identity.kindLabel}
-        </dd>
+        </p>
+        <p className="mt-0.5 whitespace-normal break-words text-xs leading-4 text-muted-foreground">
+          {[identity.kindLabel, identity.subtitle]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
         {item.login_urls.length > 0 && (
-          <>
-            <dt className="mt-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              {VAULT_LABELS.loginUrls}
-            </dt>
-            <dd className="whitespace-normal break-all text-xs text-muted-foreground">
-              {item.login_urls.join(", ")}
-            </dd>
-          </>
+          <p className="mt-1 whitespace-normal break-all text-[11px] text-muted-foreground">
+            {item.login_urls.join(", ")}
+          </p>
         )}
-      </dl>
+      </div>
       {item.status !== "active" && (
         <Badge
           variant="outline"
@@ -935,22 +926,16 @@ function VaultDetailDialog({
                 className={cn("h-4.5 w-4.5", selectedIdentity?.iconClass)}
               />
             </span>
-            <dl className="min-w-0 flex-1">
-              <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                {VAULT_LABELS.credentialName}
-              </dt>
-              <dd className="whitespace-normal break-words text-base font-semibold leading-tight">
+            <div className="min-w-0 flex-1">
+              <p className="whitespace-normal break-words text-base font-semibold leading-tight">
                 {selected?.display_name}
-              </dd>
-              <dt className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                {VAULT_LABELS.credentialType}
-              </dt>
-              <dd className="whitespace-normal break-words text-xs font-normal text-muted-foreground">
+              </p>
+              <p className="mt-1 whitespace-normal break-words text-xs font-normal text-muted-foreground">
                 {[selectedIdentity?.kindLabel, selectedIdentity?.subtitle]
                   .filter(Boolean)
                   .join(" · ")}
-              </dd>
-            </dl>
+              </p>
+            </div>
           </CredenzaTitle>
         </CredenzaHeader>
         <CredenzaBody className="max-h-[70dvh] overflow-y-auto px-4 pb-6 md:px-0">

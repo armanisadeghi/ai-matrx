@@ -76,7 +76,6 @@ import {
 } from "./VaultHandlingControl";
 import {
   FIELD_KEY_RE,
-  HANDLING_LABELS,
   PROMOTABLE_URL_FIELD_KEYS,
   URI_MATCH_MODE_LABELS,
   VALID_KEY_RE,
@@ -552,27 +551,16 @@ function AttachmentsSection({
                 placeholder="Used to sign App Store Connect API requests"
               />
             </div>
-            <div className="space-y-1">
-              <Label>Who can download it</Label>
-              <Select
+            <div className="space-y-1 sm:col-span-2">
+              <Label>Download protection</Label>
+              <VaultHandlingControl
                 value={handling}
-                onValueChange={(value) => setHandling(value as VaultHandling)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="visible">
-                    {HANDLING_LABELS.visible}
-                  </SelectItem>
-                  <SelectItem value="revealable">
-                    {HANDLING_LABELS.revealable}
-                  </SelectItem>
-                  <SelectItem value="sealed">
-                    {HANDLING_LABELS.sealed}
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={setHandling}
+                disabled={busy}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                The file is always encrypted at rest.
+              </p>
             </div>
           </div>
           <div className="flex justify-end">
@@ -639,7 +627,11 @@ function AttachmentRow({
           </dd>
           <dt className="font-medium text-muted-foreground">Protection</dt>
           <dd className="text-foreground">
-            {HANDLING_LABELS[attachment.handling as VaultHandling]}
+            {
+              HANDLING_PRESENTATION[
+                attachment.handling as VaultHandling
+              ].label
+            }
           </dd>
           {attachment.description && (
             <>
@@ -699,26 +691,14 @@ function AttachmentRow({
               onChange={(event) => setFileName(event.target.value)}
             />
           </div>
-          <div className="space-y-1">
-            <Label>Who can download it</Label>
-            <Select
+          <div className="space-y-1 sm:col-span-2">
+            <Label>Download protection</Label>
+            <VaultHandlingControl
               value={handling}
-              disabled={attachment.handling === "sealed"}
-              onValueChange={(value) => setHandling(value as VaultHandling)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="visible">
-                  {HANDLING_LABELS.visible}
-                </SelectItem>
-                <SelectItem value="revealable">
-                  {HANDLING_LABELS.revealable}
-                </SelectItem>
-                <SelectItem value="sealed">{HANDLING_LABELS.sealed}</SelectItem>
-              </SelectContent>
-            </Select>
+              onValueChange={setHandling}
+              disabled={busy}
+              sealedLocked={attachment.handling === "sealed"}
+            />
           </div>
           <div className="space-y-1 sm:col-span-2">
             <Label htmlFor={`replace-${attachment.id}`}>
