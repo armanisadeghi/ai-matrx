@@ -25,6 +25,7 @@ import {
   listListingPublishers,
   listLocationListings,
   listVisibleBrandOptions,
+  getSiteRootStructuredData,
   upsertLocationListing,
   listBrandAssets,
   listBrandProperties,
