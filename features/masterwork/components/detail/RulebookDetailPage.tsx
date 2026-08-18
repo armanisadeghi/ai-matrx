@@ -74,6 +74,7 @@ import {
   type RuleSeverity,
   type RuleSourceRef,
 } from "../../types";
+import { RuleRelations, ruleAnchorId } from "./RuleRelations";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
 import { BuildMasterworkDialog } from "./BuildMasterworkDialog";
@@ -324,6 +325,7 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
 
 function RuleRow({
   rule,
+  allRules,
   canEdit,
   onEdit,
   onToggleRetired,
@@ -334,6 +336,9 @@ function RuleRow({
   onReconsider,
 }: {
   rule: RulebookRule;
+  /** Every rule in the Rulebook — a `relates_to` link resolves its sibling's
+   * real name from here, so the connection is a named door, not a raw id. */
+  allRules: RulebookRule[];
   canEdit: boolean;
   onEdit: () => void;
   onToggleRetired: () => void;
@@ -349,7 +354,10 @@ function RuleRow({
   const rejected = state === "rejected";
   return (
     <div
-      className={`rounded-md border bg-card ${
+      // THE DOOR a sibling rule's `relates_to` link opens. `scroll-mt` keeps
+      // the row clear of the shell header when jumped to.
+      id={ruleAnchorId(rule.id)}
+      className={`scroll-mt-24 rounded-md border bg-card ${
         retired
           ? "border-border opacity-60"
           : rejected
@@ -495,6 +503,7 @@ function RuleRow({
               </blockquote>
             </div>
           ) : null}
+          <RuleRelations rule={rule} allRules={allRules} />
           {rule.source_ref ? (
             <RuleProvenance sourceRef={rule.source_ref} />
           ) : null}
@@ -1159,8 +1168,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         >
           {/* Rulebook summary */}
           <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-muted-foreground" />
                   <h2
@@ -1442,6 +1451,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                         <RuleRow
                           key={rule.id}
                           rule={rule}
+                          allRules={rulebook.rules}
                           canEdit={canEdit}
                           onEdit={() => {
                             setEditing(rule);

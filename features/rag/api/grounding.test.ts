@@ -1,4 +1,5 @@
 import {
+  groundingSearchDisposition,
   parseGroundedPassageCitations,
   serializeGroundedPassages,
 } from "./grounding";
@@ -8,6 +9,35 @@ import {
 } from "@/features/education/tutor/grounding";
 
 describe("serializeGroundedPassages", () => {
+  test("rejects nonempty nearest-neighbour hits when relevance is low or unverified", () => {
+    const hit = { chunk_id: "unrelated" };
+    expect(
+      groundingSearchDisposition({
+        hits: [hit as never],
+        rerank_status: "low_confidence",
+      }),
+    ).toBe("empty");
+    expect(
+      groundingSearchDisposition({
+        hits: [hit as never],
+        rerank_status: "failed",
+      }),
+    ).toBe("failed");
+    expect(
+      groundingSearchDisposition({
+        hits: [hit as never],
+        rerank_status: "off",
+      }),
+    ).toBe("failed");
+    expect(groundingSearchDisposition({ hits: [hit as never] })).toBe("failed");
+    expect(
+      groundingSearchDisposition({
+        hits: [hit as never],
+        rerank_status: "applied",
+      }),
+    ).toBe("retrieved");
+  });
+
   test("preserves the durable citation coordinates in stable markers", () => {
     const serialized = serializeGroundedPassages([
       {

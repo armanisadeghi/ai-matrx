@@ -17,6 +17,7 @@ import { getShortcutRecordFromState } from "@/features/agents/redux/agent-shortc
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { getSurfaceRuntimeForName } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
 import { replaceSurfaceVariableValues } from "../instance-variable-values/instance-variable-values.slice";
@@ -57,6 +58,14 @@ export const refreshSurfaceScope = createAsyncThunk<
 
     const runtime = getSurfaceRuntimeForName(surfaceName);
     if (!runtime) {
+      if (getManifest(surfaceName)?.requiresBeforeExecute) {
+        const message = `Nothing was sent. Open the ${surfaceName} surface before sending so its current-turn evidence can be prepared.`;
+        console.error(
+          `[surfaces] required submit-time provider missing for conversation "${conversationId}" on "${surfaceName}"`,
+        );
+        toast.error("Could not prepare this message", { description: message });
+        throw new Error(message);
+      }
       if (process.env.NODE_ENV !== "production") {
         console.warn(
           `[surfaces] submit-time scope refresh skipped for conversation "${conversationId}" — no live provider is mounted for "${surfaceName}"`,

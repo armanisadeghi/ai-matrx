@@ -51,4 +51,26 @@ describe("reconcileTurnTrust", () => {
       citations: [],
     });
   });
+
+  test("does not let seed or weak-card context authorize grounded", () => {
+    const claimed: TrustEnvelope = {
+      confidence: "grounded",
+      groundedIn: "student material",
+      citations: [{ sourceId: "card-1", sourceKind: "fc_card" }],
+    };
+
+    expect(
+      reconcileTurnTrust(claimed, [
+        {
+          sourceId: "card-1",
+          sourceKind: "fc_card",
+          title: "Current card",
+        },
+      ]),
+    ).toEqual({
+      confidence: "not_in_material",
+      groundedIn: "student material",
+      citations: [],
+    });
+  });
 });

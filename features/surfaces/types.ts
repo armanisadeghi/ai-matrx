@@ -117,9 +117,7 @@ export interface SurfaceValue {
 
 /** Where a resolved value came from. Preserved through registry resolution. */
 export type SurfaceValueProvenance =
-  | { kind: "own" }
-  | { kind: "inherited"; from: string }
-  | { kind: "baseline" };
+  { kind: "own" } | { kind: "inherited"; from: string } | { kind: "baseline" };
 
 export interface ResolvedSurfaceValue extends SurfaceValue {
   provenance: SurfaceValueProvenance;
@@ -365,6 +363,12 @@ export interface SurfaceManifest {
   /** Matches `ui_surface.name`. */
   surfaceName: string;
   /**
+   * Every turn requires a mounted live provider to prepare request-specific
+   * evidence. Missing providers and send-while-running inbox delivery fail
+   * closed because neither can attach a fresh context snapshot.
+   */
+  requiresBeforeExecute?: boolean;
+  /**
    * Campaign tracking — REQUIRED. See `SurfaceReadiness`. Only flip to
    * `verified` after the surface-authoring checklist passes end-to-end.
    */
@@ -558,10 +562,7 @@ export interface SurfaceValueDrift {
   kind: "manifest_only" | "db_only" | "diff";
   /** Field-level diff when `kind === "diff"`. */
   diff?: Partial<
-    Record<
-      keyof SurfaceValue | "groupKey",
-      { manifest: unknown; db: unknown }
-    >
+    Record<keyof SurfaceValue | "groupKey", { manifest: unknown; db: unknown }>
   >;
 }
 

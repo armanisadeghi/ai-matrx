@@ -414,6 +414,7 @@ const writeTargets: SurfaceWriteTarget[] = [
 
 export const educationTutorManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-tutor",
+  requiresBeforeExecute: true,
   readiness: "partial",
   readinessNote:
     "Manifest + emitter shipped and complete for everything the tutor client loads. Write targets (3) are live and were verified end-to-end with a real agent run — ask dialog per target, Apply landing through the canonical paths, decline clean, undeclared target refused, handler throws reaching the agent. Not yet stamped verified: the DB sync (writeTargets are code-only v1, not yet mirrored to ui.ui_surface_write_target) + a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no agent roles are declared yet (the tutor agent itself is a fixed default, not a surface role).",
@@ -425,7 +426,10 @@ Read the values in tiers. The Grounding group is what the tutor actually knows a
 Respect the Gates group before proposing anything that sends a message: when send_blocked is true the learner cannot reply, and compliance_blocked specifically means a guardian must approve first — never route around it. When is_shared_view is true this is someone else's conversation opened read-only; never propose a write.
 </surface_intro>`,
   groups,
-  values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  values: mergeBaselineValues(
+    pickBaseline("selection", "context"),
+    surfaceSpecific,
+  ),
   writeTargets,
 };
 

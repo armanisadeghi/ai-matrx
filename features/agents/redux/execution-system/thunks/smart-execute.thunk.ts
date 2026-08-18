@@ -26,6 +26,7 @@ import { callCancelRequest } from "@/lib/api/call-api";
 import { toast } from "@/lib/toast";
 import { refreshSurfaceScope } from "./refresh-surface-scope.thunk";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 
 interface SmartExecuteArgs {
   conversationId: string;
@@ -143,6 +144,18 @@ export const smartExecute = createAsyncThunk<
     if (selectIsExecuting(conversationId)(state)) {
       const sendText = composerText.trim();
       if (!sendText) return; // nothing to queue
+      const surfaceName =
+        state.conversations.byConversationId[conversationId]?.surfaceName;
+      if (
+        surfaceName &&
+        getManifest(surfaceName)?.requiresBeforeExecute === true
+      ) {
+        toast.info("Wait for this tutor turn to finish", {
+          description:
+            "Each tutor question searches your material before it sends, so it can't be queued into an already-running answer.",
+        });
+        return;
+      }
       if (selectResourcePayloads(conversationId)(state).length > 0) {
         // Queued/steered sends are text-only; silently dropping attachments
         // would be the classic lost-file bug. Keep everything in the composer

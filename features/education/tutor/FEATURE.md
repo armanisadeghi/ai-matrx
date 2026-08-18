@@ -93,9 +93,11 @@ input**: `EducationTutorClient` assembles memory + retrieved material (`groundin
 which is **re-sent on every turn** (including continuations), so grounding stays live for the whole
 conversation and never shows in the composer. The Holder reads the request-only
 `tutor_retrieved_evidence` key; unlike the similarly named surface value, that key cannot be
-filtered by surface auto-context policy. Four compact `tutor_grounding_citation_N` pointers stay
-under the platform's inline threshold and persist the exact chunk/file/document/page coordinates
-on the user turn. Live optimistic `context_snapshot` supplies them through URL promotion; after
+filtered by surface auto-context policy. Four fixed citation slots overwrite on every send (unused
+slots are blank), so a narrower/empty turn cannot inherit stale coordinates. Non-empty
+`tutor_grounding_citation_N` pointers stay under the platform's inline threshold and persist the
+exact chunk/file/document/page coordinates on the user turn. Live optimistic
+`context_snapshot` supplies them through URL promotion; after
 reload, `chat.message.model_context` supplies the same pointers. Full passages remain deferred and
 are never duplicated into the message row.
 
@@ -119,7 +121,7 @@ target state the earlier grounding-derived strip was a placeholder for):
   polluting the student's view (the "structured channel alongside streamed prose" pattern).
   `extractTurnTrust()` parses the latest assistant message's raw text through the ONE canonical
   `coerceTrustEnvelope` contract. The client then accepts only citation ids present in the exact
-  same-turn retrieval result or its persisted compact coordinate ledger and restores the canonical
+  same-turn retrieved **chunk** result or its persisted compact coordinate ledger and restores the canonical
   title/file/document/page (plus the live retrieved excerpt when available); a fabricated id can
   never make a turn `grounded`. `EducationTutorClient` renders
   `TutorTurnTrust` flush under that
@@ -128,9 +130,9 @@ target state the earlier grounding-derived strip was a placeholder for):
   how the one-shot `lanes/helpLive` agent threads its `trust` envelope, adapted to a streaming
   markdown turn. The agent is prompt-bound to never fabricate `grounded` — honest `inferred` /
   `not_in_material` beats fake citations.
-- **Grounding-derived strip (`TutorTrustStrip`) — FALLBACK only:** rendered *only when the current
-  turn carries no structured envelope* (fresh/empty conversation, mid-stream before the closing
-  `-->` lands, or an older answer that predates the structured channel). It shows the
+- **Grounding-derived strip (`TutorTrustStrip`) — pre-answer only:** rendered only for a fresh
+  conversation before its first answer. An old or malformed answer with no turn envelope gets no
+  reconstructed claim; today's weak cards are not evidence for yesterday's answer. The strip shows the
   grounding-DERIVED `TrustEnvelope` (`grounding.ts#deriveGroundingTrust`) from the KNOWN sources
   (seed + weak cards), floored at `inferred`, with the `not_in_material` "answers are general
   knowledge" notice when nothing is loaded.
@@ -145,6 +147,8 @@ voice session and receives the current card as its seed; `AskTutorButton` uses t
 for typed help and `flashcards.help_live`, whose response carries a `TrustEnvelope` and a source
 chip. Live verification on 2026-08-18 started/stopped a listening session on a real card and got a
 card-cited ATP explanation from the typed inline path without leaving the study page.
+The realtime panel is currently card-grounded only and exposes no IC-3 citation/refusal channel;
+WP4 does not claim that narrower inline voice path is closed-corpus complete yet.
 
 ## Invariants & gotchas
 
@@ -196,6 +200,11 @@ source_feature, `AskTutorButton`, the generalized `lanes/`. **Consumed contracts
   door. An Iceland-tax challenge refused without a citation. Spanish Socratic guidance and essay
   coaching both used retrieved guide passages. Unit coverage pins sequencing, marker fidelity,
   coordinate persistence and fabricated-id refusal.
+- **2026-08-18** — **Adversarial grounding hardening.** Low-confidence or unverified rerank output
+  fails closed; only retrieved chunk citations can authorize `grounded`; all four durable pointer
+  slots overwrite every turn; historical answers never inherit today's corpus claim; and the
+  tutor manifest refuses missing-provider and send-while-running paths that cannot prepare fresh
+  evidence.
 - **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted.
   `agents.ts` → `mandates.ts` (`education.tutor_message`); `EducationTutorClient` gates on
   `useMandate` (unresolved mandate REFUSES with the error visible — never a fallback id);

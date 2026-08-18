@@ -481,6 +481,15 @@ export function RulebookSourcesPanel({
                 attach={captureAttach}
                 uploadFolderPath="Masterwork/Sources"
                 uploadLocationLabel="your Files (Masterwork/Sources)"
+                // "Add document" is a strict subset of "From your workspace"
+                // below — two buttons for one job is exactly the clutter this
+                // section was consolidated to kill.
+                showActions={{
+                  upload: true,
+                  addFile: true,
+                  newDocument: true,
+                  addDocument: false,
+                }}
                 filePicker={{
                   title: "Attach files as sources",
                   description:

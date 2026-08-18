@@ -127,7 +127,8 @@ export function RulebookInputsSection({
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Feed this Rulebook something you already have
+                  Bring in something you already have — we read it and draft
+                  rules from it
                 </TooltipContent>
               </Tooltip>
               <DropdownMenuContent align="end" className="w-64">

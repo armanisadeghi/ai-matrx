@@ -59,7 +59,9 @@ Both hang off the same `ui.ui_surface` spine and resolve server-side in aidream 
   composerText})`. `refreshSurfaceScope` awaits it before reading `getScope`, and `smartExecute`
   calls the refresh before `markInputSubmitted`; a throw therefore makes no request and preserves
   the draft. This is for live evidence required by the current turn (first consumer: Education
-  Tutor closed-corpus retrieval), not arbitrary UI effects.
+  Tutor closed-corpus retrieval), not arbitrary UI effects. A manifest with
+  `requiresBeforeExecute: true` fails closed when its provider is absent and refuses queue/steer
+  while a run is live, because neither path can attach a fresh per-turn evidence snapshot.
 - **Binding id = association id** everywhere (Redux slice, shortcut seeding via `create_shortcut_from_agent_surface`, drift remediation — which updates `metadata.value_mappings` on `platform.associations` via the admin client, server-side only).
 - Redux stays `agentSurfaceBindingsSlice` + thunks in `redux/thunks.ts` — same shapes, associations-backed.
 

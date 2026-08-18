@@ -458,7 +458,8 @@ function EducationTutorClientInner({
   // SourceCitations, or RefusalNotice) flush under the answer via `afterMessages`
   // — a REAL per-claim envelope, not the grounding-derived strip. Null while a
   // turn streams (no closing `-->` yet) or on older answers that predate the
-  // structured channel; the derived strip is the fallback in that case.
+  // structured channel. Historical answers without an envelope get no
+  // reconstructed claim: today's corpus is not evidence for yesterday's turn.
   const latestAssistantId = useAppSelector(
     selectLatestAssistantMessageId(conversationId ?? ""),
   );
@@ -534,6 +535,7 @@ function EducationTutorClientInner({
       persistedTurnCitations.map((citation) => [citation.sourceId, citation]),
     );
     for (const citation of tutorTrust?.citations ?? []) {
+      if (citation.sourceKind !== "chunk") continue;
       const persisted = citations.get(citation.sourceId);
       citations.set(citation.sourceId, {
         ...persisted,
@@ -913,12 +915,12 @@ function EducationTutorClientInner({
               )}
             </div>
           )}
-        {/* P0 trust surface. Preferred: the PER-TURN structured envelope for the
-          latest answer renders under it (below, via `afterMessages`). The
-          grounding-DERIVED strip is the FALLBACK — shown only when the current
-          turn carries no structured envelope (fresh/empty, mid-stream, or an
-          older answer that predates the structured channel). */}
-        {!turnTrust && <TutorTrustStrip trust={tutorTrust} />}
+        {/* Before the first answer, show the corpus-level availability strip.
+          Completed answers are trusted only through their own structured
+          envelope; never reconstruct an old claim from today's weak cards. */}
+        {!turnTrust && messageCount === 0 && (
+          <TutorTrustStrip trust={tutorTrust} />
+        )}
         <div className="flex-1 min-h-0 overflow-hidden flex justify-center">
           <AgentConversationColumn
             conversationId={conversationId}

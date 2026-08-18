@@ -78,7 +78,9 @@ export function reconcileTurnTrust(
   allowedCitations: readonly SourceCitation[],
 ): TrustEnvelope {
   const allowed = new Map(
-    allowedCitations.map((citation) => [citation.sourceId, citation]),
+    allowedCitations
+      .filter((citation) => citation.sourceKind === "chunk")
+      .map((citation) => [citation.sourceId, citation]),
   );
   const citations = claimed.citations.flatMap((citation) => {
     const canonical = allowed.get(citation.sourceId);

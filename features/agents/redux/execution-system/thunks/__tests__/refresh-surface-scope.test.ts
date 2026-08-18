@@ -239,4 +239,25 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
       unregister();
     }
   });
+
+  test("fails closed when a preparation-required surface has no live provider", async () => {
+    const store = makeStore();
+    seedConversation(store);
+    store.dispatch(
+      patchConversation({
+        conversationId: CONVERSATION_ID,
+        surfaceName: "matrx-user/education-tutor",
+      }),
+    );
+
+    await expect(
+      (store.dispatch as unknown as AppDispatch)(
+        refreshSurfaceScope({
+          conversationId: CONVERSATION_ID,
+          composerText: "Do not send without current evidence",
+        }),
+      ).unwrap(),
+    ).rejects.toThrow("current-turn evidence can be prepared");
+    expect(mockFetchSurfaceBindingLayers).not.toHaveBeenCalled();
+  });
 });

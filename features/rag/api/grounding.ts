@@ -11,7 +11,7 @@ import type {
   SourceCitation,
   TrustEnvelope,
 } from "@/features/education/trust/types";
-import { ragSearch, type RagSearchHit } from "./search";
+import { ragSearch, type RagSearchHit, type RagSearchResponse } from "./search";
 
 export interface GroundingSource {
   sourceKind: string;
@@ -58,6 +58,20 @@ const EMPTY_TRUST: TrustEnvelope = {
   confidence: "not_in_material",
   groundedIn: "your uploaded study materials",
 };
+
+export function groundingSearchDisposition(
+  response: Pick<RagSearchResponse, "hits" | "rerank_status">,
+): GroundingResult["status"] {
+  if (
+    response.hits.length === 0 ||
+    response.rerank_status === "low_confidence"
+  ) {
+    return "empty";
+  }
+  // Grounding is a claim of support, so an unavailable/disabled/legacy
+  // relevance judge cannot silently promote nearest-neighbour candidates.
+  return response.rerank_status === "applied" ? "retrieved" : "failed";
+}
 
 const sourceKey = (source: Pick<GroundingSource, "sourceKind" | "sourceId">) =>
   `${source.sourceKind}:${source.sourceId}`;
@@ -189,10 +203,20 @@ export async function retrieveGroundedPassages(
         source_id: source.sourceId,
       })),
     });
-    const passages = response.hits.map((hit) => passageFor(hit, titles));
-    if (passages.length === 0) {
+    const disposition = groundingSearchDisposition(response);
+    if (disposition === "empty") {
       return { status: "empty", passages: [], trust: EMPTY_TRUST };
     }
+    if (disposition === "failed") {
+      return {
+        status: "failed",
+        passages: [],
+        trust: EMPTY_TRUST,
+        error:
+          "Study-material relevance verification was unavailable. Please try again.",
+      };
+    }
+    const passages = response.hits.map((hit) => passageFor(hit, titles));
 
     return {
       status: "retrieved",
@@ -268,9 +292,7 @@ export function parseGroundedPassageCitations(
           ? `p. ${page}`
           : "Retrieved passage",
       ...(attributes.file_id ? { fileId: attributes.file_id } : {}),
-      ...(attributes.document_id
-        ? { documentId: attributes.document_id }
-        : {}),
+      ...(attributes.document_id ? { documentId: attributes.document_id } : {}),
       ...(page !== undefined && Number.isInteger(page) ? { page } : {}),
     });
   }
