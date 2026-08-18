@@ -4,13 +4,19 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 import { EducationHeader } from "@/features/education/components/EducationHeader";
 
-export const metadata = createRouteMetadata("/education", {
-  title: "Education",
-  description:
-    "The all-in-one AI study platform — flashcards, quizzes, practice tests, podcasts, mind maps, and a context-aware tutor. Every subject, every grade, every way to learn.",
-  letter: "Ed",
-  canonicalPath: "/education",
-});
+export const metadata = {
+  ...createRouteMetadata("/education", {
+    title: "Education",
+    description:
+      "The all-in-one AI study platform — flashcards, quizzes, practice tests, podcasts, mind maps, and a context-aware tutor. Every subject, every grade, every way to learn.",
+    letter: "Ed",
+    canonicalPath: "/education",
+  }),
+  // Installing from any /education page installs the STUDY app (start_url
+  // /education), not the platform workspace that /manifest.webmanifest
+  // declares. See app/education.webmanifest/route.ts.
+  manifest: "/education.webmanifest",
+};
 
 export default function EducationLayout({
   children,

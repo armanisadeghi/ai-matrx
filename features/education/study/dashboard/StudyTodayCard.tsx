@@ -15,6 +15,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { InstallStudyAppButton } from "@/features/education/components/InstallStudyAppButton";
 import {
   CalendarClock,
   Flame,
@@ -245,6 +246,8 @@ export function StudyTodayCard() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            {/* Renders nothing unless this browser can actually install. */}
+            <InstallStudyAppButton />
             <Link
               href="/education/progress"
               className="text-xs text-muted-foreground hover:text-foreground"
