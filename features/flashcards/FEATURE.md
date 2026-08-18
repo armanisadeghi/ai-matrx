@@ -16,9 +16,13 @@ education program; several surfaces have named holes (see *Known limits*).
 ## Purpose
 
 The flashcard subsystem: create, import, organize, study and grade decks of cards. It is the
-largest surface in the education product (~22,300 lines, 91 files, 18 routes) and the one students
-spend most of their time in. Nine study modes — classic, learn, write, test, match, due-review,
-weak-area drill, FastFire and single-card voice test — all record to one study spine.
+largest surface in the education product (~92 code files, ~22.6k lines, 18 routes) and the one
+students spend most of their time in.
+
+**Nine study methods** all record to one study spine: the five in-deck modes (classic, learn,
+write, test, match), two cross-deck queues (due-review, weak-area drill), and two spoken ones
+(FastFire, single-card voice test). *"Seven study modes" elsewhere counts only the in-deck five
+plus the two cross-deck queues; nine is the count of distinct `study_attempt.method` values.*
 
 ---
 
@@ -31,7 +35,7 @@ weak-area drill, FastFire and single-card voice test — all record to one study
 | `/education/flashcards` | `FlashcardsHome` — my/shared/public sets, streak, Export library |
 | `/education/flashcards/new` | `CreateFromTopic` — AI generate from a topic string |
 | `/education/flashcards/new/from-source` | `CreateFromSource` — AI generate from a document |
-| `/education/flashcards/new/import` | `ImportSetView` — **delimited CSV/TSV only** (see *Known limits*) |
+| `/education/flashcards/new/import` | `ImportSetView` — CSV/TSV + portable JSON (`.apkg` is `ImportDeckPanel` only) |
 | `/education/flashcards/[setId]` | `SetDetailView` — card list, export menu, mode launchers, visibility |
 | `/education/flashcards/[setId]/study` · `/learn` · `/test` · `/match` · `/write` | the five in-deck study modes |
 | `/education/flashcards/[setId]/edit` | `EditSetView`, server-gated by `requireAccess` |
@@ -46,7 +50,7 @@ weak-area drill, FastFire and single-card voice test — all record to one study
 (`FastFireClient`) and `/fastfire/capture-test` (audio-capture debug harness) — while its code
 lives in `features/flashcards/fast-fire/`. Don't look for it under `/education/flashcards`.
 
-**Study driver hooks** (all in `data/`, all record through the spine)
+**Study driver hooks** (all record through the spine; all in `data/` except the FastFire pair)
 - `useFlashcardStudy()` — classic / learn / write. `{withSession, reshuffleWeighted, mode}`
 - `useQuizStudy()` — test (MCQ) · `useMatchGame()` — match
 - `useDueReview()` — cross-set FSRS due queue · `useWeakAreaDrill()` — weak-area drill
@@ -54,7 +58,7 @@ lives in `features/flashcards/fast-fire/`. Don't look for it under `/education/f
 - `fast-fire/hooks/useFastFireDrill()` + `useFastFireLauncher()` — the timed spoken drill
 
 **Services**
-- `data/fcService.ts` (751 lines) — **the canonical content service.** All deck/card/detail CRUD
+- `data/fcService.ts` — **the canonical content service.** All deck/card/detail CRUD
 - `features/education/study/service/studyService.ts` — **the spine writer** (not owned here)
 
 **Redux**
@@ -111,8 +115,9 @@ Rendering a face as a raw string is a defect; several surfaces still do (see *Kn
 (`audio/continuousCapture.ts`, 826 lines); `useFastFireDrill` only *marks* per-card windows on the
 audio clock (`startCardClip`/`stopCardClip`) — there is no per-card record button. Each clip
 uploads through `fileHandler` and grades fire-and-forget (`agents/gradeCard.thunk.ts` →
-`runHeadlessAgentJson` → `gradeResolved` → `recordAttempt`). Grading is optional by design: no
-agent id → `gradeSkipped` and the attempt is still recorded.
+`runHeadlessAgentJson` → `gradeResolved` → `recordAttempt`) through the `flashcards.grade_spoken`
+mandate. With no uploaded audio → `gradeSkipped` and the attempt is still recorded (grading with
+no audio hallucinates a "correct" from the card back).
 
 **4. Mid-drill adaptation.** On each resolved grade, `adaptUnseenQueue` (`fastFireSlice.ts:212-266`)
 **stably re-sorts the not-yet-seen tail** by `1 − (topic mean of resolved scores)`, gated on
@@ -124,21 +129,26 @@ Do not describe it as re-drilling missed cards.
 
 ## Invariants & gotchas
 
-- 🚨 **`hooks/useFlashcardStudy.ts` and `data/useFlashcardStudy.ts` are different modules with the
-  same export name.** Every live surface imports the `data/` one. The `hooks/` one is a dead
-  3-box Leitner scheduler with **zero importers** — but it looks live in any grep. Check the
-  import path before you conclude anything about scheduling.
-- **Two SRS algorithms exist in this feature.** The live one is FSRS (`lib/srs/fsrs.ts`, authoritative
-  replay in `studyService`). The Leitner one is dead. Never wire the dead one back up.
+- **ONE SRS algorithm exists: FSRS** (`lib/srs/fsrs.ts`; the authoritative replay lives in
+  `features/education/study/service/studyService.ts`). A second, Leitner-based scheduler over the
+  legacy `users.user_flashcard_*` tables was deleted 2026-08-17 — **never reintroduce one.**
+- **A study session is closed TERMINAL-FIRST by the mode that opened it** — completed when the
+  work is done, abandoned on unmount — using the one-way `closeRef` latch shared by
+  `useFlashcardStudy` (classic/learn/write), `useQuizStudy` (test), `useMatchGame` (match),
+  `useDueReview` and `useWeakAreaDrill`. **The hourly DB reaper
+  (`education.reap_stale_study_sessions`, 6h) is a backstop for a hard tab-kill, never the normal
+  path.** This was measured wrong on 2026-08-17: the live DB held **142 `classic_review` sessions
+  and zero completed ones** — the most-used mode could not reach a terminal state by its own
+  action, so session-level truth (completion rate, duration, aggregate score) was wrong for it.
+  A new mode that opens a session and does not close it is a defect.
 - **`fcService` never throws.** An unchecked `FcResult` silently swallows the failure.
 - **`card.topic` is nullable and mostly unpopulated.** No editor field sets it and no CSV/paste
   import writes it (`importDeck.ts:120,133`; `EditSetView.tsx:610` edits the *set's* topic). Any
   feature keyed on per-card topic — FastFire adaptation is one — is inert on hand-built and
   CSV-imported decks until this is fixed.
-- **FastFire's grader id reads `localStorage` first** (`fast-fire/config.ts:58`), falling back to
-  the registry. That is an env-var-shaped toggle in disguise; treat it as debug-only.
-- **`FC_AGENTS` is consumed outside this feature** — `features/education/assessment/data/agents.ts`,
-  `tutor/lanes/config.ts`, `trust/useVerifyAgainstSource.ts`. Migrating it is cross-feature.
+- **`FC_MANDATES` is consumed outside this feature** — `features/education/assessment/data/mandates.ts`,
+  the tutor lanes (`tutor/lanes/*.ts`), `trust/useVerifyAgainstSource.ts`. Changing a key is
+  cross-feature.
 - `StudyDeck.tsx`'s header comment names only two consumers; **four** surfaces render it.
 
 ---
@@ -151,68 +161,76 @@ Verified 2026-08-17 by the education program's WP12 (truth) against live code.
   renders as literal `\frac`: `fast-fire/components/FastFireLiveCard.tsx:203` (**the most-looked-at
   face in the product**), `FastFireScoreboard.tsx:175,178`,
   `voice-test/SingleCardVoiceTest.tsx:446,458,589`, `VoiceTestAudioSetup.tsx:97`, and — outside this
-  feature — `education/media/audio/AudioReviewSession.tsx:485,534`,
-  `media/mindmap/MindMapView.tsx:128,129`. Mobile (`FlashcardMobileView`) renders faces through
+  feature — `features/education/media/audio/components/AudioReviewSession.tsx:485,534`,
+  `features/education/media/mindmap/components/MindMapView.tsx:128,129`. Mobile (`FlashcardMobileView`) renders faces through
   `ConfigurableMarkdownContent` but carries a **second** face-style pipeline
   (`makeMobileCardStyle:143`, `stripInlineMarkdown:205`) and its scrubber at `:609` renders raw.
-- **"Anki export" is not `.apkg`.** `utils/exportDeck.ts:47-49` emits a headed TSV named
-  `.anki.txt`. Anki **import** *is* a real `.apkg` reader (`education/onboard/import/importAnki.ts`),
-  so the asymmetry surprises people. The file's own header comment contradicts itself
-  (`#html:false` at L10, `#html:true` at L47).
-- **Two export implementations exist.** `features/education/onboard/export/deckFormats.ts`
-  (`buildDeckExport`, `PortableDeck` v2) already shipped the same four formats and preserves
-  `metadata.trust`; `utils/exportDeck.ts` is a second one that **drops trust** and whose CSV is
-  front/back only. `/education/data` still uses the first. Per PRINCIPLES this is a defect even
-  though it works — consume `deckFormats.ts`, don't extend the fork.
-- **Deck JSON does not round-trip.** `buildDeckJson` nests deck fields under `set:{}`;
-  `parseDeckJson` reads them off the top level, so an exported deck re-imports as "Imported deck"
-  with description/topic/difficulty lost. Cards survive.
-- **`ImportSetView` (the flashcards import route) accepts only `.csv,.tsv,.txt`** and parses the
-  file itself — it never calls `importDeckFile`, so JSON and `.apkg` are unreachable from this
-  route, and the RFC-4180 `parseCsvRecords` in `utils/importExportCsv.ts:103` is never used here.
-- **`PortableCard.scheduling` and `.media` are parsed then dropped** on import and never written on
-  export. The whole-library JSON export has **no importer at all**.
-- **No image on a card.** `EDGE_ROLE` declares `illustration | diagram | chart | photo | video_ref`
-  with no writer and no renderer. Owned by the dedicated image lane (program decisions D-7/D-8).
+- **"Anki export" is not `.apkg` — and this is platform-wide, not a fork's fault.** Both export
+  modules emit a headed TSV: `utils/exportDeck.ts:48` writes the `#separator:tab` / `#html:true`
+  header, and `deckFormats.ts:101` maps `anki: "txt"` with the comment "Anki imports .txt TSV
+  natively". The `.anki.txt` filename is minted at
+  `components/set-detail/SetDetailView.tsx:362`. Anki **import** *is* a real `.apkg` reader
+  (`education/onboard/import/importAnki.ts`), so the asymmetry surprises people. One stale comment
+  line at `exportDeck.ts:10` still says `#html:false`; L44 and L48 agree on `true`.
+- **Two export entry points still exist**, though they no longer diverge on fidelity:
+  `utils/exportDeck.ts#buildDeckJson` now delegates to `deckFormats.ts#toPortableDeck`, so trust IS
+  preserved. The remaining gap is narrow: `buildDeckJson` does not pass export *extras*, so the
+  **SetDetailView** export path omits `scheduling` and `media` that `/education/data` includes
+  (`useDataOwnership.ts:82,110-111` passes `fetchDeckExportExtras`). Converge the two rather than
+  extending either.
+- **`.apkg` is unreachable from the flashcards import route.** `ImportSetView` accepts
+  `.csv,.tsv,.txt,.json` (`:201`) and does use `importPortableJson` (`:80`) and the RFC-4180
+  `parseCsvRecords` (`:93`) — but it never routes to `importAnkiFile`, which only
+  `education/onboard/components/ImportDeckPanel.tsx` reaches.
+- **Images: a writer exists, the STUDY RENDERER does not.** `fcService.addCards` writes one
+  `fc_card → file` edge per media ref (`data/fcService.ts:312-328`, role chosen at `:319`), fed by
+  Anki import, and `education/onboard/export/exportExtras.ts:52-68` reads those edges back. What is
+  missing is any study or edit surface that **displays** them. Owned by the dedicated image lane
+  (program decisions D-7/D-8).
 - **Test coverage is thin.** Three test files (~641 lines) cover generated-set parsing, the live-cards
   launch regression, and the FastFire adaptation reducer. **`fcService`, every study driver hook,
   the `recordAttempt` integration, `exportDeck` and `importExportCsv` have no tests.**
 
 ---
 
-## Intelligence — being migrated to Mandates
+## Intelligence — Mandates (migration COMPLETE 2026-08-18)
 
-**`data/agents.ts` holds 13 raw agent UUIDs** (`FC_AGENTS`). Two mandate keys are already correct
-and are the template: `flashcards.spoken_front_tts`
-(`fast-fire/spoken-front/generateSpokenFront.thunk.ts:27`) and `education.voice_tutor`
-(`components/study/VoiceTutorPanel.tsx:44`).
+**Every AI lane resolves through a mandate key in `data/mandates.ts`** (`FC_MANDATES`:
+`flashcards.generate_cards` / `generate_from_source` / `enrich_card` / `expand_card` /
+`grade_spoken` / `grade_typed_answer` / `help_live` / `review_batch` / `micro_coach` /
+`make_quiz_items` / `verify_against_source`), plus `flashcards.spoken_front_tts`
+(`fast-fire/spoken-front/generateSpokenFront.thunk.ts`) and `education.voice_tutor`
+(`components/study/VoiceTutorPanel.tsx`). The old `data/agents.ts` UUID registry is DELETED, and
+the FastFire/tutor localStorage agent-id overrides (`fast-fire/config.ts`,
+`education/tutor/lanes/config.ts`) are RETIRED — swap agents via bindings at `/agents/mandates`.
 
 🚨 **A raw agent UUID in code is a platform-law violation** — see root `CLAUDE.md` and
-`features/agents/mandates/FEATURE.md`. **Do not add another**, and do not migrate these yourself:
-the education program's WP2 owns the conversion and has published the mandate roster (IC-1) and
-call-shape map (IC-2) in the program's `INTEGRATION_MAP.md`. Need a NEW AI step? Ask WP2 for a key.
+`features/agents/mandates/FEATURE.md`. **Do not add one back.** Need a NEW AI step? Declare a
+mandate in aidream `services/mandates/client_mandates.py` and add its key to `FC_MANDATES`.
 
-`FC_AGENTS.writeHelper` and `FC_AGENTS.spokenQuestion` have **zero consumers repo-wide**.
+The dead `writeHelper` and `spokenQuestion` lanes (zero consumers repo-wide) were dropped in the
+migration — no mandate was declared for them.
 
 ---
 
-## Unfinished work — flagged, never to be deleted on an agent's own authority
+## The legacy persistence path — one live remnant
 
-Per `/Users/armanisadeghi/code/common-docs/policies/unfinished-work-alarm.md`, a purpose-built
-artifact with no consumers is **work a previous agent left unfinished**. Recommending its deletion
-is forbidden until Arman names it dead in writing. These are recorded so they get *finished* or
-formally retired:
+`services/flashcardPersistenceService.ts` (331 lines) writes `users.user_flashcard_sets` /
+`user_flashcard_reviews`, the legacy tables that still exist live. **Its only importer is
+`features/canvas/components/CanvasArtifactDebugPanel.tsx:45-47`, via a dynamic `await import()`** —
+so a plain grep for static imports reports zero consumers and is wrong. Canvas moved its
+*canonical* adapter to `fcService`
+(`features/canvas/artifact-types/persistence/flashcards-canonical-adapter.ts`); only the debug
+panel still reaches the legacy service.
 
-1. **`hooks/useFlashcardStudy.ts`** (263 lines) — a complete 3-box Leitner scheduler with set
-   autosave and review submission. Zero importers. Superseded in practice by FSRS.
-2. **`services/flashcardPersistenceService.ts`** (331 lines) — writes `users.user_flashcard_sets`
-   / `user_flashcard_reviews`, which still exist live. Its only importer is (1). Canvas already
-   migrated off it (`features/canvas/artifact-types/persistence/flashcards-canonical-adapter.ts`).
-3. **`types.ts` legacy half** — `LeitnerBox`, `CardStudyState`, `CardReviewStats`,
-   `FlashcardSetRow`/`ReviewRow`/`Insert` types are consumed only by (1) and (2). Only
-   `ReviewResult` is live.
+`types.ts` (feature root) holds the matching legacy shapes — `CardReviewStats`, `FlashcardSetRow`,
+`FlashcardReviewRow` and their Insert twins — consumed only by that service. Only `ReviewResult`
+(aliasing `GradeResult`) is live across the rest of the feature.
 
-Retiring the legacy `users.user_flashcard_*` tables is **program decision D-6, awaiting Arman**.
+Retiring the legacy `users.user_flashcard_*` tables is **program decision D-6, awaiting Arman**,
+and WP8 owns stopping the remaining write path. Per
+`/Users/armanisadeghi/code/common-docs/policies/unfinished-work-alarm.md`, **do not delete any of
+this on your own authority** — it is a documented migration in progress, not abandoned code.
 
 ---
 
@@ -250,8 +268,8 @@ which PRINCIPLES calls a defect even when it works.
 ## Current work / migration state
 
 Under the education launch program (`common-docs/projects/education-platform/`): **WP3** owns study
-depth (FastFire adaptation, rich media, merge, export, depth tiers), **WP2** owns the mandate
-migration of `FC_AGENTS`, **WP1** owns mobile parity and route chrome, **WP5** owns import and
+depth (FastFire adaptation, rich media, merge, export, depth tiers), **WP2** owned the mandate
+migration (done 2026-08-18), **WP1** owns mobile parity and route chrome, **WP5** owns import and
 acquisition, **WP8** owns the legacy-table bleed. Check `STATUS_BOARD.md` before starting work here
 — five packages touch this tree.
 
@@ -259,6 +277,10 @@ acquisition, **WP8** owns the legacy-table bleed. Check `STATUS_BOARD.md` before
 
 ## Change log
 
+- `2026-08-18` — all AI steps resolve through mandates (IC-1); UUID registry deleted.
+  `data/agents.ts` → `data/mandates.ts` (`FC_MANDATES`), `fast-fire/config.ts` +
+  `education/tutor/lanes/config.ts` localStorage agent overrides retired (bindings at
+  `/agents/mandates` replace them), dead `writeHelper`/`spokenQuestion` lanes dropped.
 - `2026-08-17` — WP12 (truth & docs): **file created.** The largest education subsystem had no
   `FEATURE.md` at all. Written from a verified map of all 91 files plus an adversarial spot-check
   of the four gaps reported closed that day; every *Known limits* row is a measured finding, not a
