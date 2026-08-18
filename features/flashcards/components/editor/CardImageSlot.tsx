@@ -78,7 +78,9 @@ function FaceRow({
         }),
       );
       if (res.error) {
-        toast.error(`Couldn't ${lane === "find" ? "find" : "generate"} an image: ${res.error}`);
+        toast.error(
+          `Couldn't ${lane === "find" ? "find" : "generate"} an image: ${res.error.message}`,
+        );
         return;
       }
       if (payload?.refused) {
