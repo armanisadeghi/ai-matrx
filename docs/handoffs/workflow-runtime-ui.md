@@ -1,78 +1,49 @@
 # Workflow Runtime UI — the surface where workflows RUN
 
-**status:** Phases 1 (plumbing) and 2 (Run Surfaces: config table + Grafana grid + readouts + rail + builder) SHIPPED 2026-08-16 — Phases 3+ open
-**canonical plan (cross-repo, read it first):** `common-docs/systems/workflow-runtime-ui/PLAN.md`
-(all rulings R1–R12 settled; Readouts, Grafana layout model, dual-source, trigger points)
-**code contract:** `features/workflow-runtime/FEATURE.md`
+**status:** owned (taken over 2026-08-17) — Phases 1–5 SHIPPED; tails below are the open work
+**canonical plan + vision (cross-repo, read it first):** `common-docs/systems/workflow-runtime-ui/PLAN.md`
+(rulings R1–R12 all settled; the vision lives THERE — §1 requirements, §4.2 scale doctrine
+20–100 nodes/nested runs, the podcast acceptance bar. Never let it rot out of that file.)
+**code contract:** `features/workflow-runtime/FEATURE.md` (parts table, invariants, change log)
 
-One line: a generic, user-designed (later AI-designed) live run surface for workflows —
-the podcast studio run experience, generalized. Every node streams into its own requestId lane
-(`MarkdownStream` + kind components render everything), a Grafana-model grid places readouts
-with trigger-point-driven visibility, and everything rehydrates from durable `workflow.*` rows.
+One line: a generic, user-designed (later AI-designed) live run surface for workflows — the
+podcast studio run experience, generalized. Per-node requestId lanes through the canonical
+pipeline, Grafana-model grid of dual-source readouts, trigger-point visibility, rehydrates from
+durable `workflow.*` rows.
 
-## Shipped (Phase 1)
+## Shipped (compressed — details in FEATURE.md change log)
 
-`features/workflow-runtime/` — the Run Stream Adapter (`adoptWorkflowRun`: replay + SSE/poller
-live follow + child runs), the tree-aware `workflowRuns` slice with fan-out invocation
-aggregation, the lane manager (12-lane budget, one shared flush timer, canonical accumulator
-lanes), the trigger-point registry, lifecycle-controls hook, the zero-config
-`WorkflowRunBoard`, and the exit-test page `/demos/workflow-runtime` (`?run=` refresh
-survival). StreamProfiler gated off (CAPS). 51 jest tests; repo typecheck + eslint clean.
-
-## Shipped (Phase 2, 2026-08-16)
-
-`workflow.runtime_surface` (canonical entity table, live + ledgered) · `surface/config.ts` (the
-ONE builder/AI config document — R1/R6/R7) · `surface/layout.ts` (compaction, placement,
-`autoLayoutSurface` Tier-0 generator) · `surface/service.ts` (direct supabase-js, CAS saves) ·
-readout renderers (`readout-parts` / `ProgressRailReadout` with synthetic sub-steps /
-`ReadoutView` with R8 modes / `RunSurfaceView` with trigger visibility + pages) ·
-`SurfaceBuilder` (dense config editor) · demo Board/Surface/Builder views. 90 tests.
-Tail shipped same day: drag-to-place layout preview (dnd-kit over `applyPlacement`),
-surface name/audience/profile editable in the builder (same CAS write), R9 compact
-child-run render (child's own compact surface, summary+expand fallback), real "table"
-multi-run mode (`MatrxDataTable`), viewer-driven lane promotion (viewport →
-`ensureLane`, text-tail seeded).
-
-## Shipped (Phase 3 core + adversarial hardening, 2026-08-16)
-
-Signal→refetch pump: adapter parses `record_update`/`resource_changed` frames (run-level
-included) into bounded per-run signals + coarse/per-table revisions; consumers subscribe via
-`useRunRecordSignal` and refetch themselves. Server half (aidream `workflow_events.py`) emits
-parseable summaries instead of truncated JSON. Eleven adversarial-review findings fixed —
-fan-out tracked-tier streaming, lane release on dispose, viewport-promotion attach, dup-start
-lane guard, poller terminal stop, monotonic (sticky) triggers, meta batching, seeded lane
-creation, mobile order scales, child status mapping.
+Phases 1–5, 2026-08-16/17: Run Stream Adapter (`adoptWorkflowRun`: replay + SSE/poller + child
+runs) · tree-aware `workflowRuns` slice · 12-lane budget, one shared flush timer ·
+trigger-point registry · `workflow.runtime_surface` table + `surface/config.ts` (the ONE
+builder/AI config document) · layout engine + `autoLayoutSurface` · readout renderers +
+progress rail with synthetic sub-steps · `SurfaceBuilder` with drag-to-place · signal→refetch
+pump (`useRunRecordSignal`) · actions/HITL (step-mode verbs, readiness-gated action readouts,
+schema-driven interrupt form, generated run-start form incl. canonical file picker) · two live
+parity proofs pinned by tests: Study Pack (surface `c797a1c1-…`) and Podcast (definition
+`f6d0e4b2-…` + surface `d2b9c7a4-…`). ~140 jest tests. Eleven adversarial findings fixed.
 
 ## Remaining (this repo)
 
-1. **Phase 3 tail:** Supabase realtime backstop — `hooks/useRunListRealtime.ts` is the
-   primitive; consume it when the first runs-LIST surface lands (Phase 5 studio); verify
-   `workflow.run` is in the `supabase_realtime` publication first. `link_kind`/`link_id`
-   doors: signals carry table+record_id — render doors (EntityRef) on the first surface that
-   lists signals. First real pump consumer lands with the Study Pack surface.
-3. **Phase 4 — actions + HITL (SHIPPED 2026-08-16):** `startStepRun`/`executeNode` controls
-   verbs, `nodeActionReadiness` (parked-run gated), real action readouts (unlock-on-ready
-   button + auto-run toggle, shared in-flight guard), schema-driven interrupt form
-   (checkpoint-keyed; `schema_hint` → typed fields, text fallback), the generated run-start
-   form (`io.user_input` fields → `node_inputs`), step-mode path in the demo. "file" form
-   fields use the canonical cloud-files picker (`openFilePicker`) with a paste-a-link input
-   beside it (2026-08-17). **Small tail:** executeNode per-node `inputs` collection UI.
-4. **Phase 5 — parity proof (Study Pack SHIPPED 2026-08-16 · Podcast SHIPPED 2026-08-17):**
-   both proofs are LIVE data, zero new code. Study Pack: `workflow.runtime_surface` row
-   `c797a1c1-4396-411c-973e-cacc12555e60` on "Study Pack v1", pinned by
-   `surface/__tests__/study-pack-surface.test.ts`. Podcast: definition "Podcast Episode v1"
-   (`workflow.definition` `f6d0e4b2-7a91-4c58-b3aa-51e9c2d7f804` — io.user_input brief form →
-   the registered `podcast.episode.generate` host action → output.to_frontend; produces a
-   real public `pc_episodes` row) + surface row `d2b9c7a4-1e63-4f0b-8c5d-9a47e0f21b36`
-   (3 pages: brief / making with synthetic-step rail narrating script→voices→artwork→publish /
-   deliverable, prefer persisted), pinned by `surface/__tests__/podcast-surface.test.ts`
-   (also proves the generated run-start form: 5 authored fields incl. the quick-test toggle).
-   **Remaining:** research-lite.
-5. **Known Phase-1 limits to close:** `node_stream` deltas carry `node_id` only, so fan-out
-   siblings multiplex onto the node's root lane (server contract addition tracked in the aidream
-   handoff); `useWorkflowRunControls` casts its callApi configs (`as never`) — replace with
-   fully typed per-verb calls; demo list parsing is tolerant-shaped pending the generated
-   list response type.
+1. **Phase 5 — research-lite parity proof**: tabs/pages + DB-backed tables surface (PLAN
+   Phase 6's second half). The last unproven complexity class.
+2. **Phase 3 tail**: consume `hooks/useRunListRealtime.ts` when the first runs-LIST surface
+   lands (verify `workflow.run` is in the `supabase_realtime` publication first);
+   `link_kind`/`link_id` doors (EntityRef) on the first surface that lists signals; first real
+   pump consumer with the Study Pack surface.
+3. **Phase 4 small tail**: executeNode per-node `inputs` collection UI.
+4. **Phase-1 limits**: `useWorkflowRunControls` casts its callApi configs `as never` — replace
+   with typed per-verb calls; demo list parsing is tolerant-shaped pending the generated list
+   response type; fan-out siblings multiplex onto the node's root lane (`node_stream` deltas
+   carry `node_id` only — server contract addition, tracked in the aidream handoff).
+5. **Mobile patrol row**: `.matrx/patrol-reports/mobile-friendly-ui.md` flags the feature +
+   demo — verify/remediate.
 
-Server half (kinds adoption, autogen→web, generated event-types package):
-`aidream docs/handoffs/workflow-runtime-ui-server.md` + `workflow-node-kinds-gap.md`.
+## Dispatched as chips (2026-08-17 — do not duplicate)
+
+FE kind components + activation for the 4 media kinds (`task_fa01879d`) · generated shared TS
+event-types (replaces hand-maintained `types.ts`; cross-repo, `task_5e0478ef`) ·
+`kind_component_autogen` → web (`task_0ec39b7c`).
+
+Server half: `aidream docs/handoffs/workflow-runtime-ui-server.md` + `workflow-node-kinds-gap.md`
++ `podcast-media-shapes.md`.
