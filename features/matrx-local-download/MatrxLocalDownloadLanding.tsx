@@ -1,7 +1,4 @@
-"use client";
-
-import Image from "next/image";
-import { useSyncExternalStore, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import {
   ArrowDownToLine,
   Check,
@@ -17,11 +14,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  detectDesktopPlatform,
-  MATRX_LOCAL_RELEASE,
-  type DesktopPlatform,
-} from "./release";
+import { MATRX_LOCAL_RELEASE, type DesktopPlatform } from "./release";
 
 const PLATFORM_COPY: Record<
   Exclude<DesktopPlatform, "unknown">,
@@ -46,18 +39,6 @@ const PLATFORM_COPY: Record<
   },
 };
 
-function subscribeToPlatform() {
-  return () => undefined;
-}
-
-function readBrowserPlatform(): DesktopPlatform {
-  return detectDesktopPlatform(navigator.userAgent);
-}
-
-function readServerPlatform(): DesktopPlatform {
-  return "unknown";
-}
-
 function DownloadButton({
   href,
   children,
@@ -72,7 +53,7 @@ function DownloadButton({
       asChild
       size="lg"
       variant={variant}
-      className="h-12 w-full justify-center gap-2 rounded-xl text-sm font-semibold shadow-sm"
+      className="h-11 w-full justify-center gap-2 rounded-xl text-sm font-semibold shadow-sm"
     >
       <a href={href} rel="noopener noreferrer">
         <ArrowDownToLine className="h-4 w-4" aria-hidden="true" />
@@ -116,7 +97,7 @@ function PlatformCard({
       id={`${id}-download`}
       style={{ order: recommended ? 0 : defaultOrder }}
       className={cn(
-        "relative flex scroll-mt-20 flex-col rounded-3xl border bg-card/90 p-5 shadow-sm backdrop-blur-sm transition-all sm:p-6",
+        "relative flex scroll-mt-20 flex-col rounded-3xl border bg-card/90 p-5 shadow-sm backdrop-blur-sm transition-all",
         recommended
           ? "border-primary/60 shadow-lg shadow-primary/10 ring-2 ring-primary/10"
           : "border-border/80 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg",
@@ -129,7 +110,7 @@ function PlatformCard({
         </span>
       )}
       <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
           {icon}
         </div>
         <div>
@@ -139,18 +120,16 @@ function PlatformCard({
           <p className="mt-0.5 text-sm text-muted-foreground">{subtitle}</p>
         </div>
       </div>
-      <div className="mt-6 flex flex-1 flex-col">{children}</div>
+      <div className="mt-5 flex flex-1 flex-col">{children}</div>
     </article>
   );
 }
 
-export function MatrxLocalDownloadLanding() {
-  const detected = useSyncExternalStore(
-    subscribeToPlatform,
-    readBrowserPlatform,
-    readServerPlatform,
-  );
-
+export function MatrxLocalDownloadLanding({
+  detected,
+}: {
+  detected: DesktopPlatform;
+}) {
   const detectedCopy = detected === "unknown" ? null : PLATFORM_COPY[detected];
 
   return (
@@ -168,23 +147,11 @@ export function MatrxLocalDownloadLanding() {
         className="pointer-events-none absolute -right-28 top-48 h-80 w-80 rounded-full bg-violet-500/10 blur-3xl"
       />
 
-      <section className="relative mx-auto max-w-6xl px-4 pb-10 pt-14 text-center sm:px-6 sm:pb-14 sm:pt-20 lg:px-8">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-border/70 bg-card shadow-xl shadow-primary/10">
-          <Image
-            src="/matrx/matrx-icon.svg"
-            width={38}
-            height={38}
-            alt=""
-            priority
-          />
-        </div>
-        <p className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-primary">
-          Matrx Local
-        </p>
-        <h1 className="mx-auto mt-3 max-w-4xl text-balance text-4xl font-black tracking-[-0.04em] sm:text-6xl lg:text-7xl">
-          Bring AI Matrx to your computer.
+      <section className="relative mx-auto max-w-6xl px-4 pb-6 pt-7 text-center sm:px-6 sm:pb-7 sm:pt-8 lg:px-8">
+        <h1 className="mx-auto max-w-4xl text-balance text-4xl font-black tracking-[-0.04em] sm:text-5xl">
+          Download Matrx Local
         </h1>
-        <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+        <p className="mx-auto mt-2 max-w-4xl text-pretty text-base leading-7 text-muted-foreground">
           Choose your computer, download the app, and follow the simple setup.
           No technical knowledge needed.
         </p>
@@ -192,7 +159,7 @@ export function MatrxLocalDownloadLanding() {
         {detectedCopy && (
           <div
             className={cn(
-              "mx-auto mt-7 flex max-w-xl items-start gap-3 rounded-2xl border px-4 py-3 text-left",
+              "mx-auto mt-4 flex min-h-16 max-w-xl items-start gap-3 rounded-2xl border px-4 py-2.5 text-left",
               detected === "mobile"
                 ? "border-amber-500/30 bg-amber-500/10"
                 : "border-primary/25 bg-primary/5",
@@ -215,8 +182,8 @@ export function MatrxLocalDownloadLanding() {
         )}
       </section>
 
-      <main className="relative mx-auto max-w-6xl px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="grid gap-5 lg:grid-cols-3">
+      <main className="relative mx-auto max-w-6xl px-4 pb-12 sm:px-6 lg:px-8">
+        <div className="grid gap-4 lg:grid-cols-3">
           <PlatformCard
             id="windows"
             icon={<Monitor className="h-6 w-6" aria-hidden="true" />}
@@ -227,7 +194,7 @@ export function MatrxLocalDownloadLanding() {
             <DownloadButton href={MATRX_LOCAL_RELEASE.downloads.windows}>
               Download for Windows
             </DownloadButton>
-            <ol className="mt-6 space-y-3 border-t border-border/70 pt-5">
+            <ol className="mt-5 space-y-2 border-t border-border/70 pt-4">
               <Step number={1}>Open the downloaded setup file.</Step>
               <Step number={2}>Choose “Yes,” then follow the setup.</Step>
               <Step number={3}>Open Matrx Local and sign in.</Step>
@@ -241,7 +208,7 @@ export function MatrxLocalDownloadLanding() {
             subtitle="Two easy choices — we’ll help you pick"
             detected={detected}
           >
-            <div className="space-y-3">
+            <div className="space-y-2">
               <DownloadButton href={MATRX_LOCAL_RELEASE.downloads.macApple}>
                 <span className="flex flex-col items-start leading-tight">
                   <span>Mac with an Apple chip</span>
@@ -263,7 +230,7 @@ export function MatrxLocalDownloadLanding() {
               </DownloadButton>
             </div>
 
-            <details className="group mt-4 rounded-xl border border-border/70 bg-muted/30 px-3.5 py-3">
+            <details className="group mt-3 rounded-xl border border-border/70 bg-muted/30 px-3.5 py-2.5">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
                 <span className="flex items-center gap-2">
                   <CircleHelp
@@ -288,7 +255,7 @@ export function MatrxLocalDownloadLanding() {
               </p>
             </details>
 
-            <ol className="mt-5 space-y-3 border-t border-border/70 pt-5">
+            <ol className="mt-4 space-y-2 border-t border-border/70 pt-4">
               <Step number={1}>Open the downloaded installer.</Step>
               <Step number={2}>Drag AI Matrx into Applications.</Step>
               <Step number={3}>Open Matrx Local and sign in.</Step>
@@ -309,7 +276,7 @@ export function MatrxLocalDownloadLanding() {
               Using Fedora or another kind of Linux? This installer may not work
               on your computer yet.
             </p>
-            <ol className="mt-5 space-y-3 border-t border-border/70 pt-5">
+            <ol className="mt-4 space-y-2 border-t border-border/70 pt-4">
               <Step number={1}>Open the download from your Files app.</Step>
               <Step number={2}>Choose Software Install, then Install.</Step>
               <Step number={3}>Open Matrx Local and sign in.</Step>

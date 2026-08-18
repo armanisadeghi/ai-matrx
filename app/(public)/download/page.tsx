@@ -1,4 +1,6 @@
+import { headers } from "next/headers";
 import { MatrxLocalDownloadLanding } from "@/features/matrx-local-download/MatrxLocalDownloadLanding";
+import { detectDesktopPlatform } from "@/features/matrx-local-download/release";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/download", {
@@ -8,6 +10,10 @@ export const metadata = createRouteMetadata("/download", {
   canonicalPath: "/download",
 });
 
-export default function DownloadMatrxLocalPage() {
-  return <MatrxLocalDownloadLanding />;
+export default async function DownloadMatrxLocalPage() {
+  const userAgent = (await headers()).get("user-agent") ?? "";
+
+  return (
+    <MatrxLocalDownloadLanding detected={detectDesktopPlatform(userAgent)} />
+  );
 }
