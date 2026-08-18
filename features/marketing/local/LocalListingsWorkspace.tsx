@@ -691,7 +691,7 @@ function ListingsMatrix({
 function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
   const sitesQuery = useBrandSites(location.brand_id);
   const site = (sitesQuery.data ?? [])[0] ?? null;
-  const evidenceQuery = useSiteRootStructuredData(site?.id ?? "", site?.root_url ?? "");
+  const evidenceQuery = useSiteRootStructuredData(site?.id ?? "");
 
   const verdict = useMemo(() => {
     if (!evidenceQuery.data) return null;
@@ -715,14 +715,6 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
           This brand has no website in the platform yet, so there is nothing to check. Add one under{" "}
           <Link className="text-primary underline-offset-2 hover:underline" href="/marketing/sites">
             Websites
-          </Link>
-          .
-        </p>
-      ) : !site.root_url ? (
-        <p className="text-sm text-muted-foreground">
-          {site.name} has no root URL recorded, so its homepage cannot be checked. Set it in{" "}
-          <Link className="text-primary underline-offset-2 hover:underline" href={`/marketing/sites/${site.id}`}>
-            the site workspace
           </Link>
           .
         </p>

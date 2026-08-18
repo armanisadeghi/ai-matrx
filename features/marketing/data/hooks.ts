@@ -1227,11 +1227,11 @@ export function useUpsertLocationListing() {
 }
 
 /** Latest homepage structured-data evidence for the on-site LocalBusiness check. */
-export function useSiteRootStructuredData(siteId: string, rootUrl: string) {
+export function useSiteRootStructuredData(siteId: string) {
   return useQuery({
     queryKey: [...marketingKeys.root, "site", siteId, "root-structured-data"] as const,
-    queryFn: ({ signal }) => getSiteRootStructuredData(siteId, rootUrl, signal),
-    enabled: Boolean(siteId && rootUrl),
+    queryFn: ({ signal }) => getSiteRootStructuredData(siteId, signal),
+    enabled: Boolean(siteId),
     staleTime: 5 * 60_000,
   });
 }

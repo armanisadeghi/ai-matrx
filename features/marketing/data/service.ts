@@ -3999,17 +3999,21 @@ export async function upsertLocationListing(
  */
 export async function getSiteRootStructuredData(
   siteId: string,
-  rootUrl: string,
   signal?: AbortSignal,
 ): Promise<{ capturedAt: string | null; structuredData: Json } | null> {
   const db = await authenticatedWebDb(supabase);
   const abortSignal = signal ?? new AbortController().signal;
+  // Keyed on path='/', never URL equality — the registry may hold the www/apex
+  // twin of site.root_url and exact-match silently misses it.
   const pageResponse = await db
     .from("page")
     .select("latest_snapshot_id")
     .eq("site_id", siteId)
-    .eq("url", rootUrl)
+    .eq("path", "/")
     .is("deleted_at", null)
+    .not("latest_snapshot_id", "is", null)
+    .order("last_seen", { ascending: false, nullsFirst: false })
+    .limit(1)
     .abortSignal(abortSignal)
     .maybeSingle();
   if (pageResponse.error) throw pageResponse.error;
