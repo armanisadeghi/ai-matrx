@@ -9532,6 +9532,154 @@
    "view": "no"
   },
   {
+   "create": "planned",
+   "delete": "planned",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Approach",
+   "noun": "approach",
+   "reference": "no",
+   "schemas": {
+    "create": {
+     "additionalProperties": true,
+     "properties": {
+      "blurb": {
+       "title": "Blurb"
+      },
+      "cost_time_shape": {
+       "title": "Cost Time Shape"
+      },
+      "enabled": {
+       "default": true,
+       "title": "Enabled"
+      },
+      "family": {
+       "default": "distillation",
+       "title": "Family"
+      },
+      "intake_query": {
+       "default": {},
+       "title": "Intake Query"
+      },
+      "key": {
+       "title": "Key"
+      },
+      "label": {
+       "title": "Label"
+      },
+      "mandate_key": {
+       "title": "Mandate Key"
+      },
+      "metadata": {
+       "default": {},
+       "title": "Metadata"
+      },
+      "sort_order": {
+       "default": 0,
+       "title": "Sort Order"
+      },
+      "source_ref_stamp": {
+       "title": "Source Ref Stamp"
+      },
+      "what_it_needs": {
+       "title": "What It Needs"
+      }
+     },
+     "required": [
+      "key",
+      "label",
+      "blurb",
+      "what_it_needs",
+      "cost_time_shape",
+      "mandate_key",
+      "source_ref_stamp"
+     ],
+     "title": "CreateApproachItem",
+     "type": "object"
+    },
+    "delete": {
+     "additionalProperties": true,
+     "properties": {
+      "id": {
+       "title": "Id",
+       "type": "string"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "DeleteApproachItem",
+     "type": "object"
+    },
+    "update": {
+     "additionalProperties": true,
+     "properties": {
+      "blurb": {
+       "default": null,
+       "title": "Blurb"
+      },
+      "cost_time_shape": {
+       "default": null,
+       "title": "Cost Time Shape"
+      },
+      "enabled": {
+       "default": null,
+       "title": "Enabled"
+      },
+      "family": {
+       "default": null,
+       "title": "Family"
+      },
+      "id": {
+       "title": "Id",
+       "type": "string"
+      },
+      "intake_query": {
+       "default": null,
+       "title": "Intake Query"
+      },
+      "key": {
+       "default": null,
+       "title": "Key"
+      },
+      "label": {
+       "default": null,
+       "title": "Label"
+      },
+      "mandate_key": {
+       "default": null,
+       "title": "Mandate Key"
+      },
+      "metadata": {
+       "default": null,
+       "title": "Metadata"
+      },
+      "sort_order": {
+       "default": null,
+       "title": "Sort Order"
+      },
+      "source_ref_stamp": {
+       "default": null,
+       "title": "Source Ref Stamp"
+      },
+      "what_it_needs": {
+       "default": null,
+       "title": "What It Needs"
+      }
+     },
+     "required": [
+      "id"
+     ],
+     "title": "UpdateApproachItem",
+     "type": "object"
+    }
+   },
+   "table": "platform.approach",
+   "title_column": null,
+   "update": "planned",
+   "view": "no"
+  },
+  {
    "create": "no",
    "delete": "no",
    "family": "Other",
@@ -20806,6 +20954,20 @@
    "title_column": "name",
    "update": "planned",
    "view": "yes"
+  },
+  {
+   "create": "no",
+   "delete": "no",
+   "family": "Other",
+   "identity_fields": [],
+   "label": "Masterwork Corpus Piece",
+   "noun": "masterwork_corpus_item",
+   "reference": "no",
+   "schemas": null,
+   "table": "platform.masterwork_corpus_item",
+   "title_column": null,
+   "update": "no",
+   "view": "no"
   },
   {
    "create": "planned",
