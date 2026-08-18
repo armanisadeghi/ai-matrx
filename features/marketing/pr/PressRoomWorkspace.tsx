@@ -324,15 +324,31 @@ export default function PressRoomWorkspace() {
 
         {/* ── Status bar: the honest line about anything held in memory ── */}
         {rulings.count > 0 ? (
-          <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-[11px] text-amber-700 dark:text-amber-300">
+          (() => {
+            const failed = Object.keys(rulings.failures ?? {}).length;
+            const tone = failed
+              ? "border-destructive/40 bg-destructive/10 text-destructive"
+              : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
+            return (
+          <div className={`flex min-w-0 flex-wrap items-center gap-2 rounded-lg border px-3 py-1.5 text-[11px] ${tone}`}>
             <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
             <span className="min-w-0">
-              {rulings.count} ruling{rulings.count === 1 ? "" : "s"} held in this
-              session — accepting, pitching, dismissing and &ldquo;I have
-              this&rdquo; all recompute the page, but there is no write path to{" "}
-              <span className="font-mono text-[10px]">seo.story_angle</span> or{" "}
-              <span className="font-mono text-[10px]">seo.source_request</span>{" "}
-              from this surface yet, so a reload loses them.
+              {failed ? (
+                <>
+                  {failed} ruling{failed === 1 ? "" : "s"} could not be saved.
+                  The page still shows your decision, but the row was not
+                  written — retry, or check you still have edit access to this
+                  site.
+                </>
+              ) : (
+                <>
+                  {rulings.count} ruling{rulings.count === 1 ? "" : "s"} applied
+                  and saved. Accepting, pitching and dismissing write straight to{" "}
+                  <span className="font-mono text-[10px]">seo.story_angle</span>;
+                  &ldquo;I have this&rdquo; recomputes the page for this session
+                  and is not stored yet.
+                </>
+              )}
             </span>
             <Button
               size="sm"
@@ -343,6 +359,8 @@ export default function PressRoomWorkspace() {
               Discard them
             </Button>
           </div>
+        );
+          })()
         ) : null}
 
         {/* ── Forced load state, on the real route ─────────────────────── */}

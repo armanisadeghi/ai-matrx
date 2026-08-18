@@ -440,10 +440,10 @@ function AngleRow({
                 />
               </div>
               <p className="mt-1.5 text-[10px] leading-4 text-muted-foreground">
-                A ruling applies across this whole page immediately. It is held
-                in this session only — there is no write path to{" "}
-                <span className="font-mono">seo.story_angle</span> from here yet,
-                and the status bar at the top says so while any are outstanding.
+                A ruling applies across this whole page immediately and is
+                written to <span className="font-mono">seo.story_angle</span>.
+                If a save fails, the status bar at the top says so rather than
+                quietly reverting your decision.
               </p>
             </div>
 

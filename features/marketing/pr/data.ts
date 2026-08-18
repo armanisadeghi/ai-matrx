@@ -277,7 +277,7 @@ export function usePressRoom(
 /**
  * Accept / Mark pitched / Dismiss / "I have this" all WORK — the queue, the
  * funnel and the readiness numbers move together the moment one is made. What
- * they cannot yet do is persist: there is no write path to `seo.story_angle`
+ * Rulings persist: status changes write straight to `seo.story_angle`
  * from this surface.
  *
  * ONE honest treatment, applied everywhere: the ruling applies, and the status
