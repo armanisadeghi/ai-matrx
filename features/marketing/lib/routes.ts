@@ -58,6 +58,9 @@ export const marketingRoutes = {
   keywordResearch: () => "/marketing/keyword-research",
   /** Score and price a candidate backlink. Every weight and dollar point tunable. */
   backlinkValuation: () => "/marketing/backlink-valuation",
+
+  /** Press & PR — the earned-media workspace (Story Engine + source requests). */
+  press: () => "/marketing/pr",
   /** Public-video discovery and expertise comparison through YouTube Data API v3. */
   youtubeDiscovery: () => "/marketing/discovery/youtube",
   youtubeVideo: (videoId: string) =>

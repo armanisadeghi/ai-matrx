@@ -542,6 +542,35 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
     ],
   },
   {
+    key: "press",
+    label: "Press & PR",
+    description:
+      "Find what is newsworthy about you, pitch the right journalist, and prove the coverage landed.",
+    iconName: "Newspaper",
+    landingItems: [
+      "Story angles worth pitching",
+      "Live journalist source requests",
+      "Media lists and journalist intelligence",
+      "Coverage won, tied to the angle",
+    ],
+    entries: [
+      {
+        label: "Press Room",
+        href: marketingRoutes.press(),
+        description:
+          "The Story Engine: what is genuinely newsworthy about this business, ranked, with the proof a newsroom would ask for — plus live journalist requests on deadline.",
+        iconName: "Newspaper",
+      },
+      {
+        label: "Media Lists",
+        href: "/crm/outreach-lists",
+        description:
+          "Journalist and outlet lists with beat, activity and role-change intelligence. Lives in the CRM because a journalist is a person, not a copy of one.",
+        iconName: "Users",
+      },
+    ],
+  },
+  {
     key: "intelligence",
     label: "Market Intelligence",
     description:
