@@ -12,6 +12,7 @@
  */
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
@@ -25,7 +26,6 @@ import { WorkflowRunBoard } from "@/features/workflow-runtime/components/Workflo
 import { RunStartForm } from "@/features/workflow-runtime/components/RunStartForm";
 import { deriveRunForm } from "@/features/workflow-runtime/surface/run-form";
 import { RunSurfaceView } from "@/features/workflow-runtime/components/RunSurfaceView";
-import { SurfaceBuilder } from "@/features/workflow-runtime/components/SurfaceBuilder";
 import { useWorkflowRunControls } from "@/features/workflow-runtime/hooks/useWorkflowRunControls";
 import {
   fetchRunDefinitionId,
@@ -364,19 +364,7 @@ function WorkflowRuntimeDemo() {
       ) : null}
 
       {selected && surfaceLoaded && effectiveView === "builder" ? (
-        definition ? (
-          <SurfaceBuilder
-            definitionId={selected}
-            definition={definition}
-            surface={surface}
-            onSaved={setSurface}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            The workflow definition could not be loaded, so the builder has
-            nothing to edit.
-          </p>
-        )
+        <BuilderLink definitionId={selected} hasSurface={surface !== null} />
       ) : null}
 
       {selected && surfaceLoaded && effectiveView === "surface" ? (
@@ -392,20 +380,8 @@ function WorkflowRuntimeDemo() {
               Start a run to watch it on this surface.
             </p>
           )
-        ) : definition ? (
-          // No surface yet: the builder's null-surface state IS the hint +
-          // one-click create card — render it bare, no second wrapper.
-          <SurfaceBuilder
-            definitionId={selected}
-            definition={definition}
-            surface={null}
-            onSaved={setSurface}
-          />
         ) : (
-          <p className="text-sm text-muted-foreground">
-            This workflow has no run surface yet, and its definition could not
-            be loaded to generate one.
-          </p>
+          <BuilderLink definitionId={selected} hasSurface={false} />
         )
       ) : null}
 
@@ -419,6 +395,32 @@ function WorkflowRuntimeDemo() {
           </p>
         )
       ) : null}
+    </div>
+  );
+}
+
+/** The builder is a full route now (`/workflows/[id]/design`) — the demo
+ *  points at it rather than mounting a second, lesser copy. */
+function BuilderLink({
+  definitionId,
+  hasSurface,
+}: {
+  definitionId: string;
+  hasSurface: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-start gap-2 rounded-xl border border-border bg-card p-3">
+      <p className="text-sm text-muted-foreground">
+        {hasSurface
+          ? "This workflow has a run page. Open the designer to change what people watch while it runs."
+          : "Nobody has designed this workflow's run page yet. The designer opens with one already laid out for you."}
+      </p>
+      <Link
+        href={`/workflows/${definitionId}/design`}
+        className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
+      >
+        Open the run page designer
+      </Link>
     </div>
   );
 }

@@ -41,6 +41,13 @@ export interface RunFailureExplanation {
    * add a pattern below.
    */
   unrecognized: boolean;
+  /**
+   * The ONE-CLICK way forward, when the cause has a real destination in the
+   * product. A refusal the reader can only re-read is a dead end; a refusal
+   * with the door attached is a task. Null when the next step is genuinely
+   * "press Run again" (the button the surface already shows).
+   */
+  action: { label: string; href: string } | null;
 }
 
 interface Pattern {
@@ -48,6 +55,8 @@ interface Pattern {
   /** `what` is the caller's name for the thing that ran ("your Understudy"). */
   headline: (what: string) => string;
   nextStep: string;
+  /** Where the reader goes to clear this cause themselves. */
+  action?: { label: string; href: string };
 }
 
 /**
@@ -56,6 +65,18 @@ interface Pattern {
  * can actually produce — this is not a guessing table.
  */
 const PATTERNS: Pattern[] = [
+  {
+    // Seen live 2026-08-18 on every education workflow started by an account
+    // with no age declaration / no verified guardian. This is a PRODUCT GATE
+    // doing its job, not a bug — so it must never read as a crash, and it
+    // must carry the door that clears it.
+    match: /coppa|consent[_ ]required|guardian|age[_ ]undeclared|age band/i,
+    headline: (what) =>
+      `${what} needs an age check on this account before AI can run.`,
+    nextStep:
+      "Open the Family page to declare an age or get a parent's approval — it takes under a minute, and everything unlocks automatically. Then press Run it again. Nothing was used up.",
+    action: { label: "Open the Family page", href: "/education/family" },
+  },
   {
     // Seen live 2026-08-18: every UI-started run was born with no organization
     // and refused at the first agent step.
@@ -149,6 +170,7 @@ export function explainRunFailure(
         "Press Run it again. If it stops a second time, tell us — a failure with no reason recorded is a bug we want to see.",
       technical: null,
       unrecognized: true,
+      action: null,
     };
   }
 
@@ -165,6 +187,7 @@ export function explainRunFailure(
         nextStep: pattern.nextStep,
         technical: cause,
         unrecognized: false,
+        action: pattern.action ?? null,
       };
     }
   }
@@ -175,5 +198,6 @@ export function explainRunFailure(
       "Press Run it again — most of these clear on a second try. If it stops again, send us the technical detail below and we'll fix the cause.",
     technical: cause,
     unrecognized: true,
+    action: null,
   };
 }
