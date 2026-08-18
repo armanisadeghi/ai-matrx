@@ -32,6 +32,7 @@ import {
 } from "react";
 import { useSyncExternalStore } from "react";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
+import type { InstanceContextEntry } from "@/features/agents/types/instance.types";
 
 /**
  * One write handler per declared `SurfaceWriteTarget.name`. A handler applies
@@ -47,6 +48,13 @@ export type SurfaceWriteHandlers = Record<
 export interface SurfaceBeforeExecuteInput {
   conversationId: string;
   composerText: string;
+}
+
+export interface SurfaceBeforeExecuteResult {
+  /** Current-turn context overlaid after the generic surface remap. */
+  contextEntries?: Array<
+    Omit<InstanceContextEntry, "slotMatched"> & { slotMatched?: boolean }
+  >;
 }
 
 export interface SurfaceRuntimeValue {
@@ -66,7 +74,12 @@ export interface SurfaceRuntimeValue {
    * scope refresh and before the input is snapshotted, so failures preserve the
    * draft and make no request. Use for current-turn evidence, never UI effects.
    */
-  beforeExecute?: (input: SurfaceBeforeExecuteInput) => void | Promise<void>;
+  beforeExecute?: (
+    input: SurfaceBeforeExecuteInput,
+  ) =>
+    | SurfaceBeforeExecuteResult
+    | void
+    | Promise<SurfaceBeforeExecuteResult | void>;
   /** Pass-through for editable surfaces (default contracts). */
   isEditable?: boolean;
   /**

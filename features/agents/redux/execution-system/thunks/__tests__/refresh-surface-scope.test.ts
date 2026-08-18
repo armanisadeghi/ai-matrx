@@ -161,6 +161,16 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
     const beforeExecute = jest.fn(async ({ composerText }) => {
       await Promise.resolve();
       preparedValue = `retrieved for: ${composerText}`;
+      return {
+        contextEntries: [
+          {
+            key: "study_material",
+            value: "retrieved page 14 evidence",
+            type: "text" as const,
+            label: "Study material",
+          },
+        ],
+      };
     });
     const unregister = registerSurfaceRuntime(
       {
@@ -188,6 +198,10 @@ describe("refreshSurfaceScope — live provider values at submit", () => {
         state.instanceVariableValues.byConversationId[CONVERSATION_ID]
           ?.scopeValues.renamed_agent_input,
       ).toBe("retrieved for: What is on page 14?");
+      expect(
+        state.instanceContext.byConversationId[CONVERSATION_ID]?.study_material
+          ?.value,
+      ).toBe("retrieved page 14 evidence");
     } finally {
       unregister();
     }

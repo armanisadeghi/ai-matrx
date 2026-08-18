@@ -58,7 +58,10 @@ import { canEditAccess } from "@/utils/permissions/access-core";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { Eye } from "lucide-react";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import type {
+  SurfaceBeforeExecuteResult,
+  SurfaceWriteHandlers,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createEducationTutorScope } from "@/features/surfaces/manifests/education-tutor.manifest";
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import { useMandate } from "@/features/agents/mandates/useMandate";
@@ -679,7 +682,9 @@ function EducationTutorClientInner({
     };
   };
 
-  const prepareTutorTurn = async (composerText: string) => {
+  const prepareTutorTurn = async (
+    composerText: string,
+  ): Promise<SurfaceBeforeExecuteResult | void> => {
     const query = composerText.trim();
     if (!query) return;
     if (isSharedView)
@@ -703,37 +708,34 @@ function EducationTutorClientInner({
     }
     groundingRef.current = grounding;
     setTutorTrust(grounding.trust);
-    dispatch(
-      setContextEntries({
-        conversationId,
-        entries: [
-          {
-            key: "learner_memory",
-            value: grounding.learner_memory,
-            type: "text",
-            label: "Learner memory",
-          },
-          {
-            key: "study_material",
-            value: grounding.study_material,
-            type: "text",
-            label: "Study material",
-          },
-          {
-            key: "teaching_mode",
-            value: grounding.teaching_mode,
-            type: "text",
-            label: "Teaching mode",
-          },
-          {
-            key: "personality_style",
-            value: grounding.personality_style,
-            type: "text",
-            label: "Personality style",
-          },
-        ],
-      }),
-    );
+    return {
+      contextEntries: [
+        {
+          key: "learner_memory",
+          value: grounding.learner_memory,
+          type: "text",
+          label: "Learner memory",
+        },
+        {
+          key: "study_material",
+          value: grounding.study_material,
+          type: "text",
+          label: "Study material",
+        },
+        {
+          key: "teaching_mode",
+          value: grounding.teaching_mode,
+          type: "text",
+          label: "Teaching mode",
+        },
+        {
+          key: "personality_style",
+          value: grounding.personality_style,
+          type: "text",
+          label: "Personality style",
+        },
+      ],
+    };
   };
 
   return (

@@ -20,7 +20,10 @@ import { getSurfaceRuntimeForName } from "@/features/surfaces/runtime/SurfaceRun
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
 import { replaceSurfaceVariableValues } from "../instance-variable-values/instance-variable-values.slice";
-import { replaceSurfaceContextEntries } from "../instance-context/instance-context.slice";
+import {
+  replaceSurfaceContextEntries,
+  setContextEntries,
+} from "../instance-context/instance-context.slice";
 import {
   applyLaunchWritePolicies,
   prepareLaunchMappings,
@@ -62,8 +65,12 @@ export const refreshSurfaceScope = createAsyncThunk<
       return { refreshed: false, surfaceName, reason: "no_provider" };
     }
 
+    let preparation;
     try {
-      await runtime.beforeExecute?.({ conversationId, composerText });
+      preparation = await runtime.beforeExecute?.({
+        conversationId,
+        composerText,
+      });
     } catch (error) {
       const detail =
         error instanceof Error
@@ -178,12 +185,22 @@ export const refreshSurfaceScope = createAsyncThunk<
         entries: result.contextEntries,
       }),
     );
+    if (preparation?.contextEntries?.length) {
+      dispatch(
+        setContextEntries({
+          conversationId,
+          entries: preparation.contextEntries,
+        }),
+      );
+    }
 
     return {
       refreshed: true,
       surfaceName,
       variableCount: Object.keys(result.variableValues).length,
-      contextCount: result.contextEntries.length,
+      contextCount:
+        result.contextEntries.length +
+        (preparation?.contextEntries?.length ?? 0),
     };
   },
 );
