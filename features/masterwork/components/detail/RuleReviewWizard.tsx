@@ -9,15 +9,7 @@
 // (drafts); rejected rules are with the interviewer and never appear here.
 
 import { useEffect, useRef, useState } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  MessageSquareText,
-  PartyPopper,
-  Pencil,
-  XCircle,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, PartyPopper } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import type { Rulebook, RulebookRule } from "../../types";
 import { ruleState, SEVERITY_LABELS } from "../../types";
 
@@ -311,41 +304,16 @@ export function RuleReviewWizard({
             </div>
             {!rejecting ? (
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border bg-muted/20 px-6 py-4">
-                {/* The three core verbs: Approve / Improve / Reject (Arman,
-                2026-08-17), plus Edit for hand-fixes. Icons rely on the
-                Button's own gap — never add mr-* to a button icon (icon +
-                gap + margin was the "giant gap" defect). */}
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={() => void approve()} disabled={busy}>
-                    <CheckCircle2 className="h-4 w-4" />
-                    Approve
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => rule && onImprove(rule)}
-                    disabled={busy}
-                    title="Say what should change — the AI rewrites it and it comes back to this queue."
-                  >
-                    <MessageSquareText className="h-4 w-4" />
-                    Improve
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setRejecting(true)}
-                    disabled={busy}
-                  >
-                    <XCircle className="h-4 w-4" />
-                    Reject
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => rule && onEdit(rule)}
-                    disabled={busy}
-                  >
-                    <Pencil className="h-4 w-4" />
-                    Edit
-                  </Button>
-                </div>
+                {/* The four verbs come from the ONE shared primitive
+                (features/masterwork/review/RuleDecisionActions) — no surface
+                declares its own review buttons. */}
+                <RuleDecisionActions
+                  disabled={busy}
+                  onApprove={() => void approve()}
+                  onImprove={() => rule && onImprove(rule)}
+                  onReject={() => setRejecting(true)}
+                  onEdit={() => rule && onEdit(rule)}
+                />
                 <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
