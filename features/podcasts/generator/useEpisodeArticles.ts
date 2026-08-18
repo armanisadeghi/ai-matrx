@@ -28,7 +28,6 @@ import {
   type LiveRunWindowHandle,
 } from "@/features/overlays/openers/liveRunWindow";
 import { articleService } from "@/features/podcasts/articleService";
-import { assembleArticleFromValue } from "@/features/podcasts/generator/articleMarkdown";
 import { slugify } from "@/features/podcasts/utils";
 import type {
   PcArticle,
@@ -62,6 +61,21 @@ export function episodeMetadata(
     keywords: [],
     related_episodes: [],
   };
+}
+
+/**
+ * The article's title, read off the markdown's own leading `# ` H1.
+ * Returns null when the agent produced no H1, so the caller falls back rather
+ * than inventing one.
+ */
+function headingTitle(markdown: string): string | null {
+  for (const line of markdown.split("\n", 20)) {
+    const t = line.trim();
+    if (!t) continue;
+    const h1 = /^#\s+(.+)$/.exec(t);
+    return h1 ? h1[1].trim() || null : null;
+  }
+  return null;
 }
 
 export interface UseEpisodeArticles {
@@ -159,18 +173,31 @@ export function useEpisodeArticles(
                   ? String(episode.duration_seconds)
                   : "",
               };
-        // These agents answer with a structured JSON envelope, so the run goes
-        // through the structured-JSON primitive and hands back the parsed
-        // object; the renderable markdown is assembled from it. The mandate is
+        // THE PRODUCT IS MARKDOWN (2026-08-18). These agents used to answer
+        // with a JSON envelope that the client immediately flattened into
+        // markdown — and markdown is what `pc_articles` stores, so nothing
+        // ever read the structure. That middleman cost the whole live view:
+        // the window can render markdown as it streams, but an un-kinded JSON
+        // blob has nothing to show until it is parsed at the end, so the user
+        // watched an EMPTY window for minutes and then got raw JSON.
+        // The agents now write markdown, `expect: "text"` hands it back, and
+        // the article appears word by word in the window. The mandate is
         // resolved INSIDE the canonical launcher (config_overrides preserved) —
         // never an agent id resolved out here.
-        const value = await (kind === "blog" ? blogRun : notesRun).run<unknown>(
+        const markdown = await (kind === "blog" ? blogRun : notesRun).run<string>(
           {
             mandateKey:
               kind === "blog" ? BLOG_WRITER_MANDATE_KEY : SHOW_NOTES_MANDATE_KEY,
             surfaceKey: `podcast-episode-article:${kind}`,
             sourceFeature: "podcasts",
+            expect: "text",
             variables,
+            failureMessages: {
+              noText:
+                kind === "blog"
+                  ? "The blog writer returned nothing usable."
+                  : "The show-notes writer returned nothing usable.",
+            },
             // The live handle lands mid-stream; feeding it to the already-open
             // window is what turns "pending" into streamed output.
             onConversationCreated: (conversationId) => {
@@ -179,11 +206,11 @@ export function useEpisodeArticles(
           },
         );
         const fallbackTitle = `${episode.title} — ${kind === "blog" ? "Blog" : "Show notes"}`;
-        const { title, markdown, slugSuggestion } = assembleArticleFromValue(
-          kind,
-          value,
-          fallbackTitle,
-        );
+        // The blog agent's first line is its `# ` H1 and owns the title; show
+        // notes never carry one (the episode owns that), so they keep the
+        // fallback. One rule, read off the markdown itself — no second field
+        // to drift out of sync with the body the reader actually sees.
+        const title = (kind === "blog" ? headingTitle(markdown) : null) ?? fallbackTitle;
         if (!markdown.trim()) {
           throw new Error(
             kind === "blog"
@@ -200,7 +227,7 @@ export function useEpisodeArticles(
           // unique constraint); show notes render inline (no slug).
           slug:
             kind === "blog"
-              ? `${slugify(slugSuggestion || title) || "episode"}-${episode.id.slice(0, 8)}`
+              ? `${slugify(title) || "episode"}-${episode.id.slice(0, 8)}`
               : null,
           title,
           content_markdown: markdown,

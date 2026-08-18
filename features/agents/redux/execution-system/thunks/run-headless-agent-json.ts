@@ -100,6 +100,21 @@ export interface HeadlessAgentJsonOptions {
   contextAnchor?: ContextAnchor | null;
   /** Wipe history between sends (builder/test semantics). Default false. */
   autoClearConversation?: boolean;
+  /**
+   * What this run's PRODUCT is.
+   *
+   * `"json"` (default) — the structured value; the run fails if nothing
+   * parseable landed. `"text"` — the agent's answer TEXT is the product, and
+   * the run resolves with it (`data` is the markdown string). Use "text" for
+   * an agent that writes prose or markdown: it streams into the canonical
+   * pipeline for free, so the live window renders it as it is written, and
+   * there is no JSON middleman to flatten afterwards.
+   *
+   * A markdown agent asked for "json" fails with "produced no structured
+   * JSON" even though it answered perfectly — which is the whole reason this
+   * option exists rather than a second primitive.
+   */
+  expect?: "json" | "text";
   /** Let the extractor fuzzy-parse at finalize. Default true. */
   fuzzyOnFinalize?: boolean;
   /** Overall ceiling for the run + extraction. Default 120s. */
@@ -167,6 +182,8 @@ export interface HeadlessAgentJsonOptions {
     streamError?: string;
     /** Run finished but produced no parseable JSON. */
     noJson?: string;
+    /** `expect: "text"` run finished but produced no answer text. */
+    noText?: string;
     /** Ceiling elapsed. */
     timeout?: string;
   };
@@ -221,6 +238,7 @@ const DEFAULT_SETTLE_MS = 6_000;
 const DEFAULT_MESSAGES = {
   streamError: "The agent failed before returning a result.",
   noJson: "The agent finished but produced no structured JSON.",
+  noText: "The agent finished but produced no text.",
   timeout:
     "The AI response timed out. If you switched browser tabs during this " +
     "process, the connection may have been suspended — keep this tab active " +
@@ -304,6 +322,8 @@ export interface AdoptedAgentJsonOptions {
   pollIntervalMs?: number;
   /** Bounded settle window after a terminal stream state. Default 6s. */
   settleMs?: number;
+  /** See `expect` on `HeadlessAgentJsonOptions`. Default "json". */
+  expect?: "json" | "text";
   /**
    * Keep the conversation/instance alive after the run. Default false — the
    * instance is destroyed on settle, matching the launched path. A caller
@@ -348,6 +368,7 @@ export async function adoptHeadlessAgentJson(
       surfaceKey: opts.surfaceKey,
       agentRef,
       msgs,
+      expect: opts.expect ?? "json",
       ...(opts.signal ? { signal: opts.signal } : {}),
     });
   } catch (err: unknown) {
@@ -500,6 +521,7 @@ async function launchAndWait(
       surfaceKey: opts.surfaceKey,
       agentRef: opts.agentId ?? opts.mandateKey ?? "unknown",
       msgs,
+      expect: opts.expect ?? "json",
       ...(opts.signal ? { signal: opts.signal } : {}),
     });
   } catch (err: unknown) {
@@ -631,12 +653,20 @@ async function waitForExtraction(
     settleMs: number;
     surfaceKey: string;
     agentRef: string;
-    msgs: { streamError: string; noJson: string; timeout: string };
+    msgs: {
+      streamError: string;
+      noJson: string;
+      noText: string;
+      timeout: string;
+    };
+    /** See `expect` on the options — "text" resolves with the answer text. */
+    expect: "json" | "text";
     /** Stop waiting and settle from whatever landed (see `signal` on the options). */
     signal?: AbortSignal;
   },
 ): Promise<HeadlessAgentJsonResult> {
   const { conversationId, requestId, msgs } = args;
+  const noResultMsg = args.expect === "text" ? msgs.noText : msgs.noJson;
   const start = Date.now();
   let terminalAt: number | null = null;
 
@@ -658,6 +688,27 @@ async function waitForExtraction(
     reason: "extraction-complete" | "stream-ended" | "timeout" | "aborted",
     message: string,
   ): HeadlessAgentJsonResult => {
+    // A text run's product IS the answer text — there is nothing to extract,
+    // so asking `resolveRunData` for an object would fail a run that answered
+    // perfectly. Same settle/report/abort machinery, different product.
+    if (args.expect === "text") {
+      const b = base();
+      if (b.fullResponse.trim()) {
+        return { success: true, data: b.fullResponse, ...b };
+      }
+      if (reason === "aborted") {
+        return { success: false, data: null, error: message, ...b };
+      }
+      reportNoResult(getState, {
+        requestId,
+        conversationId,
+        surfaceKey: args.surfaceKey,
+        agentRef: args.agentRef,
+        reason,
+        message,
+      });
+      return { success: false, data: null, error: message, ...b };
+    }
     const { data } = resolveRunData(getState, requestId, conversationId);
     if (data != null) return { success: true, data, ...base() };
     // An abort that harvested nothing is a caller decision, not a defect —
@@ -682,7 +733,7 @@ async function waitForExtraction(
       // already produced (which `settle` still persists through `onResult`).
       // A partial object already in Redux is a paid answer, not a cancellation.
       if (args.signal?.aborted) {
-        return settle("aborted", msgs.noJson);
+        return settle("aborted", noResultMsg);
       }
 
       const state = getState();
@@ -713,7 +764,7 @@ async function waitForExtraction(
       }
 
       if (selectJsonExtractionComplete(requestId)(state)) {
-        return settle("extraction-complete", msgs.noJson);
+        return settle("extraction-complete", noResultMsg);
       }
 
       // Stream over, extraction never finalized: give Redux a bounded settle
@@ -722,7 +773,7 @@ async function waitForExtraction(
       if (status !== undefined && TERMINAL_STATUSES.has(status)) {
         terminalAt ??= Date.now();
         if (Date.now() - terminalAt > args.settleMs) {
-          return settle("stream-ended", msgs.noJson);
+          return settle("stream-ended", noResultMsg);
         }
       }
 
