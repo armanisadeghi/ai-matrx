@@ -17,7 +17,7 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
-### D213 — Google Slides export requests an UNAPPROVED scope through a hand-rolled OAuth path (2026-08-18)
+### D214 — Google Slides export requests an UNAPPROVED scope through a hand-rolled OAuth path (2026-08-18)
 
 `components/mardown-display/blocks/presentations/presentation-export.ts:345` declares
 `GOOGLE_SLIDES_SCOPE = 'https://www.googleapis.com/auth/presentations'` locally and calls the Slides
