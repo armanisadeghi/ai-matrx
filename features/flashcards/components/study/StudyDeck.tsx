@@ -35,12 +35,14 @@ import {
   Loader2,
   GraduationCap,
   Expand,
+  Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { cn } from "@/lib/utils";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
+import { getCardImages } from "./cardImages";
 import { VoiceTestButton } from "@/features/flashcards/fast-fire/voice-test/VoiceTestButton";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import {
@@ -54,6 +56,7 @@ import { studyService } from "@/features/education/study/service/studyService";
 import type {
   ItemMasteryRow,
   SessionAiJournal,
+  StudyStreakRow,
 } from "@/features/education/study/types";
 import type { CardWithDetails } from "../../data/types";
 import type { ReviewResult } from "../../types";
@@ -285,6 +288,20 @@ export function StudyDeck(props: StudyDeckProps) {
   // when the LAST card is mastered (working-queue removal), so `cards.length`
   // alone can't distinguish "just finished" from "never had any cards".
   const [completed, setCompleted] = useState(false);
+
+  // VISION §13 — the streak the session just earned, read once on completion
+  // (the DB trigger writes it on session insert, so it already counts today).
+  const [streak, setStreak] = useState<StudyStreakRow | null>(null);
+  useEffect(() => {
+    if (!completed) return undefined;
+    let cancelled = false;
+    void studyService.getStreak().then((res) => {
+      if (!cancelled && !res.error) setStreak(res.data ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [completed]);
   // `completed` is a one-way latch (see `restart` below), not a pure
   // derivation of progress — it must survive a "Study again" reset where
   // progress itself doesn't change, so a synchronizing effect is correct
@@ -300,6 +317,14 @@ export function StudyDeck(props: StudyDeckProps) {
   const current = cards[currentIndex];
   // Declared here (before keyboard effect) — matching cards skip grade hotkeys.
   const currentKind = asCardKind(current?.card_kind);
+
+  // VISION §11 — is the learner struggling on THIS card right now? Either the
+  // spine already flagged it (FSRS lapses across sessions) or they just got it
+  // wrong in this session. Drives the proactive memory-aid offer.
+  const strugglingOnCurrent = current
+    ? (masteryByCard?.[current.id]?.struggle_flag ?? false) ||
+      resultsByCard[current.id] === "incorrect"
+    : false;
   const [askOpen, setAskOpen] = useState(false);
   const [question, setQuestion] = useState("");
   // "Improve this card" — the set-level enhance dialog scoped to the card in
@@ -672,6 +697,25 @@ export function StudyDeck(props: StudyDeckProps) {
             <Stat label="Accuracy" value={`${accuracy}%`} />
           </div>
 
+          {/* VISION §13 — the session that EARNS the streak says so. The row is
+              written by the education.bump_study_streak() trigger on session
+              insert, so by completion it already counts this session. Healthy
+              by design: it celebrates, it never guilts. */}
+          {streak && streak.current_streak > 0 && (
+            <div className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs">
+              <Flame className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="font-medium text-foreground">
+                {streak.current_streak} day
+                {streak.current_streak === 1 ? "" : "s"} in a row
+              </span>
+              {streak.longest_streak > streak.current_streak && (
+                <span className="text-muted-foreground">
+                  · best {streak.longest_streak}
+                </span>
+              )}
+            </div>
+          )}
+
           {(reviewLoading || review) && (
             <div className="w-full rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-left text-sm">
               <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -858,6 +902,7 @@ export function StudyDeck(props: StudyDeckProps) {
             back={current.back ?? ""}
             topic={current.topic}
             existingDetails={current.details}
+            struggling={strugglingOnCurrent}
           />
         )}
 
@@ -1015,6 +1060,8 @@ export function StudyDeck(props: StudyDeckProps) {
               onFlipToggle={flip}
               lastResult={resultsByCard[current.id] ?? null}
               voiceTest={voiceTestForCard?.(current)}
+              frontImage={getCardImages(current).front}
+              backImage={getCardImages(current).back}
             />
 
             {/* P0 Trust — once the answer is revealed, show where it came from:
@@ -1176,8 +1223,9 @@ export function StudyDeck(props: StudyDeckProps) {
             </div>
           )}
 
-          {/* VISION §11 — opt-in proactive memory aid for this card. Nothing
-              fires until tapped; skipped for matching cards (no single answer). */}
+          {/* VISION §11 — the memory aid surfaces itself: a stored aid renders
+              on sight, and a struggling card gets a reasoned offer instead of a
+              quiet button. Skipped for matching cards (no single answer). */}
           {enableMemoryAids && current && currentKind !== CARD_KIND.matching && (
             <MemoryAidButton
               key={`memory-${current.id}`}
@@ -1186,6 +1234,7 @@ export function StudyDeck(props: StudyDeckProps) {
               back={current.back ?? ""}
               topic={current.topic}
               existingDetails={current.details}
+              struggling={strugglingOnCurrent}
             />
           )}
 

@@ -42,6 +42,7 @@ export function MemoryAidButton({
   back,
   topic,
   existingDetails,
+  struggling = false,
   className,
 }: {
   /** The card the aid belongs to — the row it is persisted on (D151). */
@@ -55,6 +56,15 @@ export function MemoryAidButton({
    * it — instead of paying for the same mnemonic again.
    */
   existingDetails?: { kind: string; text: string; metadata: unknown }[];
+  /**
+   * VISION §11 — "memory aids surface automatically; students don't have to
+   * ask." A stored aid always renders on its own (below). This flag covers the
+   * other half: when the learner is visibly struggling on this card and no aid
+   * exists yet, the affordance stops being a quiet ghost button and becomes a
+   * prominent offer that says WHY it appeared. Generation still needs the tap —
+   * it is a paid call, so it is offered, never silently spent.
+   */
+  struggling?: boolean;
   className?: string;
 }) {
   const dispatch = useAppDispatch();
@@ -131,8 +141,29 @@ export function MemoryAidButton({
     });
   }
 
+  // VISION §11 — the proactive offer: struggling on this card, nothing stored
+  // yet, nothing asked. It states the reason so it never feels like a nag.
+  const offerProactively = struggling && !shown && !asked && !loading;
+
   return (
     <div className={className}>
+      {offerProactively && (
+        <button
+          type="button"
+          onClick={() => void fetchHint()}
+          className="mb-1 flex w-full items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-3 py-2 text-left transition-colors hover:bg-primary/10"
+        >
+          <Brain className="h-4 w-4 shrink-0 text-primary" />
+          <span className="min-w-0 flex-1 text-xs">
+            <span className="font-medium text-foreground">
+              This one keeps slipping.
+            </span>{" "}
+            <span className="text-muted-foreground">
+              Want a memory trick for it?
+            </span>
+          </span>
+        </button>
+      )}
       <div className="flex items-center gap-1">
         <Button
           type="button"
