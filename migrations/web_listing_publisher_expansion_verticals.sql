@@ -1,8 +1,71 @@
--- Registry expansion 29 -> 91 (PLAN.md WS2): review/trust platforms, general
--- form-based citation directories, open-API map platforms, and niche verticals
--- (health, legal, real-estate, home-services, restaurants, travel, weddings,
--- auto, B2B/software, care, pets, fitness). APPLIED LIVE 2026-08-18 via
--- Supabase MCP (migration web_listing_publisher_expansion_verticals) as an
--- idempotent upsert by slug under the system org. Exact VALUES are recorded in
--- the applied migration; the seed evolves via further upserts, never edits here.
-select 1;
+-- Registry expansion 29 -> 91 (common-docs/systems/local-listings/PLAN.md WS2).
+-- APPLIED LIVE 2026-08-18 via Supabase MCP. Idempotent upsert by slug; system org.
+insert into web.listing_publisher (organization_id, slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility)
+select '39c38960-d30c-4840-b0c1-c9960de95582'::uuid, v.* from (values
+  ('trustpilot','Trustpilot','trustpilot.com','high_value',false,'partnership','Business API for invited partners; free business account self-serve.','https://business.trustpilot.com','{}'::text[],60::smallint,290,'public'::platform.visibility),
+  ('sitejabber','Sitejabber','sitejabber.com','long_tail',false,'none','Free business claim; form-based.','https://www.sitejabber.com/business','{}',30,470,'public'),
+  ('chamberofcommerce-com','ChamberofCommerce.com','chamberofcommerce.com','high_value',false,'none','Form-based claim/update.','https://www.chamberofcommerce.com','{}',45,292,'public'),
+  ('merchantcircle','MerchantCircle','merchantcircle.com','long_tail',false,'none','Form-based.','https://www.merchantcircle.com','{}',25,472,'public'),
+  ('cylex-us','Cylex USA','cylex.us.com','long_tail',false,'none','Form-based.',null,'{}',20,474,'public'),
+  ('n49','n49','n49.com','long_tail',false,'none','Form-based.',null,'{}',18,476,'public'),
+  ('2findlocal','2FindLocal','2findlocal.com','long_tail',false,'none','Form-based.',null,'{}',18,478,'public'),
+  ('golocal247','GoLocal247','golocal247.com','long_tail',false,'none','Form-based.',null,'{}',15,480,'public'),
+  ('opendi','Opendi','opendi.us','long_tail',false,'none','Form-based.',null,'{}',15,482,'public'),
+  ('salespider','SaleSpider','salespider.com','long_tail',false,'none','Form-based.',null,'{}',14,484,'public'),
+  ('fyple','Fyple','fyple.com','long_tail',false,'none','Form-based.',null,'{}',14,486,'public'),
+  ('tupalo','Tupalo','tupalo.com','long_tail',false,'none','Form-based.',null,'{}',15,488,'public'),
+  ('yellowbot','YellowBot','yellowbot.com','long_tail',false,'none','Form-based.',null,'{}',16,490,'public'),
+  ('judysbook','Judy''s Book','judysbook.com','long_tail',false,'none','Form-based.',null,'{}',16,492,'public'),
+  ('citysquares','CitySquares','citysquares.com','long_tail',false,'none','Form-based.',null,'{}',15,494,'public'),
+  ('ebusinesspages','eBusinessPages','ebusinesspages.com','long_tail',false,'none','Form-based.',null,'{}',12,496,'public'),
+  ('ibegin','iBegin','ibegin.com','long_tail',false,'none','Form-based.',null,'{}',12,498,'public'),
+  ('cityfos','Cityfos','cityfos.com','long_tail',false,'none','Form-based.',null,'{}',12,500,'public'),
+  ('here-maps','HERE Maps','here.com','high_value',false,'open','Open developer program; map content feedback/ingest APIs.','https://developer.here.com','{}',35,294,'public'),
+  ('tomtom','TomTom','tomtom.com','long_tail',false,'open','Open developer program.','https://developer.tomtom.com','{}',28,502,'public'),
+  ('g2','G2','g2.com','vertical',false,'partnership','Vendor profile claim; partner API for reviews.','https://sell.g2.com','{software,b2b}',55,340,'public'),
+  ('capterra','Capterra','capterra.com','vertical',false,'partnership','Vendor onboarding via Gartner Digital Markets.','https://www.capterra.com/vendors','{software,b2b}',55,342,'public'),
+  ('clutch','Clutch','clutch.co','vertical',false,'none','Profile claim + review collection; form-based.','https://clutch.co/get-listed','{b2b,agencies}',50,344,'public'),
+  ('goodfirms','GoodFirms','goodfirms.co','vertical',false,'none','Form-based claim.','https://www.goodfirms.co/get-listed','{b2b,agencies}',35,346,'public'),
+  ('crunchbase','Crunchbase','crunchbase.com','vertical',false,'open','Self-serve profile editing; paid API.','https://www.crunchbase.com','{b2b,startups}',50,348,'public'),
+  ('vitals','Vitals','vitals.com','vertical',false,'none','Provider profile claim; form-based.','https://www.vitals.com','{healthcare}',50,350,'public'),
+  ('webmd-care','WebMD Care','doctor.webmd.com','vertical',false,'partnership','Provider directory via partnership/enhanced profiles.','https://doctor.webmd.com','{healthcare}',55,352,'public'),
+  ('ratemds','RateMDs','ratemds.com','vertical',false,'none','Provider claim; form-based.','https://www.ratemds.com','{healthcare}',35,354,'public'),
+  ('realself','RealSelf','realself.com','vertical',false,'none','Provider profiles (aesthetics); claim + paid tiers.','https://www.realself.com','{healthcare,aesthetics}',45,356,'public'),
+  ('wellness-com','Wellness.com','wellness.com','vertical',false,'none','Form-based claim.','https://www.wellness.com','{healthcare}',25,358,'public'),
+  ('sharecare','Sharecare','sharecare.com','vertical',false,'partnership','Provider data via partnerships.',null,'{healthcare}',35,360,'public'),
+  ('findlaw','FindLaw','findlaw.com','vertical',false,'partnership','Thomson Reuters directory; paid profiles.','https://www.findlaw.com','{legal}',50,362,'public'),
+  ('justia','Justia','justia.com','vertical',false,'none','Free lawyer profile claim; form-based.','https://www.justia.com/lawyers','{legal}',50,364,'public'),
+  ('lawyers-com','Lawyers.com','lawyers.com','vertical',false,'partnership','Martindale-Avvo network; paid profiles.','https://www.lawyers.com','{legal}',45,366,'public'),
+  ('superlawyers','Super Lawyers','superlawyers.com','vertical',false,'partnership','Selection-based + profile management via Thomson Reuters.',null,'{legal}',45,368,'public'),
+  ('martindale','Martindale-Hubbell','martindale.com','vertical',false,'partnership','Martindale-Avvo network.','https://www.martindale.com','{legal}',45,370,'public'),
+  ('nolo','Nolo','nolo.com','vertical',false,'partnership','Martindale-Avvo network directory.',null,'{legal}',40,372,'public'),
+  ('zillow','Zillow','zillow.com','vertical',false,'closed','Agent profiles self-serve in-product; no third-party management API.','https://www.zillow.com/agent-resources','{real-estate}',55,374,'public'),
+  ('realtor-com','Realtor.com','realtor.com','vertical',false,'closed','Agent profiles via Move network; no open API.','https://www.realtor.com','{real-estate}',55,376,'public'),
+  ('trulia','Trulia','trulia.com','vertical',false,'closed','Zillow-owned; agent profiles in-product.',null,'{real-estate}',40,378,'public'),
+  ('homes-com','Homes.com','homes.com','vertical',false,'partnership','CoStar network; agent profiles.',null,'{real-estate}',35,380,'public'),
+  ('porch','Porch','porch.com','vertical',false,'none','Pro signup; form-based.','https://pro.porch.com','{home-services}',45,382,'public'),
+  ('houzz','Houzz','houzz.com','vertical',false,'none','Pro profile claim; form-based.','https://www.houzz.com/pro','{home-services}',50,384,'public'),
+  ('bark','Bark','bark.com','vertical',false,'none','Pro signup; form-based.','https://www.bark.com/sellers','{home-services,services}',40,386,'public'),
+  ('expertise-com','Expertise.com','expertise.com','vertical',false,'none','Selection-based; profile updates by request.',null,'{services}',40,388,'public'),
+  ('buildzoom','BuildZoom','buildzoom.com','vertical',false,'none','Contractor claim; form-based.','https://www.buildzoom.com','{home-services}',30,390,'public'),
+  ('networx','Networx','networx.com','vertical',false,'none','Pro signup; form-based.',null,'{home-services}',25,392,'public'),
+  ('grubhub','Grubhub','grubhub.com','vertical',false,'partnership','Merchant onboarding via sales; APIs for partners.','https://get.grubhub.com','{restaurants}',40,394,'public'),
+  ('doordash','DoorDash','doordash.com','vertical',false,'partnership','Merchant signup; Developer APIs for partners.','https://get.doordash.com','{restaurants}',40,396,'public'),
+  ('allmenus','Allmenus','allmenus.com','vertical',false,'none','Grubhub network; form/aggregator-fed.',null,'{restaurants}',25,398,'public'),
+  ('menupix','MenuPix','menupix.com','vertical',false,'none','Form-based.',null,'{restaurants}',18,399,'public'),
+  ('booking-com','Booking.com','booking.com','vertical',false,'partnership','Property extranet + Connectivity APIs for partners.','https://join.booking.com','{hospitality,travel}',45,400,'public'),
+  ('expedia','Expedia','expedia.com','vertical',false,'partnership','Partner Central + EPS APIs.','https://join.expediagroup.com','{hospitality,travel}',40,402,'public'),
+  ('theknot','The Knot','theknot.com','vertical',false,'none','Vendor profile; form-based.','https://pros.theknot.com','{weddings,events}',45,404,'public'),
+  ('weddingwire','WeddingWire','weddingwire.com','vertical',false,'none','Vendor profile; form-based.','https://www.weddingwire.com/vendors','{weddings,events}',45,406,'public'),
+  ('cars-com','Cars.com','cars.com','vertical',false,'partnership','Dealer products via sales.',null,'{automotive}',40,408,'public'),
+  ('carfax','Carfax','carfax.com','vertical',false,'partnership','Service shop listings via Carfax Car Care.',null,'{automotive}',35,410,'public'),
+  ('repairpal','RepairPal','repairpal.com','vertical',false,'none','Shop certification + profile; form-based.','https://repairpal.com/shops','{automotive}',35,412,'public'),
+  ('care-com','Care.com','care.com','vertical',false,'none','Provider signup; form-based.','https://www.care.com','{childcare,senior-care}',40,414,'public'),
+  ('caring-com','Caring.com','caring.com','vertical',false,'none','Senior care directory; claim by form.',null,'{senior-care}',35,416,'public'),
+  ('rover','Rover','rover.com','vertical',false,'none','Provider signup; in-product.','https://www.rover.com','{pets}',35,418,'public'),
+  ('mindbody','Mindbody','mindbodyonline.com','vertical',false,'partnership','Business listings via Mindbody platform + partner API.','https://www.mindbodyonline.com','{fitness,wellness}',35,420,'public')
+) as v(slug, name, domain, tier, is_aggregator, api_access, api_notes, manage_url, categories, citation_weight, sort_rank, visibility)
+on conflict (slug) do update set
+  name=excluded.name, domain=excluded.domain, tier=excluded.tier, is_aggregator=excluded.is_aggregator,
+  api_access=excluded.api_access, api_notes=excluded.api_notes, manage_url=excluded.manage_url,
+  categories=excluded.categories, citation_weight=excluded.citation_weight, sort_rank=excluded.sort_rank;
