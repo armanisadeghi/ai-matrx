@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   FileText,
   Loader2,
+  LockKeyhole,
   Mail,
   Plus,
   ShieldCheck,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -334,24 +336,14 @@ export function GoogleWorkspaceReviewWorkspace({
   );
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-5 p-4 sm:p-6 lg:p-8">
-      <header className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">Google Workspace connection</Badge>
-          <Badge variant="secondary">Selected files only</Badge>
-          <Badge variant="secondary">No Gmail reading</Badge>
-        </div>
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Google Workspace in AI Matrx
-          </h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Work with source-of-truth Google Docs and Sheets inside AI Matrx,
-            then send a final email only after reviewing it. These
-            actions require Google authorization because AI Matrx cannot access
-            your private files or send from your Gmail account without it.
-          </p>
-        </div>
+    <div className="mx-auto w-full max-w-6xl space-y-3 p-3 sm:p-4">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Google Workspace
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Manage connected accounts and the Google access each one has.
+        </p>
       </header>
 
       {error && (
@@ -362,100 +354,155 @@ export function GoogleWorkspaceReviewWorkspace({
       )}
 
       <Card>
-        <CardHeader className="p-5 pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <ShieldCheck className="h-5 w-5 text-primary" />
-            1. Connect selected Docs & Sheets
-          </CardTitle>
-          <CardDescription>
-            This permission is requested here, when you choose to use the
-            feature—not during ordinary AI Matrx sign-in.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 p-5 pt-0">
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm leading-6 text-blue-950 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
-            <p className="font-medium">Before you continue</p>
-            <p className="mt-1">
-              AI Matrx will use Google Drive&apos;s <code>drive.file</code>
-              permission to access only the Google Docs and Sheets you
-              explicitly select. AI Matrx cannot browse your whole Drive. It
-              reads or updates a selected file only when you use the visible
-              action for that file. Your Google Workspace content is not sold or
-              used to train generalized AI models. You can disconnect at any
-              time.
-            </p>
-            <Link
-              href="/privacy-policy"
-              className="mt-2 inline-flex items-center gap-1 font-medium underline underline-offset-4"
-              target="_blank"
-            >
-              Read the AI Matrx Privacy Policy
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
+        <CardHeader className="flex-row items-center justify-between gap-3 p-4 pb-2">
+          <div>
+            <CardTitle className="text-base">Connected accounts</CardTitle>
+            <CardDescription>Select an account to manage it.</CardDescription>
           </div>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => void connectFiles()}
+            disabled={!google.isGoogleLoaded || busy !== null}
+          >
+            {busy === "connect-files" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Plus />
+            )}
+            Add account
+          </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead className="border-y bg-muted/40 text-left text-xs text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Account</th>
+                  <th className="px-4 py-2 font-medium">Docs & Sheets</th>
+                  <th className="px-4 py-2 font-medium">Gmail sending</th>
+                  <th className="px-4 py-2 font-medium">Connection</th>
+                  <th className="px-4 py-2 font-medium">Google session</th>
+                  <th className="px-4 py-2 text-right font-medium">Manage</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {inventory.isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center">
+                      <Loader2 className="mx-auto h-4 w-4 animate-spin text-muted-foreground" />
+                    </td>
+                  </tr>
+                ) : personalConnections.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-6 text-center text-muted-foreground">
+                      No Google accounts connected.
+                    </td>
+                  </tr>
+                ) : (
+                  personalConnections.map((connection) => {
+                    const selected = connection.id === effectiveConnectionId;
+                    const docsGranted = hasScope(connection, GOOGLE_SCOPE.driveFile);
+                    const gmailGranted = hasScope(connection, GOOGLE_SCOPE.gmailSend);
+                    const signedIn =
+                      google.isAuthenticated &&
+                      pickerSessionConnectionId === connection.id;
+                    return (
+                      <tr key={connection.id} className={selected ? "bg-primary/5" : undefined}>
+                        <td className="px-4 py-2.5">
+                          <button
+                            type="button"
+                            onClick={() => setActiveConnectionId(connection.id)}
+                            className="max-w-64 truncate text-left font-medium hover:text-primary hover:underline"
+                          >
+                            {connectionName(connection)}
+                          </button>
+                        </td>
+                        <td className={docsGranted ? "px-4 py-2.5 text-emerald-700 dark:text-emerald-400" : "px-4 py-2.5 text-muted-foreground"}>
+                          {docsGranted ? "Granted" : "Not granted"}
+                        </td>
+                        <td className={gmailGranted ? "px-4 py-2.5 text-emerald-700 dark:text-emerald-400" : "px-4 py-2.5 text-muted-foreground"}>
+                          {gmailGranted ? "Granted" : "Not granted"}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <span className="inline-flex items-center gap-1.5">
+                            {connection.health === "connected" ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                            ) : (
+                              <CircleAlert className="h-3.5 w-3.5 text-amber-600" />
+                            )}
+                            {connectionStatus(connection)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 text-muted-foreground">
+                          {signedIn ? "Signed in" : "Sign-in when needed"}
+                        </td>
+                        <td className="px-4 py-2 text-right">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={selected ? "secondary" : "ghost"}
+                            onClick={() => setActiveConnectionId(connection.id)}
+                          >
+                            {selected ? "Selected" : "Manage"}
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="min-w-0 flex-1 space-y-1.5">
-              <Label htmlFor="google-account">Google account</Label>
-              <select
-                id="google-account"
-                value={effectiveConnectionId ?? ""}
-                onChange={(event) =>
-                  setActiveConnectionId(event.currentTarget.value || null)
-                }
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
-                disabled={personalConnections.length === 0 || busy !== null}
-              >
-                <option value="">No Google account connected</option>
-                {personalConnections.map((connection) => (
-                  <option key={connection.id} value={connection.id}>
-                    {connection.account_email ??
-                      connection.account_name ??
-                      "Google account"}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {activeConnection && (
+        <Card>
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base">Manage {connectionName(activeConnection)}</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2 p-4 pt-0">
             <Button
               type="button"
+              size="sm"
+              variant="outline"
               onClick={() => void connectFiles()}
               disabled={!google.isGoogleLoaded || busy !== null}
             >
               {busy === "connect-files" && <Loader2 className="animate-spin" />}
-              {filesEnabled
-                ? "Reconnect Docs & Sheets"
-                : "Connect Docs & Sheets"}
+              {filesEnabled ? "Refresh Docs & Sheets access" : "Add Docs & Sheets access"}
             </Button>
-          </div>
+            {!gmailEnabled && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={enableGmail}
+                disabled={!google.isGoogleLoaded || busy !== null}
+              >
+                {busy === "enable-gmail" && <Loader2 className="animate-spin" />}
+                Add Gmail sending
+              </Button>
+            )}
+            <Button type="button" size="sm" variant="outline" onClick={disconnect} disabled={busy !== null}>
+              {busy === "disconnect" ? <Loader2 className="animate-spin" /> : <Unplug />}
+              Disconnect
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
-          {filesEnabled && activeConnection && (
-            <div className="rounded-lg border bg-muted/30 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="flex items-center gap-2 text-sm font-medium">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    Connected as{" "}
-                    {activeConnection.account_email ?? "Google user"}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Choose one file at a time. Each selection is recorded and
-                    can be used only through this connection.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={chooseFile}
-                  disabled={busy !== null}
-                >
-                  {busy === "pick-file" && <Loader2 className="animate-spin" />}
-                  Choose a Google Doc or Sheet
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <div className="flex items-start gap-2 rounded-lg border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <p>
+          Google content is used only for actions you request; it is not sold or used to train generalized AI models.{" "}
+          <Link href="/privacy-policy" target="_blank" className="font-medium text-foreground underline underline-offset-4">
+            Privacy policy
+            <ExternalLink className="ml-1 inline h-3 w-3" />
+          </Link>
+        </p>
+      </div>
 
       {filesEnabled && (
         <Card>

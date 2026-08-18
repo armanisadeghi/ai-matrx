@@ -26,6 +26,7 @@ import {
   type AssistActionContext,
   type AssistActionResult,
 } from "./assist-action-registry";
+import { resolveAssistNavigation } from "./navigation";
 import type { Assist } from "../types";
 
 // Built-in capabilities register by side-effect import. New handlers are
@@ -67,7 +68,26 @@ export function useAssistRunner(): AssistRunnerApi {
     () => ({
       userId: userId ?? null,
       openAgentRun,
-      navigate: (href: string) => router.push(href),
+      navigate: (href: string) => {
+        const target = resolveAssistNavigation(href, {
+          profile: process.env.NEXT_PUBLIC_MATRX_PROFILE || "full",
+          currentOrigin: window.location.origin,
+          mainOrigin:
+            process.env.NEXT_PUBLIC_MAIN_ORIGIN?.trim() ||
+            "https://www.aimatrx.com",
+          adminOrigin:
+            process.env.NEXT_PUBLIC_ADMIN_ORIGIN?.trim() ||
+            "https://manage.aimatrx.com",
+          demosOrigin:
+            process.env.NEXT_PUBLIC_DEMOS_ORIGIN?.trim() ||
+            "https://demos.aimatrx.com",
+        });
+        if (target.kind === "document") {
+          window.location.assign(target.href);
+          return;
+        }
+        router.push(target.href);
+      },
       callServer: async (endpoint, body) => {
         const result = await dispatch(
           callApi({
