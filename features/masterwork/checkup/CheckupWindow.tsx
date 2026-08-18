@@ -26,6 +26,7 @@ import {
   CHECKUP_FINDING_KIND,
 } from "@/features/content-ir/kinds/masterwork-checkup-finding";
 import type { CheckupDecisionsUiState } from "@/components/mardown-display/blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
+import type { CheckupRuleData } from "@/features/content-ir/kinds/masterwork-checkup-finding";
 import {
   CheckupSuggestionDialog,
   type CheckupSuggestionMode,
@@ -141,6 +142,26 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
     return map;
   }, [dispositions]);
 
+  // What the Expert now owns after Improve or Edit. The card shows THIS in
+  // step 4, so what they approve is what Apply writes.
+  const yourVersionMap = useMemo(() => {
+    const map: Record<string, CheckupRuleData> = {};
+    for (const finding of findings) {
+      const chosen = chosenProposal(finding, dispositions[finding.id]);
+      if (!chosen || chosen === finding.proposed) continue;
+      map[finding.id] = {
+        name: chosen.name,
+        statement: chosen.statement,
+        rationale: chosen.rationale ?? null,
+        detection: chosen.detection ?? null,
+        severity: chosen.severity,
+        section: chosen.section,
+        ruleId: finding.target_rule_id ?? null,
+      };
+    }
+    return map;
+  }, [findings, dispositions]);
+
   useEffect(() => {
     // Publishing this key is what makes the rendered findings interactive.
     // While the window is closed we publish nothing, so the same cards in a
@@ -151,11 +172,11 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
       isOpen
         ? ({
             decided: decidedMap,
-            busyFindingId: applying ? null : null,
+            yourVersion: yourVersionMap,
           } satisfies CheckupDecisionsUiState)
         : undefined,
     );
-  }, [isOpen, decidedMap, applying]);
+  }, [isOpen, decidedMap, yourVersionMap]);
 
   useEffect(
     () => () =>

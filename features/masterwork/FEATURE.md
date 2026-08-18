@@ -437,62 +437,90 @@ durationSec, charOffset}`, rendered as a player via `InlineMediaRef` (`as="audio
   `features/audio/__tests__/recordingOrigin.test.tsx` (origin → `provider.start()`; origin → the
   persisted row) rather than by a live recording.
 
-## The Final Checkup — `checkup/` (2026-08-17)
+## The Final Checkup — `checkup/` (rebuilt 2026-08-18)
 
 **The finish line.** Arman: _"the expert kinda feels like here she is done, and we
 could have a button that they click that's kind of like — maybe call it a final
-checkup… it's probably a window panel, and it should be split down the middle…
-the point is to have it where we can suggest rules that need to be added, rules
-that could be modified, rules that should be removed, and the user is just going
-through very quickly and sort of approving or disapproving."_
+checkup… it's probably a window panel… the point is to have it where we can
+suggest rules that need to be added, rules that could be modified, rules that
+should be removed, and the user is just going through very quickly and sort of
+approving or disapproving."_
 
-- **Entry:** one "Final checkup" action in the Rulebook page header (owner only,
-  once there is something to check). It opens the `masterworkCheckupWindow`
-  overlay — a `WindowPanel`, so the Rulebook stays visible behind it.
-- **The run:** `POST /masterworks/checkup` on the SAME durable spine as Build /
-  ingest / Audition (`platform.masterwork_run`, operation `checkup`). Auditors run
-  in PARALLEL and each finding is streamed the moment it is found
-  (`masterwork_checkup_finding`), so the Expert starts deciding while the rest are
-  still coming; the terminal `masterwork_checkup_complete` document is the truth
-  and is merged by id. A refresh rejoins — `useCheckupRun` is a thin face over
-  `useMasterworkRun`, never a second durability mechanism. _(Progressive results
-  are why `useDurableRun` gained `onDomainEvent`: a run that answers in PIECES
-  must not put a spinner over work the user could already be doing.)_
-- **NOT a word diff.** Both halves render a rule the way a rule is read, so the
-  Expert compares MEANING: left = the Rulebook today (the existing rule for
-  modify/remove; the section it would join for add), right = the proposal, the
-  reason in their own terms, and their **VERBATIM quote as the evidence** with a
-  door to the conversation or source file it came from.
-- **Confidence is honest.** Three bands (`confidenceBand`): a low-confidence
-  suggestion is labelled "We're guessing — check this one" and is never touched by
-  Approve with AI.
-- **Fast disposition.** `Y`/`Enter` approve · `N`/`D` dismiss · `↑↓`/`j k` move ·
-  `U` undo this one, with auto-advance; keys are ignored while the Expert is
-  typing or dictating into a `ProTextarea`. Where a finding carries
-  `alternatives`, the Expert clicks the wording they want; they can also rewrite
-  the proposal in their own words (`ProTextarea`, so they can dictate it).
-- **"Approve with AI" is reviewable, not a black box.** It accepts only findings
-  at ≥80% confidence that the Expert has not already ruled on and that carry no
-  alternatives (a choice is theirs alone), marks each one `byAi`, shows the count
-  in the button ("Approve the 14 we're most sure about"), switches the list to All
-  so they see exactly what it took, and offers **Undo those** — which only takes
-  back the calls the AI made.
+🚨 **It shipped 2026-08-17 breaking four of our own laws, and Arman found all
+four on his first run. What follows is the rebuilt surface; the five fixes are
+named in `CheckupWindow.tsx`'s header so nobody re-introduces one.**
+
+- **Opening it RUNS it.** The window auto-starts the checkup on open. There is no
+  second "Start the checkup" button — clicking "Final checkup" and then being
+  asked to click "Final checkup" is false advertising. The only re-run is a
+  subtle **Run again** in the window header, and auto-start stands down the
+  instant the durable hook claims a run id, so a rejoin never pays for a second
+  run.
+- **IT STREAMS, through the ONE pipeline.** _"All of our content streams in real
+  fucking time."_ The old surface blocked on `run_mandate` and painted a blank
+  panel for ~90 seconds. aidream now scans each producer agent's own token stream
+  and releases every finding the moment it is written **and has passed the
+  evidence gate** (`aidream/services/masterwork_checkup/streaming_producer.py`);
+  each one rides its `masterwork_checkup_finding` event as a canonical
+  Content-IR value. `useCheckupRun` adopts the stream
+  (`useMasterworkRun` → `useDurableRun` `live.surfaceOwnsDisplay`) and the body is
+  `<MarkdownStream requestId />`. **This feature parses, buckets, routes and
+  renders NOTHING itself.** A checkup rejoined after a refresh has no stream left
+  to adopt, so its findings render through `KindInstanceRender` — the same
+  complete-envelope assembler and the same `applyIrKindRoute`, never a second
+  renderer. Measured on a real paid run: first finding at 56s of a 115s run.
+- **THE ORDER IS THE SPEC.** Arman: _"The order needs to be: You said this → They
+  created this → Here is what is missing or wrong → Here is the version
+  recommended. Notice how that actually flows."_ That order IS the registered
+  kind's shape (`features/content-ir/kinds/masterwork-checkup-finding.ts`) and its
+  ONE component (`components/mardown-display/blocks/masterwork-checkup/`). An
+  `add` says out loud, at step 2, that **nothing was created for this** — hiding
+  the step would be dishonest about what the system did. The panel states in ONE
+  line what the Final Checkup is and what it will do.
+- **All four verbs, on every finding.** Approve · Improve · Reject · Edit, from
+  the ONE `review/RuleDecisionActions` primitive — the same row the rule-review
+  queue uses. **Improve** runs the SAME `masterwork.rule_improver` Mandate through
+  the SAME `useRuleImproveRun`, and **Edit** uses the SAME `RuleFields` form (with
+  `omitFields={["quote"]}`: the source quote is mechanically-verified evidence, and
+  a box whose edits are discarded is worse than no box). Both land as the
+  Expert's own wording on the disposition, and step 4 then re-titles to **Your
+  version** — what a person approves must be what Apply writes.
+- **The card acts through the surface, never a callback.** It reads
+  `useCurrentSurfaceUiState("masterwork_checkup_decisions")` and writes through
+  `runAction("apply_surface_write", { target: "checkup_decision" })`
+  (`matrx-user/masterwork-rulebook`, `applyPolicy: "manual"` — deciding which of
+  the Expert's own rules to change is the one judgement an agent may never make).
+  Absent that UI state — a chat transcript, a share page — the same card renders
+  read-only, which is right: the finding is still worth reading.
+- **ONE footer row.** _"The footer of this window panel breaks every fucking UI
+  rule in the world."_ The footer is progress + the AI pass + Apply, and nothing
+  else. The AI-pass notice is a toast; the apply receipt (with its door to the
+  Rulebook and **Undo**) is in the BODY, where content belongs.
+- **Confidence is honest.** A finding below 55% is badged "We're not sure — check
+  this one" and is never touched by the AI pass, which accepts only findings at
+  ≥80% that the Expert has not ruled on and that carry no alternatives (a choice
+  between wordings is theirs alone).
 - **Nothing is written until Apply**, and Apply is ONE compare-and-swap through
   the Rulebook's existing `saveRules` (never a second write path, never a
   per-finding save storm). `add` appends a live rule (the Expert approving HERE is
   the human-first act — it is not queued as another draft), `modify` rewrites the
   target **keeping its id** (audits cite it), `remove` **RETIRES** it. A
   concurrent save surfaces as the Rulebook's own conflict message and the fresh
-  Rulebook is pulled so the next Apply works. After Apply the Expert reads a
-  receipt of exactly what changed, with a door to the Rulebook and an **Undo**
-  that restores the previous rules as a real new version.
+  Rulebook is pulled so the next Apply works.
 - **Memory, so we stop asking.** Approved findings need none (they changed the
   Rulebook). A DISMISSAL is recorded on `metadata.checkup.dismissed`, fingerprinted
   by kind + target rule id + proposed name (finding ids are run-scoped and never
-  repeat), with the Expert's optional reason. This surface is its only writer;
-  aidream's checkup service reads it to suppress what the Expert already refused.
-- **Decisions survive a refresh** — they are kept per run id in localStorage and
-  restored on rejoin, then cleared on Apply.
+  repeat), with the Expert's optional reason — captured by the Reject dialog,
+  because the reason is what teaches the next checkup. This surface is its only
+  writer; aidream's checkup service reads it to suppress what the Expert refused.
+- **Decisions survive a refresh** — kept per run id in localStorage, restored on
+  rejoin, cleared on Apply.
+- **Deleted with the rebuild:** the split panes (`CheckupPanes.tsx`), the finding
+  sidebar (`CheckupFindingList.tsx`), the filter tabs, the focused-finding cursor
+  and its keyboard model. They existed to drive a single-focus split view; the
+  findings now render as themselves, each carrying its own verbs, and keeping a
+  parallel focus model beside that would be a second answer to "which finding are
+  we on". The panel got smaller, not bigger.
 
 ## The Approach Registry — `platform.approach` (2026-08-17)
 
@@ -749,6 +777,7 @@ deliberately never produced.
   `/encore` deleted, pre-launch, no redirects); nav children + FeatureAdminMap + every internal
   link updated. `computeKpis` widened to `Pick<Rulebook,"rules">` so overview surfaces can reuse it.
 
+- 2026-08-18 — Claude: **The Final Checkup was rebuilt after Arman found it breaking four of our own laws on his first run** (section above). (1) **It did not stream** — `await run_mandate(...)` in each producer meant a blank panel for ~90s, so aidream gained a shared streaming path (`streaming_producer.py` + the `StreamingJsonArrayItems` / `capture_agent_chunks` primitives) that releases each finding the moment it parses AND passes the unchanged evidence gate; a forcing-function test asserts emits land BEFORE the mandate returns, so nobody can quietly restore the blocking version. (2) **The order was confusing** — the finding is now the registered `masterwork_checkup_finding` kind whose shape IS Arman's sentence (You said this → They created this → What's missing or wrong → The recommended version), rendered by ONE component through the canonical pipeline. (3) **Improve and Edit were missing** — every finding now carries the shared four-verb `RuleDecisionActions` row, with Improve on the ONE `masterwork.rule_improver` runner and Edit on the ONE `RuleFields` form; the card reaches the panel through the `checkup_decision` surface write target, never a callback. (4) **The footer hosted three stacked banners** — it is one row now; the receipt moved into the body and the AI-pass notice became a toast. Plus (5) opening the window RUNS the checkup instead of offering a second identical button. `CheckupPanes.tsx` and `CheckupFindingList.tsx` are deleted. Verified on a real paid run against the live Rulebook: findings appeared progressively (badge 1 → 2 → 4 with the run still going), Improve round-tripped a real agent rewrite into "Your version", Edit saved a hand-written name, Reject captured a reason, and Apply landed the Expert's own wording on the real rule at Rulebook v29.
 - 2026-08-17 — **The Final Checkup shipped** (`features/masterwork/checkup/`, section above): the
   split-down-the-middle `masterworkCheckupWindow`, findings streamed one at a time off the durable
   `checkup` run, keyboard disposition, a reviewable-and-undoable "Approve with AI", one CAS apply

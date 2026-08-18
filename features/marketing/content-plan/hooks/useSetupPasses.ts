@@ -157,7 +157,10 @@ function readPhaseMessage(event: TypedStreamEvent): string | null {
   return null;
 }
 
-export function useSetupPasses(siteId: string | null) {
+export function useSetupPasses(
+  siteId: string | null,
+  researchTopicId: string | null,
+) {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
   const [state, setState] = useState<SetupPassState>(IDLE);
@@ -174,7 +177,12 @@ export function useSetupPasses(siteId: string | null) {
     review: setupPassRunSetKey(siteId, "review"),
   };
   const keywordEstimate = useQuery({
-    queryKey: ["content-plan", "keyword-strategy-estimate", siteId],
+    queryKey: [
+      "content-plan",
+      "keyword-strategy-estimate",
+      siteId,
+      researchTopicId,
+    ],
     enabled: Boolean(siteId),
     queryFn: async (): Promise<KeywordStrategyEstimate> => {
       if (!siteId) throw new Error("Pick a site first.");

@@ -84,7 +84,11 @@ export function KeywordStrategySection({
       ? "There are no planned pages to assign keywords to yet"
       : null;
   const tierEstimate = estimate?.tiers?.find((item) => item.tier === tier) ?? null;
-  const runDisabled = Boolean(disabledReason) || anyBusy || !tierEstimate;
+  const runDisabled =
+    Boolean(disabledReason) ||
+    anyBusy ||
+    !tierEstimate ||
+    tierEstimate.approximate_cost_usd == null;
 
   const byRole = new Map<PageRole, KeywordAssignment[]>();
   for (const assignment of strategy?.assignments ?? []) {

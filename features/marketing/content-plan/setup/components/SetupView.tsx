@@ -351,7 +351,7 @@ export function SetupView() {
   // run on `chat.agent_run` and persists the proposal on the site before it
   // streams. `agents` still owns the small client-side steps (shape,
   // family names, entity curation).
-  const passes = useSetupPasses(siteId);
+  const passes = useSetupPasses(siteId, researchTopicId);
   const researchReport =
     researchDoc.data?.status === "success" && researchDoc.data.content?.trim()
       ? researchDoc.data.content

@@ -21,6 +21,33 @@
 
 ## STATUS — live and verified (compressed)
 
+- **🚨 THE FINAL CHECKUP WAS REBUILT — it broke four of our own laws and Arman caught all four
+  on his first run (2026-08-18).** *"It forced me to stare at a blank page in a window panel for
+  approximately a minute and a half and then magically all the content appeared… we have a policy
+  that all of our content streams in real fucking time."* **(1) It now STREAMS:** the cause was
+  `await run_mandate(...)` in every producer — the findings were on the wire the whole time and the
+  code discarded the stream. aidream gained a shared `run_streaming_finding_producer` plus two
+  reusable primitives (`ai_execution/streaming_json_items.py`, `ai_execution/chunk_capture.py`) that
+  release each finding the instant it parses AND clears the unchanged evidence gate; a
+  forcing-function test asserts emits land BEFORE the mandate returns. Measured on a real paid run:
+  **first finding at 56s of a 115s run.** **(2) The ORDER is the spec:** a finding is now the
+  registered `masterwork_checkup_finding` kind whose shape IS Arman's sentence — You said this →
+  They created this → What's missing or wrong → The recommended version — with ONE component, and an
+  `add` says out loud that nothing was created. The FE renders it the documented way
+  (`adoptForeignStream` via `useDurableRun`'s new `live.surfaceOwnsDisplay` → `<MarkdownStream
+  requestId />`), and a rejoined checkup renders through `KindInstanceRender` — never a second
+  renderer. **(3) All four verbs** (Approve · Improve · Reject · Edit) are on every finding, from the
+  shared `RuleDecisionActions`, with Improve on the ONE `masterwork.rule_improver` runner and Edit on
+  the ONE `RuleFields` form; clicks reach the panel through the new `checkup_decision` surface write
+  target (`applyPolicy: "manual"`). **(4) The footer is ONE row** — receipt moved to the body, AI-pass
+  notice to a toast. **(5) Opening the window RUNS the checkup** (the second identical button is
+  gone). `CheckupPanes.tsx` + `CheckupFindingList.tsx` deleted. Live-verified end to end: badge 1 → 2
+  → 4 while running, Improve round-tripped a real agent rewrite into "Your version", Edit saved a
+  hand-written name, Reject captured a reason, Apply landed the Expert's own wording on the real rule
+  at Rulebook v29.
+  **Open:** the checkup can only produce findings where a real Expert corpus exists — the Strunk
+  canon was distilled from a book, so its checkup is honestly empty until someone talks to it.
+
 - **🚨 A RULE THAT HIDES ITS RELATIONSHIP TO ANOTHER RULE IS MISLEADING (2026-08-18, from Arman
   reading all 28 rules of the SEO Rulebook `8d1d4f08-…` by hand before approving them:
   _"they're representing the rule as though it's a standalone thing… on a few of the rules, I

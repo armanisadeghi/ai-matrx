@@ -1,5 +1,5 @@
 {
-  "generated_for": "1247-kinds+a662ded1b537",
+  "generated_for": "1249-kinds+23357e89aa6e",
   "columns": [
     "definition",
     "example",
@@ -8187,6 +8187,34 @@
       }
     },
     {
+      "kind": "masterwork_checkup_finding",
+      "is_active": true,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "masterwork_checkup_rule",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
       "kind": "math_problem",
       "is_active": true,
       "family": null,
@@ -8516,7 +8544,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -14956,7 +14984,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -17949,6 +17977,12 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
+      "kind": "masterwork_checkup_finding",
+      "message": "kind \"masterwork_checkup_finding\" has no content block referencing \"__kind\": \"masterwork_checkup_finding\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
       "kind": "meta_tag_options",
       "message": "kind \"meta_tag_options\" has no content block referencing \"__kind\": \"meta_tag_options\""
     },
@@ -19175,6 +19209,12 @@
       "code": "no-skill",
       "kind": "map",
       "message": "kind \"map\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "masterwork_checkup_finding",
+      "message": "kind \"masterwork_checkup_finding\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",

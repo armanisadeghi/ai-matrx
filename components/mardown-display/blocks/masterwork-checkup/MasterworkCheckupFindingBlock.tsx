@@ -76,6 +76,14 @@ export interface MasterworkCheckupFindingBlockProps {
 export interface CheckupDecisionsUiState {
   /** findingId → the verb the Expert already landed on. */
   decided?: Record<string, "approved" | "rejected">;
+  /**
+   * findingId → the wording the EXPERT now owns, after Improve rewrote it or
+   * Edit changed it by hand. Step 4 shows this instead of ours, because the
+   * thing a person is about to approve must be the thing they will get — a
+   * card still showing our original after they asked for a rewrite is a lie
+   * about what Apply will write.
+   */
+  yourVersion?: Record<string, CheckupRuleData>;
   /** The finding currently being worked (an agent rewrite, a save). */
   busyFindingId?: string | null;
 }
@@ -206,6 +214,9 @@ export function MasterworkCheckupFindingBlock({
   if (!finding) return null;
 
   const decided = ui?.decided?.[finding.findingId];
+  // The Expert's own wording wins over ours the moment it exists.
+  const yourVersion = ui?.yourVersion?.[finding.findingId] ?? null;
+  const shown = yourVersion ?? finding.recommendedRule;
   const interactive = Boolean(ui);
   const busy = sending !== null || ui?.busyFindingId === finding.findingId;
 
@@ -297,9 +308,14 @@ export function MasterworkCheckupFindingBlock({
         <p className="whitespace-pre-wrap text-sm text-foreground">{finding.gap}</p>
       </Step>
 
-      {finding.recommendedRule ? (
-        <Step n={4} label="The recommended version">
-          <RuleCard rule={finding.recommendedRule} tone="recommended" />
+      {shown ? (
+        <Step n={4} label={yourVersion ? "Your version" : "The recommended version"}>
+          <RuleCard rule={shown} tone="recommended" />
+          {yourVersion ? (
+            <p className="pt-0.5 text-[11px] text-muted-foreground">
+              This is what Apply will write — your wording, not ours.
+            </p>
+          ) : null}
           {finding.alternatives.length > 0 ? (
             <div className="space-y-1 pt-1">
               <p className="text-[11px] text-muted-foreground">
