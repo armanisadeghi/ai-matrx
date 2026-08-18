@@ -15,6 +15,7 @@ import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
+import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
 import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -492,11 +493,17 @@ export function AgentConversationColumn({
           <ProposedDirectivesZone conversationId={displayId} />
 
           {!hideInput && (
-            <SmartAgentInput
-              conversationId={conversationId}
-              surfaceKey={surfaceKey}
-              {...smartInputProps}
-            />
+            <>
+              <SmartAgentInput
+                conversationId={conversationId}
+                surfaceKey={surfaceKey}
+                {...smartInputProps}
+              />
+              {/* One quiet line: what this conversation could reach if the user
+                  connected it. Disappears once everything is connected — it is
+                  a reminder, never a nag. */}
+              <ChatConnectorStrip className="mt-1.5" />
+            </>
           )}
         </motion.div>
       )}
