@@ -126,6 +126,25 @@
       },
       "previousEventHash": "757e1fc4007ab362fd71ce2a625eaadf2726510bef18dc20861a5128b5572151",
       "eventHash": "8ba1728ffc2001a99426a542b8265c34b36eb4c488ce362c0245ca893a0677af"
+    },
+    {
+      "sequence": 8,
+      "state": "delivered",
+      "at": "2026-08-18T19:22:55.471Z",
+      "actor": "codex-p10-worker",
+      "summary": "Reconciled the certified escaped-delivery candidate with its existing main integration and release.",
+      "evidence": [
+        "Candidate and integration commits are both ancestors of v0.4.703 and current origin/main.",
+        "No new release was created; later releases already contain the candidate."
+      ],
+      "delivery": {
+        "candidateSha": "a4a7c03ea2db9311ee926433eb0f6f25774e03a6",
+        "preservedRef": "refs/heads/patrol-runs/P10/2026-08-15T191639Z",
+        "integratedSha": "ce600b6536c900aefae521f24d69c2d4ea7a6d97",
+        "release": "v0.4.703"
+      },
+      "previousEventHash": "8ba1728ffc2001a99426a542b8265c34b36eb4c488ce362c0245ca893a0677af",
+      "eventHash": "1bc5252429c3e979d5642fd8c89e86a7db28ac9ae48fa592526a711b3875b8a0"
     }
   ]
 }

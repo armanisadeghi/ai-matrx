@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P10",
   "runId": "2026-08-15T191639Z",
-  "state": "certified",
-  "updatedAt": "2026-08-18T19:22:51.575Z",
-  "summary": "Independent resumed certification found no batch-caused regression.",
+  "state": "delivered",
+  "updatedAt": "2026-08-18T19:22:55.471Z",
+  "summary": "Reconciled the certified escaped-delivery candidate with its existing main integration and release.",
   "source": "2026-08-15T191639Z.json",
-  "eventHash": "8ba1728ffc2001a99426a542b8265c34b36eb4c488ce362c0245ca893a0677af"
+  "eventHash": "1bc5252429c3e979d5642fd8c89e86a7db28ac9ae48fa592526a711b3875b8a0"
 }
