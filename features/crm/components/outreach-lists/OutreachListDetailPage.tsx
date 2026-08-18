@@ -178,7 +178,11 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         })
         .catch((e: unknown) => {
           if (current) {
-            toast.error(e instanceof Error ? e.message : "Could not load sending mailboxes");
+            toast.error(
+              e instanceof Error
+                ? e.message
+                : "Could not load sending mailboxes",
+            );
           }
         })
         .finally(() => {
@@ -415,7 +419,9 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
             className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium leading-none text-emerald-700 hover:bg-emerald-500/20 dark:text-emerald-300"
           >
             <Award className="h-3 w-3 shrink-0" aria-hidden />
-            <span className="truncate">{outcomeKindLabel(outcome.outcomeKind)}</span>
+            <span className="truncate">
+              {outcomeKindLabel(outcome.outcomeKind)}
+            </span>
             {extra > 0 && <span className="tabular-nums">+{extra}</span>}
           </button>
         );
@@ -711,7 +717,9 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                 variant={activeView === "outcomes" ? "secondary" : "ghost"}
                 className="h-7 gap-1 px-2 text-xs"
                 onClick={() =>
-                  setActiveView(activeView === "outcomes" ? "members" : "outcomes")
+                  setActiveView(
+                    activeView === "outcomes" ? "members" : "outcomes",
+                  )
                 }
               >
                 <Award className="h-3.5 w-3.5" />
@@ -768,7 +776,9 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
         {list?.lane === "cold_outreach" && (
           <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-2 py-1.5">
             <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium text-foreground">Sending mailbox</span>
+            <span className="text-xs font-medium text-foreground">
+              Sending mailbox
+            </span>
             {sendingIdentities.length > 0 ? (
               <Select
                 value={list.sending_identity_id ?? undefined}
@@ -777,21 +787,33 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
               >
                 <SelectTrigger className="h-7 min-w-64 text-xs">
                   <SelectValue
-                    placeholder={mailboxesLoading ? "Loading mailboxes…" : "Choose a mailbox"}
+                    placeholder={
+                      mailboxesLoading
+                        ? "Loading mailboxes…"
+                        : "Choose a mailbox"
+                    }
                   />
                 </SelectTrigger>
                 <SelectContent>
                   {sendingIdentities.map((identity) => (
-                    <SelectItem key={identity.id} value={identity.id} className="text-xs">
+                    <SelectItem
+                      key={identity.id}
+                      value={identity.id}
+                      className="text-xs"
+                    >
                       {identity.from_address} · {identity.status}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             ) : mailboxesLoading ? (
-              <span className="text-xs text-muted-foreground">Loading mailboxes…</span>
+              <span className="text-xs text-muted-foreground">
+                Loading mailboxes…
+              </span>
             ) : (
-              <span className="text-xs text-muted-foreground">No mailbox is connected.</span>
+              <span className="text-xs text-muted-foreground">
+                No mailbox is connected.
+              </span>
             )}
             <Link
               href={
@@ -830,80 +852,80 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
           <OutcomesPanel campaignId={listId} />
         </div>
       ) : (
-      <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
-        <MatrxDataTable<OutreachListMemberWithParty>
-          data={members}
-          columns={memberColumns}
-          getRowId={(row) => row.id}
-          isLoading={isLoading}
-          isFetching={isFetching}
-          zebra
-          detail={{ enabled: false }}
-          window={{ enabled: false }}
-          onRowOpen={(row) => {
-            if (row.party) router.push(`/crm/${row.party.id}`);
-          }}
-          query={{
-            mode: "controlled",
-            totalItems: total,
-            state: {
-              page,
-              pageSize: PAGE_SIZE,
-              search,
-              anyOf: "",
-              columnFilters: {},
-              sort: { id: "created_at", direction: "asc" },
-            },
-            onStateChange: onTableState,
-          }}
-          toolbar={{ search: true, searchPlaceholder: "Search members…" }}
-          rowActions={(row) => (
-            <ItemMenu config={memberMenu(row)} align="end">
-              <button
-                type="button"
-                aria-label={`Actions for ${row.party?.display_name ?? "member"}`}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </ItemMenu>
-          )}
-          copy={{
-            label: "Outreach list member",
-            listLabel: "Outreach list members",
-            location: `/crm/outreach-lists/${listId}`,
-            rowKind: "crm-outreach-list-member",
-            listKind: "crm-outreach-list-member-list",
-            humanRow: (row) =>
-              `${row.party?.display_name ?? row.party_id} — ${row.status}, ${row.attempt_count} attempts`,
-            showRow: false,
-            showToolbar: false,
-          }}
-          emptyState={{
-            icon: <ListPlus className="h-5 w-5" />,
-            title:
-              statusFilter === "all"
-                ? "No members yet"
-                : `No ${statusFilter.replace(/_/g, " ")} members`,
-            description:
-              statusFilter === "all"
-                ? "Add members from the CRM list (select rows → Add to list) or enroll everyone matching a filter."
-                : "Pick another status chip above, or clear the filter.",
-            action:
-              statusFilter === "all" ? (
-                <Button
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
-                  onClick={() => setAddOpen(true)}
+        <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
+          <MatrxDataTable<OutreachListMemberWithParty>
+            data={members}
+            columns={memberColumns}
+            getRowId={(row) => row.id}
+            isLoading={isLoading}
+            isFetching={isFetching}
+            zebra
+            detail={{ enabled: false }}
+            window={{ enabled: false }}
+            onRowOpen={(row) => {
+              if (row.party) router.push(`/crm/${row.party.id}`);
+            }}
+            query={{
+              mode: "controlled",
+              totalItems: total,
+              state: {
+                page,
+                pageSize: PAGE_SIZE,
+                search,
+                anyOf: "",
+                columnFilters: {},
+                sort: { id: "created_at", direction: "asc" },
+              },
+              onStateChange: onTableState,
+            }}
+            toolbar={{ search: true, searchPlaceholder: "Search members…" }}
+            rowActions={(row) => (
+              <ItemMenu config={memberMenu(row)} align="end">
+                <button
+                  type="button"
+                  aria-label={`Actions for ${row.party?.display_name ?? "member"}`}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <ListPlus className="h-3.5 w-3.5" />
-                  Add members
-                </Button>
-              ) : undefined,
-          }}
-        />
-      </div>
+                  <MoreVertical className="h-4 w-4" />
+                </button>
+              </ItemMenu>
+            )}
+            copy={{
+              label: "Outreach list member",
+              listLabel: "Outreach list members",
+              location: `/crm/outreach-lists/${listId}`,
+              rowKind: "crm-outreach-list-member",
+              listKind: "crm-outreach-list-member-list",
+              humanRow: (row) =>
+                `${row.party?.display_name ?? row.party_id} — ${row.status}, ${row.attempt_count} attempts`,
+              showRow: false,
+              showToolbar: false,
+            }}
+            emptyState={{
+              icon: <ListPlus className="h-5 w-5" />,
+              title:
+                statusFilter === "all"
+                  ? "No members yet"
+                  : `No ${statusFilter.replace(/_/g, " ")} members`,
+              description:
+                statusFilter === "all"
+                  ? "Add members from the CRM list (select rows → Add to list) or enroll everyone matching a filter."
+                  : "Pick another status chip above, or clear the filter.",
+              action:
+                statusFilter === "all" ? (
+                  <Button
+                    size="sm"
+                    className="h-7 gap-1 px-2 text-xs"
+                    onClick={() => setAddOpen(true)}
+                  >
+                    <ListPlus className="h-3.5 w-3.5" />
+                    Add members
+                  </Button>
+                ) : undefined,
+            }}
+          />
+        </div>
       )}
 
       {list && ctx && (

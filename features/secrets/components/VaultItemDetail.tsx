@@ -1216,26 +1216,19 @@ function AddFieldPanel({
           autoComplete="off"
         />
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <Select
+      <div className="space-y-2">
+        <div className="space-y-1">
+          <Label className="text-xs">Protection</Label>
+          <VaultHandlingControl
             value={handling}
-            onValueChange={(v) => setHandling(v as VaultHandling)}
-          >
-            <SelectTrigger
-              className="h-auto min-h-8 min-w-56 whitespace-normal text-left text-xs"
-              aria-label={VAULT_LABELS.valueAccess}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="visible">{HANDLING_LABELS.visible}</SelectItem>
-              <SelectItem value="revealable">
-                {HANDLING_LABELS.revealable}
-              </SelectItem>
-              <SelectItem value="sealed">{HANDLING_LABELS.sealed}</SelectItem>
-            </SelectContent>
-          </Select>
+            onValueChange={setHandling}
+            disabled={busy}
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Every value is encrypted at rest.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <label
             className="flex items-center gap-2 text-xs text-muted-foreground"
             title={
@@ -1252,31 +1245,31 @@ function AddFieldPanel({
               aria-label="Inject into sandboxes"
             />
           </label>
+          <Button
+            size="sm"
+            disabled={busy || !valid}
+            onClick={() =>
+              void onAdd({
+                field_key: fieldKey,
+                value,
+                env_key: envKey || null,
+                handling,
+                editable: true,
+                // Never send an impossible combination: without an env key the
+                // server refuses injection (it could never take effect).
+                inject_into_sandbox: inject && Boolean(envKey),
+                description: null,
+              })
+            }
+          >
+            {busy ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="mr-2 h-4 w-4" />
+            )}
+            Add field
+          </Button>
         </div>
-        <Button
-          size="sm"
-          disabled={busy || !valid}
-          onClick={() =>
-            void onAdd({
-              field_key: fieldKey,
-              value,
-              env_key: envKey || null,
-              handling,
-              editable: true,
-              // Never send an impossible combination: without an env key the
-              // server refuses injection (it could never take effect).
-              inject_into_sandbox: inject && Boolean(envKey),
-              description: null,
-            })
-          }
-        >
-          {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="mr-2 h-4 w-4" />
-          )}
-          Add field
-        </Button>
       </div>
     </div>
   );

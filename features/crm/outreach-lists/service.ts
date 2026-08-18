@@ -28,11 +28,7 @@ import {
   updateParty,
 } from "../service";
 import { contactPointBlockReason } from "../reachability";
-import type {
-  CrmQueryContext,
-  PartyDetail,
-  PartyListQuery,
-} from "../types";
+import type { CrmQueryContext, PartyDetail, PartyListQuery } from "../types";
 import type {
   OutreachListWithCount,
   OutreachListMemberRow,
@@ -62,7 +58,7 @@ function pgError(error: { message?: string; code?: string }): Error {
     error.message?.trim()
       ? `${error.message}${error.code ? ` (${error.code})` : ""}`
       : "Supabase returned an error with no message — usually a gateway/PostgREST " +
-        "failure rather than a query error.",
+          "failure rather than a query error.",
   );
 }
 
@@ -77,9 +73,9 @@ function crm() {
  * declared scope of the outreach list console (THE VIEW LAW; outreach lists are a
  * sales-floor tool, not a browse surface, so one blended work scope).
  */
-export async function fetchOutreachLists(ctx: CrmQueryContext): Promise<
-  OutreachListWithCount[]
-> {
+export async function fetchOutreachLists(
+  ctx: CrmQueryContext,
+): Promise<OutreachListWithCount[]> {
   let q = crm()
     .from("outreach_list")
     // Embedded count = live members only (soft-deleted rows excluded).
@@ -150,7 +146,10 @@ export async function updateOutreachList(
     "name" | "description" | "sending_identity_id"
   >,
 ): Promise<void> {
-  const { error } = await crm().from("outreach_list").update(patch).eq("id", id);
+  const { error } = await crm()
+    .from("outreach_list")
+    .update(patch)
+    .eq("id", id);
   if (error) throw pgError(error);
 }
 
@@ -677,20 +676,22 @@ export async function dispositionCall(args: {
   //    (self-healing: the member is still claimable), never a silently
   //    advanced member with no record. Bare insert (component RETURNING, D181).
   if (args.disposition.logsCall) {
-    const { error } = await crm().from("interaction").insert({
-      party_id: args.member.party_id,
-      organization_id: args.member.organization_id,
-      outreach_list_id: args.list.id,
-      contact_point_id: args.target?.point.id ?? null,
-      channel_code: "call",
-      direction: "outbound",
-      status: "completed",
-      subject: `Call — ${args.list.name}`,
-      body: notes,
-      occurred_at: nowIso,
-      attempt_number: attempt,
-      performed_by: args.userId,
-    });
+    const { error } = await crm()
+      .from("interaction")
+      .insert({
+        party_id: args.member.party_id,
+        organization_id: args.member.organization_id,
+        outreach_list_id: args.list.id,
+        contact_point_id: args.target?.point.id ?? null,
+        channel_code: "call",
+        direction: "outbound",
+        status: "completed",
+        subject: `Call — ${args.list.name}`,
+        body: notes,
+        occurred_at: nowIso,
+        attempt_number: attempt,
+        performed_by: args.userId,
+      });
     if (error) throw pgError(error);
   }
 

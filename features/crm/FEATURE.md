@@ -594,7 +594,7 @@ outreach-only console, and there is no second candidate list.
   rows (IC-3) — the ONE ranked list every producer writes to: the crawl, the
   paid waterfall, the open registries, the extension. `OutreachContactCandidatesCard`
   above it stays exactly as it is: it is the zero-write authority on what a
-  crawled page *says*, and it folds into this same list. **Two lists on one page
+  crawled page _says_, and it folds into this same list. **Two lists on one page
   would be the half-application the no-partial-application law names — these are
   one list and its source.**
   - **The two second-confirmations are two separate questions**, each with its
@@ -629,10 +629,10 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 - **`crm.resolve_party` is the ONLY domain→party path and it is server-side.**
   Never match a domain to a party in the client to create anything; the fold
   endpoint is the call site, it is idempotent on the domain key, and it stamps
-  the provenance edge. The client only *reads* the result back.
+  the provenance edge. The client only _reads_ the result back.
 - **`normalizeDomainKey` is the TS twin of aidream's `normalize_domain`** and
   must stay in step. A reputation case carries `source_domain =
-  "www.andysowards.com"` while the party is stored as `andysowards.com`; before
+"www.andysowards.com"` while the party is stored as `andysowards.com`; before
   the twin existed the door reported "could not be turned into an
   organization" about a record the server had just created. Parity test:
   `outreach-start/__tests__/normalize-domain-key.test.ts`.

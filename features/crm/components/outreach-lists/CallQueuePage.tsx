@@ -261,7 +261,8 @@ export function CallQueuePage({ listId }: { listId: string }) {
         ...s,
         dialed: s.dialed + 1,
         connected:
-          s.connected + (d.id === "connected" || d.id === "meeting_booked" ? 1 : 0),
+          s.connected +
+          (d.id === "connected" || d.id === "meeting_booked" ? 1 : 0),
         meetings: s.meetings + (d.id === "meeting_booked" ? 1 : 0),
         suppressed: s.suppressed + (d.suppresses ? 1 : 0),
       }));
@@ -451,7 +452,11 @@ export function CallQueuePage({ listId }: { listId: string }) {
             </div>
             <div className="mt-1 text-xs text-destructive/90">{error}</div>
             <div className="mt-2 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => void advance()}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void advance()}
+              >
                 Try again
               </Button>
               <Button size="sm" variant="ghost" asChild>
@@ -469,7 +474,8 @@ export function CallQueuePage({ listId }: { listId: string }) {
             </div>
             <div className="mt-1 text-xs text-muted-foreground">
               No claimable members right now — retries surface when their
-              windows pass{stats.dialed > 0 && (
+              windows pass
+              {stats.dialed > 0 && (
                 <>
                   {" "}
                   · this session: {stats.dialed} dialed, {stats.connected}{" "}
@@ -479,7 +485,11 @@ export function CallQueuePage({ listId }: { listId: string }) {
               .
             </div>
             <div className="mt-3 flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => void advance()}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void advance()}
+              >
                 Check again
               </Button>
               <Button size="sm" asChild>

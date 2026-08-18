@@ -186,28 +186,28 @@ export function VaultWorkspace({
 
   if (presentation === "full") {
     return (
-      <div className="h-full min-h-0 p-3 md:p-4">
-        <div className="grid h-full min-h-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:grid-cols-[13rem_21rem_minmax(0,1fr)]">
-          <aside className="hidden min-h-0 flex-col border-r border-border bg-muted/30 lg:flex">
-            <div className="border-b border-border p-3">
+      <div className="h-full min-h-0 bg-background">
+        <div className="grid h-full min-h-0 overflow-hidden border-t border-border bg-background lg:grid-cols-[14rem_20rem_minmax(0,1fr)] xl:grid-cols-[15rem_22rem_minmax(0,1fr)]">
+          <aside className="hidden min-h-0 flex-col border-r border-border bg-muted/20 lg:flex">
+            <div className="border-b border-border px-3 py-3.5">
               <div className="flex items-center gap-2">
-                <span className={cn(IDENTITY_TILE_CLASS, "h-8 w-8")}>
+                <span className={cn(IDENTITY_TILE_CLASS, "h-7 w-7")}>
                   {principal.type === "organization" ? (
-                    <Building2 className="h-4 w-4 text-primary" />
+                    <Building2 className="h-3.5 w-3.5 text-primary" />
                   ) : (
-                    <UserRound className="h-4 w-4 text-primary" />
+                    <UserRound className="h-3.5 w-3.5 text-primary" />
                   )}
                 </span>
-                <dl className="min-w-0">
-                  <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Vault owner
-                  </dt>
-                  <dd className="whitespace-normal break-words text-sm font-semibold text-foreground">
+                <div className="min-w-0">
+                  <p className="whitespace-normal break-words text-sm font-semibold text-foreground">
                     {principal.type === "organization"
-                      ? "Organization"
-                      : "Personal"}
-                  </dd>
-                </dl>
+                      ? "Organization vault"
+                      : "Personal vault"}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Encrypted and private
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -215,9 +215,6 @@ export function VaultWorkspace({
               className="min-h-0 flex-1 space-y-1 overflow-y-auto p-2"
               aria-label="Vault views"
             >
-              <p className="px-2 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Credentials
-              </p>
               {principal.type === "user" ? (
                 <>
                   <VaultNavButton
@@ -253,36 +250,40 @@ export function VaultWorkspace({
                 />
               )}
 
-              <p className="px-2 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Credential types
-              </p>
-              <VaultNavButton
-                active={family === "all"}
-                icon={KeyRound}
-                label="All types"
-                count={vault.items.length}
-                onClick={() => {
-                  setFamily("all");
-                  setSelectedId(null);
-                }}
-              />
-              {familiesPresent.map((fam) => (
-                <VaultNavButton
-                  key={fam}
-                  active={family === fam}
-                  icon={KeyRound}
-                  label={FAMILY_LABELS[fam]}
-                  count={
-                    vault.items.filter(
-                      (item) => familyOf(item, defsByKey) === fam,
-                    ).length
-                  }
-                  onClick={() => {
-                    setFamily(fam);
-                    setSelectedId(null);
-                  }}
-                />
-              ))}
+              {familiesPresent.length > 1 && (
+                <>
+                  <p className="px-2 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    Types
+                  </p>
+                  <VaultNavButton
+                    active={family === "all"}
+                    icon={KeyRound}
+                    label="All types"
+                    count={vault.items.length}
+                    onClick={() => {
+                      setFamily("all");
+                      setSelectedId(null);
+                    }}
+                  />
+                  {familiesPresent.map((fam) => (
+                    <VaultNavButton
+                      key={fam}
+                      active={family === fam}
+                      icon={KeyRound}
+                      label={FAMILY_LABELS[fam]}
+                      count={
+                        vault.items.filter(
+                          (item) => familyOf(item, defsByKey) === fam,
+                        ).length
+                      }
+                      onClick={() => {
+                        setFamily(fam);
+                        setSelectedId(null);
+                      }}
+                    />
+                  ))}
+                </>
+              )}
             </nav>
 
             {principal.type === "organization" && (
@@ -296,7 +297,7 @@ export function VaultWorkspace({
           </aside>
 
           <section className="flex min-h-0 min-w-0 flex-col border-r border-border">
-            <div className="space-y-2 border-b border-border p-3">
+            <div className="space-y-2 border-b border-border px-3 py-3">
               <div className="flex flex-wrap items-center gap-2 lg:hidden">
                 {principal.type === "user" && (
                   <div
@@ -376,7 +377,7 @@ export function VaultWorkspace({
                 {canCreate && (
                   <Button
                     size="sm"
-                    className="h-9 shrink-0"
+                    className="h-8 shrink-0 rounded-full px-3"
                     onClick={() => setCreateOpen(true)}
                     disabled={vault.busy}
                   >
@@ -387,7 +388,7 @@ export function VaultWorkspace({
                 )}
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-0.5">
                 <p className="text-xs text-muted-foreground">
                   {filtered.length}
                   {filtered.length === vault.items.length
@@ -417,7 +418,7 @@ export function VaultWorkspace({
               </div>
             )}
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-2">
+            <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
               {vault.loading ? (
                 <VaultWorkspaceListSkeleton />
               ) : filtered.length === 0 ? (
@@ -454,30 +455,24 @@ export function VaultWorkspace({
           <section className="hidden min-h-0 min-w-0 flex-col lg:flex">
             {detailItem ? (
               <>
-                <div className="flex min-w-0 items-start gap-3 border-b border-border p-4">
-                  <span className={cn(IDENTITY_TILE_CLASS, "h-10 w-10")}>
+                <div className="flex min-w-0 items-start gap-3 border-b border-border px-5 py-4">
+                  <span className={cn(IDENTITY_TILE_CLASS, "h-9 w-9")}>
                     <SelectedIcon
-                      className={cn("h-5 w-5", selectedIdentity?.iconClass)}
+                      className={cn("h-4.5 w-4.5", selectedIdentity?.iconClass)}
                     />
                   </span>
-                  <dl className="min-w-0 flex-1">
-                    <dt className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {VAULT_LABELS.credentialName}
-                    </dt>
-                    <dd className="whitespace-normal break-words text-base font-semibold text-foreground">
+                  <div className="min-w-0 flex-1">
+                    <p className="whitespace-normal break-words text-base font-semibold leading-5 text-foreground">
                       {detailItem.display_name}
-                    </dd>
-                    <dt className="mt-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      {VAULT_LABELS.credentialType}
-                    </dt>
-                    <dd className="whitespace-normal break-words text-xs text-muted-foreground">
+                    </p>
+                    <p className="mt-0.5 whitespace-normal break-words text-xs text-muted-foreground">
                       {[selectedIdentity?.kindLabel, selectedIdentity?.subtitle]
                         .filter(Boolean)
                         .join(" · ")}
-                    </dd>
-                  </dl>
+                    </p>
+                  </div>
                 </div>
-                <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
                   <VaultItemDetail
                     key={detailItem.id}
                     item={detailItem}
@@ -501,7 +496,7 @@ export function VaultWorkspace({
                     Select a credential
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Its labeled fields and actions will appear here.
+                    Its fields and actions will appear here.
                   </p>
                 </div>
               </div>
