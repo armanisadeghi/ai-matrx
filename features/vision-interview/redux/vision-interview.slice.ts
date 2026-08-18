@@ -28,6 +28,12 @@ import {
   type QuestionCategory,
   type RoleKey,
 } from "../types";
+// Durable ledger (never lose an answer to a reload) — see
+// ../pendingAnswersStorage.ts for why this is write-through, not in-memory.
+import {
+  loadPendingAnswers,
+  savePendingAnswers,
+} from "../pendingAnswersStorage";
 
 export type RunPhase =
   | "idle"
@@ -172,6 +178,8 @@ const visionInterviewSlice = createSlice({
       Object.assign(state, initialState);
       state.requestIdBySession = keepAdoptions;
       state.sessionId = action.payload.sessionId;
+      // Answers written before a reload are still "ready to send".
+      state.pendingAnswers = loadPendingAnswers(action.payload.sessionId);
     },
 
     /** ONE batched dispatch for the whole room load / catch-up refetch —
@@ -392,6 +400,7 @@ const visionInterviewSlice = createSlice({
       const { questionId, questionText, answerText } = action.payload;
       if (!answerText.trim()) {
         delete state.pendingAnswers[questionId];
+        savePendingAnswers(state.sessionId, state.pendingAnswers);
         return;
       }
       state.pendingAnswers[questionId] = {
@@ -400,17 +409,20 @@ const visionInterviewSlice = createSlice({
         answerText,
         updatedAt: Date.now(),
       };
+      savePendingAnswers(state.sessionId, state.pendingAnswers);
     },
 
     /** The Expert threw an answer away before it rode a message. */
     answerDiscarded(state, action: PayloadAction<{ questionId: string }>) {
       delete state.pendingAnswers[action.payload.questionId];
+      savePendingAnswers(state.sessionId, state.pendingAnswers);
     },
 
     /** The answers reached the room — dispatched ONLY once the message they
      *  rode is durably persisted, never on send-click. */
     pendingAnswersCleared(state) {
       state.pendingAnswers = {};
+      savePendingAnswers(state.sessionId, state.pendingAnswers);
     },
   },
 });
