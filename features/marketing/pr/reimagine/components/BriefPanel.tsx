@@ -21,8 +21,9 @@ import {
   Link2,
   Newspaper,
   Quote,
+  PenLine,
+  Radar,
   Send,
-  Sparkles,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -84,7 +85,6 @@ export interface BriefHandlers {
 export function BriefPanel({
   item,
   site,
-  sites,
   now,
   relatedRequests,
   relatedCoverage,
@@ -94,7 +94,6 @@ export function BriefPanel({
 }: {
   item: DeskItem | null;
   site: DeskSite | null;
-  sites: DeskSite[];
   now: number;
   relatedRequests: SourceRequestRow[];
   relatedCoverage: CoverageMentionRow[];
@@ -107,7 +106,7 @@ export function BriefPanel({
   return (
     <div className="flex h-full min-h-0 flex-col">
       {showBack ? (
-        <div className="shrink-0 border-b border-border/70 px-3 py-2">
+        <div className="shrink-0 border-b border-border/70 px-3 py-2 lg:hidden">
           <Button
             size="sm"
             variant="ghost"
@@ -124,7 +123,6 @@ export function BriefPanel({
           <AngleBrief
             angle={item.row}
             site={site}
-            sites={sites}
             now={now}
             relatedRequests={relatedRequests}
             relatedCoverage={relatedCoverage}
@@ -164,7 +162,7 @@ function BriefIntro() {
     <div className="flex h-full items-center justify-center p-8">
       <div className="max-w-md">
         <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Sparkles className="h-4 w-4" />
+          <Radar className="h-4 w-4" />
         </span>
         <h2 className="mt-3 text-base font-semibold text-foreground">
           You are not short of a press channel. You are short of a story.
@@ -225,7 +223,6 @@ function IntroLine({
 function AngleBrief({
   angle,
   site,
-  sites,
   now,
   relatedRequests,
   relatedCoverage,
@@ -233,7 +230,6 @@ function AngleBrief({
 }: {
   angle: StoryAngleRow;
   site: DeskSite | null;
-  sites: DeskSite[];
   now: number;
   relatedRequests: SourceRequestRow[];
   relatedCoverage: CoverageMentionRow[];
@@ -384,7 +380,6 @@ function AngleBrief({
 
       <RelatedRequests
         requests={relatedRequests}
-        sites={sites}
         now={now}
         onSelect={handlers.onSelect}
       />
@@ -516,12 +511,10 @@ function Field({ label, value }: { label: string; value: string }) {
 
 function RelatedRequests({
   requests,
-  sites,
   now,
   onSelect,
 }: {
   requests: SourceRequestRow[];
-  sites: DeskSite[];
   now: number;
   onSelect: (id: string) => void;
 }) {
@@ -563,9 +556,6 @@ function RelatedRequests({
           );
         })}
       </ul>
-      <p className="mt-1.5 text-[10px] text-muted-foreground">
-        Sites: {sites.length} on this desk.
-      </p>
     </section>
   );
 }
@@ -906,7 +896,7 @@ function RequestBrief({
                       className="h-7 text-xs"
                       disabled
                     >
-                      <Sparkles className="mr-1 h-3.5 w-3.5" />
+                      <PenLine className="mr-1 h-3.5 w-3.5" />
                       Draft with AI
                     </Button>
                   </span>

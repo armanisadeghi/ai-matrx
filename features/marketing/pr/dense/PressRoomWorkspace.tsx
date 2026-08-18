@@ -78,7 +78,7 @@ import {
   type AngleSort,
   type PressFilters,
 } from "./select";
-import type { StoryAngleRow } from "./types";
+import { coverageAngleId, type StoryAngleRow } from "./types";
 import { DeadlineRail } from "./components/DeadlineRail";
 import { FacetRail } from "./components/FacetRail";
 import {
@@ -321,14 +321,7 @@ export default function PressRoomWorkspace() {
     <CoverageDetail
       mention={selectedCoverage}
       angle={angles.find(
-        (row) =>
-          row.id ===
-          (selectedCoverage.metadata &&
-          typeof selectedCoverage.metadata === "object" &&
-          !Array.isArray(selectedCoverage.metadata)
-            ? (selectedCoverage.metadata as Record<string, unknown>)
-                .story_angle_id
-            : undefined),
+        (row) => row.id === coverageAngleId(selectedCoverage),
       )}
       onFocusAngle={(id) => focusRecord({ kind: "angle", id })}
     />
@@ -404,7 +397,8 @@ export default function PressRoomWorkspace() {
             setFilters({ ...filters, q: event.target.value })
           }
           placeholder="Search headlines, queries, outlets…   /"
-          className="h-6 rounded border-border pl-7 pr-6 text-xs"
+          // 16px on phones: anything smaller makes iOS zoom the whole page on focus.
+          className="h-8 rounded border-border pl-7 pr-6 text-[16px] md:h-6 md:text-xs"
         />
         {filters.q ? (
           <button

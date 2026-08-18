@@ -37,6 +37,8 @@ import PlanPageOutlineBlock from "../../blocks/page-pipeline/PlanPageOutlineBloc
 import PlanPageDraftBlock from "../../blocks/page-pipeline/PlanPageDraftBlock";
 import PlanPageReviewBlock from "../../blocks/page-pipeline/PlanPageReviewBlock";
 import CmsPageBuildBlock from "../../blocks/page-pipeline/CmsPageBuildBlock";
+import IngestedSourcesBlock from "../../blocks/ingested-sources/IngestedSourcesBlock";
+import StudyNotesBlock from "../../blocks/study-notes/StudyNotesBlock";
 import MultipleChoiceQuiz from "../../blocks/quiz/MultipleChoiceQuiz";
 import Slideshow from "../../blocks/presentations/Slideshow";
 import RecipeViewer from "../../blocks/cooking-recipes/cookingRecipeDisplay";
@@ -325,6 +327,18 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <MasterworkCheckupFindingBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  IngestedSourcesBlock: (
+    props: React.ComponentProps<typeof IngestedSourcesBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <IngestedSourcesBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  StudyNotesBlock: (props: React.ComponentProps<typeof StudyNotesBlock>) => (
+    <LazyBlockWrapper>
+      <StudyNotesBlock {...props} />
     </LazyBlockWrapper>
   ),
   AgentResultBlock: (props: React.ComponentProps<typeof AgentResultBlock>) => (

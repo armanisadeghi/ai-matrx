@@ -121,6 +121,8 @@ describe("compiled bootstrap (system-components)", () => {
       episode_title_options: "episode_title_options",
       masterwork_checkup_finding: "masterwork_checkup_finding",
       agent_result: "agent_result",
+      ingested_sources: "ingested_sources",
+      study_notes: "study_notes",
       seo_package: "seo_package",
       keyword_serp_intent_analysis_v1: "keyword_serp_intent_analysis",
       memory_aid: "memory_aid",

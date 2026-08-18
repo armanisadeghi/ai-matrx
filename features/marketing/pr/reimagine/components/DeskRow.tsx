@@ -28,7 +28,6 @@ import {
   countdownTo,
   ENDOWMENT_LABEL,
   humanise,
-  laneOf,
   missingCount,
   PLATFORM_LABEL,
   rankReasons,
@@ -70,7 +69,6 @@ export function DeskRow({
 }) {
   const Icon = KIND_ICON[item.kind];
   const reasons = rankReasons(item, now);
-  const lane = laneOf(item, now);
   const title = titleOf(item);
   const subtitle = subtitleOf(item);
 
@@ -142,7 +140,7 @@ export function DeskRow({
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
           <SiteRef site={site} />
           <span className="text-border">·</span>
-          <RowMeta item={item} now={now} lane={lane} />
+          <RowMeta item={item} now={now} />
         </div>
         {subtitle ? (
           <p className="mt-1 line-clamp-1 text-[11px] leading-snug text-muted-foreground">
@@ -158,15 +156,7 @@ export function DeskRow({
   );
 }
 
-function RowMeta({
-  item,
-  now,
-  lane,
-}: {
-  item: DeskItem;
-  now: number;
-  lane: string;
-}) {
+function RowMeta({ item, now }: { item: DeskItem; now: number }) {
   if (item.kind === "angle") {
     const angle = item.row;
     return (
@@ -235,9 +225,6 @@ function RowMeta({
         <CheckCircle2 className="mr-1 h-3 w-3" />
         {mention.prominence ? humanise(mention.prominence) : "Landed"}
       </Badge>
-      <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
-        {lane}
-      </span>
     </>
   );
 }
