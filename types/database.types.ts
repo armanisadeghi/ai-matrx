@@ -9931,6 +9931,27 @@ export type Database = {
           recording_owner_id: string
         }[]
       }
+      set_my_sms_assistant_enabled: {
+        Args: { p_enabled: boolean; p_program_key: string }
+        Returns: {
+          blocked_reasons: string[]
+          chat_conversation_id: string
+          consent_status: string
+          destination_id: string
+          global_assistant_enabled: boolean
+          identity_status: string
+          masked_phone: string
+          number_active: boolean
+          preferred_agent_id: string
+          preferred_agent_version_id: string
+          program_key: string
+          ready: boolean
+          sms_conversation_id: string
+          sms_enabled: boolean
+          user_assistant_enabled: boolean
+          verified_user_phone: string
+        }[]
+      }
       voice_call_consent_persistence_readiness: {
         Args: { p_program_key?: string }
         Returns: {
