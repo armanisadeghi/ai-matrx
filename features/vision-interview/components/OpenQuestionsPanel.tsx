@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  composerInsertRequested,
   holeForced,
   holeMerged,
   questionForced,
@@ -190,7 +191,29 @@ function QuestionCard({
             raised by {raisedBy}
           </span>
         )}
-        <span className="ml-auto inline-flex opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100">
+        {isLive && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="ml-auto h-5 px-1.5 text-[11px] text-primary hover:text-primary"
+            onClick={() =>
+              dispatch(
+                composerInsertRequested({
+                  text: `**Q:** ${question.question}\n**A:** `,
+                }),
+              )
+            }
+            title="Answer this question in the composer — it sends with your next turn"
+          >
+            Answer
+          </Button>
+        )}
+        <span
+          className={cn(
+            "inline-flex opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100",
+            !isLive && "ml-auto",
+          )}
+        >
           {question.state === "deferred" ? (
             <Button
               variant="ghost"

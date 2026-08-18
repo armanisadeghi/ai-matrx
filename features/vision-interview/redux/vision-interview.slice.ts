@@ -59,6 +59,10 @@ interface VisionInterviewState {
 
   /** sessionId → requestId the run stream was adopted under (activeRequests). */
   requestIdBySession: Record<string, string>;
+
+  /** Text another surface (e.g. a question's Answer button) asked the
+   *  composer to append. The composer consumes and clears it. */
+  composerInsert: string | null;
 }
 
 const initialState: VisionInterviewState = {
@@ -76,6 +80,7 @@ const initialState: VisionInterviewState = {
   roleActivity: {},
   pendingInterrupt: null,
   requestIdBySession: {},
+  composerInsert: null,
 };
 
 /**
@@ -257,6 +262,18 @@ const visionInterviewSlice = createSlice({
       state.requestIdBySession[action.payload.sessionId] =
         action.payload.requestId;
     },
+
+    /** A surface (e.g. a question's Answer button) hands text to the
+     *  composer. Appends when an insert is already pending un-consumed. */
+    composerInsertRequested(state, action: PayloadAction<{ text: string }>) {
+      state.composerInsert = state.composerInsert
+        ? `${state.composerInsert}\n\n${action.payload.text}`
+        : action.payload.text;
+    },
+
+    composerInsertConsumed(state) {
+      state.composerInsert = null;
+    },
   },
 });
 
@@ -279,6 +296,8 @@ export const {
   runCompleted,
   runFailed,
   streamAdopted,
+  composerInsertRequested,
+  composerInsertConsumed,
 } = visionInterviewSlice.actions;
 
 export default visionInterviewSlice.reducer;
@@ -303,6 +322,8 @@ export const selectPendingInterrupt = (state: RootState) =>
   selectSelf(state).pendingInterrupt;
 export const selectRevisions = (state: RootState) =>
   selectSelf(state).revisions;
+export const selectComposerInsert = (state: RootState) =>
+  selectSelf(state).composerInsert;
 
 export const selectRoomRequestId = (state: RootState): string | null => {
   const s = selectSelf(state);

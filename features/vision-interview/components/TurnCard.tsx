@@ -27,15 +27,74 @@ function turnTime(iso: string): string {
   });
 }
 
+function prettifyKey(key: string): string {
+  return key
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/**
+ * A turn's DISPLAY text. New rows already carry human-readable content, but
+ * older structured-role rows (Scribe / Adversary) persisted the raw JSON
+ * envelope as their speech — a user must NEVER see that blob, so it heals
+ * here into the same summary the backend now writes. Parse-once on persisted
+ * content (never stream parsing); anything unrecognized renders as-is.
+ */
+function displayContent(turn: InterviewTurnRow): string {
+  const raw = (turn.content ?? "").trim();
+  if (!raw.startsWith("{")) return raw;
+  try {
+    const parsed = JSON.parse(raw) as {
+      doc_patches?: { section_key?: string; op?: string }[];
+      question_updates?: { question_id?: string | null }[];
+      gap_questions?: string[];
+      holes?: { claim?: string; claim_attacked?: string }[];
+    };
+    if (Array.isArray(parsed.doc_patches)) {
+      const parts: string[] = [];
+      const touched = parsed.doc_patches
+        .map((p) => (p.section_key ? `**${prettifyKey(p.section_key)}**` : null))
+        .filter(Boolean);
+      if (touched.length) {
+        parts.push(`Updated the living document: ${touched.join(", ")}.`);
+      }
+      const fresh =
+        (parsed.gap_questions?.length ?? 0) +
+        (parsed.question_updates?.filter((u) => !u.question_id).length ?? 0);
+      const updated =
+        parsed.question_updates?.filter((u) => u.question_id).length ?? 0;
+      if (fresh) parts.push(`Raised ${fresh} new question${fresh === 1 ? "" : "s"}.`);
+      if (updated) parts.push(`Updated ${updated} open question${updated === 1 ? "" : "s"}.`);
+      return parts.join(" ") || "Reviewed the round — no changes recorded.";
+    }
+    if (Array.isArray(parsed.holes)) {
+      const names = parsed.holes
+        .map((h) => h.claim_attacked ?? h.claim)
+        .filter(Boolean);
+      return names.length
+        ? `Opened ${names.length} hole${names.length === 1 ? "" : "s"}:\n${names
+            .map((n) => `- ${n}`)
+            .join("\n")}`
+        : "No holes found this round.";
+    }
+  } catch {
+    // Not a JSON envelope after all — render as-is.
+  }
+  return raw;
+}
+
 export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
   const isHuman = turn.speaker === "human";
+  const isScribe = turn.speaker === "scribe";
   const role = isHuman ? null : ROLES[turn.speaker as RoleKey];
   const name = role?.name ?? "You";
   const [copied, setCopied] = useState(false);
+  const content = displayContent(turn);
 
   const copyTurn = async () => {
     try {
-      await navigator.clipboard.writeText(turn.content);
+      await navigator.clipboard.writeText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 900);
     } catch {
@@ -85,13 +144,17 @@ export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
             "mt-0.5",
             isHuman &&
               "rounded-xl rounded-tl-sm border border-primary/15 bg-primary/5 px-3 py-2",
+            // The Scribe never speaks to the person — its turn is a quiet
+            // activity record of what it changed, not a chat bubble.
+            isScribe &&
+              "rounded-lg border border-border/60 bg-muted/40 px-3 py-2",
           )}
         >
           <RichDocument
-            content={turn.content}
+            content={content}
             source={{ type: "raw" }}
             hideCopyButton
-            contentClassName="text-sm"
+            contentClassName={isScribe ? "text-[13px] text-muted-foreground" : "text-sm"}
           />
         </div>
       </div>

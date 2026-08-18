@@ -19,7 +19,7 @@
 import { cn } from "@/lib/utils";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import type { WorkflowNodeStreamEntry } from "@/features/agents/types/request.types";
-import { ROLES, type RoleKey } from "../types";
+import { ROLES, STRUCTURED_ROLES, type RoleKey } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
 
 interface LiveTurnCardProps {
@@ -28,8 +28,16 @@ interface LiveTurnCardProps {
   round: number;
 }
 
+/** What a structured role is doing while its JSON streams — the tokens
+ *  themselves are machine output and must never render as speech. */
+const STRUCTURED_WORKING_LABEL: Partial<Record<RoleKey, string>> = {
+  scribe: "Updating the living document and question ledger…",
+  adversary: "Stress-testing the vision for holes…",
+};
+
 export function LiveTurnCard({ role, stream, round }: LiveTurnCardProps) {
   const meta = ROLES[role];
+  const structured = STRUCTURED_ROLES.has(role);
   const isThinking = stream.text.length === 0;
 
   return (
@@ -59,17 +67,23 @@ export function LiveTurnCard({ role, stream, round }: LiveTurnCardProps) {
               )}
               aria-hidden
             />
-            {isThinking ? "Thinking" : "Speaking"}
+            {isThinking ? "Thinking" : structured ? "Working" : "Speaking"}
           </span>
         </div>
-        {!isThinking && (
-          <div className="mt-0.5 text-sm">
-            <BasicMarkdownContent
-              content={stream.text}
-              isStreamActive
-              showCopyButton={false}
-            />
-          </div>
+        {structured ? (
+          <p className="mt-0.5 text-[13px] italic text-muted-foreground">
+            {STRUCTURED_WORKING_LABEL[role] ?? "Working…"}
+          </p>
+        ) : (
+          !isThinking && (
+            <div className="mt-0.5 text-sm">
+              <BasicMarkdownContent
+                content={stream.text}
+                isStreamActive
+                showCopyButton={false}
+              />
+            </div>
+          )
         )}
       </div>
     </div>

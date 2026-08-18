@@ -38,19 +38,84 @@ interface DocSection {
   body: string;
 }
 
-/** Split the Scribe's section-keyed markdown on H2 headings. Pure string
- *  work on PERSISTED content — not stream parsing (RichDocument renders
- *  every body through the canonical engine). */
+// The backend's section keying: an invisible HTML-comment marker per section
+// (aidream `document_sections.py`). Older documents may still carry the
+// retired `<key>…</key>` XML wrappers — those are parsed too and their tags
+// NEVER reach the user (they rendered as literal junk; live defect,
+// 2026-08-18). Pure string work on PERSISTED content — not stream parsing.
+const MARKER_RE = /^[ \t]*<!--\s*matrx:section:([A-Za-z_][A-Za-z0-9_.\-]*)\s*-->[ \t]*$/gm;
+const LEGACY_SECTION_RE =
+  /<([A-Za-z_][A-Za-z0-9_.\-]*)(?:\s[^>]*)?>([\s\S]*?)<\/\1\s*>/g;
+const H2_RE = /^##\s+(.+?)\s*$/;
+
+function prettifyKey(key: string): string {
+  return key
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Pull the section's title out of its body: the first H2 wins (and is
+ *  removed from the rendered body — the accordion trigger carries it);
+ *  fallback is the prettified section key. */
+function titleFromBody(body: string, key: string): { title: string; body: string } {
+  const lines = body.split("\n");
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!lines[i].trim()) continue;
+    const h2 = H2_RE.exec(lines[i]);
+    if (h2) {
+      return {
+        title: h2[1],
+        body: [...lines.slice(0, i), ...lines.slice(i + 1)].join("\n").trim(),
+      };
+    }
+    break;
+  }
+  return { title: prettifyKey(key), body: body.trim() };
+}
+
 function splitSections(markdown: string): {
   preamble: string;
   sections: DocSection[];
 } {
+  // 1) Canonical marker format.
+  MARKER_RE.lastIndex = 0;
+  const markers = [...markdown.matchAll(MARKER_RE)];
+  if (markers.length > 0) {
+    const sections: DocSection[] = markers.map((m, i) => {
+      const start = (m.index ?? 0) + m[0].length;
+      const end = i + 1 < markers.length ? (markers[i + 1].index ?? markdown.length) : markdown.length;
+      const raw = markdown.slice(start, end).trim();
+      const { title, body } = titleFromBody(raw, m[1]);
+      return { key: `${i}:${m[1]}`, title, body };
+    });
+    return {
+      preamble: markdown.slice(0, markers[0].index ?? 0).trim(),
+      sections,
+    };
+  }
+
+  // 2) Legacy XML-wrapped format — parse, and never show a tag.
+  LEGACY_SECTION_RE.lastIndex = 0;
+  const legacy = [...markdown.matchAll(LEGACY_SECTION_RE)];
+  if (legacy.length > 0) {
+    const sections: DocSection[] = legacy.map((m, i) => {
+      const { title, body } = titleFromBody(m[2].trim(), m[1]);
+      return { key: `${i}:${m[1]}`, title, body };
+    });
+    return {
+      preamble: markdown.slice(0, legacy[0].index ?? 0).trim(),
+      sections,
+    };
+  }
+
+  // 3) Plain markdown — fold on H2 headings.
   const lines = markdown.split("\n");
   const sections: DocSection[] = [];
   const preamble: string[] = [];
   let current: { title: string; body: string[] } | null = null;
   for (const line of lines) {
-    const heading = /^##\s+(.+?)\s*$/.exec(line);
+    const heading = H2_RE.exec(line);
     if (heading) {
       if (current) {
         sections.push({
@@ -92,7 +157,11 @@ export function DocumentPane() {
   const copyDocument = async () => {
     if (!document) return;
     try {
-      await navigator.clipboard.writeText(document);
+      // The user's copy is clean markdown — no machine section markers.
+      MARKER_RE.lastIndex = 0;
+      await navigator.clipboard.writeText(
+        document.replace(MARKER_RE, "").replace(/\n{3,}/g, "\n\n").trim(),
+      );
       setCopied(true);
       setTimeout(() => setCopied(false), 900);
     } catch {

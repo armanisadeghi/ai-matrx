@@ -148,6 +148,25 @@ per-node tokens the same way.
 
 ## Change log
 
+- 2026-08-18 — **The room made honest, from Arman's broken live session.**
+  (1) RELOAD-RESUME: on hydrate, a session carrying a `run_id` while the hook
+  is idle mints an `activeRequests` row (`ensureAdopted`) and follows the
+  run's SSE feed — the durable replay re-drives the choreography into the
+  run's REAL state (running / waiting_human / errored), so a reload never
+  shows a dead "Start" over a live run and a server-side run death now shows
+  its error instead of an eternal hang. (2) DOCUMENT SECTIONS: `DocumentPane`
+  parses the backend's `<!-- matrx:section:key -->` markers (and the retired
+  `<key>` XML wrappers, and bare-H2 fallback) — a tag never reaches the user;
+  copy strips markers. (3) SCRIBE TURNS render as a quiet activity card; a
+  legacy raw-JSON envelope turn (Scribe or Adversary) heals into a readable
+  summary in `TurnCard.displayContent`. (4) STRUCTURED live streams
+  (Scribe/Adversary, `STRUCTURED_ROLES`) never render raw JSON tokens — a
+  working label instead; a Thinking placeholder card appears on
+  `node_started` before the first token. (5) CLICK-TO-ANSWER: each live
+  question has an Answer button → `composerInsertRequested` appends a
+  `**Q:**/**A:**` block to the durable draft and focuses the composer.
+  (6) The interrupt-prompt banner is height-capped (it once squashed the
+  transcript to 8px); Start reads "Continue" after a completed run.
 - 2026-08-16 — Room surface rebuilt to the /chat + Scribe bar (Arman's
   rejection of v1): `RoleAvatar` presence language with chart-token role
   accents (strip, turns, live cards, summon menu); turns in the canonical

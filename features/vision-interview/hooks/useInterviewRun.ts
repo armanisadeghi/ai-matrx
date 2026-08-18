@@ -31,6 +31,11 @@ import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
+import { createRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
+import {
+  generateConversationId,
+  generateRequestId,
+} from "@/features/agents/redux/execution-system/utils/ids";
 import {
   followWorkflowRunStream,
   type WorkflowRunWireEvent,
@@ -50,6 +55,8 @@ import {
   runStarted,
   runStarting,
   selectPendingInterrupt,
+  selectRoomHydrated,
+  selectRoomSession,
   selectRunId,
   selectRunPhase,
   sessionMerged,
@@ -70,6 +77,8 @@ export function useInterviewRun(sessionId: string) {
   const runPhase = useAppSelector(selectRunPhase);
   const runId = useAppSelector(selectRunId);
   const pendingInterrupt = useAppSelector(selectPendingInterrupt);
+  const session = useAppSelector(selectRoomSession);
+  const hydrated = useAppSelector(selectRoomHydrated);
   // A second click while a call is in flight must not start a second run.
   const inFlightRef = useRef(false);
   // The SSE follower for the current run — armed EXACTLY ONCE per run_id and
@@ -180,6 +189,47 @@ export function useInterviewRun(sessionId: string) {
       }
     });
   };
+
+  /** Mint an activeRequests row WITHOUT an inline stream — the reload path.
+   *  Same row shape adoptForeignStream creates; the SSE follower writes node
+   *  streams into it exactly as on a live start. */
+  const ensureAdopted = () => {
+    if (adoptedRef.current) return adoptedRef.current;
+    const ids = {
+      requestId: generateRequestId(),
+      conversationId: generateConversationId(),
+    };
+    dispatch(
+      createRequest({
+        requestId: ids.requestId,
+        conversationId: ids.conversationId,
+      }),
+    );
+    adoptedRef.current = ids;
+    dispatch(streamAdopted({ sessionId, requestId: ids.requestId }));
+    return ids;
+  };
+
+  // RELOAD-RESUME: a page load into a session with a live run must NOT show
+  // a dead room with a "Start" button (that is how a user starts a duplicate
+  // run against a workflow that is mid-round, or types into a composer that
+  // can never send). The session row is truth: when it carries a run_id and
+  // this hook knows nothing yet, follow that run's SSE feed — the durable
+  // event replay (seq 0 → head) re-drives the whole choreography and lands
+  // the room in the run's REAL current state (running / waiting_human /
+  // complete / errored). Auto-resume is the floor, never a question.
+  const reconciledRunRef = useRef<string | null>(null);
+  const sessionRunId = session?.run_id ?? null;
+  useEffect(() => {
+    if (!hydrated || !sessionRunId) return;
+    if (runPhase !== "idle") return;
+    if (reconciledRunRef.current === sessionRunId) return;
+    reconciledRunRef.current = sessionRunId;
+    dispatch(runStarted({ runId: sessionRunId }));
+    ensureAdopted();
+    startFollowing(sessionRunId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- startFollowing/ensureAdopted are render-scoped helpers over stable refs; the guard ref makes re-runs no-ops
+  }, [hydrated, sessionRunId, runPhase, dispatch]);
 
   /**
    * Events on the inline NDJSON start/resume stream. It detaches almost

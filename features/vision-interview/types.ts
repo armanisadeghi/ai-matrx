@@ -82,6 +82,9 @@ export interface InterviewTurnRow {
   position: number;
   run_id: string | null;
   node_id: string | null;
+  /** Machine sidecar — the Scribe's full structured envelope rides
+   *  `metadata.scribe_output` (its `content` is the human-readable summary). */
+  metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }
@@ -255,6 +258,16 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     },
   },
 };
+
+/**
+ * Roles whose model output is a STRUCTURED JSON envelope, not prose. Their
+ * raw token stream must never render as speech — the live layer shows a
+ * working state instead, and the persisted turn carries the readable record.
+ */
+export const STRUCTURED_ROLES: ReadonlySet<RoleKey> = new Set<RoleKey>([
+  "adversary",
+  "scribe",
+]);
 
 /**
  * Resolve a workflow node id to the role speaking through it. Node ids carry

@@ -20,13 +20,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectWorkflowNodeStreams } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import {
+  selectActiveSpeaker,
   selectRoomHydrated,
   selectRoomRequestId,
   selectRoomSession,
   selectTurnsOrdered,
 } from "../redux/vision-interview.slice";
 import type { ResumeInput } from "../hooks/useInterviewRun";
-import { ROLE_ORDER, roleFromNodeId } from "../types";
+import { ROLE_ORDER, ROLES, roleFromNodeId } from "../types";
 import { Composer } from "./Composer";
 import { LiveTurnCard } from "./LiveTurnCard";
 import { RoleAvatar } from "./RoleAvatar";
@@ -78,6 +79,16 @@ export function TranscriptPane({
     return [{ stream, role }];
   });
 
+  // MOTION BEFORE TOKENS: node_started fires seconds before the first token
+  // frame arrives (and the ephemeral token wire is best-effort). The active
+  // speaker must be visibly thinking in the transcript from the instant its
+  // node starts — a silent gap here is the "staring at nothingness" defect.
+  const activeSpeaker = useAppSelector(selectActiveSpeaker);
+  const showThinkingPlaceholder =
+    activeSpeaker !== null &&
+    !liveCards.some((c) => c.role === activeSpeaker) &&
+    !turns.some((t) => t.speaker === activeSpeaker && t.round >= currentRound);
+
   // Follow the conversation: new turn or live tokens → scroll to bottom.
   const liveCharCount = liveCards.reduce(
     (sum, c) => sum + c.stream.text.length,
@@ -98,7 +109,7 @@ export function TranscriptPane({
             <Skeleton className="h-16 w-5/6" />
             <Skeleton className="h-16 w-full" />
           </div>
-        ) : turns.length === 0 && liveCards.length === 0 ? (
+        ) : turns.length === 0 && liveCards.length === 0 && !showThinkingPlaceholder ? (
           session?.vision_statement?.trim() ? (
             // NEVER-LOSE-CONTENT: a statement saved on the session but not
             // yet turned into a run MUST be visible — data that is saved but
@@ -151,6 +162,32 @@ export function TranscriptPane({
                 round={currentRound}
               />
             ))}
+            {showThinkingPlaceholder && activeSpeaker && (
+              <div className="flex gap-2.5 px-1 py-1.5">
+                <RoleAvatar role={activeSpeaker} speaking />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`text-[13px] font-semibold ${ROLES[activeSpeaker].accent.text}`}
+                    >
+                      {ROLES[activeSpeaker].name}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground">
+                      Round {currentRound}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 text-[11px] font-medium ${ROLES[activeSpeaker].accent.text}`}
+                    >
+                      <span
+                        className="inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-current"
+                        aria-hidden
+                      />
+                      Thinking
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

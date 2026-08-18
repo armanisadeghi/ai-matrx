@@ -17,7 +17,7 @@
 // Also carries the role-summon control ("bring in the Adversary" →
 // summon_role on the resume payload, design-doc open Q3).
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CornerDownLeft,
@@ -37,10 +37,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useDurableDraft } from "@/hooks/useDurableDraft";
 import {
+  composerInsertConsumed,
   selectActiveSpeaker,
+  selectComposerInsert,
   selectPendingInterrupt,
   selectRunError,
   selectRunPhase,
@@ -58,7 +60,9 @@ interface ComposerProps {
 }
 
 export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
+  const dispatch = useAppDispatch();
   const runPhase = useAppSelector(selectRunPhase);
+  const composerInsert = useAppSelector(selectComposerInsert);
   const pendingInterrupt = useAppSelector(selectPendingInterrupt);
   const activeSpeaker = useAppSelector(selectActiveSpeaker);
   const runError = useAppSelector(selectRunError);
@@ -73,6 +77,23 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
   const [summon, setSummon] = useState<RoleKey | null>(null);
   const [sending, setSending] = useState(false);
   const [starting, setStarting] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Consume text another surface handed the composer (a question's Answer
+  // button) — append to the durable draft, then focus so they just type.
+  useEffect(() => {
+    if (!composerInsert) return;
+    setText(text ? `${text.replace(/\s+$/, "")}\n\n${composerInsert}` : composerInsert);
+    dispatch(composerInsertConsumed());
+    requestAnimationFrame(() => {
+      const el = wrapperRef.current?.querySelector("textarea");
+      if (el) {
+        el.focus();
+        el.setSelectionRange(el.value.length, el.value.length);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs only when an insert lands; draft setter is stable for the key
+  }, [composerInsert]);
 
   const canAnswer = runPhase === "waiting_human";
   const canStart =
@@ -122,12 +143,16 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
     <div className="shrink-0 border-t border-border bg-background px-2 pb-2 pt-1.5">
       {/* Status line — always honest about what the room is doing. */}
       {canAnswer && pendingInterrupt?.prompt ? (
-        <p className="mb-1.5 flex items-start gap-1.5 rounded-lg border border-primary/25 bg-primary/5 px-2.5 py-1.5 text-xs text-foreground">
+        // Height-capped: a long round summary must never squash the
+        // transcript above it (it once left the transcript 8px tall).
+        <p className="mb-1.5 flex max-h-32 items-start gap-1.5 overflow-y-auto rounded-lg border border-primary/25 bg-primary/5 px-2.5 py-1.5 text-xs text-foreground">
           <MessageCircleQuestion
             className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary"
             aria-hidden
           />
-          <span className="min-w-0">{pendingInterrupt.prompt}</span>
+          <span className="min-w-0 whitespace-pre-wrap">
+            {pendingInterrupt.prompt}
+          </span>
         </p>
       ) : working ? (
         <p className="mb-1 flex items-center gap-1.5 px-1 text-xs text-muted-foreground">
@@ -172,7 +197,10 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
         </p>
       )}
 
-      <div className="rounded-xl border border-border bg-card shadow-sm transition-colors focus-within:border-primary/40">
+      <div
+        ref={wrapperRef}
+        className="rounded-xl border border-border bg-card shadow-sm transition-colors focus-within:border-primary/40"
+      >
         <ProTextarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -254,7 +282,9 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
                 ? "Starting…"
                 : runPhase === "error"
                   ? "Try again"
-                  : "Start"}
+                  : runPhase === "complete"
+                    ? "Continue"
+                    : "Start"}
             </Button>
           ) : (
             <Button
