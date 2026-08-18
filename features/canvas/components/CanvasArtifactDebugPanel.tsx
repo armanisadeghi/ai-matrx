@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { ChevronDown, ChevronUp, Bug } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import type { CanvasItem } from "@/features/canvas/redux/canvasSlice";
@@ -235,8 +236,10 @@ export function InlineArtifactDebugStrip({
   lastErrors?: string[];
   busy?: boolean;
 }) {
-  const isAdmin = useAppSelector(selectIsAdmin);
-  if (!isAdmin) return null;
+  const showAdminDebug = useAppSelector(
+    (state) => selectIsAdmin(state) && selectIsDebugMode(state),
+  );
+  if (!showAdminDebug) return null;
 
   const hasUuid = isMaterializedArtifactId(artifactId);
 
