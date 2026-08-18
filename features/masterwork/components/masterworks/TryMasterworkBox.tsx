@@ -34,6 +34,10 @@ import {
   type WorkflowRunWireEvent,
 } from "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream";
 import { RichDocument } from "@/features/rich-document/RichDocument";
+import {
+  explainRunFailure,
+  type RunFailureExplanation,
+} from "@/features/workflow-runtime/run-failure-explanation";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import {
   getMasterworkRunVerdict,
@@ -106,12 +110,19 @@ function stageLabel(nodeId: string): string {
 export function TryMasterworkBox({
   masterworkId,
   masterworkKind,
+  whatItRuns = "Your Masterwork",
   onRunFinished,
   onCompare,
 }: {
   masterworkId: string;
   /** From the Masterwork's metadata (masterwork_kind): "edit" | "generate". */
   masterworkKind: string | null;
+  /**
+   * What the reader thinks they pressed Run on, phrased to open a sentence
+   * ("Your Understudy", "Your Masterwork"). Every failure message names it, so
+   * a stopped run always says WHAT stopped — never a bare red line.
+   */
+  whatItRuns?: string;
   /** Fired when a run reaches a terminal state (refresh Past runs). */
   onRunFinished: () => void;
   /**
@@ -127,7 +138,7 @@ export function TryMasterworkBox({
   const [phase, setPhase] = useState<Phase>("idle");
   const [stages, setStages] = useState<StageRow[]>([]);
   const [verdict, setVerdict] = useState<MasterworkRunVerdict | null>(null);
-  const [failureMessage, setFailureMessage] = useState<string | null>(null);
+  const [failure, setFailure] = useState<RunFailureExplanation | null>(null);
   /** True while showing a run recovered on mount rather than started here. */
   const [rejoined, setRejoined] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -138,6 +149,29 @@ export function TryMasterworkBox({
   const isEdit = masterworkKind !== "generate";
 
   useEffect(() => () => abortRef.current?.abort(), []);
+
+  // THE ONE FAILURE DOOR. Every path that can stop a run goes through here, so
+  // there is exactly one place that decides what a stopped run says — and it
+  // is never bare. `raw` is the best reason we hold at the call site; when a
+  // run row exists, its recorded error is richer than anything the stream
+  // carries, so it is read and preferred before explaining.
+  const failRunRef = useRef<(runId: string | null, raw?: string | null) => Promise<void>>(
+    async () => undefined,
+  );
+  failRunRef.current = async (runId, raw) => {
+    let reason = raw ?? null;
+    if (runId) {
+      try {
+        const row = await getMasterworkRunVerdict(runId);
+        if (row?.errorMessage) reason = row.errorMessage;
+      } catch {
+        // The run row is unreadable — explain from what we already have
+        // rather than degrade to "something went wrong".
+      }
+    }
+    setPhase("failed");
+    setFailure(explainRunFailure(reason, whatItRuns));
+  };
 
   // Backstop: the SSE follower is the primary signal, but a run is durable
   // server work — if the stream dies silently (proxy restart, dropped
@@ -162,10 +196,7 @@ export function TryMasterworkBox({
               setVerdict(result);
               setPhase("done");
             } else {
-              setPhase("failed");
-              setFailureMessage(
-                "The run didn't finish — its details are in Past runs.",
-              );
+              void failRunRef.current(runId, result.errorMessage);
             }
             onRunFinished();
           }
@@ -200,11 +231,7 @@ export function TryMasterworkBox({
     if (event.event === "run_completed" || event.event === "run_failed" || event.event === "run_cancelled") {
       const runId = runIdRef.current;
       if (event.event !== "run_completed") {
-        setPhase("failed");
-        setFailureMessage(
-          event.error_message ??
-            "The run didn't finish — its details are in Past runs.",
-        );
+        void failRunRef.current(runId, event.error_message ?? null);
         onRunFinished();
         return;
       }
@@ -220,9 +247,13 @@ export function TryMasterworkBox({
           // The run finished; the verdict read failing is recoverable via
           // Past runs — say so instead of pretending the run failed.
           setPhase("failed");
-          setFailureMessage(
-            "The run finished, but the result couldn't be loaded here — open it under Past runs.",
-          );
+          setFailure({
+            headline: `${whatItRuns} finished its work, but the result couldn't be loaded onto this page.`,
+            nextStep:
+              "Nothing was lost — open it under Past runs to read what it produced, or reload this page.",
+            technical: null,
+            unrecognized: false,
+          });
         } finally {
           onRunFinished();
         }
@@ -264,10 +295,7 @@ export function TryMasterworkBox({
           return;
         }
         if (TERMINAL_STATUSES.includes(result.status)) {
-          setPhase("failed");
-          setFailureMessage(
-            "That run didn't finish — its details are in Past runs.",
-          );
+          void failRunRef.current(runId, result.errorMessage);
           return;
         }
         // Still running: rejoin the live feed. abortRef is this box's single
@@ -294,7 +322,7 @@ export function TryMasterworkBox({
   /** What a finished run produced — the Audition's candidate, when there is one. */
   const candidateText =
     phase === "done" && verdict
-      ? (verdict.editorText ?? verdict.chiefText)
+      ? (verdict.editorText ?? verdict.chiefText ?? verdict.understudyText)
       : null;
 
   const start = async () => {
@@ -307,7 +335,7 @@ export function TryMasterworkBox({
     setPhase("starting");
     setStages([]);
     setVerdict(null);
-    setFailureMessage(null);
+    setFailure(null);
     setRejoined(false);
     runIdRef.current = null;
     forgetRun(masterworkId);
@@ -367,13 +395,18 @@ export function TryMasterworkBox({
       );
       const error = (result as { error?: { message?: string } }).error;
       if (error) {
+        // No run row exists yet — the start itself was refused, so the
+        // message we were handed is the only reason there is.
         setPhase("failed");
-        setFailureMessage(error.message ?? "The run could not start.");
+        setFailure(explainRunFailure(error.message ?? null, whatItRuns));
       }
     } catch (err) {
       setPhase("failed");
-      setFailureMessage(
-        err instanceof Error ? err.message : "The run could not start.",
+      setFailure(
+        explainRunFailure(
+          err instanceof Error ? err.message : null,
+          whatItRuns,
+        ),
       );
     }
   };
@@ -457,8 +490,28 @@ export function TryMasterworkBox({
         </ul>
       ) : null}
 
-      {phase === "failed" && failureMessage ? (
-        <p className="text-xs text-destructive">{failureMessage}</p>
+      {/* A stopped run is never a bare red line: what stopped, why in plain
+          words, what to do next — and the technical cause kept reachable
+          rather than hidden or promoted to the headline. */}
+      {phase === "failed" && failure ? (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
+          <p className="text-xs font-medium text-foreground">
+            {failure.headline}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {failure.nextStep}
+          </p>
+          {failure.technical ? (
+            <details className="mt-1.5">
+              <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
+                Technical detail (for us)
+              </summary>
+              <p className="mt-1 break-words font-mono text-[11px] text-muted-foreground">
+                {failure.technical}
+              </p>
+            </details>
+          ) : null}
+        </div>
       ) : null}
 
       {phase === "done" && verdict ? (
@@ -476,16 +529,26 @@ export function TryMasterworkBox({
               <RichDocument content={verdict.editorText} source={{ type: "raw" }} hideCopyButton contentClassName="text-sm" />
             </div>
           ) : null}
+          {/* The Understudy is ONE agent — no chief, no editor — so its
+              output lands on the "understudy" node and is titled for what it
+              actually is. Reading only chief/editor is what made a SUCCESSFUL
+              Understudy run report "no ruling text came back" (2026-08-18). */}
           <div>
             <h4 className="mb-1 text-xs font-semibold text-foreground">
-              The ruling
+              {verdict.chiefText ? "The ruling" : "The first cut"}
             </h4>
-            {verdict.chiefText ? (
-              <RichDocument content={verdict.chiefText} source={{ type: "raw" }} hideCopyButton contentClassName="text-sm" />
+            {verdict.chiefText ?? verdict.understudyText ? (
+              <RichDocument
+                content={(verdict.chiefText ?? verdict.understudyText) as string}
+                source={{ type: "raw" }}
+                hideCopyButton
+                contentClassName="text-sm"
+              />
             ) : (
               <p className="text-xs text-muted-foreground">
-                The run finished, but no ruling text came back — open the run
-                under Past runs to see everything it produced.
+                It finished, but sent back no text at all — open it under Past
+                runs to see every step it took. If that page is empty too, tell
+                us: a run that produces nothing is a bug, not your doing.
               </p>
             )}
           </div>

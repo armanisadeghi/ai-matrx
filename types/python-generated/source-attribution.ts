@@ -144,6 +144,7 @@ export type SourceFeature = (typeof SOURCE_FEATURES)[number];
 
 export const SOURCE_FEATURE_PATTERNS = [
   "rag_derive_[a-z0-9_]+",
+  "mandate:[a-z0-9_]+\\.[a-z0-9_]+",
   "slot:[a-z0-9_]+\\.[a-z0-9_]+",
 ] as const;
 

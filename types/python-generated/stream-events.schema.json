@@ -4227,6 +4227,30 @@
         "title": "Video Urls",
         "type": "array"
       },
+      "audio_file_id": {
+        "default": "",
+        "title": "Audio File Id",
+        "type": "string"
+      },
+      "image_file_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Image File Ids",
+        "type": "array"
+      },
+      "video_file_ids": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Video File Ids",
+        "type": "array"
+      },
+      "official_video_file_id": {
+        "default": "",
+        "title": "Official Video File Id",
+        "type": "string"
+      },
       "official_video_url": {
         "default": "",
         "title": "Official Video Url",

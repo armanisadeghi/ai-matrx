@@ -178,17 +178,26 @@ export function RulebookSourcesPanel({
   autoOpen,
   onRulebookChanged,
   onIngested,
+  variant = "card",
 }: {
   rulebook: Rulebook;
   canEdit: boolean;
   /** `?dump=1` — the dump Approach card routes here; open + focus the panel. */
   autoOpen: boolean;
+  /**
+   * `bare` — no card chrome, no collapse, no own title: the panel is rendered
+   * INSIDE the Rulebook page's one Sources section, which already draws the
+   * border and owns the heading + the full-page door. `card` keeps the
+   * standalone `/masterwork/[id]/sources` route unchanged.
+   */
+  variant?: "card" | "bare";
   /** A staged-URL CAS write returned a fresh Rulebook row — adopt it. */
   onRulebookChanged: (rulebook: Rulebook) => void;
   /** The run finished — drafts landed on the Rulebook behind this panel. */
   onIngested: () => void;
 }) {
-  const [open, setOpen] = useState(autoOpen);
+  const bare = variant === "bare";
+  const [open, setOpen] = useState(autoOpen || variant === "bare");
   const [showPicker, setShowPicker] = useState(false);
   const [showUrlAdd, setShowUrlAdd] = useState(false);
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -410,58 +419,64 @@ export function RulebookSourcesPanel({
   return (
     <div
       ref={sectionRef}
-      className="scroll-mt-16 rounded-lg border border-border bg-card"
+      className={cn(
+        "scroll-mt-16",
+        !bare && "rounded-lg border border-border bg-card",
+      )}
     >
-      {/* ── header (always visible; a count is a door) ───────────────── */}
-      <div className="flex w-full items-center gap-2 pr-4">
-        <button
-          type="button"
-          className="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 text-left"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-        >
-          {open ? (
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-          )}
-          <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
-          <span className="text-sm font-semibold text-foreground">Sources</span>
-          {totalSources > 0 ? (
-            <span className="rounded bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
-              {totalSources}
+      {/* ── header (card variant only; the inputs section owns it otherwise) ── */}
+      {!bare ? (
+        <div className="flex w-full items-center gap-2 pr-4">
+          <button
+            type="button"
+            className="flex min-w-0 flex-1 items-center gap-2 px-4 py-3 text-left"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+          >
+            {open ? (
+              <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+            )}
+            <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">
+              Sources
             </span>
-          ) : null}
-          <span className="ml-auto truncate text-xs text-muted-foreground">
-            Dump everything you have — we turn it into rules
-          </span>
-        </button>
-        {/* THE DOOR LAW — this working mode has its own URL. */}
-        <Link
-          href={`/masterwork/${rulebook.id}/sources`}
-          className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          title="Open Sources as its own page"
-        >
-          <ExternalLink className="h-3 w-3" />
-          Full page
-        </Link>
-      </div>
+            {totalSources > 0 ? (
+              <span className="rounded bg-muted px-1.5 text-[11px] font-medium text-muted-foreground">
+                {totalSources}
+              </span>
+            ) : null}
+          </button>
+          {/* THE DOOR LAW — this working mode has its own URL. */}
+          <Link
+            href={`/masterwork/${rulebook.id}/sources`}
+            className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            title="Open Sources as its own page"
+          >
+            <ExternalLink className="h-3 w-3" />
+            Full page
+          </Link>
+        </div>
+      ) : null}
 
       {open ? (
-        <div className="border-t border-border px-4 pb-4 pt-3">
-          <p className="text-xs text-muted-foreground">
-            Pile in everything that holds your method — notes, transcripts,
-            recordings, research, documents — and just as much the files that
-            live OUTSIDE this platform: things exported from Google Drive or
-            SharePoint, old SOPs, checklists, training decks. Upload or drop
-            them here, attach what already lives in your workspace, or paste a
-            link. Then press one button and it all becomes draft rules for you
-            to approve.
-          </p>
+        <div className={cn(bare ? "pt-1" : "border-t border-border px-4 pb-4 pt-3")}>
+          {!bare ? (
+            <p className="text-xs text-muted-foreground">
+              Pile in everything that holds your method — notes, transcripts,
+              recordings, research, documents — and just as much the files that
+              live OUTSIDE this platform: things exported from Google Drive or
+              SharePoint, old SOPs, checklists, training decks. Upload or drop
+              them here, attach what already lives in your workspace, or paste
+              a link. Then press one button and it all becomes draft rules for
+              you to approve.
+            </p>
+          ) : null}
 
           {/* ── capture ──────────────────────────────────────────────── */}
           {canEdit ? (
-            <div className="mt-3 rounded-md border border-border/60">
+            <div className={cn("rounded-md border border-border/60", !bare && "mt-3")}>
               <AssociationCaptureToolbar
                 attach={captureAttach}
                 uploadFolderPath="Masterwork/Sources"

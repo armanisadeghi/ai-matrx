@@ -1540,6 +1540,10 @@ export interface PodcastCompleteEvent {
   description?: string;
   image_urls?: string[];
   video_urls?: string[];
+  audio_file_id?: string;
+  image_file_ids?: string[];
+  video_file_ids?: string[];
+  official_video_file_id?: string;
   official_video_url?: string;
   official_video_error?: string;
   run_mode?: string;

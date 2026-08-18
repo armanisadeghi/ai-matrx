@@ -407,6 +407,20 @@ export interface MasterworkRunVerdict {
   chiefText: string | null;
   /** The editor's corrected text (edit shape only) — prose, never the envelope. */
   editorText: string | null;
+  /**
+   * The Understudy's whole-job first cut. The Understudy is ONE agent on node
+   * "understudy" — it has no chief and no editor — so a run that reads only
+   * those two nodes reports "no ruling text came back" on a run that in fact
+   * succeeded (proven live 2026-08-18: run 07cf6fe6 completed with a full
+   * first cut on `understudy` and the Expert was shown nothing).
+   */
+  understudyText: string | null;
+  /**
+   * What the run RECORDED when it failed (`workflow.run.error.message`), raw.
+   * The one input to explainRunFailure — without it a failed run can only be
+   * described as "it didn't finish", which is the bare error Arman reported.
+   */
+  errorMessage: string | null;
 }
 
 /**
@@ -449,7 +463,7 @@ export async function getMasterworkRunVerdict(
       supabase
         .schema("workflow")
         .from("run")
-        .select("id,status")
+        .select("id,status,error")
         .eq("id", runId)
         .maybeSingle(),
       supabase
@@ -457,7 +471,7 @@ export async function getMasterworkRunVerdict(
         .from("node_outcome")
         .select("node_id, text:output->>final_text" as string)
         .eq("run_id", runId)
-        .in("node_id", ["chief", "editor"])
+        .in("node_id", ["chief", "editor", "understudy"])
         .returns<{ node_id: string; text: string | null }[]>(),
     ]);
   if (runError) throw runError;
@@ -468,7 +482,23 @@ export async function getMasterworkRunVerdict(
     status: String(run.status),
     chiefText: byNode.get("chief") ?? null,
     editorText: correctedProse(byNode.get("editor") ?? null),
+    understudyText: byNode.get("understudy") ?? null,
+    errorMessage: runErrorMessage(run.error),
   };
+}
+
+/**
+ * `workflow.run.error` is a jsonb the engine writes as `{message: "..."}`; a
+ * plain string and an absent value are both legal in the wild. Narrowed here,
+ * at the one read boundary, so no surface has to guess at its shape.
+ */
+function runErrorMessage(raw: unknown): string | null {
+  if (typeof raw === "string") return raw.trim() || null;
+  if (raw && typeof raw === "object") {
+    const message = (raw as { message?: unknown }).message;
+    if (typeof message === "string") return message.trim() || null;
+  }
+  return null;
 }
 
 /** The projection the Masterwork reads select (workflow.definition subset). */

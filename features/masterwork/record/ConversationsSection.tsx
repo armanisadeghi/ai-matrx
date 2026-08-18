@@ -2,21 +2,22 @@
 
 // features/masterwork/record/ConversationsSection.tsx
 //
-// CONVERSATIONS ARE FIRST-CLASS ON THE RULEBOOK PAGE.
+// THE INTERVIEW LIST — every conversation the Expert ever had about this
+// Rulebook, rendered as a LIST inside the one Sources section (never its own
+// card, never a fat "conversation card").
 //
-// Arman, 2026-08-17, testing live: "we are not tracking the conversations for
-// a particular masterwork being produced. I can't see it. So if it's in the
-// UI, it's hidden… I want to be able to see all of those conversations, click
-// one, pick up right where I left off, and be able to then create a new one."
+// Arman, 2026-08-17: "we are not tracking the conversations for a particular
+// masterwork being produced… I want to be able to see all of those
+// conversations, click one, pick up right where I left off."
+// Arman, 2026-08-18, on the card this used to be: "representing a conversation
+// as though it's a card with a title and description and all this shit. No one
+// gives a fuck. It's a session. The title is enough, and it needs to render a
+// LIST."
 //
-// The machinery existed (the platform.associations edge, listRulebookInterviews,
-// the InterviewChooser) — but the ONLY place it showed was inside the
-// "Interview me" sheet, so an Expert who never reopened the sheet never saw
-// their own conversations. This section puts every interview on the Rulebook
-// page itself: when, how many turns, how much was said, rules produced, the
-// first line — with Continue (resumes in the interview panel), a new-tab door
-// to the full conversation, a full-page door to /masterwork/[id]/interview,
-// and a prominent "New interview".
+// So: one row per interview — title, when, a tiny meta line — with Continue
+// (resumes in the interview panel beside the rules), a full-page door, and a
+// new-tab door to the whole conversation. The section header above owns
+// "New interview" and "Your words"; this file renders NO chrome of its own.
 //
 // ONE query path: listRulebookInterviews. A second assembly is a defect.
 
@@ -27,17 +28,20 @@ import {
   ExternalLink,
   Expand,
   MessagesSquare,
-  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { relativeWhen, wordCount } from "./format";
 import {
   listRulebookInterviewsWithAccess,
   type RulebookInterview,
 } from "./service";
 import type { RulebookRule } from "../types";
-import { YourWordsActions } from "./YourWordsActions";
 
 export interface ConversationsSectionProps {
   rulebookId: string;
@@ -80,123 +84,104 @@ export function ConversationsSection({
   }, [rulebookId, rules, rulebookVersion]);
 
   return (
-    <section
-      className="rounded-lg border border-border bg-card p-4"
-      data-surface-value="conversations"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <MessagesSquare className="h-4 w-4 text-primary" aria-hidden />
-          Conversations
-          {interviews && interviews.length > 0 ? (
-            <span className="text-xs font-normal text-muted-foreground">
-              {interviews.length}
-            </span>
-          ) : null}
-        </h3>
-        <div className="flex gap-2">
-          <YourWordsActions rulebookId={rulebookId} compact variant="ghost" />
-          {canEdit ? (
-            <Button size="sm" className="h-7" onClick={onStartNew}>
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              New interview
-            </Button>
-          ) : null}
-        </div>
-      </div>
-
+    <div data-surface-value="conversations">
       {interviews === null ? (
-        <div className="flex justify-center py-4">
+        <div className="flex justify-center py-3">
           <LoadingSpinner size="sm" />
         </div>
       ) : interviews.length === 0 ? (
-        <div className="mt-3 rounded-md border border-dashed border-border px-4 py-5 text-center">
-          <p className="text-sm text-muted-foreground">
-            Every interview you have about this Rulebook lives here — nothing
-            you say is ever lost. Start the first one: talk about how you work,
-            and rules get drafted as you speak.
-          </p>
+        <p className="px-1 py-2 text-xs text-muted-foreground">
+          No interviews yet. Talk about how you work and rules get drafted as
+          you speak
           {canEdit ? (
-            <Button size="sm" className="mt-3" onClick={onStartNew}>
-              <MessagesSquare className="mr-1 h-4 w-4" />
-              Start your first interview
-            </Button>
+            <>
+              {" — "}
+              <button
+                type="button"
+                onClick={onStartNew}
+                className="font-medium text-primary underline-offset-2 hover:underline"
+              >
+                start the first one
+              </button>
+            </>
           ) : null}
-        </div>
+          .
+        </p>
       ) : (
-        <ul className="mt-3 space-y-2">
+        <ul className="divide-y divide-border/60">
           {interviews.map((interview) => (
             <li
               key={interview.conversationId}
-              className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-background px-3 py-2"
+              className="flex items-center gap-2 px-1 py-1.5"
             >
+              <MessagesSquare
+                className="size-4 shrink-0 text-muted-foreground"
+                aria-hidden
+              />
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
-                  <span className="font-medium text-foreground">
-                    {interview.title ?? "Interview"}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {relativeWhen(interview.createdAt)}
-                  </span>
+                <div className="truncate text-sm text-foreground">
+                  {interview.title ?? "Interview"}
                 </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {interview.expertTurnCount === 0
-                    ? "You didn't say anything yet"
-                    : `${interview.expertTurnCount} thing${
-                        interview.expertTurnCount === 1 ? "" : "s"
-                      } you said · ${wordCount(interview.expertChars)}`}
+                <div className="truncate text-[11px] text-muted-foreground">
+                  {relativeWhen(interview.createdAt)}
+                  {interview.expertTurnCount > 0
+                    ? ` · ${wordCount(interview.expertChars)}`
+                    : " · nothing said yet"}
                   {interview.rulesProduced > 0
                     ? ` · ${interview.rulesProduced} rule${
                         interview.rulesProduced === 1 ? "" : "s"
-                      } from it`
+                      }`
                     : ""}
-                </p>
-                {interview.firstExpertLine ? (
-                  <p className="mt-0.5 line-clamp-1 text-xs italic text-muted-foreground">
-                    &ldquo;{interview.firstExpertLine}&rdquo;
-                  </p>
-                ) : null}
+                </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <Button
-                  asChild
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
-                  title="Continue full-screen"
-                >
-                  <Link
-                    href={`/masterwork/${rulebookId}/interview?conversation=${interview.conversationId}`}
-                  >
-                    <Expand className="h-3.5 w-3.5" />
-                    <span className="sr-only">Continue full-screen</span>
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
-                  title="Open the full conversation in a new tab"
-                >
-                  <Link
-                    href={`/chat/${interview.conversationId}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                    <span className="sr-only">Open in a new tab</span>
-                  </Link>
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button asChild size="icon" variant="ghost" className="h-7 w-7">
+                      <Link
+                        href={`/masterwork/${rulebookId}/interview?conversation=${interview.conversationId}`}
+                      >
+                        <Expand className="h-3.5 w-3.5" />
+                        <span className="sr-only">Continue full-screen</span>
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Continue on its own full page</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button asChild size="icon" variant="ghost" className="h-7 w-7">
+                      <Link
+                        href={`/chat/${interview.conversationId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        <span className="sr-only">Open in a new tab</span>
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Read the whole conversation in a new tab
+                  </TooltipContent>
+                </Tooltip>
                 {canEdit ? (
-                  <Button
-                    size="sm"
-                    className="h-7"
-                    onClick={() => onContinue(interview.conversationId)}
-                  >
-                    Continue
-                    <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7"
+                        onClick={() => onContinue(interview.conversationId)}
+                      >
+                        Continue
+                        <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Pick this interview back up here, beside your rules
+                    </TooltipContent>
+                  </Tooltip>
                 ) : null}
               </div>
             </li>
@@ -205,12 +190,12 @@ export function ConversationsSection({
       )}
 
       {hiddenCount > 0 ? (
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="px-1 pt-1 text-[11px] text-muted-foreground">
           {hiddenCount === 1
             ? "1 more interview exists that isn't yours to read."
             : `${hiddenCount} more interviews exist that aren't yours to read.`}
         </p>
       ) : null}
-    </section>
+    </div>
   );
 }

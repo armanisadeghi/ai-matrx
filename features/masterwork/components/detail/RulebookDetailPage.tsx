@@ -1088,7 +1088,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       });
       setRulebook(saved);
       setConfirmActivate(false);
-      toast.success("Rulebook activated — it can now power Masterworks.");
+      toast.success("Marked as ready — this Rulebook now shows as Active.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not activate");
     }
@@ -1190,59 +1190,97 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   </Badge>
                 </div>
               </div>
-              <div className="flex shrink-0 gap-2">
-                {canEdit && rulebook.status === "draft" ? (
-                  <Button size="sm" onClick={() => setConfirmActivate(true)}>
-                    <CheckCircle2 className="h-4 w-4" />
-                    Activate
-                  </Button>
-                ) : null}
-                {/* THE FINAL CHECKUP (features/masterwork/checkup/) — the finish
-                line. Press it when you feel done and we read everything you
-                ever told us back against every rule you have. Owned entirely
-                by the checkup window; this is its only entry point. */}
-                {canEdit && approvedCount > 0 ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openCheckup({ rulebookId: rulebook.id })}
-                  >
-                    <Stethoscope className="h-4 w-4" />
-                    Final checkup
-                  </Button>
-                ) : null}
+              {/* ONE primary action, everything else behind a labelled
+                  menu. Arman, 2026-08-18: the old row was "Activate / Final
+                  checkup / Build a Masterwork / Your words / [icon] /
+                  Masterworks" with no tooltips and an implied order that was
+                  nonsense. The one thing the Expert is here to reach is
+                  BUILD — 28 approved rules and he had never got past them. */}
+              <div className="flex shrink-0 items-center gap-1.5">
                 {approvedCount > 0 ? (
-                  <Button size="sm" onClick={() => setBuildOpen(true)}>
-                    <Hammer className="h-4 w-4" />
-                    Build a Masterwork
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="sm" onClick={() => setBuildOpen(true)}>
+                        <Hammer className="h-4 w-4" />
+                        Build a Masterwork
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Turn your {approvedCount} approved rules into a system
+                      that does this work for you
+                    </TooltipContent>
+                  </Tooltip>
                 ) : null}
-                {/* THE RECORD — everything the Expert has said about this
-                Rulebook. Their words are the most valuable thing here; they
-                are never more than one click away. */}
-                <YourWordsActions rulebookId={rulebook.id} />
-                <Button asChild size="sm" variant="outline">
-                  <Link href={`/masterwork/${rulebook.id}/masterworks`}>
-                    <Workflow className="h-4 w-4" />
-                    Masterworks
-                    {builtCount > 0 ? ` (${builtCount})` : ""}
-                  </Link>
-                </Button>
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="outline">
+                          More
+                          <ChevronDown className="h-4 w-4 opacity-60" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Everything else you can do with this Rulebook
+                    </TooltipContent>
+                  </Tooltip>
+                  <DropdownMenuContent align="end" className="w-72">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/masterwork/${rulebook.id}/masterworks`}>
+                        <Workflow className="h-4 w-4" />
+                        <span className="flex-1">
+                          Systems built from this Rulebook
+                        </span>
+                        {builtCount > 0 ? (
+                          <span className="text-xs text-muted-foreground">
+                            {builtCount}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </DropdownMenuItem>
+                    {/* THE FINAL CHECKUP (features/masterwork/checkup/) — the
+                        finish line: we read everything you ever told us back
+                        against every rule you have. This is its only entry
+                        point. */}
+                    {canEdit && approvedCount > 0 ? (
+                      <DropdownMenuItem
+                        onSelect={() => openCheckup({ rulebookId: rulebook.id })}
+                      >
+                        <Stethoscope className="h-4 w-4" />
+                        Check my rules against everything I said
+                      </DropdownMenuItem>
+                    ) : null}
+                    {canEdit && rulebook.status === "draft" ? (
+                      <>
+                        <DropdownMenuSeparator />
+                        {/* Status is a LABEL, not a gate — nothing in the
+                            platform reads `active` except the badge and the
+                            browse list, and Build works in either state. The
+                            copy says exactly that instead of implying the
+                            Rulebook is switched off. */}
+                        <DropdownMenuItem
+                          onSelect={() => setConfirmActivate(true)}
+                          className="flex-col items-start gap-0.5"
+                        >
+                          <span className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4" />
+                            Mark as ready
+                          </span>
+                          <span className="pl-6 text-xs text-muted-foreground">
+                            Changes the Draft badge to Active. Building works
+                            either way.
+                          </span>
+                        </DropdownMenuItem>
+                      </>
+                    ) : null}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
             <div className="mt-3">
               <RulebookKpiStrip kpis={kpis} live={understudy !== null} />
             </div>
-            {/* The improvement brain's chips — what to try on the Expert next
-            (aidream/services/masterwork_assists/). Renders nothing when the
-            producer has nothing to say; a chip only ever expands on click,
-            and its verb button navigates back here with ?assist=… which
-            opens the right lane seeded (never auto-sent). */}
-            <AssistStrip
-              surfaceName={MASTERWORK_RULEBOOK_SURFACE}
-              filter={(a) => a.entityId === rulebookId}
-              className="mt-2"
-            />
             {draftCount > 0 && canEdit ? (
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Button
@@ -1271,25 +1309,28 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             ) : null}
           </div>
 
-          {/* CONVERSATIONS — first-class on the Rulebook page. Every Scout
-          interview the Expert ever had about this Rulebook, with Continue
-          (resumes in the panel beside the rules), a new-tab door to /chat, a
-          full-page door to /masterwork/[id]/interview, and New interview.
-          Born from Arman not being able to find his own 37k-character
-          interview: the chooser only ever showed INSIDE the sheet. */}
-          <ConversationsSection
-            rulebookId={rulebook.id}
-            rules={rulebook.rules}
-            rulebookVersion={rulebook.version}
+          {/* THE ONE INPUTS SECTION — interviews, documents, published work,
+          AI chats and the record, together. Arman, 2026-08-18: "all of the
+          things I'm putting in to get a result should be together, not put
+          all across the fucking code." Nothing that feeds a rule may live
+          anywhere else on this page. */}
+          <RulebookInputsSection
+            rulebook={rulebook}
             canEdit={canEdit}
-            onContinue={(conversationId) => {
+            dumpFocus={dumpFocus}
+            onRulebookChanged={setRulebook}
+            onIngested={reloadRulebook}
+            onContinueInterview={(conversationId) => {
               setInterviewTarget({ conversationId, newNonce: 0 });
               setInterviewOpen(true);
             }}
-            onStartNew={() => {
+            onStartInterview={() => {
               setInterviewTarget({ newNonce: Date.now() });
               setInterviewOpen(true);
             }}
+            onAddDocument={() => setIngestOpen(true)}
+            onAddPublishedWork={() => setCorpusOpen(true)}
+            onAddChats={() => setChatImportOpen(true)}
           />
 
           {/* THE UNDERSTUDY — the system that runs from minute one (vision doc
@@ -1306,18 +1347,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             />
           </div>
 
-          {/* Sources — the dump Approach's capture surface. Attach everything
-          (workspace things, uploads, links from external tools), then turn
-          the whole pile into draft rules in one durable run. */}
-          <RulebookSourcesPanel
-            rulebook={rulebook}
-            canEdit={canEdit}
-            autoOpen={dumpFocus}
-            onRulebookChanged={setRulebook}
-            onIngested={reloadRulebook}
-          />
-
-          {/* Toolbar */}
+          {/* Rules toolbar — search and Add rule, nothing else. Every way of
+          feeding this Rulebook moved into the Sources section above; this row
+          used to also carry "Interview me", "From a source", "Your published
+          work" and "Your AI chats". */}
           <div className="flex items-center gap-2">
             <Input
               value={search}
@@ -1327,82 +1360,47 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               data-surface-value="search_query"
             />
             {canEdit ? (
-              <>
-                <Button
-                  size="sm"
-                  className="h-8"
-                  onClick={() => openAddRuleWindow()}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add rule
-                </Button>
-                <InterviewButton
-                  className="h-8"
-                  onClick={() => setInterviewOpen(true)}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8"
-                  onClick={() => setIngestOpen(true)}
-                >
-                  <FileUp className="h-4 w-4" />
-                  From a source
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8"
-                  onClick={() => setCorpusOpen(true)}
-                >
-                  <BookOpen className="h-4 w-4" />
-                  Your published work
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8"
-                  onClick={() => setChatImportOpen(true)}
-                >
-                  <MessagesSquare className="h-4 w-4" />
-                  Your AI chats
-                </Button>
-              </>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    className="h-8"
+                    onClick={() => openAddRuleWindow()}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add rule
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Write one rule yourself, or have AI draft it
+                </TooltipContent>
+              </Tooltip>
             ) : null}
           </div>
 
           {/* Sections */}
           <div data-surface-value="rules" className="contents">
             {rulebook.rules.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border p-8 text-center">
+              /* Empty state — one sentence and ONE button. Every other way in
+                 lives in Sources above; repeating them here is what made this
+                 page a maze. */
+              <div className="rounded-lg border border-dashed border-border p-6 text-center">
                 <p className="text-sm text-muted-foreground">
-                  No rules yet. The fastest way to fill this in: let us
-                  interview you — talk about how you work, and rules get written
-                  down as you speak.
+                  No rules yet. Rules come from what you put in{" "}
+                  <span className="font-medium text-foreground">Sources</span>{" "}
+                  above — start an interview and they get written down as you
+                  speak.
                 </p>
                 {canEdit ? (
-                  <div className="mt-3 flex items-center justify-center gap-2">
-                    <Button size="sm" onClick={() => setInterviewOpen(true)}>
-                      <MessageCircleQuestion className="h-4 w-4" />
-                      Start the interview
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openAddRuleWindow()}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add a rule
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setIngestOpen(true)}
-                    >
-                      <FileUp className="h-4 w-4" />
-                      From a document
-                    </Button>
-                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-3"
+                    onClick={() => openAddRuleWindow()}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Or write one yourself
+                  </Button>
                 ) : null}
               </div>
             ) : (
@@ -1554,9 +1552,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <ConfirmDialog
             open={confirmActivate}
             onOpenChange={setConfirmActivate}
-            title="Activate this Rulebook?"
-            description="An active Rulebook can power Masterworks — working AI checkers built from these rules. You can keep editing after activation; every save creates a new version."
-            confirmLabel="Activate"
+            title="Mark this Rulebook as ready?"
+            description="It stops showing as a Draft and shows as Active in your list. Nothing else changes — you can keep editing (every save creates a new version), and you can build a Masterwork from it either way."
+            confirmLabel="Mark as ready"
             onConfirm={() => void activate()}
           />
           <BuildMasterworkDialog
