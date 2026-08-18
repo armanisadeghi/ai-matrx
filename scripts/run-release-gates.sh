@@ -44,6 +44,7 @@ if $STRICT; then
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
+        "Route metadata and favicons|pnpm check:route-metadata:strict"
         "Pattern Patrol manifest contracts|pnpm exec tsx scripts/pattern-patrol/check-manifest.ts --repo-only"
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
@@ -127,6 +128,7 @@ else
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts"
+        "Route metadata and favicons|pnpm check:route-metadata"
         "Pattern Patrol manifest contracts|pnpm exec tsx scripts/pattern-patrol/check-manifest.ts --repo-only"
         "Turbopack filesystem tracing|pnpm exec tsx scripts/check-turbopack-fs-tracing.ts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
@@ -254,7 +256,7 @@ run_gate() {
 
     # Heuristic: non-strict checkers still print SCHEMA TRUTH-CHECK / FAIL boxes
     # while exiting 0. Treat that as a loud advisory failure for the summary.
-    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|TYPE-ESCAPE HATCHES ABOVE BASELINE|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
+    if $has_output && grep -qE 'ADMIN ROUTE REGISTRY GAP|ROUTE METADATA GAPS|SCHEMA TRUTH-CHECK|PROTOCOL MIRROR DRIFT|DEAD ENDS FOUND|TYPE-ESCAPE HATCHES ABOVE BASELINE|LIVE PULL FAILED|COMMITTED SNAPSHOT IS STALE|Release gates failed|\[FAIL\]|error\(s\)' "$tmp" 2>/dev/null; then
         echo -e "${YELLOW}[WARN]${NC}  [$step/$total] ${label} (${elapsed}s) — findings below (advisory)"
         print_gate_details "$tmp"
         rm -f "$tmp"

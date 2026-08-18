@@ -42,6 +42,60 @@ export const TEST_COLOR = "#65a30d";
 /** Administration family — deep indigo (distinct from the red app accent). */
 export const ADMIN_COLOR = "#4338ca";
 
+/**
+ * Stable fallback palette for routes that have not been curated in
+ * `favicon-route-data` yet. This is a safety net, not a replacement for the
+ * registry: a new route gets a useful badge immediately while the route
+ * metadata check still reports the missing canonical registration.
+ */
+const AUTO_ROUTE_COLORS = [
+  "#075985",
+  "#166534",
+  "#6b21a8",
+  "#9f1239",
+  "#9a3412",
+  "#115e59",
+  "#1e3a8a",
+  "#713f12",
+] as const;
+
+const UUID_SEGMENT =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Derives the compact, readable badge used by an unregistered route. */
+export function deriveRouteFaviconLetter(pathname: string): string {
+  const segments = pathname
+    .split(/[?#]/, 1)[0]
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => decodeURIComponent(segment))
+    .filter(
+      (segment) =>
+        !/^\[.*\]$/.test(segment) &&
+        !UUID_SEGMENT.test(segment) &&
+        !/^\d+$/.test(segment),
+    );
+  const segment = segments.at(-1) ?? "Matrx";
+  const words = segment.split(/[^a-zA-Z0-9]+/).filter(Boolean);
+  const raw =
+    words.length > 1
+      ? `${words[0][0]}${words[1][0]}`
+      : (words[0]?.slice(0, 2) ?? "Mx");
+  return `${raw[0]?.toUpperCase() ?? "M"}${raw[1]?.toLowerCase() ?? "x"}`;
+}
+
+/** Returns a deterministic color + letter for any routable pathname. */
+export function createAutomaticFaviconConfig(pathname: string): FaviconConfig {
+  const rootSegment =
+    pathname.split(/[?#]/, 1)[0].split("/").filter(Boolean)[0] ?? "matrx";
+  let hash = 0;
+  for (const char of rootSegment) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return {
+    color: AUTO_ROUTE_COLORS[hash % AUTO_ROUTE_COLORS.length],
+    letter: deriveRouteFaviconLetter(pathname),
+  };
+}
+
 function pathnameIsUnderDemoHosts(pathname: string): boolean {
   return (
     pathname === "/demo" ||
@@ -235,7 +289,9 @@ export function findNavigationLinkByPath(
   const sortedLinks = [...faviconRouteData].sort(
     (a, b) => b.href.length - a.href.length,
   );
-  return sortedLinks.find((link) => pathname.startsWith(link.href));
+  return sortedLinks.find(
+    (link) => pathname === link.href || pathname.startsWith(`${link.href}/`),
+  );
 }
 
 /**
@@ -278,7 +334,7 @@ export function getFaviconConfigByPath(
   }
 
   const link = findNavigationLinkByPath(pathname);
-  return link?.favicon;
+  return link?.favicon ?? createAutomaticFaviconConfig(pathname);
 }
 
 /**

@@ -70,14 +70,19 @@ export function createRouteMetadata(
     additionalMetadata?: Partial<Metadata>;
   } = {},
 ): Metadata {
-  const { title, titlePrefix, description, letter, keywords, canonicalPath, additionalMetadata } =
-    options;
+  const {
+    title,
+    titlePrefix,
+    description,
+    letter,
+    keywords,
+    canonicalPath,
+    additionalMetadata,
+  } = options;
 
   // Compose the browser-tab title: "Prefix | Section" or just "Section"
   const composedTitle =
-    titlePrefix && title
-      ? `${titlePrefix} | ${title} | AI Matrx Agentic Harness`
-      : `${title} | AI Matrx Agentic Harness`;
+    titlePrefix && title ? `${titlePrefix} | ${title}` : title;
 
   // OG/Twitter titles always include the brand name
   const socialTitle = composedTitle
@@ -188,8 +193,16 @@ export function createDynamicRouteMetadata(
     metadataBase?: string;
   },
 ): Metadata {
-  const { title, titlePrefix, description, letter, ogImage, keywords, canonicalPath, metadataBase } =
-    options;
+  const {
+    title,
+    titlePrefix,
+    description,
+    letter,
+    ogImage,
+    keywords,
+    canonicalPath,
+    metadataBase,
+  } = options;
 
   const composedTitle = titlePrefix ? `${titlePrefix} | ${title}` : title;
   const desc = description || siteConfig.description;

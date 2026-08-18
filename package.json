@@ -118,6 +118,8 @@
     "check:release-gates": "bash scripts/run-release-gates.sh",
     "check:release-gates:advisory": "bash scripts/run-release-gates.sh --advisory",
     "check:release-gates:strict": "bash scripts/run-release-gates.sh --strict",
+    "check:route-metadata": "tsx scripts/check-route-metadata.ts",
+    "check:route-metadata:strict": "tsx scripts/check-route-metadata.ts --strict",
     "check:admin-catalog": "tsx scripts/check-admin-catalog.ts",
     "check:admin-catalog:strict": "tsx scripts/check-admin-catalog.ts --strict",
     "check:schema": "tsx scripts/schema-check/check-schema.ts",

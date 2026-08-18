@@ -87,7 +87,7 @@ describe("marketing route section registries", () => {
         ? `${SITE_PATH}/${section.slug}`
         : SITE_PATH;
       expect(getMarketingRouteMetadata(pathname).title).toBe(
-        `${section.titlePrefix} | Marketing | AI Matrx Agentic Harness`,
+        `${section.titlePrefix} | Marketing`,
       );
       expect(faviconDataUri(pathname)).toBe(
         svgToDataURI(

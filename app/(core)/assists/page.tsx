@@ -3,11 +3,13 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AssistsManager } from "@/features/assists/manager/AssistsManager";
 import { getServerAuth } from "@/utils/supabase/getServerAuth";
 import { loginHref } from "@/utils/auth/auth-destination";
+import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = {
+export const metadata = createRouteMetadata("/assists", {
   title: "Assists",
   description: "Every assist the system has offered you, in every state.",
-};
+  canonicalPath: "/assists",
+});
 
 export default async function AssistsPage() {
   const { isAuthenticated } = await getServerAuth();

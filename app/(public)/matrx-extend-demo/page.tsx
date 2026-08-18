@@ -1,26 +1,28 @@
-import type { Metadata } from "next";
 import Link from "next/link";
+import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata: Metadata = {
+export const metadata = createRouteMetadata("/matrx-extend-demo", {
   title: "Matrx Extend Demo Page",
   description:
     "A stable public page for trying Matrx Extend page capture, structured-data extraction, SEO auditing, and page-aware chat.",
-  alternates: { canonical: "/matrx-extend-demo" },
-  openGraph: {
-    title: "Matrx Extend Demo Page",
-    description:
-      "A stable sample article with links, a table, and structured data for demonstrating Matrx Extend.",
-    url: "/matrx-extend-demo",
-    type: "article",
+  canonicalPath: "/matrx-extend-demo",
+  additionalMetadata: {
+    openGraph: {
+      title: "Matrx Extend Demo Page",
+      description:
+        "A stable sample article with links, a table, and structured data for demonstrating Matrx Extend.",
+      url: "/matrx-extend-demo",
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "Matrx Extend Demo Page",
+      description:
+        "A stable sample article with links, a table, and structured data for demonstrating Matrx Extend.",
+      images: ["/matrx/logo-option-4.jpeg"],
+    },
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Matrx Extend Demo Page",
-    description:
-      "A stable sample article with links, a table, and structured data for demonstrating Matrx Extend.",
-    images: ["/matrx/logo-option-4.jpeg"],
-  },
-};
+});
 
 const workflowStages = [
   {

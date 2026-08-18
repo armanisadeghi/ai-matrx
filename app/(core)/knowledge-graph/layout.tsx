@@ -1,6 +1,6 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
-export const metadata = createRouteMetadata("/knowledge", {
+export const metadata = createRouteMetadata("/knowledge-graph", {
   titlePrefix: "Graph",
   title: "Knowledge",
   description: "Legacy redirect to the knowledge graph.",
