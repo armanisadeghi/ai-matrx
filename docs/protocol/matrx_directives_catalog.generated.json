@@ -18329,6 +18329,10 @@
     "create": {
      "additionalProperties": true,
      "properties": {
+      "cleaned_transcript": {
+       "default": null,
+       "title": "Cleaned Transcript"
+      },
       "current_round": {
        "default": 0,
        "title": "Current Round"
@@ -18336,9 +18340,17 @@
       "document": {
        "title": "Document"
       },
+      "finalized_at": {
+       "default": null,
+       "title": "Finalized At"
+      },
       "metadata": {
        "default": {},
        "title": "Metadata"
+      },
+      "requirements_document": {
+       "default": null,
+       "title": "Requirements Document"
       },
       "role_bindings": {
        "default": {},
@@ -18359,6 +18371,10 @@
       "title": {
        "default": "Untitled interview",
        "title": "Title"
+      },
+      "vision_document": {
+       "default": null,
+       "title": "Vision Document"
       },
       "vision_statement": {
        "default": null,
@@ -18388,6 +18404,10 @@
     "update": {
      "additionalProperties": true,
      "properties": {
+      "cleaned_transcript": {
+       "default": null,
+       "title": "Cleaned Transcript"
+      },
       "current_round": {
        "default": null,
        "title": "Current Round"
@@ -18396,6 +18416,10 @@
        "default": null,
        "title": "Document"
       },
+      "finalized_at": {
+       "default": null,
+       "title": "Finalized At"
+      },
       "id": {
        "title": "Id",
        "type": "string"
@@ -18403,6 +18427,10 @@
       "metadata": {
        "default": null,
        "title": "Metadata"
+      },
+      "requirements_document": {
+       "default": null,
+       "title": "Requirements Document"
       },
       "role_bindings": {
        "default": null,
@@ -18423,6 +18451,10 @@
       "title": {
        "default": null,
        "title": "Title"
+      },
+      "vision_document": {
+       "default": null,
+       "title": "Vision Document"
       },
       "vision_statement": {
        "default": null,
@@ -20155,6 +20187,10 @@
     "create": {
      "additionalProperties": true,
      "properties": {
+      "cohort_key": {
+       "default": null,
+       "title": "Cohort Key"
+      },
       "display_name": {
        "default": null,
        "title": "Display Name"
@@ -20202,6 +20238,10 @@
     "update": {
      "additionalProperties": true,
      "properties": {
+      "cohort_key": {
+       "default": null,
+       "title": "Cohort Key"
+      },
       "display_name": {
        "default": null,
        "title": "Display Name"
