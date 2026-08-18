@@ -1,6 +1,6 @@
 # Vision Interview — the multi-agent interview room
 
-**Status:** v2 frontend (2026-08-17). Cross-repo system-of-record:
+**Status:** v3 frontend (2026-08-18) — the THREE-PANEL room. Cross-repo system-of-record:
 `common-docs/systems/vision-interview/FEATURE.md` — read it first; this file is
 only the matrx-frontend half. Backend (engine, workflow, service, `interview.*`
 tables) lives in aidream (`aidream/services/vision_interview/`).
@@ -22,7 +22,9 @@ them — `normalizeStage` in `types.ts` maps them for display
 | Surface | Route / file |
 |---|---|
 | List page | `app/(core)/vision-interview/page.tsx` → `components/VisionInterviewListPage.tsx` (canonical entity-list shell; config `browse/listConfig.tsx`) |
-| Room | `app/(core)/vision-interview/[sessionId]/page.tsx` → `components/VisionInterviewRoom.tsx` (RouteHeader + full-width `StageRail` + 2 resizable panes: conversation center [transcript · next-questions strip · composer] · right side pane [living document / questions-holes tabs]) |
+| Room | `app/(core)/vision-interview/[sessionId]/page.tsx` → `components/VisionInterviewRoom.tsx` — RouteHeader + THREE resizable panels (cookie `vision-interview-room-layout-v3`): `QuestionsPanel` (~22%) · `RoomChatPane` (~50%) · `ExpertFeedPanel` (~28%); mobile switches panes (Questions · Room · Feed) |
+| One expert's room | `components/RoomChatPane.tsx` — `StageTabs` + the CANONICAL `ChatRoomClient` for the active role, plus the Scribe's document/deliverables and the answer-append rider |
+| Stage tabs | `components/StageTabs.tsx` — one substantial button per stage primary (icon disc + role name + stage label together) |
 | New interview | `components/NewInterviewDialog.tsx` (direct Supabase insert → routes into the room) |
 
 ## Data flow
@@ -80,7 +82,7 @@ them — `normalizeStage` in `types.ts` maps them for display
    `activeRequests` (adopted + SSE-followed). No `useLiveJsonRegion`, no
    chunk bucketing in feature components.
 3. **Live tokens render per node, no double-render.** While a role node
-   speaks, `TranscriptPane` shows a `LiveTurnCard` off
+   speaks, the expert feed shows a `LiveTurnCard` off
    `selectWorkflowNodeStreams(requestId)` — accumulated markdown through
    `BasicMarkdownContent` (the collab child-stream precedent). The card
    hides the moment the persisted `interview.turn` for that role lands in
@@ -95,7 +97,9 @@ them — `normalizeStage` in `types.ts` maps them for display
    `reclassified_by_human=true`; accept-risk behind a ConfirmDialog).
 5. **Stage movement is human-controlled and rides the resume payload** —
    `advance_stage` (the header's Advance control) and v2's `goto_stage`
-   (the `StageRail`'s click-to-jump, ANY stage forward or back). Both arm
+   (v3: the centre panel's "Move the interview here" bar, shown when you are
+   reading an expert whose stage is not the current one — ANY stage, forward
+   or back). Both arm
    only while the run waits on the human (`waiting_human`); disabled states
    carry an honest tooltip, never a silent no-op. Summoning a role
    (`summon_role`) makes it the NEXT round's primary.
@@ -125,14 +129,10 @@ them — `normalizeStage` in `types.ts` maps them for display
 9. **Question categories are stage-keyed.** `interview.question.category`
    (core/grounding/enhancement/articulation/risk/architectural/gap; null on
    pre-v2 rows reads as `gap` via `questionCategory()`) renders as the ONE
-   `QuestionCategoryChip` (Lucide icons, chart tokens) in both the panel and
-   the composer's `NextQuestionsStrip`. The strip (directly above the
-   composer — the last thing the Expert reads) shows open questions matching
-   the CURRENT stage's category, topped up to 3 with the oldest other open
-   questions (`selectNextQuestions`); the full panel shows ALL questions with
-   the current category grouped first (`selectQuestionsGroupedForStage`) so
-   the Expert can answer ahead of schedule. Both reuse
-   `composerInsertRequested` — never a second insert path.
+   `QuestionCategoryChip` (Lucide icons, chart tokens). The left panel shows
+   ALL questions with the current stage's category grouped first
+   (`selectQuestionsGroupedForStage`) so the Expert can answer ahead of
+   schedule; `selectNextQuestions` still ranks the stage-matched ones.
 10. **Raw-audio capture (v2 §13.1) — never lose the speaker's audio.** Every
     composer dictation's full recording is uploaded by the SHARED recorder's
     canonical path (fileHandler via `saveAudioToStorage` — never a hand-rolled
@@ -165,6 +165,36 @@ them — `normalizeStage` in `types.ts` maps them for display
     (`useDurableDraft`) and a sent message lands as a turn before agents run
     — and offer the retry in the same breath. Never lose composer content
     (acceptance-gated clearing, invariant 7).
+
+13. **ONE STAGE TAB == ONE ROLE == ONE ORDINARY AGENT CONVERSATION (v3).**
+    `interview.session.role_bindings` already holds, per role,
+    `{agent_id, is_version, definition_agent_id, conversation_id}` — and that
+    conversation id is stable per role, per session, across runs. So the
+    centre panel mounts the canonical `ChatRoomClient` (`agentId` +
+    `conversationId`, read through `roleBinding()` in `types.ts`) and there is
+    NO bespoke transcript, composer, or stream renderer in this feature any
+    more (`TranscriptPane`, `Composer`, `StageRail`, `RoleStrip`,
+    `NextQuestionsStrip`, `OpenQuestionsPanel` were deleted with v3). **Only
+    the ACTIVE tab is mounted** — that is what keeps the execution system's
+    one-conversation-per-surface assumption true; switching tabs unmounts the
+    old room and mounts the new one, never several live at once. A role with
+    no binding (the session was never started) renders the honest
+    "hasn't joined yet" invitation with Start — never a spinner.
+14. **THE ANSWER-APPEND RULE (v3).** Answers written in the left panel live in
+    the slice (`answerDrafted` / `answerDiscarded` / `selectPendingAnswers`),
+    never only in a composer, and they ride the NEXT message as an
+    `<answered_questions>` XML block so the speaking expert AND the Scribe
+    both receive them. THE SEAM: the canonical chat has no outgoing-text
+    transform, so `PendingAnswersRider` (in `RoomChatPane`) writes the block
+    into the composer draft through `setUserInputText` — the same action the
+    Expert's own keystrokes dispatch — and clears the ledger
+    (`pendingAnswersCleared`) only when `submissionPhase === "persisted"`,
+    i.e. the server reserved the request. A failed send therefore can never
+    eat an answer. The block is visible to the Expert on purpose.
+15. **THE DUPLICATE-STREAM RULE (v3).** The right-hand feed streams every
+    role EXCEPT the one whose tab is live (`selectActiveRoleTab`) — that one
+    is already streaming in the centre. Completed messages always land in the
+    feed regardless.
 
 ## Doctrine (reuse-first)
 
@@ -201,6 +231,29 @@ per-node tokens the same way.
   structured marker in turn rows.
 
 ## Change log
+
+- 2026-08-18 — **v3: the three-panel room, on the canonical chat.** (1) LAYOUT:
+  `VisionInterviewRoom` rebuilt as three resizable panels — questions ·
+  room · expert feed (new cookie `…-v3`); mobile is a Questions/Room/Feed
+  switcher. (2) STAGE TABS: `StageTabs` — one substantial button per stage
+  primary, role icon in its accent disc WITH the role name and stage label in
+  the same button (Arman rejected icon-and-name-apart chips); the bar wraps so
+  every expert stays visible instead of scrolling out of reach.
+  (3) THE CENTRE IS THE CANONICAL CHAT: `RoomChatPane` resolves the active
+  role's `role_bindings` entry and mounts `ChatRoomClient` with its agent +
+  conversation; the Scribe's living document and the deliverables stay
+  reachable from the same bar (the chat stays MOUNTED underneath, so reading
+  the record never interrupts a stream), and `goto_stage` lives on an inline
+  "Move the interview here" bar. (4) SLICE: `activeRoleTab` +
+  `pendingAnswers` with the contract's actions/selectors; `composerInsert`
+  retired with the composer. (5) DELETED with the rewrite: `TranscriptPane`,
+  `Composer`, `StageRail`, `RoleStrip`, `NextQuestionsStrip`,
+  `OpenQuestionsPanel`. OPEN: the v2 raw-audio TURN STAMPING
+  (`useTurnAudioAttachment` + `dictationAudio*` slice state) lost its producer
+  with the old composer — dictation in the room is still attributed and
+  durably saved (`RecordingOriginProvider`, surface
+  `vision-interview.room`), but nothing stamps a turn any more, because the
+  human's words are now chat messages rather than `interview.turn` rows.
 
 - 2026-08-18 — **The opening and the wizard, rebuilt from Arman's live review.**
   (1) NEW-INTERVIEW EXPERIENCE: the cramped dialog is no longer the front door —
