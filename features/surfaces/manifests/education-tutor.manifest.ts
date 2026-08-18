@@ -204,11 +204,10 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "study_material",
     label: "Study material",
     description:
-      "The learner's OWN material the tutor must ground and cite its answers in (their decks, summaries, and the Ask-Tutor seed), rendered as text. Absent until grounding completes. Large — bindable-only, so it does not silently consume the context window of every agent run on this surface.",
+      "The learner's OWN question-specific material the tutor must ground and cite its answers in (retrieved passages, their decks, summaries, and the Ask-Tutor seed), rendered as text. Absent until grounding completes. Automatic on this tutor-only surface because omitting the evidence would make an answer ungrounded; the agent's context policy controls inline versus deferred delivery.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 9000,
-    autoContext: false,
     sortOrder: 420,
     group: "grounding",
   },
