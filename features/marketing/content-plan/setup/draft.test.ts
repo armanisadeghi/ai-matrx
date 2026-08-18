@@ -57,6 +57,8 @@ function draftWithRuns(): SetupDraft {
           secondaryKeywords: ["ssd destruction"],
           supportsRoutes: [],
           internalLinks: [],
+          desiredMetaTitle: "Hard Drive Shredding | Acme",
+          desiredMetaDescription: "Secure hard drive shredding for local teams.",
           reason: "The commercial page for the core service.",
         },
         {
@@ -69,6 +71,8 @@ function draftWithRuns(): SetupDraft {
           internalLinks: [
             { toRoute: "/services/shredding", anchorText: "hard drive shredding" },
           ],
+          desiredMetaTitle: "How to Destroy a Hard Drive | Acme",
+          desiredMetaDescription: "Learn how secure hard drive destruction works.",
           reason: "Easier term that passes authority to the money page.",
         },
       ],

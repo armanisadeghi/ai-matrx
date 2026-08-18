@@ -22,7 +22,7 @@ export type PlanNodeArtifactRow =
  * missing `plan.node_step` row means the step has never run.
  */
 export const PIPELINE_STEPS = [
-  { step: "p1_keywords", label: "Keywords" },
+  { step: "p1_keywords", label: "SEO plan" },
   { step: "p2_research", label: "Research" },
   { step: "p3_family", label: "Family" },
   { step: "p4_write", label: "Write" },

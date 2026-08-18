@@ -54,9 +54,64 @@ import { planAiRunKeys } from "./usePlanAiRuns";
 
 /** Which pass is running — one at a time, per the server's own cost posture. */
 export type SetupPassKind = "keywords" | "entities" | "review";
-export type KeywordEffortTier = components["schemas"]["KeywordEffortTier"];
+export type KeywordEffortTier =
+  components["schemas"]["KeywordTierEstimate"]["tier"];
 export type KeywordStrategyEstimate =
   components["schemas"]["KeywordStrategyEstimate"];
+const KEYWORD_EFFORT_TIERS: readonly KeywordEffortTier[] = [
+  "cheap",
+  "thorough",
+  "advanced",
+];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseKeywordStrategyEstimate(value: unknown): KeywordStrategyEstimate {
+  if (!isRecord(value)) {
+    throw new Error("Keyword-plan estimate did not return an object.");
+  }
+  const root = value;
+  if (typeof root.site_id !== "string" || typeof root.pages !== "number") {
+    throw new Error("Keyword-plan estimate is missing its site or page count.");
+  }
+  if (!Array.isArray(root.tiers)) {
+    throw new Error("Keyword-plan estimate has no effort tiers.");
+  }
+  const tiers: NonNullable<KeywordStrategyEstimate["tiers"]> = [];
+  for (const item of root.tiers) {
+    if (!isRecord(item)) {
+      throw new Error("Keyword-plan estimate contains an invalid tier.");
+    }
+    const row = item;
+    const tier = KEYWORD_EFFORT_TIERS.find(
+      (candidate) => candidate === row.tier,
+    );
+    if (
+      !tier ||
+      typeof row.label !== "string" ||
+      typeof row.pages !== "number" ||
+      typeof row.calls !== "number" ||
+      typeof row.pages_per_call !== "number"
+    ) {
+      throw new Error("Keyword-plan estimate contains an incomplete tier.");
+    }
+    tiers.push({
+      tier,
+      label: row.label,
+      pages: row.pages,
+      calls: row.calls,
+      pages_per_call: row.pages_per_call,
+      approximate_cost_usd:
+        typeof row.approximate_cost_usd === "number"
+          ? row.approximate_cost_usd
+          : null,
+      basis: typeof row.basis === "string" ? row.basis : "",
+    });
+  }
+  return { site_id: root.site_id, pages: root.pages, tiers };
+}
 
 // `as const` matters: callApi's `path` is the generated literal union, so a
 // widened `string` here would not typecheck against the OpenAPI contract.
@@ -135,7 +190,7 @@ export function useSetupPasses(siteId: string | null) {
           describeBackendFailure(parseCallApiError(result.error)).headline,
         );
       }
-      return result.data;
+      return parseKeywordStrategyEstimate(result.data);
     },
   });
 

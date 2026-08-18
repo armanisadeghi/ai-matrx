@@ -13,11 +13,16 @@
  * Results are previewed grouped by role, then applied on the user's word.
  */
 import { useState } from "react";
-import { ArrowRight, Loader2, Network, X } from "lucide-react";
+import { ArrowRight, BrainCircuit, Loader2, X } from "lucide-react";
 
+import { ProcessingUnitsBadge } from "@/components/processing-units/ProcessingUnitsBadge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import type {
+  KeywordEffortTier,
+  KeywordStrategyEstimate,
+} from "../../hooks/useSetupPasses";
 import type { KeywordAssignment, KeywordStrategyResult, PageRole } from "../ai";
 import { SetupSection } from "./SetupSection";
 
@@ -34,6 +39,7 @@ const ROLE_CLASS: Record<PageRole, string> = {
 };
 
 const ROLE_ORDER: PageRole[] = ["money", "supporting", "navigational"];
+const EFFORT_TIERS: KeywordEffortTier[] = ["cheap", "thorough", "advanced"];
 
 export function KeywordStrategySection({
   strategy,
@@ -48,6 +54,9 @@ export function KeywordStrategySection({
   onDismiss,
   applying,
   appliedAt,
+  estimate,
+  estimateLoading,
+  estimateError,
 }: {
   strategy: KeywordStrategyResult | null;
   busy: boolean;
@@ -56,20 +65,26 @@ export function KeywordStrategySection({
   planEmpty: boolean;
   error: string | null;
   onDismissError?: () => void;
-  onRun: () => void;
+  onRun: (tier: KeywordEffortTier) => void;
   onApply: () => void;
   /** Throw the staged run away — it is persisted, so this is the only exit. */
   onDismiss: () => void;
   applying: boolean;
   /** Set once applied — the button becomes a receipt. */
   appliedAt: string | null;
+  estimate: KeywordStrategyEstimate | null;
+  estimateLoading: boolean;
+  estimateError: string | null;
 }) {
   const [open, setOpen] = useState(true);
+  const [tier, setTier] = useState<KeywordEffortTier>("cheap");
   const disabledReason = !aiReady
     ? "Pick a research topic with a finished report in the AI grounding bar first"
     : planEmpty
       ? "There are no planned pages to assign keywords to yet"
       : null;
+  const tierEstimate = estimate?.tiers?.find((item) => item.tier === tier) ?? null;
+  const runDisabled = Boolean(disabledReason) || anyBusy || !tierEstimate;
 
   const byRole = new Map<PageRole, KeywordAssignment[]>();
   for (const assignment of strategy?.assignments ?? []) {
@@ -83,6 +98,22 @@ export function KeywordStrategySection({
       title="Keyword strategy"
       action={
         <div className="flex items-center gap-1">
+          <select
+            aria-label="SEO planning effort"
+            className="h-6 rounded-md border border-input bg-background px-1.5 text-xs"
+            value={tier}
+            disabled={anyBusy}
+            onChange={(event) => {
+              const next = EFFORT_TIERS.find(
+                (candidate) => candidate === event.target.value,
+              );
+              if (next) setTier(next);
+            }}
+          >
+            <option value="cheap">Cheap</option>
+            <option value="thorough">Thorough</option>
+            <option value="advanced">Advanced</option>
+          </select>
           {strategy && !busy ? (
             <Button
               variant="ghost"
@@ -98,19 +129,30 @@ export function KeywordStrategySection({
             variant="ghost"
             size="sm"
             className="h-6 gap-1.5 px-2 text-xs"
-            disabled={Boolean(disabledReason) || anyBusy}
+            disabled={runDisabled}
             title={
               disabledReason ??
-              "Assign keywords across the WHOLE plan — money pages get distinct commercial terms, educational pages get easier terms that feed them."
+              estimateError ??
+              tierEstimate?.basis ??
+              "Calculating pages, calls, and approximate cost…"
             }
-            onClick={onRun}
+            onClick={() => onRun(tier)}
           >
             {busy ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
-              <Network className="h-3 w-3" />
+              <BrainCircuit className="h-3 w-3" />
             )}
-            {strategy ? "Re-plan keywords" : "Plan keywords"}
+            {strategy ? "Re-plan" : "Plan"} {tierEstimate?.pages ?? "…"} pages
+            {tierEstimate ? ` · ${tierEstimate.calls} call${tierEstimate.calls === 1 ? "" : "s"}` : ""}
+            {tierEstimate?.approximate_cost_usd != null ? (
+              <ProcessingUnitsBadge
+                costUsd={tierEstimate.approximate_cost_usd}
+                hideIcon
+                short
+                className="ml-0.5 px-1.5 py-0"
+              />
+            ) : null}
           </Button>
         </div>
       }
@@ -131,6 +173,16 @@ export function KeywordStrategySection({
             </button>
           ) : null}
         </div>
+      ) : null}
+
+      {!error && (estimateLoading || estimateError || tierEstimate) ? (
+        <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
+          {estimateLoading
+            ? "Calculating the full run before anything is spent…"
+            : estimateError
+              ? `Estimate unavailable: ${estimateError}`
+              : tierEstimate?.basis}
+        </p>
       ) : null}
 
       {busy ? (
@@ -272,6 +324,16 @@ function AssignmentRow({ assignment }: { assignment: KeywordAssignment }) {
               {assignment.internalLinks
                 .map((link) => `"${link.anchorText}" → ${link.toRoute}`)
                 .join(" · ")}
+            </p>
+          ) : null}
+          {assignment.desiredMetaTitle ? (
+            <p className="mt-1 text-[11px] leading-relaxed text-foreground">
+              Meta: {assignment.desiredMetaTitle}
+            </p>
+          ) : null}
+          {assignment.desiredMetaDescription ? (
+            <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+              {assignment.desiredMetaDescription}
             </p>
           ) : null}
         </div>

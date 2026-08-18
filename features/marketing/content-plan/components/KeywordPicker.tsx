@@ -71,7 +71,24 @@ export function KeywordPicker({
   };
 
   return (
-    <div className="space-y-1.5">
+    <div
+      className="space-y-1.5"
+      // A TYPED phrase is a decision, not a suggestion-click audition. Leaving
+      // the field commits it — before this, typed text sat uncommitted behind
+      // an 11px "Press Enter" hint, the box LOOKED filled, and Save stayed
+      // dead (the exact trap Arman hit, 2026-08-17). Focus moving WITHIN the
+      // picker (suggestion click, clear button) is not leaving.
+      onBlur={(event) => {
+        if (
+          event.relatedTarget &&
+          event.currentTarget.contains(event.relatedTarget as Node)
+        ) {
+          return;
+        }
+        const typed = phrase.trim();
+        if (typed && typed !== selectedPhrase.trim()) void commit(typed);
+      }}
+    >
       <div className="flex items-start gap-1">
         <KeywordInput
           value={phrase}
@@ -120,7 +137,7 @@ export function KeywordPicker({
         </div>
       ) : null}
       {phrase.trim() && phrase.trim() !== selectedPhrase.trim() ? (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-xs font-medium text-amber-600 dark:text-amber-500">
           Press Enter to use this keyword.
         </p>
       ) : null}

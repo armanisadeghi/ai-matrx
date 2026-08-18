@@ -244,7 +244,7 @@ export async function applyKeywordStrategy(args: {
 
       if (primaryKeywordId) result.bound += 1;
       result.secondaryKeywords += secondaryIds.length;
-      result.plannedLinks += outboundLinks.length;
+      result.plannedLinks += strategyLinks.length;
     } catch (error) {
       result.failures.push(
         `${assignment.route}: ${extractErrorMessage(error)}`,

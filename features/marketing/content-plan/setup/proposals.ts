@@ -57,6 +57,9 @@ function readProposal<T>(
   if (!isRecord(block)) return null;
   const raw = block[key];
   if (!isRecord(raw)) return null;
+  // Batched keyword planning checkpoints after every paid call. A running
+  // checkpoint is recoverable input for the server, never an applyable plan.
+  if (typeof raw.status === "string" && raw.status !== "complete") return null;
   let result: T;
   try {
     // A proposal that no longer parses degrades to "none" — the user re-runs.

@@ -1186,7 +1186,7 @@ export function NodePanel({
             ) : null}
 
             {activeTab === "p1_keywords" ? (
-            <PanelSection title="Keywords & search appearance">
+            <PanelSection title="SEO plan">
               {/* 🚨 ONE SEO PLAN PER PAGE, ON `web.page` (content-planning
                   invariant 9). A node without that record gets one honest
                   state and the ONE planned-page writer. Once it exists, every

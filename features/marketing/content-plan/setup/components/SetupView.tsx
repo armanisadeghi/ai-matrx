@@ -97,7 +97,10 @@ import {
   saveSetupDraft,
   type SetupDraft,
 } from "../draft";
-import { useSetupPasses } from "../../hooks/useSetupPasses";
+import {
+  useSetupPasses,
+  type KeywordEffortTier,
+} from "../../hooks/useSetupPasses";
 import { setupKeys, useArchetypeLibrary, useCmsFacts } from "../hooks";
 import {
   readEntityAttachProposal,
@@ -1333,11 +1336,11 @@ export function SetupView() {
   // SERVER-side: the plan, the site's own keyword library and the research
   // report are assembled by aidream, the run is recorded, and the strategy is
   // stored on the site the instant it arrives.
-  const handlePlanKeywords = async () => {
+  const handlePlanKeywords = async (tier: KeywordEffortTier) => {
     if (!siteId) return;
     setKeywordError(null);
     try {
-      const proposal = await passes.planKeywords();
+      const proposal = await passes.planKeywords(tier);
       setKeywordStrategy(proposal.result);
       setKeywordsAppliedAt(null);
       setLastAiRun({
@@ -2084,7 +2087,7 @@ export function SetupView() {
                       planEmpty={nodeRows.length === 0}
                       error={keywordError}
                       onDismissError={() => setKeywordError(null)}
-                      onRun={() => void handlePlanKeywords()}
+                      onRun={(tier) => void handlePlanKeywords(tier)}
                       onApply={() => void handleApplyKeywords()}
                       onDismiss={() => {
                         setKeywordStrategy(null);
@@ -2093,6 +2096,9 @@ export function SetupView() {
                       }}
                       applying={applyingKeywords}
                       appliedAt={keywordsAppliedAt}
+                      estimate={passes.keywordEstimate}
+                      estimateLoading={passes.keywordEstimateLoading}
+                      estimateError={passes.keywordEstimateError}
                     />
                     <EntityAttachSection
                       plan={entityPlan}

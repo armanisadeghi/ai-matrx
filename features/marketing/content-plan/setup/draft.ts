@@ -164,6 +164,8 @@ function keywordStrategyToStorage(
         to_route: link.toRoute,
         anchor_text: link.anchorText,
       })),
+      meta_title: assignment.desiredMetaTitle,
+      meta_description: assignment.desiredMetaDescription,
       reason: assignment.reason,
     })),
   };
@@ -432,8 +434,8 @@ export async function clearSetupDraft(siteId: string): Promise<void> {
  * THE APPLIED RECORD — what an Apply left behind that no row of the plan can
  * hold on its own.
  *
- * Applying a keyword strategy writes each page's own share to
- * `plan.node.attributes.keyword_strategy`; applying an entity plan writes
+ * Applying a keyword strategy writes each page's own share to the canonical
+ * `web.page` SEO-plan fields; applying an entity plan writes
  * canonical association edges. But both agents also return WHOLE-PLAN facts
  * that belong to no single page — the strategy's summary and its warnings,
  * and the roster gaps the attacher refused to invent — and those were
