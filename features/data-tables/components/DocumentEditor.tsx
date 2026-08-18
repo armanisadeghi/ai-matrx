@@ -46,6 +46,7 @@ import { useUniverDarkModeSync } from "../hooks/useUniverDarkModeSync";
 import { sanitizeUniverDocSnapshot } from "../utils/sanitizeUniverDocSnapshot";
 import { isSnapshotMutation } from "../utils/isSnapshotMutation";
 import { disposeUniverInstance } from "../utils/disposeUniverInstance";
+import { activateUniverSheetServices } from "../utils/activateUniverSheetServices";
 import { RemoteCursorsLayer } from "./RemoteCursorsLayer";
 import {
   getLatestDocumentSnapshot,
@@ -217,6 +218,14 @@ export default function DocumentEditor({
         }
         univerRef.current = univer;
         apiRef.current = univerAPI;
+
+        // `preset-sheets-core` registers sheet plugins, but Univer starts
+        // plugins by unit type: their onStarting hooks do not run until the
+        // first workbook unit exists. The sheets Facade observer is global and
+        // still reacts when this document reaches Rendered, so activate those
+        // services before creating the visible document unit. Without this,
+        // the observer throws while resolving HoverManagerService.
+        activateUniverSheetServices(univerAPI, LocaleType.EN_US);
 
         const res = await getLatestDocumentSnapshot(documentId);
         if (cancelled) return;

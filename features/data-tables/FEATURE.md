@@ -119,10 +119,13 @@ become 5 linked datasets under one workbook.
 ## Entry points
 
 **Univer mixed-editor invariant:** `DocumentEditor` registers
-`UniverSheetsCorePreset` before `UniverDocsCorePreset`. Univer facade mixins are
-process-global: after a workbook loads in the same SPA session, sheets observers
-also attach to later document instances and require sheets services. The docs
-preset stays last so its shared UI configuration wins.
+`UniverSheetsCorePreset` before `UniverDocsCorePreset`, then calls
+`activateUniverSheetServices()` before creating the visible document. Univer
+Facade observers are process-global, while sheet plugin hooks are lazy by unit
+type; registration alone does not provide `HoverManagerService` until a workbook
+unit exists. The inert activation unit starts those hooks, and the document
+created next remains active. The docs preset stays last so its shared UI
+configuration wins.
 
 **Routes**
 - `app/(core)/data/page.tsx` — list all of the user's datasets (`/data`)
@@ -548,12 +551,13 @@ Decide before agent-heavy workloads land.
 
 ## Change log
 
-- 2026-08-18 — **Document editor survives workbook-first SPA sessions.**
-  `DocumentEditor` registers sheets services before the docs preset because
-  Univer's process-global sheets facade observers otherwise resolve an absent
-  hover service when a later document reaches `Rendered`. The docs preset stays
-  last so document UI configuration remains authoritative; a source contract
-  guards preset order, locale coverage, and sheets CSS.
+- 2026-08-18 — **Document editor activates registered sheet services before Rendered.**
+  Univer's sheets Facade observer is process-global, but `UniverSheetsUIPlugin`
+  is sheet-typed and does not run `onStarting` merely because its preset is
+  registered. `DocumentEditor` now creates one inert workbook unit through
+  `activateUniverSheetServices()` before the visible document, which starts
+  `HoverManagerService` and the other sheet hooks before the observer fires.
+  Focused contracts guard preset order, activation order, and activation shape.
 
 - 2026-08-18 — codex: **Document and workbook snapshot RLS now uses canonical parent tokens.**
   The four legacy snapshot policies still called `has_permission` with physical table names after

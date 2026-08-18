@@ -18,4 +18,14 @@ describe("DocumentEditor Univer preset contract", () => {
     );
     expect(source).toContain("merge({}, sheetsCoreEnUS, docsCoreEnUS)");
   });
+
+  it("activates sheet-typed plugins before creating the visible document", () => {
+    const activation = source.indexOf(
+      "activateUniverSheetServices(univerAPI, LocaleType.EN_US)",
+    );
+    const documentCreation = source.indexOf("fb.createUniverDoc?.(initial)");
+
+    expect(activation).toBeGreaterThan(-1);
+    expect(documentCreation).toBeGreaterThan(activation);
+  });
 });
