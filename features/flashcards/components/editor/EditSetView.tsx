@@ -89,6 +89,7 @@ import {
   type MatchingPair,
 } from "../../utils/cardVariants";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
+import { CardImageSlot } from "./CardImageSlot";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -736,6 +737,7 @@ export function EditSetView({ setId }: { setId: string }) {
                   mastery={masteryByCard[card.id]}
                   onMove={(dir) => void moveCard(i, dir)}
                   onDelete={() => setDeleteTarget(card)}
+                  onImagesChanged={() => setReloadKey((k) => k + 1)}
                 />
               ))}
             </div>
@@ -784,6 +786,7 @@ function CardEditor({
   mastery,
   onMove,
   onDelete,
+  onImagesChanged,
 }: {
   card: CardWithDetails;
   index: number;
@@ -792,6 +795,8 @@ function CardEditor({
   mastery: ItemMasteryRow | undefined;
   onMove: (direction: -1 | 1) => void;
   onDelete: () => void;
+  /** A face image was attached/removed — refetch so the row shows it. */
+  onImagesChanged: () => void;
 }) {
   const kind = asCardKind(card.card_kind);
 
@@ -1077,6 +1082,10 @@ function CardEditor({
           className="h-8 text-sm"
         />
       </div>
+
+      {/* Face images — Find (web-sourcing agent) / Generate (verified) /
+          Remove, per face. Closes the editor's declared image fast-follow. */}
+      <CardImageSlot card={card} onChanged={onImagesChanged} />
 
       {/* P0 Trust — for an AI-generated card, show where it came from and let
           the author re-check it against its cited source (drift detection).
