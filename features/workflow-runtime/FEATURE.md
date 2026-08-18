@@ -102,6 +102,32 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-18 — **the last two raw-JSON panels of a live Study Pack run became real
+  components.** "Your materials" (the Preparing screen, on screen from the opening seconds of
+  EVERY run) rendered the ingest node's chunk array — `content_hash`, `chunk_index`,
+  `source_offset_end` — at a learner who had pasted their own textbook; "Study notes" (the
+  Writing screen) rendered the notes document as one unbroken line of braces. Both shapes were
+  MEASURED against live `workflow.node_outcome` rows and neither fitted an existing kind, so both
+  got their own: **`ingested_sources`** (python-owned, schema =
+  `IngestedContent.model_json_schema()`, declared at the SPEC level on
+  `docproc.ingest.from_media_refs` so every workflow using that node benefits) and
+  **`study_notes`** (ts-owned, converter-emitted). The declined alternatives are recorded because
+  re-attempting them costs a drift log on every run: `bulk_result` requires `items[]` and forbids
+  everything else, and `structured_info` is `additionalProperties:false` over exactly
+  `title`+`sections` with sections keyed `heading`/`body`/`items`.
+  **The notes declaration cannot sit on the parse node** — `ai.util.parse_llm_json` wraps its
+  result under `value` and `parsed_json` is closed — so `study_pack_v1` gained a `study_notes`
+  step (`data.transform`, expression `inputs['notes']`, which spreads the dict flat onto the
+  root) exactly like the `flashcard_set` / `quiz_set` nodes, and the stored surface row
+  (c797a1c1…) repoints its "Study notes" readout at that node with `prefer: "persisted"`.
+  Verified end to end on run `e606cd60`: `output_kind_ok=true` on both
+  `ingest`→`ingested_sources` and `study_notes`→`study_notes`.
+  🚨 **The Writing screen's other three panels — Flashcards, Practice quiz, Lesson scripts — still
+  render raw JSON**, for a DIFFERENT reason: they read their `ai.agent.start` node, whose output is
+  the `agent_result` envelope, so `InvocationBody` falls through to the JSON viewer. Flashcards and
+  quiz already have kinded nodes to repoint at (`flashcard_set` / `quiz_set`); lesson scripts has
+  no kind yet.
+
 - 2026-08-18 — Warning activity now consumes aidream's bounded
   `{code,user_message,level,recoverable}` JSON summary directly. The old regex path remains only
   for legacy server frames that sliced full WarningPayload JSON mid-string.
