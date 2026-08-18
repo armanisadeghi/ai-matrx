@@ -350,6 +350,18 @@ export class StreamBlockAccumulator {
    * knows when the region closed; ask it, don't re-parse its output.
    */
   private xmlClosedCleanly = false;
+  /**
+   * True while the OPEN ir region is the JSON BODY of an attribute-XML block
+   * (`<artifact …>{"__kind":…}</artifact>`) rather than a block that IS the
+   * JSON region. Two consequences, both required:
+   *
+   *  - the parity check is skipped — it compares the envelope against
+   *    `JSON.parse(currentBlockContent)`, and an attr-XML block's content is
+   *    the tag chrome PLUS the body, which never parses as JSON. Without this
+   *    every wrapped payload would fire a false "stream parity" alarm.
+   *  - the fragment feed stays off the closing-tag line (see `ingest`).
+   */
+  private irRegionIsXmlBody = false;
   /** Every session identity opened during this stream (disposed at finalize). */
   private irIdentities: string[] = [];
   /**
@@ -403,13 +415,27 @@ export class StreamBlockAccumulator {
     // and open the bare_json region NOW, so the kind resolves live.
     this.maybeOpenBareJsonFromFragment(dispatch);
 
+    // Same live-open, one level in: the JSON BODY of an attr-XML wrapper
+    // (`<artifact …>` + minified payload) never completes a line until the
+    // whole payload has arrived, so without this the region would open only
+    // at the closing newline — a spinner for the entire run.
+    if (!this.irSession) {
+      this.maybeOpenXmlBodyIrRegion(this.pendingLineFragment, false);
+    }
+
     // Bare-JSON regions get the trailing fragment's NEW chars immediately —
     // minified single-line JSON (structured outputs) parses live instead of
     // waiting for a newline that may never come. Fence regions stay
-    // line-fed (a fragment could be a partial closing fence).
+    // line-fed (a fragment could be a partial closing fence). An attr-XML
+    // body region rides the same path, minus the closing-tag line: once the
+    // body line completed, the only fragment left is `</artifact>`, and
+    // feeding that would corrupt the region (a body line never opens `<`).
     if (
       this.irSession &&
-      this.subState.kind === "bare_json" &&
+      (this.subState.kind === "bare_json" ||
+        (this.irRegionIsXmlBody &&
+          this.subState.kind === "xml_tag" &&
+          !this.pendingLineFragment.trimStart().startsWith("<"))) &&
       this.pendingLineFragment.length > this.irFedFragmentLen
     ) {
       this.irWriteLinePart(
@@ -445,6 +471,7 @@ export class StreamBlockAccumulator {
     }
     this.emitCurrentBlock(dispatch, "complete");
     this.irEnvelope = null;
+    this.irRegionIsXmlBody = false;
     this.irDisposeAll();
     // console.log(
     //   `%c[BlockAccumulator] FINALIZED for ${this.requestId.slice(0, 8)} — ${this.ingestCount} ingests, ${this.emitCount} dispatches, ${this.currentBlockIndex + 1} blocks total`,
@@ -472,6 +499,7 @@ export class StreamBlockAccumulator {
     this.irRegionLineCount = 0;
     this.irFedFragmentLen = 0;
     this.irEnvelope = null;
+    this.irRegionIsXmlBody = false;
     this.fenceClosedCleanly = false;
     this.xmlClosedCleanly = false;
     this.regionContinuesAfterClose = false;
@@ -938,8 +966,19 @@ export class StreamBlockAccumulator {
               lineToAppend.slice(closingIdx + closingTag.length);
           }
         }
+        const isClosingLine = trimmed.includes(closingTag);
+        // Wrapped-payload class: an attr-XML body that is JSON feeds the kind
+        // parser, so the block carries `metadata.__ir` like any other JSON
+        // region. The closing-tag line is chrome, never region content.
+        if (isAttrXml && !isClosingLine) {
+          if (this.irSession) {
+            this.irFeedLine(rawLine);
+          } else {
+            this.maybeOpenXmlBodyIrRegion(rawLine, true);
+          }
+        }
         this.appendToCurrentBlock(lineToAppend);
-        if (trimmed.includes(closingTag)) {
+        if (isClosingLine) {
           // Record the clean close BEFORE closing: the keystone convergence hook
           // must distinguish a completed region from a stream-death truncation,
           // and the content no longer carries the tag to scan for.
@@ -1111,6 +1150,7 @@ export class StreamBlockAccumulator {
       this.irRegionLineCount = 0;
       this.irFedFragmentLen = 0;
       this.irEnvelope = null;
+      this.irRegionIsXmlBody = false;
     } catch (error) {
       // Shadow layer must never break streaming — loud, then dark.
       captureError({
@@ -1166,7 +1206,48 @@ export class StreamBlockAccumulator {
     this.irParityCheck(this.irEnvelope);
   }
 
+  /**
+   * Open an ir region for the JSON BODY of an attribute-XML block.
+   *
+   * THE WRAPPED-PAYLOAD CLASS. A structured-output agent whose answer is
+   * wrapped by the artifact system arrives as
+   *
+   *     <artifact type="flashcards" id="…" title="…">
+   *     {"__kind":"flashcard_set","cards":[…]}
+   *     </artifact>
+   *
+   * The accumulator opens ir regions for fences and for bare JSON, but an
+   * attr-XML region swallowed every body line whole — no region, no
+   * `metadata.__ir`, so `selectKindEnvelope` answered null for the entire run
+   * AND after it. Every surface reading the envelope (the flashcard
+   * card-by-card preview, D170's `<image_prompt>` step) therefore showed a
+   * spinner over a stream that was arriving perfectly. The wrapper is not the
+   * payload: parse the body exactly as a bare JSON region.
+   *
+   * Rendering is deliberately UNCHANGED — the artifact block keeps the
+   * artifact renderer (kind-route.ts refuses to re-type an artifact); the
+   * envelope is attached for selectors, which is what was missing.
+   *
+   * `part` is a whole body line (isLineComplete) or the streaming fragment of
+   * one, so a minified single-line body parses live instead of at the close.
+   */
+  private maybeOpenXmlBodyIrRegion(part: string, isLineComplete: boolean): void {
+    if (this.irSession || this.irEnvelope) return;
+    if (this.subState.kind !== "xml_tag" || !this.subState.isAttrXml) return;
+    if (!BARE_JSON_OPEN_RE.test(part.trimStart())) return;
+
+    this.irOpenRegion();
+    if (!this.irSession) return; // open failed (already screamed) — stay dark
+    this.irRegionIsXmlBody = true;
+    // The opening tag line is block content, never region content: this is
+    // line 0 OF THE REGION, so no leading "\n" separator is written.
+    this.irWriteLinePart(part, isLineComplete);
+  }
+
   private irParityCheck(envelope: CanonicalBlockIR): void {
+    // An attr-XML body region's block content is tag chrome + body, so the
+    // parity comparison (envelope vs JSON.parse(content)) can only ever fail.
+    if (this.irRegionIsXmlBody) return;
     if (envelope.root.status !== "complete") return;
 
     let parsed: unknown;
@@ -1237,6 +1318,7 @@ export class StreamBlockAccumulator {
         this.currentBlockEmitted = false;
       }
       this.irEnvelope = null;
+      this.irRegionIsXmlBody = false;
       return;
     }
     // XML-surface convergence (THE KEYSTONE): a COMPLETED simple-XML region
@@ -1279,6 +1361,7 @@ export class StreamBlockAccumulator {
     this.xmlClosedCleanly = false;
     this.emitCurrentBlock(dispatch, "complete");
     this.irEnvelope = null;
+    this.irRegionIsXmlBody = false;
     this.currentBlockContent = "";
     this.currentBlockLineCount = 0;
   }

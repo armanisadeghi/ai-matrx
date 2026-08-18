@@ -192,6 +192,17 @@ function routeToGeneric<T extends IrRoutableBlock>(
 }
 
 export function applyIrKindRoute<T extends IrRoutableBlock>(block: T): T {
+  // An `artifact` block is OWNED by the artifact system — it has an identity,
+  // a version, and a Canvas to open in, and BlockRenderer routes it through
+  // its dedicated registration (Stage 3 explicitly skips `type === "artifact"`
+  // for the same reason). Since 2026-08-18 an artifact wrapping a JSON payload
+  // carries `metadata.__ir` so SELECTORS can read the envelope
+  // (`selectKindEnvelope` — the live flashcard preview and every other
+  // wrapped-payload surface). That envelope must not also re-type the block:
+  // routing it to the bare kind component would strip the artifact chrome and
+  // lose the door to the Canvas. The envelope is data here, not a route.
+  if (block.type === "artifact") return block;
+
   const envelope = readEnvelope(block.metadata);
   if (!envelope) return block;
 
