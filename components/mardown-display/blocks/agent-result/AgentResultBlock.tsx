@@ -40,7 +40,7 @@
  * detail row.
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, MessagesSquare } from "lucide-react";
 
 import MarkdownStream from "@/components/MarkdownStream";
@@ -144,6 +144,14 @@ function summaryLine(facts: AgentRunFacts): string | null {
 
 function RunDetail({ facts }: { facts: AgentRunFacts }) {
   const [open, setOpen] = useState(false);
+  const detailRef = useRef<HTMLDivElement>(null);
+  // The row sits at the BOTTOM of a bounded, scrollable host (the workflow
+  // readout gives each step a 560px scroller), so what expanding reveals lands
+  // just past the fold and the click reads as "nothing happened". Pull it into
+  // view — `nearest` so a row already visible never jumps.
+  useEffect(() => {
+    if (open) detailRef.current?.scrollIntoView({ block: "nearest" });
+  }, [open]);
   const items = factList(facts);
   // Nothing to tell and nowhere to go — render no row at all rather than a
   // control that opens onto an empty box.
@@ -169,7 +177,7 @@ function RunDetail({ facts }: { facts: AgentRunFacts }) {
         ) : null}
       </button>
       {open ? (
-        <div className="mt-1.5 space-y-1.5">
+        <div ref={detailRef} className="mt-1.5 space-y-1.5">
           <dl className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]">
             {items.map((item) => (
               <div key={item.label} className="flex items-baseline gap-1">
