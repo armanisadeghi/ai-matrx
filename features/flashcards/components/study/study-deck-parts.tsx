@@ -17,6 +17,7 @@ import type { ReviewResult } from "../../types";
 import type { ItemMasteryRow } from "@/features/education/study/types";
 import { displayMasteryPct } from "@/features/education/study/utils/masteryFsrs";
 import { FlashcardGradeButtonRow } from "./FlashcardGradeButton";
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 
 export interface StudyProgress {
   done: number;
@@ -283,8 +284,12 @@ export function FlashcardStudySidebar({
                           : "bg-muted-foreground/30",
                   )}
                 />
-                <span className="line-clamp-2 min-w-0 flex-1 leading-snug">
-                  {card.front}
+                <span className="min-w-0 flex-1 leading-snug">
+                  <CardFaceContent
+                    content={card.front}
+                    variant="inline"
+                    className="line-clamp-2"
+                  />
                 </span>
               </button>
             );

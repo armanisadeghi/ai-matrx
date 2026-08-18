@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useMatchGame } from "../../data/useMatchGame";
 import { StudyDeckHeader } from "./StudyDeckHeader";
+import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -130,7 +131,7 @@ function Board({ game }: { game: ReturnType<typeof useMatchGame> }) {
                   "border-red-500/60 bg-red-50 text-red-900 dark:bg-red-950/30 dark:text-red-200",
               )}
             >
-              {tile.text}
+              <CardFaceContent content={tile.text} variant="inline" />
             </button>
           );
         })}
