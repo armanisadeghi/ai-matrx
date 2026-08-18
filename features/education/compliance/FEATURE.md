@@ -2,7 +2,14 @@
 
 **Status:** `live`
 **Tier:** `2` — a study-hub compliance sub-feature
-**Last updated:** `2026-07-15`
+**Last updated:** `2026-08-17`
+
+> 🚨 **Until 2026-08-17 this gate protected nobody.** Every layer below was built
+> correctly and `users.profiles.age_band` was NULL for all 269 accounts in the
+> database, so `edu_coppa_gate()` returned `ai_allowed=true` universally. Age
+> declaration is now **mandatory** for a signed-in account and the
+> `under_13 → adult` self-transition is **hard-blocked**. Project context:
+> `common-docs/projects/education-platform/` (WP9).
 **Why:** [`docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md`](../../../docs/proposals/education-projects/CONVERGENCE_C_CREATORS.md) §Compliance + [`docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md`](../../../docs/proposals/education-projects/SCHOOL_SAFE_CHECKLIST.md). Keeps the Education Hub installable on school devices (never banned by Apple/Google education review or district IT).
 
 ---
@@ -31,26 +38,52 @@ state, never a silent failure.
   call is Arman/legal's, see FOUND_DEFECTS D57).
 - **RPCs (public, SECURITY DEFINER, authenticated-only):**
   - `edu_set_age_band(band)` — the ONLY validated write path for the caller's own
-    band (DB-enforced by the trigger above); writes the audit row.
+    band (DB-enforced by the trigger above); writes the audit row. **Returns
+    `jsonb` `{status, age_band, reason, message?}`, not a bare band.** A child may
+    never self-declare out of `under_13`: that write comes back
+    `status: "blocked"` with the band **unchanged** and the refusal audited as
+    `age_band_change_blocked`. It does NOT raise — raising would roll back the
+    audit row itself — so **callers must read `status`**; a block never populates
+    `result.error`. Downgrades and first declarations always proceed, and
+    `13_17 → adult` stays open (not a COPPA escape).
+  - `edu_guardian_set_age_band(student_user_id, band)` — the sanctioned route out
+    of `under_13` for a child who genuinely had a birthday, requiring an active
+    **and VERIFIED** guardian link (42501 otherwise). This is why the hard block
+    is not a dead end; the UI is `family/components/StudentAgeBandControl.tsx`,
+    rendered only on a verified link.
+  - `edu_coppa_gate_for(user_id)` — **THE one verdict implementation.** Not
+    executable by `authenticated` (it would disclose another user's age band);
+    aidream's server-side gate calls it directly, so the two enforcement layers
+    read one function and cannot drift.
   - `edu_coppa_gate()` — the authoritative verdict `{age_band, requires_consent,
-    has_active_guardian, has_verified_guardian, ai_allowed, reason}`. Reads the
+    has_active_guardian, has_verified_guardian, is_anonymous, ai_allowed,
+    reason}`, a thin `edu_coppa_gate_for(auth.uid())` wrapper. Reads the
     RLS-guarded `education.guardian_link` server-side (only a definer RPC can), so
     both guardian signals are trustworthy. For an under-13, **`ai_allowed` requires
     a VERIFIED link** (`has_verified_guardian` — an active link with `verified_at`
     set by a COPPA verifiable-consent method), NOT merely an active one. Two
     distinct blocks: `guardian_consent_required` (no active link — ask a parent)
     and `guardian_verification_pending` (active link, parent hasn't completed the
-    verifiable step — "waiting for a parent to verify"). Undeclared band → allowed
-    (existing users aren't broken) + `age_undeclared` so the UI can nudge. The
-    verifiable-consent flow itself lives on the guardian system — see
-    [`../family/FEATURE.md`](../family/FEATURE.md) §Verifiable parental consent.
+    verifiable step — "waiting for a parent to verify"). **Undeclared band →
+    BLOCKED** with reason `age_undeclared` (since 2026-08-17; it was `allowed`
+    before, which is why the gate protected nobody). **Anonymous sessions and
+    no-subject callers stay allowed** — they are not this gate's subject, and the
+    guest funnel belongs to WP5. The verifiable-consent flow itself lives on the
+    guardian system — see [`../family/FEATURE.md`](../family/FEATURE.md)
+    §Verifiable parental consent.
 
 ## Entry points
 
 - `coppaService.ts` — typed wrappers over the two RPCs (`StudyResult<T>`).
 - `useAiComplianceGate.tsx` — **THE reusable gate primitive.** `ensureAllowed()`
-  (server-truth pre-action check; opens the consent dialog + returns false on a
-  block) + `<gate.Gate />` + reactive `gate`/`blocked`. On a resolver error it
+  (server-truth pre-action check; opens the right dialog + returns false on a
+  block) + `<gate.Gate />` + reactive `gate`/`blocked`. **Two blocks, two
+  dialogs, one entry point:** `age_undeclared` opens `AgeDeclarationDialog`,
+  writes the band, and **resolves to the post-declaration verdict** — so a teen
+  or adult declares once and the action they originally clicked proceeds without
+  a second click; anything else opens `AiConsentRequiredDialog`. Because all nine
+  AI entry points already share this primitive, both behaviours land everywhere
+  from here — never re-implement either dialog at a call site. On a resolver error it
   **fails CLOSED for the minor path** (D57): a signed-in account with no
   already-resolved allowed verdict is treated as a potential under-13 and blocked;
   an already-resolved adult/13-17/consented-under-13 keeps the softer allow, and a
@@ -59,6 +92,9 @@ state, never a silent failure.
   signed-in vs anonymous line.
 - `components/AiConsentRequiredDialog.tsx` — the "a parent must approve" state,
   routing to `/education/family` (the guardian flow).
+- `components/AgeDeclarationDialog.tsx` — the one-tap mandatory age prompt shown
+  at any AI entry point when the account has no declared band. A step, not a
+  wall: picking a band resumes the original action.
 - `components/AgeBandPrivacyCard.tsx` — declare age band + see live COPPA status;
   rendered on the "Your data & privacy" surface (`/education/data`).
 
@@ -123,6 +159,32 @@ no entry point to gate there.
 
 ## Change log
 
+- `2026-08-17` — **THE GATE NOW APPLIES (WP9).** It protected nobody until today:
+  269 profiles, zero with an `age_band`, so `edu_coppa_gate()` answered
+  `ai_allowed=true` for every user. Four changes, all live-verified:
+  **(1)** age declaration is **mandatory** for a signed-in account
+  (`age_undeclared` now blocks; anonymous sessions stay out of scope), resolved
+  in one tap by the new `AgeDeclarationDialog` wired into `useAiComplianceGate`,
+  which then **resumes the action the learner clicked** — so all nine AI entry
+  points got it from one change. **(2)** `under_13 → 13_17|adult`
+  **self-declaration is hard-blocked** (D-4 recommended posture) and the refusal
+  is **durably audited** as `age_band_change_blocked` — replacing the review
+  signal that nothing consumed. **(3)** The one route out of `under_13` is
+  `edu_guardian_set_age_band`, requiring a **VERIFIED** guardian, surfaced as
+  `family/components/StudentAgeBandControl.tsx` so the block is not a dead end.
+  **(4)** `edu_coppa_gate_for(uuid)` is now THE single verdict implementation
+  that aidream's server gate calls directly — killing the declared Python/SQL
+  drift risk. Also hardened: the `app.age_band_rpc_guard` flag is disarmed right
+  after its UPDATE (it stayed armed for the rest of the transaction).
+  `migrations/edu_coppa_gate_applies.sql`. **Adversarially verified 17/17**
+  against the live DB in a rolled-back transaction — self-escape refused with the
+  band unchanged, direct table write refused (42501) both in a clean transaction
+  and after the RPC, stranger refused, active-but-unverified guardian refused and
+  still AI-blocked, verified guardian able to change it, downgrades open,
+  `edu_coppa_gate_for` unreachable by `authenticated`.
+  **Still open (Arman/legal, not code):** the age band remains *self-attested* at
+  first declaration — the hard block stops the escape, not the initial lie; and
+  the verifiable-method/vendor choice is A-2.
 - `2026-07-15` — **D57 `age_band` write-tamper CODE gap closed.** Single audited write
   path: a `BEFORE UPDATE` trigger on `users.profiles` blocks any direct `age_band`
   write outside `edu_set_age_band()` (or `service_role`); every change is now audited
