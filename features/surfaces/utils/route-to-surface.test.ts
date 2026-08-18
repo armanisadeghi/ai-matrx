@@ -417,9 +417,30 @@ describe("Images family (studio tools)", () => {
   });
 
   it("does not leak the studio prefix onto its sibling library routes", () => {
-    expect(surfaceFromPathname("/images/studio-library")).toBeNull();
-    expect(surfaceFromPathname("/images/studio-light")).toBeNull();
-    expect(surfaceFromPathname("/images")).toBeNull();
-    expect(surfaceFromPathname("/images/presets")).toBeNull();
+    // These are Image Manager tabs, NOT the studio. Until 2026-08-17 they
+    // resolved to nothing at all (a comment in the mapping wrongly called them
+    // "static explainers/stubs" — ToolsTab alone is ~550 lines), so a dozen
+    // live routes could not bind an agent. They now resolve to the hub surface;
+    // what this test still guards is that the studio prefix does not swallow
+    // them.
+    for (const route of [
+      "/images/studio-library",
+      "/images/studio-light",
+      "/images",
+      "/images/presets",
+      "/images/tools",
+      "/images/branded",
+      "/images/profile-photo",
+      "/images/public-search",
+    ]) {
+      expect(surfaceFromPathname(route)).toBe("matrx-user/image-manager");
+    }
+  });
+
+  it("keeps the specialist image surfaces above the hub catch-all", () => {
+    expect(surfaceFromPathname("/images/my-cloud")).toBe("matrx-user/images");
+    expect(surfaceFromPathname("/images/studio")).toBe(
+      "matrx-user/image-studio",
+    );
   });
 });

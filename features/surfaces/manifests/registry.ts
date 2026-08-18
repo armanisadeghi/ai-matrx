@@ -27,6 +27,18 @@ import type {
 import { RESERVED_GROUP_KEYS } from "@/features/surfaces/types";
 import { BASELINE_VALUES } from "./_baseline.manifest";
 import { notesEditorManifest } from "./notes-editor.manifest";
+import { agentShortcutsManifest } from "./agent-shortcuts.manifest";
+import { aiWorkManifest } from "./ai-work.manifest";
+import { aiWorkComposerManifest } from "./ai-work-composer.manifest";
+import { aiWorkConversationsManifest } from "./ai-work-conversations.manifest";
+import { imageManagerManifest } from "./image-manager.manifest";
+import { visionInterviewManifest } from "./vision-interview.manifest";
+import { artifactsManifest } from "./artifacts.manifest";
+import { assistsManifest } from "./assists.manifest";
+import { reportsManifest } from "./reports.manifest";
+import { cameraManifest } from "./camera.manifest";
+import { vaultManifest } from "./vault.manifest";
+import { legalCaWcManifest } from "./legal-ca-wc.manifest";
 import { codeEditorManifest } from "./code-editor.manifest";
 import { pdfExtractorManifest } from "./pdf-extractor.manifest";
 import { extractorChunkerManifest } from "./extractor-chunker.manifest";
@@ -204,6 +216,18 @@ import { quickDataManifest } from "./quick-data.manifest";
  * are injected below. Use `ALL_MANIFESTS`.
  */
 const RAW_MANIFESTS: readonly SurfaceManifest[] = [
+  agentShortcutsManifest,
+  aiWorkManifest,
+  aiWorkComposerManifest,
+  aiWorkConversationsManifest,
+  imageManagerManifest,
+  visionInterviewManifest,
+  artifactsManifest,
+  assistsManifest,
+  reportsManifest,
+  cameraManifest,
+  vaultManifest,
+  legalCaWcManifest,
   notesEditorManifest,
   codeEditorManifest,
   pdfExtractorManifest,

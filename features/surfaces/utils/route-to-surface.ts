@@ -57,6 +57,13 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/suggestions", surface: "matrx-user/knowledge" },
   { prefix: "/shapes", surface: "matrx-user/shapes" },
   { prefix: "/notes", surface: "matrx-user/notes" },
+  { prefix: "/artifacts", surface: "matrx-user/artifacts" },
+  { prefix: "/legal/ca-wc", surface: "matrx-user/legal-ca-wc" },
+  { prefix: "/assists", surface: "matrx-user/assists" },
+  { prefix: "/camera", surface: "matrx-user/camera" },
+  { prefix: "/reports", surface: "matrx-user/reports" },
+  { prefix: "/vault", surface: "matrx-user/vault" },
+  { prefix: "/vision-interview", surface: "matrx-user/vision-interview" },
   { prefix: "/messages", surface: "matrx-user/messages" },
   { prefix: "/tasks", surface: "matrx-user/tasks" },
   // The three outreach work surfaces sit UNDER /crm and must be listed before
@@ -74,9 +81,13 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   // Images family. The my-cloud tab is the library; the four studio tools
   // each carry their own surface. The static /images/studio landing maps to
   // the studio surface it fronts (/images/convert is the live tool); the
-  // /images/ai-generate coming-soon hero maps to image-generate. The
-  // remaining /images routes are static explainers/stubs and deliberately
-  // map to nothing.
+  // /images/ai-generate coming-soon hero maps to image-generate. Everything
+  // else under /images is an Image Manager tab (tools, branded upload, profile
+  // photo, public search, studio library, presets, all-files) and resolves to
+  // `matrx-user/image-manager` via the catch-all prefix below it. An earlier
+  // comment here called those routes "static explainers/stubs" and mapped them
+  // to nothing; that was wrong — ToolsTab alone is ~550 lines — so a dozen live
+  // routes could not bind an agent (fixed 2026-08-17).
   { prefix: "/images/my-cloud", surface: "matrx-user/images" },
   { prefix: "/images/convert", surface: "matrx-user/image-studio" },
   { prefix: "/images/studio", surface: "matrx-user/image-studio" },
@@ -84,6 +95,14 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/images/ai-generate", surface: "matrx-user/image-generate" },
   { prefix: "/images/edit", surface: "matrx-user/image-edit" },
   { prefix: "/images/annotate", surface: "matrx-user/image-annotate" },
+  { prefix: "/images", surface: "matrx-user/image-manager" },
+  // AI Work Hub. Specific routes ABOVE the /work hub, per first-match-wins.
+  { prefix: "/work/new", surface: "matrx-user/ai-work-composer" },
+  {
+    prefix: "/work/conversations",
+    surface: "matrx-user/ai-work-conversations",
+  },
+  { prefix: "/work", surface: "matrx-user/ai-work" },
   { prefix: "/files", surface: "matrx-user/files" },
   { prefix: "/projects", surface: "matrx-user/projects" },
   { prefix: "/lists", surface: "matrx-user/lists" },
