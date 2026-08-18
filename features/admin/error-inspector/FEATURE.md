@@ -140,6 +140,13 @@ queryable store + admin dashboard the server writes), so client + server errors
 live in one place. Conservative — **NOT** the in-memory firehose: **red-tier only**,
 deduped (once per entry/session), throttled, **production + authenticated only**.
 
+**A provisional access question never races into the repair queue.** A
+`record-unavailable (...unknown)` capture waits up to 10 seconds for AccessGate
+to reconcile it. A handled denial turns yellow and stays local; missing,
+deleted, transient-`ok`, signed-out, or still-unknown outcomes remain red and
+persist. The flush re-reads the entry after async setup so it never sends a
+stale pre-reconciliation snapshot.
+
 Direct client INSERT into `system_error` is RLS-denied — the canonical browser
 path is the auth-checked `SECURITY DEFINER` RPC **`public.log_client_error`**
 (`migrations/log_client_error.sql`): attributes to `auth.uid()`, resolves
@@ -259,6 +266,11 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-17 — **Provisional access questions settle before persistence.**
+  `record-unavailable (...unknown)` waits up to 10 seconds for AccessGate;
+  handled denials stay local, while unresolved and genuinely broken reads still
+  enter `system_error`. The send boundary re-reads the capture so an in-flight
+  reconciliation cannot leak a stale red snapshot.
 - 2026-08-17 — **Expected CMS write-policy refusals stay user-visible and local.** Structured `cms_write_policy_denied` 403s and the duplicate `site policy ... forbids ...` toast are yellow, so the policy still blocks the write and explains why without creating two repair-queue rows; unrelated 403s and toasts remain red.
 - 2026-08-17 — **Recoverable Vision Interview deploy-window transport loss stays local.** Route-scoped `api-network` / `network_error` / Safari `Load failed` captures are yellow: durable drafts and room rehydration make retry the complete recovery, so repeated mic/start attempts no longer persist duplicate `system_error` rows. The same wording remains red outside this proven surface; adapter tests pin all three observed endpoints.
 - 2026-08-17 — **A Content IR recovery no longer creates a second persisted symptom through the console fallback.** The kind-registry fieldless-schema guard now emits only its structured `content-ir` capture, with a named `operation`, `relation`, `callSite`, recovery data, and an adapter-specific hint. The global `console.error` adapter remains the production safety net, but structured producers must not mirror the same incident into it; source is part of the capture signature, so that mirror previously bypassed in-memory dedupe and persisted one logical incident twice.
