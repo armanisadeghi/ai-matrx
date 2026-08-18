@@ -278,6 +278,30 @@ function evaluateGates(
 // Labels + money
 // ---------------------------------------------------------------------------
 
+/**
+ * Find the band a value falls in, tolerating gaps between bands.
+ *
+ * Hand-built band sets are written as `0-10`, `11-40`, `41-43` — fine while the
+ * score is a whole number, and full of holes the moment it is not. A miss here
+ * used to fall through to a multiplier of 0, which quietly paid every role $0 on
+ * a link the same engine had just priced at $200. Falling back to the last band
+ * that starts at or below the value keeps a hole from becoming a refusal.
+ */
+function resolveBand<T extends { from: number; to: number }>(
+  bands: readonly T[],
+  at: number,
+): T | undefined {
+  const exact = bands.find((band) => at >= band.from && at <= band.to);
+  if (exact) return exact;
+
+  const sorted = [...bands].sort((a, b) => a.from - b.from);
+  let fallback: T | undefined;
+  for (const band of sorted) {
+    if (band.from <= at) fallback = band;
+  }
+  return fallback ?? sorted[0];
+}
+
 function resolveLabel(
   bands: readonly { from: number; to: number; label: string }[],
   at: number,
@@ -343,7 +367,13 @@ export function evaluateLink(
     }
 
     const floored = bucket.floorAtZero ? Math.max(raw, 0) : raw;
-    const divisor = bucket.divisor === 0 ? 1 : bucket.divisor;
+    // `divisor` belongs to `fixed` mode only. A mean is already normalised, so
+    // dividing it again would silently collapse every score the moment someone
+    // flipped a bucket's mode in the tuning panel and left the old divisor behind.
+    const divisor =
+      bucket.divisorMode === "meanOfPresent" || bucket.divisor === 0
+        ? 1
+        : bucket.divisor;
     buckets[bucket.key] = {
       raw,
       score: bucket.enabled ? floored / divisor : 0,
@@ -386,9 +416,7 @@ export function evaluateLink(
 
   const roleCeilings: Record<string, number> = {};
   for (const role of config.money.roles) {
-    const band = role.bands.find(
-      (entry) => moneyScore >= entry.from && moneyScore <= entry.to,
-    );
+    const band = resolveBand(role.bands, moneyScore);
     const multiplier = band?.multiplier ?? 0;
     roleCeilings[role.key] = roundHalfUp(
       maxValue * multiplier,
@@ -396,9 +424,7 @@ export function evaluateLink(
     );
   }
 
-  const authorizationBand = config.money.authorization.find(
-    (band) => moneyScore >= band.from && moneyScore <= band.to,
-  );
+  const authorizationBand = resolveBand(config.money.authorization, moneyScore);
 
   // Confidence: the evidence-weighted share of the model that was actually fed.
   const measurable = terms.filter((term) => term.status !== "disabled");
@@ -419,10 +445,19 @@ export function evaluateLink(
       `${measurable.length - measured.length} of ${measurable.length} scored inputs were not supplied — they were excluded, not scored as zero.`,
     );
   }
-  const overCurve = config.money.curve[config.money.curve.length - 1];
-  if (overCurve && totalScore > overCurve.at) {
+  // The curve is a SET of points, not an ordered list — the tuning panel appends
+  // new ones. Read its top by value, or adding a point makes this warning lie.
+  const overCurve = config.money.curve.reduce<{
+    at: number;
+    value: number;
+  } | null>(
+    (highest, point) =>
+      highest === null || point.at > highest.at ? point : highest,
+    null,
+  );
+  if (overCurve && moneyScore > overCurve.at) {
     warnings.push(
-      `Score ${totalScore.toFixed(1)} is above the top of the value curve (${overCurve.at}); the price is clamped to $${overCurve.value}.`,
+      `Score ${moneyScore.toFixed(1)} is above the top of the value curve (${overCurve.at}); the price is clamped to $${overCurve.value}.`,
     );
   }
 

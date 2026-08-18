@@ -106,17 +106,51 @@ export function parseConfig(
     return { error: "Expected a JSON object." };
 
   const candidate = parsed as Partial<LinkValuationConfig>;
-  const required: (keyof LinkValuationConfig)[] = [
-    "id",
-    "name",
+
+  const requiredStrings: (keyof LinkValuationConfig)[] = ["id", "name"];
+  const missingStrings = requiredStrings.filter(
+    (key) => typeof candidate[key] !== "string" || candidate[key] === "",
+  );
+  if (missingStrings.length > 0) {
+    return {
+      error: `Missing or non-text field(s): ${missingStrings.join(", ")}.`,
+    };
+  }
+
+  // Every collection the engine ITERATES must be an array before it is accepted.
+  // Accepting a config missing `groups` or `gates` and discovering it inside the
+  // engine blanks the whole workspace with no way back — validation belongs at
+  // the door, not in the maths.
+  const requiredArrays: (keyof LinkValuationConfig)[] = [
     "signals",
+    "groups",
     "terms",
     "buckets",
-    "money",
+    "gates",
   ];
-  const missing = required.filter((key) => candidate[key] === undefined);
-  if (missing.length > 0) {
-    return { error: `Missing required field(s): ${missing.join(", ")}.` };
+  const badArrays = requiredArrays.filter(
+    (key) => !Array.isArray(candidate[key]),
+  );
+  if (badArrays.length > 0) {
+    return { error: `These must each be an array: ${badArrays.join(", ")}.` };
   }
+
+  const money = candidate.money;
+  if (!money || typeof money !== "object")
+    return { error: "Missing the `money` block." };
+  if (!Array.isArray(money.curve) || money.curve.length === 0) {
+    return {
+      error: "`money.curve` must be a non-empty array of { at, value } points.",
+    };
+  }
+  if (!Array.isArray(money.roles) || !Array.isArray(money.authorization)) {
+    return {
+      error: "`money.roles` and `money.authorization` must each be an array.",
+    };
+  }
+  if (candidate.labels === undefined || typeof candidate.labels !== "object") {
+    return { error: "Missing the `labels` block." };
+  }
+
   return { config: candidate as LinkValuationConfig };
 }

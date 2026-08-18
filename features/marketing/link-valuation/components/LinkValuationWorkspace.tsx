@@ -35,52 +35,11 @@ import {
   saveConfig,
   writeActiveConfigId,
 } from "../storage";
+import { seedFor } from "../configs/seeds";
 import type { EvaluationInput, LinkValuationConfig } from "../types";
 import { CandidateForm } from "./CandidateForm";
 import { ResultPanel } from "./ResultPanel";
 import { TuningPanel } from "./TuningPanel";
-
-/**
- * Appendix B of the source PRD, preloaded. It is the one candidate whose
- * correct answer is independently known, so the page opens on a case the user
- * can immediately check the engine against.
- */
-const SEED_INPUT: EvaluationInput = {
-  domain: "example.com",
-  target: { keyword: "", page: "", campaign: "" },
-  values: {
-    domain_authority: { value: 36, provenance: "api", confidence: 1 },
-    url_rating: { value: 40, provenance: "api", confidence: 1 },
-    domain_rating: { value: 37, provenance: "api", confidence: 1 },
-    global_rank: { value: 2_017_142, provenance: "api", confidence: 1 },
-    spam_score: { value: 0, provenance: "api", confidence: 1 },
-    trust_links: { value: 23, provenance: "api", confidence: 1 },
-    volume_links: { value: 29, provenance: "api", confidence: 1 },
-    organic_traffic: { value: 12_200, provenance: "api", confidence: 1 },
-    url_length: { value: 9, provenance: "derived", confidence: 1 },
-    spam_keywords: { value: "No Spam", provenance: "manual", confidence: 1 },
-    is_us_site: { value: "No", provenance: "manual", confidence: 1 },
-    tld: { value: ".com", provenance: "derived", confidence: 1 },
-    topical_trust: { value: 2, provenance: "manual", confidence: 1 },
-    keyword_relevance: {
-      value: "No Relevance",
-      provenance: "manual",
-      confidence: 1,
-    },
-    page_topic_relevance: {
-      value: "No Relevance",
-      provenance: "manual",
-      confidence: 1,
-    },
-    promote_social: { value: "No", provenance: "manual", confidence: 1 },
-    feature_placement: {
-      value: "Yes: Moderate Placement",
-      provenance: "manual",
-      confidence: 1,
-    },
-    page_authority: { value: 24, provenance: "api", confidence: 1 },
-  },
-};
 
 export function LinkValuationWorkspace() {
   const [configs, setConfigs] = useState<LinkValuationConfig[]>([
@@ -89,15 +48,19 @@ export function LinkValuationWorkspace() {
   const [activeId, setActiveId] = useState<string>(
     BUILT_IN_CONFIGS[0]?.id ?? "matrx-v1",
   );
-  const [input, setInput] = useState<EvaluationInput>(SEED_INPUT);
+  const [input, setInput] = useState<EvaluationInput>(() =>
+    seedFor(BUILT_IN_CONFIGS[0]?.id ?? ""),
+  );
   const [importText, setImportText] = useState("");
   const [dirty, setDirty] = useState(false);
 
   // Hydrate from storage after mount — server and client must agree on the
   // first paint, so the stored config is applied in an effect, not during render.
   useEffect(() => {
+    const storedId = readActiveConfigId();
     setConfigs(listConfigs());
-    setActiveId(readActiveConfigId());
+    setActiveId(storedId);
+    setInput(seedFor(storedId));
   }, []);
 
   const config =
@@ -115,6 +78,10 @@ export function LinkValuationWorkspace() {
     setActiveId(id);
     writeActiveConfigId(id);
     setDirty(false);
+    // Each config has its own signals, so its own worked example travels with it.
+    // Carrying the previous config's inputs across would half-feed the new model
+    // and show a score nobody could check.
+    setInput(seedFor(id));
   };
 
   const persist = () => {

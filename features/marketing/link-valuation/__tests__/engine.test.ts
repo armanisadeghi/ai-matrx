@@ -10,8 +10,14 @@
 import { evaluateLink } from "../engine";
 import { applyCurve, interpolatePoints, roundHalfUp } from "../curves";
 import { SHEET_2018_CONFIG } from "../configs/sheet-2018";
+import { seedFor } from "../configs/seeds";
+import { BUILT_IN_CONFIGS, parseConfig } from "../storage";
 import { MATRX_V1_CONFIG } from "../configs/matrx-v1";
-import type { EvaluationInput, SignalValue } from "../types";
+import type {
+  EvaluationInput,
+  LinkValuationConfig,
+  SignalValue,
+} from "../types";
 
 const measured = (value: number | string): SignalValue => ({
   value,
@@ -238,5 +244,113 @@ describe("matrx-v1 — the redesigned model", () => {
       "p_feature_placement",
     );
     expect(relevanceTerms.map((t) => t.key)).not.toContain("r_page_authority");
+  });
+});
+
+describe("knobs cannot silently break the maths", () => {
+  const input: EvaluationInput = {
+    domain: "example.com",
+    target: { keyword: "x", page: "y", campaign: "z" },
+    values: {
+      domain_authority: measured(60),
+      organic_traffic: measured(50_000),
+      tld: measured(".com"),
+      spam_score: measured(5),
+    },
+  };
+
+  it("ignores a leftover fixed divisor after a bucket is switched to averaging", () => {
+    // Flipping sheet-2018's quality bucket to "average what arrived" while its
+    // divisor of 17 stayed behind used to divide the mean a second time.
+    const switched: LinkValuationConfig = {
+      ...MATRX_V1_CONFIG,
+      buckets: MATRX_V1_CONFIG.buckets.map((bucket) =>
+        bucket.key === "quality" ? { ...bucket, divisor: 17 } : bucket,
+      ),
+    };
+    const before = evaluateLink(MATRX_V1_CONFIG, input);
+    const after = evaluateLink(switched, input);
+    expect(after.buckets.quality.score).toBeCloseTo(
+      before.buckets.quality.score,
+      6,
+    );
+  });
+
+  it("never pays a role $0 on a link it priced, even when the bands leave a gap", () => {
+    // sheet-2018's role bands run 0-10, 11-40, 41-43 ... A continuous score can
+    // land at 10.5, which matches no band at all.
+    const continuous: LinkValuationConfig = {
+      ...SHEET_2018_CONFIG,
+      money: { ...SHEET_2018_CONFIG.money, roundScoreTo: null },
+    };
+    const result = evaluateLink(continuous, {
+      ...APPENDIX_B,
+      // Nudge the total into the 40/41 gap.
+      values: { ...APPENDIX_B.values, domain_authority: measured(59) },
+    });
+
+    expect(result.money.maxValue).toBeGreaterThan(0);
+    for (const role of continuous.money.roles) {
+      expect(result.money.roleCeilings[role.key]).toBeGreaterThan(0);
+    }
+    expect(result.money.authorization).not.toBeNull();
+  });
+
+  it("reads the top of the value curve by score, not by array position", () => {
+    // The tuning panel appends new points, so the last slot is not the highest.
+    const appended: LinkValuationConfig = {
+      ...MATRX_V1_CONFIG,
+      money: {
+        ...MATRX_V1_CONFIG.money,
+        curve: [...MATRX_V1_CONFIG.money.curve, { at: 0, value: 0 }],
+      },
+    };
+    const result = evaluateLink(appended, input);
+    expect(result.warnings.join(" ")).not.toContain(
+      "above the top of the value curve",
+    );
+    expect(result.money.maxValue).toBeGreaterThan(0);
+  });
+});
+
+describe("config import refuses what the engine cannot run", () => {
+  const complete = JSON.stringify(MATRX_V1_CONFIG);
+
+  it("accepts a complete config", () => {
+    expect(parseConfig(complete)).toHaveProperty("config");
+  });
+
+  it.each(["groups", "gates", "labels", "terms", "buckets"])(
+    "rejects a config missing %s rather than blanking the workspace",
+    (field) => {
+      const partial: Record<string, unknown> = { ...MATRX_V1_CONFIG };
+      delete partial[field];
+      const result = parseConfig(JSON.stringify(partial));
+      expect(result).toHaveProperty("error");
+    },
+  );
+
+  it("explains what is wrong instead of throwing", () => {
+    const result = parseConfig("{ not json");
+    expect(result).toHaveProperty("error");
+  });
+});
+
+describe("each config opens on its own worked example", () => {
+  it.each(BUILT_IN_CONFIGS.map((entry) => entry.id))(
+    "%s seeds every signal its own model scores",
+    (configId) => {
+      const config = BUILT_IN_CONFIGS.find((entry) => entry.id === configId)!;
+      const seeded = evaluateLink(config, seedFor(configId));
+      const missing = seeded.terms.filter((term) => term.status === "missing");
+      expect(missing.map((term) => term.key)).toEqual([]);
+      expect(seeded.confidence).toBeGreaterThan(0);
+    },
+  );
+
+  it("still reproduces Appendix B from the sheet-2018 seed", () => {
+    expect(
+      evaluateLink(SHEET_2018_CONFIG, seedFor("sheet-2018")).totalScore,
+    ).toBeCloseTo(35.52, 2);
   });
 });
