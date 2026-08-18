@@ -136,6 +136,7 @@ DECLARE
   v_currency integer := 0;
   v_duration integer;
   v_new_badges text[] := ARRAY[]::text[];
+  v_awarded_badges text[] := ARRAY[]::text[];
   v_badge text;
   v_attempt record;
   v_week date := date_trunc('week', now() AT TIME ZONE 'utc')::date;
@@ -311,15 +312,16 @@ BEGIN
      AND lm.cohort_key IS NOT NULL
      AND lm.deleted_at IS NULL;
 
-  FOREACH v_badge IN ARRAY ARRAY['first_game']::text[] LOOP
-    INSERT INTO education.game_badge (organization_id, created_by, badge_key, context)
-    SELECT v_session.organization_id, v_user, v_badge,
-           jsonb_build_object('resultId', v_result.id, 'sessionId', p_session_id, 'score', v_score)
-    WHERE NOT EXISTS (
-      SELECT 1 FROM education.game_badge b
-       WHERE b.created_by = v_user AND b.badge_key = v_badge AND b.deleted_at IS NULL
-    );
-  END LOOP;
+  INSERT INTO education.game_badge (organization_id, created_by, badge_key, context)
+  SELECT v_session.organization_id, v_user, 'first_game',
+         jsonb_build_object('resultId', v_result.id, 'sessionId', p_session_id, 'score', v_score)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM education.game_badge b
+     WHERE b.created_by = v_user AND b.badge_key = 'first_game' AND b.deleted_at IS NULL
+  );
+  IF FOUND THEN
+    v_awarded_badges := array_append(v_awarded_badges, 'first_game');
+  END IF;
 
   IF v_attempt_count >= 5 AND v_correct = v_attempt_count THEN
     v_new_badges := array_append(v_new_badges, 'perfect_round');
@@ -347,7 +349,16 @@ BEGIN
       SELECT 1 FROM education.game_badge b
        WHERE b.created_by = v_user AND b.badge_key = v_badge AND b.deleted_at IS NULL
     );
+    IF FOUND THEN
+      v_awarded_badges := array_append(v_awarded_badges, v_badge);
+    END IF;
   END LOOP;
+
+  UPDATE education.game_result
+     SET metadata = metadata || jsonb_build_object('new_badges', to_jsonb(v_awarded_badges)),
+         updated_at = now()
+   WHERE id = v_result.id
+   RETURNING * INTO v_result;
 
   RETURN v_result;
 END;
@@ -878,6 +889,6 @@ GRANT EXECUTE ON FUNCTION public.education_streak_rollover(date) TO service_role
 GRANT EXECUTE ON FUNCTION public.education_league_rollover(date) TO service_role;
 
 COMMENT ON FUNCTION public.game_finalize_result(uuid, text) IS
-  'IC-14 authority: derives a durable game result, league gain, and badges only from the owned unedited study-attempt ledger.';
+  'IC-14 authority: derives a durable game result, league gain, and badges only from server-graded, owned, unedited game attempts.';
 COMMENT ON COLUMN education.league_membership.cohort_key IS
   'Private weekly activity-matched league cohort; never a public/global shame board.';

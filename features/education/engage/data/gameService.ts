@@ -30,7 +30,7 @@ function fail<T>(where: string, error: unknown): EngageResult<T> {
       ? error
       : error instanceof Error
         ? error.message
-        : (error as { message?: string } | null)?.message ?? "Unknown error";
+        : ((error as { message?: string } | null)?.message ?? "Unknown error");
   console.error(`[gameService] ${where}:`, message);
   return { data: null, error: `${where}: ${message}` };
 }
@@ -95,7 +95,10 @@ export interface EngagementSnapshot {
   league_mastery_gain: number;
   league_opted_in: boolean;
 }
-type _CheckEngagementSnapshot = EngagementSnapshot extends DbRpcRow<"education_engagement_snapshot"> ? true : false;
+type _CheckEngagementSnapshot =
+  EngagementSnapshot extends DbRpcRow<"education_engagement_snapshot">
+    ? true
+    : false;
 declare const _engagementSnapshotMatchesDb: _CheckEngagementSnapshot;
 true satisfies typeof _engagementSnapshotMatchesDb;
 
@@ -147,7 +150,8 @@ export const gameService = {
           .single();
         if (!error) return { data: data as GameRoomRow, error: null };
         // 23505 = unique_violation on the live join-code index → retry a new code.
-        if ((error as { code?: string }).code === "23505" && attempt < 2) continue;
+        if ((error as { code?: string }).code === "23505" && attempt < 2)
+          continue;
         return fail("createRoom", error);
       }
       return fail("createRoom", "exhausted join-code retries");
@@ -157,7 +161,9 @@ export const gameService = {
   },
 
   /** Look up a joinable (lobby/active) room by its code — cross-owner via RPC. */
-  async findRoomByCode(code: string): Promise<EngageResult<JoinableRoom | null>> {
+  async findRoomByCode(
+    code: string,
+  ): Promise<EngageResult<JoinableRoom | null>> {
     try {
       const { data, error } = await supabase.rpc("game_room_by_code", {
         p_code: code.trim(),
@@ -221,6 +227,7 @@ export const gameService = {
         p_display_name: displayName,
       });
       if (error) return fail("finalizeResult", error);
+      if (!data) return fail("finalizeResult", "RPC returned no result");
       return { data, error: null };
     } catch (e) {
       return fail("finalizeResult", e);
@@ -300,7 +307,10 @@ export const gameService = {
         .is("deleted_at", null)
         .maybeSingle();
       if (error) return fail("getMyLeagueMembership", error);
-      return { data: (data ?? null) as LeagueMembershipRow | null, error: null };
+      return {
+        data: (data ?? null) as LeagueMembershipRow | null,
+        error: null,
+      };
     } catch (e) {
       return fail("getMyLeagueMembership", e);
     }

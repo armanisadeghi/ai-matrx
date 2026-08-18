@@ -256,7 +256,8 @@ export function EditSetView({ setId }: { setId: string }) {
           { symbol: "a, b, c", meaning: "coefficients of ax² + bx + c = 0" },
           { symbol: "x", meaning: "the roots of the equation" },
         ],
-        example: "For $x^2 - 5x + 6 = 0$: $x = \\frac{5 \\pm 1}{2}$, so $x = 3$ or $x = 2$.",
+        example:
+          "For \\(x^2 - 5x + 6 = 0\\): \\(x = \\frac{5 \\pm 1}{2}\\), so \\(x = 3\\) or \\(x = 2\\).",
       }),
     },
   };

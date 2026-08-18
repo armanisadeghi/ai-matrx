@@ -214,13 +214,12 @@ enforces it in code, not copy:
   was org-gated (`assoc_for_targets` → `iam.has_org_access`), so a guest from a
   different personal org loaded 0 cards for a `visibility='public'` deck. New
   visibility-aware `assoc_members_visible` RPC (`has_org_access OR
-  `iam.has_access(target,'viewer')` — the canonical row-level auth truth,
-  evaluated once per target; strict superset of the old read) wrapped by
-  `associationsService.listForTargetsVisible`; `fcService.getSetWithCards` routes
-  through it, so every flashcard surface reads public/shared decks cross-account.
-  Live-verified as a real guest (`test@test.com`, org membership removed → true
-  stranger): old rpc 0 → new rpc 52 edges → 52 playable cards; PERSONAL un-granted
-  deck stays 0 (no leak). `migrations/assoc_members_visible_rpc.sql` (ledgered).
+`iam.has_access(target,'viewer')`— the canonical row-level auth truth,
+evaluated once per target; strict superset of the old read) wrapped by`associationsService.listForTargetsVisible`; `fcService.getSetWithCards` routes
+through it, so every flashcard surface reads public/shared decks cross-account.
+Live-verified as a real guest (`test@test.com`, org membership removed → true
+stranger): old rpc 0 → new rpc 52 edges → 52 playable cards; PERSONAL un-granted
+deck stays 0 (no leak). `migrations/assoc_members_visible_rpc.sql` (ledgered).
 - **2026-07-10** — DoD-closing live run (P10). Drove a real solo round + a real
   two-user multiplayer round end-to-end through the authenticated service/RPC
   paths (first live rows in `game_room`/`game_result`/`game_badge`/

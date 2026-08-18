@@ -8,6 +8,7 @@
 import { gameService } from "./gameService";
 import { BADGES, type BadgeKey } from "../engine/badges";
 import type { GameOutcome } from "../types";
+import type { Json } from "@/types/database.types";
 
 export interface FinalizeInput {
   outcome: GameOutcome;
@@ -32,17 +33,19 @@ export async function finalizeGame(
     };
   }
 
-  const before = await gameService.listMyBadges();
-  const finalized = await gameService.finalizeResult(outcome.sessionId, displayName);
+  const finalized = await gameService.finalizeResult(
+    outcome.sessionId,
+    displayName,
+  );
   if (!finalized.data) {
-    return { newBadges: [], officialOutcome: null, error: finalized.error };
+    return {
+      newBadges: [],
+      officialOutcome: null,
+      error: finalized.error ?? "The result authority returned no result.",
+    };
   }
-  const after = await gameService.listMyBadges();
-  const heldBefore = new Set((before.data ?? []).map((badge) => badge.badge_key));
-  const newBadges = (after.data ?? [])
-    .map((badge) => badge.badge_key)
-    .filter((key): key is BadgeKey => key in BADGES && !heldBefore.has(key));
   const row = finalized.data;
+  const newBadges = readAwardedBadges(row.metadata);
 
   return {
     newBadges,
@@ -63,4 +66,15 @@ export async function finalizeGame(
       sourceTitle: row.source_title,
     },
   };
+}
+
+function readAwardedBadges(metadata: Json): BadgeKey[] {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return [];
+  }
+  const value = metadata.new_badges;
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (key): key is BadgeKey => typeof key === "string" && key in BADGES,
+  );
 }

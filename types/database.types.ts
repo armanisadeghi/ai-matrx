@@ -40675,6 +40675,18 @@ export type Database = {
           session_points: number
         }[]
       }
+      education_league_rollover: {
+        Args: { p_week_start?: string }
+        Returns: number
+      }
+      education_streak_rollover: {
+        Args: { p_rollover_date?: string }
+        Returns: {
+          protected: number
+          reset: number
+          scanned: number
+        }[]
+      }
       ensure_folder_chain: {
         Args: { p_folder_path: string; p_owner_id: string }
         Returns: string
@@ -40907,6 +40919,19 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      game_record_answer: {
+        Args: {
+          p_difficulty: number
+          p_due_at: string
+          p_item_id: string
+          p_lapses: number
+          p_retrievability: number
+          p_selected_answer: string
+          p_session_id: string
+          p_stability: number
+        }
+        Returns: Json
       }
       game_room_by_code: {
         Args: { p_code: string }

@@ -219,11 +219,13 @@ export function formulaBack(
   content: FormulaContent,
   extraNotes?: string | null,
 ): string {
+  // Inline math MUST use \(…\): the markdown engine deliberately disables
+  // single-$ inline math (currency safety), so `$x$` renders literally.
   const parts: string[] = [`$$${content.latex}$$`];
   if (content.variables.length > 0) {
     parts.push(
       content.variables
-        .map((v) => `- $${v.symbol}$ — ${v.meaning}`)
+        .map((v) => `- \\(${v.symbol}\\) — ${v.meaning}`)
         .join("\n"),
     );
   }

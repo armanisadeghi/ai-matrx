@@ -19,7 +19,10 @@ import { useEffect, useRef, useState } from "react";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { studyService } from "@/features/education/study/service/studyService";
 import { currentRetrievability } from "@/features/education/study/utils/masteryFsrs";
-import type { ItemMasteryRow, StudySessionRow } from "@/features/education/study/types";
+import type {
+  ItemMasteryRow,
+  StudySessionRow,
+} from "@/features/education/study/types";
 import type { CardWithDetails } from "@/features/flashcards/data/types";
 import { buildGameQueue } from "../engine/queue";
 import { scoreAnswer } from "../engine/scoring";
@@ -120,14 +123,17 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
   const [hiddenChoices, setHiddenChoices] = useState<number[]>([]);
   const [doublePointsArmed, setDoublePointsArmed] = useState(false);
   const [shieldArmed, setShieldArmed] = useState(false);
-  const [lastAnswer, setLastAnswer] = useState<{ correct: boolean; chosenIndex: number } | null>(null);
+  const [lastAnswer, setLastAnswer] = useState<{
+    correct: boolean;
+    chosenIndex: number;
+  } | null>(null);
   const [session, setSession] = useState<StudySessionRow | null>(null);
 
   const masteryRef = useRef<Record<string, ItemMasteryRow | undefined>>({});
   const questionShownAt = useRef<number>(0);
   const startedAtRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
-  const seedRef = useRef(args.seed ?? Math.floor(Math.random() * 1e9));
+  const seedRef = useRef(args.seed ?? 1);
   // Authoritative outcome accumulators (refs, not state): the finish report must
   // read final values even though the last recordAttempt resolves async. Mirror
   // the display state below but are the source of truth for the outcome.
@@ -237,7 +243,6 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
   // Solo autostart once the queue is ready.
   useEffect(() => {
     if (autoStart && status === "ready") start();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart, status]);
 
   // ── Countdown timer while playing. ────────────────────────────────────────
@@ -250,13 +255,12 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       if (left <= 0) finish();
     }, 250);
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, config.durationMs]);
 
   // `atMs` lets a rejoining multiplayer client SYNC to the host's original
   // start time (from game_room.started_at / the game_started broadcast), so its
   // countdown matches everyone else's instead of restarting a full round.
-  const start = (atMs?: number): void => {
+  function start(atMs?: number): void {
     if (status !== "ready") return;
     const startAt = atMs ?? Date.now();
     startedAtRef.current = startAt;
@@ -271,7 +275,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       return;
     }
     setStatus("playing");
-  };
+  }
 
   const advance = (): void => {
     setHiddenChoices([]);
@@ -347,9 +351,10 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
           return;
         }
         masteryRef.current[q.card.id] = res.data.mastery;
-        const newR = res.data.mastery.retrievability != null
-          ? Number(res.data.mastery.retrievability)
-          : priorR;
+        const newR =
+          res.data.mastery.retrievability != null
+            ? Number(res.data.mastery.retrievability)
+            : priorR;
         const gain = Math.max(0, newR - priorR);
         if (gain > 0) {
           masteryGainRef.current += gain;
@@ -398,7 +403,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
   // finish() only FLIPS state — the outcome is reported from the effect below,
   // which reads the CURRENT render's accumulated score/mastery (avoids the
   // stale-closure trap where the timer's finish() would capture zeros).
-  const finish = (): void => {
+  function finish(): void {
     if (finishedRef.current) return;
     finishedRef.current = true;
     setStatus("finished");
@@ -409,7 +414,7 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
         ended_at: new Date().toISOString(),
       });
     }
-  };
+  }
 
   // Report the finalized outcome exactly once, reading live state. Await any
   // in-flight attempt writes first so masteryGain (the headline "real learning"
@@ -446,7 +451,6 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
       }
       onFinish?.({ ...outcomeBase, masteryGain: masteryGainRef.current });
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   // Close an abandoned session on unmount if we never finished.
@@ -459,7 +463,6 @@ export function useGamePlay(args: UseGamePlayArgs): UseGamePlayResult {
         });
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   return {
