@@ -41,10 +41,13 @@ the safety net, not the main event.
 - **Markdown delimiter guard** — `lib/markdown/delimiter-guard.ts`,
   `reportDelimiterViolations()`, called from the markdown renderers
   (`BasicMarkdownContent`, `ConfigurableMarkdownContent`,
-  `MarkdownWithPlugins`). Source `markdown-delimiters`, red. Fires when a stray
+  `MarkdownWithPlugins`). Source `markdown-delimiters`, red by default. Fires when a stray
   `$$` or an unclosed `[` would have swallowed a section of an answer — the
   guard neutralizes the delimiter so the message still renders, and the capture
-  is how the producer emitting broken content gets found.
+  is how the producer emitting broken content gets found. Hindsight is the
+  narrow exception: normalized transcripts legitimately contain raw model/tool
+  delimiter tokens, so a successfully guarded firing there stays yellow and
+  local while the same failure remains red everywhere else.
 - **Agent stream (the central artery)** — `lib/diagnostics/captureStreamError.ts`.
   `captureStreamEvent` is wired at the ONE chokepoint every stream consumer pulls
   events through: `parseNdjsonStream` (`lib/api/stream-parser.ts`). It captures
@@ -176,6 +179,9 @@ default: showing a failure to the user does not prove it expected or harmless.
 Supabase status-0 browser transport loss is yellow: wifi, sleep, and deployment
 handoffs are locally retryable client conditions, while every actual HTTP or
 database response stays red.
+Hindsight transcript delimiter recovery is yellow because the transcript is
+expected to preserve raw model/tool tokens and the renderer guard already
+neutralizes them; delimiter defects on every other route stay red.
 Resolved+handled AccessGate denials → yellow; the original unknown capture and
 all other resolved record states stay red. Vision Interview's exact Safari
 `Load failed` transport class is yellow because its drafts are durable, its room
@@ -285,6 +291,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-18 — **Guarded Hindsight transcript delimiters stay local.** Raw model/tool transcript tokens can legitimately form malformed Markdown pairs; the renderer guard still neutralizes and records them locally, while only this route is yellow so ordinary answer delimiter defects remain red.
 - 2026-08-18 — **Supabase browser transport loss stays local across every route.** The structured adapter tags only classifier-proven status-0 network failures as `TypeError`; the tier rule keeps them visible for retry UX without filing client wifi/sleep/deployment handoffs as server repair work. HTTP and database responses stay red.
 - 2026-08-18 — **Transient PostgREST schema-cache restarts recover before alarming.** The global Supabase boundary retries the exact request on `PGRST002` (the query did not execute); success produces no capture, while exhaustion produces one canonical structured error. The scopes result mapper and organization loader no longer mirror that already-captured error through `console.error`, eliminating two causal duplicate repair rows.
 - 2026-08-18 — **CMS availability refusals stay local without hiding outages.** Structured `cms_unavailable` 400s remain visible in the Error Inspector but do not enter `system_error`; the server's startup environment validation owns the operational alarm, while CMS 5xx and unrelated 4xx responses remain red.

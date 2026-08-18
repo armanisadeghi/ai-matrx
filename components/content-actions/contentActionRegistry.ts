@@ -286,6 +286,56 @@ function copyItems(ctx: ContentActionContext): MenuItem[] {
   ];
 }
 
+/**
+ * "Send to Google Doc" — one item, every ContentActionBar surface.
+ *
+ * Creates a NEW Doc in the user's own Drive through the canonical
+ * `features/google-workspace` path. `drive.file` covers files this app creates,
+ * and the new file self-registers, so the agent can keep working on it later
+ * without the user picking it. No per-surface Google code, ever.
+ *
+ * Not-connected is a normal state, not an error: it offers the one-click fix
+ * rather than failing. Success offers the door to the file itself.
+ */
+function googleDocItem(ctx: ContentActionContext): MenuItem {
+  const { content, title, onClose } = ctx;
+  return {
+    key: "send-google-doc",
+    icon: FileText,
+    iconColor: "text-blue-500 dark:text-blue-400",
+    label: "Send to Google Doc",
+    action: async () => {
+      if (!requireAuth(ctx, "send-google-doc", "Google Docs", "Send this to your Google Drive"))
+        return;
+      const { sendContentToGoogleDoc } = await import(
+        "@/features/google-workspace/export/sendToGoogle"
+      );
+      const result = await sendContentToGoogleDoc(content, title);
+      if (!result.ok) {
+        toast.info("Connect Google to send this to a Doc", {
+          description: "Takes about ten seconds, and only for files you choose or that we create.",
+          action: {
+            label: "Connect",
+            onClick: () => window.open(result.settingsHref, "_blank", "noopener"),
+          },
+        });
+        return;
+      }
+      toast.success(`Created "${result.name}" in your Google Drive`, {
+        action: result.openUrl
+          ? {
+              label: "Open",
+              onClick: () => window.open(result.openUrl as string, "_blank", "noopener"),
+            }
+          : undefined,
+      });
+      onClose();
+    },
+    category: "Export",
+    showToast: false,
+  };
+}
+
 function exportItems(ctx: ContentActionContext): MenuItem[] {
   const {
     content,
@@ -418,6 +468,7 @@ function exportItems(ctx: ContentActionContext): MenuItem[] {
       successMessage: "Email sent!",
       errorMessage: "Failed to send email",
     },
+    googleDocItem(ctx),
     {
       key: "print",
       icon: Printer,

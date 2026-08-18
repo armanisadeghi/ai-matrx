@@ -7,42 +7,47 @@
  * Before this block existed, a kind the platform fully understood — schema in
  * `content_ir.kind_definition`, envelope parsed, fields validated — but which
  * no component claimed would fall through the unified renderer's switch and
- * land on a raw code block. That is the "no-component root" trap that kept
- * `q_and_a_set`, `study_pack_set` and `schema_showcase` permanently red.
+ * land on a raw code block.
  *
- * R6's disposition, implemented here: render the shape readably, and SAY OUT
- * LOUD that no renderer is registered for it. Never an error. Never hidden
- * content. The user always sees their data.
+ * R6's disposition, implemented here: render the shape READABLY, and say —
+ * quietly, in human words — that no custom view is registered for it yet.
+ * Never an error. Never hidden content. The user always sees their data.
  *
- * The tree itself is NOT hand-rolled — it is `JsonInspector`, the repo's
- * canonical application-wide JSON display (tree / raw / explorer views, copy,
- * expand-depth), pulled in through `next/dynamic` so its panes never enter the
- * chat chunk. This component owns only the chrome and the honesty.
+ * 🚨 **What "readably" means changed on 2026-08-18.** This block used to show
+ * a `JsonInspector` tree under a warning-tinted "Unverified shape — no
+ * renderer is registered for this shape" banner. That is a developer artifact,
+ * and our reader is a non-technical Subject Matter Expert: on one real Study
+ * Pack run, 19 of 23 steps rendered exactly like that. The body is now
+ * {@link StructuredValueView} — the platform-wide floor that renders any JSON
+ * value as a human document (prose through the canonical markdown renderer,
+ * uniform object arrays as a real table, media through `InlineMediaRef`,
+ * humanized keys, nested objects as titled sections). The honesty did not go
+ * away; it moved into that component's muted footer, beside the raw-data
+ * escape hatch — which is where WE read it and where the SME does not have to.
+ *
+ * Naming a component is still not the same as having one: the footer appears
+ * whether R6 fired (`marker.by === "generic"`) or a `kind_component` row names
+ * `generic_structured` as the kind's web output component (`marker.by ===
+ * "db"`), because both mean "no custom view".
+ *
+ * ## Bare by construction (THE WRAPPER LAW)
+ *
+ * Every host that routes a block here already draws chrome — a chat message
+ * surface, a workflow readout step box, the studio's preview card. This block
+ * used to add a card of its own on top, which on `/shapes/<kind>` produced the
+ * literal two-border, two-`p-3` box-in-a-box. It contributes flow spacing and
+ * nothing else; the host owns the frame.
  */
 
 import React from "react";
-import dynamic from "next/dynamic";
-import { AlertTriangle, Braces } from "lucide-react";
+import { Braces } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { reconstructRegionValue } from "@/features/content-ir/core/envelope-value";
+import { readObjectKind } from "@/features/content-ir/core/kind-schema.types";
 import { readIrRouteMarker } from "@/features/content-ir/react/kind-route";
-
-const JsonInspector = dynamic(
-  () =>
-    import("@/components/official-candidate/json-inspector/JsonInspector").then(
-      (m) => ({ default: m.JsonInspector }),
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="p-3 text-xs text-muted-foreground">
-        Loading structured view…
-      </div>
-    ),
-  },
-);
 
 export interface GenericStructuredBlockProps {
   /** The raw region source — the zero-loss floor when no envelope survived. */
@@ -77,84 +82,44 @@ const GenericStructuredBlock: React.FC<GenericStructuredBlockProps> = ({
   className,
 }) => {
   const envelope = readEnvelope(metadata);
-  const marker = readIrRouteMarker(metadata);
-  const kind = envelope?.root.kind ?? "";
   const status = envelope?.root.status ?? "complete";
   const { value, recovered } = readStructuredValue(content, metadata);
-
-  // The affordance is UNCONDITIONAL, by construction. This component is only
-  // ever reached two ways, and no bespoke renderer exists on either:
-  //   1. the R6 fallback fired (marker.by === "generic"), or
-  //   2. a `kind_component` row names `generic_structured` as the kind's web
-  //      output component (marker.by === "db").
-  // Gating the banner on `marker.unverified` would make case 2 render the
-  // generic tree while silently claiming the shape has a renderer. The marker
-  // therefore only refines the SENTENCE, never whether we tell the truth.
-  const reasonText =
+  // The envelope is the authority; a block that arrived without one still
+  // names its own kind inside the payload.
+  const kind =
+    envelope?.root.kind ??
+    (typeof value === "object" && value !== null && !Array.isArray(value)
+      ? readObjectKind(value as Record<string, unknown>)
+      : null) ??
+    "";
+  const marker = readIrRouteMarker(metadata);
+  const note =
     marker?.reason === "inactive"
-      ? "a component is registered for this shape but is held inactive, so it is not yet trusted to render"
-      : "no renderer is registered for this shape";
+      ? "a custom view is registered but held inactive"
+      : "no custom view yet";
 
   return (
-    <div
-      className={cn(
-        "my-2 overflow-hidden rounded-lg border border-border bg-card",
-        className,
-      )}
-    >
-      <div className="flex items-center gap-2 px-3 py-2">
-        <Braces className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <span className="text-sm font-medium text-foreground">
-            Structured content
-          </span>
-          {kind ? (
-            <span className="truncate rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground">
-              {kind}
-            </span>
-          ) : null}
-          {status === "streaming" ? (
-            <span className="shrink-0 text-xs text-muted-foreground">
-              streaming…
-            </span>
-          ) : null}
+    <div className={cn("my-2 min-w-0", className)}>
+      {status === "streaming" ? (
+        <div className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Braces className="h-3.5 w-3.5 shrink-0 animate-pulse" />
+          <span>Still arriving…</span>
         </div>
-      </div>
+      ) : null}
 
-      <div className="flex items-start gap-2 border-t border-border/40 bg-warning/5 px-3 py-2">
-        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
-        <p className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Unverified shape</span>
-          {" — "}
-          {reasonText}
-          {kind ? (
-            <>
-              {" for "}
-              <span className="font-mono text-foreground">{kind}</span>
-            </>
-          ) : null}
-          . Showing every field exactly as it arrived.
-        </p>
-      </div>
-
-      <div className="min-h-0 border-t border-border/40">
-        {recovered ? (
-          <div className="h-96 min-h-0">
-            <JsonInspector
-              data={value}
-              defaultView="tree"
-              defaultExpandDepth={2}
-              className="rounded-none bg-transparent"
-            />
-          </div>
-        ) : (
-          // Zero-data-loss backstop: the region never parsed, so show the
-          // source verbatim rather than swallowing it.
-          <pre className="max-h-96 overflow-auto px-3 py-2 font-mono text-xs leading-relaxed text-muted-foreground">
-            {content}
-          </pre>
-        )}
-      </div>
+      {recovered ? (
+        <StructuredValueView
+          value={value}
+          kind={kind || undefined}
+          note={note}
+        />
+      ) : (
+        // Zero-data-loss backstop: the region never parsed, so show the
+        // source verbatim rather than swallowing it.
+        <pre className="max-h-96 overflow-auto font-mono text-xs leading-relaxed text-muted-foreground">
+          {content}
+        </pre>
+      )}
     </div>
   );
 };

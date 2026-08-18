@@ -48,8 +48,10 @@ const LEGACY_STAGE_MAP: Record<LegacyInterviewStage, InterviewStage> = {
 
 /** Map a wire stage (possibly legacy) to the canonical v2 stage key. */
 export function normalizeStage(stage: InterviewStageWire): InterviewStage {
-  return (LEGACY_STAGE_MAP as Record<string, InterviewStage | undefined>)[stage] ??
-    (stage as InterviewStage);
+  return (
+    (LEGACY_STAGE_MAP as Record<string, InterviewStage | undefined>)[stage] ??
+    (stage as InterviewStage)
+  );
 }
 
 export type RoleKey =
@@ -65,11 +67,7 @@ export type RoleKey =
 export type Speaker = "human" | RoleKey;
 
 export type QuestionState =
-  | "open"
-  | "answered"
-  | "partially_answered"
-  | "dodged"
-  | "deferred";
+  "open" | "answered" | "partially_answered" | "dodged" | "deferred";
 
 /** `interview.question.category` — which kind of asking produced it. May be
  *  null on pre-v2 rows; a null category reads as `gap`. */
@@ -85,10 +83,7 @@ export type QuestionCategory =
 export type HoleClassification = "fatal" | "unknown" | "undecided";
 
 export type HoleStatus =
-  | "open"
-  | "patched"
-  | "accepted_risk"
-  | "needs_human_arbitration";
+  "open" | "patched" | "accepted_risk" | "needs_human_arbitration";
 
 // ── Rows ────────────────────────────────────────────────────────────────────
 
@@ -359,7 +354,9 @@ export const STRUCTURED_ROLES: ReadonlySet<RoleKey> = new Set<RoleKey>([
  * the role key (e.g. `role_sounding_board`, `role_adversary_2`) per the
  * backend contract.
  */
-export function roleFromNodeId(nodeId: string | null | undefined): RoleKey | null {
+export function roleFromNodeId(
+  nodeId: string | null | undefined,
+): RoleKey | null {
   if (!nodeId) return null;
   const lower = nodeId.toLowerCase();
   for (const key of ROLE_ORDER) {
@@ -504,7 +501,10 @@ export interface QuestionCategoryMeta {
   chip: string;
 }
 
-export const QUESTION_CATEGORIES: Record<QuestionCategory, QuestionCategoryMeta> = {
+export const QUESTION_CATEGORIES: Record<
+  QuestionCategory,
+  QuestionCategoryMeta
+> = {
   core: {
     key: "core",
     label: "Core",
@@ -628,3 +628,14 @@ export function stageForRole(role: RoleKey): InterviewStage | null {
 export function defaultRoleTab(stage: InterviewStageWire): RoleKey {
   return STAGES[normalizeStage(stage)].primaryRole ?? ROLE_TABS[0].role;
 }
+
+/**
+ * The record views reachable from the room's centre panel: the Scribe's
+ * living document, plus the three finalize deliverables once the guided run
+ * has written them. `null` == the expert's chat is on screen.
+ *
+ * It lives in the slice (not local component state) because the finish
+ * dialog must be able to OPEN a document the moment it is written — a
+ * document you are told about but cannot reach is a dead end.
+ */
+export type DocView = "document" | "vision" | "requirements" | "transcript";

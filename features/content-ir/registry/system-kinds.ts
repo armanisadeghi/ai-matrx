@@ -74,6 +74,7 @@ import { PAGE_BRIEF_KIND_DEFINITIONS } from "../kinds/page-brief";
 import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-options";
 import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
 import { MASTERWORK_CHECKUP_KIND_DEFINITIONS } from "../kinds/masterwork-checkup-finding";
+import { AGENT_RESULT_KIND_DEFINITIONS } from "../kinds/agent-result";
 import { GENERATED_IMAGE_SET_KIND_DEFINITIONS } from "../kinds/generated-image-set";
 import { GENERATED_VIDEO_SET_KIND_DEFINITIONS } from "../kinds/generated-video-set";
 import { GENERATED_AUDIO_KIND_DEFINITIONS } from "../kinds/generated-audio";
@@ -85,6 +86,8 @@ import { PLAN_PAGE_OUTLINE_KIND_DEFINITIONS } from "../kinds/plan-page-outline";
 import { PLAN_PAGE_DRAFT_KIND_DEFINITIONS } from "../kinds/plan-page-draft";
 import { PLAN_PAGE_REVIEW_KIND_DEFINITIONS } from "../kinds/plan-page-review";
 import { CMS_PAGE_BUILD_KIND_DEFINITIONS } from "../kinds/cms-page-build";
+import { INGESTED_SOURCES_KIND_DEFINITIONS } from "../kinds/ingested-sources";
+import { STUDY_NOTES_KIND_DEFINITIONS } from "../kinds/study-notes";
 
 export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // Gold-mine sweep (Stage 6 pulled forward): kinds engineered from existing
@@ -110,6 +113,10 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS,
   ...MEDIA_CHAPTERS_KIND_DEFINITIONS,
   ...MASTERWORK_CHECKUP_KIND_DEFINITIONS,
+  // The canonical output of EVERY matrx-ai graph action. Registered 2026-08-18
+  // after an active, componentless `agent_result` printed the verbatim system
+  // prompt and the token bill into a learner's "Study notes" box.
+  ...AGENT_RESULT_KIND_DEFINITIONS,
   // Media workflow-I/O (python-owned models — see each module header).
   ...GENERATED_IMAGE_SET_KIND_DEFINITIONS,
   ...GENERATED_VIDEO_SET_KIND_DEFINITIONS,
@@ -128,6 +135,8 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   ...PLAN_PAGE_DRAFT_KIND_DEFINITIONS,
   ...PLAN_PAGE_REVIEW_KIND_DEFINITIONS,
   ...CMS_PAGE_BUILD_KIND_DEFINITIONS,
+  ...INGESTED_SOURCES_KIND_DEFINITIONS,
+  ...STUDY_NOTES_KIND_DEFINITIONS,
   {
     kind: "flashcard_set",
     schemaSource: "system",

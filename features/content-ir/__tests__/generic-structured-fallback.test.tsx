@@ -3,6 +3,12 @@
  * render-trusted claims renders through GenericStructuredBlock — never a raw
  * code block, never an error, never hidden content.
  *
+ * Since 2026-08-18 the BODY is the platform floor (`StructuredValueView`): a
+ * human document, not a JSON tree under a warning banner. The honesty moved to
+ * a muted footer — "<Kind> — no custom view yet" plus the raw-data escape —
+ * and these tests pin THAT, because the old banner is exactly the developer
+ * artifact the floor exists to stop showing a non-technical reader.
+ *
  * The three kinds this retires (`q_and_a_set`, `study_pack_set`,
  * `schema_showcase`) live ONLY in `content_ir.kind_definition` — they have a
  * schema but no compiled bridge and no component. Warm arrival is simulated
@@ -17,18 +23,18 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-// The generic viewer's tree is `JsonInspector`, pulled through next/dynamic so
-// its panes stay out of the chat chunk. Stub the loader: we assert the VALUE
-// reaching the viewer, not the canonical inspector's internals.
+// The raw-data escape is `JsonInspector`; it only mounts once a reader opens
+// it, so static markup never contains it. Stub any next/dynamic boundary the
+// document body reaches for so these tests stay about the VALUE on screen.
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () => {
     const react = require("react") as typeof React;
-    return function MockJsonInspector({ data }: { data: unknown }) {
+    return function MockDynamic({ data }: { data?: unknown }) {
       return react.createElement(
         "pre",
         { "data-testid": "json-tree" },
-        JSON.stringify(data),
+        JSON.stringify(data ?? null),
       );
     };
   },
@@ -255,21 +261,27 @@ describe("GenericStructuredBlock renders the shape honestly", () => {
     );
   }
 
-  it("shows the unverified-shape affordance, the kind slug, and every field", () => {
+  it("renders the fields as a document, names the shape, and offers the raw data", () => {
     const markup = routedMarkup("schema_showcase", {
       label: "Widget",
       count: 3,
       status: "draft",
     });
 
-    expect(markup).toContain("Unverified shape");
-    expect(markup).toContain("no renderer is registered for this shape");
+    // Honest, in human words — and the exact slug stays available to us.
+    expect(markup).toContain("no custom view yet");
+    expect(markup).toContain("Schema showcase");
     expect(markup).toContain("schema_showcase");
+    expect(markup).toContain("Show the raw data");
 
-    // Content is never hidden: the value reached the tree viewer intact.
+    // A DOCUMENT, not a dump: humanized field labels, values in place.
+    expect(markup).toContain("Label");
     expect(markup).toContain("Widget");
+    expect(markup).toContain("Status");
     expect(markup).toContain("draft");
-    expect(markup).toContain("json-tree");
+
+    // The old developer banner is gone from what the reader sees.
+    expect(markup).not.toContain("Unverified shape");
   });
 
   it("names the inactive reason when a component is registered but held", () => {
@@ -289,8 +301,8 @@ describe("GenericStructuredBlock renders the shape honestly", () => {
       />,
     );
 
-    expect(markup).toContain("Unverified shape");
     expect(markup).toContain("held inactive");
+    expect(markup).toContain("T");
   });
 
   it("still tells the truth when an ACTIVE registry row named the generic viewer (by:'db')", () => {
@@ -310,8 +322,8 @@ describe("GenericStructuredBlock renders the shape honestly", () => {
         }}
       />,
     );
-    expect(markup).toContain("Unverified shape");
-    expect(markup).toContain("no renderer is registered for this shape");
+    expect(markup).toContain("no custom view yet");
+    expect(markup).toContain("Show the raw data");
   });
 
   it("never errors and never hides content when the region does not parse", () => {

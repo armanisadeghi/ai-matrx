@@ -74,6 +74,13 @@ export interface ResumeInput {
   /** Jump to ANY stage, forward or back (v2 HumanDirectives.goto_stage) —
    *  the stage rail's click-to-jump. */
   gotoStage?: InterviewStage;
+  /** "I am finished" (v2 HumanDirectives.done) — the ONLY way the run's gate
+   *  converges, and therefore the only path to `interview.finalize` and its
+   *  deliverables (cleaned transcript + Vision + Requirements documents).
+   *  The gate answers the FIRST done with what is still open and runs another
+   *  round; a REPEATED done is honored as the person's call. Sent from the
+   *  finish dialog (`FinishInterviewDialog`), which shows that answer. */
+  done?: boolean;
 }
 
 export function useInterviewRun(sessionId: string) {
@@ -95,9 +102,10 @@ export function useInterviewRun(sessionId: string) {
   const followingRunIdRef = useRef<string | null>(null);
   // Ids of the latest adoption, so the follower can start the moment the
   // run_id becomes known (either order: adoption first, run_id event later).
-  const adoptedRef = useRef<{ requestId: string; conversationId: string } | null>(
-    null,
-  );
+  const adoptedRef = useRef<{
+    requestId: string;
+    conversationId: string;
+  } | null>(null);
 
   useEffect(() => {
     return () => {
@@ -150,7 +158,8 @@ export function useInterviewRun(sessionId: string) {
         dispatch(
           runFailed({
             message:
-              (typeof event.error_message === "string" && event.error_message) ||
+              (typeof event.error_message === "string" &&
+                event.error_message) ||
               "The interview run failed.",
           }),
         );
@@ -381,7 +390,9 @@ export function useInterviewRun(sessionId: string) {
    *  Returns true when the answer was accepted (draft may clear). */
   const resume = async (input: ResumeInput): Promise<boolean> => {
     if (!runId) {
-      toast.error("There is no active run to answer — start the interview first.");
+      toast.error(
+        "There is no active run to answer — start the interview first.",
+      );
       return false;
     }
     const checkpointId = pendingInterrupt?.checkpointId;
@@ -402,6 +413,7 @@ export function useInterviewRun(sessionId: string) {
             ...(input.summonRole ? { summon_role: input.summonRole } : {}),
             ...(input.advanceStage ? { advance_stage: true } : {}),
             ...(input.gotoStage ? { goto_stage: input.gotoStage } : {}),
+            ...(input.done ? { done: true } : {}),
           },
           mode: "inline",
         },

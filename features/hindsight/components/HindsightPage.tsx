@@ -7,7 +7,7 @@
  * agent reads the ACTUAL transcripts and proposes fixes across four levers,
  * with Replay evidence. This is the ONE home for the Hindsight admin surface.
  */
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
@@ -23,6 +23,7 @@ import { ChangeHistoryPanel } from "./ChangeHistoryPanel";
 import { EnrollDialog } from "./EnrollDialog";
 import { EnrollmentDetailPanel } from "./EnrollmentDetailPanel";
 import { FindingEffectivenessPanel } from "./FindingEffectivenessPanel";
+import { selectEnrollmentId } from "./select-enrollment";
 import { fmtCost, KIND_COLOR, KIND_ICON } from "./tokens";
 
 export function HindsightPage() {
@@ -34,11 +35,7 @@ export function HindsightPage() {
   const deepLinkedTool = params.get("enroll_tool");
 
   const [enrollOpen, setEnrollOpen] = useState(Boolean(deepLinkedTool));
-  const [selectedId, setSelectedId] = useState<string | null>(deepLinkedEnrollment);
-
-  useEffect(() => {
-    if (deepLinkedEnrollment) setSelectedId(deepLinkedEnrollment);
-  }, [deepLinkedEnrollment]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const enrollments = useQuery({
     queryKey: ["hindsight", "enrollments"],
@@ -54,7 +51,15 @@ export function HindsightPage() {
     () => (enrollments.data ?? []).filter((e) => e.status !== "archived"),
     [enrollments.data],
   );
-  const selected = selectedId ?? active[0]?.id ?? null;
+  // A route transition can reuse this mounted page. The URL must win during
+  // that very render; synchronizing it into state in an effect briefly fetched
+  // the previously selected enrollment and turned an expected stale selection
+  // into a queued 404.
+  const selected = selectEnrollmentId(
+    deepLinkedEnrollment,
+    selectedId,
+    active[0]?.id,
+  );
 
   return (
     <div className="space-y-4 p-4">

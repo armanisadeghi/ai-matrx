@@ -99,11 +99,25 @@ describe("entityListRowHref", () => {
   });
 
   it("returns undefined for a token with no route rather than a broken link", () => {
-    // `workflow` is registered WITHOUT an hrefFor — `/workflows/[id]` does not
-    // exist. A door here would be a 404 factory.
+    // `skill` is registered WITHOUT an hrefFor — `/skills/[id]` does not exist
+    // (`/agent-connections/skills` is a list). A door here would be a 404
+    // factory. This used to assert on `workflow`, which earned a real route
+    // (`/workflows/[id]`) and a registry `hrefFor` on 2026-08-18 — so the case
+    // moved to a token that is still genuinely route-less rather than being
+    // deleted, which would have retired the guard along with the example.
+    expect(
+      entityListRowHref(makeConfig({ token: "skill" }), { id: ID }),
+    ).toBeUndefined();
+  });
+
+  it("gives a workflow row its real door", () => {
+    // The counterpart of the case above: the registry is the ONE route
+    // authority, so the moment `workflow` gained an `hrefFor` every list, peek
+    // and EntityRef had to start opening it. Pinned so a registry edit that
+    // drops it fails here instead of silently going dark again.
     expect(
       entityListRowHref(makeConfig({ token: "workflow" }), { id: ID }),
-    ).toBeUndefined();
+    ).toBe(`/workflows/${ID}`);
   });
 
   it("honours hrefFor EXACTLY — undefined never falls through to the registry", () => {

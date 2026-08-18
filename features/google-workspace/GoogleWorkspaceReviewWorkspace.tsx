@@ -4,18 +4,19 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
+  ChevronDown,
+  CircleAlert,
   ExternalLink,
   FileSpreadsheet,
   FileText,
   Loader2,
-  LockKeyhole,
   Mail,
+  Plus,
   ShieldCheck,
   Unplug,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,6 +26,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -87,6 +93,18 @@ function metadataLink(resource: GoogleConnectionResource): string | null {
   return typeof value === "string" && value ? value : null;
 }
 
+function connectionName(connection: GoogleConnectionSummary): string {
+  return (
+    connection.account_email ?? connection.account_name ?? "Google account"
+  );
+}
+
+function connectionStatus(connection: GoogleConnectionSummary): string {
+  if (connection.health === "needs_reauth") return "Needs attention";
+  if (connection.health === "revoked") return "Disconnected";
+  return "Connected";
+}
+
 interface GoogleWorkspaceReviewWorkspaceProps {
   pickerInitialQuery?: string;
 }
@@ -115,6 +133,9 @@ export function GoogleWorkspaceReviewWorkspace({
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [emailConfirmed, setEmailConfirmed] = useState(false);
+  const [pickerSessionConnectionId, setPickerSessionConnectionId] = useState<
+    string | null
+  >(null);
 
   const personalConnections = useMemo(
     () =>
@@ -211,6 +232,7 @@ export function GoogleWorkspaceReviewWorkspace({
       if (!accessToken) {
         throw new Error("Google did not provide access for file selection.");
       }
+      setPickerSessionConnectionId(activeConnection.id);
       const picked = await pickGoogleWorkspaceFile(accessToken, {
         initialQuery: pickerInitialQuery,
       });
@@ -295,6 +317,9 @@ export function GoogleWorkspaceReviewWorkspace({
     if (!activeConnection) return;
     void run("disconnect", async () => {
       await disconnectGoogle.mutateAsync(activeConnection.id);
+      if (pickerSessionConnectionId === activeConnection.id) {
+        setPickerSessionConnectionId(null);
+      }
       setActiveConnectionId(null);
       setSelectedResourceId(null);
       toast.success("Google account disconnected and authorization revoked.");

@@ -1,5 +1,5 @@
 {
-  "generated_for": "1249-kinds+23357e89aa6e",
+  "generated_for": "1253-kinds+47976b1d5ccd",
   "columns": [
     "definition",
     "example",
@@ -7382,7 +7382,7 @@
         "definition": "ok",
         "example": "ok",
         "gate_structural": "ok",
-        "component": "n/a",
+        "component": "ok",
         "skill": "n/a",
         "content_block": "n/a",
         "surface": "n/a"
@@ -7949,6 +7949,20 @@
       }
     },
     {
+      "kind": "glossary_term",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
+      }
+    },
+    {
       "kind": "gsc_opportunities",
       "is_active": true,
       "family": "user_authored",
@@ -8016,6 +8030,20 @@
         "skill": "ok",
         "content_block": "ok",
         "surface": "warn"
+      }
+    },
+    {
+      "kind": "ingested_sources",
+      "is_active": true,
+      "family": "workflow_io",
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "n/a",
+        "content_block": "n/a",
+        "surface": "n/a"
       }
     },
     {
@@ -9443,6 +9471,34 @@
         "component": "n/a",
         "skill": "ok",
         "content_block": "ok",
+        "surface": "n/a"
+      }
+    },
+    {
+      "kind": "study_notes",
+      "is_active": true,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "ok",
+        "skill": "missing",
+        "content_block": "missing",
+        "surface": "warn"
+      }
+    },
+    {
+      "kind": "study_notes_section",
+      "is_active": false,
+      "family": null,
+      "assets": {
+        "definition": "ok",
+        "example": "ok",
+        "gate_structural": "ok",
+        "component": "n/a",
+        "skill": "n/a",
+        "content_block": "n/a",
         "surface": "n/a"
       }
     },
@@ -17607,6 +17663,12 @@
     {
       "severity": "red",
       "code": "contract-gap",
+      "kind": "ingested_sources",
+      "message": "ACTIVE generated kind \"ingested_sources\" (workflow_io) is not in the contract manifest — stale catalog row or stale snapshot (pnpm check:shapes:manifest:refresh)"
+    },
+    {
+      "severity": "red",
+      "code": "contract-gap",
       "kind": "items",
       "message": "ACTIVE generated kind \"items\" (workflow_io) is not in the contract manifest — stale catalog row or stale snapshot (pnpm check:shapes:manifest:refresh)"
     },
@@ -18099,6 +18161,12 @@
       "code": "no-content-block",
       "kind": "status_ping_debug",
       "message": "kind \"status_ping_debug\" has no content block referencing \"__kind\": \"status_ping_debug\""
+    },
+    {
+      "severity": "yellow",
+      "code": "no-content-block",
+      "kind": "study_notes",
+      "message": "kind \"study_notes\" has no content block referencing \"__kind\": \"study_notes\""
     },
     {
       "severity": "yellow",
@@ -19269,6 +19337,12 @@
       "code": "no-skill",
       "kind": "stats",
       "message": "kind \"stats\" has no render_block skill teaching it"
+    },
+    {
+      "severity": "yellow",
+      "code": "no-skill",
+      "kind": "study_notes",
+      "message": "kind \"study_notes\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",

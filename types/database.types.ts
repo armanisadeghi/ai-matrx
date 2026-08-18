@@ -43978,6 +43978,20 @@ export type Database = {
           schema_name: string
         }[]
       }
+      mtx_search_score: {
+        Args: {
+          p_deep_hit?: boolean
+          p_description: string
+          p_extra_100?: string[]
+          p_extra_300?: string[]
+          p_id: string
+          p_name: string
+          p_owner_email: string
+          p_query: string
+          p_tags: string[]
+        }
+        Returns: number
+      }
       orchestra_list: {
         Args: never
         Returns: {
@@ -45433,6 +45447,79 @@ export type Database = {
         Args: { room_id: string }
         Returns: {
           thread_id: string
+        }[]
+      }
+      wfx_bucket_matches: {
+        Args: { p_bucket: string; p_n: number }
+        Returns: boolean
+      }
+      wfx_list_facets: {
+        Args: {
+          p_archived?: string
+          p_deep?: boolean
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+        }
+        Returns: {
+          kind: string
+          total: number
+          value: string
+        }[]
+      }
+      wfx_list_scope_counts: {
+        Args: {
+          p_archived?: string
+          p_deep?: boolean
+          p_filters?: Json
+          p_search?: string
+        }
+        Returns: {
+          label: string
+          narrow_id: string
+          scope: string
+          total: number
+        }[]
+      }
+      wfx_list_scoped: {
+        Args: {
+          p_archived?: string
+          p_deep?: boolean
+          p_dir?: string
+          p_favorites_first?: boolean
+          p_filters?: Json
+          p_limit?: number
+          p_offset?: number
+          p_org_id?: string
+          p_scope?: string
+          p_search?: string
+          p_sort?: string
+        }
+        Returns: {
+          access_level: string
+          category: string
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          is_active: boolean
+          is_archived: boolean
+          is_favorite: boolean
+          is_owner: boolean
+          last_run_at: string
+          last_run_id: string
+          last_run_status: string
+          name: string
+          organization_id: string
+          organization_name: string
+          owner_email: string
+          run_count: number
+          step_count: number
+          tags: string[]
+          total_count: number
+          updated_at: string
+          version: number
+          visibility: string
         }[]
       }
       wsp_resolve_system_task: {

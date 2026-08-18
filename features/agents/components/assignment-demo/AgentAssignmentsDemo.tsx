@@ -32,6 +32,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { MatrxUuidCell } from "@/components/official/matrx-data-table/MatrxUuidCell";
+import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { cn } from "@/lib/utils";
 
 const MODES: Array<{
@@ -636,10 +637,17 @@ function ResultsPanel() {
   );
 }
 
+/**
+ * What the run PRODUCED — never the envelope. THE reader is
+ * `features/workflow-runtime/agent-run-output.ts`; this surface used to reach
+ * for `final_text` itself, which is how a third copy of the envelope contract
+ * gets born.
+ */
 function finalText(value: unknown): string | null {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return null;
   }
-  const final = (value as Record<string, unknown>).final_text;
-  return typeof final === "string" ? final : null;
+  return (
+    readAgentRunOutput(value as Record<string, unknown>)?.finalText ?? null
+  );
 }

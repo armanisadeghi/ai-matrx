@@ -17,7 +17,7 @@
 // reachable from this bar — the chat stays MOUNTED underneath while a
 // document is on screen, so reading the document never interrupts a stream.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import {
   BookOpenText,
   FileText,
@@ -37,8 +37,10 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
+  docViewChanged,
   pendingAnswersCleared,
   selectActiveRoleTab,
+  selectDocView,
   selectPendingAnswers,
   selectRoleBindings,
   selectRolesError,
@@ -55,6 +57,7 @@ import {
   roleBinding,
   stageForRole,
   STAGES,
+  type DocView,
   type InterviewStage,
   type RoleKey,
 } from "../types";
@@ -119,7 +122,8 @@ function PendingAnswersRider({ conversationId }: { conversationId: string }) {
     const text = selectUserInputText(conversationId)(store.getState());
     const rest = text.replace(LEADING_BLOCK_RE, "");
     const next = block ? `${block}${rest}` : rest;
-    if (next !== text) dispatch(setUserInputText({ conversationId, text: next }));
+    if (next !== text)
+      dispatch(setUserInputText({ conversationId, text: next }));
   }, [block, conversationId, dispatch, store]);
 
   // The message carrying them is durably persisted → the ledger is spent.
@@ -133,8 +137,6 @@ function PendingAnswersRider({ conversationId }: { conversationId: string }) {
 }
 
 // ── Deliverables + document (kept reachable — never a dead end) ─────────────
-
-type DocView = "document" | "vision" | "requirements" | "transcript";
 
 interface DocTab {
   key: DocView;
@@ -187,7 +189,13 @@ function useDocTabs(): { tabs: DocTab[]; finalizedAt: string | null } {
  * room resolves every role through `POST /roles` the moment it opens, for
  * every session, before the person can talk. Reaching this state means that
  * call has not landed yet (or is failing), so it says WHICH of those is true
- * and offers the way forward, never a spinner and never a dead tab.
+ * and offers the ONE way forward — never a spinner, never a dead tab.
+ *
+ * It carries no "Start the interview" control any more (2026-08-18): the
+ * guided workflow run does not open these rooms — `/roles` does — so a Start
+ * button here answered a question nobody asked, and it was the only door to
+ * the run in the whole feature. The run now lives in the room header's Finish
+ * control (`FinishInterviewDialog`), reachable from a WORKING room.
  */
 function ExpertNotJoined({
   roleName,
@@ -196,8 +204,6 @@ function ExpertNotJoined({
   rolesPhase,
   rolesError,
   onRetryRoles,
-  onStart,
-  starting,
 }: {
   roleName: string;
   roleDescription: string;
@@ -205,8 +211,6 @@ function ExpertNotJoined({
   rolesPhase: RolesPhase;
   rolesError: string | null;
   onRetryRoles: () => void;
-  onStart: () => void;
-  starting: boolean;
 }) {
   const failed = rolesPhase === "failed";
   return (
@@ -233,12 +237,9 @@ function ExpertNotJoined({
                 {rolesError}
               </p>
             )}
-            <div className="mt-5 flex items-center justify-center gap-2">
+            <div className="mt-5 flex items-center justify-center">
               <Button variant="outline" onClick={onRetryRoles}>
                 Try again
-              </Button>
-              <Button variant="ghost" onClick={onStart} disabled={starting}>
-                {starting ? "Starting the interview…" : "Start the interview"}
               </Button>
             </div>
           </>
@@ -267,17 +268,16 @@ function RoleTurnObserver({
 }
 
 export function RoomChatPane({
-  onStart,
   onGotoStage,
   onRetryRoles,
 }: {
-  onStart: () => void;
   /** Human-controlled stage movement (v2 `goto_stage`) — armed only while the
    *  run is waiting on the human, exactly as the retired stage rail was. */
   onGotoStage: (stage: InterviewStage) => void;
   /** Ask the server for the role bindings again, now (see useRoleBindings). */
   onRetryRoles: () => void;
 }) {
+  const dispatch = useAppDispatch();
   const role = useAppSelector(selectActiveRoleTab);
   const session = useAppSelector(selectRoomSession);
   const runPhase = useAppSelector(selectRunPhase);
@@ -287,18 +287,13 @@ export function RoomChatPane({
   const rolesPhase = useAppSelector(selectRolesPhase);
   const rolesError = useAppSelector(selectRolesError);
   const binding = roleBinding({ role_bindings: roleBindings }, role);
-  const [docView, setDocView] = useState<DocView | null>(null);
+  // Which record is on screen lives in the SLICE, not here: the finish dialog
+  // has to be able to open the Vision document the moment it is written (a
+  // document you are told about but cannot reach is a dead end). Switching
+  // experts clears it inside `activeRoleTabChanged`.
+  const docView = useAppSelector(selectDocView);
   const { tabs: docTabs, finalizedAt } = useDocTabs();
   const activeDoc = docTabs.find((t) => t.key === docView) ?? null;
-
-  // Moving to another expert always returns to their conversation.
-  const lastRoleRef = useRef(role);
-  useEffect(() => {
-    if (lastRoleRef.current !== role) {
-      lastRoleRef.current = role;
-      setDocView(null);
-    }
-  }, [role]);
 
   const meta = ROLES[role];
   const stage = stageForRole(role);
@@ -320,7 +315,9 @@ export function RoomChatPane({
             <button
               key={key}
               type="button"
-              onClick={() => setDocView(docView === key ? null : key)}
+              onClick={() =>
+                dispatch(docViewChanged(docView === key ? null : key))
+              }
               className={cn(
                 "inline-flex min-h-[36px] items-center gap-1.5 rounded-md px-2 text-xs",
                 docView === key
@@ -342,7 +339,11 @@ export function RoomChatPane({
             {meta.name} leads the {STAGES[stage].label} step — the interview is
             on {currentStage ? STAGES[currentStage].label : "another step"}.
           </span>
-          <Button size="sm" variant="outline" onClick={() => onGotoStage(stage)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onGotoStage(stage)}
+          >
             Move the interview here
           </Button>
         </div>
@@ -361,7 +362,9 @@ export function RoomChatPane({
                 surface: "vision-interview.room",
                 entityId: session?.id ?? "",
                 label: session?.title || "Vision interview",
-                href: session ? `/vision-interview/${session.id}` : "/vision-interview",
+                href: session
+                  ? `/vision-interview/${session.id}`
+                  : "/vision-interview",
               }}
             >
               <ChatRoomClient
@@ -388,8 +391,6 @@ export function RoomChatPane({
               rolesPhase={rolesPhase}
               rolesError={rolesError}
               onRetryRoles={onRetryRoles}
-              onStart={onStart}
-              starting={runPhase === "starting"}
             />
           )}
         </div>

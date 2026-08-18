@@ -43,6 +43,11 @@ const config: Config = {
         "\\.(css|less|sass|scss)$": "<rootDir>/test-utils/style-mock.ts",
         "\\.(gif|ttf|eot|otf|woff|woff2|png|jpe?g|webp|avif|mp4|webm|wav|mp3|m4a|aac|oga)$":
             "<rootDir>/test-utils/style-mock.ts",
+        // Syntax highlighting is never what a test asserts, and the real
+        // package's ESM `refractor` chain kills the suite at import — see the
+        // stub's header. Mapped before the `@/` alias like the asset mocks.
+        "^react-syntax-highlighter(/.*)?$":
+            "<rootDir>/test-utils/syntax-highlighter-mock.tsx",
         "^@/(.*)$": "<rootDir>/$1",
     },
     // Transform ESM-only `uuid` instead of ignoring it. The lookahead must

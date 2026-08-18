@@ -275,6 +275,7 @@ function ScheduleDetailBody({ taskId }: Props) {
                 jsonExportItem(() => ({ schedule: task, runs })),
                 csvExportItem(() => runCsvRows(runs), "CSV (all runs)"),
               ]}
+              sheetRows={() => runCsvRows(runs)}
             />
           </div>
         </div>

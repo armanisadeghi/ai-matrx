@@ -23,6 +23,7 @@ import KeywordSerpIntentAnalysisBlock from "../../blocks/keyword-research/Keywor
 import PageBriefBlock from "../../blocks/page-brief/PageBriefBlock";
 import EpisodeTitleOptionsBlock from "../../blocks/episode-title-options/EpisodeTitleOptionsBlock";
 import MasterworkCheckupFindingBlock from "../../blocks/masterwork-checkup/MasterworkCheckupFindingBlock";
+import AgentResultBlock from "../../blocks/agent-result/AgentResultBlock";
 import MediaChaptersBlock from "../../blocks/media-chapters/MediaChaptersBlock";
 import GeneratedImageSetBlock from "../../blocks/media-io/GeneratedImageSetBlock";
 import GeneratedVideoSetBlock from "../../blocks/media-io/GeneratedVideoSetBlock";
@@ -36,6 +37,8 @@ import PlanPageOutlineBlock from "../../blocks/page-pipeline/PlanPageOutlineBloc
 import PlanPageDraftBlock from "../../blocks/page-pipeline/PlanPageDraftBlock";
 import PlanPageReviewBlock from "../../blocks/page-pipeline/PlanPageReviewBlock";
 import CmsPageBuildBlock from "../../blocks/page-pipeline/CmsPageBuildBlock";
+import IngestedSourcesBlock from "../../blocks/ingested-sources/IngestedSourcesBlock";
+import StudyNotesBlock from "../../blocks/study-notes/StudyNotesBlock";
 import MultipleChoiceQuiz from "../../blocks/quiz/MultipleChoiceQuiz";
 import Slideshow from "../../blocks/presentations/Slideshow";
 import RecipeViewer from "../../blocks/cooking-recipes/cookingRecipeDisplay";
@@ -324,6 +327,23 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <MasterworkCheckupFindingBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  IngestedSourcesBlock: (
+    props: React.ComponentProps<typeof IngestedSourcesBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <IngestedSourcesBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  StudyNotesBlock: (props: React.ComponentProps<typeof StudyNotesBlock>) => (
+    <LazyBlockWrapper>
+      <StudyNotesBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  AgentResultBlock: (props: React.ComponentProps<typeof AgentResultBlock>) => (
+    <LazyBlockWrapper>
+      <AgentResultBlock {...props} />
     </LazyBlockWrapper>
   ),
   MediaChaptersBlock: (

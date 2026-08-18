@@ -166,7 +166,7 @@ export function WorkflowRunPage({
     <RouteHeader
       left={
         <div className="flex min-w-0 items-center">
-          <ChevronLeftTapButton href="/workflows" ariaLabel="All workflows" />
+          <ChevronLeftTapButton href="/workflows/all" ariaLabel="All workflows" />
           <span className="ml-1 min-w-0 truncate text-sm font-medium text-foreground">
             {workflow?.name ?? "Workflow"}
           </span>
@@ -204,7 +204,7 @@ export function WorkflowRunPage({
           <p className="mt-1.5 text-sm text-muted-foreground">{loadError}</p>
           <button
             type="button"
-            onClick={() => router.push("/workflows")}
+            onClick={() => router.push("/workflows/all")}
             className="mt-4 inline-flex min-h-9 items-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground"
           >
             Back to your workflows
@@ -244,7 +244,7 @@ export function WorkflowRunPage({
               onStart={(nodeInputs) => void begin(nodeInputs)}
               onCancel={() => {
                 if (runId) setShowForm(false);
-                else router.push("/workflows");
+                else router.push("/workflows/all");
               }}
             />
           ) : (

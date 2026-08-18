@@ -119,7 +119,18 @@ These are **hand-written per feature from a documented template**, deliberately
 not generated: a generator would have to model every feature's access semantics
 and would become its own language to debug, whereas ~150 lines of explicit SQL
 is readable and fixable at 2am. `public.agx_list_scoped`
-(`migrations/agx_list_scoped_v3_all_columns.sql`) is the worked reference.
+(`migrations/agx_list_scoped_v3_all_columns.sql`) is the worked reference;
+`migrations/wfx_list_scoped.sql` (workflows) is the same template applied to a
+table whose owner column is `created_by`, with numeric-bucket filters and a
+nullable status column.
+
+**Relevance is NOT hand-written per feature.** `public.mtx_search_score` is the
+GENERIC scorer: id / name / description / tags / owner_email plus two arrays for
+the feature's own 300-tier and 100-tier fields. It reproduces `agx_search_score`
+exactly on the shared parity fixture, so a new surface reuses it rather than
+adding a fourth near-identical copy. (`agx_search_score` and `trx_search_score`
+predate it and are not yet retrofitted — a mechanical follow-up kept out of the
+workflow-list change because both guard live surfaces.)
 
 Invariants the template carries, all of them learned the hard way:
 

@@ -11,6 +11,8 @@ import reducer, {
   attachRun,
   detachRun,
   seedRunRow,
+  refreshHeartbeatTails,
+  setTransportMode,
   TEXT_TAIL_CAP,
   type WorkflowRunsState,
 } from "@/features/workflow-runtime/redux/workflow-runs.slice";
@@ -434,6 +436,51 @@ describe("workflow-runs slice", () => {
     expect(state.byRunId[RUN_ID]?.status).toBe("running");
     expect(state.byRunId[RUN_ID]?.nodes[k1]?.textTail).toBe("live text");
     expect(state.byRunId[RUN_ID]?.nodes[k2]?.textTail).toBe("heartbeat tail");
+  });
+
+  test("refreshHeartbeatTails advances the tail on the poller and is inert on SSE", () => {
+    // The bug this locks down: `node_stream` frames are SSE-only and never
+    // replayed, and `seedRunRow` runs ONCE at attach — when the heartbeat is
+    // still empty. A poller-bound client therefore rendered a skeleton for
+    // the whole run no matter how much text the server streamed.
+    const rowWithTail = (tail: string): RunRow => ({
+      id: RUN_ID,
+      definition_id: "def-1",
+      status: "running",
+      input: null,
+      output: null,
+      error: null,
+      created_at: "2026-08-16T00:00:00Z",
+      completed_at: null,
+      metadata: { _heartbeat: { _streaming_by_node: { n1: { live_text_tail: tail } } } },
+      conversation_id: null,
+    });
+    const k1 = invocationKeyOf("n1", null, 0);
+
+    let state = attached();
+    state = apply(state, nodeStarted("n1"));
+    state = reducer(state, setTransportMode({ runId: RUN_ID, mode: "polling" }));
+
+    // First refresh seeds; a LATER refresh must advance it, not be ignored
+    // because the tail is already non-empty (seedRunRow's baseline guard).
+    state = reducer(state, refreshHeartbeatTails({ runId: RUN_ID, row: rowWithTail("first 300 chars") }));
+    expect(state.byRunId[RUN_ID]?.nodes[k1]?.textTail).toBe("first 300 chars");
+    state = reducer(state, refreshHeartbeatTails({ runId: RUN_ID, row: rowWithTail("now 900 chars") }));
+    expect(state.byRunId[RUN_ID]?.nodes[k1]?.textTail).toBe("now 900 chars");
+
+    // On SSE the tail is assembled from live deltas — a throttled snapshot
+    // must never roll it back.
+    state = reducer(state, setTransportMode({ runId: RUN_ID, mode: "sse" }));
+    state = reducer(
+      state,
+      applyNodeStreamMeta({
+        runId: RUN_ID,
+        event: { kind: "chunk", delta: " + live delta", node_id: "n1", stream_seq: 2 } as NodeStreamEvent,
+      }),
+    );
+    const liveTail = state.byRunId[RUN_ID]?.nodes[k1]?.textTail;
+    state = reducer(state, refreshHeartbeatTails({ runId: RUN_ID, row: rowWithTail("stale snapshot") }));
+    expect(state.byRunId[RUN_ID]?.nodes[k1]?.textTail).toBe(liveTail);
   });
 
   test("node_emitted appends to run emissions with the cap dropping oldest", () => {

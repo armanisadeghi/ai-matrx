@@ -511,6 +511,9 @@ export function AgentAppsGrid({
                   "CSV (this view)",
                 ),
               ]}
+              sheetRows={() =>
+                filteredApps as unknown as Array<Record<string, unknown>>
+              }
             />
           </>
         )}

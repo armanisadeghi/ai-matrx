@@ -9,6 +9,11 @@
  * Rendering law compliance: streamed content renders ONLY via
  * `LiveRunDisplay` (→ MarkdownStream requestId), settled kind-checked output
  * via `KindInstanceRender`. No hand-parsed stream anywhere.
+ *
+ * Settled output with no kind component renders through `StructuredValueView`
+ * — the platform floor. It used to be `JSON.stringify` in a ```json fence,
+ * which is what 19 of the 23 steps on the 2026-08-18 Study Pack run showed a
+ * non-technical reader.
  */
 
 import { useState } from "react";
@@ -24,6 +29,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import MarkdownStream from "@/components/MarkdownStream";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 
 import { looksLikeJsonDocument, readAgentRunOutput } from "../agent-run-output";
 import { useWorkflowRunControls } from "../hooks/useWorkflowRunControls";
@@ -62,9 +68,6 @@ export function PhaseIcon({ phase }: { phase: string }) {
   }
 }
 
-/** Beyond this, a raw JSON output is too big to hand the canonical viewer. */
-const JSON_VIEWER_MAX_CHARS = 60_000;
-
 /**
  * The honest "working, nothing to show yet" state. NOT a bare spinner: it
  * names the step's own live progress message when the engine sent one, and
@@ -88,26 +91,31 @@ function WorkingBody({ message }: { message: string | null }) {
   );
 }
 
-function fenceJson(text: string): string {
-  return `\`\`\`json\n${text}\n\`\`\``;
+/**
+ * Structured output whose shape has no kind component. It renders as a human
+ * DOCUMENT through the platform floor: prose through the canonical markdown
+ * renderer, uniform object arrays as a real table, media through
+ * `InlineMediaRef`, nested objects as titled sections with humanized keys —
+ * with the raw data one click away for us.
+ */
+function JsonBody({ value }: { value: Record<string, unknown> | unknown[] }) {
+  return <StructuredValueView value={value} />;
 }
 
 /**
- * Unregistered structured output. It still deserves the platform's real JSON
- * viewer (fold, copy, table view), which it gets by riding the canonical
- * markdown pipeline as a fenced block — a raw <pre> was a wall of text on the
- * one screen where the reader most wants to SEE what was produced.
+ * A settled string that is really a JSON document (an agent that answered with
+ * JSON rather than through a bound schema). Parsed once and handed to the same
+ * floor; unparseable text falls back to the canonical markdown renderer, which
+ * is what it is.
  */
-function JsonBody({ value }: { value: Record<string, unknown> }) {
-  const json = JSON.stringify(value, null, 2);
-  if (json.length <= JSON_VIEWER_MAX_CHARS) {
-    return <MarkdownStream content={fenceJson(json)} />;
+function JsonTextBody({ text }: { text: string }) {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text) as unknown;
+  } catch {
+    return <MarkdownStream content={text} />;
   }
-  return (
-    <pre className="max-h-96 overflow-auto rounded-md bg-muted p-2 text-[11px]">
-      {json}
-    </pre>
-  );
+  return <StructuredValueView value={parsed} />;
 }
 
 /**
@@ -124,7 +132,7 @@ function SettledOutputBody({ output }: { output: Record<string, unknown> }) {
   if (agent.structured) return <JsonBody value={agent.structured} />;
   if (agent.finalText) {
     return looksLikeJsonDocument(agent.finalText) ? (
-      <MarkdownStream content={fenceJson(agent.finalText)} />
+      <JsonTextBody text={agent.finalText} />
     ) : (
       <MarkdownStream content={agent.finalText} />
     );
@@ -203,23 +211,36 @@ export function InvocationBody({
   // output, which is the blank box a finished step showed beside its own green
   // tick. Empty lane + still working → the honest working state; empty lane +
   // settled → fall through to the output it actually produced.
-  const laneHasContent =
-    invocation.chunksReceived > 0 || invocation.textTail !== "";
-  if (
-    invocation.laneRequestId &&
-    (laneHasContent || working) &&
-    !(prefer === "persisted" && settledOutput)
-  ) {
-    if (!laneHasContent) {
-      return <WorkingBody message={invocation.progress?.message ?? null} />;
-    }
+  //
+  // Lane content and the durable tail are DIFFERENT TIERS and must not be
+  // conflated. `LiveRunDisplay` renders the LANE; `textTail` lives in this
+  // slice. Counting a tail as "the lane has content" makes an empty lane
+  // render as an empty pane that hides the very text we do have — and on the
+  // POLLER that is the normal case, because `node_stream` deltas are SSE-only
+  // while the heartbeat tail keeps arriving. So the lane speaks only once it
+  // has actually carried a chunk; otherwise the tail gets its turn below.
+  const laneCarriedContent = invocation.chunksReceived > 0;
+  const laneOwnsDisplay =
+    Boolean(invocation.laneRequestId) &&
+    !(prefer === "persisted" && settledOutput);
+  if (laneOwnsDisplay && laneCarriedContent) {
     return (
       <LiveRunDisplay
-        requestId={invocation.laneRequestId}
+        requestId={invocation.laneRequestId!}
         label={invocation.nodeId}
         variant="bare"
       />
     );
+  }
+  if (invocation.textTail && !(prefer === "persisted" && settledOutput)) {
+    return (
+      <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+        {invocation.textTail}
+      </p>
+    );
+  }
+  if (laneOwnsDisplay && working) {
+    return <WorkingBody message={invocation.progress?.message ?? null} />;
   }
   if (
     invocation.phase === "settled" &&
@@ -237,6 +258,9 @@ export function InvocationBody({
         kind={invocation.outputKind}
         value={invocation.output}
         showRoutingNote={false}
+        // The readout cell already draws the titled card — a second border +
+        // background + padding here is the box-in-a-box (THE WRAPPER LAW).
+        variant="bare"
         unroutableFallback={<SettledOutputBody output={invocation.output} />}
       />
     );

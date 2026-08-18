@@ -1,5 +1,6 @@
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@/utils/supabase/guardedUpdate";
+import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { pokeUnderstudy } from "./understudy/refresh";
 import {
   parseRulebook,
@@ -469,15 +470,24 @@ export async function getMasterworkRunVerdict(
       supabase
         .schema("workflow")
         .from("node_outcome")
-        .select("node_id, text:output->>final_text" as string)
+        .select("node_id, output")
         .eq("run_id", runId)
         .in("node_id", ["chief", "editor", "understudy"])
-        .returns<{ node_id: string; text: string | null }[]>(),
+        .returns<{ node_id: string; output: Record<string, unknown> | null }[]>(),
     ]);
   if (runError) throw runError;
   if (error) throw error;
   if (!run) return null;
-  const byNode = new Map((outcomes ?? []).map((o) => [o.node_id, o.text]));
+  // The node output is the agent-run ENVELOPE, not the text: reading
+  // `final_text` off it (this used to be an `output->>final_text` select) is
+  // the contract THE reader owns, so a schema-bound node's answer is found
+  // too instead of coming back empty.
+  const byNode = new Map(
+    (outcomes ?? []).map((o) => [
+      o.node_id,
+      readAgentRunOutput(o.output)?.finalText ?? null,
+    ]),
+  );
   return {
     status: String(run.status),
     chiefText: byNode.get("chief") ?? null,

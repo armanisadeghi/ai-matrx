@@ -30,16 +30,19 @@ that is the exit-test surface.
 | Trigger points | `trigger-points.ts` | Ruling R2: named, enumerable moments derived from the DEFINITION (`run:*`, `node:<id>:*`, `edge:<id>:traversed` — client-DERIVED, the engine emits no edge events — `deliverable:ready`, `mark:<name>`), resolved against run state. Pure module. |
 | Hooks | `hooks/useWorkflowRun.ts`, `hooks/useWorkflowRunControls.ts` | Adoption is refcounted per runId (two watchers share one adapter). Controls are the ONLY lifecycle verbs — start/pause/resume/cancel/answer-interrupt/retry/skip via `callApi`. |
 | **THE LIVE RUN EXPERIENCE** | `components/run/RunStage.tsx` | The surface a person actually watches, composed like the podcast studio: hero + promise → journey rail + activity feed → authored readouts → deliverables. Hoists the authored progress rails into the always-visible journey (`hideProgressRails`) and renders the failure/interrupt cards itself (`hideRunStatusCards`), so nothing is drawn twice. Falls back to `deriveDefaultSurfaceConfig` when a workflow has no authored surface. |
+| **The catalog** | `browse/` → `app/(core)/workflows/all/page.tsx` | `/workflows/all` on the CANONICAL entity-list shell (`lib/entity-list`) — not a bespoke grid. Config in `browse/listConfig.tsx`; rows from `public.wfx_list_scoped` read DIRECT via supabase-js (`browse/service.ts`), never through the Python server. Table-first with every column sorting AND filtering server-side, card + dense views, Mine / My Orgs / Shared / Public with true server counts, relevance-ranked search. ONE `ItemMenuConfig` builder (`browse/workflowActionRegistry.tsx`) feeds the table kebab, the card kebab, the dense-row kebab and right-click, so the three-drifting-action-lists failure that hit agents cannot happen here. |
+| Catalog RPCs | `migrations/wfx_list_scoped.sql` | `wfx_list_scoped` / `wfx_list_scope_counts` / `wfx_list_facets` / `wfx_bucket_matches`, hand-written from the template in `lib/list-scope/FEATURE.md`. Owner column is `created_by` (agents use `user_id`); `iam.permissions.resource_type` is `'workflow'`. Relevance comes from `public.mtx_search_score` — the GENERIC scorer, not a fourth copy of `agx_search_score`: it reproduces agx's tiers exactly on the shared parity fixture (12/12 MATCH), with the per-feature extras passed as `p_extra_300` / `p_extra_100` arrays. |
+| Run status vocabulary | `run-status.tsx` | THE one place a `workflow.run.status` becomes words and an icon (`RUN_STATUS_LABEL`, `RUN_STATUS_PHASE`, `runStatusLabel`, `RunStatusChip`). There were two disagreeing copies before it — `ReadoutView`'s and the old catalog's ("completed" was "Done" in one and "Finished" in the other) — and the list page would have been a third. Both now import from here. |
 | Run routes | `app/(core)/workflows/[id]/page.tsx`, `app/(core)/workflows/runs/[runId]/page.tsx` → `components/run/WorkflowRunPage.tsx` | One body, two doors: `/workflows/[id]` sets up + runs (run id rides `?run=`), `/workflows/runs/[runId]` is the run's permalink (THE DOOR LAW). Each resolves the other, so a refresh always lands back on the live run. `(core)` conformant: `RouteHeader`, body `h-full overflow-hidden`, one inner scroll. |
 | Hero + the promise | `components/run/RunHero.tsx` | Status, elapsed (from the ENGINE's start, not the attach), cost, step count, and the chip row naming every deliverable **from frame zero** — the ProductionTeaser job, generalized. Fixed heights: nothing below it moves as state changes. |
 | Journey rail | `components/run/RunJourney.tsx` | Every step of the DEFINITION present immediately (not just the ones the run has reported), each with its author's label, its own icon, and what it will produce. Three layers while a step runs: its freshest REAL signal, the authored synthetic sub-steps (the guaranteed floor — never removed), the phase. Both retire on completion; the full trace lives in the feed. |
 | **Activity truth-feed** | `components/run/RunActivityFeed.tsx` + `components/run/activity-copy.ts` | The workflow twin of the podcast's `ResearchActivityFeed`: the actual tools called, the engine's own phases, `node_progress` sentences, per-step durations. `activity-copy` is the ONE place wire markers become sentences. Tool and warning markers are parseable JSON summaries; bare tool names and mid-string warning JSON remain legacy fallbacks. Renders nothing when the backend said nothing. |
 | Deliverables | `components/run/RunDeliverables.tsx` | Every step declaring an `output_kind`, ghosted as "coming up" then becoming a real panel rendering its canonical kind component. Skips nodes the authored surface already renders — one shape, one component, once per screen. Lives at the BOTTOM so the surface only grows. |
 | Step presentation | `components/run/node-presentation.ts` | Pure derivation of label / family / lucide icon / declared `output_kind` from the definition. This is what makes "what to look forward to" possible before a single node starts. |
-| Agent output reader | `agent-run-output.ts` | THE reader for an `ai.agent.start` node's settled output — `final_text` / `structured_output` ONLY. The rest of that envelope (`messages`, `usage`, `metadata`, ids) is plumbing and must never reach a reader. |
+| Agent output reader | `agent-run-output.ts` | THE reader for an agent-run envelope (`agent_result`) — `readAgentRunOutput` gives what the agent PRODUCED (`final_text` / `structured_output`), `readAgentRunFacts` gives the numbers ABOUT the run (duration, turns, tool calls, cost, tokens, model, the conversation id as a door). `messages` is in NEITHER result type, so no consumer can leak the verbatim prompt by forgetting to filter it. Pure, importless. Consumers: the `agent_result` kind bridge (`features/content-ir/kinds/agent-result.ts` — what THE component renders everywhere), `readout-parts.tsx`, `AgentAssignmentsDemo`, `features/masterwork/service.ts`. A fourth ad-hoc `final_text` reader is a defect. |
 | Failure card | `components/run/RunFailureCard.tsx` + `run-failure-explanation.ts` | Failure as a first-class state: plain-language headline, the failing step by its author's name, the one next action, and the technical cause one tap away. `explainRunFailure` owns the copy (add a pattern there, never a bespoke string here) and carries an optional one-click `action` — the education COPPA gate routes to the page that clears it. |
 | Zero-config board | `components/WorkflowRunBoard.tsx` | Tier 0 presentation: status rows for every node, lanes via `LiveRunDisplay variant="bare"`, settled kind-checked output via `KindInstanceRender`, interrupt answer card, recursive child boards (`adopt={false}` on children — the parent adapter already follows them). |
-| Shared readout parts | `components/readout-parts.tsx` | THE one per-invocation body (`InvocationBody`) + `PhaseIcon` / `PHASE_LABEL` / `InterruptCard` — consumed by the board AND every readout; never fork a second copy. Resolution order: a lane **that has carried something** → `LiveRunDisplay`; settled kind → `KindInstanceRender`; textTail; settled JSON → the canonical viewer via `MarkdownStream`; error; still working → the honest working state with its live progress line. **An empty lane never wins** — the adapter opens one for every non-fan-out node including nodes that never stream a token, and treating it as truth rendered an empty pane over the output the step had actually produced. |
+| Shared readout parts | `components/readout-parts.tsx` | THE one per-invocation body (`InvocationBody`) + `PhaseIcon` / `PHASE_LABEL` / `InterruptCard` — consumed by the board AND every readout; never fork a second copy. Resolution order: a lane **that has carried something** → `LiveRunDisplay`; settled kind → `KindInstanceRender` (with an `unroutableFallback` that reads an agent-run envelope through `agent-run-output.ts` for any OTHER componentless kind — `agent_result` itself now has THE component and no longer reaches it); textTail; settled JSON → the canonical viewer via `MarkdownStream`; error; still working → the honest working state with its live progress line. **An empty lane never wins** — the adapter opens one for every non-fan-out node including nodes that never stream a token, and treating it as truth rendered an empty pane over the output the step had actually produced. |
 | Surface config | `surface/config.ts` | The Run Surface document (R1/R6/R7): 24-col `pos`, readout sources (node/group/childRun/progressRail/static/action), pages, visibility; tolerant parse + strict validate. `deriveDefaultSurfaceConfig` builds a real surface from the DEFINITION for a workflow nobody has authored one for (steps that think or declare an `output_kind` become full-width readouts). Additive only — the builder writes the same document. |
 | Progress rail | `components/ProgressRailReadout.tsx` | The generalized podcast rail: per-node rows from selectors + authored SYNTHETIC sub-steps (randomized 2.2–5.5s cadence, last held until the node leaves "running", snap-all-done), 99%-cap progress bar until the run is terminal. Animation state is presentation-local — refresh restarts it by design. |
 | Readout renderer | `components/ReadoutView.tsx` | One readout's bare content per source kind; multi-run modes stack/latest/table (table = the canonical `MatrxDataTable` over invocations — item/status/output/duration, every column sorts + filters); childRun renders the child's OWN authored compact surface when one exists (R9 — `getDefaultSurface(childDefId, {profile:"compact"})` → nested `RunSurfaceView adopt={false}`), else a compact status summary with an expandable full board; static markdown via `MarkdownStream` content mode. Node and rail labels use the resolved spec type with a human fallback, never expose graph-local IDs as dead-end UI text. Visible node readouts promote running lane-less invocations via `useViewportLanePromotion` (IntersectionObserver → `ensureLane`, seeded with the tracked tail). |
@@ -100,7 +103,47 @@ that is the exit-test surface.
 - **StreamProfiler** (`utils/stream-profiler.ts`) is gated off by CAPS constant — the global
   one-request singleton was a measured hazard for N concurrent lanes.
 
+## Known limits
+
+- **There is no per-workflow run-history surface.** `/workflows/runs/[runId]` opens ONE run, so
+  the catalog's Runs column is a plain count rather than a door: pointing "4 runs" at the single
+  most recent run would land the user somewhere the number did not promise. The Last run cell
+  beside it IS a real door to a real record, and the row menu carries "Open the last run". A
+  proper `/workflows/[id]/runs` list is the fix, and it is the one thing on this surface that
+  THE DOOR LAW still wants.
+- **`workflow.v_definition_catalog` no longer has a consumer.** The view existed so the old
+  catalog could read step/run counts without shipping the `nodes`/`edges` jsonb;
+  `wfx_list_scoped` computes the same facts from the same lateral, with scoping and filtering the
+  view could not do. The view is left in place deliberately — per the unfinished-work alarm, an
+  artifact with no runtime consumer is a decision for Arman, not something an agent retires.
+
 ## Change Log
+
+- 2026-08-18 — **the last two raw-JSON panels of a live Study Pack run became real
+  components.** "Your materials" (the Preparing screen, on screen from the opening seconds of
+  EVERY run) rendered the ingest node's chunk array — `content_hash`, `chunk_index`,
+  `source_offset_end` — at a learner who had pasted their own textbook; "Study notes" (the
+  Writing screen) rendered the notes document as one unbroken line of braces. Both shapes were
+  MEASURED against live `workflow.node_outcome` rows and neither fitted an existing kind, so both
+  got their own: **`ingested_sources`** (python-owned, schema =
+  `IngestedContent.model_json_schema()`, declared at the SPEC level on
+  `docproc.ingest.from_media_refs` so every workflow using that node benefits) and
+  **`study_notes`** (ts-owned, converter-emitted). The declined alternatives are recorded because
+  re-attempting them costs a drift log on every run: `bulk_result` requires `items[]` and forbids
+  everything else, and `structured_info` is `additionalProperties:false` over exactly
+  `title`+`sections` with sections keyed `heading`/`body`/`items`.
+  **The notes declaration cannot sit on the parse node** — `ai.util.parse_llm_json` wraps its
+  result under `value` and `parsed_json` is closed — so `study_pack_v1` gained a `study_notes`
+  step (`data.transform`, expression `inputs['notes']`, which spreads the dict flat onto the
+  root) exactly like the `flashcard_set` / `quiz_set` nodes, and the stored surface row
+  (c797a1c1…) repoints its "Study notes" readout at that node with `prefer: "persisted"`.
+  Verified end to end on run `e606cd60`: `output_kind_ok=true` on both
+  `ingest`→`ingested_sources` and `study_notes`→`study_notes`.
+  🚨 **The Writing screen's other three panels — Flashcards, Practice quiz, Lesson scripts — still
+  render raw JSON**, for a DIFFERENT reason: they read their `ai.agent.start` node, whose output is
+  the `agent_result` envelope, so `InvocationBody` falls through to the JSON viewer. Flashcards and
+  quiz already have kinded nodes to repoint at (`flashcard_set` / `quiz_set`); lesson scripts has
+  no kind yet.
 
 - 2026-08-18 — Warning activity now consumes aidream's bounded
   `{code,user_message,level,recoverable}` JSON summary directly. The old regex path remains only
@@ -237,6 +280,24 @@ that is the exit-test surface.
   added `ProgressRailReadout` / `ReadoutView` / `RunSurfaceView`; slice gained
   `childRunsByNode` (subgraph_run_linked node→child map) + selectors
   `selectChildRunIdForNode` and `selectNodeAggregatePhases`.
+- 2026-08-18 — **the catalog moved to `/workflows/all` and was rebuilt on the canonical
+  entity-list shell** (Arman's ruling after testing production). `/workflows` is now RESERVED for
+  a future marketing page and redirects signed-in visitors to the catalog (signed-out ones go
+  through `loginHref`, so the destination survives sign-in); `/workflows/[id]` and
+  `/workflows/[id]/design` are untouched. What the bespoke card grid could not do and the shell
+  does: scopes with true server counts, every column sorting AND filtering over the whole result
+  set, relevance-ranked search, card/dense/table views with persisted style, inline edit, and one
+  action list per row. **The visual defect that prompted this** — the search field flush against
+  the shell's glass header (measured: input top 44px, header bottom 44px, zero clearance) — is
+  gone because the shell owns its own `pt-[calc(var(--shell-header-h)+0.5rem)]`; measured 56px of
+  clearance after. Three doors that were dark got lit on the way: `entityRegistry.workflow`
+  gained its `hrefFor` (the "no detail route exists" comment had outlived `/workflows/[id]` by
+  months, so every workflow `EntityRef`, peek and toast door was inert), the
+  `platform.shareable_resource_registry` row got its `url_path_template` back
+  (`migrations/wfx_share_registry_workflow_route.sql` — emptied in the D138 sweep for the same
+  stale reason, so a shared workflow's modal rendered no link), and `workflow_run` was registered
+  in `FEATURE_META`, which makes 128 existing engine-stamped conversations filterable for the
+  first time. The old `catalog/` directory is deleted, not shimmed.
 - 2026-08-18 — the dead-run defect class closed after Arman's morning test: `RunErrorCard`
   (readout-parts) renders a failed/errored run's structured error + failing-step names on the
   Surface AND the Board (it used to sit at "Not started" forever); the progress rail shows the

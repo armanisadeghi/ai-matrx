@@ -45,7 +45,10 @@ export async function registerSelectedGoogleFile(
     { connection_id: connectionId, file_id: fileId },
     "Unable to register the selected Google file.",
   );
-  const body = await responseRecord(response);
+  return selectedFile(await responseRecord(response));
+}
+
+function selectedFile(body: Record<string, unknown>): SelectedGoogleFile {
   const resourceType = requiredString(body, "resource_type");
   if (
     resourceType !== "google_document" &&
@@ -66,6 +69,41 @@ export async function registerSelectedGoogleFile(
     mimeType: requiredString(body, "mime_type"),
     webViewLink,
   };
+}
+
+/**
+ * Create a NEW Doc in the user's own Drive and register it.
+ *
+ * Still `drive.file`: the scope covers files this app creates for the user, not
+ * their existing Drive. The new file joins the same registry a Picker-selected
+ * file joins, so every later read or write passes the same boundary check and
+ * it appears in the same "files AI Matrx can reach" list.
+ */
+export async function createGoogleDocument(
+  connectionId: string,
+  title: string,
+  text: string,
+): Promise<SelectedGoogleFile> {
+  const response = await postGoogleBackend(
+    "/api/google-workspace/documents/create",
+    { connection_id: connectionId, title, text },
+    "Unable to create the Google Doc.",
+  );
+  return selectedFile(await responseRecord(response));
+}
+
+/** Create a NEW Sheet in the user's own Drive and register it. */
+export async function createGoogleSheet(
+  connectionId: string,
+  title: string,
+  values: string[][],
+): Promise<SelectedGoogleFile> {
+  const response = await postGoogleBackend(
+    "/api/google-workspace/sheets/create",
+    { connection_id: connectionId, title, values },
+    "Unable to create the Google Sheet.",
+  );
+  return selectedFile(await responseRecord(response));
 }
 
 export async function readGoogleDocument(

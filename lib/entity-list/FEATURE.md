@@ -8,7 +8,9 @@ Filters & Sort panel, column picker, the controlled MatrxDataTable, view/
 density persistence, inline edit commit, and the error banner.
 
 **Consumers:** `/agents/all` (`features/agents/browse/listConfig.tsx` — the
-proving ground) · `/transcripts` (`features/transcripts/browse/listConfig.tsx`
+proving ground) · `/workflows/all`
+(`features/workflow-runtime/browse/listConfig.tsx` — first consumer to need a
+GENERIC relevance scorer, `public.mtx_search_score`, instead of a fourth copy) · `/transcripts` (`features/transcripts/browse/listConfig.tsx`
 — the heterogeneous-rows test: five source shapes collapsed to one row type
 with a `kind` column) · `/work/conversations`
 (`features/ai-work/conversations/listConfig.tsx` — the URL-state + honest-default

@@ -42,6 +42,7 @@ import { MatrxDataTable } from "@/components/official/matrx-data-table/MatrxData
 import type { MatrxColumnDef } from "@/components/official/matrx-data-table/types";
 
 import type { Readout, ReadoutSource, RunSurfaceConfig } from "../surface/config";
+import { TERMINAL_RUN_STATUSES } from "../types";
 import {
   getDefaultSurface,
   fetchWorkflowDefinition,
@@ -62,6 +63,7 @@ import {
 } from "../redux/workflow-runs.selectors";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
 import { InvocationBody, PhaseIcon, PHASE_LABEL } from "./readout-parts";
+import { RUN_STATUS_LABEL, RUN_STATUS_PHASE } from "../run-status";
 import { ProgressRailReadout } from "./ProgressRailReadout";
 import { definitionNodeLabels, RunSurfaceView } from "./RunSurfaceView";
 import { WorkflowRunBoard } from "./WorkflowRunBoard";
@@ -205,6 +207,8 @@ function NodeReadout({
   ensureLane?: EnsureLaneFn;
 }) {
   const aggregate = useAppSelector(selectNodeAggregate(runId, nodeId));
+  const runStatus = useAppSelector(selectRunStatus(runId));
+  const terminal = runStatus !== null && TERMINAL_RUN_STATUSES.has(runStatus);
   const { invocations, phase } = aggregate;
   // Promotion is SINGLE-invocation only: fan-out deltas carry node_id alone
   // and stay in the tracked tier, so a promoted sibling lane could never
@@ -221,11 +225,20 @@ function NodeReadout({
     // copy is forward-looking, not a status stamp: on the first frame of a
     // run every box said "Not started", which reads as a failure report
     // rather than as the queue it actually is.
+    //
+    // On a TERMINAL run there is no future to point at, and the forward-
+    // looking sentence becomes a lie the reader waits on: the finished Study
+    // Pack run showed "This fills in when the run reaches this step" under
+    // "Study notes" forever, because that one node of 24 never ran
+    // (2026-08-18). A finished run says so.
+    const waiting = phase === "idle" || phase === "waiting";
     return (
       <p className="text-xs text-muted-foreground">
-        {phase === "idle" || phase === "waiting"
-          ? "This fills in when the run reaches this step."
-          : (PHASE_LABEL[phase] ?? phase)}
+        {!waiting
+          ? (PHASE_LABEL[phase] ?? phase)
+          : terminal
+            ? "This step never ran."
+            : "This fills in when the run reaches this step."}
       </p>
     );
   }
@@ -314,35 +327,9 @@ function GroupMemberReadout({
   );
 }
 
-/** Run status → node-phase vocabulary for PhaseIcon, + human labels. The
- * child summary renders a RUN's status; PhaseIcon/PHASE_LABEL are keyed on
- * node phases — unmapped, a completed child showed the idle circle and raw
- * status text (adversarial finding 10). */
-const RUN_STATUS_PHASE: Record<string, string> = {
-  pending: "idle",
-  running: "running",
-  cancelling: "running",
-  pausing: "running",
-  paused: "waiting",
-  interrupted: "waiting",
-  errored: "failed",
-  completed: "settled",
-  failed: "failed",
-  cancelled: "skipped",
-};
-
-const RUN_STATUS_LABEL: Record<string, string> = {
-  pending: "Not started",
-  running: "Working",
-  cancelling: "Stopping",
-  pausing: "Pausing",
-  paused: "Paused",
-  interrupted: "Waiting for input",
-  errored: "Needs attention",
-  completed: "Done",
-  failed: "Needs attention",
-  cancelled: "Stopped",
-};
+/* Run status → node-phase vocabulary for PhaseIcon, + human labels, now
+ * shared: the workflow LIST names the same statuses, and a third copy would
+ * have made three vocabularies for one enum. See ../run-status.tsx. */
 
 interface CompactChildSurface {
   /** Which child definition this was loaded for (guards stale results). */
