@@ -569,6 +569,54 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
       errorMessage: "Failed to copy HTML",
     },
     {
+      /**
+       * A REAL Google Doc, not a clipboard payload.
+       *
+       * `copy-docs` above puts Docs-flavoured HTML on the clipboard and still
+       * makes the user open Drive, create a file and paste. This creates the
+       * file in their Drive and hands them the link. Same one path every other
+       * surface uses — `features/google-workspace/export/sendToGoogle.ts` — so
+       * this menu owns no Google code of its own.
+       */
+      key: "send-google-doc",
+      icon: FileText,
+      iconColor: "text-blue-500 dark:text-blue-400",
+      label: "Send to Google Doc",
+      action: async () => {
+        const { sendContentToGoogleDoc } = await import(
+          "@/features/google-workspace/export/sendToGoogle"
+        );
+        const result = await sendContentToGoogleDoc(
+          turnText,
+          deriveMessageTitle(ctx) ?? "AI Matrx message",
+        );
+        if (!result.ok) {
+          toast.info("Connect Google to send this to a Doc", {
+            description:
+              "Takes about ten seconds, and only for files you choose or that we create.",
+            action: {
+              label: "Connect",
+              onClick: () =>
+                window.open(result.settingsHref, "_blank", "noopener"),
+            },
+          });
+          return;
+        }
+        toast.success(`Created "${result.name}" in your Google Drive`, {
+          action: result.openUrl
+            ? {
+                label: "Open",
+                onClick: () =>
+                  window.open(result.openUrl as string, "_blank", "noopener"),
+              }
+            : undefined,
+        });
+        onClose();
+      },
+      category: "Actions",
+      showToast: false,
+    },
+    {
       key: "email-to-me",
       icon: Mail,
       iconColor: "text-sky-500 dark:text-sky-400",
