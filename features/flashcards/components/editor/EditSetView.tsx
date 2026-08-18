@@ -796,6 +796,11 @@ function CardEditor({
   // with one; hand-built and CSV-imported decks had no way to set it until now.
   const [topic, setTopic] = useState(card.topic ?? "");
   const [pairs, setPairs] = useState<MatchingPair[]>(() => matchingPairs(card));
+  // VISION §17 — formula cards: latex + variable definitions + worked example.
+  const [formula, setFormula] = useState<FormulaContent>(
+    () =>
+      formulaContent(card) ?? { latex: "", variables: [], example: null },
+  );
   const [preview, setPreview] = useState(false);
 
   // Debounced autosave — the never-lose-work path. The save fn builds the
@@ -807,6 +812,7 @@ function CardEditor({
     back: string;
     topic: string;
     pairs: MatchingPair[];
+    formula: FormulaContent;
   }>({
     save: async (v) => {
       const base = { topic: v.topic.trim() || null };
@@ -825,7 +831,15 @@ function CardEditor({
                 back: v.back.trim(),
                 card_kind: CARD_KIND.cloze,
               }
-            : { ...base, front: v.front.trim(), back: v.back.trim() };
+            : kind === CARD_KIND.formula
+              ? {
+                  ...base,
+                  front: v.front.trim(),
+                  back: v.back.trim(),
+                  card_kind: CARD_KIND.formula,
+                  dynamic_content: formulaDynamicContent(v.formula),
+                }
+              : { ...base, front: v.front.trim(), back: v.back.trim() };
       const res = await fcService.updateCard(card.id, patch);
       return { error: res.error };
     },
@@ -840,17 +854,20 @@ function CardEditor({
     back?: string;
     topic?: string;
     pairs?: MatchingPair[];
+    formula?: FormulaContent;
   }): void => {
     const next = {
       front: patch.front ?? front,
       back: patch.back ?? back,
       topic: patch.topic ?? topic,
       pairs: patch.pairs ?? pairs,
+      formula: patch.formula ?? formula,
     };
     if (patch.front !== undefined) setFront(patch.front);
     if (patch.back !== undefined) setBack(patch.back);
     if (patch.topic !== undefined) setTopic(patch.topic);
     if (patch.pairs !== undefined) setPairs(patch.pairs);
+    if (patch.formula !== undefined) setFormula(patch.formula);
     autosave.schedule(next);
   };
 
@@ -941,6 +958,16 @@ function CardEditor({
           onChange={(p) => editCard({ pairs: p })}
           prompt={front}
           onPromptChange={(v) => editCard({ front: v })}
+        />
+      ) : kind === CARD_KIND.formula ? (
+        <FormulaFields
+          front={front}
+          onFrontChange={(v) => editCard({ front: v })}
+          formula={formula}
+          onFormulaChange={(f) => editCard({ formula: f })}
+          notes={back}
+          onNotesChange={(v) => editCard({ back: v })}
+          preview={preview}
         />
       ) : kind === CARD_KIND.cloze ? (
         <div className="space-y-2">
