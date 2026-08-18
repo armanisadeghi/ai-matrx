@@ -238,6 +238,20 @@ export function EditSetView({ setId }: { setId: string }) {
         { left: "Term B", right: "Definition B" },
       ]),
     },
+    // VISION §17 — a formula with variable definitions + a worked example.
+    formula: {
+      front: "What is the quadratic formula?",
+      back: "",
+      card_kind: CARD_KIND.formula,
+      dynamic_content: formulaDynamicContent({
+        latex: "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+        variables: [
+          { symbol: "a, b, c", meaning: "coefficients of ax² + bx + c = 0" },
+          { symbol: "x", meaning: "the roots of the equation" },
+        ],
+        example: "For $x^2 - 5x + 6 = 0$: $x = \\frac{5 \\pm 1}{2}$, so $x = 3$ or $x = 2$.",
+      }),
+    },
   };
 
   const addCard = async (kind: CardKind) => {
@@ -692,6 +706,12 @@ export function EditSetView({ setId }: { setId: string }) {
                   >
                     <Grid3x3 className="mr-2 h-4 w-4 text-muted-foreground" />
                     Matching pairs
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => void addCard(CARD_KIND.formula)}
+                  >
+                    <Sigma className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Formula (variables + example)
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
