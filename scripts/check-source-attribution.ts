@@ -71,6 +71,18 @@ function stringValue(node: ts.Expression | ts.JsxAttributeValue | undefined): st
   return null;
 }
 
+function isDisplayOnlyNoneLabel(node: ts.Node): boolean {
+  let current: ts.Node | undefined = node.parent;
+  while (current && !ts.isSourceFile(current)) {
+    if (ts.isPropertyAssignment(current)) {
+      const name = propertyName(current.name);
+      if (name === "noneLabels") return true;
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
 function addFinding(
   findings: Finding[],
   sourceFile: ts.SourceFile,
@@ -105,7 +117,9 @@ function scanFile(file: string): Finding[] {
   function visit(node: ts.Node): void {
     if (ts.isPropertyAssignment(node)) {
       const name = propertyName(node.name);
-      if (name) addFinding(findings, sourceFile, node, name, stringValue(node.initializer));
+      if (name && !isDisplayOnlyNoneLabel(node)) {
+        addFinding(findings, sourceFile, node, name, stringValue(node.initializer));
+      }
     } else if (ts.isJsxAttribute(node)) {
       addFinding(findings, sourceFile, node, node.name.getText(sourceFile), stringValue(node.initializer));
     } else if (ts.isVariableDeclaration(node)) {
