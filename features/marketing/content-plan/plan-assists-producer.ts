@@ -26,7 +26,7 @@ import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
 import type { Assist } from "@/features/assists/types";
 import { assistPriority } from "@/features/assists/types";
 import { listSiteKeywordValues } from "./data/service";
-import { planForRoute, type SitePlanIndex } from "./page-seo-plan";
+import { hasRoutePlan, planForRoute, type SitePlanIndex } from "./page-seo-plan";
 import type { CmsPageMapEntry } from "./setup/bridge";
 import type { PlanNodeRow } from "./types";
 
@@ -69,8 +69,12 @@ export function hasKeywordAssignment(
 ): boolean {
   if (plans === null || plans === undefined) return true;
   const plan = planForRoute(plans, node.route);
-  if (!plan) return false;
-  return Boolean(plan.draft.primaryKeywordId || plan.draft.pageRole);
+  // `hasRoutePlan` IS the server predicate (`has_keyword_assignment` /
+  // `strategy_payload` in brief_writer.py + page_seo_plan.py): a target
+  // keyword OR any strategist record — role, supported routes, secondary
+  // keywords, reason, planned links. This used to check only keyword+role,
+  // so the UI chipped a "gap" the server's gate would happily pass.
+  return hasRoutePlan(plan);
 }
 
 /**

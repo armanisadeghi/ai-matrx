@@ -734,6 +734,61 @@ export const fcService = {
     }
   },
 
+  /**
+   * VISION/WP3 gap 5 — MERGE two or more cards into one (Arman asked for it by
+   * name). The caller composes the merged face text (the dialog previews and
+   * lets the learner edit it), so this method is the WRITE half only:
+   *
+   *   1. the primary card takes the merged front/back,
+   *   2. the losers' details are re-pointed at the primary,
+   *   3. the losers are soft-deleted.
+   *
+   * `spoken_front` details are deliberately NOT carried over: that audio is TTS
+   * of a front that just changed, and the table holds one spoken front per card
+   * (`fc_detail_one_spoken_front_per_card`). It regenerates on demand.
+   *
+   * Not transactional — the steps are ordered so a partial failure is always
+   * recoverable and never destructive: content lands first, the delete is last,
+   * so a mid-way failure leaves duplicate cards (visible, re-mergeable) rather
+   * than lost content.
+   */
+  async mergeCards(input: {
+    primaryCardId: string;
+    front: string;
+    back: string;
+    mergedCardIds: string[];
+  }): Promise<FcResult<FcCardRow>> {
+    const { primaryCardId, front, back, mergedCardIds } = input;
+    const losers = mergedCardIds.filter((id) => id !== primaryCardId);
+    if (losers.length === 0) {
+      return fail("mergeCards", "Pick at least two cards to merge");
+    }
+    try {
+      const updated = await this.updateCard(primaryCardId, { front, back });
+      if (updated.error) return fail("mergeCards", updated.error);
+
+      // Carry the losers' details onto the survivor (audio helpers, examples,
+      // images, trust rows) — everything the learner already paid for.
+      const { error: detailErr } = await EDU()
+        .from("fc_detail")
+        .update({ card_id: primaryCardId })
+        .in("card_id", losers)
+        .is("deleted_at", null)
+        .neq("kind", "spoken_front");
+      if (detailErr) return fail("mergeCards", detailErr);
+
+      const { error: delErr } = await EDU()
+        .from("fc_card")
+        .update({ deleted_at: new Date().toISOString() })
+        .in("id", losers);
+      if (delErr) return fail("mergeCards", delErr);
+
+      return { data: updated.data, error: null };
+    } catch (e) {
+      return fail("mergeCards", e);
+    }
+  },
+
   async getDetails(cardId: string): Promise<FcResult<FcDetailRow[]>> {
     try {
       const { data, error } = await EDU()

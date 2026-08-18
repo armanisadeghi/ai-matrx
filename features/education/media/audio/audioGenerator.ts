@@ -86,7 +86,12 @@ async function run(
     href: `/education/audio-study/${id}`,
     title,
     trust,
-    detail: "Audio overview",
+    // Honest state: the row exists, the audio does not yet. Audio is the one
+    // streamed target here — everything else in the kit returns finished
+    // content. Marking it `pending` is what stops the kit board claiming a
+    // completed artifact for work that is still running (and may still fail).
+    detail: "Starting — audio is still being produced",
+    pending: true,
   };
 
   // Lineage: link the artifact → its origin (ingest anchor file or entity source).

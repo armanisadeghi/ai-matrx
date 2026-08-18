@@ -122,6 +122,18 @@ export interface ConvertResult {
   trust?: TrustEnvelope | null;
   /** Optional one-line summary of what was produced ("18 cards", "6 nodes"). */
   detail?: string;
+  /**
+   * True when the generator has only STARTED long-running work (the artifact
+   * row exists but its content does not yet). The audio pipeline is streamed,
+   * so it returns immediately with a row at status 'generating' that can still
+   * fail minutes later.
+   *
+   * A surface that reports this as a finished artifact is lying: the study kit
+   * used to render "Audio overview — created" for audio that had not produced a
+   * single byte, and the user was never told when it later errored. Any surface
+   * rendering a ConvertResult MUST branch on this.
+   */
+  pending?: boolean;
 }
 
 /** Context handed to a generator — the Redux plumbing + resolved identity. */

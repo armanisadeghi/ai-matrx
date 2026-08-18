@@ -75,7 +75,13 @@ export interface PortableCard {
 type ExportCard = Pick<
   CardWithDetails,
   "front" | "back" | "card_kind" | "difficulty" | "topic" | "metadata"
->;
+> & { id?: string };
+
+/** Optional per-card state joined in at export time (keyed by card id). */
+export interface DeckExportExtras {
+  schedulingByCardId?: Map<string, PortableScheduling>;
+  mediaByCardId?: Map<string, PortableMediaRef[]>;
+}
 
 function trustOf(card: ExportCard): unknown {
   const meta = card.metadata as Record<string, unknown> | null;
@@ -109,6 +115,7 @@ export function toPortableDeck(
   set: Pick<FcSetRow, "name" | "description" | "topic" | "difficulty">,
   cards: ExportCard[],
   exportedAt: string | null,
+  extras?: DeckExportExtras,
 ): PortableDeck {
   return {
     __format: "matrx.flashcards",
@@ -118,14 +125,20 @@ export function toPortableDeck(
     topic: set.topic ?? null,
     difficulty: set.difficulty ?? null,
     exported_at: exportedAt,
-    cards: cards.map((c) => ({
-      front: c.front,
-      back: c.back,
-      card_kind: c.card_kind ?? null,
-      difficulty: c.difficulty ?? null,
-      topic: c.topic ?? null,
-      trust: trustOf(c) ?? undefined,
-    })),
+    cards: cards.map((c) => {
+      const sched = c.id ? extras?.schedulingByCardId?.get(c.id) : undefined;
+      const media = c.id ? extras?.mediaByCardId?.get(c.id) : undefined;
+      return {
+        front: c.front,
+        back: c.back,
+        card_kind: c.card_kind ?? null,
+        difficulty: c.difficulty ?? null,
+        topic: c.topic ?? null,
+        trust: trustOf(c) ?? undefined,
+        ...(sched ? { scheduling: sched } : {}),
+        ...(media?.length ? { media } : {}),
+      };
+    }),
   };
 }
 
@@ -208,7 +221,12 @@ export function parseDeckJson(raw: string): ParsedPortableDeck | null {
     return null;
   }
   if (!parsed || typeof parsed !== "object") return null;
-  const obj = parsed as Record<string, unknown>;
+  let obj = parsed as Record<string, unknown>;
+  // Tolerant reader: some exports nested deck fields under `set:{}`
+  // (flashcards exportDeck.ts before it delegated here) — flatten them.
+  if (!obj.name && obj.set && typeof obj.set === "object") {
+    obj = { ...(obj.set as Record<string, unknown>), cards: obj.cards };
+  }
   const rawCards = Array.isArray(obj.cards) ? obj.cards : [];
   const cards: PortableCard[] = [];
   for (const rc of rawCards) {

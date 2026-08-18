@@ -25,8 +25,8 @@
 
 import type { NewCardInput } from "@/features/flashcards/data/types";
 import { hasClozeMarkup } from "@/features/flashcards/utils/cardVariants";
-import { supabase } from "@/utils/supabase/client";
 import { persistImportedDeck, type ImportOutcome } from "./importDeck";
+import { seedImportedScheduling } from "./seedScheduling";
 
 /** Unit separator Anki uses to join note fields. */
 const FIELD_SEP = "\x1f";
@@ -97,15 +97,6 @@ interface ParsedAnki {
 function factorToDifficulty(factor: number): number {
   if (!factor || factor <= 0) return 5;
   return Math.min(10, Math.max(1, 5 + (2500 - factor) / 240));
-}
-
-/** Current FSRS retrievability given stability and days elapsed since review. */
-function retrievabilityOf(stabilityDays: number, elapsedDays: number): number {
-  if (stabilityDays <= 0) return 0.9;
-  // FSRS forgetting curve: R = (1 + factor * t/S)^(-decay), classic parameters.
-  const decay = 0.5;
-  const factor = Math.pow(0.9, -1 / decay) - 1;
-  return Math.pow(1 + (factor * Math.max(0, elapsedDays)) / stabilityDays, -decay);
 }
 
 async function parseApkg(bytes: Uint8Array): Promise<ParsedAnki> {
@@ -337,39 +328,23 @@ export async function importAnkiFile(file: File): Promise<ImportOutcome> {
 
   // 4) Seed review history through the ONE sanctioned RPC, so due dates
   //    survive the move. Never overwrites existing Matrx mastery.
-  let seeded = 0;
-  const withSched = parsed.notes
-    .map((n, i) => ({ sched: n.scheduling, cardId: outcome.cardIds[i] }))
-    .filter((x): x is { sched: AnkiScheduling; cardId: string } => !!x.sched && !!x.cardId);
-  if (withSched.length > 0) {
-    const now = Date.now();
-    const items = withSched.map(({ sched, cardId }) => {
-      const elapsedDays = sched.lastReview
-        ? (now - sched.lastReview.getTime()) / 86400000
-        : 0;
-      return {
-        item_id: cardId,
-        due_at: sched.dueAt.toISOString(),
-        stability: sched.stability,
-        difficulty: Number(sched.difficulty.toFixed(2)),
-        retrievability: Number(
-          retrievabilityOf(sched.stability, elapsedDays).toFixed(4),
-        ),
-        lapses: sched.lapses,
-        reps: sched.reps,
-        last_review: sched.lastReview ? sched.lastReview.toISOString() : null,
+  const seeded = await seedImportedScheduling(
+    parsed.notes
+      .map((n, i) => ({ sched: n.scheduling, cardId: outcome.cardIds[i] }))
+      .filter((x): x is { sched: AnkiScheduling; cardId: string } => !!x.sched && !!x.cardId)
+      .map(({ sched, cardId }) => ({
+        cardId,
+        scheduling: {
+          due_at: sched.dueAt.toISOString(),
+          stability: sched.stability,
+          difficulty: sched.difficulty,
+          lapses: sched.lapses,
+          reps: sched.reps,
+          last_review: sched.lastReview ? sched.lastReview.toISOString() : null,
+        },
         source: "anki",
-      };
-    });
-    const { data, error } = await supabase.rpc("edu_import_review_history", {
-      p_items: items,
-    });
-    if (error) {
-      console.error("[importAnki] review-history seed failed:", error);
-    } else {
-      seeded = (data as { seeded?: number } | null)?.seeded ?? 0;
-    }
-  }
+      })),
+  );
 
   const notes: string[] = [];
   if (media.byName.size > 0)

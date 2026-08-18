@@ -16,7 +16,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { importDeckFile, importDelimited, type ImportOutcome } from "../import/importDeck";
+import {
+  importDeckFile,
+  importDelimited,
+  importLibraryJson,
+  importLibraryZip,
+  looksLikeLibraryJson,
+  type ImportOutcome,
+  type LibraryImportOutcome,
+} from "../import/importDeck";
 
 /** Filename check only — kept here so the heavy Anki decoder (jszip + sql.js
  * WASM) is loaded LAZILY, only when an .apkg is actually chosen. */
@@ -30,11 +38,13 @@ export function ImportDeckPanel() {
   const [pasteName, setPasteName] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportOutcome | null>(null);
+  const [libResult, setLibResult] = useState<LibraryImportOutcome | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function runImport(fn: () => Promise<ImportOutcome>) {
     setBusy(true);
     setResult(null);
+    setLibResult(null);
     try {
       const outcome = await fn();
       setResult(outcome);
@@ -49,8 +59,36 @@ export function ImportDeckPanel() {
     }
   }
 
-  const onFile = (file: File) =>
-    runImport(async () => {
+  async function runLibraryImport(fn: () => Promise<LibraryImportOutcome>) {
+    setBusy(true);
+    setResult(null);
+    setLibResult(null);
+    try {
+      const outcome = await fn();
+      setLibResult(outcome);
+      const cards = outcome.decks.reduce((n, d) => n + d.cardCount, 0);
+      toast.success(
+        `Imported ${outcome.decks.length} deck${outcome.decks.length === 1 ? "" : "s"} (${cards} cards)` +
+          (outcome.failed.length ? ` — ${outcome.failed.length} failed` : ""),
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Import failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const onFile = async (file: File) => {
+    if (/\.zip$/i.test(file.name)) {
+      return runLibraryImport(() => importLibraryZip(file));
+    }
+    if (/\.json$/i.test(file.name)) {
+      const text = await file.text();
+      if (looksLikeLibraryJson(text)) {
+        return runLibraryImport(() => importLibraryJson(text));
+      }
+    }
+    return runImport(async () => {
       if (isAnkiFile(file)) {
         // Lazy-load the Anki decoder (jszip + sql.js WASM) only on demand.
         const { importAnkiFile } = await import("../import/importAnki");
@@ -58,6 +96,7 @@ export function ImportDeckPanel() {
       }
       return importDeckFile(file);
     });
+  };
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -101,7 +140,7 @@ export function ImportDeckPanel() {
           <input
             ref={fileRef}
             type="file"
-            accept=".apkg,.csv,.tsv,.txt,.json"
+            accept=".apkg,.csv,.tsv,.txt,.json,.zip"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -114,7 +153,9 @@ export function ImportDeckPanel() {
             <>
               <Upload className="h-6 w-6 text-muted-foreground" />
               <p className="text-sm text-foreground">Drop a file or click to browse</p>
-              <p className="text-xs text-muted-foreground">.apkg · .csv · .tsv · .txt · .json</p>
+              <p className="text-xs text-muted-foreground">
+                .apkg · .csv · .tsv · .txt · .json · library .zip
+              </p>
             </>
           )}
         </div>
@@ -148,6 +189,36 @@ export function ImportDeckPanel() {
 
       {result?.note && (
         <p className="mt-3 text-xs text-muted-foreground">{result.note}</p>
+      )}
+      {libResult && (
+        <div className="mt-3 space-y-1">
+          {libResult.decks.map((d) => (
+            <div
+              key={d.setId}
+              className="flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-1.5"
+            >
+              <div className="flex min-w-0 items-center gap-2 text-sm text-foreground">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 dark:text-green-500" />
+                <EntityRef
+                  token="fc_set"
+                  id={d.setId}
+                  name={d.name}
+                  showIcon={false}
+                  className="truncate"
+                />
+                <span className="shrink-0 text-muted-foreground">· {d.cardCount} cards</span>
+              </div>
+              <Button size="sm" variant="ghost" asChild>
+                <Link href={`/education/flashcards/${d.setId}`}>Open</Link>
+              </Button>
+            </div>
+          ))}
+          {libResult.failed.map((f) => (
+            <p key={f.name} className="text-xs text-destructive">
+              {f.name}: {f.error}
+            </p>
+          ))}
+        </div>
       )}
       {result && (
         <div className="mt-3 flex items-center justify-between rounded-lg border border-border bg-muted/40 px-3 py-2">

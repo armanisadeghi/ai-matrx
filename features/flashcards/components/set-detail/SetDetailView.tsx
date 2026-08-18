@@ -34,7 +34,10 @@ import {
   Boxes,
   Mic,
   Headphones,
+  Merge,
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MergeCardsDialog } from "./MergeCardsDialog";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -139,10 +142,17 @@ function CardPeek({
   card,
   index,
   mastery,
+  selectable = false,
+  selected = false,
+  onToggleSelected,
 }: {
   card: CardWithDetails;
   index: number;
   mastery: ItemMasteryRow | undefined;
+  /** Merge-selection mode: the whole tile becomes a toggle. */
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelected?: () => void;
 }) {
   const hasHelper = card.details.some((d) => d.kind === "helper");
   const hasExample = card.details.some((d) => d.kind === "example");
@@ -152,9 +162,29 @@ function CardPeek({
   const faces = kind === CARD_KIND.cloze ? clozeFaces(card.front) : null;
 
   return (
-    <div className="flex flex-col rounded-lg border border-border bg-card p-3">
+    <div
+      className={cn(
+        "flex flex-col rounded-lg border bg-card p-3",
+        selectable && "cursor-pointer transition-colors",
+        selected
+          ? "border-primary ring-1 ring-primary"
+          : selectable
+            ? "border-border hover:border-primary/50"
+            : "border-border",
+      )}
+      onClick={selectable ? onToggleSelected : undefined}
+      role={selectable ? "button" : undefined}
+      aria-pressed={selectable ? selected : undefined}
+    >
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5">
+          {selectable && (
+            <Checkbox
+              checked={selected}
+              aria-label={`Select card ${index + 1} to merge`}
+              className="h-3.5 w-3.5"
+            />
+          )}
           <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
             Card {index + 1}
           </span>
@@ -253,6 +283,10 @@ export function SetDetailView({ setId }: { setId: string }) {
   const [isPending, startTransition] = useTransition();
   const [enhanceOpen, setEnhanceOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
+  // WP3 gap 5 — card merge selection.
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [mergeOpen, setMergeOpen] = useState(false);
   const [lineageKey, setLineageKey] = useState(0);
   const [masteryByCard, setMasteryByCard] = useState<
     Record<string, ItemMasteryRow | undefined>
@@ -704,16 +738,72 @@ export function SetDetailView({ setId }: { setId: string }) {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {data.cards.map((card, i) => (
-                    <CardPeek
-                      key={card.id}
-                      card={card}
-                      index={i}
-                      mastery={masteryByCard[card.id]}
-                    />
-                  ))}
-                </div>
+                <>
+                  {/* WP3 gap 5 — merge near-duplicate cards (Arman asked for
+                      it by name). Selection is opt-in so a normal visit is
+                      unchanged; the bar states exactly what will happen. */}
+                  {canEdit && (
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      {selecting ? (
+                        <>
+                          <span className="text-xs text-muted-foreground">
+                            {selectedIds.size === 0
+                              ? "Pick the cards to merge"
+                              : `${selectedIds.size} selected`}
+                          </span>
+                          <Button
+                            size="sm"
+                            onClick={() => setMergeOpen(true)}
+                            disabled={selectedIds.size < 2}
+                          >
+                            <Merge className="mr-1.5 h-3.5 w-3.5" />
+                            Merge {selectedIds.size >= 2 ? selectedIds.size : ""}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelecting(false);
+                              setSelectedIds(new Set());
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelecting(true)}
+                          disabled={data.cards.length < 2}
+                        >
+                          <Merge className="mr-1.5 h-3.5 w-3.5" />
+                          Merge cards
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {data.cards.map((card, i) => (
+                      <CardPeek
+                        key={card.id}
+                        card={card}
+                        index={i}
+                        mastery={masteryByCard[card.id]}
+                        selectable={selecting}
+                        selected={selectedIds.has(card.id)}
+                        onToggleSelected={() =>
+                          setSelectedIds((prev) => {
+                            const nextIds = new Set(prev);
+                            if (nextIds.has(card.id)) nextIds.delete(card.id);
+                            else nextIds.add(card.id);
+                            return nextIds;
+                          })
+                        }
+                      />
+                    ))}
+                  </div>
+                </>
               )}
             </div>
 
@@ -725,6 +815,18 @@ export function SetDetailView({ setId }: { setId: string }) {
               setId={setId}
               cards={data.cards}
               onChanged={() => setReloadKey((k) => k + 1)}
+            />
+
+            {/* WP3 gap 5 — merge selected cards into one (editable preview). */}
+            <MergeCardsDialog
+              open={mergeOpen}
+              onOpenChange={setMergeOpen}
+              cards={data.cards.filter((c) => selectedIds.has(c.id))}
+              onMerged={() => {
+                setSelecting(false);
+                setSelectedIds(new Set());
+                setReloadKey((k) => k + 1);
+              }}
             />
 
             {/* Convert this deck into other study artifacts (shared primitive). */}

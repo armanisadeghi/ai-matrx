@@ -8,8 +8,10 @@
 // (`importAnki.ts`) because it needs zip+SQLite decoding.
 //
 // IC-11 (education-platform INTEGRATION_MAP): `persistImportedDeck` is THE one
-// import entry. Every import source — file, paste, Anki, extension capture —
-// lands through it; nothing calls `createSetWithCards` (or the tables) direct.
+// import entry. Every IMPORT source — file, paste, Anki, extension capture —
+// lands through it, never `createSetWithCards` direct. (AI *generation* flows
+// like CreateFromTopic/CreateFromSource are not imports; they may call the one
+// row writer themselves.)
 
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { NewCardInput } from "@/features/flashcards/data/types";
@@ -19,7 +21,12 @@ import {
   type FieldDelimiter,
   type SkippedLine,
 } from "@/features/flashcards/utils/importExportCsv";
-import { parseDeckJson } from "../export/deckFormats";
+import {
+  parseDeckJson,
+  type ParsedPortableDeck,
+  type PortableCard,
+} from "../export/deckFormats";
+import { seedImportedScheduling } from "./seedScheduling";
 
 export interface ImportOutcome {
   setId: string;
@@ -86,12 +93,8 @@ export async function persistImportedDeck(input: ImportedDeckInput): Promise<Imp
   };
 }
 
-/** Import a Matrx portable-JSON export (round-trips deckFormats.buildDeckExport,
- * deck-level fields included). */
-export async function importPortableJson(raw: string): Promise<ImportOutcome> {
-  const parsed = parseDeckJson(raw);
-  if (!parsed) throw new Error("That doesn't look like a Matrx deck export.");
-  const cards: NewCardInput[] = parsed.cards.map((c) => ({
+function portableCardToInput(c: PortableCard): NewCardInput {
+  return {
     front: c.front,
     back: c.back,
     card_kind: c.card_kind ?? undefined,
@@ -99,15 +102,135 @@ export async function importPortableJson(raw: string): Promise<ImportOutcome> {
     topic: c.topic ?? undefined,
     // Preserve the P0 TrustEnvelope on round-trip when present.
     ...(c.trust ? { metadata: { trust: c.trust } } : {}),
-  }));
-  return persistImportedDeck({
+    // Re-attach media refs that already have a durable file id (same-account
+    // round-trip; foreign file ids are refused by the edge write's RLS).
+    ...(c.media?.some((m) => m.file_id)
+      ? {
+          media: c.media
+            .filter((m) => !!m.file_id)
+            .map((m) => ({
+              file_id: m.file_id!,
+              face: m.face,
+              kind: m.kind,
+              source_name: m.source_name,
+            })),
+        }
+      : {}),
+  };
+}
+
+/** Land a parsed portable deck: cards, then scheduling through the seed RPC. */
+async function persistPortableDeck(parsed: ParsedPortableDeck): Promise<ImportOutcome> {
+  const outcome = await persistImportedDeck({
     name: parsed.name,
     description: parsed.description,
     topic: parsed.topic,
     difficulty: parsed.difficulty,
-    cards,
+    cards: parsed.cards.map(portableCardToInput),
     format: "json",
   });
+  const seedItems = parsed.cards
+    .map((c, i) => ({ sched: c.scheduling, cardId: outcome.cardIds[i] }))
+    .filter((x): x is { sched: NonNullable<typeof x.sched>; cardId: string } => !!x.sched && !!x.cardId)
+    .map((x) => ({ cardId: x.cardId, scheduling: x.sched, source: "matrx" }));
+  const seeded = await seedImportedScheduling(seedItems);
+  return seeded > 0
+    ? {
+        ...outcome,
+        note: [outcome.note, `Review history restored for ${seeded} card${seeded === 1 ? "" : "s"} — due dates preserved.`]
+          .filter(Boolean)
+          .join(" "),
+      }
+    : outcome;
+}
+
+/** Import a Matrx portable-JSON export (round-trips deckFormats.buildDeckExport,
+ * deck-level fields, trust, media refs, and review state included). */
+export async function importPortableJson(raw: string): Promise<ImportOutcome> {
+  const parsed = parseDeckJson(raw);
+  if (!parsed) throw new Error("That doesn't look like a Matrx deck export.");
+  return persistPortableDeck(parsed);
+}
+
+/** Cheap sniff: is this JSON text a whole-library export rather than one deck? */
+export function looksLikeLibraryJson(text: string): boolean {
+  try {
+    const parsed = JSON.parse(text) as { sets?: unknown; cards?: unknown } | null;
+    return !!parsed && typeof parsed === "object" && Array.isArray(parsed.sets) && !Array.isArray(parsed.cards);
+  } catch {
+    return false;
+  }
+}
+
+/** Outcome of a multi-deck (library) import. */
+export interface LibraryImportOutcome {
+  decks: ImportOutcome[];
+  failed: { name: string; error: string }[];
+}
+
+/** Import a whole-library JSON (`matrx-flashcards-library` — an array of
+ * portable decks). Each deck lands independently; one bad deck never sinks
+ * the rest. */
+export async function importLibraryJson(raw: string): Promise<LibraryImportOutcome> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("That doesn't look like a Matrx library export.");
+  }
+  const sets =
+    parsed && typeof parsed === "object" && Array.isArray((parsed as { sets?: unknown[] }).sets)
+      ? (parsed as { sets: unknown[] }).sets
+      : null;
+  if (!sets) throw new Error("That doesn't look like a Matrx library export.");
+  const decks: ImportOutcome[] = [];
+  const failed: { name: string; error: string }[] = [];
+  for (const s of sets) {
+    const deck = parseDeckJson(JSON.stringify(s));
+    if (!deck) {
+      failed.push({ name: "(unreadable deck)", error: "no usable cards" });
+      continue;
+    }
+    try {
+      decks.push(await persistPortableDeck(deck));
+    } catch (e) {
+      failed.push({ name: deck.name, error: e instanceof Error ? e.message : "import failed" });
+    }
+  }
+  if (decks.length === 0) {
+    throw new Error("No decks could be imported from that library file.");
+  }
+  return { decks, failed };
+}
+
+/** Import the whole-library ZIP that "Export all" produces
+ * (`matrx-flashcards/<name>.json` per deck + manifest). */
+export async function importLibraryZip(file: File): Promise<LibraryImportOutcome> {
+  const { default: JSZip } = await import("jszip");
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const decks: ImportOutcome[] = [];
+  const failed: { name: string; error: string }[] = [];
+  const entries = Object.values(zip.files).filter(
+    (f) => !f.dir && /\.json$/i.test(f.name) && !/(^|\/)manifest\.json$/i.test(f.name),
+  );
+  if (entries.length === 0) throw new Error("No deck files found in that zip.");
+  for (const entry of entries) {
+    const text = await entry.async("string");
+    const deck = parseDeckJson(text);
+    if (!deck) {
+      failed.push({ name: entry.name, error: "not a readable deck file" });
+      continue;
+    }
+    try {
+      decks.push(await persistPortableDeck(deck));
+    } catch (e) {
+      failed.push({ name: deck.name, error: e instanceof Error ? e.message : "import failed" });
+    }
+  }
+  if (decks.length === 0) {
+    throw new Error("No decks could be imported from that zip.");
+  }
+  return { decks, failed };
 }
 
 /** Import delimited text (Quizlet export, CSV, TSV, or pasted term/def pairs). */
@@ -148,6 +271,11 @@ export async function importDeckFile(file: File): Promise<ImportOutcome> {
   const text = await file.text();
   const baseName = file.name.replace(/\.[^.]+$/, "");
   if (/\.json$/i.test(file.name) || text.trimStart().startsWith("{")) {
+    if (looksLikeLibraryJson(text)) {
+      throw new Error(
+        "That's a whole-library export — use the import panel's zip/library path (or call importLibraryJson), not a single-deck import.",
+      );
+    }
     try {
       return await importPortableJson(text);
     } catch {

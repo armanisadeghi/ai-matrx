@@ -14,6 +14,7 @@
 //    library (account-level) export uses for round-tripping.
 
 import type { CardWithDetails, FcSetRow } from "../data/types";
+import { toPortableDeck } from "@/features/education/onboard/export/deckFormats";
 
 export type DeckExportFormat = "csv" | "anki" | "markdown" | "json";
 
@@ -67,42 +68,28 @@ export function buildDeckMarkdown(
   return parts.join("\n\n") + "\n";
 }
 
-/** Lossless per-deck JSON. */
+/** Lossless per-deck JSON — the canonical IC-11 `PortableDeck` shape
+ * (`education/onboard/export/deckFormats.ts`), which is what the importer
+ * round-trips. Never emit a second JSON deck shape. */
 export function buildDeckJson(
   set: FcSetRow,
   cards: CardWithDetails[],
 ): string {
-  return JSON.stringify(
-    {
-      format: "matrx-flashcards",
-      version: 1,
-      set: {
-        id: set.id,
-        name: set.name,
-        description: set.description ?? null,
-      },
-      cards: cards.map(toExportCard),
-    },
-    null,
-    2,
-  );
+  return JSON.stringify(toPortableDeck(set, cards, new Date().toISOString()), null, 2);
 }
 
-/** Whole-library JSON — every deck the learner owns, one file. */
+/** Whole-library JSON — every deck the learner owns, one file. Each entry is a
+ * canonical `PortableDeck`, so single decks can be re-imported from it. */
 export function buildLibraryJson(
   decks: { set: FcSetRow; cards: CardWithDetails[] }[],
 ): string {
+  const exportedAt = new Date().toISOString();
   return JSON.stringify(
     {
       format: "matrx-flashcards-library",
-      version: 1,
-      exported_at: new Date().toISOString(),
-      sets: decks.map(({ set, cards }) => ({
-        id: set.id,
-        name: set.name,
-        description: set.description ?? null,
-        cards: cards.map(toExportCard),
-      })),
+      version: 2,
+      exported_at: exportedAt,
+      sets: decks.map(({ set, cards }) => toPortableDeck(set, cards, exportedAt)),
     },
     null,
     2,

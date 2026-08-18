@@ -234,12 +234,22 @@ export function NodeStepRail({
   siteId = null,
   pageLabel,
   progress,
+  writeBlockedReason = null,
 }: {
   nodeId: string;
   /** Needed to refresh the site-wide step query after a run. */
   siteId?: string | null;
   pageLabel?: string;
   progress: NodePipelineProgress | null;
+  /**
+   * Why the WRITE step cannot run right now (no brief / no target keyword),
+   * or null when it can. Computed by the panel, which holds the node row and
+   * the site plan index — mirrors `assert_step_preconditions` in aidream's
+   * `page_pipeline.py`, so the refusal is visible BEFORE the click instead of
+   * arriving as a server error after it. The reason names the fix (Door Law:
+   * a disabled control with no explanation is a dead end).
+   */
+  writeBlockedReason?: string | null;
 }) {
   const artifacts = useNodeArtifacts(nodeId);
   const [openArtifact, setOpenArtifact] = useState<PlanNodeArtifactRow | null>(
@@ -295,6 +305,20 @@ export function NodeStepRail({
           const runnable = isRunnableStep(step)
             ? (step as RunnablePipelineStep)
             : null;
+          // The server refuses these anyway (`assert_step_preconditions`);
+          // surfacing the same refusal here means the user reads WHY before
+          // the click, not as an error after it. Review's input lives in the
+          // artifacts this rail already reads; Write's lives on the node row,
+          // so the panel hands it in.
+          const blockedReason =
+            runnable === "p4_write"
+              ? writeBlockedReason
+              : runnable === "p5_review" &&
+                  !artifactsByStep
+                    .get("p4_write")
+                    ?.some((a) => a.valid_to === null)
+                ? "Nothing to review yet — this page has no written content. Run “Write content” first."
+                : null;
           const busyHere =
             stepRun.isRunning && stepRun.run.step === runnable && runnable;
           return (
@@ -334,12 +358,19 @@ export function NodeStepRail({
                   type="button"
                   variant="ghost"
                   size="sm"
+                  // A truly `disabled` button swallows hover, so the reason
+                  // would never surface — aria-disabled keeps the tooltip
+                  // alive while the guard stops the run.
                   disabled={stepRun.isRunning}
-                  onClick={() => void stepRun.start(runnable)}
+                  aria-disabled={blockedReason !== null}
+                  onClick={() =>
+                    blockedReason === null && void stepRun.start(runnable)
+                  }
                   title={
-                    staleness
+                    blockedReason ??
+                    (staleness
                       ? `${stalenessTitle(label, staleness)} (${RUNNABLE_STEP_ACTIONS[runnable].action})`
-                      : `${RUNNABLE_STEP_ACTIONS[runnable].action} — ${RUNNABLE_STEP_ACTIONS[runnable].explains}`
+                      : `${RUNNABLE_STEP_ACTIONS[runnable].action} — ${RUNNABLE_STEP_ACTIONS[runnable].explains}`)
                   }
                   aria-label={`${RUNNABLE_STEP_ACTIONS[runnable].action} for this page`}
                   className={cn(
@@ -347,6 +378,8 @@ export function NodeStepRail({
                     // The detected problem's one-click fix — so it reads as the
                     // thing to press, not as an ambient re-run.
                     staleness && "text-amber-600 dark:text-amber-400",
+                    blockedReason !== null &&
+                      "cursor-not-allowed opacity-40 hover:bg-transparent",
                   )}
                 >
                   {busyHere ? (
