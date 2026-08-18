@@ -33,8 +33,8 @@ select
   'public'
 from (values
   (
-    'conversation.vision_extractor',
-    'Conversation Vision Extractor',
+    'conversation.vision_interviewer',
+    'Conversation Vision Interviewer',
     'Everything the user said and wanted in a conversation, done vs not done. Launched from the "What you asked for" analysis action on AI Work conversation surfaces.',
     'b63edf56-97d8-45f9-bc4f-b62e22902c09'
   ),

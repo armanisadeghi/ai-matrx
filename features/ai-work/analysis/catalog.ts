@@ -13,7 +13,7 @@
  * `conversations` tool, so the launch passes exactly one runtime variable.
  *
  * Labels are plain language on purpose — the person clicking is a
- * non-technical expert, not an AI engineer. No "extractor", "auditor", or
+ * non-technical expert, not an AI engineer. No "interviewer", "auditor", or
  * "ledger" jargon reaches the UI.
  */
 
@@ -32,7 +32,7 @@ export const CONVERSATION_ANALYSIS_KINDS: readonly ConversationAnalysisKind[] =
   [
     {
       key: "vision",
-      mandateKey: "conversation.vision_extractor",
+      mandateKey: "conversation.vision_interviewer",
       label: "What you asked for",
       description:
         "Collects everything you said you wanted in this conversation, and shows which of it was done and which was not.",
