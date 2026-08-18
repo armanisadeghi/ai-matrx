@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-17` (Plan/SEO-tab prose corrected to the shipped invariant-9 state; `useCmsPagePlanContext` re-pointed at the one SEO-plan store)
+**Last updated:** `2026-08-18` (site-structure caches now wait for a successful site access read)
 
 ---
 
@@ -119,6 +119,8 @@ list, never the site tree; the two content systems never share a framing shape. 
 (`app/(core)/cms/[siteId]/SiteLayoutClient.tsx`) caches `pages`/`components` per site so every child
 route rebuilds the XML from the same in-memory list instead of refetching on every keystroke —
 `refreshPages()`/`refreshComponents()` after any create/update/delete/publish/discard/rollback.
+The initial cache reads begin only after `getSite` succeeds. A missing or denied
+site is one Access Gate outcome, never two additional page/component cache errors.
 
 **Per-surface agent-context files** live under `features/cms/agent-context/` (`features/html-pages/agent-context/`
 for the standalone system): `build<Surface>ContextData.ts` (pure `contextData` builder →
@@ -511,6 +513,10 @@ UI-complete here but only take effect once P1's service layer reads them.
 ---
 
 ## Change log
+
+- `2026-08-18` — `SiteLayoutClient` now establishes site access before loading
+  its page/component `site_structure` caches, so an expected missing/denied site
+  reaches Access Gate without emitting two dependent red console errors.
 
 - `2026-08-17` — **The page editor's SEO tab gained THE SEO plan, above the
   values it serves.** `components/PageSeoPlanSection.tsx` mounts the ONE

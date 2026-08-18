@@ -228,10 +228,29 @@ export default function SiteLayoutClient({
   }, [siteId]);
 
   useEffect(() => {
-    fetchSite();
-    refreshPages();
-    refreshComponents();
-  }, [fetchSite, refreshPages, refreshComponents]);
+    let active = true;
+    void Promise.resolve().then(async () => {
+      if (active) await fetchSite();
+    });
+    return () => {
+      active = false;
+    };
+  }, [fetchSite]);
+
+  useEffect(() => {
+    // Pages and components belong to the loaded site. Waiting for that owner
+    // read prevents an expected missing/denied site from spawning two noisy
+    // dependent failures while AccessGate handles the real refusal.
+    if (site?.id !== siteId) return;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      return Promise.all([refreshPages(), refreshComponents()]);
+    });
+    return () => {
+      active = false;
+    };
+  }, [site, siteId, refreshPages, refreshComponents]);
 
   useEffect(() => {
     CmsSiteService.listSites()
