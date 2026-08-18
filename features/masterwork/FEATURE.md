@@ -16,6 +16,64 @@
 
 ## Status
 
+- 🚨 **THE ONE CANONICAL MASTERWORK SYSTEM — the Conductor (2026-08-18).** Arman: _"This
+  rulebook thing is one of many methods to extract an expert's knowledge… **We need one
+  system to build all of this.** … **the only thing that ever makes a Masterwork is our one
+  single canonical Masterwork system.** And all we do is we go to that system and we attach
+  what we already have."_ The Rulebook page's primary action is now **Make a Masterwork**,
+  and it opens a real STREAMING CONVERSATION with the **Conductor** — Mandate
+  `masterwork.conductor` (agent `c7126299-…`, Claude Opus 5, tools `rulebook` ·
+  `workflow_catalog` · `workflow_author` · `workflow_plan`), on the same agent-execution +
+  conversation machinery as `/chat` and the Scout. Never a form, never a modal, never a
+  progress box: _"Everything should just stream anyway. I'm sick of you hiding everything
+  and not letting me just talk to the agent."_
+
+  **The five properties that make it the system rather than a chat window:**
+  1. **ATTACHMENTS, not a hardcoded input.** A Rulebook is ONE attachable kind among many —
+     the Conductor receives `attachments` (`[{entity_token, id, name}]`) as a NAMED
+     variable, and adding an attachable kind changes that list, not the component. The
+     session itself is a canonical association: `conversation --(role 'conducting')-->
+     rulebook`, on the same registered pair the Scout's `interview` edge uses. **Every
+     reader must filter on the role** — an interview is the Expert's own words and feeds the
+     Record; a Conductor session is a build conversation ABOUT the rules and must never be
+     mistaken for something the Expert said (`record/service.ts` was fixed to filter, in the
+     same change).
+  2. **It learns what the platform can actually do** from `workflow_catalog
+     action=list_node_types` — the LIVE registry, so the capability list is never a
+     hardcoded lie in a prompt.
+  3. **It POKES HOLES — the heart.** For every input the method needs it says out loud where
+     that input comes from, in exactly one of three buckets: **(a)** I can supply it — naming
+     the real step; **(b)** I must ask you — one concrete question with options and a
+     recommendation; **(c)** this belongs to a specialist agent.
+  4. **An unresolved input becomes a real `plan.step` Plan** (worked with `workflow_plan`),
+     **never an invented text box.** This is the mechanism that stops "two text boxes and a
+     rubric" from ever being called a Masterwork again.
+  5. **It is allowed to REFUSE**, naming what is missing, what would fix it, and what it
+     could honestly build today.
+
+  **Files:** `conduct/ConductorPanel.tsx` (THE ONE implementation — panel + full-page route
+  both render `ConductorContent`) · `conduct/service.ts` (the attachment shape, the
+  `conducting` edge, the session list) · route `app/(core)/masterwork/[id]/conduct/page.tsx`
+  (`?conversation=` · `?new=1`; the page opener is `?conduct=1`). Declared as agent role
+  `conductor` on the existing `matrx-user/masterwork-rulebook` surface — the Conductor is
+  another agent on the Rulebook surface, not a second surface to keep in sync.
+
+  **Live-proved on Arman's real SEO Rulebook (`8d1d4f08-…`, 28 approved rules), signed in as
+  admin against the production backend.** It read the Rulebook, made 8 `workflow_catalog`
+  calls, and returned a rule-by-rule verdict: (a) page content, site crawl, live Google
+  results and the judgment work — each naming the rules it covers; (b) four gaps, of which
+  the sharpest is one no rubric would ever have found — _"All 28 of your rules describe how
+  to judge, categorize, and validate a keyword. Not one of them says where the candidates
+  originate."_ It also surfaced two real PLATFORM defects while doing it: the Google search
+  step's output schema drops the People-Also-Ask box (which a `critical` rule calls a
+  mandatory source), and the Search Console step returns a load receipt rather than the
+  keyword rows.
+
+  **The older TEMPLATE Build is not deleted and is not the primary action.** `build/` +
+  aidream `services/masterworks/build.py` fill one of two fixed shapes with no questions
+  asked; they now sit in the header's **More** menu as **Build from template**, named for
+  what they are, until the Conductor supersedes them outright.
+
 - 🚨 **THE RULEBOOK PAGE HAS FOUR THINGS ON IT — the page IA is now LAW (2026-08-18).**
   Five lanes had each added their own card/button to `/masterwork/[id]` and nobody ever
   looked at the whole page. Arman: _"every time we add a new piece of UI, some bullshit is
@@ -26,7 +84,7 @@
 
   | # | Section | Owns | Never holds |
   | --- | --- | --- | --- |
-  | 1 | **Header card** (`RulebookDetailPage`) | Identity (name, description, citation, version + status badges), ONE primary action **Build a Masterwork**, a **More** menu (Systems · Final checkup · Mark as ready), the KPI tiles + progress bar + **ONE** line, and the review actions when drafts are waiting | Any way to feed the Rulebook; any second sentence under the bar |
+  | 1 | **Header card** (`RulebookDetailPage`) | Identity (name, description, citation, version + status badges), ONE primary action **Make a Masterwork** (the Conductor), a **More** menu (Systems · Build from template · Final checkup · Mark as ready), the KPI tiles + progress bar + **ONE** line, and the review actions when drafts are waiting | Any way to feed the Rulebook; any second sentence under the bar |
   | 2 | **Sources** (`RulebookInputsSection`) | EVERY input: interviews (list), attached documents/files/links/workspace things, **Your words** (the record — its ONE entry point on this page), **Add ▾** (a document · published work · AI chats), **New interview**, and **Turn this into rules** | — |
   | 3 | **Understudy** (`UnderstudyCard`) | The system that already runs, and trying it | — |
   | 4 | **Rules** | Search · **Add rule** · the grouped rule list (+ per-group "Add here") | Any source/import/interview button |

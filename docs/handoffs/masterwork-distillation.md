@@ -21,6 +21,31 @@
 
 ## STATUS — live and verified (compressed)
 
+- **🚨 THE ONE CANONICAL MASTERWORK SYSTEM IS NOW A CONVERSATION — the Conductor
+  (2026-08-18).** Arman: _"We need one system to build all of this… the only thing that
+  ever makes a Masterwork is our one single canonical Masterwork system. And all we do is
+  we go to that system and we attach what we already have."_ + _"Everything should just
+  stream anyway. I'm sick of you hiding everything and not letting me just talk to the
+  agent."_ **Shipped:** Mandate `masterwork.conductor` → agent `c7126299-…` (Opus 5;
+  tools `rulebook` · `workflow_catalog` · `workflow_author` · `workflow_plan`, instructions
+  in the DB only), `features/masterwork/conduct/` (ONE implementation behind both the
+  Rulebook-page panel and `/masterwork/[id]/conduct`), the `conversation --(conducting)-->
+  rulebook` edge, agent role `conductor` on `matrx-user/masterwork-rulebook`. The header's
+  primary action is now **Make a Masterwork**; the template Build moved into **More** as
+  **Build from template** (NOT deleted — it is superseded, not gone; never extend it).
+  **Live-proved as admin on Arman's SEO Rulebook `8d1d4f08-…` against production**: read
+  the Rulebook, 8 `workflow_catalog` calls, then a rule-by-rule (a)/(b)/(c) verdict whose
+  best line is one no template could reach — _"All 28 of your rules describe how to judge,
+  categorize, and validate a keyword. Not one of them says where the candidates
+  originate."_ Two fixes landed with it: the Record's interview reader now filters edges on
+  `role` (a Conductor session must never be read as the Expert's own words), and the shared
+  variable-display rule renders an attachment list as DOORS instead of raw JSON with UUIDs
+  in it.
+  **Open:** two real platform defects the Conductor found and filed — the Google search
+  node drops the People-Also-Ask box (a `critical` SEO rule calls it a mandatory source),
+  and the Search Console node returns a load receipt rather than the keyword rows. Until
+  those close, the Conductor honestly parks both as gaps rather than faking them.
+
 - **🚨 THE EXPERT NOW OWNS THE AGENTS THEIR BUILD AUTHORS (2026-08-18, aidream).** Build was
   creating every Masterwork's Maker / Editor / Chief through the **platform-builtin** path, so
   they landed `agent_type='builtin'`, `created_by` NULL, in the ownerless **Matrx System org**,

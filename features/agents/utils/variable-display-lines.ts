@@ -26,7 +26,13 @@
 //   4. A bare UUID that resolves to nothing is DROPPED. An id the user can
 //      neither read nor open is noise, not information — and it is banned by
 //      both rules at once.
-//   5. Everything else renders as text.
+//   5. An ATTACHMENT LIST — a value that is (or parses to) an array of
+//      `{entity_token, id, name?}` — becomes ONE entity line per item. A
+//      surface that hands an agent "here is what is on the table" (the
+//      Masterwork Conductor's `attachments`) was otherwise printing raw JSON
+//      with UUIDs in it to a non-technical Expert: rule 3's leak, wearing a
+//      list. Same answer as rule 3 — every attachment is a door.
+//   6. Everything else renders as text.
 
 import {
   formatVariableDisplayName,
@@ -72,6 +78,46 @@ function resolveEntityVariable(
 }
 
 /**
+ * An ATTACHMENT LIST is the platform's "here is what is on the table" shape:
+ * `[{entity_token, id, name?}]`, sent as an array or as its JSON string (a
+ * Mandate variable is a scalar on the wire). Each item names a real record, so
+ * each item is a DOOR — never a line of JSON with a UUID in it.
+ *
+ * Returns null when the value is not that shape, so every other value falls
+ * through to the rules above unchanged.
+ */
+function resolveAttachmentList(
+  value: unknown,
+): { token: string; id: string }[] | null {
+  let parsed: unknown = value;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed.startsWith("[")) return null;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch {
+      return null;
+    }
+  }
+  if (!Array.isArray(parsed) || parsed.length === 0) return null;
+
+  const refs: { token: string; id: string }[] = [];
+  for (const item of parsed) {
+    if (typeof item !== "object" || item === null) return null;
+    const raw = item as Record<string, unknown>;
+    const rawToken = raw.entity_token ?? raw.entityToken;
+    const rawId = raw.id;
+    if (typeof rawToken !== "string" || typeof rawId !== "string") return null;
+    if (!UUID_RE.test(rawId.trim())) return null;
+    const token = resolveEntityToken(rawToken);
+    // An attachment we cannot open is dropped, exactly like a bare id.
+    if (!tryGetEntityInfo(token)) continue;
+    refs.push({ token, id: rawId.trim() });
+  }
+  return refs.length > 0 ? refs : null;
+}
+
+/**
  * Turn a conversation's launch variables into the lines a human should see.
  * Consumed by every display path — the first-turn strip on the user bubble and
  * the text-only recovery surfaces.
@@ -85,6 +131,20 @@ export function buildVariableDisplayLines(
     if (/^__.*__$/.test(key)) continue;
     if (value == null || value === "") continue;
     if (Array.isArray(value) && value.length === 0) continue;
+
+    const attachments = resolveAttachmentList(value);
+    if (attachments) {
+      attachments.forEach((entity, index) => {
+        lines.push({
+          key: `${key}:${entity.token}:${entity.id}`,
+          label:
+            index === 0 ? formatVariableDisplayName(key) || key : "",
+          entity,
+          text: "",
+        });
+      });
+      continue;
+    }
 
     const entity = resolveEntityVariable(key, value);
     if (entity) {
