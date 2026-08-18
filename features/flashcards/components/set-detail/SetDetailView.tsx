@@ -710,6 +710,7 @@ export function SetDetailView({ setId }: { setId: string }) {
                 setId={setId}
                 set={data.set}
                 cards={data.cards}
+                onCardsChanged={() => setReloadKey((k) => k + 1)}
                 onFileIdChange={(fileId) =>
                   setData((prev) =>
                     prev
