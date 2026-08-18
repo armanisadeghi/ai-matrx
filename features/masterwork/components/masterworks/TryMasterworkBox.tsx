@@ -31,6 +31,7 @@ import { adoptForeignStream } from "@/features/agents/redux/execution-system/thu
 import { attachWorkflowRun } from "@/features/agents/redux/execution-system/thunks/attach-workflow-run";
 import {
   followWorkflowRunStream,
+  TERMINAL_RUN_EVENTS,
   type WorkflowRunWireEvent,
 } from "@/features/agents/redux/execution-system/thunks/follow-workflow-run-stream";
 import { RichDocument } from "@/features/rich-document/RichDocument";
@@ -228,7 +229,7 @@ export function TryMasterworkBox({
         ),
       );
     }
-    if (event.event === "run_completed" || event.event === "run_failed" || event.event === "run_cancelled") {
+    if (TERMINAL_RUN_EVENTS.has(event.event)) {
       const runId = runIdRef.current;
       if (event.event !== "run_completed") {
         void failRunRef.current(runId, event.error_message ?? null);

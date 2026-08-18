@@ -363,6 +363,9 @@ rulebook.version` → the Masterworks page flags "rebuild" AND opens the rule-le
   sessionStorage (`matrx.masterwork.run.<masterworkId>`), and on mount the run row decides:
   still going → `attachWorkflowRun` (the execution system's rejoin primitive; the SSE feed
   replays the node lifecycle so the stage list rebuilds), finished → the verdict shows directly.
+  Its live-event choreography consumes the execution system's canonical `TERMINAL_RUN_EVENTS`
+  set; it must never maintain a narrower local list that misses `run_errored` and waits for the
+  row-poll recovery backstop.
 - `components/masterworks/AuditionDialog.tsx` — "Compare to the original" (the Audition). Opens
   prefilled with a finished run's own output when launched from the verdict, empty from the card.
   Streams `POST /masterworks/audition`; verdict event `masterwork_audition_verdict`.
