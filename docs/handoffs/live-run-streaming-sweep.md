@@ -1,11 +1,19 @@
 ---
 status: active
-updated: 2026-08-15
-repos: [matrx-frontend]
+updated: 2026-08-18
+repos: [matrx-frontend, aidream]
 vision: [features/window-panels/FEATURE.md]
 ---
 
 # THE FLOATING LAW — ranked offender inventory
+
+> **State, 2026-08-18.** Every ranked section (§1–§8) is DONE. What is left is
+> three named things, and nothing else: (a) the flashcard run emits no chunks at
+> all — chipped, needs aidream; (b) `useResearchStream` still hand-renders its
+> stream and must move onto `adoptForeignStream` — chipped; (c) D170's kind
+> question, which is **Arman's call** and must not be started by an agent. The
+> XML-wrapper half of D170 was fixed 2026-08-18 in the canonical pipeline.
+> Keep this doc only until (a) and (b) land.
 
 The companion worklist to [`live-stream-everywhere.md`](./live-stream-everywhere.md).
 That doc holds the vision, the primitives, and the migration recipe. **This doc is
@@ -25,6 +33,12 @@ content the user is editing), and **a run that dies on refresh is the same
 defect as a spinner**.
 
 ## Classes
+
+🚨 **This table is the ORIGINAL 2026-08-11 inventory, not a live count.** The
+counts below were never decremented as work landed — the *sections* are the
+delivery record, and every ranked section (§1–§8) is now DONE or chipped. Read a
+row here as "what the sweep found", never as "what is left"; do not quote these
+numbers as remaining work.
 
 | Class | Meaning | Count |
 |---|---|---|
@@ -244,6 +258,42 @@ fallback distractor source, never rendered — see Class E below).
    the exemplar and will light up the moment that path does, but **as of today
    both screens still show a spinner.** Do not re-cite `CreateFromTopic` as
    proof until this is fixed.
+
+   **Diagnosed 2026-08-18 — it was TWO independent defects, and the first is
+   FIXED.** Re-measured live on `/education/flashcards/new`, both halves
+   proven with instrumentation rather than inference:
+
+   - ✅ **THE WRAPPED-PAYLOAD CLASS (fixed, `abad51c24`).** The generator is a
+     structured-output agent whose answer the artifact system wraps —
+     `<artifact type="flashcards" …>` + a minified `{"__kind":"flashcard_set",…}`
+     body (verified against the persisted `chat.message` row). The accumulator
+     opened content-ir regions for **fences and bare JSON only**; an
+     attribute-XML region swallowed every body line whole, and the XML-surface
+     convergence hook is explicitly gated `!isAttrXml`. So no region, no
+     `metadata.__ir`, and `selectKindEnvelope` answered null for the whole run
+     AND after it. An attr-XML body that opens as JSON now feeds the kind parser
+     exactly like a bare JSON region, fragment path included.
+     **This is the same root cause as D170's `<image_prompt>` half** — fixing it
+     in the canonical pipeline covers every wrapped payload, not just this one.
+     Rendering is deliberately unchanged: `applyIrKindRoute` refuses to re-type
+     an `artifact` block, so the artifact system keeps its renderer and its door
+     to the Canvas; the envelope is data for selectors, not a route. Pinned with
+     real production bytes: `__tests__/artifact-wrapped-payload-live-stream.test.ts`
+     (envelope present mid-stream WITH CARDS, complete at the end, block still
+     `type: "artifact"`).
+   - ❌ **Nothing streams at all — still open, chipped.** With the envelope
+     fixed the preview is *still* blank, because the run emits no chunks:
+     logging the component's Redux read across a full run showed the request row
+     present and `activeRequestId` correct throughout, but
+     `renderBlockOrder.length === 0` for the entire ~15s run, jumping to 1 only
+     at the end. No `upsertRenderBlock` fires mid-run. That is upstream of the
+     envelope — agent/provider config or a post-hoc artifact wrap — and needs
+     aidream. **The accumulator test proves the FE half produces mid-stream
+     envelopes the moment chunks actually arrive.**
+   - Also found: `generateFromSource`'s bound `output_schema` has **no `__kind`
+     at all** and still uses the legacy `set_title` key, so `CreateFromSource`
+     cannot produce a `flashcard_set` envelope even once streaming works.
+     Folded into the same chip.
 2. **The enrich / expand / spoken-grader agents emit kind-less JSON**, so their
    (now live) runs render a raw JSON code block — the exact developer artifact
    our non-technical user must never see. `EnhanceSetDialog` binds its display
@@ -273,8 +323,14 @@ string-valued `extra`, no `stat` layouts) and the card stopped hand-rendering
 the same two values the one-shot runner took — **pass them**, don't silently drop
 them.
 
-Still open on this file: `AnalysisList.tsx:703` truncates its live stream to 200
-characters.
+Still open on this file: `AnalysisList.tsx:703` hand-renders its live stream as
+200 truncated characters beside a spinner — a bespoke renderer, not just a
+truncation. The fix is not local: `useResearchStream` consumes the pipeline
+`Response` itself, so the HOOK must be the thing that adopts
+(`adoptForeignStream`, domain events on `onEvent`, content from
+`activeRequests`), and it is shared by every research operation. **Chipped
+2026-08-18** as its own session — a half-migration of that hook would break
+search/scrape/synthesize with it.
 
 ### 5. Podcasts — DONE 2026-08-11 (all three), one payload question left for Arman
 
