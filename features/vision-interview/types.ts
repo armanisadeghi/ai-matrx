@@ -368,6 +368,26 @@ export function roleFromNodeId(nodeId: string | null | undefined): RoleKey | nul
   return null;
 }
 
+/**
+ * Roles running as SILENT OBSERVERS in the session's current round, read from
+ * the server's round stamp (`metadata.active_round_roles.modes` — stamped at
+ * round start; observers write no turn rows and must never render as
+ * speakers). Empty set when no stamp is present.
+ */
+export function observerRoles(
+  session: Pick<InterviewSessionRow, "metadata"> | null,
+): Set<RoleKey> {
+  const stamp = session?.metadata?.["active_round_roles"];
+  if (!stamp || typeof stamp !== "object") return new Set();
+  const modes = (stamp as { modes?: Record<string, unknown> }).modes;
+  if (!modes || typeof modes !== "object") return new Set();
+  const out = new Set<RoleKey>();
+  for (const [role, mode] of Object.entries(modes)) {
+    if (mode === "observer" && role in ROLES) out.add(role as RoleKey);
+  }
+  return out;
+}
+
 // ── Stage metadata ──────────────────────────────────────────────────────────
 // ONE frontend mirror of the backend's stage table (aidream v2 contract):
 // each working stage has a label, the primary role that speaks in it (one

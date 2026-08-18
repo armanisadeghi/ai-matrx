@@ -27,7 +27,13 @@ import {
   selectTurnsOrdered,
 } from "../redux/vision-interview.slice";
 import type { ResumeInput } from "../hooks/useInterviewRun";
-import { ROLE_ORDER, ROLES, roleFromNodeId } from "../types";
+import {
+  observerRoles,
+  ROLE_ORDER,
+  ROLES,
+  roleFromNodeId,
+  type RoleKey,
+} from "../types";
 import { Composer } from "./Composer";
 import { LiveTurnCard } from "./LiveTurnCard";
 import { NextQuestionsStrip } from "./NextQuestionsStrip";
@@ -39,6 +45,18 @@ import type { WorkflowNodeStreamEntry } from "@/features/agents/types/request.ty
 // Stable empty result while no run has been adopted — a fresh [] per call
 // would re-render the pane on every store change.
 const EMPTY_NODE_STREAMS: WorkflowNodeStreamEntry[] = [];
+
+/** True while any observer-mode role node is still streaming its silent pass. */
+function activeObserverBusy(
+  streams: readonly WorkflowNodeStreamEntry[],
+  silent: ReadonlySet<RoleKey>,
+): boolean {
+  return streams.some((s) => {
+    if (s.status !== "streaming") return false;
+    const role = roleFromNodeId(s.nodeId);
+    return role !== null && silent.has(role);
+  });
+}
 const NO_NODE_STREAMS = () => EMPTY_NODE_STREAMS;
 
 interface TranscriptPaneProps {
@@ -68,16 +86,25 @@ export function TranscriptPane({
   // moment the persisted turn for that role lands in the current round (the
   // TurnCard above takes over) or the node settles via the events feed —
   // whichever arrives first, so the text never renders twice.
+  // SILENT OBSERVERS (v2 §10): a role running in observer mode this round
+  // never renders as a speaker — its structured eagerness output streamed
+  // straight into the transcript as raw JSON before this filter existed
+  // (Arman's live session, 2026-08-18). Observers surface only as the quiet
+  // "taking notes" line below; their effects arrive via questions/document.
+  const silentRoles = observerRoles(session);
   const liveCards = nodeStreams.flatMap((stream) => {
     if (stream.status !== "streaming") return [];
     const role = roleFromNodeId(stream.nodeId);
     if (!role) return []; // router/gate/apply nodes — not transcript speakers
+    if (silentRoles.has(role)) return [];
     const persisted = turns.some(
       (t) => t.speaker === role && t.round >= currentRound,
     );
     if (persisted) return [];
     return [{ stream, role }];
   });
+  const observersBusy =
+    activeObserverBusy(nodeStreams, silentRoles) && liveCards.length === 0;
 
   // MOTION BEFORE TOKENS: node_started fires seconds before the first token
   // frame arrives (and the ephemeral token wire is best-effort). The active
@@ -86,6 +113,7 @@ export function TranscriptPane({
   const activeSpeaker = useAppSelector(selectActiveSpeaker);
   const showThinkingPlaceholder =
     activeSpeaker !== null &&
+    !silentRoles.has(activeSpeaker) &&
     !liveCards.some((c) => c.role === activeSpeaker) &&
     !turns.some((t) => t.speaker === activeSpeaker && t.round >= currentRound);
 
@@ -164,6 +192,11 @@ export function TranscriptPane({
                 round={currentRound}
               />
             ))}
+            {observersBusy && !showThinkingPlaceholder && (
+              <p className="px-1 py-1.5 text-xs italic text-muted-foreground">
+                The room is quietly taking notes…
+              </p>
+            )}
             {showThinkingPlaceholder && activeSpeaker && (
               <div className="flex gap-2.5 px-1 py-1.5">
                 <RoleAvatar role={activeSpeaker} speaking />

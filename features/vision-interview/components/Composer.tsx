@@ -57,7 +57,7 @@ import {
   selectRunError,
   selectRunPhase,
 } from "../redux/vision-interview.slice";
-import { ROLE_ORDER, ROLES, type RoleKey } from "../types";
+import { observerRoles, ROLE_ORDER, ROLES, type RoleKey } from "../types";
 import type { ResumeInput } from "../hooks/useInterviewRun";
 import { RoleAvatar } from "./RoleAvatar";
 
@@ -253,9 +253,11 @@ export function Composer({ sessionId, onResume, onStart }: ComposerProps) {
             )}
             aria-hidden
           />
-          {speakerMeta
-            ? `${speakerMeta.name} is speaking`
-            : "The room is working"}
+          {speakerMeta && activeSpeaker && observerRoles(session).has(activeSpeaker)
+            ? `${speakerMeta.name} is quietly taking notes`
+            : speakerMeta
+              ? `${speakerMeta.name} is speaking`
+              : "The room is working"}
           {hasDraft && " — your message sends on your turn"}
         </p>
       ) : runPhase === "error" && runError ? (
