@@ -469,53 +469,24 @@ const nextConfig = {
             { source: '/transcript-studio', destination: '/transcripts/studio', permanent: true },
             { source: '/transcription/mobile/:path*', destination: '/transcripts/scribe/:path*', permanent: true },
             { source: '/transcription/mobile', destination: '/transcripts/scribe', permanent: true },
-            // Entity-isolation migration (Phase 2+): legacy entity-bound routes
-            // moved under /legacy/* so they can boot through the entity-aware
-            // store/providers without bloating slim chunks. Old URLs are 307'd
-            // to keep bookmarks + external links working until internal links
-            // are fully audited; promote to permanent in a follow-up.
-            // See ~/.claude/plans/the-entity-system-which-bubbly-wind.md
-            // Whole-route entity moves (route exclusively used entities).
-            { source: '/entity-crud/:path*', destination: '/legacy/entity-crud/:path*', permanent: false },
-            { source: '/entity-crud', destination: '/legacy/entity-crud', permanent: false },
+            // The 30 `/legacy/*` redirects that used to live here were DELETED
+            // 2026-08-18. They were written when entity-bound routes moved into
+            // the `(legacy)` route group — but that group has since been removed
+            // (see the route-group table in CLAUDE.md), so every one of them
+            // 307'd a real URL into a guaranteed 404. `/workflows` was the one
+            // that bit: the new (core) workflows route was unreachable because
+            // this file redirected it to `/legacy/workflows`. Never add a
+            // redirect whose destination is not a route this app compiles.
             // /entities was renamed to /entity-admin under /legacy
-            { source: '/entities/:path*', destination: '/legacy/entity-admin/:path*', permanent: false },
-            { source: '/entities', destination: '/legacy/entity-admin', permanent: false },
-            { source: '/workflow-entity/:path*', destination: '/legacy/workflow-entity/:path*', permanent: false },
-            { source: '/workflow-entity', destination: '/legacy/workflow-entity', permanent: false },
-            { source: '/workflows-new/:path*', destination: '/legacy/workflows-new/:path*', permanent: false },
-            { source: '/workflows-new', destination: '/legacy/workflows-new', permanent: false },
-            { source: '/workflows/:path*', destination: '/legacy/workflows/:path*', permanent: false },
-            { source: '/workflows', destination: '/legacy/workflows', permanent: false },
             // /deprecated/chat moved to /legacy/chat (the "deprecated" prefix dropped)
-            { source: '/deprecated/chat/:path*', destination: '/legacy/chat/:path*', permanent: false },
-            { source: '/deprecated/chat', destination: '/legacy/chat', permanent: false },
             // Surgical subroute moves: entity-using test subfolders that
             // ACTUALLY had URL routes were moved to /legacy/* during the
             // entity-isolation work. The remaining /tests/* and /demo/* paths
             // now redirect to the consolidated /demos/* prefix (see the
             // 2026-05-26 block below). These per-subfolder /legacy/* redirects
             // must remain ABOVE that catch-all so the more-specific match wins.
-            { source: '/tests/advanced-data-table/:path*', destination: '/legacy/tests/advanced-data-table/:path*', permanent: false },
-            { source: '/tests/advanced-data-table', destination: '/legacy/tests/advanced-data-table', permanent: false },
-            { source: '/tests/dynamic-entity-test/:path*', destination: '/legacy/tests/dynamic-entity-test/:path*', permanent: false },
-            { source: '/tests/dynamic-entity-test', destination: '/legacy/tests/dynamic-entity-test', permanent: false },
-            { source: '/tests/dynamic-layouts/:path*', destination: '/legacy/tests/dynamic-layouts/:path*', permanent: false },
-            { source: '/tests/dynamic-layouts', destination: '/legacy/tests/dynamic-layouts', permanent: false },
-            { source: '/tests/fetch-test/:path*', destination: '/legacy/tests/fetch-test/:path*', permanent: false },
-            { source: '/tests/fetch-test', destination: '/legacy/tests/fetch-test', permanent: false },
-            { source: '/tests/forms/:path*', destination: '/legacy/tests/forms/:path*', permanent: false },
-            { source: '/tests/forms', destination: '/legacy/tests/forms', permanent: false },
-            { source: '/tests/relationship-management/:path*', destination: '/legacy/tests/relationship-management/:path*', permanent: false },
-            { source: '/tests/relationship-management', destination: '/legacy/tests/relationship-management', permanent: false },
-            { source: '/demo/component-demo/:path*', destination: '/legacy/demo/component-demo/:path*', permanent: false },
-            { source: '/demo/component-demo', destination: '/legacy/demo/component-demo', permanent: false },
-            { source: '/demo/many-to-many-ui/:path*', destination: '/legacy/demo/many-to-many-ui/:path*', permanent: false },
-            { source: '/demo/many-to-many-ui', destination: '/legacy/demo/many-to-many-ui', permanent: false },
             // /administration/schema-manager depends on entity hooks (SchemaSelect, opsRedux);
             // moved under /legacy/administration so it boots through the entity store/providers.
-            { source: '/administration/schema-manager/:path*', destination: '/legacy/administration/schema-manager/:path*', permanent: false },
-            { source: '/administration/schema-manager', destination: '/legacy/administration/schema-manager', permanent: false },
             // 2026-05-26: Route-group reorganization. All internal demo / test /
             // experimental surfaces consolidated under a single /demos/* URL
             // prefix served from (dev) (auth-required).

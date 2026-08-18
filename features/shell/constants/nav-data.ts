@@ -1515,14 +1515,19 @@ export const primaryNavItems: ShellNavItem[] = [
     ],
   },
   {
-    label: "Workflows",
+    // The external Vite canvas app (apps/workflow-studio) where the GRAPH is
+    // authored. Renamed from "Workflows" 2026-08-18: the in-app /workflows
+    // route is where a workflow is RUN and watched, and two nav rows sharing
+    // one label collided on React's key AND left the user unable to tell the
+    // two destinations apart.
+    label: "Workflow Studio",
     href: WORKFLOWS_APP_URL,
     external: true,
     iconName: "Workflow",
     section: "primary",
     profileMenu: true,
     dashboard: true,
-    description: "Design and automate complex workflows",
+    description: "Design workflow graphs on the canvas (opens the studio app)",
     color: "purple",
   },
 ];

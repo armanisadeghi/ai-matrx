@@ -295,6 +295,37 @@ function parseEdges(raw: Json): WorkflowDefinitionLike["edges"] {
   return edges;
 }
 
+export interface RecentRunSummary {
+  id: string;
+  status: string;
+  createdAt: string;
+}
+
+/**
+ * The newest runs of a workflow, newest first. The builder's preview binds to
+ * one of these so an author sees their real data, not a drawing of it. A
+ * handful is all any surface needs — never a completeness read.
+ */
+export async function listRecentRuns(
+  definitionId: string,
+  limit = 8,
+): Promise<RecentRunSummary[]> {
+  const { data, error } = await supabase
+    .schema("workflow")
+    .from("run")
+    .select("id,status,created_at")
+    .eq("definition_id", definitionId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    status: row.status,
+    createdAt: row.created_at,
+  }));
+}
+
 /**
  * The definition a run belongs to — how a `?run=` deep link (or a mid-run
  * refresh) restores the workflow context it was started from. Null when the
