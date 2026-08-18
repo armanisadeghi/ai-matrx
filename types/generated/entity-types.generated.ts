@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 385 active entity tokens. A token here is FK-valid for
+// 386 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -207,6 +207,7 @@ export type EntityTypeToken =
   | "mandate_binding"
   | "mandate_exemplar"
   | "marketing_initiative"
+  | "masterwork_corpus_item"
   | "masterwork_run"
   | "membership"
   | "message"
@@ -589,6 +590,7 @@ export type ComponentEntityToken =
   | "interview_hole"
   | "interview_question"
   | "interview_turn"
+  | "masterwork_corpus_item"
   | "masterwork_run"
   | "message"
   | "party_contact_point"
@@ -854,6 +856,7 @@ export type ScopeableEntityToken =
   | "mandate_binding"
   | "mandate_exemplar"
   | "marketing_initiative"
+  | "masterwork_corpus_item"
   | "masterwork_run"
   | "membership"
   | "message"
@@ -1285,6 +1288,7 @@ export const ENTITY_TYPE_METADATA = {
   "mandate_binding": { token: "mandate_binding", schema: "agent", table: "mandate_binding", label: "Mandate Binding", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "mandate_exemplar": { token: "mandate_exemplar", schema: "agent", table: "mandate_exemplar", label: "Mandate Exemplar", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "marketing_initiative": { token: "marketing_initiative", schema: "marketing", table: "initiative", label: "Initiative", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
+  "masterwork_corpus_item": { token: "masterwork_corpus_item", schema: "platform", table: "masterwork_corpus_item", label: "Masterwork Corpus Piece", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "masterwork_run": { token: "masterwork_run", schema: "platform", table: "masterwork_run", label: "Masterwork Run", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: "Masterwork", referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "membership": { token: "membership", schema: "iam", table: "memberships", label: "Membership", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "message": { token: "message", schema: "chat", table: "message", label: "Message", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1674,6 +1678,7 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "mandate_binding",
   "mandate_exemplar",
   "marketing_initiative",
+  "masterwork_corpus_item",
   "masterwork_run",
   "membership",
   "message",
