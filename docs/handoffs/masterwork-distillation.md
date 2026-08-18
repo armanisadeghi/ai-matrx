@@ -21,6 +21,29 @@
 
 ## STATUS — live and verified (compressed)
 
+- **BODY OF WORK + CHAT IMPORT PROVEN THROUGH THE PRODUCT; RUN LINKAGE FIXED (2026-08-18).**
+  Both lanes driven end-to-end in the real browser dialogs on Strunk
+  (`e492a07f-…`), dev FE :3001 → local aidream :8000. Chat import: synthetic
+  ChatGPT `conversations.json` (mapping node-graph) uploaded through the dialog →
+  picker parsed 2 conversations (`provider: chatgpt`) → run `91b49fcc-…` completed,
+  9 drafts, every quote verbatim-verified, `source_ref` carries
+  `conversation_key/title/provider/message_range/file_id`. Body of Work: run
+  `18016cca-…` completed with 36 drafts (33 per-piece + 3 `synthesis: true` rules
+  citing both pieces), `run_id` now STAMPED on `platform.masterwork_corpus_item`
+  (the 08-17 NULLs were in-process-only proofs; the HTTP path claims the durable
+  run — aidream exposes a public `run_id` on the run emitter). Mid-run reload
+  auto-reopened the dialog and rejoined (run `10276319-…`). FE fixes shipped: dump
+  terminal event corrected to `masterwork_dump_complete` (was
+  `masterwork_ingest_dump_complete` — dump dialog never saw completion live), and
+  BodyOfWorkDialog's "Try the failed pieces again" now actually relaunches the
+  failed pieces from the durable board (retry survives reload; previously it just
+  reset the form). Dead-letter retry re-opens rows with a fresh budget; non-owner
+  non-admin retry of another user's Rulebook is refused (`rulebook_forbidden`,
+  fail-closed, observed live — the shared dev browser profile is signed in as
+  test@test.com). Local-dev note: URL pieces need a scraper at
+  `MATRX_SCRAPER_URL` (localhost:8001) — the 08-17 dead_letters were exactly
+  that service being down.
+
 - **DUPLICATE RULE-REWRITE MANDATE RETIRED + EVERY DIALOG LANE GOT ITS URL (2026-08-17).**
   `masterwork.rule_cleanup` (a concurrent-session sibling of `rule_improver`) is gone
   end-to-end: the editor's "Clean up with AI" now runs `masterwork.rule_improver`'s TIDY shape
