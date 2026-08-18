@@ -497,6 +497,7 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 - Architecture: `docs/MARKETING_SITE_PLATFORM_PLAN.md` and `docs/MARKETING_SITE_ROUTE_ARCHITECTURE.md`.
 - Cross-repo VISION making web/marketing the proving ground for the platform sharing experience (presentation shares, collaboration shares, share-as-growth-engine): /Users/armanisadeghi/code/common-docs/systems/sharing-experience/VISION.md — read it before building any marketing share surface. Data-layer model: /Users/armanisadeghi/code/common-docs/systems/access-architecture/SHARING_MODEL.md.
 - Cross-repo Google OAuth verification inventory, scope decisions, cleanup register, and submission gates: `../common-docs/projects/google-oauth-verification/PLAN.md`. Read it before changing Google scopes, clients, consent-screen configuration, or reviewer-facing flows.
+- Cross-repo local-listings research (publisher/aggregator API accessibility + verified platform state): /Users/armanisadeghi/code/common-docs/systems/local-listings/RESEARCH.md — read it before building the `marketing.local` ("Local & Listings") reserved pillar at `/marketing/local`.
 
 ## Doctrine compliance
 
