@@ -53,7 +53,7 @@ import { useOpenNoteKnowledgePanel } from "@/features/overlays/openers/noteKnowl
 import { useNoteIngestStatus } from "../hooks/useNoteIngestStatus";
 import { useNoteDelete } from "../hooks/useNoteDelete";
 import { cn } from "@/lib/utils";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import {
   DropdownMenu,
@@ -261,7 +261,10 @@ export function NoteTabItem({ noteId, instanceId }: NoteTabItemProps) {
   const handleSave = useCallback(async () => {
     const result = await dispatch(saveNote(noteId));
     if (saveNote.rejected.match(result)) {
-      toast.error("Failed to save note");
+      // `saveNote` owns failure classification/capture. This is only the
+      // tab-action acknowledgement; recapturing it would file a second,
+      // context-free system_error for the same failed write.
+      toastErrorAlreadyCaptured("Failed to save note");
       return;
     }
     toast.success("Note saved");
