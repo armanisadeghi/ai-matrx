@@ -135,6 +135,19 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     },
   },
   {
+    id: "vision-interview-deploy-transport-loss",
+    tier: "yellow",
+    reason:
+      "Safari Load failed during a vision-interview server swap is recoverable control flow: drafts are durable, the room rehydrates, and the user retries after the restart. Keep the local diagnostic, but do not persist one system_error per mic/start attempt.",
+    addedAt: "2026-08-17",
+    match: {
+      source: "api-network",
+      code: "network_error",
+      routeIncludes: "/vision-interview/",
+      messageIncludes: "Load failed",
+    },
+  },
+  {
     id: "request-aborted",
     tier: "yellow",
     reason:

@@ -120,6 +120,37 @@ describe("classifyTier", () => {
     expect(c.tier).toBe("red");
   });
 
+  it("keeps a vision-interview deploy-window Load failed local and silent", () => {
+    const c = classifyTier(
+      captured({
+        source: "api-network",
+        route: "/vision-interview/72175649-568b-45e1-95d0-a5fb638af20b",
+        relation: "POST /audio/transcribe",
+        code: "network_error",
+        name: "TypeError",
+        message: "Load failed",
+      }),
+    );
+
+    expect(c.tier).toBe("yellow");
+    expect(c.ruleId).toBe("vision-interview-deploy-transport-loss");
+  });
+
+  it("keeps the same transport wording red outside the proven recoverable surface", () => {
+    const c = classifyTier(
+      captured({
+        source: "api-network",
+        route: "/marketing/content-plan/site-1",
+        relation: "POST /seo/pages/page-1/pagespeed/sync",
+        code: "network_error",
+        name: "TypeError",
+        message: "Load failed",
+      }),
+    );
+
+    expect(c.tier).toBe("red");
+  });
+
   it("silences a record-unavailable capture only after AccessGate resolves denial", () => {
     const c = classifyTier(
       captured({

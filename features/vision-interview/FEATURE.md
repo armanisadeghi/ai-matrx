@@ -178,7 +178,9 @@ per-node tokens the same way.
   lifted above the mobile bottom band. Transport failures (Safari "Load
   failed" — the 11-error burst was a deploy swap window on the server) now
   surface as "server may be restarting" copy via `isTransportFailure` in
-  `useInterviewRun` and `useMicField` instead of the browser's wording.
+  `useInterviewRun` and `useMicField` instead of the browser's wording. The
+  exact route-scoped capture is yellow in `errorTierRules`: it remains visible
+  locally but cannot persist one `system_error` row per retry.
 - 2026-08-16 — Live token streaming shipped end-to-end: `followWorkflowRunStream`
   follows the run's SSE events feed into `activeRequests.nodeStreams`;
   `TranscriptPane` renders per-role `LiveTurnCard`s that resolve seamlessly

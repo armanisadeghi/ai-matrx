@@ -161,7 +161,10 @@ Seeded defaults (in `DOWNGRADE_RULES`): **tool errors → yellow** (a failed too
 call is normal agent operation — the agent adapts; e.g. the sql guard rejecting
 `grant`/`delete from`), **redux-rejected → orange**, **user-toast → orange**.
 Resolved+handled AccessGate denials → yellow; the original unknown capture and
-all other resolved record states stay red. Everything else stays red until
+all other resolved record states stay red. Vision Interview's exact Safari
+`Load failed` transport class is yellow because its drafts are durable, its room
+rehydrates, and retry after a server swap is expected; the route-scoped rule
+does not quiet the same wording elsewhere. Everything else stays red until
 tuned. Promote a specific tool/slice to red with a `relation` rule ABOVE the
 broad source rule.
 
@@ -253,6 +256,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-08-17 — **Recoverable Vision Interview deploy-window transport loss stays local.** Route-scoped `api-network` / `network_error` / Safari `Load failed` captures are yellow: durable drafts and room rehydration make retry the complete recovery, so repeated mic/start attempts no longer persist duplicate `system_error` rows. The same wording remains red outside this proven surface; adapter tests pin all three observed endpoints.
 - 2026-08-17 — **A Content IR recovery no longer creates a second persisted symptom through the console fallback.** The kind-registry fieldless-schema guard now emits only its structured `content-ir` capture, with a named `operation`, `relation`, `callSite`, recovery data, and an adapter-specific hint. The global `console.error` adapter remains the production safety net, but structured producers must not mirror the same incident into it; source is part of the capture signature, so that mirror previously bypassed in-memory dedupe and persisted one logical incident twice.
 - 2026-08-13 — **Captured errors can be reconciled in place.** AccessGate uses
   the new `resolveCapturedError` seam to replace `reason: "unknown"` with the
