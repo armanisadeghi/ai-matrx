@@ -1,5 +1,18 @@
 # content-ir — the canonical structured-content system
 
+
+> 🚨🚨 **WORKFLOW NODE I/O HAS DRIFTED OFF THIS SYSTEM — ARMAN'S RULING, 2026-08-18. NOT FIXED.** 🚨🚨
+>
+> The Shape System itself is healthy on the component side (75 real web renderers). **Workflow node
+> outputs are the break:** zero workflow payloads carry `__kind`, 986 machine-minted contract kinds
+> vs 267 real ones, 3 of 133 node types declare an input kind, and agent output loses its kind
+> entirely (`structured_output` null, real payload stringified inside `final_text`). Arman's law —
+> *"an official declared kind component with a predetermined created shape, or streaming markdown.
+> That's it."* Evidence, the intent behind the minted contracts, the devil's-advocate risks, and the
+> open decisions: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/WORKFLOW_KINDS_AUDIT.md`.
+> **Do not build a new fallback renderer, projection node, or per-surface unwrapper to route around
+> this.**
+
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/FEATURE.md` — read it before using this frontend implementation document as a platform-wide status source.
 
 🚨 **ONE SYSTEM (Arman, 2026-08-17): Matrx Directives, render block types, and artifacts ARE Content IR** — Actions are the automated family, primitives are Shapes without a schema (arrival forms permanent — NOT "everything becomes JSON"), artifacts merge in. Phased plan + constraints: `/Users/armanisadeghi/code/common-docs/systems/content-ir-system/UNIFICATION.md` — read it before touching convergence in ANY repo.
