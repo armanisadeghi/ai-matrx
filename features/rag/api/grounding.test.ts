@@ -1,4 +1,7 @@
-import { serializeGroundedPassages } from "./grounding";
+import {
+  parseGroundedPassageCitations,
+  serializeGroundedPassages,
+} from "./grounding";
 
 describe("serializeGroundedPassages", () => {
   test("preserves the durable citation coordinates in stable markers", () => {
@@ -22,5 +25,35 @@ describe("serializeGroundedPassages", () => {
     expect(serialized).toContain('file_id="file-1"');
     expect(serialized).toContain('page="14"');
     expect(serialized).toContain("A verbatim passage from the uploaded PDF.");
+  });
+
+  test("recovers persisted citation coordinates without rerunning retrieval", () => {
+    const serialized = serializeGroundedPassages([
+      {
+        chunkId: "chunk-14",
+        text: "Railways improved trade & helped cities grow.",
+        title: 'AP World "Guide"',
+        sourceKind: "cld_file",
+        sourceId: "file-1",
+        fileId: "file-1",
+        documentId: "document-1",
+        page: 14,
+        locator: "p. 14",
+        score: 0.91,
+      },
+    ]);
+
+    expect(parseGroundedPassageCitations(serialized)).toEqual([
+      {
+        sourceId: "chunk-14",
+        sourceKind: "chunk",
+        title: 'AP World "Guide"',
+        excerpt: "Railways improved trade & helped cities grow.",
+        locator: "p. 14",
+        fileId: "file-1",
+        documentId: "document-1",
+        page: 14,
+      },
+    ]);
   });
 });

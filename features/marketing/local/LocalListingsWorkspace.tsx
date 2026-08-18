@@ -718,6 +718,14 @@ function OnSiteSchemaCard({ location }: { location: BusinessLocation }) {
           </Link>
           .
         </p>
+      ) : !site.root_url ? (
+        <p className="text-sm text-muted-foreground">
+          {site.name} has no root URL recorded, so its homepage cannot be checked. Set it in{" "}
+          <Link className="text-primary underline-offset-2 hover:underline" href={`/marketing/sites/${site.id}`}>
+            the site workspace
+          </Link>
+          .
+        </p>
       ) : evidenceQuery.isPending ? (
         <p className="text-sm text-muted-foreground">Reading the latest homepage crawl…</p>
       ) : evidenceQuery.isError ? (

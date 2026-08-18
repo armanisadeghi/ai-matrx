@@ -42,6 +42,7 @@ type DraftStatus =
   "generating" | "verifying" | "ready" | "failed" | "published";
 
 interface GeneratedDraft {
+  examSlug: string;
   plan: ExamDeckPlan;
   status: DraftStatus;
   setId?: string;
@@ -99,14 +100,15 @@ export function ExamContentPipeline() {
         if (!cancelled) {
           setSources(next);
           if (existing.data) {
-            const recovered = existing.data.flatMap((set): GeneratedDraft[] => {
+            const recoveredByPlan = new Map<string, GeneratedDraft>();
+            for (const set of existing.data) {
               const metadata = asJsonObject(set.metadata);
               if (
                 metadata.generation_pipeline !==
                   "education-grounded-content-v1" ||
                 metadata.content_status !== "draft"
               ) {
-                return [];
+                continue;
               }
               const key =
                 typeof metadata.generation_plan === "string"
@@ -119,25 +121,37 @@ export function ExamContentPipeline() {
               const plan = EXAM_DECK_PLANS.find(
                 (candidate) => candidate.key === key,
               );
+              const recoveredExamSlug =
+                typeof metadata.exam_slug === "string"
+                  ? metadata.exam_slug
+                  : undefined;
               const chunkIds = Array.isArray(metadata.grounding_chunk_ids)
                 ? metadata.grounding_chunk_ids.filter(
                     (value): value is string => typeof value === "string",
                   )
                 : [];
-              if (!plan || chunkIds.length === 0) return [];
-              return [
-                {
-                  plan,
-                  status: "failed",
-                  setId: set.id,
-                  href: `/education/flashcards/${set.id}`,
-                  title: set.name,
-                  allowedChunkIds: chunkIds,
-                  error:
-                    "Recovered a private draft from an interrupted run. Resume source verification before publishing.",
-                },
-              ];
-            });
+              const recoveryKey = `${recoveredExamSlug}:${plan?.key}`;
+              if (
+                !plan ||
+                !recoveredExamSlug ||
+                chunkIds.length === 0 ||
+                recoveredByPlan.has(recoveryKey)
+              ) {
+                continue;
+              }
+              recoveredByPlan.set(recoveryKey, {
+                examSlug: recoveredExamSlug,
+                plan,
+                status: "failed",
+                setId: set.id,
+                href: `/education/flashcards/${set.id}`,
+                title: set.name,
+                allowedChunkIds: chunkIds,
+                error:
+                  "Recovered a private draft from an interrupted run. Resume source verification before publishing.",
+              });
+            }
+            const recovered = [...recoveredByPlan.values()];
             if (recovered.length > 0) setDrafts(recovered);
           }
         }
@@ -161,11 +175,18 @@ export function ExamContentPipeline() {
   const selectedSources = sources.filter((source) =>
     selected.has(`${source.sourceKind}:${source.sourceId}`),
   );
+  const visibleDrafts = drafts.filter((draft) => draft.examSlug === examSlug);
+  const plansToGenerate = EXAM_DECK_PLANS.filter((plan) => {
+    const existing = visibleDrafts.find((draft) => draft.plan.key === plan.key);
+    return !existing?.setId && existing?.status !== "published";
+  });
 
   function patchDraft(plan: ExamDeckPlan, patch: Partial<GeneratedDraft>) {
     setDrafts((current) =>
       current.map((draft) =>
-        draft.plan.key === plan.key ? { ...draft, ...patch } : draft,
+        draft.examSlug === examSlug && draft.plan.key === plan.key
+          ? { ...draft, ...patch }
+          : draft,
       ),
     );
   }
@@ -173,9 +194,20 @@ export function ExamContentPipeline() {
   async function generate() {
     if (!exam || selectedSources.length === 0 || running) return;
     setRunning(true);
-    setDrafts(EXAM_DECK_PLANS.map((plan) => ({ plan, status: "generating" })));
+    setDrafts((current) => [
+      ...current.filter(
+        (draft) =>
+          draft.examSlug !== examSlug ||
+          !plansToGenerate.some((plan) => plan.key === draft.plan.key),
+      ),
+      ...plansToGenerate.map((plan) => ({
+        examSlug,
+        plan,
+        status: "generating" as const,
+      })),
+    ]);
 
-    for (const plan of EXAM_DECK_PLANS) {
+    for (const plan of plansToGenerate) {
       try {
         const retrieval = await retrieveGroundedPassages({
           query: `${exam.name}: ${plan.label}. ${plan.focus}`,
@@ -355,10 +387,16 @@ export function ExamContentPipeline() {
           <Button
             className="min-h-11 w-full"
             onClick={() => void generate()}
-            disabled={running || !exam || selectedSources.length === 0}
+            disabled={
+              running ||
+              !exam ||
+              selectedSources.length === 0 ||
+              plansToGenerate.length === 0
+            }
           >
             {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Generate and verify 3 drafts
+            Generate and verify {plansToGenerate.length} missing draft
+            {plansToGenerate.length === 1 ? "" : "s"}
           </Button>
           <p className="text-xs text-muted-foreground">
             {selectedSources.length} source
@@ -427,9 +465,9 @@ export function ExamContentPipeline() {
         </div>
       </div>
 
-      {drafts.length > 0 ? (
+      {visibleDrafts.length > 0 ? (
         <div className="mt-6 grid gap-3 md:grid-cols-3">
-          {drafts.map((draft) => (
+          {visibleDrafts.map((draft) => (
             <article key={draft.plan.key} className="rounded-lg border p-4">
               <h3 className="font-medium">{draft.title ?? draft.plan.label}</h3>
               <p className="mt-1 text-xs text-muted-foreground">

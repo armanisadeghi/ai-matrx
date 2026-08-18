@@ -220,6 +220,63 @@ function markerValue(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
 }
 
+function unescapeMarkerValue(value: string): string {
+  return value.replaceAll("&quot;", '"').replaceAll("&amp;", "&");
+}
+
+const GROUNDING_BLOCK_RE =
+  /\[GROUNDING_PASSAGE\s+([^\]]+)]\n([\s\S]*?)\n\[\/GROUNDING_PASSAGE]/g;
+const GROUNDING_ATTRIBUTE_RE = /([a-z_]+)="([^"]*)"/g;
+
+/**
+ * Recover canonical citations from the exact serialized evidence attached to a
+ * completed turn. The backend persists this value on the user message's
+ * `model_context`, so reloads can still validate the assistant's trust envelope
+ * against what the model actually received instead of re-running today's search.
+ */
+export function parseGroundedPassageCitations(
+  serialized: string,
+): SourceCitation[] {
+  const citations: SourceCitation[] = [];
+  GROUNDING_BLOCK_RE.lastIndex = 0;
+  for (
+    let block = GROUNDING_BLOCK_RE.exec(serialized);
+    block;
+    block = GROUNDING_BLOCK_RE.exec(serialized)
+  ) {
+    const attributes: Record<string, string> = {};
+    GROUNDING_ATTRIBUTE_RE.lastIndex = 0;
+    for (
+      let attribute = GROUNDING_ATTRIBUTE_RE.exec(block[1]);
+      attribute;
+      attribute = GROUNDING_ATTRIBUTE_RE.exec(block[1])
+    ) {
+      attributes[attribute[1]] = unescapeMarkerValue(attribute[2]);
+    }
+    const chunkId = attributes.chunk_id;
+    if (!chunkId) continue;
+    const page = attributes.page
+      ? Number.parseInt(attributes.page, 10)
+      : undefined;
+    citations.push({
+      sourceId: chunkId,
+      sourceKind: "chunk",
+      title: attributes.title || "Uploaded study material",
+      excerpt: block[2],
+      locator:
+        page !== undefined && Number.isInteger(page)
+          ? `p. ${page}`
+          : "Retrieved passage",
+      ...(attributes.file_id ? { fileId: attributes.file_id } : {}),
+      ...(attributes.document_id
+        ? { documentId: attributes.document_id }
+        : {}),
+      ...(page !== undefined && Number.isInteger(page) ? { page } : {}),
+    });
+  }
+  return citations;
+}
+
 /** Serialize canonical passages for a text-valued agent context policy. */
 export function serializeGroundedPassages(
   passages: readonly GroundedPassage[],

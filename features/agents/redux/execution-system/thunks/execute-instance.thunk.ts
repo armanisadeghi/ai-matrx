@@ -537,17 +537,6 @@ export const executeInstance = createAsyncThunk<
         scopeIdsOverride,
         initiation,
       });
-      console.info(
-        "[wp4-diagnostic] " +
-          JSON.stringify({
-            conversationId,
-            keys: Object.keys(payload?.context ?? {}),
-            studyMaterialPreview:
-              typeof payload?.context?.study_material === "object"
-                ? JSON.stringify(payload.context.study_material).slice(0, 240)
-                : String(payload?.context?.study_material ?? "").slice(0, 240),
-          }),
-      );
       if (!payload) {
         throw new Error(`Failed to assemble request for ${conversationId}`);
       }

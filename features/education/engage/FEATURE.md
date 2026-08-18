@@ -11,7 +11,8 @@ A real-time multiplayer study game (host a room, players join by code) plus a
 solo arcade, both fed by the study spine's FSRS engine so every round is genuine
 review. Around them: a **healthy** streak system (freezes + rest days), an
 opt-in weekly **league** scored by mastery gain, and **outcome** badges. Every
-answer records to the shared study spine (`method='game'`) → mastery + P5
+answer reaches `game_record_answer`, which grades against the canonical card and
+then records to the shared study spine (`method='game'`) → mastery + P5
 analytics. Nothing is a toy: fun shows up in `item_mastery`.
 
 ## Entry points
@@ -65,12 +66,19 @@ auto-recovers it on reconnect. Cross-owner reads (join-by-code, room scoreboard,
 league leaderboard) go through SECURITY DEFINER RPCs in `public` (the
 `supabase.rpc` convention): `game_room_by_code`, `game_room_players`,
 `league_leaderboard`, `game_finalize_result`, `league_set_opt_in`,
-`education_engagement_snapshot`, `set_streak_rest_weekdays`. The retired
+`game_record_answer`, `education_engagement_snapshot`,
+`set_streak_rest_weekdays`. The retired
 `league_add_result` seam raises loudly and cannot add points.
 
 ### IC-14 server-authority invariant
 
-**The attempt ledger is the only competitive authority.** A client finalizes by
+**The server-graded attempt ledger is the only competitive authority.** A
+client answers with session id, card id, and selected choice text;
+`game_record_answer` verifies ownership/active state/source membership, compares
+the choice to `fc_card.back`, derives latency from server timestamps, rejects a
+second answer for the same card, and alone may mint a contest-eligible game
+attempt. The generic self-graded `study_record_attempt` RPC cannot mint one.
+A client finalizes by
 calling `game_finalize_result(session_id, display_name)` and submits no score,
 correctness, streak, mastery, currency, duration, or badge keys. In one locked,
 idempotent transaction Postgres:
@@ -83,9 +91,12 @@ idempotent transaction Postgres:
    league gain, and verifiable badges;
 5. writes exactly one live result per session.
 
-Authenticated roles have no INSERT/UPDATE/DELETE grant on `game_result`,
-`game_badge`, or `league_membership`. `league_set_opt_in` is the only membership
-write door; it assigns a bounded private cohort from recent eligible activity.
+Authenticated roles have no INSERT/UPDATE/DELETE grant on `study_attempt`,
+`game_result`, `game_badge`, or `league_membership`. The ordinary study and
+manual-correction RPCs remain the write doors for noncompetitive practice;
+manual game corrections are permanently excluded from contests.
+`league_set_opt_in` is the only membership write door; it assigns a bounded
+private cohort from recent eligible activity.
 `league_leaderboard` returns only the caller's cohort. The live scoreboard is
 explicitly provisional; completion hides client totals until the official row
 returns and then reloads `game_room_players`.
@@ -125,7 +136,9 @@ enforces it in code, not copy:
    screen headlines _mastery gained_, not score.
 4. **No guilt notifications.** WP7's `choose_education_reminders` policy emits
    at most one neutral learner nudge per local day, returns silence for rest
-   days and disabled preferences, and names forgiveness in streak copy. WP8's
+   days, disabled global/per-kind preferences, or any prior learner nudge that
+   day, and names forgiveness in streak copy. Guardian summaries require active
+   consent and a child/reporting-period identity. WP8's
    IC-6/IC-7 path owns quiet hours, deduplication, retries, and transport. No
    re-engagement guilt algorithm and no bespoke education queue.
 5. **Generous free tier (P8).** Room size is gated by
@@ -134,8 +147,9 @@ enforces it in code, not copy:
 
 ## Contracts consumed
 
-- **Study spine** (`studyService.recordAttempt`, `method='game'`) — every answer
-  advances FSRS/mastery. Game sessions are study sessions (visible in P5).
+- **Study spine** (`studyService.recordGameAnswer` → server grading → canonical
+  `study_record_attempt`) — every answer advances FSRS/mastery. Game sessions
+  are study sessions (visible in P5).
 - **FSRS + `useDueReview` selection** — generalized in `engine/queue.ts`; not
   forked.
 - **P7 access boundary** — enforced via `fc_set`/`fc_card` RLS + the
@@ -155,15 +169,14 @@ enforces it in code, not copy:
 
 ## Verification (2026-08-18 live integrity run)
 
-- Two real authenticated learners completed one live room through the shared
-  database/API path. Official results were 440 (3/3, +3 mastery) and 247 (2/3,
-  +2 mastery); `game_room_players` returned those persisted values.
-- A fourth client-authored “perfect” attempt marked manually edited did not
-  count: the official row remained 2/3 and 247. Finalizing the same session
-  again returned the same result id.
-- Authenticated direct INSERT/UPDATE attempts against `game_result`, direct
-  badge INSERT, and direct league-total mutation each returned HTTP 403. An
-  arbitrary client score cannot land.
+- Two real authenticated learners completed one live room through PostgREST.
+  Server-graded official results were 478 (3/3) and 299 (2/3), and
+  `game_room_players` returned exactly those two persisted rows in rank order.
+- A tampered generic RPC request for an extra correct 0ms game attempt returned
+  HTTP 403. A direct rewrite of the real wrong answer to correct/0ms also
+  returned 403. Duplicate-card answer farming returned 409.
+- An authenticated direct official-score rewrite returned HTTP 403. The
+  tampered values did not land in either result or the room scoreboard.
 - Live migrations:
   `20260818_education_game_result_session_unique.sql` and
   `20260818_education_game_server_authority.sql`; generated DB types were
@@ -202,8 +215,9 @@ enforces it in code, not copy:
 
 ## Change Log
 
-- **2026-08-18** — Landed IC-14: attempt-ledger-derived score/mastery/badges,
-  direct-write revocation, idempotent per-session results, private
+- **2026-08-18** — Landed IC-14: server-graded answer recording,
+  attempt-ledger-derived score/mastery/badges, attempt/result direct-write
+  revocation, idempotent per-session results, private
   activity-matched cohorts, provisional live labels, official-result
   replacement, and the shared study-completion engagement snapshot. Added the
   anti-Duolingo reminder policy seam for WP8 IC-6/IC-7.
