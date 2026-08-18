@@ -67,6 +67,17 @@ const WorkingDocumentPanel = dynamic(
     ),
   { ssr: false },
 );
+// Live Cloud Browser surface hosted in the canvas pane. CanvasPane supplies the
+// frame + header, so the bare body renders WITHOUT its own WindowPanel chrome
+// ("a host frame either IS the chrome or has none"). Heavy (screenshot stream,
+// takeover canvas, telemetry) — kept out of the canvas base chunk until opened.
+const CloudBrowserBody = dynamic(
+  () =>
+    import("@/features/cloud-browser/components/CloudBrowserBody").then(
+      (m) => ({ default: m.CloudBrowserBody }),
+    ),
+  { ssr: false },
+);
 
 export interface CanvasBodyProps {
   content: CanvasContent;
@@ -126,6 +137,7 @@ export function getDefaultTitle(type: string): string {
     // neutral container label, never a third repeat of the tab.
     working_document: "Documents",
     scratchpad: "Documents",
+    cloud_browser: "Cloud Browser",
   };
   return titles[type] || "Canvas View";
 }
@@ -235,6 +247,20 @@ function renderContent(content: CanvasContent): React.ReactNode {
           onApply={data.onApply}
           onDiscard={data.onDiscard}
           onCloseModal={data.onCloseModal}
+        />
+      );
+
+    case "cloud_browser":
+      // `data` is a pointer { initialProfileId?, runId? }. The body owns all
+      // live run/screenshot/handoff state; the pane draws the frame + title.
+      return (
+        <CloudBrowserBody
+          initialProfileId={
+            typeof data?.initialProfileId === "string"
+              ? data.initialProfileId
+              : undefined
+          }
+          className="h-full"
         />
       );
 

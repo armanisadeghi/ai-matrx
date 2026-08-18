@@ -40,7 +40,11 @@ export type CanvasContentType =
   // `{ conversationId, kind }`; the panel reads live content from Redux and
   // persists itself (cx_working_documents), so these are NON_PERSISTABLE here.
   | "working_document"
-  | "scratchpad";
+  | "scratchpad"
+  // Live Cloud Browser surface hosted in the canvas pane. `data` is a pointer
+  // `{ initialProfileId?, runId? }`; the body holds live run/screenshot/handoff
+  // state (never serializable) — NON_PERSISTABLE, like the editor surfaces.
+  | "cloud_browser";
 
 /**
  * Canvas content types that hold live, non-serializable runtime state —
@@ -56,6 +60,9 @@ export const NON_PERSISTABLE_CANVAS_TYPES: ReadonlySet<string> = new Set([
   // saving a canvas_items row would just freeze a dead pointer.
   "working_document",
   "scratchpad",
+  // Live Cloud Browser: holds run/screenshot/controller/handoff state — a
+  // canvas_items row would freeze a dead pointer with no live session.
+  "cloud_browser",
 ]);
 
 export function isPersistableCanvasType(type: string): boolean {
