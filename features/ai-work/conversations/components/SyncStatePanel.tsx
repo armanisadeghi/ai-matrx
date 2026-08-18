@@ -47,9 +47,7 @@ import {
   type SyncFreshness,
   type SyncStateSnapshot,
 } from "../syncState";
-
-const MATRX_LOCAL_DOWNLOAD_URL =
-  "https://github.com/armanisadeghi/matrx-local/releases/latest";
+import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
 
 /** Exact, verified statement of why the web app cannot start a sync itself. */
 export const SYNC_NOW_UNAVAILABLE_REASON =
@@ -69,7 +67,6 @@ function useSyncState() {
 
   useEffect(() => {
     let cancelled = false;
-    setStatus("loading");
     void readSyncState()
       .then((next) => {
         if (cancelled) return;
@@ -90,7 +87,15 @@ function useSyncState() {
     };
   }, [reloadToken]);
 
-  return { state, status, error, reload: () => setReloadToken((n) => n + 1) };
+  return {
+    state,
+    status,
+    error,
+    reload: () => {
+      setStatus("loading");
+      setReloadToken((n) => n + 1);
+    },
+  };
 }
 
 function FreshnessPill({ freshness }: { freshness: SyncFreshness }) {
@@ -124,10 +129,12 @@ function FreshnessPill({ freshness }: { freshness: SyncFreshness }) {
  */
 export function SyncNowDoor({ compact = false }: { compact?: boolean }) {
   return (
-    <div className={cn("flex flex-wrap items-center gap-2", compact && "gap-1.5")}>
+    <div
+      className={cn("flex flex-wrap items-center gap-2", compact && "gap-1.5")}
+    >
       <Button asChild size="sm" variant="outline" className="gap-1.5">
         <a
-          href={MATRX_LOCAL_DOWNLOAD_URL}
+          href={MATRX_LOCAL_DOWNLOAD_PATH}
           target="_blank"
           rel="noopener noreferrer"
           title={SYNC_NOW_UNAVAILABLE_REASON}
@@ -306,8 +313,8 @@ export function SyncStateIndicator() {
           <FreshnessPill freshness={state.freshness} />
           <span className="text-muted-foreground">
             {state.totalSessions.toLocaleString()} session
-            {state.totalSessions === 1 ? "" : "s"} ·{" "}
-            {state.accounts.length} account
+            {state.totalSessions === 1 ? "" : "s"} · {state.accounts.length}{" "}
+            account
             {state.accounts.length === 1 ? "" : "s"} ·{" "}
             {state.lastSeenAt
               ? `last delivery ${formatSessionTimestamp(state.lastSeenAt)}`

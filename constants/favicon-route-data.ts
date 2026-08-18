@@ -89,6 +89,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
     favicon: { color: "#0e7490", letter: "Ap" },
   },
   { href: "/contact", favicon: { color: "#9a3412", letter: "Co" } },
+  { href: "/download", favicon: { color: "#2563eb", letter: "Dl" } },
   { href: "/how-it-works", favicon: { color: "#7c2d12", letter: "Hw" } },
   { href: "/loop", favicon: { color: "#14532d", letter: "Lp" } },
   { href: "/matrx-extend-demo", favicon: { color: "#5b21b6", letter: "Me" } },

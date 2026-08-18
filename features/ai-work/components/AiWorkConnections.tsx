@@ -34,6 +34,7 @@ import {
   workspaceName,
 } from "@/features/ai-work/lib/codingSessionPresentation";
 import { SyncStatePanel } from "@/features/ai-work/conversations/components/SyncStatePanel";
+import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
 
 /**
  * Matrx Local ships the explicit Claude local-history importer (v1.4.22+,
@@ -41,9 +42,6 @@ import { SyncStatePanel } from "@/features/ai-work/conversations/components/Sync
  * callbacks today, so the honest door is the desktop download page plus the
  * exact in-app route name — not a pretend deep link.
  */
-const MATRX_LOCAL_DOWNLOAD_URL =
-  "https://github.com/armanisadeghi/matrx-local/releases/latest";
-
 interface AccountGroup {
   key: string;
   display: string;
@@ -300,7 +298,8 @@ export function AiWorkConnections() {
                               <span className="break-all font-medium">
                                 {account.display}
                               </span>
-                              {accounts.length > 1 || account.sessionCount > 1 ? (
+                              {accounts.length > 1 ||
+                              account.sessionCount > 1 ? (
                                 <span className="text-muted-foreground">
                                   {account.sessionCount} session
                                   {account.sessionCount === 1 ? "" : "s"}
@@ -382,8 +381,10 @@ export function AiWorkConnections() {
                   <>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                       The backend reports a managed Claude runtime. Native
-                      resume: {capability.nativeResume ? "available" : "unavailable"};
-                      native fork: {capability.nativeFork ? "available" : "unavailable"}.
+                      resume:{" "}
+                      {capability.nativeResume ? "available" : "unavailable"};
+                      native fork:{" "}
+                      {capability.nativeFork ? "available" : "unavailable"}.
                       Launching from this page is still in certification — the
                       start/stream/resume path must pass an end-to-end
                       certification run before this button goes live.
@@ -440,10 +441,9 @@ export function AiWorkConnections() {
                     Claude History
                   </span>{" "}
                   in its sidebar to preview local Claude Code sessions and
-                  import the ones you choose, with an exact
-                  accepted/duplicate report. This web page never reads local
-                  provider files, so the import itself runs in the desktop
-                  app.
+                  import the ones you choose, with an exact accepted/duplicate
+                  report. This web page never reads local provider files, so the
+                  import itself runs in the desktop app.
                 </p>
                 <Button
                   asChild
@@ -452,7 +452,7 @@ export function AiWorkConnections() {
                   className="mt-2 gap-1.5"
                 >
                   <a
-                    href={MATRX_LOCAL_DOWNLOAD_URL}
+                    href={MATRX_LOCAL_DOWNLOAD_PATH}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -461,8 +461,8 @@ export function AiWorkConnections() {
                   </a>
                 </Button>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                  ChatGPT and Claude.ai web-chat history remain unavailable —
-                  no supported live seam exists, and no pretend sync action is
+                  ChatGPT and Claude.ai web-chat history remain unavailable — no
+                  supported live seam exists, and no pretend sync action is
                   offered.
                 </p>
               </div>
