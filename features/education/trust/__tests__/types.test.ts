@@ -14,10 +14,40 @@ import {
   isGrounded,
   citationIsOpenable,
   gradeResultScore,
+  readStoredVerification,
   resultFromScore,
+  stampAppliedCorrection,
   verdictResult,
   verdictFromResult,
 } from "../types";
+
+describe("stampAppliedCorrection", () => {
+  it("makes the verifier correction the durable verified answer", () => {
+    const stamped = stampAppliedCorrection(
+      {
+        trust_verification: {
+          status: "drifted",
+          explanation: "The original answer overclaimed.",
+          suggestedFix: "Source-supported answer",
+          verifiedBack: "Original answer",
+          verifiedAt: "2026-08-18T07:00:00.000Z",
+          appliedAt: null,
+        },
+      },
+      "Source-supported answer",
+      "2026-08-18T08:00:00.000Z",
+    );
+
+    expect(readStoredVerification(stamped)).toEqual({
+      status: "verified",
+      explanation: "The original answer overclaimed.",
+      suggestedFix: "Source-supported answer",
+      verifiedBack: "Source-supported answer",
+      verifiedAt: "2026-08-18T07:00:00.000Z",
+      appliedAt: "2026-08-18T08:00:00.000Z",
+    });
+  });
+});
 import { attachSourceRefs } from "../grounding";
 
 describe("coerceTrustEnvelope", () => {
@@ -61,7 +91,10 @@ describe("coerceTrustEnvelope", () => {
 
   it("drops malformed citations (no sourceId) and defaults an unknown sourceKind to chunk", () => {
     const env = coerceTrustEnvelope({
-      citations: [{ locator: "p1" }, { sourceId: "ok", sourceKind: "nonsense" }],
+      citations: [
+        { locator: "p1" },
+        { sourceId: "ok", sourceKind: "nonsense" },
+      ],
       confidence: "grounded",
     });
     expect(env?.citations).toHaveLength(1);
@@ -76,7 +109,10 @@ describe("coerceTrustEnvelope", () => {
   });
 
   it("classifies a refusal", () => {
-    const env = coerceTrustEnvelope({ citations: [], confidence: "not_in_material" });
+    const env = coerceTrustEnvelope({
+      citations: [],
+      confidence: "not_in_material",
+    });
     expect(env).not.toBeNull();
     expect(isRefusal(env)).toBe(true);
     expect(isGrounded(env)).toBe(false);
@@ -85,7 +121,10 @@ describe("coerceTrustEnvelope", () => {
   it("isGrounded requires grounded confidence AND at least one citation", () => {
     expect(isGrounded({ citations: [], confidence: "grounded" })).toBe(false);
     expect(
-      isGrounded({ citations: [{ sourceId: "c", sourceKind: "chunk" }], confidence: "grounded" }),
+      isGrounded({
+        citations: [{ sourceId: "c", sourceKind: "chunk" }],
+        confidence: "grounded",
+      }),
     ).toBe(true);
   });
 });
@@ -150,7 +189,12 @@ describe("attachSourceRefs (source-agnostic grounding backfill)", () => {
     const out = attachSourceRefs(
       {
         citations: [
-          { sourceId: "c", sourceKind: "url", url: "https://real", fileId: "keep" },
+          {
+            sourceId: "c",
+            sourceKind: "url",
+            url: "https://real",
+            fileId: "keep",
+          },
         ],
         confidence: "grounded",
       },
@@ -188,7 +232,11 @@ describe("coerceGradeVerdict (grade-on-meaning)", () => {
   });
 
   it("never reports partial and correct at once", () => {
-    const v = coerceGradeVerdict({ correct: true, partial: true, explanation: "" });
+    const v = coerceGradeVerdict({
+      correct: true,
+      partial: true,
+      explanation: "",
+    });
     expect(v?.correct).toBe(true);
     expect(v?.partial).toBe(false);
   });
@@ -231,11 +279,21 @@ describe("grade verdict core (the ONE grading vocabulary + adapters)", () => {
   });
 
   it("verdictResult prefers correct over partial", () => {
-    expect(verdictResult({ correct: true, partial: true, misconception: null, explanation: "" })).toBe(
-      "correct",
-    );
     expect(
-      verdictResult({ correct: false, partial: false, misconception: null, explanation: "" }),
+      verdictResult({
+        correct: true,
+        partial: true,
+        misconception: null,
+        explanation: "",
+      }),
+    ).toBe("correct");
+    expect(
+      verdictResult({
+        correct: false,
+        partial: false,
+        misconception: null,
+        explanation: "",
+      }),
     ).toBe("incorrect");
   });
 });
@@ -255,7 +313,11 @@ describe("coerceVerifyResult", () => {
   });
 
   it("defaults an unknown status to unverifiable and nulls an empty fix", () => {
-    const r = coerceVerifyResult({ status: "???", explanation: "x", suggested_fix: "" });
+    const r = coerceVerifyResult({
+      status: "???",
+      explanation: "x",
+      suggested_fix: "",
+    });
     expect(r?.status).toBe("unverifiable");
     expect(r?.suggestedFix).toBeNull();
   });

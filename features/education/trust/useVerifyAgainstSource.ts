@@ -20,6 +20,7 @@ import { fcService } from "@/features/flashcards/data/fcService";
 import { toast } from "@/lib/toast";
 import {
   coerceVerifyResult,
+  stampAppliedCorrection,
   VERIFICATION_KEY,
   type SourceCitation,
   type VerifyResult,
@@ -180,22 +181,7 @@ export function useVerifyAgainstSource(): UseVerifyAgainstSource {
       const stamped = await fcService.mergeCardJson(
         subject.id,
         "metadata",
-        (current) => {
-          const prior =
-            current[VERIFICATION_KEY] &&
-            typeof current[VERIFICATION_KEY] === "object" &&
-            !Array.isArray(current[VERIFICATION_KEY])
-              ? (current[VERIFICATION_KEY] as Record<string, unknown>)
-              : {};
-          return {
-            ...current,
-            [VERIFICATION_KEY]: {
-              ...prior,
-              verifiedBack: fix,
-              appliedAt: new Date().toISOString(),
-            },
-          };
-        },
+        (current) => stampAppliedCorrection(current, fix),
       );
       if (stamped.error) {
         console.error(

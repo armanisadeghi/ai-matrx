@@ -313,6 +313,27 @@ export interface StoredVerification {
 /** The `fc_card.metadata` key a stored verification lives under. */
 export const VERIFICATION_KEY = "trust_verification";
 
+/** Stamp a verifier-suggested correction as the now-current verified answer. */
+export function stampAppliedCorrection(
+  metadata: unknown,
+  fix: string,
+  appliedAt = new Date().toISOString(),
+): Record<string, unknown> {
+  const current = isRecord(metadata) ? metadata : {};
+  const prior = isRecord(current[VERIFICATION_KEY])
+    ? current[VERIFICATION_KEY]
+    : {};
+  return {
+    ...current,
+    [VERIFICATION_KEY]: {
+      ...prior,
+      status: "verified",
+      verifiedBack: fix,
+      appliedAt,
+    },
+  };
+}
+
 /** Read a persisted verdict off a subject row's `metadata` (null when absent). */
 export function readStoredVerification(
   metadata: unknown,
