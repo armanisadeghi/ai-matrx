@@ -15,6 +15,7 @@ import {
 } from "@/lib/communications/voice/persistence";
 import { getVoiceProviderConfigurationReadiness } from "@/lib/communications/voice/provider-configuration-readiness";
 import { getVoiceStorageCanaryReadiness } from "@/lib/communications/voice/storage-canary-readiness";
+import { prepareConversationRelaySession } from "@/lib/communications/voice/conversation-relay-preparation";
 import { OWNER_BETA_VOICE_DISCLOSURE_VERSION } from "@/lib/communications/providers/twilio/voice-twiml";
 
 import { GET, POST } from "./route";
@@ -33,6 +34,14 @@ jest.mock("@/lib/communications/voice/persistence", () => ({
 jest.mock("@/lib/communications/voice/storage-canary-readiness", () => ({
   getVoiceStorageCanaryReadiness: jest.fn(),
 }));
+jest.mock(
+  "@/lib/communications/voice/conversation-relay-preparation",
+  () => ({
+    CONVERSATION_RELAY_PUBLIC_URL:
+      "wss://server.app.matrxserver.com/communications/voice/conversation-relay",
+    prepareConversationRelaySession: jest.fn(),
+  }),
+);
 jest.mock(
   "@/lib/communications/voice/provider-configuration-readiness",
   () => ({
@@ -128,6 +137,9 @@ describe("POST /api/webhooks/twilio/voice", () => {
       event_id: 123,
       disposition: "created",
     });
+    jest.mocked(prepareConversationRelaySession).mockRejectedValue(
+      new Error("relay disabled"),
+    );
     jest.spyOn(console, "info").mockImplementation(() => undefined);
     jest.spyOn(console, "error").mockImplementation(() => undefined);
   });
@@ -409,7 +421,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
     );
   });
 
-  test("starts exact dual-channel capture only after durable consent and every launch gate", async () => {
+  test("starts exact capture then connects the canonical relay with no optional events", async () => {
     jest.mocked(getVoiceStorageCanaryReadiness).mockResolvedValue({
       ready: true,
       status: "ready",
@@ -426,6 +438,12 @@ describe("POST /api/webhooks/twilio/voice", () => {
       externalStorageConfigured: true,
       emailVerificationValidUntil: "2026-08-18T22:50:00.000Z",
       configurationValidUntil: "2026-09-16T23:00:00.000Z",
+    });
+    jest.mocked(prepareConversationRelaySession).mockResolvedValue({
+      session_id: "11111111-1111-4111-8111-111111111111",
+      chat_conversation_id: "22222222-2222-4222-8222-222222222222",
+      session_reference: "owner-beta-session-reference-value",
+      expires_at: "2026-08-18T00:00:00Z",
     });
     const disclosedAt = new Date().toISOString();
     const consentUrl = new URL(WEBHOOK_URL);
@@ -461,6 +479,23 @@ describe("POST /api/webhooks/twilio/voice", () => {
       'recordingStatusCallback="https://www.aimatrx.com/api/webhooks/twilio/voice/recording"',
     );
     expect(body).toContain("Recording starts now");
+    expect(body).toContain("<Connect><ConversationRelay");
+    expect(body).toContain(
+      'url="wss://server.app.matrxserver.com/communications/voice/conversation-relay"',
+    );
+    expect(body).toContain(
+      '<Parameter name="sessionReference" value="owner-beta-session-reference-value"',
+    );
+    expect(body).not.toContain("events=");
+    expect(prepareConversationRelaySession).toHaveBeenCalledWith({
+      signedUrl: consentUrl.toString(),
+      signature: expect.any(String),
+      parameters: expect.objectContaining({
+        AccountSid: "AC123",
+        CallSid: "CA123",
+        Digits: "1",
+      }),
+    });
     expect(claimVoiceCallConsentEvent).toHaveBeenCalledTimes(1);
     expect(
       jest.mocked(claimVoiceCallConsentEvent).mock.invocationCallOrder[0],
@@ -472,6 +507,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
       expect.objectContaining({
         providerCallId: "CA123",
         recordingStarted: true,
+        conversationRelayConnected: true,
         recordingBlockedGateKeys: [],
       }),
     );

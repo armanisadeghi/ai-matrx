@@ -37,6 +37,10 @@ import {
 } from "@/lib/communications/voice/recording-readiness";
 import { evaluateConversationRelayReadiness } from "@/lib/communications/voice/conversation-relay-readiness";
 import {
+  CONVERSATION_RELAY_PUBLIC_URL,
+  prepareConversationRelaySession,
+} from "@/lib/communications/voice/conversation-relay-preparation";
+import {
   getVoiceProviderConfigurationReadiness,
   type VoiceProviderConfigurationReadiness,
 } from "@/lib/communications/voice/provider-configuration-readiness";
@@ -286,10 +290,28 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   const recordingStarted = recordingReadiness?.ready === true;
+  let sessionReference: string | null = null;
+  if (recordingStarted) {
+    const signature = request.headers.get("x-twilio-signature");
+    if (signature) {
+      try {
+        const prepared = await prepareConversationRelaySession({
+          signedUrl,
+          signature,
+          parameters: validation.params,
+        });
+        sessionReference = prepared.session_reference;
+      } catch {
+        sessionReference = null;
+      }
+    }
+  }
+  const conversationRelayConnected = sessionReference !== null;
 
   console.info("Twilio Voice owner beta consent accepted", {
     ...consentEvidence,
     recordingStarted,
+    conversationRelayConnected,
     recordingBlockedGateKeys:
       recordingReadiness?.gates
         .filter((gate) => !gate.passed)
@@ -299,6 +321,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     buildOwnerBetaConsentAcceptedTwiml({
       recording: recordingStarted
         ? { recordingStatusCallbackUrl: RECORDING_STATUS_CALLBACK_URL }
+        : null,
+      conversationRelay: sessionReference !== null
+        ? {
+            url: CONVERSATION_RELAY_PUBLIC_URL,
+            sessionReference,
+          }
         : null,
     }),
   );

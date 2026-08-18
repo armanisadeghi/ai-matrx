@@ -60,8 +60,11 @@ long-lived media and agent execution stay in aidream.
 - The accepted-response builder has one composition seam for the later live-agent launch: after
   recording starts it can emit `<Connect><ConversationRelay>` with the durable one-time
   `sessionReference`. It deliberately omits the unpublished optional `events` subscription.
-  The route does not consume this option yet, and the builder refuses to connect when recording
-  readiness is absent because the disclosed owner-beta program promised capture after consent.
+  The route consumes this option only after aidream independently revalidates the exact Twilio
+  signature/routing, resolves `voice.owner_beta` for the canonical actor and organization, creates
+  the durable chat conversation, and idempotently issues the short-lived reference. Preparation
+  failure preserves recording but omits the connection; absent recording readiness refuses both
+  because the disclosed owner-beta program promised capture after consent.
 - `storage-canary-readiness.ts` reads the latest owner-program pass/fail receipt from the existing
   `platform.activity_log` ledger and validates the exact bucket, prefix, writer ARN, retention
   policy, deny checks, application HEAD/read/hash, canonical index/access/delete receipts, and a
@@ -101,6 +104,11 @@ before reference consumption or paid execution. This is readiness only: no token
 content, phone, provider URL, session reference, signature, or credential is returned.
 
 ## Change log
+
+- **2026-08-17** — Completed the first-call handoff: the signed webhook forwards exact signed form
+  material through the typed backend client, aidream independently revalidates and prepares the
+  canonical Mandate/conversation/reference, and accepted TwiML starts recording before connecting.
+  Optional playback events remain omitted; no provider switch changed.
 
 - **2026-08-17** — Extended the one accepted-response builder so a later launch can compose
   consented recording before ConversationRelay, carry only the opaque one-time reference, and omit

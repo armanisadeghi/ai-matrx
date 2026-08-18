@@ -20751,6 +20751,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/communications/voice/conversation-relay/session-reference": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Conversation Relay Preparation */
+        post: operations["conversation_relay_preparation_communications_voice_conversation_relay_session_reference_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -62138,6 +62155,43 @@ export interface components {
             /** Error Message */
             error_message?: string | null;
         };
+        /**
+         * ConversationRelayPreparationRequest
+         * @description Exact Twilio-signed form material forwarded by the Next webhook edge.
+         */
+        ConversationRelayPreparationRequest: {
+            /** Signed Url */
+            signed_url: string;
+            /**
+             * Signature
+             * Format: password
+             */
+            signature: string;
+            /** Parameters */
+            parameters: {
+                [key: string]: string;
+            };
+        };
+        /** ConversationRelayPreparationResponse */
+        ConversationRelayPreparationResponse: {
+            /**
+             * Session Id
+             * Format: uuid
+             */
+            session_id: string;
+            /**
+             * Chat Conversation Id
+             * Format: uuid
+             */
+            chat_conversation_id: string;
+            /** Session Reference */
+            session_reference: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -98664,6 +98718,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LabelMetadata"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    conversation_relay_preparation_communications_voice_conversation_relay_session_reference_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationRelayPreparationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationRelayPreparationResponse"];
                 };
             };
             /** @description Validation Error */

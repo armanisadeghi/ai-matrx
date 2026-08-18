@@ -55810,6 +55810,47 @@
           }
         }
       }
+    },
+    "/communications/voice/conversation-relay/session-reference": {
+      "post": {
+        "tags": [
+          "Voice"
+        ],
+        "summary": "Conversation Relay Preparation",
+        "operationId": "conversation_relay_preparation_communications_voice_conversation_relay_session_reference_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationRelayPreparationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationRelayPreparationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -162007,6 +162048,74 @@
           "running"
         ],
         "title": "ScannerStatusResponse"
+      },
+      "ConversationRelayPreparationRequest": {
+        "properties": {
+          "signed_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 32,
+            "title": "Signed Url"
+          },
+          "signature": {
+            "type": "string",
+            "format": "password",
+            "title": "Signature",
+            "writeOnly": true
+          },
+          "parameters": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "maxProperties": 64,
+            "minProperties": 1,
+            "title": "Parameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "signed_url",
+          "signature",
+          "parameters"
+        ],
+        "title": "ConversationRelayPreparationRequest",
+        "description": "Exact Twilio-signed form material forwarded by the Next webhook edge."
+      },
+      "ConversationRelayPreparationResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Session Id"
+          },
+          "chat_conversation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Chat Conversation Id"
+          },
+          "session_reference": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 32,
+            "title": "Session Reference"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "session_id",
+          "chat_conversation_id",
+          "session_reference",
+          "expires_at"
+        ],
+        "title": "ConversationRelayPreparationResponse"
       }
     }
   }
