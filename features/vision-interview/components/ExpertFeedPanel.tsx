@@ -173,10 +173,12 @@ export function ExpertFeedPanel() {
   return (
     <div className="flex h-full min-h-0 flex-col bg-card">
       <div className="flex shrink-0 items-center gap-2 border-b border-border px-2 py-1.5">
-        <h2 className="truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <h2 className="min-w-0 truncate text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Everyone in the room
         </h2>
-        <div className="ml-auto flex items-center gap-0.5">
+        {/* shrink-0: on touch the repo's tap-target law grows these
+            icon-only controls to 44px — the TITLE gives way, never them. */}
+        <div className="ml-auto flex shrink-0 items-center gap-0.5">
           <button
             type="button"
             onClick={() => setOpen(allKeys)}
