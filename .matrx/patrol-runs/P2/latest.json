@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P2",
+  "runId": "2026-08-18-weekly",
+  "state": "fixing",
+  "updatedAt": "2026-08-18T07:15:55.566Z",
+  "summary": "Started bounded two-file canonical agent-door repair.",
+  "source": "2026-08-18-weekly.json",
+  "eventHash": "fee55fd5b2d8717a3e9c1b00a6415c46a73fec3a3d377612bc138a71fd047f95"
+}

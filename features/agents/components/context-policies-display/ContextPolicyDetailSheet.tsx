@@ -13,6 +13,7 @@
 
 import { useMemo } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectAgentContextPolicies } from "@/features/agents/redux/agent-definition/selectors";
@@ -166,9 +167,15 @@ export function ContextPolicyDetailSheet({
 
           {policy?.summary_agent_id && (
             <DetailSection title="Summary sub-agent">
-              <p className="break-all font-mono text-[11px] text-muted-foreground">
-                {policy.summary_agent_id}
-              </p>
+              <EntityRef
+                token="agent"
+                id={policy.summary_agent_id}
+                name={policy.summary_agent_id}
+                openInNewTab
+                wrap
+                alwaysShowActions
+                className="font-mono text-[11px] text-muted-foreground"
+              />
             </DetailSection>
           )}
 

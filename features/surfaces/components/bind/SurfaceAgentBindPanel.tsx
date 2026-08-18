@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Loader2, Link2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -399,9 +400,14 @@ export function SurfaceAgentBindPanel({
             <Link2 className="h-3.5 w-3.5 text-primary" />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {agentName}
-            </p>
+            <EntityRef
+              token="agent"
+              id={agentId}
+              name={agentName}
+              openInNewTab
+              alwaysShowActions
+              className="text-sm font-medium text-foreground"
+            />
             <p className="text-[11px] text-muted-foreground">
               Mapping values from{" "}
               <span className="font-medium text-foreground">

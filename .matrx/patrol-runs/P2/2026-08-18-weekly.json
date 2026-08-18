@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P2",
+  "runId": "2026-08-18-weekly",
+  "baseSha": "4f0e491c03460506c9ee440e0cff3140d4c3ba61",
+  "createdAt": "2026-08-18T07:14:17.431Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-18T07:14:17.431Z",
+      "actor": "codex-pattern-patrol-p2",
+      "summary": "Weekly P2 structural-novelty and full detector pass started; no unfinished permanent P2 record existed.",
+      "evidence": [
+        "Manifest contracts passed: 12 patrols plus live automations.",
+        "Clean detached automation worktree at base 4f0e491c; canonical checkout excluded from mutation.",
+        "Baseline type-check red on pre-existing context-slot schema drift; detector 9 no-doors-in-file alerts; reuse index reports 4 stale paths."
+      ],
+      "previousEventHash": null,
+      "eventHash": "88e686e95c72cc804cbe29880df3fdff405ea2589d12833ac428d66a0fa56587"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-18T07:15:55.566Z",
+      "actor": "codex-pattern-patrol-p2",
+      "summary": "Started bounded two-file canonical agent-door repair.",
+      "evidence": [
+        "ContextPolicyDetailSheet has summary_agent_id and no door; agent registry provides route plus peek.",
+        "SurfaceAgentBindPanel has selected agent id/name and no door; EntityRef preserves mapping state with new-tab navigation."
+      ],
+      "previousEventHash": "88e686e95c72cc804cbe29880df3fdff405ea2589d12833ac428d66a0fa56587",
+      "eventHash": "fee55fd5b2d8717a3e9c1b00a6415c46a73fec3a3d377612bc138a71fd047f95"
+    }
+  ]
+}
