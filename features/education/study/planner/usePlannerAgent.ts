@@ -15,7 +15,7 @@
 // React Compiler is on: no manual memo.
 
 import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
-import { STUDY_AGENTS, restDaysToNames } from "./agents";
+import { STUDY_MANDATES, restDaysToNames } from "./mandates";
 import { buildStudySnapshot, coercePlanDraft } from "./coercePlan";
 import type { PlanDraft, PlanInput } from "./types";
 import type { PlanSummary } from "./buildPlan";
@@ -38,7 +38,7 @@ export function usePlannerAgent(): PlannerAgentResult {
   ): Promise<PlanDraft> {
     const itemType = input.itemType ?? "fc_card";
     return run<PlanDraft>({
-      agentId: STUDY_AGENTS.planner,
+      mandateKey: STUDY_MANDATES.planner,
       label: "Building your study plan",
       surfaceKey: "education-planner-generate",
       sourceFeature: "education-planner",

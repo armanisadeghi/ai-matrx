@@ -29,7 +29,7 @@ import type {
   ReviewAttempt,
 } from "@/features/education/tutor/lanes/learnerContext";
 import type { ReviewSessionResult } from "@/features/education/tutor/lanes/reviewSession";
-import { SPOKEN_PRACTICE_AGENTS } from "../agents";
+import { SPOKEN_PRACTICE_MANDATES } from "../mandates";
 import type { SpokenPracticeMode } from "../types";
 
 export interface ReviewPracticeSessionArgs {

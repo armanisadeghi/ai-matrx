@@ -10,7 +10,7 @@ import {
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import type { TrustConfidence } from "@/features/education/trust/types";
-import { SPOKEN_PRACTICE_AGENTS } from "../agents";
+import { SPOKEN_PRACTICE_MANDATES } from "../mandates";
 import type {
   PracticePlan,
   PracticePrompt,
@@ -90,13 +90,13 @@ export function generateSession(args: GenerateSessionArgs) {
       // The `pronunciation` mode has a DEDICATED designer that emits
       // target-language utterances (same plan shape); the three shipped modes
       // keep the original session designer.
-      const designerAgentId =
+      const designerMandateKey =
         args.mode === "pronunciation"
-          ? SPOKEN_PRACTICE_AGENTS.designLanguageSession
-          : SPOKEN_PRACTICE_AGENTS.designSession;
+          ? SPOKEN_PRACTICE_MANDATES.designLanguageSession
+          : SPOKEN_PRACTICE_MANDATES.designSession;
 
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId: designerAgentId,
+        mandateKey: designerMandateKey,
         surfaceKey: "education-spoken-practice-generate",
         // No dedicated SourceFeature exists (adding one lives in the frozen
         // agents module); reuse the closest sibling — generating graded

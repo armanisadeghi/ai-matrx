@@ -13,7 +13,7 @@
 // React Compiler is on: no manual memo.
 
 import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
-import { EDU_MEDIA_AGENTS } from "./agents";
+import { EDU_MEDIA_MANDATES } from "./mandates";
 
 const EXTRACTION_TIMEOUT_MS = 90_000;
 const POLL_INTERVAL_MS = 250;
@@ -54,7 +54,7 @@ export function useGenerateMindMap(): GenerateMindMapResult {
 
   async function generate(vars: MindMapVariables): Promise<DiagramSpecEnvelope> {
     return run<DiagramSpecEnvelope>({
-      agentId: EDU_MEDIA_AGENTS.mindMap,
+      mandateKey: EDU_MEDIA_MANDATES.mindMap,
       label: "Mapping your material",
       surfaceKey: "education-mindmap-create",
       sourceFeature: "education-mindmap",

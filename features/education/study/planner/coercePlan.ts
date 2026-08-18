@@ -8,7 +8,7 @@
 
 import type { PlanBlockDraft, PlanBlockKind, PlanDayDraft, PlanDraft, PlanInput } from "./types";
 import type { PlanSummary } from "./buildPlan";
-import { STUDY_AGENTS } from "./agents";
+import { STUDY_MANDATES } from "./mandates";
 
 const BLOCK_KINDS: PlanBlockKind[] = [
   "review",
@@ -140,7 +140,9 @@ export function coercePlanDraft(
     restDays: input.restDays,
     goalId: input.goalId ?? null,
     generatedBy: "ai",
-    generatorAgentId: STUDY_AGENTS.planner,
+    // Provenance: records the MANDATE the plan was generated through (the
+    // actual agent is whatever the binding resolved to at run time).
+    generatorAgentId: STUDY_MANDATES.planner,
     rationale:
       typeof obj.overall_rationale === "string"
         ? obj.overall_rationale.trim()

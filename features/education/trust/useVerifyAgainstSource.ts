@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
-import { FC_AGENTS } from "@/features/flashcards/data/agents";
+import { FC_MANDATES } from "@/features/flashcards/data/mandates";
 import { fcService } from "@/features/flashcards/data/fcService";
 import { toast } from "@/lib/toast";
 import {
@@ -120,7 +120,7 @@ export function useVerifyAgainstSource(): UseVerifyAgainstSource {
     }
     try {
       const verdict = await run<VerifyResult | null>({
-        agentId: FC_AGENTS.verifyAgainstSource,
+        mandateKey: FC_MANDATES.verifyAgainstSource,
         label: "Verifying against the source",
         surfaceKey: "education-trust-verify",
         sourceFeature: "education-flashcards",

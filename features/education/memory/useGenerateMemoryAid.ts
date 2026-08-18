@@ -14,7 +14,7 @@
 // React Compiler is on: no manual memo.
 
 import { useFloatingAgentRun } from "@/features/agents/hooks/useFloatingAgentRun";
-import { EDU_MEMORY_AGENTS } from "./agents";
+import { EDU_MEMORY_MANDATES } from "./mandates";
 import {
   coerceMemoryAid,
   type MemoryAidPayload,
@@ -39,7 +39,7 @@ export function useGenerateMemoryAid(): GenerateMemoryAidResult {
 
   async function generate(vars: MemoryAidVariables): Promise<MemoryAidPayload> {
     return run<MemoryAidPayload>({
-      agentId: EDU_MEMORY_AGENTS.memoryAid,
+      mandateKey: EDU_MEMORY_MANDATES.memoryAid,
       label: "Building your memory aids",
       surfaceKey: "education-memory-create",
       // Reuses the "converter one-shot generation" source-feature tag (this is

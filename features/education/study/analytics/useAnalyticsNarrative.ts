@@ -15,7 +15,7 @@
 
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { studyService } from "../service/studyService";
-import { STUDY_AGENTS } from "../planner/agents";
+import { STUDY_MANDATES } from "../planner/mandates";
 import type { StudyAnalytics } from "./computeAnalytics";
 import {
   coerceNarrative,
@@ -58,7 +58,7 @@ export function useAnalyticsNarrative(): AnalyticsNarrativeResult {
     const sessionId = options.sessionId ?? null;
     const fingerprint = narrativeFingerprint(analytics);
     return run<NarrativeReport>({
-      agentId: STUDY_AGENTS.narrator,
+      mandateKey: STUDY_MANDATES.narrator,
       surfaceKey: "education-analytics-narrate",
       sourceFeature: "education-analytics",
       variables: narrativeVariables(analytics, options.itemLabel ?? "cards"),

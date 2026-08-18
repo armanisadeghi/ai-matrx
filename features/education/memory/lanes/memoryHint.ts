@@ -14,7 +14,7 @@ import {
   livePosture,
   runHeadlessAgentJson,
 } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
-import { EDU_MEMORY_AGENTS } from "../agents";
+import { EDU_MEMORY_MANDATES } from "../mandates";
 import {
   coerceMemoryHint,
   type MemoryHintPayload,
@@ -69,7 +69,7 @@ export function memoryHint(ctx: MemoryHintContext) {
   ): Promise<MemoryHintPayload | null> => {
     try {
       const result = await runHeadlessAgentJson(dispatch, getState, {
-        agentId: EDU_MEMORY_AGENTS.memoryHint,
+        mandateKey: EDU_MEMORY_MANDATES.memoryHint,
         surfaceKey: "flashcards-memory-hint",
         // A background per-card study aid on a study surface — the exact
         // meaning of the existing "coach" lane tag.
