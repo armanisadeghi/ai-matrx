@@ -106,6 +106,8 @@ is easy to fill in.
 
 ## Change log
 
+- 2026-08-18 — **The blog and show-notes agents write MARKDOWN; the JSON middleman is gone (Arman's call).** Both answered with a structured envelope (`{title, intro, sections[], resources[]}` / `{key_takeaways[], topics[], links[], people[]}`) that `articleMarkdown.ts` flattened into markdown the instant it landed — and markdown is what `pc_articles.content_markdown` stores, so **nothing in the product ever read that structure**. The cost was the entire live view: the floating window renders markdown as it streams, but an un-kinded JSON blob has nothing to show until it is parsed at the end, so the user watched an EMPTY window for the whole run and then got raw JSON (FOUND_DEFECTS D170). Per the Class E rule — a kind is earned only when the output is consumed STRUCTURALLY — the structure was not earning anything, so it was removed rather than promoted to a kind. Both agents rewritten through `agent_author` (`podcast_blog_writer`, `podcast_show_notes_generator`) with the same anti-fabrication, resources-integrity and timestamp-estimation rules intact; the blog's `output_schema` cleared and both mandates' `output_kind` set to `text`. The blog's first line is a single `# ` H1 that **owns the title and the public slug** (`headingTitle()` reads it off the markdown itself, so the title can never drift from the body the reader sees); show notes start at `## Key takeaways` and never emit an H1. `articleMarkdown.ts` is DELETED. **Platform half:** `runHeadlessAgentJson` gained `expect: "json" | "text"` — a prose agent's product is its answer text, and asking the JSON primitive for it failed a run that answered perfectly. Live-verified end to end: show notes and a blog post generated on real episodes, each rendered as formatted markdown in the floating window (headings, bold timestamps, bullets — no JSON), saved with the H1-derived title and slug. **Known unrelated defect seen while testing:** regenerating an article row created by ANOTHER user fails RLS and surfaces as a bare "Generation failed." toast — the agent ran and its output is lost. That is Access-Gate work, not article work.
+
 - 2026-08-14 — **Topic ideas: the four the user didn't pick are no longer thrown away, and the one they DID pick arrives whole (FOUND_DEFECTS D151).** `TopicIdeaHelper` generated five ideas, kept one, and lost the batch when the dialog closed; `topicFromIdea` then flattened the chosen idea to title + hook and silently dropped every other field the generator wrote (angle, audience, why-now, segments). It now carries every field across as labeled lines, and — given a selected show — banks the WHOLE batch on `pc_shows.metadata.topic_ideas` through the new `onBatch` seam on the Kind Request primitive (`podcastService.bankTopicIdeas` / `readTopicIdeaBank`, newest batch first, capped at 20, CAS-merged so two studio tabs can't clobber each other). `GeneratorForm` passes `showId`. **Known limit:** with no show selected there is no durable parent row yet, so the batch stays transient — the generator form is explicitly not persisted.
 
 - 2026-08-09 — **Host count capped at 10, and that is final.** ElevenLabs
@@ -128,11 +130,9 @@ is easy to fill in.
   The mandate now resolves INSIDE the canonical launcher (`mandateKey`, config_overrides
   preserved) instead of `resolveMandate` + a bare agentId, and the run comes back as a
   parsed object from the structured-JSON primitive, so `articleMarkdown.ts` gained
-  `assembleArticleFromValue` (the text-taking `assembleArticle` stays for the fuzzy
-  path). Live-verified on a real episode: window on click, phase moves, article saved,
-  output survives completion. 🚨 **Correction to the sweep doc:** it recorded these
-  agents as returning plain markdown needing no kind — they do not. They answer with a
-  JSON envelope and the markdown is assembled client-side, so the window is EMPTY for
+  `assembleArticleFromValue`. 🚨 **Superseded 2026-08-18 — both agents now write
+  markdown and `articleMarkdown.ts` is DELETED; see the change log.** The note that
+  followed described the JSON era, when the window was EMPTY for
   the whole run and paints raw JSON at the end. Filed as **D170**; whether they earn a
   kind is Arman's call.
 
@@ -585,14 +585,14 @@ is easy to fill in.
   episode, `EpisodeContentStudio` (on the run page) generates a blog article or
   show notes from the episode's `script` via the `podcast_blog_writer`
   (`58204bd9`) / `podcast_show_notes_generator` (`b1910198`) agents through
-  `useEpisodeArticles` + `useRunAgent`, saving to `pc_articles`
+  `useEpisodeArticles`, saving to `pc_articles`
   (`articleService`, migrations `pc_articles.sql` + `pc_episodes_script.sql`).
-  These agents emit a **structured JSON envelope** (behind `<reasoning>`), NOT
-  raw markdown — `articleMarkdown.ts#assembleArticle` extracts the object
-  (`utils/json/extract-json`) and assembles renderable markdown. Two
-  `useRunAgent` fixes this surfaced: it now reads `completion.result.output`
-  (schema agents don't stream `chunk` events) and treats a failed/cancelled
-  completion as an error. Publish flips `status`; public blog renders at
+  🚨 **These agents write MARKDOWN (2026-08-18).** They used to answer with a
+  structured JSON envelope that the client immediately flattened — and markdown
+  is what `pc_articles` stores, so nothing ever read the structure. The run uses
+  `expect: "text"`, the blog's leading `# ` H1 IS its title (and the source of
+  its slug), and show notes start at `## Key takeaways`. Publish flips `status`;
+  public blog renders at
   `/podcast/[slug]/blog` (`PodcastBlogPage`, SSR + `generateMetadata` with
   `og:type=article` + canonical), show notes inline on the episode page
   (`EpisodeShowNotes`). Episode-page CTAs go live when published; `ResultActions`

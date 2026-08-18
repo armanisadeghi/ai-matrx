@@ -7,13 +7,11 @@ vision: [features/window-panels/FEATURE.md]
 
 # THE FLOATING LAW — ranked offender inventory
 
-> **State, 2026-08-18.** Every ranked section (§1–§8) is DONE. What is left is
-> three named things, and nothing else: (a) the flashcard run emits no chunks at
-> all — chipped, needs aidream; (b) `useResearchStream` still hand-renders its
-> stream and must move onto `adoptForeignStream` — chipped; (c) D170's kind
-> question, which is **Arman's call** and must not be started by an agent. The
-> XML-wrapper half of D170 was fixed 2026-08-18 in the canonical pipeline.
-> Keep this doc only until (a) and (b) land.
+> **State, 2026-08-18.** Every ranked section (§1–§8) is DONE, and **D170 is
+> CLOSED — both halves.** What is left is TWO chipped items and nothing else:
+> (a) the flashcard run emits no chunks at all, which needs aidream; (b)
+> `useResearchStream` still hand-renders its stream and must move onto
+> `adoptForeignStream`. Delete this doc when those two land.
 
 The companion worklist to [`live-stream-everywhere.md`](./live-stream-everywhere.md).
 That doc holds the vision, the primitives, and the migration recipe. **This doc is
@@ -343,13 +341,16 @@ All three generators run through `useLiveAgentRun` into the floating
   episode+kind, and resolves the mandate inside the canonical launcher. Live-verified on a
   real episode: window opens on click, phase moves, the article saves, the output
   survives completion.
-  🚨 **The "plain markdown, no kind" verdict recorded here was WRONG at the wire.**
-  These agents answer with a JSON envelope (`{title, intro, sections[], resources[]}` /
-  `{key_takeaways[], topics[], links[], people[]}`) — `articleMarkdown.ts` exists
-  precisely to assemble the markdown client-side. So the window sits EMPTY for the whole
-  run and paints raw JSON at the end: no spinner, but nothing to watch. Filed as **D170**
-  (which also covers the same symptom on the marketing image-prompt step). Whether these
-  two agents earn a kind is **Arman's call** — do not start it inline in a sweep.
+  ✅ **RESOLVED 2026-08-18 — the original "plain markdown, no kind" verdict was wrong
+  about the WIRE but right about the DESTINATION.** These agents were answering with a
+  JSON envelope that `articleMarkdown.ts` flattened into markdown on arrival, and
+  markdown is what `pc_articles` stores — so nothing in the product ever read the
+  structure, and the window sat EMPTY for the whole run before painting raw JSON.
+  Arman's call was to delete the JSON rather than author a kind (the Class E rule: a
+  kind is earned only when the output is consumed STRUCTURALLY). Both agents now WRITE
+  markdown, the window renders it as it streams, `articleMarkdown.ts` is deleted, and
+  the blog's leading `# ` H1 owns its title and slug. Platform half:
+  `runHeadlessAgentJson` gained `expect: "json" | "text"`. **D170 is closed.**
 - ~~**Title options**~~ — **DONE 2026-08-11.** `episode_title_options` kind
   authored + activated, the agent (`podcast.title_optimizer` v4) emits the
   envelope, `useEpisodeTitleOptions` runs through `useLiveAgentRun` into the
