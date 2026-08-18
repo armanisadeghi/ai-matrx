@@ -10,6 +10,7 @@ import {
   Hammer,
   KeyRound,
   Loader2,
+  Pencil,
   Search,
   Unlock,
 } from "lucide-react";
@@ -59,6 +60,7 @@ interface CmsPageAiActionDialogProps {
   page: CmsPageListRecord;
   onPageChanged?: () => void | Promise<void>;
   editorHref: string;
+  keywordHref: string;
   planHref: string;
 }
 
@@ -81,7 +83,7 @@ function ReadinessRow({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-3",
+        "flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-start",
         ready
           ? "border-emerald-500/25 bg-emerald-500/5"
           : "border-amber-500/30 bg-amber-500/5",
@@ -99,7 +101,9 @@ function ReadinessRow({
           {detail}
         </p>
       </div>
-      {!ready && action ? <div className="shrink-0">{action}</div> : null}
+      {!ready && action ? (
+        <div className="w-full shrink-0 sm:w-auto">{action}</div>
+      ) : null}
     </div>
   );
 }
@@ -122,6 +126,7 @@ export function CmsPageAiActionDialog({
   page,
   onPageChanged,
   editorHref,
+  keywordHref,
   planHref,
 }: CmsPageAiActionDialogProps) {
   const fullPageQuery = useQuery({
@@ -236,8 +241,10 @@ export function CmsPageAiActionDialog({
   const hasResearch = researchLineage.entries.length > 0;
   const busy = reality.busy !== null || deepeningThisPage;
 
-  const runDeepen = () => {
-    if (page.plan_node_id) void deepen.start(page.plan_node_id);
+  const runDeepen = async () => {
+    if (!page.plan_node_id) return;
+    await deepen.start(page.plan_node_id);
+    await onPageChanged?.();
   };
   const runBuild = async () => {
     const failure = await reality.write();
@@ -335,15 +342,23 @@ export function CmsPageAiActionDialog({
                 }
                 action={
                   hasPlan ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={runDeepen}
-                      disabled={busy}
-                    >
-                      <KeyRound className="mr-1.5 h-3.5 w-3.5" />
-                      Find with AI
-                    </Button>
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      <Button asChild variant="outline" size="sm">
+                        <a href={keywordHref}>
+                          <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                          Edit
+                        </a>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void runDeepen()}
+                        disabled={busy}
+                      >
+                        <KeyRound className="mr-1.5 h-3.5 w-3.5" />
+                        Find + deepen
+                      </Button>
+                    </div>
                   ) : undefined
                 }
               />
@@ -357,15 +372,23 @@ export function CmsPageAiActionDialog({
                 }
                 action={
                   hasPlan ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={runDeepen}
-                      disabled={busy}
-                    >
-                      <BookOpenCheck className="mr-1.5 h-3.5 w-3.5" />
-                      Create with AI
-                    </Button>
+                    <div className="flex flex-wrap justify-end gap-1.5">
+                      <Button asChild variant="outline" size="sm">
+                        <a href={planHref}>
+                          <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                          Edit
+                        </a>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void runDeepen()}
+                        disabled={busy}
+                      >
+                        <BookOpenCheck className="mr-1.5 h-3.5 w-3.5" />
+                        Create with AI
+                      </Button>
+                    </div>
                   ) : undefined
                 }
               />
@@ -375,18 +398,15 @@ export function CmsPageAiActionDialog({
                 detail={
                   hasResearch
                     ? `${researchLineage.entries.length} research item${researchLineage.entries.length === 1 ? " is" : "s are"} available to ground the page.`
-                    : "No research topic or tag currently reaches this page. The AI can deepen the plan before writing."
+                    : "No research topic or tag currently reaches this page. Add the evidence you want the writer to use."
                 }
                 action={
                   hasPlan ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={runDeepen}
-                      disabled={busy}
-                    >
-                      <Search className="mr-1.5 h-3.5 w-3.5" />
-                      Research with AI
+                    <Button asChild variant="outline" size="sm">
+                      <a href={planHref}>
+                        <Search className="mr-1.5 h-3.5 w-3.5" />
+                        Add evidence
+                      </a>
                     </Button>
                   ) : undefined
                 }

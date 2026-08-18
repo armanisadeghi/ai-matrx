@@ -369,6 +369,19 @@ export function usePlanDeepen(siteId: string | null) {
       void queryClient.invalidateQueries({
         queryKey: planKeys.nodeEdges(targetNodeId),
       });
+      // Deepen can assign a primary keyword into the canonical per-page SEO
+      // plan. The readiness dialog and every SEO editor read that index rather
+      // than the retired plan.node keyword copy, so leaving this cache warm
+      // made a successful assignment look as if it never happened.
+      void queryClient.invalidateQueries({
+        queryKey: planKeys.seoPlans(siteId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: planKeys.nodeSteps(siteId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: planKeys.nodeArtifacts(targetNodeId),
+      });
 
       if (runEpochRef.current !== epoch) return;
 

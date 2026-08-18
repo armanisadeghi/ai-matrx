@@ -1465,6 +1465,7 @@ export default function PageEditor({
             components={components}
             page={page}
             editorHref={cmsPageEditorHref(siteId, page.id)}
+            keywordHref={cmsPageEditorHref(siteId, page.id, "seo")}
             planHref={cmsPageEditorHref(siteId, page.id, "plan")}
             onPageChanged={onRefetchPage}
           />

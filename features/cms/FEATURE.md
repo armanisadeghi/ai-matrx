@@ -149,9 +149,14 @@ header Agents chrome is the overflow, never the only door. History + remaining s
 Value: plan content (label/route/brief/status) from the linked `plan.node`, and the SEO intent
 (keyword, role, desired meta, planned links) from the ONE store —
 `web.page.desired_values.keyword_plan` via the site plan index (invariant 9; the node's retired
-SEO copies are never read). The dialog reports
-plan / keyword / brief / research readiness, offers the existing plan Deepen agent for each missing
-input, and keeps a direct skippable AI door. Generation reuses `useNodeReality.write` — the same
+SEO copies are never read). The dialog reports plan / keyword / brief / research readiness and
+puts the canonical human editor beside every missing input: SEO for the target keyword, and the
+hosted plan-node editor for the brief and research lineage. Deepen is offered only for the two
+things it can actually complete (target keyword + brief); research lineage keeps its honest
+**Add evidence** door instead of pretending Deepen creates topic/tag links. When Deepen settles it
+invalidates the page SEO-plan index as well as the node/edge/step/artifact caches, so a keyword it
+persisted into `web.page.desired_values.keyword_plan` immediately clears the readiness warning.
+The gate keeps a direct skippable AI door. Generation reuses `useNodeReality.write` — the same
 content-plan → CMS writer — including the one-click write-policy repair. The list menu is the one
 `buildCmsPageMenu` registry for AI build/edit, review, editor, preview, live page, content plan,
 publish-draft confirmation, and delete; do not fork a second row action inventory.

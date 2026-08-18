@@ -606,6 +606,7 @@ export default function PageListView({
           components={components}
           page={aiTarget.page}
           editorHref={cmsPageEditorHref(site.id, aiTarget.page.id)}
+          keywordHref={cmsPageEditorHref(site.id, aiTarget.page.id, "seo")}
           planHref={`${cmsPageEditorHref(site.id, aiTarget.page.id)}?tab=plan`}
           onPageChanged={onRefresh}
         />
