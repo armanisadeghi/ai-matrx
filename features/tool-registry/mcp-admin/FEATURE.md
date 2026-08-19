@@ -4,7 +4,7 @@
 **Owner**: tool-registry
 **Routes**: `/administration/agents/mcp-servers` (admin)
 **Surface**: `matrx-admin/mcp-servers`
-  (`features/surfaces/manifests/admin-mcp-servers.manifest.ts`)
+(`features/surfaces/manifests/admin-mcp-servers.manifest.ts`)
 
 ## What this is
 
@@ -19,6 +19,8 @@ by `managed_by_server_id`), Configs (`tool.mcp_config`), Connected users
 (identity → transport & auth → review) whose Provision button calls the
 `provision_mcp_server` RPC, inserting the server, an `mcp.<slug>` executor, a
 system bundle and a `bundle:list_<slug>` lister tool in one transaction.
+The two platform-owned tool rows always carry the Matrx System organization;
+the provisioner refuses partial creation by keeping all four inserts atomic.
 
 ## Reads vs writes
 
@@ -73,6 +75,12 @@ an agent must never assume one has run.
   per-user Connections page.
 
 ## Change Log
+
+- **2026-08-18** — Repaired `provision_mcp_server` after canonical organization
+  ownership made `tool.definition.organization_id` and
+  `tool.bundle.organization_id` required. The RPC now assigns both generated
+  platform rows to Matrx System, and a real Microsoft Work IQ provisioning run
+  verified the full four-row transaction.
 
 - **2026-08-13** — **Surface read half completed (`readiness` `partial` →
   `verified`), and a dead tools fetch fixed.** The five per-tab values the
