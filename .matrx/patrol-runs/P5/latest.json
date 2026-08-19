@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-19-copy-everywhere",
-  "state": "certified",
-  "updatedAt": "2026-08-19T07:39:30.916Z",
-  "summary": "Exact candidate 8196a478e is CERTIFIED after two payload-fidelity rejections were repaired.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-19T07:40:15.854Z",
+  "summary": "Certified candidate 8196a478e is queued for fast integration to origin/main.",
   "source": "2026-08-19-copy-everywhere.json",
-  "eventHash": "aef094ee3224704475a14f4f583b954cc7970883c880b81d2c8898c5606fb804"
+  "eventHash": "2440793e689d23aa36970e491b5bc2e81fb2ea9c92294293a07eac0903f47c83"
 }
