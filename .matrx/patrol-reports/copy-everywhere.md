@@ -59,6 +59,11 @@ review-only, and the canonical custom-copy workspace stays excluded.
   89 / 0 / 1 / 24 / 9; `git diff --check` green.
 - Canonical interaction coverage: CopyButtons, AI copy menu, and controlled
   MatrxDataTable suites passed **3 suites / 17 tests**.
+- Independent review of candidate `809b7964f` returned **REJECTED** with one
+  concrete batch-caused defect: the Assist projection omitted the visible
+  flagged, unseen, low-confidence, decision-note, action-description, and
+  Everything-count states. Those omissions are corrected in the replacement
+  candidate, and a focused formatter regression test now covers them.
 - The managed preview lease is owned by
   `/Users/armanisadeghi/code/matrx-frontend`, not this automation worktree.
   This run will not reuse or stop that foreign preview. The candidate changes

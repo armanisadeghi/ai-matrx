@@ -158,6 +158,10 @@ export function AssistsManager() {
   });
 
   const shownIds = rows.filter((r) => r.status === "pending").map((r) => r.id);
+  const everythingCount = Object.values(stats).reduce(
+    (sum, count) => sum + count,
+    0,
+  );
 
   const columns: MatrxColumnDef<Assist>[] = useMemo(
     () => [
@@ -605,6 +609,7 @@ export function AssistsManager() {
                 unseen_only: unseenOnly,
                 quieted_kinds: sourceSuppressions.length,
                 load_error: error,
+                everything_count: everythingCount,
                 status_counts: stats,
               },
             }),
@@ -621,6 +626,9 @@ export function AssistsManager() {
               accepted: stats.accepted,
               dismissed: stats.dismissed,
               went_away: stats.resolved,
+              expired: stats.expired,
+              superseded: stats.superseded,
+              everything: everythingCount,
               status_view: tab,
               urgency_filter: urgency,
               include_snoozed: includeSnoozed,

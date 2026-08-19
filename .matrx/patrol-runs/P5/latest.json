@@ -3,8 +3,8 @@
   "patrolId": "P5",
   "runId": "2026-08-19-copy-everywhere",
   "state": "certifying",
-  "updatedAt": "2026-08-19T07:28:07.071Z",
-  "summary": "Two product repairs and two detector classifications are ready for exact-SHA adversarial certification.",
+  "updatedAt": "2026-08-19T07:33:32.532Z",
+  "summary": "The rejected Assist payload now includes every cited live state, action descriptor, decision note, and the Everything KPI.",
   "source": "2026-08-19-copy-everywhere.json",
-  "eventHash": "ea5b1a423d2e82a4553470a6b95f099861b279feb1b312998058eb5dc4693e55"
+  "eventHash": "69b1266be61103569b0210e7a292f8c96ddbaaf6cc0f9bb1f04052540692774e"
 }

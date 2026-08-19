@@ -44,6 +44,44 @@
       ],
       "previousEventHash": "b89b33c65a3934c80eaa3ae50eb166b992351b1a5ce9f632c03546ab53ac0e86",
       "eventHash": "ea5b1a423d2e82a4553470a6b95f099861b279feb1b312998058eb5dc4693e55"
+    },
+    {
+      "sequence": 4,
+      "state": "rejected",
+      "at": "2026-08-19T07:31:59.487Z",
+      "actor": "/root/p5_certifier",
+      "summary": "Candidate 809b7964f omitted rendered Assist row states and the Everything KPI from its copy payload.",
+      "evidence": [
+        "Missing isStarred, viewedAt/Not yet seen, exact low-confidence warning, decisionNote, action descriptor, and the visible Everything count.",
+        "Type-check, scoped ESLint, P5 detector/tests, focused copy/table tests, patrol contracts, run-record verification, and diff check all passed; rejection is payload fidelity only."
+      ],
+      "previousEventHash": "ea5b1a423d2e82a4553470a6b95f099861b279feb1b312998058eb5dc4693e55",
+      "eventHash": "47e4d2f6164bf10f8a2390cf1cd65337bf71b9a1efe9cc9999c86a0fa7e8e180"
+    },
+    {
+      "sequence": 5,
+      "state": "fixing",
+      "at": "2026-08-19T07:32:04.142Z",
+      "actor": "codex-p5-worker",
+      "summary": "Repairing the exact Assist payload omissions found by the independent certifier.",
+      "evidence": [
+        "The product controls remain valid; only the Assist rendered-view projection and page KPI mirror require correction."
+      ],
+      "previousEventHash": "47e4d2f6164bf10f8a2390cf1cd65337bf71b9a1efe9cc9999c86a0fa7e8e180",
+      "eventHash": "00694b031890c7eca6997993c34b4de32e7be6b85c66e348488f142e7bb181ec"
+    },
+    {
+      "sequence": 6,
+      "state": "certifying",
+      "at": "2026-08-19T07:33:32.532Z",
+      "actor": "codex-p5-worker",
+      "summary": "The rejected Assist payload now includes every cited live state, action descriptor, decision note, and the Everything KPI.",
+      "evidence": [
+        "Added formatter regression coverage for flagged, unseen, low-confidence, decision-note, and action-copy fields.",
+        "Type-check, scoped ESLint, formatter test, P5 detector, and detector tests are green after the repair."
+      ],
+      "previousEventHash": "00694b031890c7eca6997993c34b4de32e7be6b85c66e348488f142e7bb181ec",
+      "eventHash": "69b1266be61103569b0210e7a292f8c96ddbaaf6cc0f9bb1f04052540692774e"
     }
   ]
 }
