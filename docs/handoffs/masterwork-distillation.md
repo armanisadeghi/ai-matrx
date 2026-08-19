@@ -1,616 +1,118 @@
-> 🔴 **SUPERSEDED — the ONE Masterwork document is
-> `/Users/armanisadeghi/code/common-docs/projects/masterwork/MASTERWORK.md`.**
-> It carries the evidence-verified state of every system, UI, agent and Approach.
-> This file is retained only for its per-task working notes; status claims here are
-> not authoritative.
+# Masterwork Distillation System — THE HANDOFF (forward work order)
 
-# Masterwork — Distillation → Rulebook → Build → a Masterwork
-
-> Vocabulary authority: [`common-docs/systems/vocabulary/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/vocabulary/FEATURE.md).
-> Cross-repo system-of-record: [`common-docs/systems/masterwork/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/masterwork/FEATURE.md).
+> **THE DOC MAP — three documents, three jobs, no overlap (settled 2026-08-19):**
+> **STATE** (what exists, evidence-verified): `/Users/armanisadeghi/code/common-docs/projects/masterwork/MASTERWORK.md`
+> **CONTRACT** (invariants, LEARNED PATTERNS, Approach registry): `/Users/armanisadeghi/code/common-docs/systems/masterwork/FEATURE.md`
+> **THIS FILE** (what remains, who owns it, the integration audit): the ONE forward work order.
+> A cold reader starts at MASTERWORK.md, builds from this file, and obeys the contract.
 
 **The spine:** an **Expert** → **Distillation** (many **Approaches**) → a **Rulebook** →
 **Build** → a **Masterwork** (draft → released), proved by an **Audition**, run by an
-**Operator** as an **Encore**.
+**Operator** as an **Encore**, improved forever (Checkup · Coherence · Hindsight · the
+improvement brain).
 
 ## Part 0 — Arman's vision (unchanged; do not lose)
 
 1. **UI-first is the reality test** — nothing is real without a UI a normal user can use.
 2. **The system is for HUMANS first** — the product is the PROCESS that distills, never
    hand-authored rules. The dream: *"just talk for an hour, upload the audio, we do the rest."*
-3. **chunk → extract → table → reference-back** is the ingestion play; reuse the document
-   pipeline; every rule links to its source pages.
+3. **chunk → extract → table → reference-back** is the ingestion play; every rule links to
+   its source (pages, timestamps, conversations).
 4. **The honest-evaluation caveat:** Hopkins/Strunk flatter us (models know them). The REAL
    test is Arman's own SEO method, judged by whether HE agrees with the output.
-   **Still the gate. Still not run.**
+   **Still the gate. Still not run end-to-end.** (28 rules approved 2026-08-18; production
+   Build works again; nothing blocks it.)
 5. **Agents are legitimate UI.**
+6. **The global view is the owner's job (Arman, 2026-08-19):** whoever owns this feature owns
+   ALL of it — every part, every integration between parts, and the layer on top. Parts that
+   don't talk to each other are the failure mode that has been "disastrous on a couple of
+   features." This handoff's Integration Audit section is that view; keep it current.
 
-## STATUS — live and verified (compressed)
+## THE INTEGRATION AUDIT (2026-08-19) — the global view
 
-- **🚨 THE ONE CANONICAL MASTERWORK SYSTEM IS NOW A CONVERSATION — the Conductor
-  (2026-08-18).** Arman: _"We need one system to build all of this… the only thing that
-  ever makes a Masterwork is our one single canonical Masterwork system. And all we do is
-  we go to that system and we attach what we already have."_ + _"Everything should just
-  stream anyway. I'm sick of you hiding everything and not letting me just talk to the
-  agent."_ **Shipped:** Mandate `masterwork.conductor` → agent `c7126299-…` (Opus 5;
-  tools `rulebook` · `workflow_catalog` · `workflow_author` · `workflow_plan`, instructions
-  in the DB only), `features/masterwork/conduct/` (ONE implementation behind both the
-  Rulebook-page panel and `/masterwork/[id]/conduct`), the `conversation --(conducting)-->
-  rulebook` edge, agent role `conductor` on `matrx-user/masterwork-rulebook`. The header's
-  primary action is now **Make a Masterwork**; the template Build moved into **More** as
-  **Build from template** (NOT deleted — it is superseded, not gone; never extend it).
-  **Live-proved END TO END as admin on Arman's SEO Rulebook `8d1d4f08-…` against
-  production**: read the Rulebook, 12 `workflow_catalog` calls, a rule-by-rule (a)/(b)/(c)
-  verdict whose best line is one no template could reach — _"All 28 of your rules describe
-  how to judge, categorize, and validate a keyword. Not one of them says where the candidates
-  originate."_ — and then, on the answers, a REAL authored workflow: `Primary Keyword
-  Decision for a Page` (`e07fbf06-…`, 24 nodes / 37 edges, `metadata.origin="conductor"` +
-  `built_from_rulebook` + `rulebook_version`) containing live Google + site crawl + GSC
-  branch **and five real `plan.step` Plans** (competitor authority · People Also Ask · local
-  results · GSC keyword footprint · long-tail restart), each with a `workflow.plan` row whose
-  output contract it set via `workflow_plan`, blank stand-in,
-  `allow_stand_in_in_production=false`. Compare the template Build's output from the same
-  Rulebook: two text boxes and a rubric, zero nodes touching Google, a URL, a SERP or Search
-  Console. Two fixes landed with it: the Record's interview reader now filters edges on
-  `role` (a Conductor session must never be read as the Expert's own words), and the shared
-  variable-display rule renders an attachment list as DOORS instead of raw JSON with UUIDs
-  in it.
-  **Stage (iii), the EMISSION leg, is now proved (2026-08-18).** Told to build, it validated
-  clean on the first pass and created `workflow.definition` `e07fbf06-…` — _"Primary Keyword
-  Decision for a Page"_, 24 nodes / 37 edges, five real `plan.step` open steps — now stamped
-  `built_from_rulebook`/`rulebook_slug`/`rulebook_version` so it lists on
-  `/masterwork/[id]/masterworks` beside the template Build's output with the same drift
-  check. Two platform gaps it exposed are closed in aidream (`workflow_tool.py` +
-  `workflow_plans/service.py`, regression `scripts/_verify_conductor_emission.py`, 14/14
-  live): (1) plan ROWS are materialized for every author, not just the Studio canvas — an
-  agent-authored workflow used to save anchors with `plan_id: null`, so five open steps had
-  no Plan Room, no history, and a publish gate that could not see them; (2) `workflow_catalog
-  action=definition_shape` returns a worked, self-validating example definition, because the
-  registry described node types but never how they are wired and the Conductor had to guess
-  the edge shape.
-  **Open:** two real platform defects the Conductor found and filed — the Google search
-  node drops the People-Also-Ask box (a `critical` SEO rule calls it a mandatory source),
-  and the Search Console node returns a load receipt rather than the keyword rows. Until
-  those close, the Conductor honestly parks both as gaps rather than faking them.
+A full-feature audit (every part, at HEAD, live DB) answered the one question that matters:
+**do the parts talk to each other?** Verdict: the parts are individually strong; seven did
+not talk; there is no top layer. Fixed same-day vs. chipped vs. owed is tracked below.
+**THE CLASS (name it before fixing instances):** six findings were ONE failure repeated —
+*a law lands in the AUTHORING half and never reaches the EXECUTING/CONSUMING half.*
+Role-filtering, `relates_to`, corpus assembly, coherence poking, dictation origin, capture
+durability: all authored correctly, all dropped downstream. This is LEARNED PATTERN 1b's
+generalization, now codified in the CONTRACT doc.
 
-- **🚨 THE EXPERT NOW OWNS THE AGENTS THEIR BUILD AUTHORS (2026-08-18, aidream).** Build was
-  creating every Masterwork's Maker / Editor / Chief through the **platform-builtin** path, so
-  they landed `agent_type='builtin'`, `created_by` NULL, in the ownerless **Matrx System org**,
-  with `card_visibility='public'` — i.e. **in every user's agent browse list**, and the Expert did
-  not own the distillation of their own method. That is the privileged internal path
-  `common-docs/policies/we-are-our-own-customer.md` forbids. **Fixed in the CREATION path**, not
-  in `build.py`'s templating, so the Masterwork Conductor inherits it: `AgentSpec.owner`
-  (new `AgentOwnership`) → `agent_factory.builder._persist_agent` decides the class, exposed on
-  the service contract as `CreateAgentInput.owner_user_id` / `owner_organization_id` (org resolved
-  through the ONE resolver, never NULL). `_author_agent` now REQUIRES `owner_user_id` and
-  `build_masterwork` refuses (`masterwork_build_unauthenticated`) rather than build a Masterwork
-  nobody owns. **Guards (two, both loud):** `agent_factory.guards.assert_ownership_class` raises at
-  the birth choke point if an owned agent would be stamped `builtin`; `scripts/check_customer_agent_ownership.py`
-  (in `release.sh`, non-blocking) screams on any builtin carrying a customer Rulebook provenance
-  tag. The DB trigger `agent._enforce_builtin_system_org` was **not weakened** — it is correct for
-  a genuine platform builtin (the shared Rulebook Auditor, the Understudy, the distillers).
-  **18 live agents reclaimed** (12 tagged `rulebook:<slug>`, 6 from the older `pack:<slug>`
-  generation) to their source Rulebook's owner + the Build's org, `agent_type='user'`,
-  `card_visibility='internal'`. Verified: 0 remain builtin / system-org / ownerless / public-card;
-  all 14 referencing Masterwork workflows still resolve every `ai.agent.start` agent and every one
-  is runnable by the workflow's owner (`iam.has_access_for` viewer). No mandate, surface, shortcut
-  or app binding pointed at any of them.
+### Fixed 2026-08-19 (this session, pushed, verified)
+- 🔴→✅ **Corpus contamination:** the Checkup's server corpus now role-filters `interview`
+  edges AND subtracts every non-interview-role conversation (the Conductor's `conducting`
+  sessions — 2 were live on the SEO Rulebook and WOULD have been quoted back as Arman's own
+  words). Forcing tests: `masterwork_checkup/tests/test_corpus_role_filter.py`. Fail-closed:
+  exclusion failure narrows the corpus, never widens it.
+- 🔴→✅ **Coherence Partner now fires on the Expert's own writes:** the FE rules funnel's
+  announcement endpoint (`/masterworks/understudy/refresh`) pokes coherence exactly like the
+  server write funnel — the two paths can no longer diverge on this.
+- 🔴→✅ **Three enabled Approaches dead-ended after selection** (`source`/`exemplar`/`file`
+  had empty `intake_query`; no param opened IngestSourceDialog at all). Now `?ingest=<lane>`
+  opens the dialog pre-set to the chosen lane; rows updated live; browser-verified
+  (`?ingest=exemplar` lands on "It IS the finished work").
+- ✅ Duplicate `masterwork.rule_cleanup` mandate row (`fc01ee64`, was ENABLED and pinned to a
+  deleted agent) soft-deleted; the FEATURE.md paragraph that would have sent someone to
+  re-bind it corrected.
+- ✅ `rulebook_advisor` / `rule_editor` surface roles bound to existing Mandates
+  (`masterwork.checkup_auditor` / `masterwork.rule_improver`) — were empty header-menu rows.
+- ✅ Orphaned deploy-gap shim function dropped from the live DB (deploy caught up; outage over
+  — production Builds completing again, verified in `platform.masterwork_run`).
 
-- **🚨 THE BUILD IS A WINDOW PANEL — the last blocking modal on the payoff moment is gone
-  (2026-08-18).** Arman, on finding the Build still in a `sm:max-w-lg` dialog a day after the
-  Add-rule conversion: *"you're telling me all of it's gonna render inside of that shitty little
-  fucking model that blocks the page and sits there … and just has so much fucking text that it
-  shits on itself every time it moves."* `BuildMasterworkDialog` is **deleted**; the Build is
-  overlay `masterworkBuildWindow` → `features/masterwork/build/BuildWindow.tsx`, opened only
-  through `useOpenBuildWindow()`. **(1)** `78dvh` — the Rulebook stays visible and editable behind
-  the running Build, and the panel never overflows on first paint; minimise/maximise/tray all work.
-  **(2)** Progress renders through **`LiveRunProgress`**, the canonical NON-token renderer THE
-  FLOATING LAW names, because `POST /masterworks/build` emits no tokens at all — only typed
-  `rulebook_loaded` / `agent_created` / `workflow_validated` data events. `build/useBuildRun.ts`
-  translates them into `LiveRunProgressState`; three stable rows update in place and the parts
-  accumulate as a detail line. The old hand-drawn `<p>` log in a `max-h-48` scroller was the
-  banned event narration, in the cramped frame he was describing. **(3)** The finished Masterwork
-  gets **doors** (studio · sibling Masterworks · source Rulebook) and the canonical
-  `TryMasterworkBox` INSIDE the panel — build it and run it without leaving the moment.
-  **Verified live on Strunk (`e492a07f-…`) against the local stack**: two real Builds ran to
-  completion (workflow `fd6cea24-…`), the page behind stayed typeable mid-Build, a reload +
-  reopen restored the finished Masterwork off the durable row, and a remount mid-Build rejoined
-  the live run ("This Build kept running while you were away"). Desktop + 375px both proved.
-  Fixed in passing: `LiveRunProgress`'s status word shattered into "Run nin g" at 375px — the
-  shared component now holds it `shrink-0 whitespace-nowrap`.
-  **Not proved:** `TryMasterworkBox` was already inline everywhere it appears (MasterworksPage,
-  EncoreRunPage, UnderstudyCard) — no run surface was trapped in a dialog, so nothing to convert.
+### Chipped (five focused sessions, briefs self-contained with file:line evidence)
+1. **`task_f27d97ba` — ONE expert corpus, all 9 lanes, both readers.** Two assemblies exist
+   (FE `getExpertCorpus` vs server `corpus.py`); NEITHER covers body_of_work
+   (`platform.masterwork_corpus_item`), dump (`distillation_source` edges), imported chat
+   text, or pasted source — the Checkup's premise is structurally false for 4 Approaches
+   (146+24+16 rules invisible).
+2. **`task_717a98c5` — `relates_to` reaches EXECUTION.** `understudy.py:87` and
+   `build.py:299` serialize rules without relationships/severity ordering; 0 of 429 live
+   rules carry `relates_to` (stack shipped after authoring) — run the relationship auditor
+   per Rulebook to build the queue; findings stay proposals.
+3. **`task_8c4853a1` — THE TOP LAYER, the cheap honest way.** One deterministic journey
+   computation; the improvement brain learns checkup/coherence/conductor/audition/release
+   moves (today it knows only sections+approaches+weak-auditions; 5 checkup runs exist and
+   no finding was ever surfaced as a next move); KPI `nextStepLine` extends past "Ready to
+   Build"; AssistStrip on the module home; cross-dedupe coherence↔checkup.
+4. **`task_e895e08d` — lane routes get the surface scope + AccessGate; capture durability
+   goes from 1 lane to all 9.** `SurfaceRuntimeProvider` only on the detail page (the
+   Conductor on `/conduct` runs with an EMPTY scope — same code, two doors, different
+   behavior); 4 denial patterns incl. banned hand-written copy; `capture_failed_write` has
+   one callsite (Scout) while the bulk lanes are unprotected.
+5. **`task_c6b6b38d` — Encore shows the Audition + housekeeping.** Operators never see
+   `quality_score`/the beat-vanilla verdict (the product's whole pitch); admin-map missing
+   rows + 4 dead OPEN buttons; `/import/ai-chats` in no nav; orphan exports
+   (`InterviewButton`, `interviewTitleFor`, `listRulebookVersions` has no UI); dictation
+   origin on 2 of 18 mic surfaces; `POST /clean-corpus` has zero callers ever (the Checkup's
+   `use_cleaned` branch is unreachable through the product).
 
-- **🚨 THE FINAL CHECKUP WAS REBUILT — it broke four of our own laws and Arman caught all four
-  on his first run (2026-08-18).** *"It forced me to stare at a blank page in a window panel for
-  approximately a minute and a half and then magically all the content appeared… we have a policy
-  that all of our content streams in real fucking time."* **(1) It now STREAMS:** the cause was
-  `await run_mandate(...)` in every producer — the findings were on the wire the whole time and the
-  code discarded the stream. aidream gained a shared `run_streaming_finding_producer` plus two
-  reusable primitives (`ai_execution/streaming_json_items.py`, `ai_execution/chunk_capture.py`) that
-  release each finding the instant it parses AND clears the unchanged evidence gate; a
-  forcing-function test asserts emits land BEFORE the mandate returns. Measured on a real paid run:
-  **first finding at 56s of a 115s run.** **(2) The ORDER is the spec:** a finding is now the
-  registered `masterwork_checkup_finding` kind whose shape IS Arman's sentence — You said this →
-  They created this → What's missing or wrong → The recommended version — with ONE component, and an
-  `add` says out loud that nothing was created. The FE renders it the documented way
-  (`adoptForeignStream` via `useDurableRun`'s new `live.surfaceOwnsDisplay` → `<MarkdownStream
-  requestId />`), and a rejoined checkup renders through `KindInstanceRender` — never a second
-  renderer. **(3) All four verbs** (Approve · Improve · Reject · Edit) are on every finding, from the
-  shared `RuleDecisionActions`, with Improve on the ONE `masterwork.rule_improver` runner and Edit on
-  the ONE `RuleFields` form; clicks reach the panel through the new `checkup_decision` surface write
-  target (`applyPolicy: "manual"`). **(4) The footer is ONE row** — receipt moved to the body, AI-pass
-  notice to a toast. **(5) Opening the window RUNS the checkup** (the second identical button is
-  gone). `CheckupPanes.tsx` + `CheckupFindingList.tsx` deleted. Live-verified end to end: badge 1 → 2
-  → 4 while running, Improve round-tripped a real agent rewrite into "Your version", Edit saved a
-  hand-written name, Reject captured a reason, Apply landed the Expert's own wording on the real rule
-  at Rulebook v29.
-  **Open:** the checkup can only produce findings where a real Expert corpus exists — the Strunk
-  canon was distilled from a book, so its checkup is honestly empty until someone talks to it.
+### Still open, NOT chipped (needs judgment or Arman)
+- **Severity floor semantics** — what `critical` mechanically MEANS at run time (blocks vs
+  weights) is a product call; chip 2 surfaces ordering but not policy.
+- **`monologue` + `matrx_conversations` registry rows disabled by design** — revisit once the
+  file card's share of monologue traffic is known.
+- **Build-service consolidation** onto `matrx_ai/plans/compiler.py::compile_plan` (~960
+  hand-rolled lines) — bring a plan first; never delete first.
+- **Four Scouts, no shared primitive** (masterwork/SEO-strategy/GSC-intake/Vision-interview) —
+  value is stopping the fifth.
+- **Distillation → Engram §5 interface** (candidate specialists/contracts/acceptance
+  criteria) — acceptance criteria first; it is also the honest test's instrument.
+- **Oracle tap (a) email-in and (b) SMS** halves (transports exist; register `oracle_tap`
+  as an Approach row when they land).
+- **Encore "shared with me" shelf** — waits on `lib/list-scope` Brief 3A.
+- **Voice-on-Scout live E2E** — needs a real microphone (harness cannot capture);
+  `docs/handoffs/voice-communication-layer.md` row 1.
 
-- **🚨 A RULE THAT HIDES ITS RELATIONSHIP TO ANOTHER RULE IS MISLEADING (2026-08-18, from Arman
-  reading all 28 rules of the SEO Rulebook `8d1d4f08-…` by hand before approving them:
-  _"they're representing the rule as though it's a standalone thing… on a few of the rules, I
-  found that they were misleading, and I fixed them"_).** A correctness defect, not a style nit:
-  a rule applied alone fires in the case he would have refused. His own repair is the standard —
-  *"Before committing to a keyword, check the backlink profiles of the top-10 competitors"* became
-  *"…**if you notice a page that seems beatable because your website has higher authority than
-  theirs**, examine how many links it took them to get that spot"* (one clause naming the
-  condition its sibling produces; not a merge). **Shipped:** optional `relates_to`
-  `[{rule_id, kind, note}]` on the rules JSONB (no migration), `kind` a closed four-value
-  vocabulary earned from his 28 rules — `refines` | `depends_on` | `exception_to` |
-  `contrast_with`; ONE resolver (`distill.resolve_rule_relations`) shared by
-  `build_draft_rules`, the Scout's `rulebook` tool and the Checkup, which DROPS and COUNTS any
-  reference it cannot resolve so a door never opens onto nothing; **THE CONNECTION RULE**
-  published into all seven rule-producing agents' DB definitions (scout v9, source v8, exemplar
-  v9, monologue v2, transcript v3, corpus synthesizer v2, rule improver v4) — check the existing
-  rules, carry the connecting aspect INLINE in the statement, *and* stamp `relates_to`, never one
-  without the other; FE `RulebookRule.relates_to` + `RuleRelations.tsx` rendering each sibling as
-  a real door (`#rule-<id>` anchor on every rule row, named with the sibling's real name);
-  **Final Checkup producer #3, the Relationship Auditor** (`masterwork.relationship_auditor`,
-  agent `c3c6ceeb-…`) for the debt already in Rulebooks. **Live-proved both ways:** the producer
-  on `8d1d4f08-…` returned **2 findings / 0 evidence rejections** out of 28 rules — both real
-  (`profile-every-top-10-serp-result…` silently `refines` the rankability verdict;
-  `use-confusedmisspelled-keywords…` silently `depends_on` the taxonomy pass) — and a source
-  distiller run on a two-related-judgments chunk emitted "…**overriding the usual
-  number-in-headline requirement**" with `{"kind": "exception_to"}` stamped, 0 relations dropped.
+### ARMAN'S OWN LIST (nobody else can do these)
+1. **THE HONEST TEST** — run your SEO method end to end: Build (works in prod again) →
+   Conduct → Audition (three-way, vanilla arm on) → your verdict. The whole program's gate.
+2. **16 provider screenshots** for `/import/ai-chats` from your signed-in accounts —
+   work orders: `features/source-onboarding/galleries/ai-chats/SCREENSHOT_WORK_ORDERS.md`.
+3. **Voice relay with a real mic** (5 minutes on `/masterwork/<id>/interview`).
+4. **Five chips to approve** (above) + the standing surface-audit chip if still pending.
 
-- **THE UNDERSTUDY ACTUALLY RUNS, AND IT SAYS WHAT IT IS (2026-08-18, from Arman pressing
-  Run it and getting a bare error: _"No explanation of what the fuck is going on… It doesn't
-  have anything to run"_).** It DID have something to run — the Understudy workflow existed.
-  **True root cause: the run's organization reached the run ROW but never the execution
-  AppContext.** `create_streaming_response` does not call `set_app_context`, and the FE injects
-  the org into the request BODY, so the detached scheduler ran org-less and every agent step
-  refused with "an agent run belongs to an organization" *while the row plainly showed one*.
-  Fixed in aidream with `durable_run_organization(run_id, ctx)` (run row = durable truth) on
-  both detached legs, plus `organization_id` on the start + both resume `with_overrides` —
-  the same ContextVar trap `conversation_id` and `initial_variables` were already fixed for.
-  **Two FE defects fixed with it:** (a) `getMasterworkRunVerdict` read only the `chief`/`editor`
-  nodes, so a SUCCESSFUL Understudy run (output lands on `understudy`) displayed "no ruling text
-  came back"; (b) every failure rendered as one bare red line — now every failure path routes
-  through the new **`features/workflow-runtime/run-failure-explanation.ts`** (plain headline
-  naming WHAT ran + a real next step + the technical cause kept reachable, never the headline),
-  reused by Studio/Encore via `TryMasterworkBox`'s `whatItRuns` prop.
-  **Copy (Arman: _"is that what an understudy is? Isn't it the exact opposite?"_):** the card
-  headlined "Your system is already running", claiming the star instead of the stand-in and
-  throwing away the canonical word. Now **"Your understudy is ready — try it"** / "A rough
-  stand-in that already does this whole job — from the N rules you've approved." / "It won't be
-  as good as the real thing — that's what building your Masterwork is for." The
-  `RulebookKpiStrip` live-dot tooltip overclaimed the same way and was fixed too.
-- **THE RULEBOOK PAGE WAS CONSOLIDATED — element count DOWN, one section per idea (2026-08-18,
-  from Arman's live review: _"no one is paying attention to what the fuck is happening"_ /
-  _"all of the things I'm putting in to get a result should be together"_).** `/masterwork/[id]`
-  went from 5 top-level sections and ~14 header/toolbar controls to **4 sections**: header (one
-  primary **Build a Masterwork** + a **More** menu) → **Sources** (the ONE inputs section:
-  interviews list + documents/files/links + Add ▾ + New interview + Your words + Turn this into
-  rules) → Understudy → rules (search + Add rule only). Deleted: the Conversations card, the
-  collapsed Sources row, the four source buttons welded onto the rules toolbar, the duplicate
-  "Your words" (3 entry points → 1), the "Interview me"/"New interview" double name, the second
-  sentence under the KPI bar, and the three-button rules empty state. New file:
-  `components/detail/RulebookInputsSection.tsx`; `RulebookSourcesPanel` gained `variant="bare"`;
-  `ConversationsSection` is now a chrome-free compact list. The page `AssistStrip` moved out of
-  prime position to below the rules, and `AssistCard`'s action row now wraps (it used to make the
-  popover scroll horizontally AND vertically at once). Page IA is written down as law in
-  `features/masterwork/FEATURE.md` § Status. Verified as owner and as viewer, desktop + 375px.
-
-- **BODY OF WORK + CHAT IMPORT PROVEN THROUGH THE PRODUCT; RUN LINKAGE FIXED (2026-08-18).**
-  Both lanes driven end-to-end in the real browser dialogs on Strunk
-  (`e492a07f-…`), dev FE :3001 → local aidream :8000. Chat import: synthetic
-  ChatGPT `conversations.json` (mapping node-graph) uploaded through the dialog →
-  picker parsed 2 conversations (`provider: chatgpt`) → run `91b49fcc-…` completed,
-  9 drafts, every quote verbatim-verified, `source_ref` carries
-  `conversation_key/title/provider/message_range/file_id`. Body of Work: run
-  `18016cca-…` completed with 36 drafts (33 per-piece + 3 `synthesis: true` rules
-  citing both pieces), `run_id` now STAMPED on `platform.masterwork_corpus_item`
-  (the 08-17 NULLs were in-process-only proofs; the HTTP path claims the durable
-  run — aidream exposes a public `run_id` on the run emitter). Mid-run reload
-  auto-reopened the dialog and rejoined (run `10276319-…`). FE fixes shipped: dump
-  terminal event corrected to `masterwork_dump_complete` (was
-  `masterwork_ingest_dump_complete` — dump dialog never saw completion live), and
-  BodyOfWorkDialog's "Try the failed pieces again" now actually relaunches the
-  failed pieces from the durable board (retry survives reload; previously it just
-  reset the form). Dead-letter retry re-opens rows with a fresh budget; non-owner
-  non-admin retry of another user's Rulebook is refused (`rulebook_forbidden`,
-  fail-closed, observed live — the shared dev browser profile is signed in as
-  test@test.com). Local-dev note: URL pieces need a scraper at
-  `MATRX_SCRAPER_URL` (localhost:8001) — the 08-17 dead_letters were exactly
-  that service being down.
-
-- **DUPLICATE RULE-REWRITE MANDATE RETIRED + EVERY DIALOG LANE GOT ITS URL (2026-08-17).**
-  `masterwork.rule_cleanup` (a concurrent-session sibling of `rule_improver`) is gone
-  end-to-end: the editor's "Clean up with AI" now runs `masterwork.rule_improver`'s TIDY shape
-  (empty `expert_input`; agent `c09465cb-…` v3 gained the tidy case, quote/severity/section
-  frozen client-side by `applyRuleTidy`), `ruleCleanup.ts`+test deleted (logic folded into
-  `ruleImprove.ts`), aidream declaration removed, mandate row + agent `f0d59c1a-…`
-  soft-deleted live, no shim. And the ruling "every creation/working mode gets a URL" is now
-  CLOSED: `/masterwork/[id]/sources` (dump), `/masterwork/[id]/body-of-work`,
-  `/masterwork/[id]/import` — one shared component per lane (panel reused directly; the two
-  dialogs grew `variant="page"`), shared `RulebookLaneRoute` scaffold per the interview
-  precedent, "Full page" doors in the dialog/panel headers, query params still open the
-  in-page entries, and the chat-import lane finally got MOUNTED on the detail page
-  ("Your AI chats" button + `?chatImport=1` — the dialog existed but nothing rendered it).
-  Interview route gained `?seed=` for the gaps follow-up. Admin map + FEATURE.md updated;
-  `pnpm type-check` + `ruleImprove.test.ts` green.
-
-- **SOURCE-ONBOARDING FEATURE FINISHED AS A SURFACE (2026-08-17).** The provider-gallery +
-  guide-page house pattern (`features/source-onboarding/`, public `/import/ai-chats[/{provider}]`)
-  now has its contract doc (`features/source-onboarding/FEATURE.md` — the one aidream's
-  distillation FEATURE.md already cited), an honest illustrated screenshot placeholder
-  (faux-browser frame naming the step in `ScreenshotSlot.tsx` — pages ship well with ZERO
-  captures), the Meta AI JSON-format trap wired to its work-ordered `dyi-json` slot, and both
-  routes + components declared on the Masterwork admin map. Browser-verified desktop + 375px,
-  light + dark, no horizontal overflow, `pnpm type-check` green. **All 16 screenshot captures
-  remain open for a HUMAN** (SCREENSHOT_WORK_ORDERS.md heads with the status table): every
-  export UI sits behind a signed-in real account — takeout.google.com and accounts.x.ai
-  verified to bounce straight to sign-in — so no anonymous agent can fill any slot; landing a
-  PNG at `public/images/source-onboarding/{provider}/{slot}.png` upgrades the slot with zero code.
-
-- **REVIEW VERBS SETTLED + SAVE≠APPROVE SHIPPED (2026-08-17, Arman's live-test rulings).** The
-  three core verbs are **Approve / Reject / Improve**. Saving an edit no longer approves
-  (`applyManualRuleEdit`, matrix in `features/masterwork/FEATURE.md` § The review-verb matrix);
-  Improve = new client Mandate `masterwork.rule_improver` (agent `c09465cb-…`, Gemini Flash tier,
-  declared in aidream `client_mandates.py`, row seeded live) — feedback + full Rulebook → full
-  structured rewrite, landing via the ONE CAS path as a draft keeping its id, wizard
-  "keep going" + requeue works; "Add rule" is now the `masterworkAddRuleWindow` WindowPanel
-  (With AI default tab — describe in your own words → same Mandate drafts the rule as a draft;
-  Manually = shared `RuleFields`); editor offers "Have the AI apply my notes instead"; the
-  icon+gap+margin button-spacing defect fixed. Browser-verified on Strunk v16→v20.
-
-- **SURFACE ROLES BEHIND MANDATES + HEADER AGENT MENU (2026-08-17, from Arman's "this surface
-  hadn't even been declared" feedback).** The manifest was already declared/synced by a sibling
-  session; this pass added the surface's system agents as mandate-backed roles and proved the
-  header menu. New platform primitive `SurfaceAgentRole.mandateKey` (types → sync mirror
-  `ui_surface_agent_role.mandate_key` → `fetchMandatePins` live resolution, sourceTier
-  `"mandate"`; drift check refuses mandateKey+defaultAgentId together) — no agent UUID in code.
-  Four roles on `matrx-user/masterwork-rulebook`: `scout`, `rule_improver`, `checkup_auditor`,
-  `corpus_cleaner`; `masterwork.rule_improver` was seeded by a parallel session mid-task and
-  bound itself with zero further work (the designed property). NO bespoke menu was built: the
-  pre-existing `SurfaceAgentsHeaderButton` in the shell header lists them ("Surface roles") and
-  launches through `launchAgentExecution` with the live rulebook scope — verified in-browser on
-  `/masterwork/[id]` (all four render with resolved agent names; Checkup auditor launch staged
-  `rulebook_id`/`rulebook_name`/`content` in the run panel).
-- **TRANSFERABLE LESSON:** every topic surface is DECLARED, its agent jobs are ROLES behind
-  Mandates (`mandateKey`, never a UUID), and the header Agents menu exposes them — check all
-  three BEFORE building any bespoke AI affordance on a page.
-
-- **CONVERSATIONS MADE FIRST-CLASS + THE INTERVIEW GOT A URL (2026-08-17, from Arman's live
-  feedback: "I still can't seem to get the conversation chain back… if it's in the UI, it's
-  hidden").** Diagnosis: NOT a data bug — his interview `4706f9c0-…` ↔ rulebook `8d1d4f08-…`
-  edge exists, `assoc_for_entity` returns it under his uid, the conversation row is his and
-  titled honestly; the chooser simply only ever rendered INSIDE the "Interview me" sheet. Fixes:
-  `ConversationsSection` (features/masterwork/record/) now on `/masterwork/[id]` — every
-  interview with Continue (in-panel resume), open-in-/chat, full-screen door, New interview,
-  empty state; new route `/masterwork/[id]/interview` (`?conversation=` resume · `?new=1`
-  fresh) rendering the SAME exported `ScoutInterviewContent` as the sheet ("Full page" door in
-  the sheet header); admin map gained the interview + record routes. Verified in-browser on the
-  Strunk Rulebook (2 interviews): section renders, Continue rehydrates history, route +
-  deep-link resume load by URL, empty state on Hopkins, mobile 375 clean.
-- **THE IMPROVEMENT BRAIN SHIPPED (2026-08-17, Arman GO on all recommendations).** The Approach
-  selector + elicitation-move producer: `aidream/services/masterwork_assists/` (system of record:
-  its FEATURE.md) raises `platform.assists` chips on `/masterwork/[id]` (AssistStrip under the KPI
-  strip, surface `matrx-user/masterwork-rulebook`) — deterministic layer (thin/one-sided section →
-  seeded section interview · 3+ approved rules → critique-a-bad-draft with a REAL weak draft
-  generated at sweep time · unaddressed weak/losing Audition → the failure lever · no
-  exemplar-sourced rules → ask for examples), move ledger on `rulebook.metadata.elicitation`
-  (7-day re-offer gate; `research` move key registered but deferred), and the
-  `masterwork.approach_selector` Mandate firing ONLY when deterministic found nothing (once/day
-  cap). Two new DB agents on Gemini 3.7 Flash behind Mandates `masterwork.approach_selector` +
-  `masterwork.bad_draft` (no seed fallback). Chips navigate to `?assist=<key>`; the page's
-  `fetchAssistLaunch` (features/masterwork/assists.ts) opens the Scout panel seeded (never
-  auto-sends) or the ingest dialog. Always the NORMAL priority band; live-cap 2 chips/Rulebook;
-  hourly system task `masterwork_assists` (…386, handler-gated, migration 0386 ledgered). Proven
-  live 11/11 by `aidream/scripts/_verify_masterwork_assists.py` on the SEO + Strunk Rulebooks,
-  incl. dedupe/ledger idempotence and a generated bad draft.
-
-- **THE UNDERSTUDY SHIPPED (2026-08-17, Arman approved all recommendations + ruled Gemini 3.7
-  Flash).** The system runs from minute one: every Rulebook gets ONE free one-agent Masterwork
-  (`ask -> understudy -> show`; mandate `masterwork.understudy`, DB agent `8bb1d53f-…`, model on
-  the row) built at Rulebook creation with ZERO rules, rebuilt free + in place on every rules
-  save from BOTH funnels (FE `saveRules`/`createDraftRulebook` → `POST
-  /masterworks/understudy/refresh`; server `rulebook_writes` pokes itself for Scout writes).
-  Approved rules are doctrine, drafts ride in a labeled unconfirmed block, rejected/retired never
-  appear; every run ends with "How this gets better". Row: `metadata.understudy=true`,
-  `engram_state='improvised'` (ladder untouched), never releasable, filtered out of the built
-  list. FE: `features/masterwork/understudy/` — the "Your system is already running — try it"
-  card on `/masterwork/[id]` (TryMasterworkBox verbatim, self-heals old Rulebooks) + KPI `live`
-  hook. Verified live on Strunk: Understudy `118b9509-…`, refresh idempotence asserted, a REAL
-  run completed on Gemini 3.7 Flash obeying the approved rules. Details: aidream
-  `services/masterworks/FEATURE.md` § The Understudy.
-- Scout `pack_id` variable residue: **FIXED live 2026-08-17** — `variable_definitions` renamed to `rulebook_id` with Rulebook-vocabulary helpText (direct DB write; agent_author refuses variables edits).
-
-- **THE GUIDED START REBUILT IN THE HOUSE PATTERN (2026-08-17, Arman's "those stupid little small
-  bubbles are horrible").** `NewRulebookDialog` DELETED; `/masterwork/new`
-  (`features/masterwork/intake/NewRulebookFlow.tsx`) is now the one intake — a full page with big
-  default-filled option tiles (every question pre-selected), the Approach picker as large
-  registry-driven cards (suggested one pre-selected), wizard-draft persistence, and all entry
-  points rewired (home buttons, Start-here tiles → `?approach=<key>`, Studio list button). House
-  pattern is now written down: FEATURE.md § Guided intake follows the house pattern + a
-  pattern-patrol nomination.
-- **THE RECORD SHIPPED + interviews are properly associated (2026-08-17, Arman's "that's
-  critical").** A Rulebook and its Scout conversations now share a canonical
-  `platform.associations` edge (`conversation --interview--> rulebook`, registered pair;
-  historical links backfilled from rule provenance + `chat.tool_trace`, including Arman's own
-  37,455-character SEO interview, whose stale "Auto: expertise_interviewer" title was fixed).
-  "Interview me" on a Rulebook with prior interviews now offers each of them (when, turns, words,
-  rules produced, first line) with **Continue** / **Start a new interview** instead of silently
-  minting a new conversation; Continue truly resumes. `/masterwork/[id]/record` ("Your words")
-  shows every message, upload, and recording for one Rulebook with doors + copy-everything.
-  `getExpertCorpus(rulebookId, rules)` is the ONE corpus contract the Final Checkup auditor should
-  consume — do not re-derive it. Also extracted `features/agents/hooks/useConversationResume.ts`,
-  the canonical resume sequence previously inline in `ChatRoomClient`.
-- **DICTATED AUDIO IS NOW ATTRIBUTED AND PLAYS IN THE RECORD (2026-08-17, Arman's "we need that
-  full tracking").** New generic `RecordingOrigin` (`features/audio/recordingOrigin.ts`) +
-  `RecordingOriginProvider` — a surface WRAPS its subtree and every recording started inside is
-  stamped at `transcripts.transcripts.metadata.origin` (existing jsonb column, **no schema
-  change**); nothing was threaded through the shared mic chain and no other ProTextarea changed.
-  `getExpertCorpus` gained `contribution.dictations[]` (additive), matched to a message only by
-  VERBATIM substring — never guessed; unmatched audio becomes its own contribution. Door back on
-  the transcript via `RecordingOriginRef`. **Arman's own 7 recordings are backfilled** onto
-  conversation `4706f9c0…` at contiguous verbatim offsets. Open: pre-2026-08-17 dictations cannot
-  be attributed without guessing, so they stay unattached. See `features/masterwork/FEATURE.md`
-  § The Record and `features/audio/FEATURE.md` § The Recording Origin.
-- **The Final Checkup UI is BUILT (2026-08-17)** — `features/masterwork/checkup/`, the
-  `masterworkCheckupWindow` split-pane WindowPanel opened from the Rulebook header: findings streamed
-  one at a time off the durable `checkup` run (`useMasterworkRun` surface `checkup`, final event
-  `masterwork_checkup_complete`, per-finding event `masterwork_checkup_finding`), keyboard
-  disposition (Y / N / arrows / U), an "Approve with AI" that only takes ≥80%-confidence findings and
-  can be undone before anything is saved, and ONE CAS apply through `saveRules` (add appends · modify
-  keeps the rule id · remove RETIRES) with a receipt + Undo. Dismissals are remembered on
-  `platform.rulebook.metadata.checkup.dismissed`, fingerprinted `kind:target_rule_id:proposed_name`
-  — **the checkup service should read that to suppress what the Expert already refused; this surface
-  is its only writer.** Verified end-to-end against the live DB on the Strunk Rulebook (add → new
-  rule, modify → rewritten in place with its id kept, dismiss → memory row, Undo → rules restored).
-  **Waiting on the server lane only:** `POST /masterworks/checkup` does not exist yet, so the launch
-  path is typed through a single documented cast in `useCheckupRun.ts` (`CHECKUP_PATH`) that becomes
-  a plain constant the moment the route ships and `pnpm sync-types` runs. The FE also expects an
-  optional `alternatives: proposed[]` on a finding (Arman: "where we have options they click to
-  select the one that they want") — additive, ignored when absent.
-- **The Final Checkup SERVER lane is LIVE (2026-08-17)** — aidream
-  `services/masterwork_checkup/` (its `FEATURE.md` is the contract). `POST /api/masterworks/checkup`
-  (durable operation `checkup`) and `POST /api/masterworks/clean-corpus` (operation `clean_corpus`)
-  both exist, so `CHECKUP_PATH`'s documented cast in `useCheckupRun.ts` becomes a plain constant
-  after `pnpm sync-types`. Event names match what the UI already listens for
-  (`masterwork_checkup_progress` / `_finding` / `_complete`, plus `masterwork_corpus_progress` /
-  `masterwork_corpus_cleaned`), the finding shape matches, `alternatives: proposed[]` is on the wire
-  (empty until a producer offers choices), and the terminal event adds `evidence_rejected` /
-  `already_dismissed` / `notes` / `corpus_cleaned`. **Your dismissal memory is read:** the service
-  suppresses any finding whose `kind:target_rule_id:proposed_name` fingerprint is in
-  `metadata.checkup.dismissed` — keep `dismissalFingerprint` byte-identical, it is a cross-repo
-  contract now. Producer #1 is Mandate `masterwork.checkup_auditor` (Opus 5); cleanup is Mandate
-  `masterwork.corpus_cleaner` and stays MANUAL (Arman's ruling) — the checkup consumes a saved clean
-  from `rulebook.metadata.expert_corpus` but never triggers one. Proved live twice on Arman's SEO
-  Rulebook `8d1d4f08-…`: identical 2 findings both runs, 0 evidence rejections, both real (a rule
-  encoding a timeline Arman explicitly retracted, and a missing "match everything the page holding
-  your target spot does well" rule).
-- **Approaches are a REGISTRY, not an `if` (2026-08-17):** `platform.approach` (canonical
-  system-variant catalog via `create_entity_table`; seeded interview/source/exemplar/file with
-  mandate_key + intake_query) drives the NewRulebookDialog picker (registry cards, "Suggested
-  for you" from the knowledge answer, row's `intake_query` routes); every lane stamps
-  `source_ref.approach` through `build_draft_rules` / the `rulebook` tool; RuleProvenance shows
-  it. Add-an-Approach-with-an-existing-lane = a row, zero code — contract in both FEATURE.mds.
-- **The monologue (recording) lane is real (2026-08-17)** — "just talk for an hour, upload
-  the audio" no longer delegates to the text lane. Audio/video → timed transcript chunks →
-  mandate `masterwork.monologue_distiller` (new DB agent purpose-built for rambling spoken
-  monologue; per-rule `confidence`, emits `gaps`) → drafts anchored with
-  `source_ref.time_range` (start/end seconds) + `approach: "monologue"` (registered
-  `platform.approach` row, enabled=false — the entry point stays the file card);
-  RuleProvenance renders "at 12:34–15:02" and flags low-confidence rules. Gaps dedupe into
-  `masterwork_ingest_complete.followup_seed`; the ingest dialog offers "Interview me about
-  the gaps" → the Scout panel opens seeded. Transcript cap 320 chunks (long sessions grind
-  under bounded concurrency with per-portion progress, never refuse; matrx-batch is the
-  noted route if that cap is ever hit for real). Verified in-process against the live DB;
-  document ingest still runs the source distiller. Details: aidream
-  `services/distillation/FEATURE.md`.
-- **The full loop is LIVE on `/masterwork`:** guided intake → Scout interview
-  (`masterwork_scout` `4a0b2f8e-…`, `rulebook` tool) or source/exemplar/file ingest → Expert
-  review → Build → run in place → "What did it get wrong?" → Audition → gaps become drafts.
-- **The vocabulary rename EXECUTED end-to-end 2026-08-17** — DB (`platform.rulebook` + `rules`
-  col, `platform.masterwork_run`, RPCs `rulebook_versions`/`rulebook_snapshot`, entity tokens,
-  8 mandate keys `masterwork.*`, tool `rulebook`, all live agent/workflow/Rulebook rows incl.
-  instruction text + `[[masterwork_name]]`/`[[rulebook_source_line]]` template placeholders),
-  aidream (`services/masterworks/` + `services/distillation/`, `/masterworks/{build,ingest,
-  ingest-file,audition,runs/{id}/rejoin}`, `masterwork_*` events, `rulebook_*`/`masterwork_*`
-  error literals, attribution slug `masterwork`), matrx-frontend (`features/masterwork/`,
-  `/masterwork` routes — old namespace deleted, no redirects), docs, generated types both
-  repos, migration record `aidream/db/migrations/masterwork_vocabulary_rename.sql` (ledgered).
-  Type-check green; registry parity tests green; browser-verified on the dev server.
-- **The review loop closes both ways (2026-08-17, Arman's feedback):** per-rule
-  **Reject with feedback** (transient `rejected` + `feedback`; rule keeps `draft:true` so a
-  Build can never include it) and **Request changes** on any rule (approved stays approved).
-  The `rulebook` tool returns `open_feedback` on read; the Scout's instructions require
-  clearing every item each turn — rewrite-and-requeue (fresh draft), or withdraw; applying
-  feedback consumes it; the Expert approving clears it. Approve-all never touches rejected.
-  **Focus wizard** ("Review one by one" — card at a time, approve/reject/edit/skip,
-  auto-advance) + **gamified KPI strip** (approved/waiting/with-the-interviewer tiles,
-  review-progress bar, next-step encouragement). Every textarea in the module is
-  **ProTextarea** (mic + live transcription). Browser-verified end-to-end: a live rejected
-  rule (`never-open-with-brand-name`, Strunk) is sitting in the Scout's queue as a demo.
-- **Adversarial round (2026-08-17) closed:** an independent attacker confirmed wire parity,
-  mandate sync, CAS discipline, the citation gate, and agent-write invariants all HELD; its 8
-  confirmed defects are FIXED and pushed — the editor path now consumes review state (a
-  hand-fixed rejected rule can never reach a Build while reading "with the interviewer"),
-  the wizard stops on failed saves instead of counting them, rejected rules have a
-  self-service "Reconsider" exit, pre-rename history rows retagged (version log/snapshots
-  whole again), stored `expertise_pack` envelopes resolve via a legacy alias (+ manifests
-  remirrored), the Scout now runs through the `masterwork.scout` Mandate (hardcoded UUID
-  deleted; mandate seeded live), the auditor agent row/tool copy renamed, matrx-extend
-  generated types refreshed, the tool sees `retired` and coerces section shapes, Audition
-  judges APPROVED rules only, and stale `processing` run rows are repaired in the ledger.
-- **Hindsight enrollment LIVE for all five mandate agents (2026-08-17):** Scout re-armed
-  (`604cfd49`), source/exemplar distillers + audition judge created (`19d16422`/`c550588c`/
-  `195e6747`, all n=10), rulebook auditor was already active (`37b7dedb`, n=5). The Expert's
-  reject/change-request verdicts already reach the reviewer through the Scout's own transcripts
-  (`open_feedback` on every `rulebook` read); enrollment `goal`s point the reviewer at them —
-  no new outcome pipeline built, on purpose. Details: aidream
-  `aidream/services/masterworks/FEATURE.md` § Hindsight enrollment.
-- **Encore SHIPPED (2026-08-17) — the Operator door exists.** Draft→released lifecycle on the
-  Masterwork (`workflow.definition.metadata.released_at`; Release/Un-release on the Studio's
-  Masterworks page, guarded CAS on `version`, direct supabase-js — RLS `std_update` covers it,
-  no server hop). `/masterwork/encore` (moved from `/encore` 2026-08-17, pre-launch, no
-  redirects) lists released Masterworks by declared scope (mine/orgs/public,
-  VIEW-LAW predicates; "shared" shelf deferred until the generic shared-with-me filter exists —
-  lib/list-scope Brief 3A) with jargon-free cards; `/masterwork/encore/[id]` is the run
-  experience reusing
-  `TryMasterworkBox` verbatim + the Operator's OWN run history. Doors both ways (By <expert> →
-  Rulebook when readable; owner → Studio; Studio → View in Encore). Strunk `24df673f` is
-  RELEASED and live on Encore (browser-verified, desktop+mobile+dark). Found+fixed live:
-  `TERMINAL_STATUSES` missed `errored` (box spun forever on an errored run); live definition
-  descriptions carried retired vocabulary + raw UUIDs (rows cleaned, build.py no longer embeds
-  the id). NOTE: an Encore run start 422s / errors until production aidream picks up the
-  mandate-aware runtime commits already on main — the FE surfaces both honestly.
-- **Audition = the benchmark harness (2026-08-17):** judge routed through the platform Judge
-  primitive (contract `masterwork.audition_judge` v2, agent v12, payload_json shape) writing
-  `platform.judge_verdict` per arm; derived `quality_score` + Expert's own
-  `expert_score`/`expert_verdict` land on `platform.masterwork_run`; opt-in three-way
-  (`compare_vanilla` + `vanilla_input`, vanilla arm on the Masterwork's own primary-agent
-  model) states "The Masterwork beat vanilla AI on N of M rules" — or the honest opposite.
-  AuditionDialog now durable (`useMasterworkRun`), with history strip + "Your call" rating
-  (100/50/0 = better-than-me / as-good / not-there, the judge's future calibration signal).
-  Proven live on Strunk (run `244bdc6f`: quality 25.0, vanilla 0.0, beat 2 of 4 rules).
-  Details: aidream `aidream/services/masterworks/FEATURE.md` § Audition.
-- Fixed along the way: word-boundary name truncation (was defect 3), duplicate Audition judge
-  soft-deleted (mandate pins `c55b52c9-…`), test residue removed (was defect 4), two
-  unmirrored shareable-registry rows (`interview_session`, `workflow_runtime_surface`) added
-  to the FE TS mirror.
-
-- **The landing SHIPPED + routes settled (2026-08-17, Arman's green-lit brief).** `/masterwork`
-  is now the module landing: guests get the marketing page (`MasterworkLanding` via the shared
-  `ModuleLanding` shell, registered in `MODULE_LANDING_DIRECTORY` → appears on `/features`;
-  spine: talk → rules you approve → a system that works exactly your way → proof against vanilla
-  AI); signed-in Experts get the Masterwork HOME (`features/masterwork/home/`): Rulebook cards
-  with review-progress KPIs, Masterworks with release state + quality trend
-  (`platform.masterwork_run.quality_score` latest vs. previous), recent runs in Expert words,
-  `platform.approach` "Start here" tiles (each opens NewRulebookDialog), and "How it's
-  improving". The Rulebook list moved to `/masterwork/all`; Encore moved to
-  `/masterwork/encore` (+ `/[id]`; old `/encore` deleted, no redirects). Nav children,
-  FeatureAdminMap, and every internal link updated. Browser-verified: guest SSR (curl, 200 +
-  marketing copy), authed home with live data, `/masterwork/all`, `/masterwork/encore` +
-  run page, mobile 375, dark. Old `/encore` 404s; guest `/masterwork/all` → `/masterwork`;
-  guest `/masterwork/encore` → login with destination preserved.
-- **✅ THE HINDSIGHT READ GAP — CLOSED (2026-08-17).** The designed fix shipped: the
-  `masterwork_improvement_summary` `SECURITY DEFINER` RPC
-  (`migrations/masterwork_improvement_summary_rpc.sql`, applied + ledgered) returns
-  DE-IDENTIFIED aggregates for exactly the `masterwork.*` mandates' Hindsight enrollments —
-  review counts, last-review time, applied/open finding counts, per-lever theme counts. Never
-  user ids, never transcript/reviewer text; EXECUTE revoked from anon; the enrollments
-  themselves stay closed (`visibility='personal'`, hindsight not PostgREST-exposed — unchanged
-  by design). `fetchImprovementRows` consumes it and the panel renders real review numbers
-  (browser-verified on /masterwork: the checker shows "1 review — 3 improvements found, 1
-  applied, 2 awaiting a decision"). The RPC is scoped `mandate_key like 'masterwork.%'` and
-  must never become a general Hindsight reader.
-
-## Decisions — RULED and EXECUTED 2026-08-17
-
-**① RULED (Arman): a released Masterwork TRACKS its Mandates** — "all agents need to be mandate
-aware." `ai.agent.start` now takes `mandate_key` (resolved on EVERY run; refuses when
-unresolvable — no seed fallback); when `agent_id` sits beside it, the mandate wins and the id is
-the build-time snapshot for drift display. Build (`masterwork_build v5`) stamps every shared
-auditor node with `mandate_key: masterwork.rulebook_auditor` + snapshot; Editor/Maker/Chief stay
-true pins (per-Masterwork authored artifacts no Mandate names). A Binding change reaches every
-released Masterwork on its next run, no rebuild.
-
-**② CLOSED: auditor contract renamed end-to-end** — `pack_source`→`rulebook_source`,
-`principles`→`rules`, `principle_id`→`rule_id` across the live auditor agent row (prompt,
-variables, output schema — via `update_agent`, auto-versioned), the mandate contract,
-`build.py` schemas + citation gates, and BOTH live Masterworks rebuilt in-process as their
-owner: Strunk `24df673f-d252-4075-b134-44ccbfdc5910`, Hopkins
-`10daeb58-bde4-4c98-a2cc-e95164700a3b` (old rows kept — versioned artifacts, list is
-newest-first). Verified from the DB: no old-contract token in either new definition.
-
-## 🚨 THE 2026-08-17 DATA-LOSS INCIDENT — read before touching a live table rename
-
-**What happened:** the live rename `platform.expertise_pack` → `platform.rulebook` was applied
-while production still ran the pre-rename code. Arman was mid-interview dictating his SEO method.
-Five tool calls died on `42P01 relation does not exist` — one carrying **11 finished expert rules**
-(8,773 chars). From his side: he talked for an hour, the agent said it was saving, and the rules
-never existed.
-
-**Recovered** (2026-08-17): all 11 rules + 1 rationale update replayed from `chat.tool_trace.args`
-through `rulebook_writes` into `8d1d4f08-…` (now v25, 28 rules, 12 awaiting review). They carry
-`source_ref.recovered_from_failed_call`. Recovery was only possible because the trace happened to
-store `args` — **forensics, not a feature.**
-
-**The standing rules this earned:**
-1. **Renaming a live table is a DEPLOY-ORDERED operation.** The old name keeps working until the
-   new code is live (alias/view, or rename after deploy). Users are mid-session; the DB and the
-   deployed code are never renamed in the same breath.
-2. **An expert-content write that fails must never be silently lost** — the Expert gets a way back
-   to their words without a database session. (Being built; see In flight.)
-3. **The Expert's words are the asset.** Anything that makes them unreachable is a Sev-1 defect,
-   even when the rows technically exist.
-
-- **No raw UUID reaches the Expert (2026-08-17).** The first-turn variables strip printed
-  `Rulebook id: 56d96d67-…` mid-interview — a machine-wired value the Expert never typed. Fixed
-  generically in the ONE shared component (`FirstTurnVariables`, consumed only by
-  `AgentUserMessage`, so every surface is covered): a bare UUID whose key names a known entity
-  renders as an `EntityRef` (icon + open + peek); one that resolves to nothing is dropped, because
-  an id the user can neither read nor open is noise. No per-surface patching needed.
-
-## In flight (dispatched 2026-08-17, parallel sessions — do not duplicate)
-
-Arman's post-incident directives, each with its own session. Coordinate by contract, not by
-editing another lane's files.
-
-| Lane | Scope |
-|---|---|
-| **The Record** | `platform.associations` edge Rulebook↔conversation (today there is NO link — a conversation is findable only by grepping `tool_trace.args`); resume-or-start-new on "Interview me"; a surface showing **everything the Expert has said** (every message, upload, transcript, and the audio if the ProTextarea mic persists it — that research is part of the lane). Exposes `getExpertCorpus(rulebookId)`. Owns `features/masterwork/record/` + `ScoutInterviewPanel`. |
-| **Cleanup + the audit Mandate** | Reuses the Scribe/War-Room transcript cleanup to make a durable CLEAN version of the Expert's words, then a new Mandate `masterwork.checkup_auditor` (Opus 5, DB-defined) whose only job is *"did we screw up?"* — every finding grounded in a verbatim quote, scored for certainty, an empty result is a legitimate outcome. Owns `aidream/services/masterwork_checkup/`. |
-| **Never lose a payload** | A failed expert-content write becomes a one-click restore for the owner (assists chip replaying through the CAS path, idempotent) + a loud `system_error`; plus the live-rename ordering rule written into the DB doctrine. Owns the tool-failure path. |
-
-**The finding contract all lanes share:**
-`{ id, kind: add|modify|remove, target_rule_id?, proposed?, reason, evidence (verbatim quote),
-evidence_ref {conversation_id?, message_id?, file_id?, time_range?}, confidence 0-1, source }`
-
-A second Checkup producer (a final pass through the interview agent) is a **seam, deliberately not
-built** — Arman floated it and was explicitly unsure it earns its cost.
-
-## Open work, in order
-
-1. **The honest test (the gate).** Arman fills his SEO method through the Scout —
-   `seo-keyword-optimization` `8d1d4f08-…` is the live one (28 rules; `arman-seo-method`
-   `5d353449-…` is the older empty draft). The reject/feedback loop is ready for exactly this.
-2. **Build-service consolidation** (vocabulary-campaign duplication finding ②):
-   `services/masterworks/build.py` (~960 lines) hand-rolls what
-   `matrx_ai/plans/compiler.py::compile_plan` does, except data-driven cast width + non-agent
-   utility nodes. Bring a plan before touching; never delete first.
-3. **Four Scouts, no shared primitive** (duplication finding ③): masterwork_scout, SEO Site
-   Strategy Interviewer, GSC Site Intake Interviewer, Vision Interview openers.
-4. **Distillation → Engram interface** (`common-docs/systems/engram/VISION.md` §5): emit
-   candidate specialists/contracts/acceptance criteria, not just rules.
-
-### Arman's rulings, 2026-08-17 (evening) — all five lanes GO
-
-- **All lane recommendations approved as pitched** (Understudy, body_of_work corpus, dump,
-  selector/moves, transcript import). All five Phase-2 builds dispatched simultaneously.
-- **Model tiers:** the Masterwork mid-tier default is **Gemini 3.7 Flash** (promo pricing —
-  Arman: "amazing for this stuff"); the smart tier is Opus 5 / a GPT model, later. Model
-  choice ALWAYS lives on the DB agent row, resolved from the live catalog — never in code.
-- **THE EXTERNAL-SOURCES RULE:** our own systems must never blind a lane to where the real
-  data lives. Meetings: Google Meet, Teams, and Zoom are the leaders — the Meeting Scavenger
-  must offer easy connections/import guides for them, not just our transcripts. Messages:
-  email + SMS threads from iCloud, Google phones, WhatsApp. The transcript-import lane's
-  provider-gallery + hand-holding-guide-page pattern is the HOUSE PATTERN for all external
-  source onboarding; its components must be reusable for future galleries.
+## THE APPROACH BUILD CATALOG (#1-#15) — preserved verbatim; the specs for what is not yet built
 
 ## The Approach build list — Arman's ruling 2026-08-17: "No idea is turned away until we test it and it sucks"
 
@@ -679,50 +181,25 @@ ritual (delivery vehicle for 9/12 and the failure lever, not a lane).
   machinery, never a bespoke game engine); the Prediction Ledger's pending→resolved state
   table (scoring still via the ONE Judge mandate — never a second grader).
 
-## Transferable lessons (Arman: "everything you learn from this needs to get applied to all of those")
-
-1. **Save ≠ approve, everywhere.** Persisting a human's correction never doubles as their
-   sign-off; approval is only ever the explicit Approve action. Any review surface that
-   auto-promotes on save has this bug.
-2. **The three review verbs are Approve / Reject / Improve** — and Improve (speak feedback →
-   an agent rewrites the ONE item with the full set as context → returns fast as a draft for
-   explicit approval) is how people will actually use review. Build it into every human-review
-   loop (checkup, audition feedback, any draft queue).
-3. **Every add/create flow is AI-first**: "describe it in your own words" (mic-first
-   ProTextarea) is the DEFAULT tab, the manual form is the fallback. "We don't want to be the
-   system where you ever have to type a single word if you don't want to."
-4. **Window panels over blocking modals** — the project-new window panel is the exemplar for
-   "how everything in our system should run"; a create flow in a blocking Dialog is a defect.
-5. **Never add `mr-*` to a Button icon** — the Button base already has `gap-2`; margin on top
-   is the double-spacing defect.
-6. **A slot for an asset you cannot produce yet ships with an HONEST designed placeholder, not
-   a broken image or a bare "coming soon" strip** — name the exact thing that will land there,
-   make the empty state good-looking, and make landing the real asset zero-code (a file at a
-   contract path). Screenshot slots, sample data panes, and preview thumbnails all follow this;
-   the capture work that needs a human gets a groomed work-order file with a status table, not
-   a silent TODO.
 
 ## Working notes that save hours
+- Live ids: Rulebooks `seo-keyword-optimization` **`8d1d4f08-…`** (Arman's, 28 approved rules
+  — THE test bed), `strunk-elements-of-style` `e492a07f-…` (admin-owned — agents verify
+  here), `hopkins-scientific-advertising` `f6267bca-…`, `arman-seo-method` `5d353449-…`
+  (empty early draft). Scout `4a0b2f8e-…`. Approach registry: `platform.approach`, family
+  `distillation`, 9 rows.
+- Deployed-vs-live schema guard: `aidream db/schema_analysis/check_deployed_schema.py`
+  (built from the 2026-08-18 outage; run it before ANY live schema change).
+- Verify locally: `pnpm preview:start` (3001, shared), admin@admin.com; Arman-owned rows are
+  RLS-invisible to admin — verify his data via SQL/RPC, UI on Strunk.
+- **Never:** hand-render a stream · re-roll the CAS write path (`rulebook_writes.py`) ·
+  auto-activate an AI-written rule · put a prompt/agent-id in code (Mandates only) · let an
+  agent touch a clean approved rule · rename a live DB identifier without the §8a-2 shim ·
+  launch a structured-output mandate from a page with write targets without
+  `auto_tools_disabled` (mandates RUNTIME.md).
 
-- Live ids: Rulebooks `hopkins-scientific-advertising` `f6267bca-…`, `strunk-elements-of-style`
-  `e492a07f-…` (has 1 rejected rule waiting as a live demo), `arman-seo-method` `5d353449-…`
-  (draft). Masterworks (current, mandate-aware): Strunk `24df673f-…`, Hopkins `10daeb58-…`
-  (superseded builds `bf711bce-…` / `b0865c3b-…` kept as versioned artifacts). Scout `4a0b2f8e-…`.
-- A real run costs ~$0.19, ~4 min, detaches server-side; safe to walk away.
-- Verify: `pnpm preview:start` (port 3001, shared), `/masterwork/e492a07f-…`. `pnpm type-check`
-  is the only type gate; the live DB is truth.
-- **Never:** hand-render a stream; re-roll the CAS write path (`rulebook_writes.py`);
-  auto-activate an AI-written rule; put a prompt/model constant in a distillation module
-  (Mandates only); let an agent touch a clean approved rule (feedback is the only key).
-- **TRANSFERABLE LESSON (2026-08-17, Arman's ruling):** every creation/working mode gets a real
-  URL route (`/x/[id]/<mode>`), and conversations tied to an entity are FIRST-CLASS visible on
-  the entity page — never buried inside a sheet or dialog. Building the machinery (edges, resume,
-  chooser) without a page-level surface is how a shipped feature reads as missing to its user.
-
-## Definition of done (Arman's bar)
-
-An Expert who cannot code opens the Studio, answers four questions, talks for twenty minutes,
-approves the rules they agree with, rejects one with a spoken reason and watches it come back
-rewritten, presses one button, runs the result, disagrees with it once, and watches that
-disagreement become a rule — then runs it again and **agrees with the output where they never
-agree with vanilla AI.** Until Arman's own SEO method clears that bar, this is not done.
+## Definition of done (Arman's bar, unchanged)
+An Expert who cannot code opens the Studio, talks for twenty minutes, approves the rules
+they agree with, rejects one with a spoken reason and watches it come back rewritten,
+presses one button, runs the result, disagrees with it once, and watches the system get
+better — agreeing with the output where they never agree with vanilla AI.
