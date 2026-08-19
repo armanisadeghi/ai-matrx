@@ -34,7 +34,7 @@ export const TASKS_ASSIST_SURFACE = "matrx-user/tasks";
 /** Agent-mandate the launch action resolves at click time (agent.mandate,
  * seeded by migrations/agent_slots_assist_producers_seed.sql — swappable from
  * the admin mandates console, no deploy). */
-export const TASK_TRIAGE_MANDATE = "tasks.triage_assistant";
+export const TASK_TRIAGE_MANDATE = "tasks.triage";
 
 // Conservative threshold — one or two overdue tasks is a normal Tuesday;
 // a pileup is the signal ("loud, never nagging").

@@ -12,7 +12,7 @@ import type { SourceFeature } from "@/features/agents/types/instance.types";
  * resolved by ProjectCreatePanel via `useMandate` (system default → the
  * user's own binding).
  */
-export const PROJECT_CREATE_MANDATE_KEY = "projects.create_assistant";
+export const PROJECT_CREATE_MANDATE_KEY = "projects.creation_guide";
 
 /**
  * SEED MIRROR of the mandate's system default — kept only so
