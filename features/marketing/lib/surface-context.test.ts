@@ -74,6 +74,7 @@ function makeSite(overrides: Partial<MarketingSite> = {}): MarketingSite {
     settings: {},
     status: "active",
     visibility: "internal",
+    plan_profile_id: null,
     ...overrides,
   };
 }

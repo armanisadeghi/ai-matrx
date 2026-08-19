@@ -904,12 +904,15 @@ the first outreach assist producers (`aidream/services/outreach_assists/`) · th
 reasoning-output floor (`guards.reasoning_output_floor`) · builtin `card_visibility` enforcement
 (migration 0387) · backlink 1000-row truncation (paged, proven 1000 → 2468).
 
-**FRONT-DOOR GAP (found 2026-08-19; chip `task_f391df4c` carries the full brief):** the Marketing
-pillar's three promised doors — `/marketing/outreach`, `/marketing/email`, `/marketing/monitoring`
-— are still "coming soon" placeholders while the entire product ships behind `/crm/*` and the site
-workspace. A user exploring Marketing is told outreach does not exist. The classic
-parts-built-but-not-talking failure; the fix is doors to the real workspaces, never a duplicate
-console (§7 trap).
+**FRONT-DOOR GAP — CLOSED 2026-08-19.** The Marketing pillar's three promised doors
+(`/marketing/outreach`, `/marketing/email`, `/marketing/monitoring`) are live front doors instead
+of placeholders: doors with live counts into `/crm/outreach-lists`, `/crm/inbox`, `/crm/chasebox`,
+`/crm/sending-identities`, the site backlinks workspace's Prospects tab, and the site's Coverage /
+Link changes / AI visibility / Reputation views — **never a duplicate console** (§7 trap honored).
+Contract: `features/marketing/front-doors/FEATURE.md`. Two promises deliberately survive, narrowed
+and printed on their live page rather than deleted: **Lane A opt-in email**
+(`marketing.email.opt-in-campaigns`, below) and review monitoring + alerting
+(`marketing.monitoring.alerts`).
 
 **Related fronts OTHER programs own that touch this feature** (so no future owner loses the
 global view): `docs/handoffs/crm-system.md` (the contact-table folds feed outreach's contact
@@ -947,7 +950,9 @@ renamed agent slots to Mandates across these docs).
 ## Lane A (opt-in marketing) — a separate, later track. DO NOT LOSE IT.
 
 **Everything in Phases 1–7 above is LANE B**, because backlink and media outreach are cold and
-that is what Arman needs now. **Lane A is committed vision, not a maybe** (§5.1): our CRM must be
+that is what Arman needs now. Since 2026-08-19 Lane A is also **visible to users** as a registered
+promise on the live `/marketing/email` page (`marketing.email.opt-in-campaigns`) — the commitment
+is now something a user can read, not just something this doc remembers. **Lane A is committed vision, not a maybe** (§5.1): our CRM must be
 able to send opt-in marketing on a customer's behalf, handled exactly as Klaviyo/Mailchimp/SendGrid
 handle it, duplicating their policies end to end.
 

@@ -80,9 +80,9 @@ export function OutreachFrontDoor() {
   useEffect(() => {
     if (!ctx) return;
     let cancelled = false;
-    setError(null);
     void (async () => {
       try {
+        setError(null);
         const [lists, queues] = await Promise.all([
           fetchOutreachLists(ctx),
           fetchChaseboxCounts(QUEUE_SCOPE),

@@ -22,7 +22,7 @@
  * than quietly dropped.
  */
 
-import { Bot, Link2Off, Newspaper, ShieldAlert } from "lucide-react";
+import { Link2Off, MessagesSquare, Newspaper, ShieldAlert } from "lucide-react";
 
 import { QueryError } from "@/features/marketing/components/shared/MarketingUi";
 import { getComingSoon } from "@/lib/coming-soon/registry";
@@ -67,7 +67,7 @@ export function MonitoringFrontDoor() {
         href: `${sitePath}/ai-visibility`,
         description:
           "Ask ChatGPT, Claude, Gemini and Perplexity a real buyer question and see whether they cite you, and which pages they cite.",
-        Icon: Bot,
+        Icon: MessagesSquare,
       },
       {
         label: "Reputation",
