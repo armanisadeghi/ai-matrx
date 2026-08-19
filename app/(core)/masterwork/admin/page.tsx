@@ -170,6 +170,14 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       description:
         "ADD A RULE — With AI (default, mic-first) + Manually (the canonical RuleFields form). Opened from every human add-rule entry point on the Rulebook page via useOpenAddRuleWindow().",
       status: "Live",
+      launchFrom: RULEBOOK_LAUNCH,
+    },
+    {
+      overlayId: "masterworkYourWordsWindow",
+      description:
+        "YOUR WORDS — the canonical Record (every interview turn, upload, and recording the Expert contributed) beside the Rulebook without leaving it. Same content as /masterwork/[id]/record, on a window panel.",
+      status: "Live",
+      launchFrom: RULEBOOK_LAUNCH,
     },
     {
       overlayId: "masterworkCheckupWindow",

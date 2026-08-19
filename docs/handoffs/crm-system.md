@@ -300,6 +300,13 @@ numbered item, and **each one is a chip fired 2026-08-14** — a self-contained 
 They are listed here too so that a chip nobody runs is still visible as work. Full rationale +
 per-item efforts in the cross-repo SoR.
 
+## Attached remaining work (tasks — not separate staffing rows)
+
+| Task | Document | Still pending |
+|---|---|---|
+| Record classification | `docs/handoffs/crm-record-classification.md` | Discovered-records pages, human bulk promotion, per-user display preference, curated shared channel lists. |
+| CRM model drift from a half-finished rename | `aidream/docs/handoffs/defect-ledger-campaign.md` | Leftover from the defect ledger sweep. |
+
 ## Open now — in priority order
 
 1. **The three contact folds.** *(chip: "Fold the three contact tables into crm.party")*

@@ -11,6 +11,10 @@ vision:
 
 # Growth Loop — finish the run, then make it healthy
 
+**Sister program: Website Factory** (`docs/handoffs/website-factory-vision.md`). Factory is
+idea → a website. This loop is that site, then measure → improve. Staff or groom one, read
+the other.
+
 The twelve-stage loop RUNS and the machine is healthy — the supervisor does **334 runs / 0
 failures** per 3h, having produced 396 stage runs, 1,196 events, 337 scored stages and 377
 recorded decisions across 6 loops.

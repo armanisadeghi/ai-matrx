@@ -209,6 +209,7 @@ function EditablePlanNode({
         entities={entities.data ?? []}
         parties={parties.data ?? []}
         profiles={profiles.data ?? []}
+        boundProfileId={marketingSite.data?.plan_profile_id ?? null}
         onDeleted={() => void onPageChanged()}
         deepen={deepen}
         cmsPage={cmsPages.pagesByNodeId.get(node.data.id) ?? null}

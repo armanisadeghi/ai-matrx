@@ -84,6 +84,12 @@ Testing: `/login` admin@admin.com / Password1234#. Dev server ONLY via `pnpm pre
 
 Everything else is genuine greenfield; order is Arman's call. **`pnpm check:dead-ends` is clean for the whole module** (0 findings under `features/marketing` or `app/(core)/marketing`, 2026-08-15) — keep it that way.
 
+## Attached remaining work (tasks — not separate staffing rows)
+
+| Task | Document | Still pending |
+|---|---|---|
+| Competitor link gap | `docs/handoffs/competitor-link-gap.md` | Wire T2 collection (clear `raw_only`, never ship the provider's default ordering); T7 service-line join; T8 is Arman's Review-tab rulings. |
+
 ## 5. Gotchas
 
 1. **`git push` deploys NOTHING — only `./scripts/release.sh` builds.** Vercel skips non-release-prefixed commits; the deployment reads `CANCELED` and production stays on the last release. Verify a release with a `READY` deployment whose commit is yours or a descendant (Vercel MCP `list_deployments`, project `prj_ZIeMm2FW8RgOAO9BJgQ2YQcXpwrH`, team `team_zWxJHqDHuRr1kpl9Hu9oON3g`), then assert on a string that exists **only** in the new build.

@@ -7,6 +7,9 @@ vision: [this doc §Vision — Arman's words, 2026-07-30 chat]
 
 # Website Factory — from content plan to agent-built professional sites
 
+**Sister program: Growth Loop** (`docs/handoffs/growth-loop.md`). Factory is idea → a website.
+Growth Loop is that site, then measure → improve. Staff or groom one, read the other.
+
 The system that takes a `web.site` content plan and produces a real, professional, multi-page
 website through many specialized agent steps. This doc is the tracking spine: Arman's vision,
 where each missing piece inserts into what exists today, and the ordered work list.

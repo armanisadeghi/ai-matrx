@@ -16686,66 +16686,6 @@
         }
       }
     },
-    "/content-plan/sites/{site_id}/cms-fill/estimate": {
-      "get": {
-        "tags": [
-          "Content Plan",
-          "Content Plan"
-        ],
-        "summary": "Cms Fill Effort Estimate Route",
-        "description": "Exact calls and measured cost for EVERY effort tier, before any spend.",
-        "operationId": "cms_fill_effort_estimate_route_content_plan_sites__site_id__cms_fill_estimate_get",
-        "parameters": [
-          {
-            "name": "site_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Site Id"
-            }
-          },
-          {
-            "name": "cms_site",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cms Site"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CmsFillEffortEstimate"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/content-plan/sites/{site_id}/cms-fill/status": {
       "get": {
         "tags": [
@@ -77802,55 +77742,6 @@
         ],
         "title": "CmsFillCancelBody"
       },
-      "CmsFillEffortEstimate": {
-        "properties": {
-          "web_site_id": {
-            "type": "string",
-            "title": "Web Site Id"
-          },
-          "pages": {
-            "type": "integer",
-            "title": "Pages",
-            "default": 0
-          },
-          "site_tier": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Site Tier"
-          },
-          "default_tier": {
-            "type": "string",
-            "title": "Default Tier",
-            "default": "advanced"
-          },
-          "overrides": {
-            "additionalProperties": {
-              "type": "integer"
-            },
-            "type": "object",
-            "title": "Overrides"
-          },
-          "tiers": {
-            "items": {
-              "$ref": "#/components/schemas/CmsFillTierEstimate"
-            },
-            "type": "array",
-            "title": "Tiers"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "web_site_id"
-        ],
-        "title": "CmsFillEffortEstimate"
-      },
       "CmsFillCostEstimate": {
         "properties": {
           "pages": {
@@ -78078,23 +77969,6 @@
             "type": "boolean",
             "title": "Include Review",
             "default": true
-          },
-          "effort_tier": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  "quick",
-                  "standard",
-                  "thorough",
-                  "advanced"
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Effort Tier"
           },
           "overwrite": {
             "type": "boolean",
@@ -78416,39 +78290,6 @@
         ],
         "title": "CmsFillStepCounts",
         "description": "One step's live queue counts — the \"12 written, 4 reviewed, 2 built\" row.\n\nDerived from item rows on every read, never from worker memory."
-      },
-      "CmsFillTierEstimate": {
-        "properties": {
-          "tier": {
-            "type": "string",
-            "title": "Tier"
-          },
-          "label": {
-            "type": "string",
-            "title": "Label"
-          },
-          "blurb": {
-            "type": "string",
-            "title": "Blurb"
-          },
-          "pages_at_tier": {
-            "type": "integer",
-            "title": "Pages At Tier",
-            "default": 0
-          },
-          "estimate": {
-            "$ref": "#/components/schemas/CmsFillCostEstimate"
-          }
-        },
-        "additionalProperties": false,
-        "type": "object",
-        "required": [
-          "tier",
-          "label",
-          "blurb"
-        ],
-        "title": "CmsFillTierEstimate",
-        "description": "What one tier would cost for THIS site, said before the button."
       },
       "CmsPageMapResult": {
         "properties": {

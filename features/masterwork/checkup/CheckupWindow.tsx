@@ -33,6 +33,7 @@ import {
   CheckupSuggestionDialog,
   type CheckupSuggestionMode,
 } from "./CheckupSuggestionDialog";
+import { RULE_RELATION_LABELS } from "../types";
 import { useCheckup } from "./useCheckup";
 import { useCleanCorpusRun } from "./useCleanCorpusRun";
 import { chosenProposal, type CheckupProposedRule } from "./types";
@@ -181,10 +182,22 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
         severity: chosen.severity,
         section: chosen.section,
         ruleId: finding.target_rule_id ?? null,
+        // The connections survive Improve and Edit (both carry them through),
+        // so the Expert's own version shows the same links the server proposed
+        // — resolved to real rule names here, exactly as the server does it.
+        connectsTo: (chosen.relates_to ?? []).map((relation) => ({
+          ruleId: relation.rule_id,
+          kind: relation.kind,
+          relation: RULE_RELATION_LABELS[relation.kind] ?? relation.kind,
+          ruleName:
+            rulebook?.rules.find((r) => r.id === relation.rule_id)?.name ??
+            null,
+          note: relation.note ?? null,
+        })),
       };
     }
     return map;
-  }, [findings, dispositions]);
+  }, [findings, dispositions, rulebook]);
 
   useEffect(() => {
     // Publishing this key is what makes the rendered findings interactive.

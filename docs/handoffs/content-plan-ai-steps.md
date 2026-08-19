@@ -8,7 +8,16 @@ vision:
   - /Users/armanisadeghi/code/common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md
 ---
 
-# Content Plan — an AI at every step, grounded in the resources we already have
+# Content Planning — an AI at every step, grounded in the resources we already have
+
+This is the **Content Planning** feature handoff. "Content Plan AI Steps" was a slice name
+and is retired.
+
+## Attached remaining work (tasks — not separate staffing rows)
+
+| Task | Document | Still pending |
+|---|---|---|
+| Page workspace Studio parity | `matrx-frontend/docs/handoffs/marketing-page-workspace-evolution.md` | Nine Plan-lane rows still save through notes instead of structured editors; attachment-sharing batch modes. |
 
 Sibling pointers: the plan→CMS→live pipeline work order lives in
 `common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md` (aidream's

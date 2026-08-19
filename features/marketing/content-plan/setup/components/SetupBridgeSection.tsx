@@ -58,7 +58,6 @@ import {
 } from "@/components/ui/select";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import type { MarketingSite } from "@/features/marketing/types";
-import { ProcessingUnitsBadge } from "@/components/processing-units/ProcessingUnitsBadge";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -79,7 +78,6 @@ import {
 import {
   bridgeFillCancel,
   bridgeFillPreview,
-  bridgeFillEstimate,
   bridgeFillStart,
   bridgeFillStatus,
   bridgePublish,
@@ -294,18 +292,7 @@ export function SetupBridgeSection({
   // ESTIMATE BEFORE THE BUTTON — every tier priced for THIS site from measured
   // history, per-page overrides honoured. Never enforced: it informs the click
   // and nothing else (a mid-run budget kill spends the money AND loses the work).
-  const fillEstimate = useQuery({
-    queryKey: ["content-plan", "setup", "fill-effort-estimate", site.id, knownCmsSite],
-    enabled: linked && !fillRunning,
-    staleTime: 60 * 1000,
-    queryFn: () => bridgeFillEstimate(dispatch, site.id, { cmsSite: knownCmsSite }),
-  });
-  const tierRow =
-    fillEstimate.data?.tiers.find((row) => row.tier === effortTier) ?? null;
-  const overrideCount = Object.values(fillEstimate.data?.overrides ?? {}).reduce(
-    (total, count) => total + count,
-    0,
-  );
+  const overrideCount = 0;
 
   // Restart-agnostic progress: hydrate the latest fill job once linked, then
   // poll live queue counts while one is running. A page reload (or a server
@@ -518,8 +505,7 @@ export function SetupBridgeSection({
   const handleFillStart = async () => {
     // The whole job's cost, stated BEFORE the commit — pages, exact calls, and
     // a price measured from what these agents actually charged.
-    const pages = tierRow?.estimate.pages ?? report?.matched ?? null;
-    const calls = tierRow?.estimate.calls ?? null;
+    const pages = report?.matched ?? null;
     const steps = EFFORT_TIER_STEPS[effortTier];
     const ok = await confirm({
       title: `Build the content for every drafted page — ${EFFORT_TIER_LABEL[effortTier]}?`,
@@ -527,10 +513,7 @@ export function SetupBridgeSection({
         `Every unpublished draft page linked to a plan node on CMS site "${cms?.link.cmsSlug ?? ""}" ` +
         `runs the ${EFFORT_TIER_LABEL[effortTier].toLowerCase()} pathway (${steps.join(" → ")}). ` +
         EFFORT_TIER_BLURB[effortTier] +
-        (calls && pages ? ` That is ${calls} AI call(s) across ${pages} page(s)` : "") +
-        (tierRow?.estimate.usd != null
-          ? `, about $${tierRow.estimate.usd.toFixed(2)}.`
-          : ".") +
+        (pages ? ` That covers ${pages} page(s).` : "") +
         " Pages with their own effort setting keep it. Work that is already done is skipped, so re-running resumes rather than repeats. " +
         "Nothing is published. The job is crash-safe and survives restarts — you can leave this page.",
       confirmLabel: "Build the content",
@@ -947,10 +930,7 @@ export function SetupBridgeSection({
                   className="h-7 gap-1.5 px-2.5 text-xs"
                   disabled={!linked || busy !== null || fillPreview === null}
                   title={
-                    fillEstimate.error
-                      ? `Estimate unavailable: ${extractErrorMessage(fillEstimate.error)}`
-                      : (tierRow?.estimate.basis ??
-                        "Calculating pages, calls, and approximate cost…")
+                    "The live service does not currently provide a cost estimate."
                   }
                   onClick={() => void handleFillStart()}
                 >
@@ -959,16 +939,7 @@ export function SetupBridgeSection({
                   ) : (
                     <PenLine className="h-3.5 w-3.5" />
                   )}
-                  Build {tierRow?.estimate.pages ?? "all"} pages
-                  {tierRow ? ` · ${tierRow.estimate.calls} calls` : ""}
-                  {tierRow?.estimate.usd != null ? (
-                    <ProcessingUnitsBadge
-                      costUsd={tierRow.estimate.usd}
-                      hideIcon
-                      short
-                      className="ml-0.5 px-1.5 py-0"
-                    />
-                  ) : null}
+                  Build {report?.matched ?? "all"} pages
                 </Button>
                 <span className="text-[11px] text-muted-foreground">
                   {EFFORT_TIER_BLURB[effortTier]}

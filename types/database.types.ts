@@ -18047,6 +18047,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      edu_purge_expired_study_data: {
+        Args: { p_max_users?: number; p_retention_days?: number }
+        Returns: Json
+      }
       reap_stale_study_sessions: {
         Args: { p_max_age?: string }
         Returns: number

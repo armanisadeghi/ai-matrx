@@ -58,6 +58,13 @@ suppression is a sentence someone has to defend.
   seven `[id]/edit` routes, redirecting is *correct* (the view route offers
   "Make a copy"). It is for future routes with no better destination.
 
+## Attached remaining work (tasks — not separate staffing rows)
+
+| Task | Document | Still pending |
+|---|---|---|
+| Access kernel scan performance | `docs/handoffs/access-kernel-scan-performance.md` | Two Arman rulings (row-attribute merge vs latent drift; parallel-safe mark), then the unfiltered `files.pages` scan that still exceeds the 8 s cap. |
+| Seven access roots with no shareable-registry row | `aidream/docs/handoffs/defect-ledger-campaign.md` | Leftover from the defect ledger sweep. |
+
 ## 4. Two traps — do not rebuild these
 
 - **A `forbidden.tsx` can never name the record.** It was built (request-scoped

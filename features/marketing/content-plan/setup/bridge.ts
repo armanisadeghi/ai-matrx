@@ -703,55 +703,6 @@ export async function bridgeFillPreview(
  * BEFORE the button (a 300-page site knows its bill before the click). Read
  * only; it starts nothing and enforces nothing.
  */
-export async function bridgeFillEstimate(
-  dispatch: AppDispatch,
-  siteId: string,
-  options: { cmsSite?: string } = {},
-): Promise<FillEffortEstimate> {
-  const result = await dispatch(
-    callApi({
-      path: "/content-plan/sites/{site_id}/cms-fill/estimate",
-      method: "GET",
-      pathParams: { site_id: siteId },
-      queryParams: options.cmsSite ? { cms_site: options.cmsSite } : undefined,
-    }),
-  );
-  const data = requireBody(result, "cms-fill/estimate");
-  const tiers: FillTierEstimate[] = [];
-  for (const row of Array.isArray(data.tiers) ? data.tiers : []) {
-    if (!row || typeof row !== "object") continue;
-    const record = row as Record<string, unknown>;
-    const tier = coerceEffortTier(record.tier);
-    if (!tier) continue;
-    tiers.push({
-      tier,
-      label: str(record.label) || tier,
-      blurb: str(record.blurb),
-      pagesAtTier:
-        typeof record.pages_at_tier === "number" ? record.pages_at_tier : 0,
-      estimate:
-        parseFillEstimate(record.estimate) ??
-        { pages: 0, calls: 0, callsByStep: {}, usd: null, basis: "" },
-    });
-  }
-  const overrides: Record<string, number> = {};
-  if (data.overrides && typeof data.overrides === "object") {
-    for (const [key, value] of Object.entries(
-      data.overrides as Record<string, unknown>,
-    )) {
-      if (typeof value === "number") overrides[key] = value;
-    }
-  }
-  return {
-    pages: typeof data.pages === "number" ? data.pages : 0,
-    siteTier: coerceEffortTier(data.site_tier),
-    defaultTier: coerceEffortTier(data.default_tier) ?? DEFAULT_EFFORT_TIER,
-    overrides,
-    tiers,
-  };
-}
-
-
 /** Start the durable fill job (seeds the DB frontier, returns immediately). */
 export async function bridgeFillStart(
   dispatch: AppDispatch,

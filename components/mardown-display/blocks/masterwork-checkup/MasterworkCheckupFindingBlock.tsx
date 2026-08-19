@@ -167,6 +167,28 @@ function RuleCard({
           {rule.detection}
         </p>
       ) : null}
+      {/*
+        THE ANTI-MISLEADING LAW, at the moment of decision. A rule that refines,
+        depends on, overrides or pulls against another one must never be
+        approved as if it stood alone — so the connection is shown HERE, before
+        the Expert presses Approve, not only after it lands in the Rulebook.
+      */}
+      {rule.connectsTo?.length ? (
+        <div className="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
+          <span className="font-medium">
+            How this connects to your other rules
+          </span>
+          {rule.connectsTo.map((link) => (
+            <p key={`${link.ruleId}-${link.kind}`}>
+              {link.relation}{" "}
+              <span className="font-medium text-foreground">
+                {link.ruleName ?? link.ruleId}
+              </span>
+              {link.note ? ` — ${link.note}` : ""}
+            </p>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

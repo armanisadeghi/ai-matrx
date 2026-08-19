@@ -6782,26 +6782,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/content-plan/sites/{site_id}/cms-fill/estimate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Cms Fill Effort Estimate Route
-         * @description Exact calls and measured cost for EVERY effort tier, before any spend.
-         */
-        get: operations["cms_fill_effort_estimate_route_content_plan_sites__site_id__cms_fill_estimate_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/content-plan/sites/{site_id}/cms-fill/status": {
         parameters: {
             query?: never;
@@ -29428,29 +29408,6 @@ export interface components {
             /** Job Id */
             job_id: string;
         };
-        /** CmsFillEffortEstimate */
-        CmsFillEffortEstimate: {
-            /** Web Site Id */
-            web_site_id: string;
-            /**
-             * Pages
-             * @default 0
-             */
-            pages: number;
-            /** Site Tier */
-            site_tier?: string | null;
-            /**
-             * Default Tier
-             * @default advanced
-             */
-            default_tier: string;
-            /** Overrides */
-            overrides?: {
-                [key: string]: number;
-            };
-            /** Tiers */
-            tiers?: components["schemas"]["CmsFillTierEstimate"][];
-        };
         /**
          * CmsFillCostEstimate
          * @description What this job is about to cost, said BEFORE it runs.
@@ -29544,8 +29501,6 @@ export interface components {
              * @default true
              */
             include_review?: boolean;
-            /** Effort Tier */
-            effort_tier?: ("quick" | "standard" | "thorough" | "advanced") | null;
             /**
              * Overwrite
              * @default false
@@ -29711,24 +29666,6 @@ export interface components {
             dead_letter?: number;
             /** Cost Usd */
             cost_usd?: number | null;
-        };
-        /**
-         * CmsFillTierEstimate
-         * @description What one tier would cost for THIS site, said before the button.
-         */
-        CmsFillTierEstimate: {
-            /** Tier */
-            tier: string;
-            /** Label */
-            label: string;
-            /** Blurb */
-            blurb: string;
-            /**
-             * Pages At Tier
-             * @default 0
-             */
-            pages_at_tier: number;
-            estimate?: components["schemas"]["CmsFillCostEstimate"];
         };
         /**
          * CmsPageMapResult
@@ -75733,39 +75670,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CmsFillStartResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    cms_fill_effort_estimate_route_content_plan_sites__site_id__cms_fill_estimate_get: {
-        parameters: {
-            query?: {
-                cms_site?: string | null;
-            };
-            header?: never;
-            path: {
-                site_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CmsFillEffortEstimate"];
                 };
             };
             /** @description Validation Error */

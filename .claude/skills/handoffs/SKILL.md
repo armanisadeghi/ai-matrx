@@ -45,16 +45,24 @@ Sections, in this order (omit empty ones):
 
 ## The orphan list — `/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md`
 
-One table, one meaning: **every row is a handoff with no owner.** It is how Arman decides what to
-staff next, so it stays short and true.
+Two tables, one meaning: **every row is a handoff with no owner.** It is how Arman decides what to
+staff next, so it stays short and true. The tables are about **developer scope**, not directories:
+
+- **Feature** — the developer owns the entire feature.
+- **Program** — the developer owns a limited scope (one part of a feature, or work that spans
+  several). Not a `projects/` folder.
+
+A **task** (one remaining item on a feature) does not get a row. Attach it on that feature's
+handoff. Do not name a slice of a feature as if it were the feature.
 
 - **Taking a handoff over → DELETE its row first**, before reading the doc or touching code
   (step 1 below). Assigned ≠ orphaned.
 - **Writing a new handoff, or grooming one that still has remaining work and nobody continuing
-  it → ADD its row in the same commit.** A new handoff IS an orphan the moment it exists.
-- **No statuses, no notes, no history in that file** — a row's existence is the status; anything
-  that needs explaining belongs inside the handoff. Rows leave only two ways: someone took the
-  work, or the handoff itself was deleted as finished.
+  it → ADD its row in the same commit.** A new handoff IS an orphan the moment it exists. File
+  it as a Feature or a Program by scope; a task attaches to the owning feature instead.
+- **No statuses, no essays, no history in that file** — a row's existence is the status. Notes
+  is repo + date + one sentence. Anything that needs explaining belongs inside the handoff.
+  Rows leave only two ways: someone took the work, or the handoff itself was deleted as finished.
 
 ## Taking one over
 

@@ -98,6 +98,15 @@ export const masterworkCheckupRuleKindSchema: KindSchema = {
       description:
         "The live Rulebook rule id, when this is a rule that already exists. Audits cite it and it never changes.",
     },
+    connects_to: {
+      // `json[]` rather than a third registered kind: a link is not a thing the
+      // platform ever renders on its own, and a new kind slug is a migration.
+      // Shape: {rule_id, kind, relation, rule_name?, note?} — read by
+      // `readConnections` below and mirrored in Python `finding_ir._connections`.
+      type: "json[]",
+      description:
+        "Sibling rules this one must be applied WITH (THE ANTI-MISLEADING LAW). Shown before the Expert approves, because a connection they cannot see is one they never agreed to.",
+    },
   },
 };
 
@@ -181,6 +190,16 @@ export const MASTERWORK_CHECKUP_KIND_SCHEMAS: KindSchema[] = [
 // serverData bridge
 // ---------------------------------------------------------------------------
 
+/** One "apply these together" link, already resolved by the server. */
+export interface CheckupRuleConnection {
+  ruleId: string;
+  kind: string;
+  /** The relation in the Expert's language ("narrows", "depends on"). */
+  relation: string;
+  ruleName: string | null;
+  note: string | null;
+}
+
 export interface CheckupRuleData {
   name: string;
   statement: string;
@@ -189,6 +208,7 @@ export interface CheckupRuleData {
   severity: "critical" | "major" | "minor";
   section: string | null;
   ruleId: string | null;
+  connectsTo: CheckupRuleConnection[];
 }
 
 export interface CheckupWhere {
@@ -219,6 +239,25 @@ function isRecordValue(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function readConnections(value: unknown): CheckupRuleConnection[] {
+  if (!Array.isArray(value)) return [];
+  const out: CheckupRuleConnection[] = [];
+  for (const item of value) {
+    if (!isRecordValue(item)) continue;
+    const ruleId = text(item.rule_id);
+    const kind = text(item.kind);
+    if (!ruleId || !kind) continue;
+    out.push({
+      ruleId,
+      kind,
+      relation: text(item.relation) ?? kind.replace(/_/g, " "),
+      ruleName: text(item.rule_name),
+      note: text(item.note),
+    });
+  }
+  return out;
+}
+
 function readRule(value: unknown): CheckupRuleData | null {
   if (!isRecordValue(value)) return null;
   const statement = text(value.statement);
@@ -235,6 +274,7 @@ function readRule(value: unknown): CheckupRuleData | null {
     severity,
     section: text(value.section),
     ruleId: text(value.rule_id),
+    connectsTo: readConnections(value.connects_to),
   };
 }
 
@@ -317,6 +357,14 @@ function ruleMarkdown(heading: string, rule: CheckupRuleData | null): string | n
     rule.statement,
     rule.rationale ? `*Why it matters:* ${rule.rationale}` : null,
     rule.detection ? `*How to spot a violation:* ${rule.detection}` : null,
+    rule.connectsTo.length > 0
+      ? `*How this connects to your other rules:* ${rule.connectsTo
+          .map(
+            (link) =>
+              `${link.relation} ${link.ruleName ?? link.ruleId}${link.note ? ` — ${link.note}` : ""}`,
+          )
+          .join("; ")}`
+      : null,
   ]);
 }
 
