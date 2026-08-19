@@ -6,6 +6,23 @@ import {
   INITIAL_CAPABILITY,
   type ManagedCapability,
 } from "@/features/ai-work/lib/managedClaudeCapability";
+import type { LocalRuntimeCapability } from "@/features/ai-work/lib/matrxLocalRuntime";
+
+function localCapability(
+  overrides: Partial<LocalRuntimeCapability>,
+): LocalRuntimeCapability {
+  return {
+    state: "ready",
+    available: true,
+    reasons: [],
+    claudeCli: "/opt/homebrew/bin/claude",
+    claudeAccountLabel: null,
+    workspaceRoots: [],
+    approvedFolders: [],
+    activeRuns: 0,
+    ...overrides,
+  };
+}
 
 const READY_AVAILABLE: ManagedCapability = {
   state: "ready",
@@ -50,16 +67,49 @@ describe("destinationAvailability", () => {
     }
   });
 
-  it("reports the live backend's own reason when Claude is unavailable", () => {
+  // Claude Code's runnability moved to the user's OWN Matrx Local engine on
+  // 2026-08-17; the hosted managed-sandbox capability is context, never a
+  // launch path from the composer. These assert the live contract.
+  it("says it is still asking while the local engine has not answered", () => {
     expect(destinationAvailability("claude-code", READY_UNAVAILABLE)).toEqual({
       selectable: false,
-      reason: "The hosted image is not released.",
+      reason: "Checking your Matrx Local app…",
     });
   });
 
-  it("stays unselectable when Claude reports available but the UI is not certified", () => {
-    const availability = destinationAvailability("claude-code", READY_AVAILABLE);
+  it("reports the local engine's own reason when it is unreachable", () => {
+    const availability = destinationAvailability(
+      "claude-code",
+      READY_AVAILABLE,
+      localCapability({
+        state: "unreachable",
+        available: false,
+        reasons: ["Matrx Local did not answer."],
+      }),
+    );
     expect(availability.selectable).toBe(false);
-    expect(availability.reason).toContain("not certified yet");
+    expect(availability.reason).toBe("Matrx Local did not answer.");
+  });
+
+  it("refuses a ready engine with no approved folder, and says which app approves one", () => {
+    const availability = destinationAvailability(
+      "claude-code",
+      READY_AVAILABLE,
+      localCapability({}),
+    );
+    expect(availability.selectable).toBe(false);
+    expect(availability.reason).toContain("Matrx Local");
+  });
+
+  it("is selectable once the local engine is ready with an approved folder", () => {
+    expect(
+      destinationAvailability(
+        "claude-code",
+        READY_UNAVAILABLE,
+        localCapability({
+          approvedFolders: ["/Users/me/code/matrx-frontend"],
+        }),
+      ),
+    ).toEqual({ selectable: true, reason: null });
   });
 });

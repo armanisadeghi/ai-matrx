@@ -85,3 +85,41 @@ export async function fetchEarlierProviderMessages(
     hasEarlierMessages: (count ?? data.length) > data.length,
   };
 }
+
+/**
+ * Forward (newest-side) pagination for a transcript whose coding session is
+ * still running. Reads user-visible messages strictly AFTER `afterPosition` in
+ * ascending order, so the cursor advances monotonically and a burst larger
+ * than one page leaves no gap — it simply lands over the next few reads.
+ *
+ * `position` is assigned by `cx_message_assign_append_position`, so it is a
+ * gap-free per-conversation sequence; ordering by it needs no tiebreak.
+ */
+export async function fetchNewerProviderMessages(
+  conversationId: string,
+  afterPosition: number,
+  limit: number = PROVIDER_TRANSCRIPT_PAGE_SIZE,
+): Promise<ProviderConversationMessage[]> {
+  const { data, error } = await supabase
+    .schema("chat")
+    .from("message")
+    .select(PROVIDER_MESSAGE_COLUMNS)
+    .eq("conversation_id", conversationId)
+    .is("deleted_at", null)
+    .eq("is_visible_to_user", true)
+    .gt("position", afterPosition)
+    .order("position", { ascending: true })
+    .limit(limit);
+
+  if (error) {
+    console.error("[fetchNewerProviderMessages] read failed", {
+      conversationId,
+      afterPosition,
+      message: error.message,
+      code: error.code,
+    });
+    throw new Error(error.message);
+  }
+
+  return data.map(normalizeProviderMessage);
+}

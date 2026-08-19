@@ -78,3 +78,45 @@ export async function fetchConversationToolCallsPage(
     totalCount: count ?? null,
   };
 }
+
+/**
+ * Forward (newest-side) page for a live transcript: tool calls at or after
+ * `sinceStartedAt`, oldest-first, so the cursor advances monotonically and a
+ * burst larger than one page arrives over the next few reads instead of
+ * leaving a hole in the middle.
+ *
+ * The bound is INCLUSIVE and the caller dedups by id: `started_at` can tie
+ * across rows written in the same instant, and an exclusive bound would drop
+ * the losers of that tie forever.
+ */
+export async function fetchNewerConversationToolCalls(
+  conversationId: string,
+  sinceStartedAt: string | null,
+  limit: number = CONVERSATION_TOOL_CALL_PAGE_SIZE,
+): Promise<CxToolCallRecord[]> {
+  let query = supabase
+    .schema("chat")
+    .from("tool_call")
+    .select("*")
+    .eq("conversation_id", conversationId)
+    .is("deleted_at", null)
+    .order("started_at", { ascending: true })
+    .limit(limit);
+
+  if (sinceStartedAt) {
+    query = query.gte("started_at", sinceStartedAt);
+  }
+
+  const { data, error } = await query;
+  if (error) {
+    console.error("[fetchNewerConversationToolCalls] failed", {
+      conversationId,
+      sinceStartedAt,
+      message: error.message,
+      code: error.code,
+    });
+    throw error;
+  }
+
+  return ((data ?? []) as CxToolCallRow[]).map(toolCallRowToRecord);
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -10,6 +10,7 @@ import {
   Loader2,
   MessageSquareText,
   MoreHorizontal,
+  RefreshCw,
 } from "lucide-react";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import AssociateTaskButton from "@/features/tasks/widgets/AssociateTaskButton";
@@ -43,6 +44,11 @@ import { buildProviderTimeline } from "../lib/providerTimeline";
 import { ConversationAnalyzePanel } from "../analysis/ConversationAnalyzePanel";
 import { ConversationProvenancePanel } from "../conversations/components/ConversationProvenancePanel";
 import { ConversationOrganizationPanel } from "./ConversationOrganizationPanel";
+import {
+  useLiveProviderTranscript,
+  type LiveTranscriptArrival,
+  type LiveTranscriptStatus,
+} from "../hooks/useLiveProviderTranscript";
 
 /** Tool activity page loaded per request — a mirror can hold thousands. */
 const TOOL_ACTIVITY_PAGE_SIZE = 200;
@@ -82,6 +88,18 @@ export function ProviderConversationTranscript({
     cursor: null,
   });
   const [workspace, setWorkspace] = useState<string | null>(null);
+  /**
+   * Rows that arrived AFTER the server render, counted separately so the
+   * "showing N of M" line stays truthful while a session keeps writing — the
+   * server totals were correct only at first paint.
+   */
+  const [liveMessagesAdded, setLiveMessagesAdded] = useState(0);
+  const [liveToolCallsAdded, setLiveToolCallsAdded] = useState(0);
+  /** Every id currently in state — the live poll dedups against these. */
+  const knownMessageIdsRef = useRef(
+    new Set(detail.messages.map((message) => message.id)),
+  );
+  const knownToolCallIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -116,6 +134,9 @@ export function ProviderConversationTranscript({
     })
       .then((page) => {
         if (cancelled) return;
+        for (const record of page.records) {
+          knownToolCallIdsRef.current.add(record.id);
+        }
         setActivity({
           records: page.records,
           state: "ready",
@@ -159,6 +180,9 @@ export function ProviderConversationTranscript({
               ...existing,
             ];
           });
+          for (const message of page.messages) {
+            knownMessageIdsRef.current.add(message.id);
+          }
           setHasEarlierMessages(page.hasEarlierMessages);
         }),
       );
@@ -171,6 +195,9 @@ export function ProviderConversationTranscript({
           limit: TOOL_ACTIVITY_PAGE_SIZE,
           beforeStartedAt: cursor,
         }).then((page) => {
+          for (const record of page.records) {
+            knownToolCallIdsRef.current.add(record.id);
+          }
           setActivity((current) => {
             const known = new Set(current.records.map((record) => record.id));
             return {
@@ -204,6 +231,53 @@ export function ProviderConversationTranscript({
     activity.cursor,
   ]);
 
+  /**
+   * Newest-side arrivals from the live poll. Both streams append at the TAIL,
+   * which the honesty floor never trims (it only withholds rows OLDER than the
+   * loaded window), so a live row can never be rendered against a gap. Dedup is
+   * by id: the tool-call cursor is tie-inclusive on purpose, and a manual
+   * "Check now" can overlap a scheduled read.
+   */
+  const handleArrival = useCallback((arrival: LiveTranscriptArrival) => {
+    const knownMessages = knownMessageIdsRef.current;
+    const freshMessages = arrival.messages.filter(
+      (message) => !knownMessages.has(message.id),
+    );
+    // Claimed BEFORE the state update: dedup must not live inside the updater
+    // (updaters are pure and may run twice), and an overlapping "Check now"
+    // must not add the same row again.
+    for (const message of freshMessages) knownMessages.add(message.id);
+
+    const knownToolCalls = knownToolCallIdsRef.current;
+    const freshToolCalls = arrival.toolCalls.filter(
+      (record) => !knownToolCalls.has(record.id),
+    );
+    for (const record of freshToolCalls) knownToolCalls.add(record.id);
+
+    if (freshMessages.length > 0) {
+      setMessages((existing) => [...existing, ...freshMessages]);
+      setLiveMessagesAdded((count) => count + freshMessages.length);
+    }
+    if (freshToolCalls.length > 0) {
+      setActivity((current) => ({
+        ...current,
+        records: [...current.records, ...freshToolCalls],
+      }));
+      setLiveToolCallsAdded((count) => count + freshToolCalls.length);
+    }
+  }, []);
+
+  const live = useLiveProviderTranscript({
+    conversationId: conversation.id,
+    latestPosition:
+      messages.length > 0 ? messages[messages.length - 1].position : -1,
+    latestStartedAt:
+      activity.records.length > 0
+        ? activity.records[activity.records.length - 1].startedAt
+        : null,
+    onArrival: handleArrival,
+  });
+
   const timeline = useMemo(
     () =>
       buildProviderTimeline({
@@ -216,6 +290,9 @@ export function ProviderConversationTranscript({
   );
 
   const shownToolCalls = activity.records.length - timeline.hiddenToolCalls;
+  const totalMessages = visibleMessageCount + liveMessagesAdded;
+  const totalToolCalls =
+    activity.totalCount === null ? null : activity.totalCount + liveToolCallsAdded;
   const hasEarlierAnything = hasEarlierMessages || activity.hasMore;
 
   return (
@@ -249,14 +326,15 @@ export function ProviderConversationTranscript({
             ) : null}
             <p className="mt-2 text-xs text-muted-foreground">
               Updated {formatAbsoluteDate(conversation.updated_at)} ·{" "}
-              {visibleMessageCount} visible{" "}
-              {visibleMessageCount === 1 ? "message" : "messages"}
-              {activity.totalCount !== null
-                ? ` · ${activity.totalCount} tool ${
-                    activity.totalCount === 1 ? "action" : "actions"
+              {totalMessages} visible{" "}
+              {totalMessages === 1 ? "message" : "messages"}
+              {totalToolCalls !== null
+                ? ` · ${totalToolCalls} tool ${
+                    totalToolCalls === 1 ? "action" : "actions"
                   }`
                 : null}
             </p>
+            <LiveTranscriptIndicator status={live} />
           </div>
           <div className="flex items-center gap-1.5">
             <AssociateTaskButton
@@ -328,9 +406,9 @@ export function ProviderConversationTranscript({
           <p className="min-w-0 flex-1 text-xs text-muted-foreground">
             Showing {timeline.items.length > 0 ? "the most recent" : ""}{" "}
             {messages.length - timeline.hiddenMessages} of{" "}
-            {visibleMessageCount} messages
-            {activity.totalCount !== null
-              ? ` and ${shownToolCalls} of ${activity.totalCount} tool actions`
+            {totalMessages} messages
+            {totalToolCalls !== null
+              ? ` and ${shownToolCalls} of ${totalToolCalls} tool actions`
               : null}
             . Earlier history stays stored and loads in order.
           </p>
@@ -388,6 +466,59 @@ export function ProviderConversationTranscript({
           )}
         </ol>
       )}
+    </div>
+  );
+}
+
+/**
+ * States the live mode TRUTHFULLY, in the user's words, and never implies more
+ * than the mechanism delivers: this reads the newest side every few seconds
+ * while the session is delivering, and it says so. When the session settles it
+ * says that too, and stops — an idle mirror months old must not poll forever.
+ * Returning to the tab re-checks on its own; "Check now" is the manual door.
+ */
+function LiveTranscriptIndicator({ status }: { status: LiveTranscriptStatus }) {
+  if (status.mode === "checking" && !status.error) {
+    return (
+      <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Checking whether this session is still running…
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+      {status.mode === "live" ? (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2 py-1 font-medium text-emerald-700 dark:text-emerald-300">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-70" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          </span>
+          Live — new turns and tool activity appear here every few seconds
+        </span>
+      ) : (
+        <span className="text-muted-foreground">
+          This session is idle, so live updates are paused.
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={status.checkNow}
+        disabled={status.busy}
+        className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-60"
+      >
+        <RefreshCw
+          className={cn("h-3 w-3", status.busy && "animate-spin")}
+        />
+        Check now
+      </button>
+      {status.error ? (
+        <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+          <CircleAlert className="h-3 w-3 shrink-0" />
+          Live updates stopped: {status.error}
+        </span>
+      ) : null}
     </div>
   );
 }
