@@ -33,7 +33,8 @@ One Explore agent per doc (batch 3–4 docs per agent when they're small). Each 
 | Verdict | Action |
 |---|---|
 | **DONE** — all remaining work shipped | Delete the file; add a dated one-liner to the feature's `FEATURE.md` Change Log if missing. |
-| **ACTIVE, rotted** — real work remains; doc is bloated or stale | Rewrite to the handoffs format: done work → one bullet each, stale claims corrected, vision quotes preserved **verbatim**. |
+| **ACTIVE, rotted** — real work remains; doc is bloated or stale | Rewrite to the handoffs format: identity block first, done work → one bullet each, stale claims corrected, vision quotes preserved **verbatim**. If the leftover is one focused session, apply the **tail law** (collapse the doc, `scope: tail`, move the orphan-list row to Tails). |
+| **VISION MISSING** — no Arman words, only paraphrase or a checklist | Do not invent a vision. Put `VISION MISSING` in the identity block and in orphan-list Notes. Add writing the vision to Decisions needed. |
 | **DRIFT, intentional** — code contradicts the doc because Arman changed direction (evidence: newer vision doc, his explicit decision, an answered question) | Delete every claim describing the old way. The doc states current intent only. |
 | **DRIFT, unclear** — code and vision disagree and you cannot tell whether it was a decision or an agent screwup | Touch nothing contested; add it to the decision list. |
 
@@ -48,15 +49,17 @@ One Explore agent per doc (batch 3–4 docs per agent when they're small). Each 
 ## Orphan-list reconciliation
 
 `/Users/armanisadeghi/code/common-docs/operations/unassigned-handoffs.md` lists every handoff with no owner (every repo).
-The sweep is its ONLY automated maintainer, and it may do exactly two things:
+The sweep is its ONLY automated maintainer. It may:
 
 - **Remove a row whose handoff file no longer exists** (including ones you deleted this sweep).
 - **Fix a broken link/path** in an existing row.
+- **Move a row** Features ↔ Programs ↔ Tails when you changed that handoff's `scope:` this sweep
+  (the tail law). Moving is not deleting.
 
 **Never add a row, and never remove one because the work looks stale or someone might be on it** —
 ownership is not knowable from the files, and a wrongly-removed row silently loses the work.
-Report any handoff you suspect is orphaned-but-unlisted as a decision line instead. Statuses,
-notes, and extra columns are banned in that file; strip them if an agent added any.
+Report any handoff you suspect is orphaned-but-unlisted as a decision line instead. Notes is one
+sentence (and `VISION MISSING` when that is true). Extra status columns stay banned.
 
 ## Mirror check
 
