@@ -47,7 +47,7 @@ export function SmsAssistantSettingsSection() {
     <>
       <SettingsSection
         title="Text assistant"
-        description="Owner beta: bind one verified phone to one saved agent for harmless two-way chat. Agent tools remain disabled."
+        description="Owner beta: bind one verified phone to one saved agent. The Holder keeps its complete tool set; consequential actions pause for recent sign-in confirmation."
         icon={MessagesSquare}
       >
         <SettingsReadOnlyValue

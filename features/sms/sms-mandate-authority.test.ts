@@ -31,5 +31,8 @@ describe("SMS Mandate authority", () => {
     expect(settings).toContain("MandateAgentPicker");
     expect(settings).toContain("SMS_ASSISTANT_OWNER_BETA_MANDATE");
     expect(settings).not.toContain("AgentListDropdown");
+    expect(settings).toContain("Holder keeps its complete tool set");
+    expect(settings).toContain("consequential actions pause");
+    expect(settings).not.toContain("Agent tools remain disabled");
   });
 });
