@@ -5,7 +5,7 @@
 // Regenerate:      pnpm gen:entity-types
 // Verify drift:    pnpm check:entity-types
 //
-// 403 active entity tokens. A token here is FK-valid for
+// 405 active entity tokens. A token here is FK-valid for
 // `platform.associations.source_type` / `target_type` and any other column
 // referencing `platform.entity_types.token`. Add/retire tokens in the DB via a
 // migration, then regenerate — NEVER hand-edit this file (the next generate
@@ -135,6 +135,8 @@ export type EntityTypeToken =
   | "crm_outreach_list"
   | "crm_outreach_list_member"
   | "crm_party_merge"
+  | "crm_registry_ingest_run"
+  | "crm_registry_source"
   | "crm_saved_view"
   | "crm_sending_event"
   | "crm_sending_identity"
@@ -826,6 +828,8 @@ export type ScopeableEntityToken =
   | "crm_outreach_list"
   | "crm_outreach_list_member"
   | "crm_party_merge"
+  | "crm_registry_ingest_run"
+  | "crm_registry_source"
   | "crm_saved_view"
   | "crm_sending_event"
   | "crm_sending_identity"
@@ -1136,6 +1140,7 @@ export type ListedEntityToken =
   | "content_ir_kind_instance"
   | "crm_blocklist_entry"
   | "crm_outreach_list"
+  | "crm_registry_source"
   | "crm_saved_view"
   | "crm_sending_identity"
   | "dataset"
@@ -1263,6 +1268,8 @@ export const ENTITY_TYPE_METADATA = {
   "crm_outreach_list": { token: "crm_outreach_list", schema: "crm", table: "outreach_list", label: "Outreach List", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: true, titleColumn: "name", contentRole: "container", referenceCategory: null },
   "crm_outreach_list_member": { token: "crm_outreach_list_member", schema: "crm", table: "outreach_list_member", label: "Outreach List Member", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_party_merge": { token: "crm_party_merge", schema: "crm", table: "party_merge", label: "Party Merge", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "crm_registry_ingest_run": { token: "crm_registry_ingest_run", schema: "crm", table: "registry_ingest_run", label: "Registry Ingest Run", baseTier: 1, isComponent: false, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
+  "crm_registry_source": { token: "crm_registry_source", schema: "crm", table: "registry_source", label: "Registry Source", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_saved_view": { token: "crm_saved_view", schema: "crm", table: "saved_view", label: "Smart View", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
   "crm_sending_event": { token: "crm_sending_event", schema: "crm", table: "sending_event", label: "Sending Event", baseTier: 1, isComponent: true, isModule: false, isListed: false, scopeable: true, category: null, referencePickable: false, titleColumn: "subject", contentRole: null, referenceCategory: null },
   "crm_sending_identity": { token: "crm_sending_identity", schema: "crm", table: "sending_identity", label: "Sending Identity", baseTier: 1, isComponent: false, isModule: false, isListed: true, scopeable: true, category: null, referencePickable: false, titleColumn: null, contentRole: null, referenceCategory: null },
@@ -1670,6 +1677,8 @@ export const ENTITY_TYPE_TOKENS: readonly EntityTypeToken[] = [
   "crm_outreach_list",
   "crm_outreach_list_member",
   "crm_party_merge",
+  "crm_registry_ingest_run",
+  "crm_registry_source",
   "crm_saved_view",
   "crm_sending_event",
   "crm_sending_identity",
