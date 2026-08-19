@@ -19,6 +19,7 @@ export function ControllerBanner({
   onTake,
   onReturn,
   onRequest,
+  canTake = false,
   busy,
   className,
 }: {
@@ -26,6 +27,7 @@ export function ControllerBanner({
   onTake: () => void;
   onReturn: () => void;
   onRequest?: () => void;
+  canTake?: boolean;
   busy?: boolean;
   className?: string;
 }) {
@@ -76,12 +78,12 @@ export function ControllerBanner({
             <Hand className="mr-1.5 h-3.5 w-3.5" />
             Request control
           </Button>
-        ) : (
+        ) : canTake ? (
           <Button size="sm" onClick={onTake} disabled={busy}>
             <MousePointerClick className="mr-1.5 h-3.5 w-3.5" />
             Take control
           </Button>
-        )}
+        ) : null}
       </div>
     </div>
   );

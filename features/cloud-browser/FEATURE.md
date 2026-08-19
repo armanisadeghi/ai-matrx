@@ -79,6 +79,9 @@ Reconnect).
 - **2026-08-19 — first-open settings:** loading a browser snapshot now selects the
   persisted profile returned by that snapshot. Profile-scoped settings therefore
   save against the browser the user is viewing, including on the very first open.
+  The control button is shown only when the browser has actually paused for a
+  person, and a failed control claim now produces a visible message instead of an
+  unhandled page error.
 - **2026-08-19 — first-composer entry:** added the cloud-browser globe to the
   `/chat/new` composer and routed it through `useOpenCloudBrowserCanvas`. The
   entry no longer appears only after the first message creates the full context

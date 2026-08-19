@@ -98,6 +98,10 @@ export function CloudBrowserBody({
       await cb.takeControl();
       await openStream();
       toast.info("You are now driving this browser.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not take control of this browser.",
+      );
     } finally {
       setBusy(false);
     }
@@ -144,9 +148,11 @@ export function CloudBrowserBody({
           variant="prompt"
           consent={cb.notificationConsent}
           onChange={cb.updateNotificationConsent}
-          onAcknowledge={() =>
-            void cb.updateNotificationConsent(cb.notificationConsent!)
-          }
+          onAcknowledge={() => {
+            if (cb.notificationConsent) {
+              void cb.updateNotificationConsent(cb.notificationConsent);
+            }
+          }}
         />
       ) : null}
 
@@ -156,6 +162,7 @@ export function CloudBrowserBody({
           onTake={onTake}
           onReturn={onReturn}
           onRequest={onTake}
+          canTake={cb.handoff?.state === "requested"}
           busy={busy}
         />
       ) : null}
