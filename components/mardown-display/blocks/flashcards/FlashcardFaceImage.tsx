@@ -15,6 +15,10 @@
 //    reporting the rot to the console so sweeps can re-source it.
 //  - alt (fc_detail.text) → real alt text; accessibility is not optional in
 //    education.
+//  - credit (fc_detail.metadata.credit) → attribution for stock photos. The
+//    Unsplash API guidelines require the photographer to be credited wherever
+//    the photo is displayed, so the caption renders with the image (face size)
+//    rather than being stored and forgotten.
 
 import { useState } from "react";
 import { InlineMediaRef } from "@/features/files/components/inline/InlineMediaRef";
@@ -28,6 +32,8 @@ export interface FaceImageRef {
   url?: string | null;
   /** Alt text (fc_detail.text). */
   alt?: string;
+  /** Stock-photo attribution (fc_detail.metadata.credit) — rendered, not just stored. */
+  credit?: { name: string; url?: string } | null;
 }
 
 /** True when the ref actually points at something renderable. */
@@ -79,7 +85,7 @@ export function FlashcardFaceImage({
   }
 
   return (
-    <div className={cn("flex justify-center w-full min-h-0", className)}>
+    <div className={cn("flex w-full min-h-0 flex-col items-center", className)}>
       <InlineMediaRef
         ref={ref}
         alt={image.alt || "Card image"}
@@ -91,6 +97,24 @@ export function FlashcardFaceImage({
         onError={handleError}
         className="max-h-full max-w-full"
       />
+      {image.credit?.name ? (
+        <span className="mt-0.5 shrink-0 text-[10px] leading-tight text-muted-foreground">
+          Photo:{" "}
+          {image.credit.url ? (
+            <a
+              href={image.credit.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="underline underline-offset-2 hover:text-foreground"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {image.credit.name}
+            </a>
+          ) : (
+            image.credit.name
+          )}
+        </span>
+      ) : null}
     </div>
   );
 }

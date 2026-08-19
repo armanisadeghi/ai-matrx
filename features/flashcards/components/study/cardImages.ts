@@ -13,12 +13,32 @@ export interface CardFaceImages {
   back?: FaceImageRef;
 }
 
+/**
+ * Stock-photo attribution lives in `fc_detail.metadata.credit` ({name, url})
+ * per common-docs/systems/flashcard-images/VISION_AND_PLAN.md §2.1. Unsplash's
+ * guidelines require it to be DISPLAYED, so the adapter surfaces it to the
+ * renderer instead of leaving it buried in the row.
+ */
+function toCredit(metadata: FcDetailRow["metadata"]): FaceImageRef["credit"] {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return undefined;
+  const credit = (metadata as Record<string, unknown>).credit;
+  if (!credit || typeof credit !== "object" || Array.isArray(credit)) return undefined;
+  const { name, url } = credit as Record<string, unknown>;
+  if (typeof name !== "string" || !name.trim()) return undefined;
+  return { name, url: typeof url === "string" && url ? url : undefined };
+}
+
 function toFaceImage(detail: FcDetailRow | undefined): FaceImageRef | undefined {
   if (!detail) return undefined;
   const fileId = detail.image_file_id;
   const url = detail.image_url;
   if (!fileId && !url) return undefined;
-  return { fileId, url, alt: detail.text || undefined };
+  return {
+    fileId,
+    url,
+    alt: detail.text || undefined,
+    credit: toCredit(detail.metadata),
+  };
 }
 
 /** The active image detail row for one face, if any. */

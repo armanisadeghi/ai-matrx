@@ -97,6 +97,7 @@ import {
 import { PARTY_COLUMNS } from "./columns";
 import { AddToOutreachListDialog } from "./outreach-lists/AddToOutreachListDialog";
 import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
+import { CRM_CREATE_NAME_PARAM, CRM_CREATE_PARAM } from "../routes";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_SURFACE_NAME } from "@/features/surfaces/manifests/crm.manifest";
 import { buildCrmListContextData } from "../agent-context/buildCrmListContextData";
@@ -433,6 +434,39 @@ export function CrmListPage({
   const requestedViewId =
     presentation === "route" ? searchParams.get("view") : null;
   const openCreateParty = useOpenCrmCreatePartyWindow();
+
+  // `/crm?create=person&name=<name>` — THE PREFILL DOOR. A surface that names
+  // somebody the CRM should hold (a journalist on a story angle, an author on a
+  // piece of coverage) sends the user here with the name already in hand, so
+  // they confirm a record instead of re-typing one. The params are consumed
+  // once and stripped, so a reload or a back-press does not re-open the window.
+  const requestedCreateKind =
+    presentation === "route" ? searchParams.get(CRM_CREATE_PARAM) : null;
+  const requestedCreateName =
+    presentation === "route" ? searchParams.get(CRM_CREATE_NAME_PARAM) : null;
+  const createHandled = useRef(false);
+  useEffect(() => {
+    if (createHandled.current) return;
+    if (requestedCreateKind !== "person" && requestedCreateKind !== "organization") {
+      return;
+    }
+    createHandled.current = true;
+    openCreateParty({
+      initialKind: requestedCreateKind,
+      initialName: requestedCreateName,
+    });
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete(CRM_CREATE_PARAM);
+    next.delete(CRM_CREATE_NAME_PARAM);
+    const query = next.toString();
+    router.replace(query ? `/crm?${query}` : "/crm", { scroll: false });
+  }, [
+    requestedCreateKind,
+    requestedCreateName,
+    openCreateParty,
+    router,
+    searchParams,
+  ]);
   const { prefs, setPrefs } = useListViewPrefs(SURFACE_KEY, SURFACE_DEFAULTS);
 
   const list = usePartyList({
