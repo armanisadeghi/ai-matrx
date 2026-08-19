@@ -720,7 +720,15 @@ function ComposerBody({
         )}
         {launched && (
           <Link
-            href={`/chat/${launched}`}
+            // A local Claude Code run mirrors into an AGENTLESS provider
+            // conversation; /chat/[id] redirects those to /chat/new, so the
+            // user loses the run they just started. Route mirrors to the
+            // provider detail view, agent-backed runs to chat.
+            href={
+              destination === "claude-code"
+                ? `/work/conversations/${launched}`
+                : `/chat/${launched}`
+            }
             className="flex items-center gap-1 text-xs text-primary hover:underline"
           >
             Open the conversation
