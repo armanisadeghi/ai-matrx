@@ -4,7 +4,7 @@
 
 **Status:** `migrating` (active rebuild — see `features/agents/migration/`)
 **Tier:** `1` — core of the product
-**Last updated:** `2026-08-16`
+**Last updated:** `2026-08-18`
 
 > This file is the **entry point** for the agents system. The system is large enough that it has its own `docs/` subdirectory with sub-feature docs. Start here, then jump to the relevant sub-doc.
 
@@ -95,11 +95,11 @@ the exact mirror of `autoToolsDisabled`. Three states, all visible in the UI via
 primitive, so it and the tools switch can never drift into looking like
 different mechanisms):
 
-| Declared | Switch | Behaviour |
-|---|---|---|
-| nothing | on | all context flows, delivered normally |
-| context policies | on | those govern their keys; undeclared extras still flow |
-| anything | **off** | **ONLY** declared context policies deliver |
+| Declared         | Switch  | Behaviour                                             |
+| ---------------- | ------- | ----------------------------------------------------- |
+| nothing          | on      | all context flows, delivered normally                 |
+| context policies | on      | those govern their keys; undeclared extras still flow |
+| anything         | **off** | **ONLY** declared context policies deliver            |
 
 The fourth combination — nothing declared AND the switch off — means no context
 reaches the agent at all. Legal, occasionally wanted, far more often a dead end,
@@ -110,8 +110,8 @@ same neutral voice as the others.
 level (`agent.mandate.auto_context_disabled`); the effective value is
 `agent OR mandate`. A Mandate can close what its Holder would have accepted and
 can never reopen what the Holder refused — the same rule `max_inline_chars`
-already follows as `min(agent, surface)`, extended from *how much* to *whether
-at all*. Cross-repo system of record:
+already follows as `min(agent, surface)`, extended from _how much_ to _whether
+at all_. Cross-repo system of record:
 `/Users/armanisadeghi/code/common-docs/systems/mandates/FEATURE.md` § Context.
 
 ⚠️ **The DB column is still `context_slots`.** The client reads
@@ -279,7 +279,7 @@ Ephemeral runtime state. Core invariant: **`agentId` is read exactly ONCE — at
 | `instanceModelOverrides`      |    Yes (`config_overrides`)    | Model settings snapshot + user deltas                                                                                                                                                                                                                                                |
 | `instanceVariableValues`      |       Yes (`variables`)        | Variable defs + resolved values (defaults → scope → user)                                                                                                                                                                                                                            |
 | `instanceResources`           | Yes (merged into `user_input`) | Attached files/content with status                                                                                                                                                                                                                                                   |
-| `instanceContext`             |        Yes (`context`)         | Context mandate matches + ad-hoc entries                                                                                                                                                                                                                                                |
+| `instanceContext`             |        Yes (`context`)         | Context mandate matches + ad-hoc entries                                                                                                                                                                                                                                             |
 | `instanceUserInput`           |       Yes (`user_input`)       | Text + multimodal content blocks                                                                                                                                                                                                                                                     |
 | `instanceClientTools`         |      Yes (`client_tools`)      | Client-side tool IDs registered for this instance                                                                                                                                                                                                                                    |
 | `instanceWorkingDocument`     |  No (feeds `instanceContext`)  | Documents keyed by `workingDocKey(scope, kind)` — `working` (per-conversation, collaborative) + `scratch` (USER-GLOBAL pool at `sp:<docId>` scopes; agent read-only): enabled/content/title/binding/saving + `attachedScratchByConversation` (see **Working document & scratchpad**) |
@@ -369,8 +369,8 @@ model overrides.
   flip with the sibling server chip. New: `agent.definition.auto_context_disabled`
   (+ on `definition_version` / `template`, and `agent.mandate.auto_context_disabled`
   for the Mandate-level gate), carried through every function that already
-  carried `tool_config` — the two snapshot triggers *and the snapshot trigger's
-  no-change guard*, promote, both duplicates, template instantiation, linked
+  carried `tool_config` — the two snapshot triggers _and the snapshot trigger's
+  no-change guard_, promote, both duplicates, template instantiation, linked
   sync, and both execution reads — because a version snapshot that dropped the
   flag would silently re-open automatic context injection on promote. The switch
   is mounted on the builder's left panel and the agent window's Context tab, and
@@ -644,6 +644,8 @@ The working doc is **opt-in** (off by default); its on/off + any cross-conversat
 ---
 
 ## Change log
+
+- `2026-08-18` — **Orchestra terminology sweep.** `/agents/all`, `/agents/classic`, and `/agents/orchestras` now use **Orchestra/Orchestras** everywhere users previously saw the retired **Set/Sets** label, including create actions, search placeholders, and empty results. `useOrchestrasList` and its consumers now expose `orchestras` instead of the stale internal `sets` alias. The existing network icon remains because it clearly represents coordinated agents.
 
 - `2026-08-16` — **Provider-managed `interaction: "agent"` models cannot fall into conversational routing.** The model catalog now recognizes the live Google background-agent interaction mode. `pickRuntime` handles it exhaustively and refuses every conversational execution mode with a dedicated-surface explanation, matching the existing `features/research/service/google-background.ts` start/poll lifecycle. Regression coverage proves no current execution mode accepts it.
 

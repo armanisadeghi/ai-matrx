@@ -1,6 +1,6 @@
 // features/agents/orchestras/run/orchestra-run-status.selectors.ts
 //
-// Selectors deriving live member-run status for an orchestrator-set run from
+// Selectors deriving live member-run status for an Orchestra run from
 // the activeRequests slice. When an orchestrator runs, each member executes as
 // a `sub_agent` operation: the stream's `init` event carries
 // `metadata: { label: "custom_tool_N", conversation_id: <child uuid> }` and the

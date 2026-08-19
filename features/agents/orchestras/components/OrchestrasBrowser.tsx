@@ -1,6 +1,6 @@
 // features/agents/orchestras/components/OrchestrasBrowser.tsx
 //
-// The /agents/orchestras list view — every orchestrated set the user can see. This is
+// The /agents/orchestras list view — every Orchestra the user can see. This is
 // the "list, not a trapped detail" entry page: browse → open an Orchestra → build it.
 
 "use client";
@@ -23,28 +23,32 @@ import { GenerateOrchestratorDialog } from "./GenerateOrchestratorDialog";
 
 export function OrchestrasBrowser() {
   const router = useRouter();
-  const { sets, status } = useOrchestrasList();
+  const { orchestras, status } = useOrchestrasList();
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return sets;
-    return sets.filter(
+    if (!q) return orchestras;
+    return orchestras.filter(
       (s) =>
         s.name?.toLowerCase().includes(q) ||
         s.label?.toLowerCase().includes(q) ||
         s.config.tagline?.toLowerCase().includes(q) ||
         s.description?.toLowerCase().includes(q),
     );
-  }, [sets, search]);
+  }, [orchestras, search]);
 
-  const loading = status === "loading" && sets.length === 0;
-  const empty = status === "ready" && sets.length === 0;
+  const loading = status === "loading" && orchestras.length === 0;
+  const empty = status === "ready" && orchestras.length === 0;
 
   const headerActions: HeaderAction[] = [
-    { icon: "Plus", label: "New set", onPress: () => setCreateOpen(true) },
+    {
+      icon: "Plus",
+      label: "New Orchestra",
+      onPress: () => setCreateOpen(true),
+    },
     {
       icon: "Workflow",
       label: "Generate orchestrator",
@@ -79,7 +83,7 @@ export function OrchestrasBrowser() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search sets…"
+              placeholder="Search Orchestras…"
               className="h-9 w-full pl-8"
             />
           </div>
@@ -88,51 +92,63 @@ export function OrchestrasBrowser() {
         {/* body */}
         <div className="flex-1 overflow-y-auto px-4 pb-4">
           {loading && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="h-44 rounded-xl" />
-            ))}
-          </div>
-        )}
-
-        {empty && (
-          <div className="mx-auto flex max-w-md flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <Network className="h-7 w-7" />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-44 rounded-xl" />
+              ))}
             </div>
-            <h2 className="text-base font-semibold text-foreground">
-              Build your first Orchestra
-            </h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              Don&apos;t have an orchestrator yet? Pick the specialists you want and
-              we&apos;ll generate one for you — an agent that knows each member and
-              coordinates them. Or use an agent you already have.
-            </p>
-            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-              <Button onClick={() => setGenerateOpen(true)} className="gap-1.5">
-                <Workflow className="h-4 w-4" />
-                Generate an orchestrator
-              </Button>
-              <Button variant="outline" onClick={() => setCreateOpen(true)} className="gap-1.5">
-                <Plus className="h-4 w-4" />
-                Use an existing agent
-              </Button>
-            </div>
-          </div>
-        )}
+          )}
 
-        {!loading && !empty && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((s) => (
-              <OrchestraCard key={s.orchestratorId} summary={s} />
-            ))}
-            {filtered.length === 0 && (
-              <div className={cn("col-span-full py-16 text-center text-sm text-muted-foreground")}>
-                No sets match “{search}”.
+          {empty && (
+            <div className="mx-auto flex max-w-md flex-col items-center justify-center py-20 text-center">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Network className="h-7 w-7" />
               </div>
-            )}
-          </div>
-        )}
+              <h2 className="text-base font-semibold text-foreground">
+                Build your first Orchestra
+              </h2>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                Don&apos;t have an orchestrator yet? Pick the specialists you
+                want and we&apos;ll generate one for you — an agent that knows
+                each member and coordinates them. Or use an agent you already
+                have.
+              </p>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                <Button
+                  onClick={() => setGenerateOpen(true)}
+                  className="gap-1.5"
+                >
+                  <Workflow className="h-4 w-4" />
+                  Generate an orchestrator
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCreateOpen(true)}
+                  className="gap-1.5"
+                >
+                  <Plus className="h-4 w-4" />
+                  Use an existing agent
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {!loading && !empty && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered.map((s) => (
+                <OrchestraCard key={s.orchestratorId} summary={s} />
+              ))}
+              {filtered.length === 0 && (
+                <div
+                  className={cn(
+                    "col-span-full py-16 text-center text-sm text-muted-foreground",
+                  )}
+                >
+                  No Orchestras match “{search}”.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -144,7 +160,10 @@ export function OrchestrasBrowser() {
           setGenerateOpen(true);
         }}
       />
-      <GenerateOrchestratorDialog open={generateOpen} onOpenChange={setGenerateOpen} />
+      <GenerateOrchestratorDialog
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+      />
     </>
   );
 }

@@ -2,7 +2,7 @@
 //
 // Resolves an Orchestra's `accent` key into Tailwind class fragments for its identity
 // surfaces (orchestrator glyph, card header gradient, member ring, chips). These
-// are decorative IDENTITY colors (intentionally vivid — sets are meant to feel
+// are decorative IDENTITY colors (intentionally vivid — Orchestras should feel
 // distinct), kept dark-mode-aware. Semantic surface tokens (bg-card etc.) still
 // own structure; accents only tint identity.
 
@@ -100,6 +100,11 @@ const MAP: Record<OrchestraAccent, AccentClasses> = {
   },
 };
 
-export function accentClasses(accent: OrchestraAccent | undefined | null): AccentClasses {
-  return MAP[(accent as OrchestraAccent) ?? DEFAULT_ORCHESTRA_ACCENT] ?? MAP[DEFAULT_ORCHESTRA_ACCENT];
+export function accentClasses(
+  accent: OrchestraAccent | undefined | null,
+): AccentClasses {
+  return (
+    MAP[(accent as OrchestraAccent) ?? DEFAULT_ORCHESTRA_ACCENT] ??
+    MAP[DEFAULT_ORCHESTRA_ACCENT]
+  );
 }

@@ -23,7 +23,11 @@ export function useCreateOrchestrator() {
   const [error, setError] = useState<string | null>(null);
 
   const create = useCallback(
-    async (args: { name: string; accent: OrchestraAccent; tagline?: string }): Promise<string | null> => {
+    async (args: {
+      name: string;
+      accent: OrchestraAccent;
+      tagline?: string;
+    }): Promise<string | null> => {
       setError(null);
       setCreating(true);
       try {
@@ -48,15 +52,21 @@ export function useCreateOrchestrator() {
         //    the DB where a user editing it saw no effect. The fix is the
         //    template, not a code override — and the constants are deleted so
         //    the override cannot come back.
-        await orchestratorService.rename(orchestratorId, args.name.trim() || "Agent Orchestrator");
+        await orchestratorService.rename(
+          orchestratorId,
+          args.name.trim() || "Agent Orchestrator",
+        );
 
-        // 3) Create the (empty) set. If the marker write fails we STILL route to
+        // 3) Create the empty Orchestra. If the marker write fails we STILL route to
         //    the created agent — the builder's "Make an orchestrator" CTA recovers.
         await dispatch(
           createOrchestra({
             orchestratorId,
             label: args.name.trim() || undefined,
-            config: { accent: args.accent, tagline: args.tagline?.trim() || undefined },
+            config: {
+              accent: args.accent,
+              tagline: args.tagline?.trim() || undefined,
+            },
           }),
         );
 
@@ -69,7 +79,9 @@ export function useCreateOrchestrator() {
 
         return orchestratorId;
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not create the orchestrator.");
+        setError(
+          e instanceof Error ? e.message : "Could not create the orchestrator.",
+        );
         return null;
       } finally {
         setCreating(false);

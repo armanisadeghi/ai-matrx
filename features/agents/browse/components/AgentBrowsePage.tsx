@@ -33,7 +33,7 @@ export function AgentBrowsePage() {
           <Button asChild variant="outline" size="sm" className="h-11 lg:h-7">
             <Link href="/agents/orchestras" aria-label="Orchestras">
               <Network className="h-4 w-4" />
-              <span className="max-sm:sr-only">Sets</span>
+              <span className="max-sm:sr-only">Orchestras</span>
             </Link>
           </Button>
           {newAgentButton}

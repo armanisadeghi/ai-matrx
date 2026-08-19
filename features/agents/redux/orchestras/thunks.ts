@@ -9,7 +9,11 @@ import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { orchestrasService } from "@/features/agents/orchestras/service/orchestrasService";
-import type { OrchestraConfig, OrchestraMember, OrchestraMemberMeta } from "@/features/agents/orchestras/types";
+import type {
+  OrchestraConfig,
+  OrchestraMember,
+  OrchestraMemberMeta,
+} from "@/features/agents/orchestras/types";
 import { DEFAULT_ORCHESTRA_RESULT_MODE } from "@/features/agents/orchestras/constants";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { purposeService, type GroundingTag } from "@/features/purpose/service";
@@ -34,13 +38,15 @@ const memberHydrationInFlight = new Set<string>();
  *
  * `initializeChatAgents` only loads the user's own gallery (`agx_get_list`), so
  * a member agent shared-with-you via the set renders the "Agent" fallback name
- * in AgentRoleCard until its definition is fetched. Sets are small, so parallel
+ * in AgentRoleCard until its definition is fetched. Orchestras are small, so parallel
  * `fetchFullAgent` calls (the canonical single-agent fetch) are fine. Guarded
  * against refetch loops: only ids absent from state and not already in flight
  * are fetched; failures (e.g. access revoked) reject their thunk action and are
  * not retried here.
  */
-function hydrateMissingMemberAgents(members: OrchestraMember[]): AppThunk<void> {
+function hydrateMissingMemberAgents(
+  members: OrchestraMember[],
+): AppThunk<void> {
   return (dispatch, getState) => {
     const loaded = getState().agentDefinition.agents;
     const missing = members
@@ -59,8 +65,10 @@ function hydrateMissingMemberAgents(members: OrchestraMember[]): AppThunk<void> 
   };
 }
 
-/** Load every set the user can see. Deduped; `status === "ready"` short-circuits. */
-export function fetchOrchestras(opts?: { force?: boolean }): AppThunk<Promise<void>> {
+/** Load every Orchestra the user can see. Deduped; `status === "ready"` short-circuits. */
+export function fetchOrchestras(opts?: {
+  force?: boolean;
+}): AppThunk<Promise<void>> {
   return async (dispatch, getState) => {
     const force = opts?.force ?? false;
     const status = getState().orchestras.listStatus;
@@ -97,7 +105,10 @@ export function loadOrchestra(
     const res = await orchestrasService.load(orchestratorId);
     if (isScopesRpcErr(res)) {
       dispatch(
-        orchestrasActions.detailRejected({ orchestratorId, error: res.error.message }),
+        orchestrasActions.detailRejected({
+          orchestratorId,
+          error: res.error.message,
+        }),
       );
     } else {
       dispatch(orchestrasActions.detailFulfilled(res.data));
@@ -184,12 +195,21 @@ export function addAgentToOrchestra(args: {
       required: args.meta?.required === true,
       resultMode: args.meta?.resultMode ?? DEFAULT_ORCHESTRA_RESULT_MODE,
     };
-    dispatch(orchestrasActions.memberAdded({ orchestratorId: args.orchestratorId, member }));
+    dispatch(
+      orchestrasActions.memberAdded({
+        orchestratorId: args.orchestratorId,
+        member,
+      }),
+    );
 
-    const res = await orchestrasService.addMember(args.orchestratorId, args.agentId, {
-      position,
-      meta: args.meta,
-    });
+    const res = await orchestrasService.addMember(
+      args.orchestratorId,
+      args.agentId,
+      {
+        position,
+        meta: args.meta,
+      },
+    );
     if (isScopesRpcErr(res)) {
       dispatch(
         orchestrasActions.memberRemoved({
@@ -210,7 +230,10 @@ export function removeAgentFromOrchestra(args: {
 }): AppThunk<Promise<OrchestraWriteResult>> {
   return async (dispatch) => {
     dispatch(orchestrasActions.memberRemoved(args));
-    const res = await orchestrasService.removeMember(args.orchestratorId, args.agentId);
+    const res = await orchestrasService.removeMember(
+      args.orchestratorId,
+      args.agentId,
+    );
     if (isScopesRpcErr(res)) {
       await dispatch(loadOrchestra(args.orchestratorId, { force: true }));
       return { ok: false, error: res.error.message };
@@ -226,7 +249,8 @@ export function reorderOrchestraMembers(args: {
 }): AppThunk<Promise<OrchestraWriteResult>> {
   return async (dispatch, getState) => {
     dispatch(orchestrasActions.membersReordered(args));
-    const members = getState().orchestras.byId[args.orchestratorId]?.members ?? [];
+    const members =
+      getState().orchestras.byId[args.orchestratorId]?.members ?? [];
     const results = await Promise.all(
       members.map((m) =>
         orchestrasService.addMember(args.orchestratorId, m.agentId, {
@@ -291,16 +315,20 @@ export function saveMemberMeta(args: {
     const m = getState().orchestras.byId[args.orchestratorId]?.members.find(
       (x) => x.agentId === args.agentId,
     );
-    const res = await orchestrasService.addMember(args.orchestratorId, args.agentId, {
-      position: m?.position,
-      meta: {
-        roleTitle: m?.roleTitle ?? undefined,
-        gap: m?.gap ?? undefined,
-        pos: m?.pos ?? undefined,
-        required: m?.required === true,
-        resultMode: m?.resultMode ?? DEFAULT_ORCHESTRA_RESULT_MODE,
+    const res = await orchestrasService.addMember(
+      args.orchestratorId,
+      args.agentId,
+      {
+        position: m?.position,
+        meta: {
+          roleTitle: m?.roleTitle ?? undefined,
+          gap: m?.gap ?? undefined,
+          pos: m?.pos ?? undefined,
+          required: m?.required === true,
+          resultMode: m?.resultMode ?? DEFAULT_ORCHESTRA_RESULT_MODE,
+        },
       },
-    });
+    );
     if (isScopesRpcErr(res)) {
       await dispatch(loadOrchestra(args.orchestratorId, { force: true }));
       return { ok: false, error: res.error.message };

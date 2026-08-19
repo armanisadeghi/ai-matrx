@@ -12,18 +12,18 @@ The folder is still named `browse/` (its implementation namespace); the ROUTE is
 
 Two good list pages existed, each strong where the other was weak:
 
-| | `/agents/all` | `/transcripts` |
-|---|---|---|
-| Cards | Clean shape, 10 unlabeled icon actions | Messy shape, few **named** actions |
-| Table | None | Bespoke, no sticky header, non-canonical |
-| Scope | Mine / Shared / All | none |
-| Persistence | none | view mode only, localStorage |
-| Paging | fetch-all → slice in browser | per-section "show more" |
+|             | `/agents/all`                          | `/transcripts`                           |
+| ----------- | -------------------------------------- | ---------------------------------------- |
+| Cards       | Clean shape, 10 unlabeled icon actions | Messy shape, few **named** actions       |
+| Table       | None                                   | Bespoke, no sticky header, non-canonical |
+| Scope       | Mine / Shared / All                    | none                                     |
+| Persistence | none                                   | view mode only, localStorage             |
+| Paging      | fetch-all → slice in browser           | per-section "show more"                  |
 
 This page takes the best half of each and fixes what **neither** did:
 
 1. **View style is remembered** — per user, synced across devices.
-2. **The table is the default**, and one `…` menu per row carries *every* record-level action.
+2. **The table is the default**, and one `…` menu per row carries _every_ record-level action.
 3. **Mine / My Orgs / Shared / Public** — real scopes with true server counts. "My Orgs" is new, and it was hiding real data (see below).
 
 ---
@@ -142,12 +142,12 @@ The table shows exactly ONE affordance per row. `MatrxDataTable`'s own row-copy 
 
 **Every user agent is `visibility='internal'` with an `organization_id` — yet `agx_get_list` only ever returned rows you own or were explicitly granted.** Agents your own teammates created in your own org were invisible platform-wide. On the first live run of this page, "My Orgs" immediately surfaced an agent (`Badass Titanium Baby Agent`, Titanium org) that `/agents/all` cannot show at all.
 
-| Scope | Question it answers | Predicate |
-|---|---|---|
-| `mine` | What did I make? | `user_id = auth.uid()` |
-| `orgs` | What does my team have? | created by someone else, in a **non-personal** org I belong to, `visibility IN ('internal','public')` |
-| `shared` | What did someone hand me? | explicit `iam.permissions` grant (user or org) |
-| `public` | What has the platform published? | `visibility = 'public'`, not mine |
+| Scope    | Question it answers              | Predicate                                                                                             |
+| -------- | -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `mine`   | What did I make?                 | `user_id = auth.uid()`                                                                                |
+| `orgs`   | What does my team have?          | created by someone else, in a **non-personal** org I belong to, `visibility IN ('internal','public')` |
+| `shared` | What did someone hand me?        | explicit `iam.permissions` grant (user or org)                                                        |
+| `public` | What has the platform published? | `visibility = 'public'`, not mine                                                                     |
 
 `orgs` and `shared` may overlap for the same row. That is correct and intentional — they answer different questions, and hiding an org row because it also carries a grant would make "what does my team have?" lie.
 
@@ -159,26 +159,26 @@ Org/Owner/Access columns appear only when scope ≠ `mine` — inside "Mine" eve
 
 ## Files
 
-| File | Role |
-|---|---|
-**The generic shell lives in `lib/entity-list/`** (extracted 2026-08-08 —
-read its `FEATURE.md`): the query hook, scope tabs, toolbar, filter panel,
-column picker, table, and page assembly are shared with `/transcripts` and
-future list surfaces. What remains here is the AGENT half:
+| File                                                                       | Role |
+| -------------------------------------------------------------------------- | ---- |
+| **The generic shell lives in `lib/entity-list/`** (extracted 2026-08-08 —  |
+| read its `FEATURE.md`): the query hook, scope tabs, toolbar, filter panel, |
+| column picker, table, and page assembly are shared with `/transcripts` and |
+| future list surfaces. What remains here is the AGENT half:                 |
 
-| File | Role |
-|---|---|
-| `types.ts` | `AgentBrowseRow` (derived from the generated RPC return — never hand-mirrored), declared scopes, re-exports of the generic vocabulary |
-| `service.ts` | The RPC calls + inline-edit save. Browser → Supabase direct; no Next hop, no Python hop |
-| `listConfig.tsx` | THE config handed to `<EntityListPage>` — service, columns, scopes, row-actions hook + modals, card/row renderers, copy config |
-| `useAgentRowActions.tsx` | Binds the registry to behaviour; owns the modals as page-level singletons (not one `ShareModal` per row) |
-| `agentActionRegistry.tsx` | THE action list |
-| `columns.tsx` | EVERY column the row can show, with `defaultHidden` / `locked` / `scopedToShared` flags (spec type + cell helpers from `lib/entity-list/columns`) |
-| `components/AgentBrowsePage.tsx` | Thin: `<EntityListPage config>` + this page's slots (notice, Sets/New buttons) |
-| `components/AgentBrowseCards.tsx` | Card view (render prop in the config) |
-| `components/AgentBrowseRows.tsx` | Dense view — full-width rows, aligned zones |
-| `components/ClassicViewNotice.tsx` | TEMPORARY cutover banner → `/agents/classic` |
-| `components/AddToOrchestraDialog.tsx` | Dialog shell over the existing `useOrchestrasList` + `addAgentToOrchestra` |
+| File                                  | Role                                                                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types.ts`                            | `AgentBrowseRow` (derived from the generated RPC return — never hand-mirrored), declared scopes, re-exports of the generic vocabulary             |
+| `service.ts`                          | The RPC calls + inline-edit save. Browser → Supabase direct; no Next hop, no Python hop                                                           |
+| `listConfig.tsx`                      | THE config handed to `<EntityListPage>` — service, columns, scopes, row-actions hook + modals, card/row renderers, copy config                    |
+| `useAgentRowActions.tsx`              | Binds the registry to behaviour; owns the modals as page-level singletons (not one `ShareModal` per row)                                          |
+| `agentActionRegistry.tsx`             | THE action list                                                                                                                                   |
+| `columns.tsx`                         | EVERY column the row can show, with `defaultHidden` / `locked` / `scopedToShared` flags (spec type + cell helpers from `lib/entity-list/columns`) |
+| `components/AgentBrowsePage.tsx`      | Thin: `<EntityListPage config>` + this page's slots (notice, Orchestras/New buttons)                                                              |
+| `components/AgentBrowseCards.tsx`     | Card view (render prop in the config)                                                                                                             |
+| `components/AgentBrowseRows.tsx`      | Dense view — full-width rows, aligned zones                                                                                                       |
+| `components/ClassicViewNotice.tsx`    | TEMPORARY cutover banner → `/agents/classic`                                                                                                      |
+| `components/AddToOrchestraDialog.tsx` | Dialog shell over the existing `useOrchestrasList` + `addAgentToOrchestra`                                                                        |
 
 ## Invariants
 
@@ -234,8 +234,9 @@ hostile at 2,000.
 - **2026-08-08** — Added the semantic Agents H1, named the favorite-column
   sort control, raised mobile scope targets to 44px, and sanitized Markdown
   description previews across table and card views.
+- **2026-08-18** — Replaced the retired **Sets** label in the agents-list header with the canonical **Orchestras** name; the existing network icon remains the semantic marker.
 - **2026-07-29** — Mobile browse chrome is one scope/actions row plus one
-  search/actions row: scope labels collapse accessibly to icons, Sets/New use
+  search/actions row: scope labels collapse accessibly to icons, Orchestras/New use
   icon tap targets, and view/density/reset move into one Display menu. The
   shared `GenericTablePagination` now remains one concise row on phones instead
   of stacking page size, range, and controls into three rows.

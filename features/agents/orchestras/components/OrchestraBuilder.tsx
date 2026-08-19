@@ -122,8 +122,8 @@ export function OrchestraBuilder({
   const openAgentContentWindow = useOpenAgentContentWindow();
 
   useEnsureAgentsLoaded();
-  // Sibling sets power the header's entity dropdown (switch set without a round trip to the list).
-  const { sets } = useOrchestrasList();
+  // Sibling Orchestras power the header's entity dropdown without a list round trip.
+  const { orchestras } = useOrchestrasList();
 
   const memberIds = useMemo(() => members.map((m) => m.agentId), [members]);
   const promptStatus = useOrchestratorPromptStatus(orchestratorId, memberIds);
@@ -304,7 +304,7 @@ export function OrchestraBuilder({
       newTab: true,
     },
     {
-      label: "Set settings",
+      label: "Orchestra settings",
       icon: Settings2,
       onPress: () => setSettingsOpen(true),
     },
@@ -315,7 +315,7 @@ export function OrchestraBuilder({
       <EntityModeHeader
         backHref="/agents/orchestras"
         entityLabel={title}
-        entityOptions={sets.map((s) => ({
+        entityOptions={orchestras.map((s) => ({
           label: s.label?.trim() || s.name,
           href: `/agents/orchestras/${s.orchestratorId}`,
           active: s.orchestratorId === orchestratorId,

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useTransition,
-  useMemo,
-  useEffect,
-} from "react";
+import { useState, useTransition, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AgentCard } from "./AgentCard";
@@ -474,7 +469,10 @@ export function AgentsGrid() {
     raw: unknown,
     allowed: readonly T[],
   ): T => {
-    if (typeof raw === "string" && (allowed as readonly string[]).includes(raw)) {
+    if (
+      typeof raw === "string" &&
+      (allowed as readonly string[]).includes(raw)
+    ) {
       return raw as T;
     }
     throw new Error(
@@ -610,7 +608,7 @@ export function AgentsGrid() {
         );
         if (tab === "shared" && liveSharedTotal === 0) {
           throw new Error(
-            "catalog_filters.ownership_tab cannot be \"shared\": nothing is shared with this user, so the gallery renders no Shared tab and the view would be empty with no way back. Use \"mine\" or \"all\".",
+            'catalog_filters.ownership_tab cannot be "shared": nothing is shared with this user, so the gallery renders no Shared tab and the view would be empty with no way back. Use "mine" or "all".',
           );
         }
         patch.tab = tab;
@@ -798,10 +796,7 @@ export function AgentsGrid() {
   const renderVersionLookup = () => {
     if (!isVersionIdQuery) return null;
 
-    if (
-      isVersionLookupLoading &&
-      versionLookupRequestId === versionIdQuery
-    ) {
+    if (isVersionLookupLoading && versionLookupRequestId === versionIdQuery) {
       return (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
           <History className="h-4 w-4 animate-pulse" />
@@ -810,7 +805,8 @@ export function AgentsGrid() {
       );
     }
 
-    if (!versionLookup || versionLookup.versionId !== versionIdQuery) return null;
+    if (!versionLookup || versionLookup.versionId !== versionIdQuery)
+      return null;
 
     return (
       <button
@@ -967,7 +963,7 @@ export function AgentsGrid() {
                 title="Orchestras — orchestrators presiding over teams of agents"
               >
                 <Network className="h-4 w-4" />
-                Sets
+                Orchestras
               </Button>
             </Link>
 

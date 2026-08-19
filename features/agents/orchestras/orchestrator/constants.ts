@@ -12,8 +12,8 @@ export const ORCHESTRATOR_TEMPLATE_ID = "b06689e3-c651-443a-9059-7e11160d91b4";
 
 /**
  * The mandate for the "Orchestra Role Describer". "Sync agent listings" runs it
- * once per click over the WHOLE set: it reads every member's current config
- * (name, description, system prompt, inputs, output) AND its current set role
+ * once per click over the WHOLE Orchestra: it reads every member's current config
+ * (name, description, system prompt, inputs, output) AND its current Orchestra role
  * (`current_role_title` / `current_gap`), then returns a strict JSON array of
  * `{id,role_title,gap}` for EVERY member — filling the ones that are blank,
  * fixing the ones that are wrong, and confirming/keeping the ones already
@@ -44,7 +44,8 @@ export const MEMBER_CONFIG_COLUMNS =
  * absent the orchestrator prompt is not template-shaped → fail loudly, never write
  * garbage. Non-greedy so nested content can't run past the close tag.
  */
-export const AVAILABLE_AGENTS_RE = /<available_agents>[\s\S]*?<\/available_agents>/;
+export const AVAILABLE_AGENTS_RE =
+  /<available_agents>[\s\S]*?<\/available_agents>/;
 export const AVAILABLE_AGENTS_OPEN = "<available_agents>";
 export const AVAILABLE_AGENTS_CLOSE = "</available_agents>";
 

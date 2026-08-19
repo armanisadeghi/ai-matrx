@@ -196,7 +196,7 @@ export const orchestratorService = {
 
   /**
    * Read each member agent's config — identity, system prompt (`messages`),
-   * declared inputs, and output shape — to both describe its set role and list
+   * declared inputs, and output shape — to both describe its Orchestra role and list
    * its I/O in `<available_agents>`.
    */
   async fetchMemberConfigs(
@@ -287,7 +287,7 @@ export const orchestratorService = {
 
       const appended =
         `${textBlock.text.trimEnd()}\n\n` +
-        `Your specialist agents are listed below and kept in sync with your set:\n\n` +
+        `Your specialist agents are listed below and kept in sync with your Orchestra:\n\n` +
         `${AVAILABLE_AGENTS_OPEN}\n${AVAILABLE_AGENTS_CLOSE}`;
       const newContent = sys.content.map((b, i) =>
         i === textIdx ? { ...b, text: appended } : b,

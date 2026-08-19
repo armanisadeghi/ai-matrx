@@ -1,7 +1,7 @@
 // features/agents/orchestras/components/AddToOrchestraMenu.tsx
 //
 // A compact "add this agent to an Orchestra" control for agent cards / rows. Lists the
-// user's existing sets (click → add as member) and offers to start a new set
+// user's existing Orchestras (click → add as member) and offers to start a new Orchestra
 // seeded with this agent. Self-contained: renders its own trigger + dialog.
 
 "use client";
@@ -38,11 +38,13 @@ export function AddToOrchestraMenu({
 }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  const { sets } = useOrchestrasList({ auto: false });
+  const { orchestras } = useOrchestrasList({ auto: false });
   const [createOpen, setCreateOpen] = useState(false);
 
   const addTo = async (orchestratorId: string, name: string) => {
-    const res = await dispatch(addAgentToOrchestra({ orchestratorId, agentId }));
+    const res = await dispatch(
+      addAgentToOrchestra({ orchestratorId, agentId }),
+    );
     if (res.ok) toast.success(`Added to “${name}”.`);
     else toast.error(res.error ?? "Could not add to Orchestra.");
   };
@@ -76,23 +78,30 @@ export function AddToOrchestraMenu({
             className="gap-2"
           >
             <Plus className="h-4 w-4" />
-            New set with this agent…
+            New Orchestra with this agent…
           </DropdownMenuItem>
-          {sets.length > 0 && <DropdownMenuSeparator />}
-          {sets.slice(0, 8).map((s) => {
-            const a = accentClasses(s.config.accent);
+          {orchestras.length > 0 && <DropdownMenuSeparator />}
+          {orchestras.slice(0, 8).map((orchestra) => {
+            const a = accentClasses(orchestra.config.accent);
             return (
               <DropdownMenuItem
-                key={s.orchestratorId}
-                onSelect={() => addTo(s.orchestratorId, s.label || s.name)}
+                key={orchestra.orchestratorId}
+                onSelect={() =>
+                  addTo(
+                    orchestra.orchestratorId,
+                    orchestra.label || orchestra.name,
+                  )
+                }
                 className="gap-2"
               >
                 <span
                   className={cn("h-2.5 w-2.5 shrink-0 rounded-full", a.dot)}
                 />
-                <span className="truncate">{s.label || s.name}</span>
+                <span className="truncate">
+                  {orchestra.label || orchestra.name}
+                </span>
                 <span className="ml-auto text-[11px] text-muted-foreground">
-                  {s.memberCount}
+                  {orchestra.memberCount}
                 </span>
               </DropdownMenuItem>
             );
@@ -103,7 +112,7 @@ export function AddToOrchestraMenu({
             className="gap-2"
           >
             <ListTree className="h-4 w-4" />
-            Browse all sets
+            Browse all Orchestras
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

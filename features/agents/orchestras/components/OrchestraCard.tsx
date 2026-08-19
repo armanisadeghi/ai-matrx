@@ -72,7 +72,7 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
         {/* A count is a door: the members it counts are named on the builder. */}
         <Link
           href={setHref}
-          title={`${count} member${count === 1 ? "" : "s"} — open the set to see them`}
+          title={`${count} member${count === 1 ? "" : "s"} — open the Orchestra to see them`}
           className={cn(
             "absolute right-3 top-3 z-20 flex items-center gap-1 rounded-full bg-background/70 px-2 py-0.5 text-xs font-medium backdrop-blur transition-colors hover:bg-background",
             a.text,
@@ -105,7 +105,9 @@ export function OrchestraCard({ summary }: { summary: OrchestraSummary }) {
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center -space-x-1.5">
             {count === 0 ? (
-              <span className="text-[11px] text-muted-foreground/70">No members yet</span>
+              <span className="text-[11px] text-muted-foreground/70">
+                No members yet
+              </span>
             ) : (
               <>
                 {Array.from({ length: strip }).map((_, i) => (

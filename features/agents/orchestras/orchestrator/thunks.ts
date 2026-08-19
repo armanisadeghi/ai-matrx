@@ -24,7 +24,10 @@ import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-syst
 import { openLiveRunWindowAction } from "@/features/overlays/openers/liveRunWindow";
 import { selectRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
-import { saveMemberMeta, loadOrchestra } from "@/features/agents/redux/orchestras/thunks";
+import {
+  saveMemberMeta,
+  loadOrchestra,
+} from "@/features/agents/redux/orchestras/thunks";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { OrchestraMember } from "../types";
 import {
@@ -104,12 +107,17 @@ export function enableOrchestratorSync(args: {
 export function syncOrchestratorPrompt(args: {
   orchestratorId: string;
   memberIds: string[];
-}): AppThunk<Promise<{ ok: boolean; error?: string; membersUpdated?: number }>> {
+}): AppThunk<
+  Promise<{ ok: boolean; error?: string; membersUpdated?: number }>
+> {
   return async (dispatch, getState) => {
     // Cheap pre-check BEFORE the slow LLM run: bail if this agent's prompt has no
     // <available_agents> section to fill (e.g. an arbitrary user-picked orchestrator).
-    const marker = await orchestratorService.hasAvailableAgentsSection(args.orchestratorId);
-    if (isScopesRpcErr(marker)) return { ok: false, error: marker.error.message };
+    const marker = await orchestratorService.hasAvailableAgentsSection(
+      args.orchestratorId,
+    );
+    if (isScopesRpcErr(marker))
+      return { ok: false, error: marker.error.message };
     if (!marker.data) {
       return {
         ok: false,
@@ -159,7 +167,7 @@ export function syncOrchestratorPrompt(args: {
     // final loud error.
     //
     // THE FLOATING LAW: this is a multi-minute AI pass over every member of the
-    // set, and it used to run `displayMode: "background"` behind a spinner on
+    // Orchestra, and it used to run `displayMode: "background"` behind a spinner on
     // the Sync button. It now runs `direct` and streams into the canonical
     // floating `LiveRunWindow` — the user watches the describer work through
     // their agents instead of watching a spinner, and the builder underneath
@@ -282,7 +290,8 @@ export function syncOrchestratorPrompt(args: {
       if (!d || (!d.roleTitle && !d.gap)) continue;
       const nextRole = d.roleTitle || m.roleTitle || "";
       const nextGap = d.gap || m.gap || "";
-      if (nextRole === (m.roleTitle ?? "") && nextGap === (m.gap ?? "")) continue;
+      if (nextRole === (m.roleTitle ?? "") && nextGap === (m.gap ?? ""))
+        continue;
 
       const res = await dispatch(
         saveMemberMeta({
@@ -335,7 +344,7 @@ export function syncOrchestratorPrompt(args: {
       return { ok: false, error: inj.error.message, membersUpdated };
     }
 
-    // Refresh the orchestrator's new prompt (the set was already reloaded above).
+    // Refresh the orchestrator's new prompt (the Orchestra was already reloaded above).
     try {
       await dispatch(fetchFullAgent(args.orchestratorId)).unwrap();
     } catch {
