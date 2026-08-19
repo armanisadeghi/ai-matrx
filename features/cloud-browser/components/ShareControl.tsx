@@ -12,6 +12,7 @@
 
 import React from "react";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
+import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { cn } from "@/utils/cn";
 import { CLOUD_BROWSER_RESOURCE_TYPE } from "../constants";
 import { AlertTriangle } from "lucide-react";
@@ -31,17 +32,23 @@ export function ShareControl({
   canShare: boolean;
   className?: string;
 }) {
+  const isPersistedProfile = isUuidValue(profileId);
+
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm font-medium text-foreground">People</span>
-        {canShare ? (
+        {canShare && isPersistedProfile ? (
           <ShareButton
             resourceType={CLOUD_BROWSER_RESOURCE_TYPE}
             resourceId={profileId}
             resourceName={profileName}
             size="sm"
           />
+        ) : !isPersistedProfile ? (
+          <span className="text-xs text-muted-foreground">
+            Sharing becomes available when this Cloud Browser is saved.
+          </span>
         ) : (
           <span className="text-xs text-muted-foreground">
             You have view access — ask the owner to change who can reach this browser.

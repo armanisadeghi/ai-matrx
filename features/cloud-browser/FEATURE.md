@@ -44,7 +44,9 @@ Reconnect).
 
 - **Sharing (D-18):** `features/sharing` `ShareButton`/`ShareModal` against resource
   type `browser_profile` (registered in `utils/permissions/registry.ts`). The only
-  addition is the shared-session warning copy. No bespoke share flow.
+  addition is the shared-session warning copy. Fixture IDs never enter persisted
+  sharing operations; the canonical control mounts only for a saved UUID profile.
+  No bespoke share flow.
 - **Notifications (D-14):** the consent surface records consent for SHIPPED channels
   only (browser / email / SMS / in-app assist) — it NEVER builds a channel. The
   producer that writes the notification is server-side (WS-5 / S5 §P6).
@@ -71,6 +73,9 @@ Reconnect).
 
 ## Change log
 
+- **2026-08-18** — Guarded the fixture/live sharing boundary: symbolic fixture
+  profile IDs no longer reach UUID-backed `browser.profile` permission or visibility
+  reads; saved UUID profiles still use the canonical sharing system.
 - **2026-08-18** — P2-A trigger + reach: the Cloud Browser is now hosted as a
   **canvas item** (`cloud_browser` canvas content type, NON_PERSISTABLE), not a
   standalone route. Extracted `CloudBrowserBody` (chrome-free) from
