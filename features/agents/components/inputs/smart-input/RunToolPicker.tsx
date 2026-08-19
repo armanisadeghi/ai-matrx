@@ -341,7 +341,10 @@ export function RunToolPicker({ conversationId }: { conversationId: string }) {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto py-0.5">
+          {/* min-h-0: a flex child's default min-height:auto floors it at
+              content height, so without it this list grows past the panel and
+              never scrolls (the whole surface just gets clipped). */}
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-0.5">
             {loadingEmpty ? (
               <p className="px-3 py-2 text-xs text-muted-foreground">
                 Loading tools…

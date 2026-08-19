@@ -17,6 +17,16 @@ interface BottomSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title?: string;
+  /**
+   * `adaptive` (default) — the sheet sizes to its content between 60dvh and
+   * 90dvh. Correct for a single short list.
+   *
+   * `full` — ONE fixed height (92dvh) that never changes as content changes.
+   * Use it for any sheet whose body varies (multi-level navigation, tabs,
+   * search results): an adaptive sheet there resizes under the user's thumb
+   * on every keystroke and every drill-in, which reads as the panel jumping.
+   */
+  size?: "adaptive" | "full";
   /** Merged onto the sheet panel — e.g. `bg-card` to override the default glass. */
   contentClassName?: string;
   children: React.ReactNode;
@@ -26,6 +36,7 @@ function BottomSheet({
   open,
   onOpenChange,
   title = "Bottom Sheet",
+  size = "adaptive",
   contentClassName,
   children,
 }: BottomSheetProps) {
@@ -38,7 +49,8 @@ function BottomSheet({
         />
         <DrawerContentPrimitive
           className={cn(
-            "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden min-h-[60dvh] max-h-[90dvh]",
+            "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-2xl overflow-hidden",
+            size === "full" ? "h-[92dvh]" : "min-h-[60dvh] max-h-[90dvh]",
             contentClassName,
           )}
           style={{
@@ -108,7 +120,9 @@ function BottomSheetBody({ children, className }: BottomSheetBodyProps) {
   return (
     <div
       className={cn(
-        "flex-1 overflow-y-auto overscroll-contain pb-safe",
+        // min-h-0 is load-bearing: without it a flex child's min-height:auto
+        // floors it at content height and the body grows instead of scrolling.
+        "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-safe",
         className,
       )}
     >

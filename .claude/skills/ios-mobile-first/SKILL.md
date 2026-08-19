@@ -87,6 +87,8 @@ Full pattern: `features/shell/components/header/variants/USAGE.md`
 
 **Hand-roll the explicit Drawer branch below only when you need more than the auto-sheet** — a `vaul` drag-to-close handle, or a genuinely different mobile layout (not just a reflow). For a normal dialog, do nothing extra.
 
+**A sheet whose content varies gets ONE fixed height, not an adaptive range.** A `min-h`/`max-h` sheet re-measures on every drill-in, filter keystroke and late load, so the panel grows and shrinks under the user's thumb — read as jumping, not as fitting. Multi-level or tabbed sheets (`components/official/bottom-sheet/BottomSheet.tsx` → `size="full"`, what `TabbedBottomSheet` uses) pin `h-[92dvh]` and scroll inside it. Adaptive is right only for a single short, static list. (A sub-16px field is the same bug by another route: iOS zooms the page on focus.)
+
 **`DropdownMenuContent` and `PopoverContent` cap to the viewport and scroll** (max-height of `var(--radix-<component>-content-available-height)` plus `overflow-y-auto` — e.g. `--radix-dropdown-menu-content-available-height`), so a long menu can never grow off-screen and lock the user out. Any custom popup panel you build MUST do the same: `max-height` + `overflow-y-auto`, never an unbounded height.
 
 ```tsx
