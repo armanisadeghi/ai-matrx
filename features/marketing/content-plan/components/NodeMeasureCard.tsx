@@ -62,9 +62,10 @@ export function NodeMeasureCard({
       : null;
 
   if (state === "no-page") {
-    return (
-      <Note>Not built yet — measurement starts after publish.</Note>
-    );
+    // Deliberately NOT "not built yet": on the Publish tab the card above
+    // already says that, and two stacked lines opening the same way read as a
+    // stutter rather than as two facts.
+    return <Note>Nothing to measure yet.</Note>;
   }
 
   if (state === "unpublished") {
