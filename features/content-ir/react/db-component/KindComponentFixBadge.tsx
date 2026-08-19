@@ -84,12 +84,14 @@ export const KindComponentFixBadge: React.FC<KindComponentFixBadgeProps> = ({
     // posture as KindAgentButton; never a silent no-op.
     void resolveMandate(KIND_CREATOR_MANDATE_KEY)
       .then((resolved) => {
+        const seed = composeKindComponentFixIntent({
+          kind,
+          instanceContent: content,
+        });
         openRun({
           initialAgentId: resolved.agentId,
-          initialDraftText: composeKindComponentFixIntent({
-            kind,
-            instanceContent: content,
-          }),
+          initialDraftText: seed.draftText,
+          initialVariableValues: seed.variables,
         });
       })
       .catch((error: unknown) => {

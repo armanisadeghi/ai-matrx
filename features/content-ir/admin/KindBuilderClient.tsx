@@ -50,18 +50,18 @@ export default function KindBuilderClient() {
 
   const start = () => {
     if (!canStart || !architect) return;
-    const parts = [
-      "Build a complete, live kind from this data structure. Run the whole build end to end and activate it.",
-      structure.trim(),
-    ];
-    if (notes.trim().length > 0) {
-      parts.push(`Additional direction:\n\n${notes.trim()}`);
-    }
-    // Open the builder agent in a floating run window on this page, pre-loaded
-    // with the brief. The run streams in-place; the admin watches every step.
+    // The pasted data structure is structured content — it rides the
+    // kind_architect agent's declared `user_data_sample` variable (whose own
+    // fixed opening turn already reads "Build a complete, live kind from this
+    // data structure: {{user_data_sample}} ... Run the whole build end to end
+    // and activate it.", so the instruction sentence needs no restating here).
+    // The admin's own typed direction is genuinely human text and stays the
+    // composer draft. THE USER-INPUT LAW:
+    // common-docs/systems/agent-variable-binding/FEATURE.md.
     openRun({
       initialAgentId: architect.agentId,
-      initialDraftText: parts.join("\n\n"),
+      initialDraftText: notes.trim() || "Go ahead and build it.",
+      initialVariableValues: { user_data_sample: structure.trim() },
     });
   };
 

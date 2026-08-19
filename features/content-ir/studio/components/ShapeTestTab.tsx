@@ -130,7 +130,7 @@ export default function ShapeTestTab({
         surfaceKey: `shapes-test-fill:${kind}`,
         sourceFeature: "ai-results",
         surfaceName: "matrx-user/shapes",
-        userInput: composeKindSampleFillIntent({
+        variables: composeKindSampleFillIntent({
           kind,
           label,
           emittedJsonSchema,

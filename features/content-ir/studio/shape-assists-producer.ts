@@ -58,6 +58,11 @@ export async function produceMissingComponentAssists(
 
   for (const entry of candidates) {
     if (!emittable.has(keyFor(entry.kind))) continue;
+    const seed = composeKindAgentIntent({
+      kind: entry.kind,
+      label: entry.label,
+      part: "component",
+    });
     const input: EmitAssistInput = {
       sourceKey: SOURCE_KEY,
       title: `AI can build a custom UI for "${entry.label}"`,
@@ -66,11 +71,8 @@ export async function produceMissingComponentAssists(
         kind: "launch_agent",
         agentId: creatorId,
         agentName: "Shape Creator",
-        draftText: composeKindAgentIntent({
-          kind: entry.kind,
-          label: entry.label,
-          part: "component",
-        }),
+        draftText: seed.draftText,
+        variableValues: seed.variables,
       },
       surfaceName: "matrx-user/shapes",
       entityType: "kind_definition",

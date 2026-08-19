@@ -46,9 +46,11 @@ export default function KindAgentButton({
     // sends; the run streams in-place. Loud on failure — never a silent no-op.
     void resolveMandate(KIND_CREATOR_MANDATE_KEY)
       .then((resolved) => {
+        const seed = composeKindAgentIntent(intent);
         openRun({
           initialAgentId: resolved.agentId,
-          initialDraftText: composeKindAgentIntent(intent),
+          initialDraftText: seed.draftText,
+          initialVariableValues: seed.variables,
         });
       })
       .catch((error: unknown) => {

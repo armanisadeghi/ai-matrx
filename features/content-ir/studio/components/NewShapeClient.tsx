@@ -2,12 +2,13 @@
 
 /**
  * New Shape — create-with-agent entry. The studio does NOT own a chat: it
- * composes the user's intent (+ optional pasted sample data) and opens the
- * creator agent in a floating run window on this page (the shared
- * `agentRunWindow` overlay), pre-loaded with the composed brief. The user
- * reviews and sends; the creator agent does the actual creation server-side and
- * the run streams in-place — no navigation away from the studio. When the shape
- * lands, the /shapes list's Refresh picks it up.
+ * opens the creator agent in a floating run window on this page (the shared
+ * `agentRunWindow` overlay), the human's own typed intent pre-loaded as the
+ * composer draft (reviewed and sent by the user) and any pasted sample data
+ * seeded onto the agent's declared `user_data_sample` variable — never folded
+ * into the draft text (THE USER-INPUT LAW). The creator agent does the actual
+ * creation server-side and the run streams in-place — no navigation away from
+ * the studio. When the shape lands, the /shapes list's Refresh picks it up.
  *
  * The creator agent is the `content_ir.kind_creator` MANDATE (the user's own
  * binding wins). Resolution failure is LOUD: no fallback agent, ever.
@@ -22,14 +23,6 @@ import { KIND_CREATOR_MANDATE_KEY } from "@/features/content-ir/studio/constants
 import { useMandate } from "@/features/agents/mandates/useMandate";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { createShapesScope } from "@/features/surfaces/manifests/shapes.manifest";
-
-function composeDraft(intent: string, sample: string): string {
-  const parts = [intent.trim()];
-  if (sample.trim().length > 0) {
-    parts.push(`Here is a sample of my data:\n\n${sample.trim()}`);
-  }
-  return parts.join("\n\n");
-}
 
 export default function NewShapeClient() {
   const openRun = useOpenAgentRunWindow();
@@ -133,9 +126,17 @@ export default function NewShapeClient() {
 
   const start = () => {
     if (!canStart) return;
+    // The intent IS what the human typed — it stays the composer's draft
+    // text. The pasted sample is structured data, so it rides the
+    // kind-creator agent's declared `user_data_sample` variable instead of
+    // being folded into the human channel. THE USER-INPUT LAW:
+    // common-docs/systems/agent-variable-binding/FEATURE.md.
     openRun({
       initialAgentId: agentId,
-      initialDraftText: composeDraft(intent, sample),
+      initialDraftText: intent.trim(),
+      initialVariableValues: sample.trim()
+        ? { user_data_sample: sample.trim() }
+        : null,
     });
   };
 

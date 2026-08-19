@@ -69,8 +69,12 @@ export type AssistAction =
       mandateKey?: string;
       /** Title-bar name shown while the agent definition loads. */
       agentName?: string;
-      /** Composed intent pre-filled into the composer (pre-fill only). */
+      /** Composed intent pre-filled into the composer (pre-fill only). Human-
+       *  editable text only — never structured content; see `variableValues`. */
       draftText?: string;
+      /** Declared-variable values seeded onto the fresh conversation — the
+       *  structured-content channel (THE USER-INPUT LAW). */
+      variableValues?: Record<string, string>;
     }
   | {
       kind: "navigate";
@@ -471,6 +475,10 @@ function narrowAction(value: Json): AssistAction | null {
       mandateKey: typeof obj.mandateKey === "string" ? obj.mandateKey : undefined,
       agentName: typeof obj.agentName === "string" ? obj.agentName : undefined,
       draftText: typeof obj.draftText === "string" ? obj.draftText : undefined,
+      variableValues:
+        obj.variableValues && typeof obj.variableValues === "object"
+          ? (obj.variableValues as Record<string, string>)
+          : undefined,
     };
   }
   if (

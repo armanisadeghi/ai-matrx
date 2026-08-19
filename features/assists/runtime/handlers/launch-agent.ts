@@ -19,7 +19,7 @@ registerAssistAction({
     if (assist.action.kind !== "launch_agent") {
       return { ok: false, error: "launch_agent: wrong action payload" };
     }
-    const { agentId, mandateKey, agentName, draftText } = assist.action;
+    const { agentId, mandateKey, agentName, draftText, variableValues } = assist.action;
     let resolvedAgentId = agentId ?? null;
     if (!resolvedAgentId && mandateKey) {
       const resolved = await resolveMandate(mandateKey);
@@ -35,6 +35,7 @@ registerAssistAction({
       initialAgentId: resolvedAgentId,
       initialAgentName: agentName ?? null,
       initialDraftText: draftText ?? null,
+      initialVariableValues: variableValues ?? null,
     });
     return { ok: true, result: { agentId: resolvedAgentId } };
   },
