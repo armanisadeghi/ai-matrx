@@ -19,6 +19,7 @@ import React from "react";
 import { SmartAgentInputStacked } from "./SmartAgentInputStacked";
 import { SmartAgentInputSingleRow } from "./SmartAgentInputSingleRow";
 import { InboxQueueStrip } from "./InboxQueueStrip";
+import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
 import type { VariablesPanelStyle } from "@/features/agents/types/instance.types";
 
 interface SmartAgentInputProps {
@@ -36,6 +37,12 @@ interface SmartAgentInputProps {
   disableSend?: boolean;
   variablesPanelStyle?: VariablesPanelStyle;
   extraRightControls?: React.ReactNode;
+  /**
+   * Show the connector reminder line under the composer. Default true — a
+   * surface opts OUT only when it genuinely has no room (an embedded runner,
+   * a single-purpose form), never to tidy the UI.
+   */
+  showConnectors?: boolean;
 }
 
 export function SmartAgentInput({
@@ -53,12 +60,21 @@ export function SmartAgentInput({
   disableSend = false,
   variablesPanelStyle,
   extraRightControls,
+  showConnectors = true,
 }: SmartAgentInputProps) {
   // Queued-while-running message cards render above EITHER variant, so every
   // surface that mounts a composer also sees / edits / withdraws its queue
   // (docs/TURN_BOUNDARY_INBOX.md). Renders null when the queue is empty.
   const queueStrip = conversationId ? (
     <InboxQueueStrip conversationId={conversationId} />
+  ) : null;
+
+  // One quiet line under EVERY composer variation: what this conversation could
+  // reach if the user connected it. Mounted here rather than in each host so a
+  // new composer surface cannot forget it. Renders nothing once everything is
+  // connected — it is a reminder, never a nag.
+  const connectorStrip = showConnectors ? (
+    <ChatConnectorStrip className="mt-1.5" />
   ) : null;
 
   if (singleRowTextarea) {
@@ -78,6 +94,7 @@ export function SmartAgentInput({
           variablesPanelStyle={variablesPanelStyle}
           extraRightControls={extraRightControls}
         />
+        {connectorStrip}
       </>
     );
   }
@@ -100,6 +117,7 @@ export function SmartAgentInput({
         variablesPanelStyle={variablesPanelStyle}
         extraRightControls={extraRightControls}
       />
+      {connectorStrip}
     </>
   );
 }
