@@ -81,7 +81,6 @@ export function useSourceResolvers(): UseSourceResolvers {
       const mandate = await resolveMandate("podcast_client.web_content_extractor");
       const cleaned = await run({
         agentId: mandate.agentId,
-        userInput: raw,
         configOverrides: mandate.configOverrides ?? undefined,
         sourceApp: "matrx-frontend",
         sourceFeature: "podcasts",
@@ -101,7 +100,6 @@ export function useSourceResolvers(): UseSourceResolvers {
       const mandate = await resolveMandate("podcast_client.youtube_research");
       const text = await run({
         agentId: mandate.agentId,
-        userInput: url,
         configOverrides: mandate.configOverrides ?? undefined,
         sourceApp: "matrx-frontend",
         sourceFeature: "podcasts",
