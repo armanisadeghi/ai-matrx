@@ -67,6 +67,8 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/knowledge/library", favicon: { color: "#a16207", letter: "Rl" } },
   { href: "/knowledge/repositories", favicon: { color: "#854d0e", letter: "Rp" } },
   { href: "/knowledge", favicon: { color: "#92400e", letter: "K" } },
+  // Compatibility route retained until the structural Knowledge cutover.
+  { href: "/rag", favicon: { color: "#92400e", letter: "K" } },
   { href: "/podcast", favicon: { color: "#e11d48", letter: "J" } },
   { href: "/schedules", favicon: { color: "#0d9488", letter: "C" } },
   { href: "/artifacts", favicon: { color: "#78716c", letter: "Ar" } },
