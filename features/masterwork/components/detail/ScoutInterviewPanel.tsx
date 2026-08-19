@@ -18,7 +18,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ExternalLink,
-  MessageCircleQuestion,
   MessagesSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -59,22 +58,6 @@ const SOURCE_FEATURE = "masterwork" as const;
 const SCOUT_MANDATE_KEY = "masterwork.scout";
 /** How often (ms) to check whether the Scout landed new draft rules. */
 const RULEBOOK_WATCH_INTERVAL_MS = 5000;
-
-/** The toolbar entry — "Interview me": talk it out, rules get drafted live. */
-export function InterviewButton({
-  onClick,
-  className,
-}: {
-  onClick: () => void;
-  className?: string;
-}) {
-  return (
-    <Button size="sm" variant="outline" className={className} onClick={onClick}>
-      <MessageCircleQuestion className="mr-1 h-4 w-4" />
-      Interview me
-    </Button>
-  );
-}
 
 export interface ScoutInterviewPanelProps {
   rulebookId: string;

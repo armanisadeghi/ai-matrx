@@ -49,6 +49,38 @@ export function OverlayLaunchButton({
   );
 }
 
+interface LaunchContextNoteProps {
+  note: string;
+  href?: string;
+}
+
+/**
+ * The honest stand-in for the "Open" button on an overlay that cannot be
+ * launched without context (a record id the generic launcher has no way to
+ * supply). Says where it opens from and — THE DOOR LAW — links there.
+ */
+export function LaunchContextNote({ note, href }: LaunchContextNoteProps) {
+  const body = (
+    <span className="text-[10px] uppercase tracking-wider">{note}</span>
+  );
+  if (!href) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-sm border border-border px-1.5 py-0.5 font-medium text-muted-foreground">
+        {body}
+      </span>
+    );
+  }
+  return (
+    <ExternalTabLink
+      href={href}
+      label={note}
+      className="rounded-sm border border-border px-1.5 py-0.5 font-medium text-muted-foreground hover:text-foreground"
+    >
+      {body}
+    </ExternalTabLink>
+  );
+}
+
 interface ExternalTabLinkProps {
   href: string;
   label?: string;

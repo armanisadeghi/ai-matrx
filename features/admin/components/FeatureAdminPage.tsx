@@ -49,7 +49,11 @@ import {
   resolveOverlay,
   resolveWindowPanel,
 } from "../utils/lookupOverlay";
-import { ExternalTabLink, OverlayLaunchButton } from "./OverlayLaunchButton";
+import {
+  ExternalTabLink,
+  LaunchContextNote,
+  OverlayLaunchButton,
+} from "./OverlayLaunchButton";
 
 interface FeatureAdminPageProps {
   map: FeatureAdminMap;
@@ -401,10 +405,19 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
                       (resolved.deprecated ? "Deprecated" : "Live")
                     }
                     rightSlot={
-                      <OverlayLaunchButton
-                        overlayId={entry.overlayId}
-                        label={resolved.label}
-                      />
+                      entry.launchFrom ? (
+                        <LaunchContextNote
+                          note={entry.launchFrom.note}
+                          {...(entry.launchFrom.href
+                            ? { href: entry.launchFrom.href }
+                            : {})}
+                        />
+                      ) : (
+                        <OverlayLaunchButton
+                          overlayId={entry.overlayId}
+                          label={resolved.label}
+                        />
+                      )
                     }
                   />
                 );
@@ -446,10 +459,19 @@ export default async function FeatureAdminPage({ map }: FeatureAdminPageProps) {
                     meta={resolved.instanceMode}
                     status={entry.status ?? "Live"}
                     rightSlot={
-                      <OverlayLaunchButton
-                        overlayId={entry.overlayId}
-                        label={resolved.label}
-                      />
+                      entry.launchFrom ? (
+                        <LaunchContextNote
+                          note={entry.launchFrom.note}
+                          {...(entry.launchFrom.href
+                            ? { href: entry.launchFrom.href }
+                            : {})}
+                        />
+                      ) : (
+                        <OverlayLaunchButton
+                          overlayId={entry.overlayId}
+                          label={resolved.label}
+                        />
+                      )
                     }
                   />
                 );

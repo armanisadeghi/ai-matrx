@@ -5,6 +5,10 @@ import {
   MASTERWORK_SELECT_COLUMNS,
   parseMasterworkRow,
 } from "../service";
+import {
+  latestScoreByRulebook,
+  listAuditionScores,
+} from "../audition/listAuditionScores";
 import type { Masterwork, RulebookSource } from "../types";
 
 /**
@@ -30,6 +34,17 @@ export interface EncoreRulebookRef {
 export interface EncoreMasterwork extends Masterwork {
   /** Null when the viewer cannot read the Rulebook — then it is not a door. */
   rulebook: EncoreRulebookRef | null;
+  /**
+   * THE PROOF. The latest Audition score (0-100) for the Rulebook this was
+   * built from — the Masterwork's output judged against the Expert's own
+   * published work, rule by rule. Null when nobody has auditioned it yet, and
+   * then the Operator is told nothing rather than something reassuring.
+   */
+  auditionScore: number | null;
+  /** The judge's own sentence about the vanilla-AI comparison, when there was one. */
+  auditionVerdict: string | null;
+  /** When that audition ran — a score with no date is not evidence. */
+  auditionedAt: string | null;
 }
 
 export interface EncoreShelf {
@@ -86,12 +101,24 @@ async function withRulebooks(
       });
     }
   }
-  return masterworks.map((m) => ({
-    ...m,
-    rulebook: m.built_from_rulebook
-      ? (refs.get(m.built_from_rulebook) ?? null)
-      : null,
-  }));
+  // THE PROOF travels with the card: the Audition score is the one thing that
+  // makes "expert judgment built in" a claim an Operator can check.
+  const scores = latestScoreByRulebook(await listAuditionScores(rulebookIds));
+
+  return masterworks.map((m) => {
+    const audition = m.built_from_rulebook
+      ? (scores.get(m.built_from_rulebook) ?? null)
+      : null;
+    return {
+      ...m,
+      rulebook: m.built_from_rulebook
+        ? (refs.get(m.built_from_rulebook) ?? null)
+        : null,
+      auditionScore: audition?.qualityScore ?? null,
+      auditionVerdict: audition?.verdictSentence ?? null,
+      auditionedAt: audition?.createdAt ?? null,
+    };
+  });
 }
 
 /**

@@ -66,7 +66,8 @@ export type MasterworkRunSurface =
   | "dump"
   | "corpus"
   | "audition"
-  | "checkup";
+  | "checkup"
+  | "clean_corpus";
 
 const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   build: "masterwork_build_complete",
@@ -84,6 +85,10 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   corpus: "masterwork_ingest_complete",
   audition: "masterwork_audition_verdict",
   checkup: "masterwork_checkup_complete",
+  // The manual "clean up what I said" pass (`/masterworks/clean-corpus`) — a
+  // paid pass the Expert asks for, so it gets its own surface and pointer and
+  // is visible in the run ledger like every other Masterwork operation.
+  clean_corpus: "masterwork_corpus_cleaned",
 };
 
 /**

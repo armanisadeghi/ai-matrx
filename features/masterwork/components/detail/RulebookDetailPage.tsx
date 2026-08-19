@@ -78,6 +78,7 @@ import { ChatImportDialog } from "./ChatImportDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
 import { RulebookInputsSection } from "./RulebookInputsSection";
 import { ConductorPanel } from "@/features/masterwork/conduct/ConductorPanel";
+import { RulebookVersionHistory } from "./RulebookVersionHistory";
 import { ScoutInterviewPanel } from "./ScoutInterviewPanel";
 import { RuleEditorDialog, type RuleEditorResult } from "./RuleEditorDialog";
 import {
@@ -1220,9 +1221,12 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                       {rulebook.source.year ? `, ${rulebook.source.year}` : ""}
                     </span>
                   ) : null}
-                  <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                    v{rulebook.version}
-                  </Badge>
+                  {/* THE DOOR LAW — the version number is an identity, so it
+                      opens: the full version log from `rulebook_versions`. */}
+                  <RulebookVersionHistory
+                    rulebookId={rulebook.id}
+                    version={rulebook.version}
+                  />
                   <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
                     {rulebook.status === "draft"
                       ? "Draft"
@@ -1578,6 +1582,8 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
             }}
             mode={feedbackTarget?.mode ?? "request"}
             ruleName={feedbackTarget?.rule.name ?? ""}
+            rulebookId={rulebook.id}
+            rulebookName={rulebook.name}
             onSubmit={async (text) => {
               if (!feedbackTarget) return;
               try {

@@ -3,6 +3,18 @@
 import FeatureAdminPage from "@/features/admin/components/FeatureAdminPage";
 import type { FeatureAdminMap } from "@/features/admin/types/featureAdminMap";
 
+/**
+ * Every Masterwork window panel refuses to render without a `rulebookId` in its
+ * overlay payload (OverlayController guards `!rulebookId` on all four), and the
+ * admin map's generic launcher has no Rulebook to hand it. So these rows say
+ * where they open from and door through to the Rulebook list, instead of
+ * offering four buttons that could never work.
+ */
+const RULEBOOK_LAUNCH = {
+  note: "Opens from a Rulebook",
+  href: "/masterwork/all",
+} as const;
+
 const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
   name: "Masterwork",
   slug: "masterwork",
@@ -81,6 +93,14 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/masterwork/[id]/conduct",
+      label: "Conduct (the Conductor session)",
+      description:
+        "Talk to the Conductor about this Rulebook — argue with it, answer its questions, tell it to build. Its own URL and its own session chooser (resume a build conversation or start a new one); dictation started here is stamped with the masterwork.conduct origin.",
+      filePath: "app/(core)/masterwork/[id]/conduct/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/masterwork/[id]/record",
       label: "The Record ('Your words')",
       description:
@@ -113,6 +133,14 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       status: "Live",
     },
     {
+      url: "/masterwork/admin",
+      label: "This map",
+      description:
+        "The per-feature admin map you are reading — every route, window panel, component, and doc Masterwork owns. Admin-gated.",
+      filePath: "app/(core)/masterwork/admin/page.tsx",
+      status: "Live",
+    },
+    {
       url: "/import/ai-chats",
       label: "Import guides — provider gallery (PUBLIC, anonymous SEO surface)",
       description:
@@ -135,6 +163,7 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
       description:
         "BUILD A MASTERWORK — the payoff moment, on a window panel (was a blocking dialog until 2026-08-18). Setup (review-and-fix vs do-the-work, recommended from the Expert's own intake goal) → live progress through the canonical LiveRunProgress over the durable masterwork_run spine → the finished Masterwork with real doors (studio, sibling Masterworks, source Rulebook) and the canonical TryMasterworkBox to run it in place. Opened from the Rulebook page header via useOpenBuildWindow().",
       status: "Live",
+      launchFrom: RULEBOOK_LAUNCH,
     },
     {
       overlayId: "masterworkAddRuleWindow",
@@ -145,8 +174,9 @@ const MASTERWORK_ADMIN_MAP: FeatureAdminMap = {
     {
       overlayId: "masterworkCheckupWindow",
       description:
-        "THE FINAL CHECKUP — split down the middle (your Rulebook today | what we suggest). Streams add / modify / remove findings from POST /masterworks/checkup over the durable masterwork_run spine, keyboard disposition (Y / N / arrows), Approve with AI above 80% confidence, and ONE compare-and-swap apply through saveRules. Opened from the Rulebook page header.",
+        "THE FINAL CHECKUP — split down the middle (your Rulebook today | what we suggest). Streams add / modify / remove findings from POST /masterworks/checkup over the durable masterwork_run spine, keyboard disposition (Y / N / arrows), Approve with AI above 80% confidence, and ONE compare-and-swap apply through saveRules. Its header also carries 'Clean up my words' — the manual clean_corpus pass the checkup's use_cleaned branch consumes. Opened from the Rulebook page header.",
       status: "Live",
+      launchFrom: RULEBOOK_LAUNCH,
     },
   ],
   components: [

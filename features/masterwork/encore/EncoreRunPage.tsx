@@ -22,6 +22,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { cn } from "@/lib/utils";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
+import { AuditionProof } from "./AuditionProof";
 import {
   getEncoreMasterwork,
   listMyEncoreRuns,
@@ -159,6 +160,15 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
             {masterwork.description}
           </p>
         ) : null}
+        {/* THE PROOF — how this Masterwork scored against the expert's real
+            published work, and (when the three-way harness ran) against a
+            plain AI given the same job. */}
+        <AuditionProof
+          variant="panel"
+          score={masterwork.auditionScore}
+          verdict={masterwork.auditionVerdict}
+          auditionedAt={masterwork.auditionedAt}
+        />
         {ownsRulebook && masterwork.rulebook ? (
           <p className="mt-2">
             <Link

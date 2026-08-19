@@ -7,10 +7,12 @@ import {
   CheckCircle2,
   Loader2,
   RotateCcw,
+  Eraser,
   Stethoscope,
   Undo2,
 } from "lucide-react";
 
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -32,6 +34,7 @@ import {
   type CheckupSuggestionMode,
 } from "./CheckupSuggestionDialog";
 import { useCheckup } from "./useCheckup";
+import { useCleanCorpusRun } from "./useCleanCorpusRun";
 import { chosenProposal, type CheckupProposedRule } from "./types";
 
 /**
@@ -63,6 +66,15 @@ import { chosenProposal, type CheckupProposedRule } from "./types";
  * 5. **"I clicked the final checkup button … but it didn't do a final
  *    checkup."** Opening this window RUNS the checkup. The only re-run is a
  *    subtle "Run again" in the header.
+ *
+ * ## The clean-up pass (2026-08-19)
+ *
+ * The Checkup asks the server for the CLEANED corpus (`use_cleaned` defaults
+ * true), but the endpoint that produces one — `POST /masterworks/clean-corpus`
+ * — had no caller anywhere in the product, so that branch could never fire.
+ * "Clean up my words" in this header is that caller: a real durable run
+ * (operation `clean_corpus`, visible on the Masterwork home as "Tidied your
+ * words"), never a hidden paid call inside the checkup, exactly as ruled.
  *
  * The split panes, the filter tabs, the finding sidebar and the keyboard
  * cursor are all deleted. They existed to drive a single-focus split view; the
@@ -108,6 +120,18 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
     undoAvailable,
     undoApply,
   } = checkup;
+
+  // THE CLEAN-UP PASS — manual, visible, and its own durable run.
+  const cleanCorpus = useCleanCorpusRun(rulebookId);
+  const runCleanCorpus = useCallback(async () => {
+    try {
+      await cleanCorpus.start();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not clean up your words.",
+      );
+    }
+  }, [cleanCorpus]);
 
   // The row this panel renders from must outlive the panel — reaping it
   // mid-stream is the recurring "my findings just disappeared" defect
@@ -358,7 +382,34 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
     );
   })();
 
-  const stageLine = run.running ? (run.stage ?? "Still looking…") : null;
+  // The clean-up's receipt: what it did, and the one thing to do next.
+  useEffect(() => {
+    if (!cleanCorpus.result) return;
+    const { cleaned, reused, failed } = cleanCorpus.result;
+    toast.success(
+      cleaned > 0
+        ? `Tidied ${cleaned} thing${cleaned === 1 ? "" : "s"} you said${
+            reused > 0 ? ` (${reused} already tidy)` : ""
+          }.`
+        : "Everything you said was already tidy.",
+      {
+        description:
+          failed > 0
+            ? `${failed} couldn't be cleaned and were left exactly as you said them. Run the checkup again to use the tidied text.`
+            : "Run the checkup again to read it back against the tidied text.",
+      },
+    );
+  }, [cleanCorpus.result]);
+
+  useEffect(() => {
+    if (cleanCorpus.error) toast.error(cleanCorpus.error);
+  }, [cleanCorpus.error]);
+
+  const stageLine = run.running
+    ? (run.stage ?? "Still looking…")
+    : cleanCorpus.running
+      ? (cleanCorpus.stage ?? "Reading back everything you said…")
+      : null;
 
   // ── Footer: ONE row. Primary actions only. ────────────────────────────────
   const footer = (
@@ -420,16 +471,38 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
           </span>
         }
         actionsRight={
-          !run.running && (totalFindings > 0 || run.status === "done") ? (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 text-[11px]"
-              onClick={() => void run.start()}
-            >
-              <RotateCcw className="h-3 w-3" />
-              Run again
-            </Button>
+          !run.running ? (
+            <span className="flex items-center gap-1">
+              {/* The pass that makes the audit good — the Expert's raw
+                  dictation, cleaned per contribution and SAVED, so the next
+                  checkup reads prose instead of a transcript. */}
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 text-[11px]"
+                disabled={cleanCorpus.running}
+                title="Tidy up your dictated words first — the checkup reads better text and finds better problems. Your originals are never changed."
+                onClick={() => void runCleanCorpus()}
+              >
+                {cleanCorpus.running ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Eraser className="h-3 w-3" />
+                )}
+                {cleanCorpus.running ? "Tidying…" : "Clean up my words"}
+              </Button>
+              {totalFindings > 0 || run.status === "done" ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-6 text-[11px]"
+                  onClick={() => void run.start()}
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  Run again
+                </Button>
+              ) : null}
+            </span>
           ) : undefined
         }
         width={760}

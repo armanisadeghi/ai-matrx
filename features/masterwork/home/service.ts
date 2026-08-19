@@ -1,6 +1,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { fetchMandatePins } from "@/features/agents/mandates/service";
+import { listAuditionScores } from "../audition/listAuditionScores";
 import {
   MASTERWORK_SELECT_COLUMNS,
   parseMasterworkRow,
@@ -111,11 +112,11 @@ export async function fetchMasterworkHome(): Promise<MasterworkHomeData> {
   // Attach the quality trend from audited runs (quality_score is stamped by
   // the Audition judge on platform.masterwork_run).
   const scoresByRulebook = new Map<string, number[]>();
-  const scored = await fetchQualityScores(rulebookIds);
+  const scored = await listAuditionScores(rulebookIds);
   for (const s of scored) {
-    const list = scoresByRulebook.get(s.rulebook_id) ?? [];
-    list.push(s.quality_score);
-    scoresByRulebook.set(s.rulebook_id, list);
+    const list = scoresByRulebook.get(s.rulebookId) ?? [];
+    list.push(s.qualityScore);
+    scoresByRulebook.set(s.rulebookId, list);
   }
   const withQuality: HomeMasterwork[] = masterworks.map((m) => {
     const scores = m.built_from_rulebook
@@ -184,29 +185,6 @@ async function fetchRecentRuns(
     rulebookName: nameById.get(row.rulebook_id) ?? null,
     quality_score: row.quality_score,
   }));
-}
-
-/** Audited quality scores, oldest first, so callers can read a trend. */
-async function fetchQualityScores(
-  rulebookIds: string[],
-): Promise<{ rulebook_id: string; quality_score: number }[]> {
-  if (rulebookIds.length === 0) return [];
-  const { data, error } = await supabase
-    .schema("platform")
-    .from("masterwork_run")
-    .select("rulebook_id,quality_score,created_at")
-    .in("rulebook_id", rulebookIds)
-    .not("quality_score", "is", null)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: true })
-    .limit(200);
-  if (error) throw new Error(`${error.message} (${error.code})`);
-  return (data ?? [])
-    .filter((row) => typeof row.quality_score === "number")
-    .map((row) => ({
-      rulebook_id: row.rulebook_id,
-      quality_score: row.quality_score as number,
-    }));
 }
 
 // ── "How it's improving" — the Expert-facing Hindsight panel ─────────────────

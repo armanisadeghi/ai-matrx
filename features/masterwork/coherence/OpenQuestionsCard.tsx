@@ -33,6 +33,7 @@ import { useState } from "react";
 import { Check, HelpCircle, MessagesSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import type { Rulebook } from "../types";
@@ -105,6 +106,13 @@ export function OpenQuestionsCard({
   };
 
   return (
+    // Settling a tension is the Expert ruling on their own contradiction —
+    // dictated here, it belongs to this Rulebook's Record.
+    <MasterworkDictationOrigin
+      surface="masterwork.open_questions"
+      rulebookId={rulebook.id}
+      rulebookName={rulebook.name}
+    >
     <section className="rounded-lg border border-border bg-card">
       <header className="flex items-center gap-2 border-b border-border px-4 py-2.5">
         <HelpCircle className="h-4 w-4 text-muted-foreground" />
@@ -267,5 +275,6 @@ export function OpenQuestionsCard({
         })}
       </ul>
     </section>
+    </MasterworkDictationOrigin>
   );
 }

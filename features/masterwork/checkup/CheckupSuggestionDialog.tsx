@@ -85,7 +85,17 @@ function toFieldValues(
   };
 }
 
-function toProposal(values: RuleFieldValues): CheckupProposedRule {
+/**
+ * `source` is the proposal being edited. Its `relates_to` rides through
+ * UNCHANGED: the form edits prose, and the sibling connections are structural
+ * (server-resolved against the real Rulebook). Rebuilding the proposal from
+ * form values alone is what silently de-linked a relationship finding the
+ * moment the Expert touched a word of it.
+ */
+function toProposal(
+  values: RuleFieldValues,
+  source: CheckupProposedRule,
+): CheckupProposedRule {
   return {
     name: values.name.trim(),
     statement: values.statement.trim(),
@@ -93,6 +103,7 @@ function toProposal(values: RuleFieldValues): CheckupProposedRule {
     section: values.section,
     ...(values.rationale.trim() ? { rationale: values.rationale.trim() } : {}),
     ...(values.detection.trim() ? { detection: values.detection.trim() } : {}),
+    ...(source.relates_to?.length ? { relates_to: source.relates_to } : {}),
   };
 }
 
@@ -166,6 +177,11 @@ export function CheckupSuggestionDialog({
           section: result.section,
           ...(result.rationale.trim() ? { rationale: result.rationale.trim() } : {}),
           ...(result.detection.trim() ? { detection: result.detection.trim() } : {}),
+          // The improver rewrites PROSE; the sibling connections are the
+          // finding's other half and are never its to discard.
+          ...(proposal.relates_to?.length
+            ? { relates_to: proposal.relates_to }
+            : {}),
         }),
       });
       onProposal(finding.id, revised);
@@ -186,7 +202,8 @@ export function CheckupSuggestionDialog({
       toast.error("A rule needs a short name and the rule itself.");
       return;
     }
-    onProposal(finding.id, toProposal(fields));
+    if (!proposal) return;
+    onProposal(finding.id, toProposal(fields, proposal));
     toast.success("Saved your wording.", {
       description: "It's approved as you wrote it. Apply when you're ready.",
     });

@@ -1,4 +1,4 @@
-import type { RuleSeverity, RulebookRule } from "../types";
+import type { RuleRelation, RuleRelationKind, RuleSeverity, RulebookRule } from "../types";
 
 /**
  * THE FINAL CHECKUP — the contract between this surface and aidream's
@@ -29,6 +29,15 @@ export interface CheckupProposedRule {
   detection?: string;
   severity: RuleSeverity;
   section: string;
+  /**
+   * Documented connections to sibling rules (THE ANTI-MISLEADING LAW — see
+   * `RuleRelation`). The Relationship Auditor's ENTIRE payload is this field
+   * plus the amended statement, and the server has already resolved every
+   * entry against the real Rulebook, so it must survive the round trip:
+   * dropping it here silently turned every relationship finding into a
+   * statement-only edit.
+   */
+  relates_to?: RuleRelation[];
 }
 
 /** Where in the Expert's own history the evidence quote came from. */
@@ -142,6 +151,35 @@ export function findingFingerprint(finding: CheckupFinding): string {
 
 const KINDS = new Set<CheckupFindingKind>(["add", "modify", "remove"]);
 const SEVERITIES = new Set<RuleSeverity>(["critical", "major", "minor"]);
+const RELATION_KINDS = new Set<RuleRelationKind>([
+  "refines",
+  "depends_on",
+  "exception_to",
+  "contrast_with",
+]);
+
+/**
+ * Narrow the proposed relationships. The server already dropped anything that
+ * does not name a real rule (`resolve_rule_relations`, THE DOOR LAW); this is
+ * the wire-shape check, not a second resolver — a malformed entry is dropped,
+ * never repaired.
+ */
+function parseRelations(raw: unknown): RuleRelation[] {
+  if (!Array.isArray(raw)) return [];
+  const out: RuleRelation[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
+    if (typeof r.rule_id !== "string" || !r.rule_id) continue;
+    if (!RELATION_KINDS.has(r.kind as RuleRelationKind)) continue;
+    out.push({
+      rule_id: r.rule_id,
+      kind: r.kind as RuleRelationKind,
+      ...(typeof r.note === "string" && r.note ? { note: r.note } : {}),
+    });
+  }
+  return out;
+}
 
 function parseProposed(raw: unknown): CheckupProposedRule | null {
   if (!raw || typeof raw !== "object") return null;
@@ -150,6 +188,7 @@ function parseProposed(raw: unknown): CheckupProposedRule | null {
   const severity = SEVERITIES.has(r.severity as RuleSeverity)
     ? (r.severity as RuleSeverity)
     : "major";
+  const relations = parseRelations(r.relates_to);
   return {
     name: r.name,
     statement: r.statement,
@@ -157,6 +196,7 @@ function parseProposed(raw: unknown): CheckupProposedRule | null {
     section: typeof r.section === "string" && r.section ? r.section : "G",
     ...(typeof r.rationale === "string" ? { rationale: r.rationale } : {}),
     ...(typeof r.detection === "string" ? { detection: r.detection } : {}),
+    ...(relations.length > 0 ? { relates_to: relations } : {}),
   };
 }
 

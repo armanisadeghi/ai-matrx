@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import type { RuleImproveResult } from "../../agent-context/ruleImprove";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
@@ -244,6 +245,13 @@ export function AddRulePanel({
     rulebook.sections[code]?.label ?? code;
 
   return (
+    // "Talk, don't type" is this panel's whole premise, so what the Expert says
+    // here is Rulebook material and gets stamped as such.
+    <MasterworkDictationOrigin
+      surface="masterwork.add_rule"
+      rulebookId={rulebookId}
+      rulebookName={rulebook.name}
+    >
     <div className="flex h-full min-h-0 flex-col">
       {/* Mode switcher — two mutually-exclusive entry methods. */}
       <div className="flex shrink-0 items-center gap-1 border-b border-border px-4 py-2">
@@ -461,5 +469,6 @@ export function AddRulePanel({
         )}
       </div>
     </div>
+    </MasterworkDictationOrigin>
   );
 }

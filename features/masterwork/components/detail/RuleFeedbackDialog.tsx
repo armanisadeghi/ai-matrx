@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 
 export type RuleFeedbackMode = "reject" | "request";
 
@@ -30,12 +31,17 @@ export function RuleFeedbackDialog({
   onOpenChange,
   mode,
   ruleName,
+  rulebookId,
+  rulebookName,
   onSubmit,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: RuleFeedbackMode;
   ruleName: string;
+  /** The Rulebook this feedback is about — stamps the dictation's origin. */
+  rulebookId: string;
+  rulebookName: string;
   onSubmit: (feedback: string) => Promise<void>;
 }) {
   const [feedback, setFeedback] = useState("");
@@ -61,6 +67,13 @@ export function RuleFeedbackDialog({
 
   const isReject = mode === "reject";
   return (
+    // The reason the Expert dictates here IS expert judgment about this
+    // Rulebook — it belongs to the Record, not to a nameless Recordings folder.
+    <MasterworkDictationOrigin
+      surface="masterwork.rule_feedback"
+      rulebookId={rulebookId}
+      rulebookName={rulebookName}
+    >
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
@@ -114,5 +127,6 @@ export function RuleFeedbackDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </MasterworkDictationOrigin>
   );
 }

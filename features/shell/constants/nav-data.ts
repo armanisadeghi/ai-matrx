@@ -515,6 +515,17 @@ export const primaryNavItems: ShellNavItem[] = [
         iconName: "Zap",
         description: "Run a released Masterwork — expert judgment on demand",
       },
+      {
+        // The provider gallery lives in (public) because "how do I export my
+        // ChatGPT history" is anonymous search traffic — but it is a real
+        // Masterwork capture lane, and until 2026-08-19 a signed-in Expert had
+        // no way to reach it from anywhere in the app.
+        label: "Import your AI chats",
+        href: "/import/ai-chats",
+        iconName: "FileInput",
+        description:
+          "Export your history from ChatGPT, Claude, Gemini and more — then turn it into rules",
+      },
     ],
   },
   {

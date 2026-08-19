@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import { applyRuleImprove } from "../../agent-context/ruleImprove";
@@ -217,6 +218,13 @@ export function ImproveRuleDialog({
   const sectionLabel = (code: string) => sections[code]?.label ?? code;
 
   return (
+    // What the Expert dictates here is the correction itself — the reason the
+    // rewrite says what it says. The Rulebook's name is not in scope on this
+    // dialog, so the origin declares the id and the door and stops there.
+    <MasterworkDictationOrigin
+      surface="masterwork.improve_rule"
+      rulebookId={rulebookId}
+    >
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="flex max-h-[85dvh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <DialogHeader className="space-y-1 border-b border-border px-6 py-4 text-left">
@@ -358,5 +366,6 @@ export function ImproveRuleDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </MasterworkDictationOrigin>
   );
 }

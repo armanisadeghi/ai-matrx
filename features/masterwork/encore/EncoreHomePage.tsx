@@ -14,6 +14,7 @@ import Link from "next/link";
 import { BookOpen, Play, Theater } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { AuditionProof } from "./AuditionProof";
 import {
   listEncoreShelves,
   type EncoreMasterwork,
@@ -48,6 +49,9 @@ function EncoreCard({ masterwork }: { masterwork: EncoreMasterwork }) {
           {masterwork.description}
         </p>
       ) : null}
+      {/* THE PROOF — the Audition score, in Operator words. Absent when this
+          Masterwork has never been auditioned; never faked. */}
+      <AuditionProof score={masterwork.auditionScore} />
       <div className="mt-auto pt-3">
         <Button asChild size="sm" className="w-full sm:w-auto">
           <Link href={`/masterwork/encore/${masterwork.id}`}>

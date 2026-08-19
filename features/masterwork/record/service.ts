@@ -283,14 +283,15 @@ export async function ensureInterviewTitle(args: {
   if (!data) return;
   const current = (data.title ?? "").trim();
   if (current && !current.startsWith("Auto:")) return;
-  const when = new Date(data.created_at ?? Date.now()).toLocaleDateString(
-    undefined,
-    { month: "short", day: "numeric", year: "numeric" },
-  );
   await supabase
     .schema("chat")
     .from("conversation")
-    .update({ title: `${args.rulebookName} — interview, ${when}` })
+    .update({
+      title: interviewTitleFor(
+        args.rulebookName,
+        new Date(data.created_at ?? Date.now()),
+      ),
+    })
     .eq("id", args.conversationId);
 }
 

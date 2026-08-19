@@ -74,6 +74,24 @@ export interface FeatureAdminComponent {
   notes?: string[];
 }
 
+/**
+ * Where a panel/overlay can only be opened FROM — declared when the generic
+ * "Open" button cannot work.
+ *
+ * Many overlays refuse to render without required data (a record id in the
+ * overlay payload). The admin map's generic launcher dispatches `openOverlay`
+ * with no payload, so for those the button is dead by construction — and four
+ * dead buttons are worse than none. Declaring `launchFrom` replaces the button
+ * with an honest note and, per THE DOOR LAW, a door to the surface that CAN
+ * open it.
+ */
+export interface FeatureAdminLaunchFrom {
+  /** One short sentence — e.g. "Opens from a Rulebook page". */
+  note: string;
+  /** Where the admin goes to open it for real. Opens in a new tab. */
+  href?: string;
+}
+
 export interface FeatureAdminWindowPanel {
   /** Matching overlayId from `features/window-panels/registry/overlay-ids.ts`. */
   overlayId: string;
@@ -81,6 +99,8 @@ export interface FeatureAdminWindowPanel {
   description?: string;
   /** Optional explicit status — most window panels are Live. */
   status?: FeatureResourceStatus;
+  /** Set when this panel needs context the generic launcher cannot supply. */
+  launchFrom?: FeatureAdminLaunchFrom;
 }
 
 export interface FeatureAdminOverlay {
@@ -90,6 +110,8 @@ export interface FeatureAdminOverlay {
   description?: string;
   /** Optional status. */
   status?: FeatureResourceStatus;
+  /** Set when this overlay needs context the generic launcher cannot supply. */
+  launchFrom?: FeatureAdminLaunchFrom;
 }
 
 export interface FeatureAdminReduxSlice {

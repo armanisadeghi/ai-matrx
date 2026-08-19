@@ -107,6 +107,12 @@ export function projectCheckup(opts: {
         draft: false,
         ...(proposal.rationale ? { rationale: proposal.rationale } : {}),
         ...(proposal.detection ? { detection: proposal.detection } : {}),
+        // THE ANTI-MISLEADING LAW: the connection to a sibling rule is part of
+        // the proposal, not decoration. Dropping it here is what made the
+        // Relationship Auditor's findings land as statement-only edits.
+        ...(proposal.relates_to?.length
+          ? { relates_to: proposal.relates_to }
+          : {}),
         // Their own words are the citation for a rule they never wrote down.
         ...(finding.evidence ? { quote: finding.evidence } : {}),
         source_ref: {
@@ -163,6 +169,10 @@ export function projectCheckup(opts: {
     target.section = proposal.section;
     if (proposal.rationale !== undefined) target.rationale = proposal.rationale;
     if (proposal.detection !== undefined) target.detection = proposal.detection;
+    // A `modify` that carries relations REPLACES them (the auditor proposes the
+    // rule's whole connection set); one that carries none leaves the rule's
+    // existing relations untouched — a statement edit is not a de-linking.
+    if (proposal.relates_to?.length) target.relates_to = proposal.relates_to;
     // The Expert just ruled on this rule: it is approved and carries no open
     // review state (same rule as approving a draft in the rule list).
     target.draft = false;

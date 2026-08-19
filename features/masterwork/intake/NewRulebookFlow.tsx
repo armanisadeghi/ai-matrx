@@ -59,6 +59,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -548,6 +549,9 @@ export function NewRulebookFlow() {
   };
 
   return (
+    // The Rulebook does not exist yet, so there is no id and no door — an
+    // origin says as much as the surface honestly knows and no more.
+    <MasterworkDictationOrigin surface="masterwork.new_rulebook">
     <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
       <StepDots step={step} />
 
@@ -706,5 +710,6 @@ export function NewRulebookFlow() {
         </div>
       )}
     </div>
+    </MasterworkDictationOrigin>
   );
 }

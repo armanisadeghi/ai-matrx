@@ -37,6 +37,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
@@ -265,6 +266,12 @@ export function AuditionDialog({
     : null;
 
   return (
+    // The Expert dictates the reference work and their own verdict here — both
+    // are their words about this Rulebook, so both are stamped.
+    <MasterworkDictationOrigin
+      surface="masterwork.audition"
+      rulebookId={rulebookId}
+    >
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
@@ -485,5 +492,6 @@ export function AuditionDialog({
         </div>
       </DialogContent>
     </Dialog>
+    </MasterworkDictationOrigin>
   );
 }
