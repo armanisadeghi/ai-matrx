@@ -31,6 +31,41 @@ interface ArmData {
     error?: string;
     started_at?: string;
     finished_at?: string;
+    /** Stamped every 60s by the live arm; the lease the reaper reads. */
+    heartbeat_at?: string;
+    reaped_at?: string;
+}
+
+/**
+ * The arm's lease, in seconds — must match ARM_LEASE_SECONDS in
+ * aidream/services/podcast_race/reaper.py. Past this much silence the arm's
+ * runner is gone and the server-side reaper will mark it failed.
+ */
+const ARM_LEASE_SECONDS = 10 * 60;
+
+/**
+ * A `running` arm whose heartbeat has lapsed is NOT running — its process died
+ * and nobody is left to write a terminal status. Say so, instead of spinning a
+ * spinner forever (race 58177feb's frontier arm sat "running" for 38 hours).
+ */
+function isArmLost(data: ArmData): boolean {
+    if (data.status !== 'running') return false;
+    const lastSeen = data.heartbeat_at ?? data.started_at;
+    // A running arm with no stamp at all predates the lease — it is not live.
+    if (!lastSeen) return true;
+    const ms = new Date(lastSeen).getTime();
+    if (!Number.isFinite(ms)) return true;
+    return Date.now() - ms > ARM_LEASE_SECONDS * 1000;
+}
+
+function sinceLabel(iso?: string): string {
+    if (!iso) return 'never';
+    const ms = Date.now() - new Date(iso).getTime();
+    if (!Number.isFinite(ms) || ms < 0) return 'unknown';
+    const mins = Math.floor(ms / 60_000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    return hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`;
 }
 
 interface RaceRow {
@@ -75,7 +110,14 @@ function duration(a?: string, b?: string): string {
     return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
 }
 
-function StatusBadge({ status }: { status?: string }) {
+function StatusBadge({ status, lost = false }: { status?: string; lost?: boolean }) {
+    if (lost) {
+        return (
+            <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[11px] font-medium uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                runner lost
+            </span>
+        );
+    }
     const tone =
         status === 'completed'
             ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
@@ -105,6 +147,7 @@ function ArmCard({
     canJudge: boolean;
 }) {
     const meta = ARM_META[arm];
+    const lost = isArmLost(data);
     return (
         <div
             className={`flex min-w-0 flex-1 flex-col gap-2 rounded-lg border p-3 ${
@@ -116,7 +159,7 @@ function ArmCard({
                     <div className="truncate text-sm font-semibold text-foreground">{meta.label}</div>
                     <div className="truncate text-[11px] text-muted-foreground">{meta.blurb}</div>
                 </div>
-                <StatusBadge status={data.status} />
+                <StatusBadge status={data.status} lost={lost} />
             </div>
 
             <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
@@ -131,6 +174,15 @@ function ArmCard({
                 </span>
             </div>
 
+            {lost ? (
+                <div className="rounded border border-amber-500/40 bg-amber-500/5 p-2 text-[11px] text-amber-700 dark:text-amber-400">
+                    <span className="font-medium">Runner lost — will be reaped.</span> This arm still says
+                    &ldquo;running&rdquo;, but the process driving it stopped reporting{' '}
+                    {sinceLabel(data.heartbeat_at ?? data.started_at)} (lease {ARM_LEASE_SECONDS / 60} min). Nothing is
+                    working on it; the server sweep will mark it failed shortly.
+                </div>
+            ) : null}
+
             {data.error ? (
                 <div className="rounded border border-red-500/40 bg-red-500/5 p-2 text-[11px] text-red-600 dark:text-red-400">
                     {data.error}
@@ -144,7 +196,7 @@ function ArmCard({
                 <audio controls preload="none" src={data.audio_url} className="w-full" />
             ) : (
                 <div className="rounded border border-dashed border-border p-2 text-center text-[11px] text-muted-foreground">
-                    no audio
+                    {lost ? 'no audio — this arm never finished' : 'no audio'}
                 </div>
             )}
 
@@ -302,7 +354,16 @@ export default function PodcastRacePage() {
                 <>
                     <div className="rounded-lg border border-border bg-muted/30 p-3">
                         <div className="flex items-center gap-2">
-                            <StatusBadge status={race.status} />
+                            <StatusBadge
+                                status={race.status}
+                                lost={
+                                    race.status === 'running' &&
+                                    ARM_ORDER.every((a) => {
+                                        const d = race.arms?.[a] ?? {};
+                                        return d.status !== 'running' || isArmLost(d);
+                                    })
+                                }
+                            />
                             <span className="text-[11px] text-muted-foreground">
                                 started {new Date(race.created_at).toLocaleString()}
                             </span>
