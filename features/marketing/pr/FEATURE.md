@@ -14,33 +14,34 @@ grafted, and from where, is listed at the bottom.
 
 ## Known gaps — the honest list
 
-**1. There is no "analyse this site" button.** `POST /sites/{site_id}/press/angles/generate`
-exists on aidream and is gated and tested, but this surface never calls it. So a real user on a
-never-analysed site sees the sample banner with no action — a detected problem whose one-click fix
-exists on the server and is not offered. **This is a no-dead-ends violation and the top follow-up.**
-Wiring it needs the `seoRequest(serverUrl, accessToken, path)` pattern from
-`features/marketing/seo/dataforseo/client.ts` plus `selectActiveServer` from
-`lib/redux/slices/apiConfigSlice.ts`; generation is an agent run, so it correctly goes to aidream
-rather than direct to Supabase.
+**1. "I have this" is session-only.** Status rulings persist (direct Supabase update in
+`data.ts::persistAngleRuling`); held evidence does not — the projection recomputes the ladder,
+`proof_required.satisfied`, `evidence_refs` and `evidence_quality` in memory and discards it on
+reload. The write is well-understood (the projection already computes the exact jsonb to persist);
+it needs a deliberate call on whether user-held evidence writes straight into the analyst's
+columns or gets its own provenance.
 
-**2. "I have this" is session-only.** Status rulings persist; held evidence does not, because there
-is no column for "the user says they hold this proof". It recomputes the ladder and is discarded on
-reload. Either a real column or a clearer affordance is needed.
-
-**3. `seo.source_request.site_id` is nullable** while every RLS policy keys on it, so a request
+**2. `seo.source_request.site_id` is nullable** while every RLS policy keys on it, so a request
 ingested before it is matched to a site is invisible to users. Ingestion is unbuilt; this must be
-settled when it is.
+settled when it is (decision with Arman: per-site rows vs a shared pool with per-site match rows).
 
-**4. Not visually verified.** No dev server was run in this build (a hard constraint), so
+**3. Not visually verified.** No dev server was run in this build (a hard constraint), so
 everything here is code + type-check + jest only. The sort control at narrow widths, the rationale
 block's length in an open row, and the KPI grid's border behaviour at 2 columns are unproven.
 
-**5. Smaller, logged not fixed:** `fixtures.ts` (944 lines) is statically imported so the sample
-dataset ships in every bundle; `ScoreComb`'s tooltip trigger is a non-focusable div inside a
-button, so the five-score breakdown is keyboard-unreachable (the expanded row does carry it);
-`SourceRequestRail` uses `vh` where `dvh` is required; `JournalistRef` hand-builds `/crm` paths;
-the dismissed count in `PitchPipeline` is a count that is not a door.
+**4. Smaller, logged not fixed:** `fixtures.ts` (944 lines) is statically imported so the sample
+dataset ships in every bundle (should become a lazy import); `ScoreComb`'s tooltip trigger is a
+non-focusable div inside a button, so the five-score breakdown is keyboard-unreachable (the
+expanded row does carry it); "not in CRM — add" lands on the CRM index rather than a prefilled
+create.
 
+**Closed since first ship** (kept so nobody re-reports them): the analyse trigger now exists —
+"Find my stories" on the sample banner and "Find stories" in the header call
+`POST /seo/sites/{id}/press/angles/generate` through `api.ts` (canonical `lib/python-client`),
+with a result panel reporting angles kept, angles REFUSED with reasons, pages captured/failed and
+the analyst's stated limitations. Rulings persist. The `vh` rail cap is `dvh`. The dismissed count
+is a door into All angles. The request rail's angle link, CoverageWon's recorded-but-not-loaded
+state, scoped arrow keys, and agent-copy sample disclosure are all in.
 
 ## Two backend facts the UI is honest about
 
