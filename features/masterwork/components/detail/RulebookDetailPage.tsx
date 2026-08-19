@@ -88,6 +88,7 @@ import { ImproveRuleDialog } from "./ImproveRuleDialog";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
 import { RuleReviewWizard } from "./RuleReviewWizard";
 import { computeKpis, RulebookKpiStrip } from "./RulebookKpiStrip";
+import { OpenQuestionsCard } from "@/features/masterwork/coherence/OpenQuestionsCard";
 import { UnderstudyCard } from "../../understudy/UnderstudyCard";
 import {
   buildRulebookSurfaceScope,
@@ -1390,6 +1391,23 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               onCreated={reloadMasterworks}
             />
           </div>
+
+          {/* THE COHERENCE PARTNER (D11 · UNPARTNERED CAPTURE) — the questions
+          only the Expert can settle, sitting directly above the rules they are
+          about. Renders nothing when there are none, which is the normal and
+          correct state. Never a blocker: nothing on this page waits on them. */}
+          <OpenQuestionsCard
+            rulebook={rulebook}
+            canEdit={canEdit}
+            onSettled={reloadRulebook}
+            onTalkItThrough={(seed) => {
+              setInterviewSeed(seed);
+              setInterviewOpen(true);
+            }}
+            onOpenRule={(ruleId) => {
+              setSearch(ruleId);
+            }}
+          />
 
           {/* Rules toolbar — search and Add rule, nothing else. Every way of
           feeding this Rulebook moved into the Sources section above; this row
