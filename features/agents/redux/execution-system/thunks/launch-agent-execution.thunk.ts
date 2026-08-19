@@ -25,13 +25,20 @@ import type {
   ResultDisplayMode,
 } from "@/features/agents/types/instance.types";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
-import { resolveMandate } from "@/features/agents/mandates/service";
+import {
+  resolveMandate,
+  assertMandateVariables,
+  type ResolvedMandate,
+} from "@/features/agents/mandates/service";
 import { mapScopeToInstanceWithSurface } from "@/features/agents/utils/scope-mapping";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import type { ValueMappingMap } from "@/features/surfaces/types";
 import { withBaselineScope } from "@/features/surfaces/utils/baseline-scope";
-import { getSurfaceRuntime } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import {
+  getSurfaceRuntime,
+  getSurfaceRuntimeForName,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { withSurfaceDocumentEvidence } from "@/features/surfaces/utils/document-evidence";
 import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
@@ -186,6 +193,7 @@ export const launchAgentExecution = createAsyncThunk<
   // mandate throws here and nothing launches — never a hardcoded fallback.
   let agentId = providedAgentId;
   let mandateLlmOverrides: Partial<FeLlmParams> | null = null;
+  let resolvedMandate: ResolvedMandate | null = null;
   if (mandateKey) {
     if (providedAgentId || shortcutId) {
       throw new Error(
@@ -193,6 +201,7 @@ export const launchAgentExecution = createAsyncThunk<
       );
     }
     const resolved = await resolveMandate(mandateKey);
+    resolvedMandate = resolved;
     agentId = resolved.agentId;
     mandateLlmOverrides = resolved.configOverrides;
   }
@@ -216,18 +225,28 @@ export const launchAgentExecution = createAsyncThunk<
   // fabricate a surface where there is none. See
   // features/surfaces/utils/baseline-scope.ts.
   //
-  // Surface auto-adoption: a launch that carries NEITHER surfaceName NOR an
-  // applicationScope adopts the mounted <SurfaceRuntimeProvider> (deepest
-  // wins) — name AND live scope together. A mounted provider is a live,
-  // DECLARED surface, so this is not fabrication; the route-prefix guess
-  // (detectActiveSurface) stays out of this path because a name without a
-  // mounted runtime has no scope and would fabricate one. Explicit caller
-  // values always win, and a scope-only launch (scope without name) is left
-  // exactly as the caller built it.
+  // Surface auto-adoption: a launch that carries no applicationScope adopts a
+  // mounted <SurfaceRuntimeProvider> — name AND live scope together. With no
+  // surfaceName the deepest provider wins; WITH one, only that surface's own
+  // provider is adopted. A mounted provider is a live, DECLARED surface, so
+  // this is not fabrication; the route-prefix guess (detectActiveSurface)
+  // stays out of this path because a name without a mounted runtime has no
+  // scope and would fabricate one. An explicit caller scope always wins, and a
+  // scope-only launch (scope without name) is left exactly as the caller
+  // built it.
   let surfaceName = runtime?.surfaceName;
   let adoptedScope: ApplicationScope | undefined;
-  if (!surfaceName && runtime?.applicationScope === undefined) {
-    const mounted = getSurfaceRuntime();
+  if (runtime?.applicationScope === undefined) {
+    // A caller that NAMES a surface and supplies no scope used to launch with
+    // nothing but the empty baseline floor — the surface's own values (a
+    // Rulebook's rules, a document's text) never reached the agent even though
+    // the provider was mounted three lines up the tree. That is the same
+    // failure class as disease D4: values that exist and don't arrive. Adopt
+    // the LIVE provider for THAT SAME surface (never a different one — the
+    // name the caller wrote is the authority).
+    const mounted = surfaceName
+      ? getSurfaceRuntimeForName(surfaceName)
+      : getSurfaceRuntime();
     if (mounted) {
       surfaceName = mounted.surfaceName;
       try {
@@ -267,6 +286,17 @@ export const launchAgentExecution = createAsyncThunk<
       ? { ...(configDefaultVariables ?? {}), ...(runtime?.variables ?? {}) }
       : undefined;
   const runtimeContext = runtime?.context;
+
+  // ── THE DOCUMENT-VARIABLE PRECONDITION (disease D4) ───────────────────────
+  // A Mandate's `required_variables` bind the CALLER too, not only the bound
+  // agent. Arman, 2026-08-19, after the Masterwork Conductor fetched its
+  // Rulebook with a tool call on turn 1 and admitted it had skimmed it:
+  // "this agent should never have even started without getting the rules in
+  // place." No seed fallback — the launch REFUSES. Checked here rather than at
+  // resolution time because `variables` merges two caller channels above.
+  if (resolvedMandate) {
+    assertMandateVariables(resolvedMandate, variables);
+  }
 
   const displayModeOverride = config?.displayMode;
   const autoRun = config?.autoRun;

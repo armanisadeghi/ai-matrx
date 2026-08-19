@@ -40,6 +40,12 @@ import {
   type RulebookInterview,
 } from "@/features/masterwork/record/service";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
+import {
+  missingRequiredVariables,
+  missingVariablesMessage,
+} from "@/features/agents/mandates/service";
+import { RULEBOOK_DOCUMENT_VARIABLE } from "@/features/masterwork/agent-context/rulebookDocument";
+import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
 import { InterviewChooser } from "@/features/masterwork/record/InterviewChooser";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 
@@ -148,12 +154,15 @@ const ELICITATION_CHIPS = [
 function InterviewConversation({
   rulebookId,
   rulebookName,
+  rulebookDocument,
   agentId,
   seedText,
   freshSessionKey,
 }: {
   rulebookId: string;
   rulebookName: string;
+  /** The Rulebook itself, already loaded — see ScoutInterviewContent. */
+  rulebookDocument: string;
   agentId: string;
   seedText?: string;
   freshSessionKey: number;
@@ -168,7 +177,22 @@ function InterviewConversation({
     // agent bindings + value mappings (skipping it silently resolves NONE).
     runtime: {
       surfaceName: MASTERWORK_RULEBOOK_SURFACE_NAME,
-      variables: { rulebook_id: rulebookId },
+      // NAMED VARIABLES, never prose in the human's turn (THE USER-INPUT LAW).
+      //
+      // 🚨 `rulebook_document` is THE CURE for disease D4. Until 2026-08-19
+      // the Scout received only `rulebook_id` and its own prompt said "Before
+      // saying anything, call rulebook action=read" — so its intake answers,
+      // its existing rules, and the Expert's open review feedback all arrived
+      // as a tool result the model had chosen to fetch. Arman: "this agent
+      // should never have even started without getting the rules in place."
+      // The document is loaded BEFORE this component mounts; the interview
+      // refuses when it is absent. The `rulebook` tool stays for RE-reads —
+      // the Scout WRITES rules mid-conversation and variables substitute once,
+      // at conversation start.
+      variables: {
+        rulebook_id: rulebookId,
+        [RULEBOOK_DOCUMENT_VARIABLE]: rulebookDocument,
+      },
     },
     config: { responseDensity: "compact" },
     // "Start a new interview" must NEVER revive the previous conversation the
@@ -439,6 +463,10 @@ export function ScoutInterviewContent({
   startNew?: boolean;
 }) {
   const { mandate, loading, error } = useMandate(SCOUT_MANDATE_KEY);
+  // THE DOCUMENT COMES FIRST — loaded before any conversation is minted, so
+  // the Scout's first turn already holds the intake answers, the rules so far,
+  // and the Expert's open review feedback (disease D4).
+  const rulebookDoc = useRulebookDocument(rulebookId);
   const [interviews, setInterviews] = useState<RulebookInterview[] | null>(
     null,
   );
@@ -489,13 +517,38 @@ export function ScoutInterviewContent({
     setChoice({ mode: "new", key });
   }, [freshKey]);
 
-  if (loading || interviews === null) return <ChatRoomSkeleton />;
+  if (loading || rulebookDoc.loading || interviews === null)
+    return <ChatRoomSkeleton />;
   if (error || !mandate?.agentId) {
     return (
       <div className="px-4 py-6 text-sm text-muted-foreground">
         The interviewer isn&apos;t available right now
         {error ? ` (${error})` : ""}. An administrator can bind one to the
         `masterwork.scout` Mandate.
+      </div>
+    );
+  }
+
+  // THE RUN REFUSES RATHER THAN STARTING BLIND (disease D4).
+  const launchVariables = {
+    rulebook_id: rulebookId,
+    [RULEBOOK_DOCUMENT_VARIABLE]: rulebookDoc.document ?? "",
+  };
+  const missing = missingRequiredVariables(mandate.contract, launchVariables);
+  if (rulebookDoc.error || missing.length > 0) {
+    return (
+      <div className="space-y-3 px-4 py-6 text-sm">
+        <p className="text-foreground">
+          {rulebookDoc.error ??
+            missingVariablesMessage(SCOUT_MANDATE_KEY, missing)}
+        </p>
+        <p className="text-muted-foreground">
+          The interviewer would have had to guess what you&apos;ve already told
+          it, so we stopped instead.
+        </p>
+        <Button size="sm" variant="outline" onClick={rulebookDoc.reload}>
+          Try again
+        </Button>
       </div>
     );
   }
@@ -528,6 +581,7 @@ export function ScoutInterviewContent({
     <InterviewConversation
       rulebookId={rulebookId}
       rulebookName={rulebookName}
+      rulebookDocument={rulebookDoc.document ?? ""}
       agentId={mandate.agentId}
       seedText={seedText}
       freshSessionKey={choice.key}

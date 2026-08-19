@@ -51,6 +51,14 @@ import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvide
 import { VoiceRelayBar } from "@/features/voice-agent/relay/VoiceRelayBar";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import {
+  missingRequiredVariables,
+  missingVariablesMessage,
+} from "@/features/agents/mandates/service";
+import {
+  RULEBOOK_DOCUMENT_VARIABLE,
+} from "@/features/masterwork/agent-context/rulebookDocument";
+import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
+import {
   associateConductorWhenPersisted,
   attachmentsVariable,
   listConductorSessions,
@@ -107,12 +115,15 @@ function NewConductorSession({
   rulebookId,
   rulebookName,
   attachments,
+  rulebookDocument,
   agentId,
   freshSessionKey,
 }: {
   rulebookId: string;
   rulebookName: string;
   attachments: MasterworkAttachment[];
+  /** The Rulebook itself, already loaded — see ConductorContent. */
+  rulebookDocument: string;
   agentId: string;
   freshSessionKey: number;
 }) {
@@ -125,12 +136,25 @@ function NewConductorSession({
     runtime: {
       surfaceName: MASTERWORK_RULEBOOK_SURFACE_NAME,
       // NAMED VARIABLES, never prose in the human's turn (THE USER-INPUT LAW).
+      //
+      // 🚨 `rulebook_document` is THE CURE for disease D4. Until 2026-08-19
+      // this passed only IDS and the agent's own prompt told it to "read it
+      // first with the rulebook tool" — so the rules arrived (when they
+      // arrived) as a tool result the model had chosen to fetch, and got
+      // skimmed. Arman: "the rules should just be variables that are directly
+      // fed into him… this agent should never have even started without
+      // getting the rules in place." The document is loaded by
+      // `ConductorContent` BEFORE this component mounts; the run refuses when
+      // it is absent. The `rulebook` tool stays for RE-reads after writes
+      // (variables substitute once, at conversation start).
+      //
       // `attachments` is the general channel; `rulebook_id` is the convenience
       // the `rulebook` tool reads. Adding a second attachable kind changes the
       // list, not this component.
       variables: {
         rulebook_id: rulebookId,
         attachments: attachmentsVariable(attachments),
+        [RULEBOOK_DOCUMENT_VARIABLE]: rulebookDocument,
       },
     },
     config: { responseDensity: "compact" },
@@ -418,6 +442,9 @@ export function ConductorContent({
   startNew: startNewProp,
 }: ConductorContentProps) {
   const { mandate, loading, error } = useMandate(CONDUCTOR_MANDATE_KEY);
+  // THE DOCUMENT COMES FIRST. Loaded here, before any conversation is minted,
+  // so the Conductor's first turn already holds the rules (disease D4).
+  const rulebookDoc = useRulebookDocument(rulebookId);
   const [sessions, setSessions] = useState<ConductorSession[] | null>(null);
   const [choice, setChoice] = useState<
     | { mode: "choose" }
@@ -463,7 +490,8 @@ export function ConductorContent({
     setChoice({ mode: "new", key });
   }, [freshKey]);
 
-  if (loading || sessions === null) return <ChatRoomSkeleton />;
+  if (loading || rulebookDoc.loading || sessions === null)
+    return <ChatRoomSkeleton />;
   // NO SILENT FALLBACK. A Mandate resolves or the run refuses.
   if (error || !mandate?.agentId) {
     return (
@@ -471,6 +499,38 @@ export function ConductorContent({
         The Masterwork system isn&apos;t available right now
         {error ? ` (${error})` : ""}. An administrator can bind an agent to the
         `masterwork.conductor` Mandate.
+      </div>
+    );
+  }
+
+  // THE RUN REFUSES RATHER THAN STARTING BLIND (disease D4). Two independent
+  // reasons, both fatal: the Rulebook itself would not load, or the Mandate
+  // declares a required variable this surface did not supply. This object must
+  // stay identical to what `NewConductorSession` actually binds — the check is
+  // worthless if it tests a different set.
+  const sessionAttachments = attachments ?? [
+    { entityToken: "rulebook", id: rulebookId, name: rulebookName },
+  ];
+  const launchVariables = {
+    rulebook_id: rulebookId,
+    attachments: attachmentsVariable(sessionAttachments),
+    [RULEBOOK_DOCUMENT_VARIABLE]: rulebookDoc.document ?? "",
+  };
+  const missing = missingRequiredVariables(mandate.contract, launchVariables);
+  if (rulebookDoc.error || missing.length > 0) {
+    return (
+      <div className="space-y-3 px-4 py-6 text-sm">
+        <p className="text-foreground">
+          {rulebookDoc.error ??
+            missingVariablesMessage(CONDUCTOR_MANDATE_KEY, missing)}
+        </p>
+        <p className="text-muted-foreground">
+          Starting without your rules would mean building a system from
+          guesswork, so we stopped instead.
+        </p>
+        <Button size="sm" variant="outline" onClick={rulebookDoc.reload}>
+          Try again
+        </Button>
       </div>
     );
   }
@@ -503,11 +563,8 @@ export function ConductorContent({
     <NewConductorSession
       rulebookId={rulebookId}
       rulebookName={rulebookName}
-      attachments={
-        attachments ?? [
-          { entityToken: "rulebook", id: rulebookId, name: rulebookName },
-        ]
-      }
+      attachments={sessionAttachments}
+      rulebookDocument={rulebookDoc.document ?? ""}
       agentId={mandate.agentId}
       freshSessionKey={choice.key}
     />

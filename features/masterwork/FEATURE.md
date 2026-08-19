@@ -51,6 +51,36 @@
   5. **It is allowed to REFUSE**, naming what is missing, what would fix it, and what it
      could honestly build today.
 
+- 🚨 **THE RULES ARE HANDED TO THE AGENT — never fetched (2026-08-19, disease D4).** Arman,
+  on a live Conductor conversation that opened with a `rulebook` tool call and later admitted
+  it had only skimmed the rules: _"why did he have to call a tool to get the rules in the
+  first place? … the rules should just be variables that are directly fed into him… this
+  agent should never have even started without getting the rules in place."_
+
+  Both conversational Masterwork agents — the **Scout** and the **Conductor** — now RECEIVE
+  the complete Rulebook as the named variable **`rulebook_document`**, substituted into the
+  prompt before turn 1. It is a `required_variable` on both Mandates, so a rebind to an agent
+  that cannot receive it is refused at bind time, AND the launch refuses at run time when the
+  caller does not supply it.
+
+  - **ONE renderer:** `agent-context/rulebookDocument.ts` → `renderRulebookDocument` —
+    identity, intake answers, sections, every rule with its review state and connections, and
+    the Expert's open review feedback broken out. The Rulebook surface's `content` value uses
+    the same function, so the page's agents and the panels' agents can never see two
+    different Rulebooks.
+  - **ALWAYS PRESENT, EVEN WHEN BLANK.** A Rulebook with no rules renders words saying so.
+    An empty string is indistinguishable from a wiring failure and is REFUSED
+    (`missingRequiredVariables` treats blank as missing).
+  - **Loaded before the conversation is minted:** `agent-context/useRulebookDocument.ts`.
+    Its `error` is a refusal, not a warning — the panel says so to the Expert and offers
+    Retry rather than starting blind.
+  - **The `rulebook` tool is DEMOTED, not retired.** Variables substitute once, at
+    conversation start, so the Scout — which WRITES rules mid-conversation — still re-reads
+    after its own writes. What is forbidden is the FIRST read being a tool call.
+  - Law: `common-docs/systems/agent-variable-binding/FEATURE.md` § THE DOCUMENT-VARIABLE
+    COROLLARY · register: `common-docs/operations/agent-failure-diseases.md` § D4 · live
+    proof: `aidream/scripts/_verify_d4_document_variable.py`.
+
   **Files:** `conduct/ConductorPanel.tsx` (THE ONE implementation — panel + full-page route
   both render `ConductorContent`) · `conduct/service.ts` (the attachment shape, the
   `conducting` edge, the session list) · route `app/(core)/masterwork/[id]/conduct/page.tsx`
@@ -764,6 +794,15 @@ deliberately never produced.
    retired into the improver 2026-08-17 — never re-split them.
 
 ## Change log
+
+- **2026-08-19 — The Rulebook is BOUND, not fetched (disease D4).** `rulebook_document` is
+  now a declared, required variable on `masterwork.scout` and `masterwork.conductor`,
+  rendered once by `agent-context/rulebookDocument.ts` and loaded before any conversation is
+  minted by `agent-context/useRulebookDocument.ts`. Both panels refuse to launch when the
+  Rulebook will not load or a required variable is unsupplied; both agents' prompts lost
+  their fetch-first instructions and gained the `{{rulebook_document}}` placeholder. The
+  surface scope's `content` value now uses the same renderer. Live proof 15/15 on the
+  30-rule SEO Rulebook: `aidream/scripts/_verify_d4_document_variable.py`.
 
 - 2026-08-18 — **The four review verbs became ONE primitive** (Arman's standing law: an
   enhancement lands in every place the logic exists). New `features/masterwork/review/`:

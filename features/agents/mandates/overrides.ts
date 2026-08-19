@@ -23,47 +23,29 @@
 import { createClient } from "@/utils/supabase/client";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
-import type { Database, Json } from "@/types/database.types";
+import type { Database } from "@/types/database.types";
 import { isJsonObject, type JsonObject } from "@/types/json";
 import { invalidateMandateCache } from "./service";
 
 export type MandateDefinitionRow = Database["agent"]["Tables"]["mandate"]["Row"];
 export type MandateBindingRow = Database["agent"]["Tables"]["mandate_binding"]["Row"];
 
-/** The mandate's stored contract — `{required_variables, required_context_policies,
- * required_output_keys}`, seeded from the default agent's declarations.
- * `requiredOutputKeys` is the mandate's OUTPUT promise: the keys any bound
- * agent's structured output must produce (contract-checked server-side at
- * bind time). */
-export interface MandateContract {
-  requiredVariables: string[];
-  requiredContextPolicyKeys: string[];
-  requiredOutputKeys: string[];
-}
-
-export function parseMandateContract(contract: Json): MandateContract {
-  const out: MandateContract = {
-    requiredVariables: [],
-    requiredContextPolicyKeys: [],
-    requiredOutputKeys: [],
-  };
-  if (!isJsonObject(contract)) return out;
-  const vars = contract.required_variables;
-  if (Array.isArray(vars)) {
-    out.requiredVariables = vars.filter((v): v is string => typeof v === "string");
-  }
-  const slots = contract.required_context_policies;
-  if (Array.isArray(slots)) {
-    out.requiredContextPolicyKeys = slots.filter((v): v is string => typeof v === "string");
-  }
-  const outputKeys = contract.required_output_keys;
-  if (Array.isArray(outputKeys)) {
-    out.requiredOutputKeys = outputKeys.filter(
-      (v): v is string => typeof v === "string",
-    );
-  }
-  return out;
-}
+// The mandate's stored contract — `{required_variables,
+// required_context_policies, required_output_keys, spill_variables}`, seeded
+// from the default agent's declarations. `requiredOutputKeys` is the mandate's
+// OUTPUT promise (contract-checked server-side at bind time);
+// `requiredVariables` is its INPUT precondition, enforced at bind time by the
+// server AND at run time by `missingRequiredVariables` (disease D4).
+// The contract shape + parser live in the leaf module `contract.ts` so both
+// this file and `service.ts` (which resolveMandate needs it in) can read it
+// without an import cycle. Re-exported here for every existing consumer.
+export {
+  parseMandateContract,
+  missingRequiredVariables,
+  missingVariablesMessage,
+  EMPTY_MANDATE_CONTRACT,
+  type MandateContract,
+} from "./contract";
 
 export function isPlaceholderMandate(mandate: MandateDefinitionRow): boolean {
   return isJsonObject(mandate.metadata) && mandate.metadata.migration_status === "placeholder";

@@ -29,12 +29,26 @@ import { createClient } from "@/utils/supabase/client";
 import { isJsonObject } from "@/types/json";
 import type { FeLlmParams } from "@/features/agents/types/agent-api-types";
 import { toLlmParams } from "./llm-params";
+import {
+  missingRequiredVariables,
+  missingVariablesMessage,
+  parseMandateContract,
+  type MandateContract,
+} from "./contract";
 
 export interface ResolvedMandate {
   mandateKey: string;
   agentId: string;
   configOverrides: Partial<FeLlmParams> | null;
   provenance: "system" | "user";
+  /**
+   * The Mandate's declared IO contract. `requiredVariables` is an INPUT
+   * PRECONDITION on the caller, not only a bind-time check on the agent: a run
+   * whose required variable is absent REFUSES (disease D4). Consumers that
+   * resolve-then-launch pre-check with `assertMandateVariables` so the user
+   * sees a real refusal instead of a thrown promise.
+   */
+  contract: MandateContract;
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -71,7 +85,9 @@ export async function resolveMandate(mandateKey: string): Promise<ResolvedMandat
   const { data: mandate, error } = await supabase
     .schema("agent")
     .from("mandate")
-    .select("id, mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled")
+    .select(
+      "id, mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled, contract",
+    )
     .eq("mandate_key", mandateKey)
     .is("deleted_at", null)
     .maybeSingle();
@@ -130,6 +146,7 @@ export async function resolveMandate(mandateKey: string): Promise<ResolvedMandat
     agentId,
     configOverrides,
     provenance,
+    contract: parseMandateContract(mandate.contract),
   };
   cache.set(mandateKey, { at: Date.now(), value });
   return value;
@@ -207,3 +224,33 @@ export async function fetchMandatePins(
   }
   return out;
 }
+
+// ── The document-variable precondition (disease D4) ─────────────────────────
+
+/**
+ * REFUSE when a Mandate's required variables were not supplied.
+ *
+ * 🚨 Arman, 2026-08-19, on the Masterwork Conductor starting blind and fetching
+ * its Rulebook with a tool call on turn 1: *"this agent should never have even
+ * started without getting the rules in place."*
+ *
+ * There is no seed fallback and no "the model can fetch it itself" consolation:
+ * a document that arrives by tool call is a document that gets skimmed. Throws
+ * — the caller either pre-checks with `missingRequiredVariables` and renders a
+ * refusal, or lets this stop the launch.
+ */
+export function assertMandateVariables(
+  mandate: ResolvedMandate,
+  supplied: Record<string, unknown> | null | undefined,
+): void {
+  const missing = missingRequiredVariables(mandate.contract, supplied);
+  if (missing.length > 0) {
+    throw new Error(missingVariablesMessage(mandate.mandateKey, missing));
+  }
+}
+
+export {
+  missingRequiredVariables,
+  missingVariablesMessage,
+  type MandateContract,
+} from "./contract";

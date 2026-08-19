@@ -1,4 +1,7 @@
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
+// ONE Rulebook renderer — the surface's `content` and the bound
+// `rulebook_document` variable must never show two different Rulebooks.
+import { renderRulebookDocument } from "./rulebookDocument";
 import {
   ruleState,
   type Masterwork,
@@ -44,29 +47,6 @@ export interface BuildRulebookSurfaceScopeArgs {
   workspaceState: RulebookWorkspaceState;
 }
 
-function rulebookAsText(rulebook: Rulebook): string {
-  const lines = [
-    `# ${rulebook.name}`,
-    rulebook.description ?? "",
-    `Status: ${rulebook.status} · Version: ${rulebook.version}`,
-  ];
-  for (const [code, section] of Object.entries(rulebook.sections)) {
-    lines.push(`\n## ${section.label} (${code})`);
-    for (const rule of rulebook.rules.filter((item) => item.section === code)) {
-      lines.push(
-        `\n### ${rule.name} [${rule.id}]`,
-        `State: ${ruleState(rule)} · Severity: ${rule.severity}`,
-        rule.statement,
-      );
-      if (rule.rationale) lines.push(`Why: ${rule.rationale}`);
-      if (rule.detection) lines.push(`Detection: ${rule.detection}`);
-      if (rule.quote) lines.push(`Source words: ${rule.quote}`);
-      if (rule.feedback) lines.push(`Review feedback: ${rule.feedback}`);
-    }
-  }
-  return lines.filter(Boolean).join("\n");
-}
-
 export function buildRulebookSurfaceScope({
   rulebook,
   masterworks,
@@ -96,7 +76,7 @@ export function buildRulebookSurfaceScope({
     selection: "",
     text_before: "",
     text_after: "",
-    content: rulebookAsText(rulebook),
+    content: renderRulebookDocument(rulebook),
     context: {
       surface: "masterwork_rulebook",
       rulebook_id: rulebook.id,

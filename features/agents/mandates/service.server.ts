@@ -22,6 +22,7 @@ import "server-only";
 import { createClient } from "@/utils/supabase/server";
 import { isJsonObject } from "@/types/json";
 import { toLlmParams } from "./llm-params";
+import { parseMandateContract } from "./contract";
 import type { ResolvedMandate } from "./service";
 
 export async function resolveMandateServer(
@@ -32,7 +33,7 @@ export async function resolveMandateServer(
     .schema("agent")
     .from("mandate")
     .select(
-      "id, mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled",
+      "id, mandate_key, default_agent_id, default_agent_version_id, use_latest, is_enabled, contract",
     )
     .eq("mandate_key", mandateKey)
     .is("deleted_at", null)
@@ -85,5 +86,14 @@ export async function resolveMandateServer(
     }
   }
 
-  return { mandateKey, agentId, configOverrides, provenance };
+  return {
+    mandateKey,
+    agentId,
+    configOverrides,
+    provenance,
+    // The same contract the client resolver carries — required variables are a
+    // RUN-time precondition on the caller, not only a bind-time check on the
+    // agent (disease D4).
+    contract: parseMandateContract(mandate.contract),
+  };
 }

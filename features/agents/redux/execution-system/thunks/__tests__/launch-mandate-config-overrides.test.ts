@@ -33,6 +33,8 @@ jest.mock(
 
 // The ONLY mandate mock — everything downstream of resolution is real code.
 const AGENT_ID = "mandate-agent-1";
+/** Mutable so one test can give the mandate a required document variable. */
+const __requiredVariables: string[] = [];
 jest.mock("@/features/agents/mandates/service", () => ({
   resolveMandate: jest.fn(async (mandateKey: string) => ({
     mandateKey,
@@ -40,7 +42,32 @@ jest.mock("@/features/agents/mandates/service", () => ({
     // A SETTINGS-ONLY binding: no agent swap, just "run this on my model".
     configOverrides: { model: "user-override-model", thinking_level: "low" },
     provenance: "user",
+    contract: {
+      requiredVariables: [...__requiredVariables],
+      requiredContextPolicyKeys: [],
+      requiredOutputKeys: [],
+      spillVariables: [],
+    },
   })),
+  // The run-time precondition (disease D4) runs as REAL code — only resolution
+  // is mocked. A contract with no required variables must never block.
+  assertMandateVariables: (
+    mandate: { mandateKey: string; contract: unknown },
+    supplied: unknown,
+  ) => {
+    const contract = jest.requireActual<
+      typeof import("@/features/agents/mandates/contract")
+    >("@/features/agents/mandates/contract");
+    const missing = contract.missingRequiredVariables(
+      mandate.contract as never,
+      supplied as never,
+    );
+    if (missing.length > 0) {
+      throw new Error(
+        contract.missingVariablesMessage(mandate.mandateKey, missing),
+      );
+    }
+  },
 }));
 
 import { configureStore, type UnknownAction } from "@reduxjs/toolkit";
@@ -206,5 +233,64 @@ describe("launchAgentExecution mandateKey — the binding's config_overrides rea
     ).rejects.toMatchObject({
       message: expect.stringMatching(/mutually exclusive/),
     });
+  });
+});
+
+/**
+ * DISEASE D4 — the run-time half of the Mandate contract, through the REAL
+ * funnel. Arman, 2026-08-19: *"this agent should never have even started
+ * without getting the rules in place."*
+ *
+ * Bind-time enforcement alone verified that the agent could RECEIVE the
+ * document while nothing verified that the caller SENT it, which is how the
+ * Masterwork Conductor came to fetch its own Rulebook with a tool call on turn
+ * 1 and skim it.
+ */
+describe("launchAgentExecution mandateKey — a required document variable is a RUN-TIME precondition", () => {
+  afterEach(() => {
+    __requiredVariables.length = 0;
+  });
+
+  test("REFUSES the launch when the required document variable was not supplied", async () => {
+    __requiredVariables.push("rulebook_document");
+    const store = makeStore();
+    // RTK rejects with a SerializedError (a plain object), not an Error —
+    // match on its message rather than `toThrow`.
+    await expect(
+      launch(store, { runtime: { variables: { rulebook_id: "rb-1" } } }),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining("rulebook_document"),
+    });
+    // Nothing was created: refusing means refusing, not half-starting.
+    const state = store.getState() as unknown as RootState;
+    expect(Object.keys(state.conversations.byConversationId)).toHaveLength(0);
+  });
+
+  test("REFUSES on a blank document — the exact shape of a wiring failure", async () => {
+    __requiredVariables.push("rulebook_document");
+    const store = makeStore();
+    await expect(
+      launch(store, {
+        runtime: { variables: { rulebook_id: "rb-1", rulebook_document: "  " } },
+      }),
+    ).rejects.toMatchObject({
+      message: expect.stringContaining("rulebook_document"),
+    });
+  });
+
+  test("launches when the document is bound, and it reaches the wire as a NAMED variable", async () => {
+    __requiredVariables.push("rulebook_document");
+    const document = "# Their Rulebook\n### Rule 3 [r3]\nNever open with an apology.";
+    const store = makeStore();
+    const { conversationId } = await launch(store, {
+      runtime: { variables: { rulebook_id: "rb-1", rulebook_document: document } },
+    });
+
+    const state = store.getState() as unknown as RootState;
+    const request = assembleRequest(state, conversationId);
+    // THE POINT: the Rulebook arrives under its own NAME, not as prose in the
+    // human's turn and not as a tool result the model chose to fetch.
+    expect(request?.variables).toMatchObject({ rulebook_document: document });
+    expect(request?.user_input ?? "").not.toContain("Never open with an apology");
   });
 });
