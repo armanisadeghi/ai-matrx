@@ -85,9 +85,11 @@ this page the moment they click this?"_ — then hand the agent exactly that.
   Normal Copy stays plain unless multiple human-readable formats exist, then
   that same icon owns their dropdown. Pass structured data as `json`; it is an
   item in the Copy-for-AI dropdown, never a standalone third icon. Scalars
-  skip JSON. Copy-for-AI is NEVER just JSON in an envelope. Pass `export` on
-  `CopyButtons` to add Download as a third even-width group segment — do not
-  also render `ExportMenu` beside it.
+  skip JSON. Copy-for-AI is NEVER just JSON in an envelope. **`CopyButtons`
+  is the one control** — pass `export` for Download, `hide` to drop any
+  segment (cards: omit `export` or `hide={["export"]}`). A menu item may
+  `onSelect` / `modal` instead of copying. Do not also render `ExportMenu`
+  beside it.
 - **`CopyForAiIcon` is canonical.** `Sparkles`, `Sparkle`, bot, face, star, or
   any substitute is banned for AI copy. Tooltips/accessibility names carry the
   words; visible Copy/JSON/Copy-for-AI text is forbidden.

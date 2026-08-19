@@ -166,6 +166,70 @@ describe("CopyButtons AI variants", () => {
     ]);
   });
 
+  it("hides Export and still groups the remaining Copy + AI pair", () => {
+    act(() => {
+      root.render(
+        <CopyButtons
+          size="xs"
+          label="Integration DeepWiki"
+          human="human card"
+          agent="agent card"
+          hide={["export"]}
+          export={{
+            items: [
+              {
+                id: "json",
+                label: "JSON",
+                build: () => ({
+                  content: "{}",
+                  extension: "json",
+                  mime: "application/json",
+                }),
+              },
+            ],
+          }}
+        />,
+      );
+    });
+
+    expect(container.querySelector("[data-copy-action-group]")).not.toBeNull();
+    const buttons = [
+      ...container.querySelectorAll("[data-copy-action-group] button"),
+    ];
+    expect(buttons).toHaveLength(2);
+    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Copy Integration DeepWiki (human-readable)",
+      "Copy Integration DeepWiki for AI agent",
+    ]);
+  });
+
+  it("opens a caller-owned modal from an AI menu item instead of copying", () => {
+    const onSelect = jest.fn();
+    act(() => {
+      root.render(
+        <CopyButtons
+          label="Chunks"
+          human="human"
+          agent="agent"
+          aiVariants={[
+            {
+              id: "customize",
+              label: "Customize…",
+              onSelect,
+            },
+          ]}
+        />,
+      );
+    });
+
+    expect(
+      [...container.querySelectorAll("[data-testid='ai-variants'] li")].map(
+        (item) => item.textContent,
+      ),
+    ).toEqual(["Customize…", "Everything"]);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
   it("folds a whole-page Groomer into the same AI control", () => {
     act(() => {
       root.render(

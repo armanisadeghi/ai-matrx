@@ -64,7 +64,7 @@ import {
 
 export type AiIconType = React.ComponentType<{ className?: string }>;
 
-/** A single ready-to-copy variant (e.g. "Focused", "Everything"). */
+/** A single Copy-for-AI menu item — copy a payload, or open a modal/window. */
 export interface AiVariant {
   id: string;
   label: string;
@@ -72,7 +72,21 @@ export interface AiVariant {
   icon?: AiIconType;
   /** Pure builder → an envelope input (wrapped via buildAgentPayload) or a
    *  finished string. May be async (e.g. lazily fetches the full set). */
-  build: () => AgentPayloadInput | string | Promise<AgentPayloadInput | string>;
+  build?: () =>
+    AgentPayloadInput | string | Promise<AgentPayloadInput | string>;
+  /**
+   * Caller-owned modal/window. Wins over `build` — the item opens UI
+   * instead of writing the clipboard.
+   */
+  onSelect?: () => void;
+  /**
+   * Hosted modal. CopyButtons owns open state and renders this next to
+   * the menu. Use when the dialog has no owner outside this control.
+   */
+  modal?: (props: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) => React.ReactNode;
 }
 
 /** One control in the custom-preview dialog. */
@@ -188,6 +202,7 @@ export function AiCopyMenu({
   const [groomerOpen, setGroomerOpen] = React.useState(false);
   const [groomerConfig, setGroomerConfig] =
     React.useState<AgentCopyGroomerConfig | null>(null);
+  const [openModalId, setOpenModalId] = React.useState<string | null>(null);
 
   const buttonCls = grouped
     ? copyActionSegmentClass(size)
@@ -201,8 +216,24 @@ export function AiCopyMenu({
   const chevronCls =
     size === "xs" ? "!size-2.5" : size === "sm" ? "!size-3.5" : "!size-3";
 
+  const activateVariant = (v: AiVariant) => {
+    if (v.onSelect) {
+      v.onSelect();
+      return;
+    }
+    if (v.modal) {
+      setOpenModalId(v.id);
+      return;
+    }
+    if (!v.build) {
+      toast.error(`Failed to copy ${label}`);
+      return;
+    }
+    void runVariant(v);
+  };
+
   const runVariant = async (v: AiVariant) => {
-    if (busy) return;
+    if (busy || !v.build) return;
     setBusy(true);
     try {
       const resolved = await v.build();
@@ -240,6 +271,15 @@ export function AiCopyMenu({
     </span>
   );
 
+  const hostedModals = variants.map((v) =>
+    v.modal
+      ? v.modal({
+          open: openModalId === v.id,
+          onOpenChange: (open) => setOpenModalId(open ? v.id : null),
+        })
+      : null,
+  );
+
   const wrap = (node: React.ReactNode) => (
     <span
       className={cn(
@@ -250,6 +290,7 @@ export function AiCopyMenu({
       onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
     >
       {node}
+      {hostedModals}
     </span>
   );
 
@@ -262,7 +303,7 @@ export function AiCopyMenu({
         size="icon"
         className={cn(buttonCls, className)}
         disabled={disabled || busy}
-        onClick={() => void runVariant(single)}
+        onClick={() => activateVariant(single)}
         aria-label={`Copy ${label} for AI`}
         title={single.hint ?? `Copy ${label} for AI`}
       >
@@ -295,7 +336,7 @@ export function AiCopyMenu({
             return (
               <DropdownMenuItem
                 key={v.id}
-                onSelect={() => void runVariant(v)}
+                onSelect={() => activateVariant(v)}
                 className="gap-2"
               >
                 <Icon className="h-4 w-4 shrink-0" />

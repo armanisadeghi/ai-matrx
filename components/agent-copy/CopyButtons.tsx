@@ -27,13 +27,19 @@ import {
   ExportMenu,
   type ExportMenuProps,
 } from "@/components/agent-copy/ExportMenu";
+import {
+  resolveCopyActions,
+  type CopyActionId,
+} from "@/components/agent-copy/copy-actions";
 import type { AgentCopyGroomerConfig } from "@/components/agent-copy/groomer-types";
 
 /**
  * CopyButtons — the reusable "copy this data" primitive.
  *
- * Renders Copy + Copy-for-AI. Pass `export` and they become a three-segment
- * even-width group with Download. Copy-for-AI uses {@link buildAgentPayload}.
+ * The one Copy / Copy-for-AI / Export control. Pass the payloads you have;
+ * hide any segment with `hide`. A menu item can copy or open a modal
+ * (`onSelect` / `modal` on an {@link AiVariant}, `onSelect` on an export
+ * item). Two or more visible segments render as one even-width group.
  *
  * Drop this onto any row, card, or page header. Pass the human text and the
  * agent payload as values or as builder functions (functions are preferred for
@@ -53,13 +59,14 @@ function resolve<T>(value: Resolvable<T>): T {
 }
 
 export interface CopyButtonsProps {
-  /** Human-readable text to copy (or a builder fn). */
-  human: Resolvable<string>;
+  /** Human-readable text to copy (or a builder fn). Omit (or `hide`) to drop Copy. */
+  human?: Resolvable<string>;
   /**
    * Agent payload: an {@link AgentPayloadInput} (passed to buildAgentPayload),
-   * a prebuilt string, or a builder fn returning either.
+   * a prebuilt string, or a builder fn returning either. Omit (or `hide`)
+   * to drop Copy-for-AI unless `aiVariants` / `aiCustom` / `groomer` remain.
    */
-  agent: Resolvable<AgentPayloadInput | string>;
+  agent?: Resolvable<AgentPayloadInput | string>;
   /**
    * When set, adds a JSON entry to the Copy-for-AI dropdown. It copies this
    * value as pretty-printed JSON without adding a third top-level control.
@@ -83,14 +90,19 @@ export interface CopyButtonsProps {
   /** Wrapper className. */
   className?: string;
   /**
-   * Download dropdown. When set, Copy + Copy-for-AI + Export render as one
-   * even-width {@link CopyActionGroup}. Pass the items you already build for
-   * a standalone ExportMenu — do not also render ExportMenu beside this.
+   * Download dropdown. Pass the items you already build for a standalone
+   * ExportMenu — do not also render ExportMenu beside this. Omit (or
+   * `hide: ["export"]`) on cards that only need Copy + Copy-for-AI.
    */
   export?: Pick<ExportMenuProps, "items" | "sheetRows">;
   /**
-   * Force the even-width group chrome without an export slot (Copy + AI
-   * only). Defaults on when `export` is set.
+   * Drop any segment even when its data is passed. Cards that share a
+   * builder with a page header use `hide={["export"]}`.
+   */
+  hide?: CopyActionId[];
+  /**
+   * Force even-width group chrome. Defaults on when two or more segments
+   * are visible (a header trio or a card pair).
    */
   grouped?: boolean;
   /**
@@ -133,6 +145,7 @@ export function CopyButtons({
   stopPropagation = true,
   className,
   export: exportConfig,
+  hide,
   grouped,
   aiVariants,
   aiCustom,
@@ -140,7 +153,19 @@ export function CopyButtons({
   groomer,
 }: CopyButtonsProps) {
   const [copied, setCopied] = React.useState<"human" | "agent" | null>(null);
-  const isGrouped = grouped ?? exportConfig !== undefined;
+  const visible = resolveCopyActions({
+    hide,
+    hasCopy: human !== undefined,
+    hasAi:
+      agent !== undefined ||
+      (aiVariants?.length ?? 0) > 0 ||
+      aiCustom !== undefined ||
+      groomer !== undefined,
+    hasExport:
+      exportConfig !== undefined &&
+      (exportConfig.items.length > 0 || exportConfig.sheetRows !== undefined),
+  });
+  const isGrouped = grouped ?? visible.count >= 2;
 
   const flash = (which: "human" | "agent") => {
     setCopied(which);
@@ -148,12 +173,14 @@ export function CopyButtons({
   };
 
   const handleHuman = async () => {
+    if (human === undefined) return;
     await writeClipboard(resolve(human));
     flash("human");
     toast.success(`${label} copied to clipboard`);
   };
 
   const handleAgent = async () => {
+    if (agent === undefined) return;
     const resolved = resolve(agent);
     const text =
       typeof resolved === "string" ? resolved : buildAgentPayload(resolved);
@@ -172,12 +199,15 @@ export function CopyButtons({
   const iconCls =
     size === "xs" ? "h-3 w-3" : size === "icon" ? "h-3.5 w-3.5" : "h-4 w-4";
 
-  const faithfulAgentVariant: AiVariant = {
-    id: agentVariant?.id ?? "everything",
-    label: agentVariant?.label ?? "Everything",
-    hint: agentVariant?.hint ?? "Full faithful payload — never lossy",
-    build: () => resolve(agent),
-  };
+  const faithfulAgentVariant: AiVariant | null =
+    agent === undefined
+      ? null
+      : {
+          id: agentVariant?.id ?? "everything",
+          label: agentVariant?.label ?? "Everything",
+          hint: agentVariant?.hint ?? "Full faithful payload — never lossy",
+          build: () => resolve(agent),
+        };
   const jsonVariant: AiVariant | null =
     json === undefined
       ? null
@@ -195,14 +225,20 @@ export function CopyButtons({
     ...(aiVariants ?? []),
     ...(jsonVariant ? [jsonVariant] : []),
   ];
-  const menuVariants =
-    agentVariant?.position === "first"
+  const menuVariants = !faithfulAgentVariant
+    ? derivedVariants
+    : agentVariant?.position === "first"
       ? [faithfulAgentVariant, ...derivedVariants]
       : [...derivedVariants, faithfulAgentVariant];
   const hasAiMenu =
-    menuVariants.length > 1 || aiCustom !== undefined || groomer !== undefined;
+    menuVariants.length > 1 ||
+    aiCustom !== undefined ||
+    groomer !== undefined ||
+    menuVariants.some((variant) => variant.onSelect || variant.modal);
 
-  const copyButton = (
+  if (visible.count === 0) return null;
+
+  const copyButton = visible.copy ? (
     <Button
       type="button"
       variant="ghost"
@@ -219,9 +255,9 @@ export function CopyButtons({
         <Copy className={iconCls} />
       )}
     </Button>
-  );
+  ) : null;
 
-  const aiButton = hasAiMenu ? (
+  const aiButton = !visible.ai ? null : hasAiMenu ? (
     <AiCopyMenu
       size={size}
       grouped={isGrouped}
@@ -250,26 +286,28 @@ export function CopyButtons({
       )}
     </Button>
   );
-  const aiControl =
-    isGrouped && !hasAiMenu ? (
-      <span className={copyActionCellClass(size)}>{aiButton}</span>
-    ) : (
-      aiButton
-    );
+  const aiControl = !aiButton ? null : isGrouped && !hasAiMenu ? (
+    <span className={copyActionCellClass(size)}>{aiButton}</span>
+  ) : (
+    aiButton
+  );
 
-  const exportControl = exportConfig ? (
-    <ExportMenu
-      label={label}
-      items={exportConfig.items}
-      sheetRows={exportConfig.sheetRows}
-      size={size}
-      grouped={isGrouped}
-    />
-  ) : null;
+  const exportControl =
+    visible.export && exportConfig ? (
+      <ExportMenu
+        label={label}
+        items={exportConfig.items}
+        sheetRows={exportConfig.sheetRows}
+        size={size}
+        grouped={isGrouped}
+      />
+    ) : null;
 
   const actions = isGrouped ? (
     <CopyActionGroup size={size}>
-      <span className={copyActionCellClass(size)}>{copyButton}</span>
+      {copyButton ? (
+        <span className={copyActionCellClass(size)}>{copyButton}</span>
+      ) : null}
       {aiControl}
       {exportControl}
     </CopyActionGroup>

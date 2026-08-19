@@ -70,6 +70,11 @@ export function ExportMenu({
   const isIcon = grouped || size !== "sm";
 
   const handle = (item: ExportItem) => {
+    if (item.onSelect) {
+      item.onSelect();
+      return;
+    }
+    if (!item.build) return;
     const { content, extension, mime } = item.build();
     downloadFile(exportFilename(label, extension), content, mime);
     toast.success(`${label} exported (${extension.toUpperCase()})`);

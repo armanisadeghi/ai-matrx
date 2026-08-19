@@ -28,7 +28,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
 import GenericTablePagination from "@/components/generic-table/GenericTablePagination";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import { cn } from "@/lib/utils";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
@@ -847,31 +846,28 @@ function MatrxDataTableCore<T>({
               </Button>
             ) : null}
             {showToolbarCopy && copy ? (
-              <>
-                <CopyButtons
-                  size="icon"
-                  label={copy.listLabel ?? `${copy.label} view`}
-                  human={() => buildViewHuman(copy, processed, visibleColumns)}
-                  json={() =>
-                    processed.map((r) => (copy.agentRow ? copy.agentRow(r) : r))
-                  }
-                  agent={() =>
-                    buildViewAgentInput(copy, processed, data, {
-                      search: searchValue,
-                      searchMatchMode,
-                      anyOf: anyOfValue,
-                      filterCount:
-                        activeFilterCount +
-                        completeLayeredFilterRules(layeredFilters).length,
-                      sort: sort ? `${sort.id}:${sort.direction}` : null,
-                    })
-                  }
-                  aiVariants={copy.aiVariants?.(processed, data)}
-                  aiCustom={copy.aiCustom?.(processed, data)}
-                />
-                <ExportMenu
-                  label={copy.listLabel ?? `${copy.label} view`}
-                  items={[
+              <CopyButtons
+                size="icon"
+                label={copy.listLabel ?? `${copy.label} view`}
+                human={() => buildViewHuman(copy, processed, visibleColumns)}
+                json={() =>
+                  processed.map((r) => (copy.agentRow ? copy.agentRow(r) : r))
+                }
+                agent={() =>
+                  buildViewAgentInput(copy, processed, data, {
+                    search: searchValue,
+                    searchMatchMode,
+                    anyOf: anyOfValue,
+                    filterCount:
+                      activeFilterCount +
+                      completeLayeredFilterRules(layeredFilters).length,
+                    sort: sort ? `${sort.id}:${sort.direction}` : null,
+                  })
+                }
+                aiVariants={copy.aiVariants?.(processed, data)}
+                aiCustom={copy.aiCustom?.(processed, data)}
+                export={{
+                  items: [
                     jsonExportItem(
                       () =>
                         processed.map((r) =>
@@ -891,12 +887,11 @@ function MatrxDataTableCore<T>({
                         mime: "text/csv",
                       }),
                     },
-                  ]}
-                  sheetRows={() =>
-                    rowsToRecordsFromColumns(processed, visibleColumns)
-                  }
-                />
-              </>
+                  ],
+                  sheetRows: () =>
+                    rowsToRecordsFromColumns(processed, visibleColumns),
+                }}
+              />
             ) : null}
             {toolbar?.actions}
           </div>

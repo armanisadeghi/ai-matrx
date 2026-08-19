@@ -86,6 +86,29 @@ describe("AiCopyMenu chrome", () => {
     expect(button?.getAttribute("aria-label")).toBe("Copy Plan tree for AI");
   });
 
+  it("opens a caller-owned modal from a menu item instead of copying", () => {
+    const onSelect = jest.fn();
+    act(() => {
+      root.render(
+        <AiCopyMenu
+          size="icon"
+          label="Chunks"
+          variants={[
+            { id: "everything", label: "Everything", build: () => "payload" },
+            { id: "customize", label: "Customize…", onSelect },
+          ]}
+        />,
+      );
+    });
+
+    const customize = [...container.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("Customize…"),
+    );
+    expect(customize).toBeDefined();
+    act(() => customize?.click());
+    expect(onSelect).toHaveBeenCalledTimes(1);
+  });
+
   it("offers one Customize option and resolves the Groomer config on selection", () => {
     const getGroomerConfig = jest.fn(() => ({
       label: "Content plan",

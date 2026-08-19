@@ -10,8 +10,13 @@ export interface ExportItem {
   id: string;
   /** Menu row label, e.g. "JSON (raw data)" or "CSV (current view)". */
   label: string;
-  /** Called at click time. */
-  build: () => { content: string; extension: string; mime: string };
+  /** Called at click time to download a file. Omit when the item opens UI. */
+  build?: () => { content: string; extension: string; mime: string };
+  /**
+   * Caller-owned modal/window. Wins over `build` — the item opens UI
+   * instead of downloading.
+   */
+  onSelect?: () => void;
 }
 
 export function downloadFile(
@@ -109,9 +114,7 @@ export function rowsToCsv(
 }
 
 export function csvExportItem(
-  rows:
-    | Array<Record<string, unknown>>
-    | (() => Array<Record<string, unknown>>),
+  rows: Array<Record<string, unknown>> | (() => Array<Record<string, unknown>>),
   label = "CSV",
   columns?: Array<{ key: string; header: string }>,
 ): ExportItem {
@@ -119,10 +122,7 @@ export function csvExportItem(
     id: "csv",
     label,
     build: () => ({
-      content: rowsToCsv(
-        typeof rows === "function" ? rows() : rows,
-        columns,
-      ),
+      content: rowsToCsv(typeof rows === "function" ? rows() : rows, columns),
       extension: "csv",
       mime: "text/csv",
     }),
