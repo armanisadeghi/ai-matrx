@@ -513,6 +513,7 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-08-18 — **THE USER-INPUT LAW fix: `generatePageImage` (the `image_producer` surface-role override path) no longer sends `buildSpec`'s machine-built spec as `user_input`.** It now passes the spec via the `intent_or_content` runtime variable — the same name the two default pipelines (`generatePageImageTwoStep` / `generatePageImageAllInOne`) already used, so all three `PageImagePlanCard` generation modes are consistent — with a short static kick phrase ("Generate the image now.") left in the message. The `image_producer` role's manifest description (`features/surfaces/manifests/marketing-page.manifest.ts`) now states the `intent_or_content` contract so anyone binding an agent to this role knows what variable it must declare (no default agent is currently bound — verified live, `ui.ui_surface_agent_role` / `ui.ui_surface_agent_pref` both empty for this role).
 - 2026-08-18 — Google backend commands now throw the canonical typed
   `BackendApiError`, preserving HTTP status so feature UIs can distinguish
   actionable 4xx input from server failures without hiding either.
