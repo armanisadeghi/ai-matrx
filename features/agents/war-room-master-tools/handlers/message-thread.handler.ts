@@ -51,6 +51,7 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { forkConversationServer } from "@/features/agents/redux/execution-system/message-crud/server/fork-conversation-server.thunk";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectConversationMessages } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import type { ThunkDispatch } from "redux-thunk";
@@ -137,6 +138,20 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
         // Watch + notify BEFORE the run so the window is up as the stream lands.
         notifyAndWatch(dispatch, forkId, threadLabel);
 
+        // KNOWN PLATFORM GAP (THE USER-INPUT LAW, ledgered in FOUND_DEFECTS.md):
+        // args.message is a tool-call argument, not human-typed text, so per
+        // the law it should never ride as user_input. It still does HERE
+        // because a fork is a CONTINUATION of an existing conversation, and
+        // aidream's continuation path (`ConversationResolver.from_conversation_id`,
+        // `services/ai_execution/agent_run.py` `_prepare_continue_run`) has no
+        // per-turn variable/context channel — `request.variables` on a
+        // continuation only stages picklist tokens, never becomes a new
+        // visible turn, and omitting user_input entirely sends no new turn
+        // at all (silently drops the master's message). Until aidream ships
+        // a continuation-turn variable channel, user_input is the only way
+        // to actually deliver this message. Do not "fix" this by switching
+        // to variables — that silently breaks the fork feature rather than
+        // fixing the law violation.
         dispatch(
           setUserInputText({ conversationId: forkId, text: args.message }),
         );
@@ -201,7 +216,19 @@ export const messageThreadHandler: WarRoomMasterToolHandler<
           setContextEntries({ conversationId, entries: contextEntries }),
         );
       }
-      dispatch(setUserInputText({ conversationId, text: args.message }));
+      // THE USER-INPUT LAW: args.message is a TOOL-CALL ARGUMENT the master
+      // agent decided, not something a human typed — it travels as the
+      // declared `thread_message` variable on the `war_room.thread` agent
+      // (verified live: variable_definitions + a `{{thread_message}}`
+      // placeholder on its seed "user" turn), never as user_input. This is
+      // safe only because this is a BRAND-NEW instance: variable
+      // substitution runs once, at conversation creation.
+      dispatch(
+        setUserVariableValues({
+          conversationId,
+          values: { thread_message: args.message },
+        }),
+      );
 
       notifyAndWatch(dispatch, conversationId, threadLabel);
 

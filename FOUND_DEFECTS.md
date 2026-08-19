@@ -17,6 +17,27 @@ First live test of /vision-interview failed with PGRST106: the `interview` schem
 
 ## OPEN
 
+### D215 — aidream continuation runs have no per-turn variable/context channel to deliver a NEW visible message (2026-08-18)
+
+`features/agents/war-room-master-tools/handlers/message-thread.handler.ts` (fork-mode branch,
+~line 141): the war-room master delegates a message into an existing thread conversation via
+`forkConversationServer` + `executeInstance`. The message (`args.message`) is a tool-call
+argument the master agent decided, not human-typed text, so per THE USER-INPUT LAW it should
+travel as a declared variable or context entry, never as `user_input`. The FRESH-mode branch of
+this same handler was fixed that way (new instance → `setUserVariableValues({thread_message})`,
+verified against `war_room.thread`'s live `agent.definition` row, which now declares
+`thread_message` + a `{{thread_message}}` seed "user" turn). **The fork/continuation branch
+cannot use the same fix**: verified live in aidream that `ConversationResolver.from_conversation_id`
+(`services/ai_execution/agent_run.py` `_prepare_continue_run`, `packages/matrx-ai/matrx_ai/agents/resolver.py:99-146`)
+only appends a new turn from `request.user_input` — `request.variables` on a continuation is used
+solely to stage picklist wire-swap tokens, and `agent_config.messages` template substitution
+(the mechanism that fills a `{{var}}` placeholder) runs ONLY on first-turn/new-conversation
+requests. Passing `thread_message` as a variable on a continuation would silently drop the
+master's message — worse than the current violation. **Decision needed:** either aidream adds a
+continuation-turn variable/context channel that surfaces as a real visible turn, or the fork path
+gets a different delegation design (e.g. always start fresh + link history instead of forking).
+Until then `user_input` stays on the fork branch, with a loud in-code comment pointing here.
+
 ### D214 — Google Slides export requests an UNAPPROVED scope through a hand-rolled OAuth path (2026-08-18)
 
 `components/mardown-display/blocks/presentations/presentation-export.ts:345` declares
