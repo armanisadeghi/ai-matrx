@@ -178,23 +178,31 @@ export function authorizePatrolCommit(input: {
         event.state === "certified" && event.certification?.candidateSha === candidateSha,
     );
   if (!certification) problems.push(`candidate ${candidateSha} has no CERTIFIED event`);
-  const queued = [...record.events]
+  const latestDelivery = [...record.events]
     .reverse()
     .find(
       (event) =>
         ["delivery_queued", "delivered"].includes(event.state) &&
         event.delivery?.candidateSha === candidateSha,
     );
-  if (!queued) problems.push(`candidate ${candidateSha} is not in the delivery queue`);
+  if (!latestDelivery) problems.push(`candidate ${candidateSha} is not in the delivery queue`);
   const latest = record.events.at(-1);
-  if (!latest || !["delivery_queued", "delivered"].includes(latest.state)) {
-    problems.push(`run is ${latest?.state ?? "empty"}; latest state must be delivery_queued or delivered`);
+  if (!latest || !["delivery_queued", "delivered", "closed"].includes(latest.state)) {
+    problems.push(
+      `run is ${latest?.state ?? "empty"}; latest state must be delivery_queued, delivered, or closed`,
+    );
   }
-  if (latest?.delivery?.candidateSha !== candidateSha) {
-    problems.push(`latest delivery state does not name exact candidate ${candidateSha}`);
+  if (latest?.state === "closed" && latestDelivery?.state !== "delivered") {
+    problems.push("closed run has no prior delivered state");
   }
-  if (latest?.delivery?.preservedRef !== deterministicAuthorityRef(trailers.patrolId, trailers.runId)) {
-    problems.push("latest delivery state does not name the deterministic remote authority ref");
+  if (latestDelivery?.delivery?.candidateSha !== candidateSha) {
+    problems.push(`latest delivery event does not name exact candidate ${candidateSha}`);
+  }
+  if (
+    latestDelivery?.delivery?.preservedRef !==
+    deterministicAuthorityRef(trailers.patrolId, trailers.runId)
+  ) {
+    problems.push("latest delivery event does not name the deterministic remote authority ref");
   }
   const productPaths = paths.filter((changedPath) => !changedPath.startsWith(".matrx/"));
   if (productPaths.length > 0 && commitSha !== candidateSha) {
