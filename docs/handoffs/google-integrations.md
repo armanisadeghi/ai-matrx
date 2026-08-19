@@ -83,10 +83,23 @@ once the scope is approved. **Opening that campaign is Arman's call.** `FOUND_DE
 - **The agency Search Console credential path.** `aidream/aidream/services/web_credentials/`
   implements a complete second GSC OAuth flow plus service-account support (`google_gsc_sa`,
   documented as "advanced — agencies"), with live routes — and **zero rows, zero UI callers**.
-  Its capability is real and the hub cannot express it: one per-user OAuth grant cannot cover
-  an agency's 200 client sites. Needs finishing or an explicit ruling. Do not delete it.
-- **`aidream/seo/utils/google_suggest_keyword_tool.py`** — orphaned autocomplete scraper in
-  the legacy root-level `seo/`. Needs a verdict, and a check against our do-not-crawl policy.
+  Needs a ruling. Do not delete it. **Audited 2026-08-19 — the framing above was wrong in one
+  load-bearing way:** the hub *does* express per-site override and org ownership already (each
+  site carries its own `credential_ref` + `resource_ref`; live: 429 resource rows, 7/22 sites
+  bound), and this module's own site-pinning path is **broken** — `web.site` has none of the
+  columns it writes. The genuinely missing capability is narrower: **service-account** (rather
+  than OAuth-grant) authentication, which belongs ON the hub, not in a parallel resolver.
+  Three options and the live evidence: `aidream/FOUND_DEFECTS.md` § "web_credentials GSC half";
+  wiring truth: `aidream/aidream/services/web_credentials/FEATURE.md`.
+- **`aidream/seo/utils/google_suggest_keyword_tool.py`** — VERDICT DELIVERED 2026-08-19, awaiting
+  Arman. Orphan status confirmed (no importer, router, tool registration, ORM entry or scheduler
+  handler anywhere). The capability is superseded by written design:
+  `common-docs/systems/seo-keywords/seo-keyword-agent-guide.md:60` names DataForSEO Labs Keyword
+  Ideas / Suggestions / Related as the supplier, and those operations are already declared in
+  `packages/matrx-seo/matrx_seo/providers/dataforseo/`. Separately it is not compliant to run —
+  Google's terms bar automated queries, and the file's own TODO proposes proxy/UA rotation and
+  CAPTCHA solving to get around detection. Recommendation is to retire it; only Arman may say the
+  word. Full reasoning + the two follow-on items: `aidream/FOUND_DEFECTS.md` (2026-08-19).
 
 ### 5. Deeper Workspace capabilities, deliberately scoped out
 Separate doc, still accurate: `docs/handoffs/google-workspace-deeper-integrations.md` —
