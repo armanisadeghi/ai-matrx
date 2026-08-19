@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-19-copy-everywhere",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-19T07:40:15.854Z",
-  "summary": "Certified candidate 8196a478e is queued for fast integration to origin/main.",
+  "state": "delivered",
+  "updatedAt": "2026-08-19T07:47:19.337Z",
+  "summary": "Certified candidate integrated to origin/main and released through the serialized release lane as v0.4.840.",
   "source": "2026-08-19-copy-everywhere.json",
-  "eventHash": "2440793e689d23aa36970e491b5bc2e81fb2ea9c92294293a07eac0903f47c83"
+  "eventHash": "d3386be8af73f0aaa8364726af674eacee0447ff1bba2dbdaad1322673b67a5f"
 }
