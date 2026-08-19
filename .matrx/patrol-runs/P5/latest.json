@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-19-copy-everywhere",
-  "state": "delivery_queued",
-  "updatedAt": "2026-08-19T07:40:15.854Z",
-  "summary": "Certified candidate 8196a478e is queued for fast integration to origin/main.",
+  "state": "closed",
+  "updatedAt": "2026-08-19T07:47:23.847Z",
+  "summary": "Run closed: 3 verified findings, 2 fixed, 1 missing-machinery task remains open; no approvals or exceptions.",
   "source": "2026-08-19-copy-everywhere.json",
-  "eventHash": "2440793e689d23aa36970e491b5bc2e81fb2ea9c92294293a07eac0903f47c83"
+  "eventHash": "b1ed5324c61b20f553633f2bc41aa4dbd4b27148f684ed29a66d63627c39e160"
 }

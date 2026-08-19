@@ -6,6 +6,9 @@
 
 **Certification:** CERTIFIED — exact candidate `8196a478e530cd541714a5611faf5bfdf86bf95b`
 
+**Delivery:** integrated as `872394e1a8502441adef9e279efffb81c9a8bb57`
+and released on `origin/main` as `v0.4.840`
+
 ## Outcome
 
 - The full `MatrxDataTable` detector returned **4 auto-approved candidates**.
@@ -74,6 +77,9 @@ review-only, and the canonical custom-copy workspace stays excluded.
 - Final independent review of exact candidate `8196a478e` returned
   **CERTIFIED**. Both rejected candidates remain ancestors, all required gates
   pass, and no concrete batch-caused defect remains.
+- The certified candidate was integrated to `origin/main` in merge
+  `872394e1a`, then the serialized release lane published `v0.4.840` at
+  `ef97be6b2`. The permanent record is closed with 13 valid hash-chained events.
 - The managed preview lease is owned by
   `/Users/armanisadeghi/code/matrx-frontend`, not this automation worktree.
   This run will not reuse or stop that foreign preview. The candidate changes
@@ -98,7 +104,12 @@ review-only, and the canonical custom-copy workspace stays excluded.
 
 - Human approvals needed: **0**.
 - Exceptions proposed or approved: **0**.
+- Degradation: **none**. The release's non-blocking post-push advisory sweep
+  stalled in `check-dead-relations` after the tag and branch were published;
+  the orphaned process was terminated and its exit trap released the delivery
+  lane. All P5-required gates and the exact-candidate certification passed.
 - Focused machinery task: add row-level AI variants to the canonical
   `MatrxDataTable.copy` contract before repairing the Unwired console.
 - Learning: detector auto-approval must stop when a table file already owns a
-  bespoke clipboard action; consolidation is not a mechanical prop addition.
+  bespoke clipboard action, and empty views need canonical `copy.listContext`
+  so visible KPIs, filters, and errors survive without row bodies.

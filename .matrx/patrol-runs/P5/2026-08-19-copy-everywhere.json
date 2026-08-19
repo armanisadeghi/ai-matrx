@@ -162,6 +162,38 @@
       },
       "previousEventHash": "aef094ee3224704475a14f4f583b954cc7970883c880b81d2c8898c5606fb804",
       "eventHash": "2440793e689d23aa36970e491b5bc2e81fb2ea9c92294293a07eac0903f47c83"
+    },
+    {
+      "sequence": 12,
+      "state": "delivered",
+      "at": "2026-08-19T07:47:19.337Z",
+      "actor": "codex-p5-worker",
+      "summary": "Certified candidate integrated to origin/main and released through the serialized release lane as v0.4.840.",
+      "evidence": [
+        "origin/main ef97be6b2e44e3a917671f235548284868d0da4e carries tag v0.4.840 and contains integration 872394e1a8502441adef9e279efffb81c9a8bb57.",
+        "Candidate 8196a478e530cd541714a5611faf5bfdf86bf95b is an ancestor of the integration and release."
+      ],
+      "delivery": {
+        "candidateSha": "8196a478e530cd541714a5611faf5bfdf86bf95b",
+        "preservedRef": "refs/heads/patrol-runs/P5/2026-08-19-copy-everywhere",
+        "integratedSha": "872394e1a8502441adef9e279efffb81c9a8bb57",
+        "release": "v0.4.840"
+      },
+      "previousEventHash": "2440793e689d23aa36970e491b5bc2e81fb2ea9c92294293a07eac0903f47c83",
+      "eventHash": "d3386be8af73f0aaa8364726af674eacee0447ff1bba2dbdaad1322673b67a5f"
+    },
+    {
+      "sequence": 13,
+      "state": "closed",
+      "at": "2026-08-19T07:47:23.847Z",
+      "actor": "codex-p5-worker",
+      "summary": "Run closed: 3 verified findings, 2 fixed, 1 missing-machinery task remains open; no approvals or exceptions.",
+      "evidence": [
+        "Independent certifier returned CERTIFIED for exact candidate 8196a478e530cd541714a5611faf5bfdf86bf95b.",
+        "Release v0.4.840 is published on origin/main."
+      ],
+      "previousEventHash": "d3386be8af73f0aaa8364726af674eacee0447ff1bba2dbdaad1322673b67a5f",
+      "eventHash": "b1ed5324c61b20f553633f2bc41aa4dbd4b27148f684ed29a66d63627c39e160"
     }
   ]
 }
