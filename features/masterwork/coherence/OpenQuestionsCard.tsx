@@ -32,9 +32,9 @@
 import { useState } from "react";
 import { Check, HelpCircle, MessagesSquare, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { Rulebook } from "../types";
 import { openTensions, TENSION_LABELS, type Tension } from "./types";
 import { settleTension } from "./service";
@@ -126,11 +126,11 @@ export function OpenQuestionsCard({
           const isBusy = busy === tension.id;
           return (
             <li key={tension.id} className="px-4 py-3">
-              <div className="flex items-start gap-2">
-                <Badge variant="outline" className="mt-0.5 shrink-0 text-xs">
+              <div>
+                <Badge variant="outline" className="mb-1.5 text-xs">
                   {TENSION_LABELS[tension.kind]}
                 </Badge>
-                <div className="min-w-0 flex-1">
+                <div>
                   <p className="text-sm">{tension.question}</p>
                   {tension.why ? (
                     <p className="mt-1 text-xs text-muted-foreground">
@@ -141,7 +141,9 @@ export function OpenQuestionsCard({
                   {onOpenRule && tension.rule_ids.length > 0 ? (
                     <div className="mt-1.5 flex flex-wrap gap-1">
                       {tension.rule_ids.map((ruleId) => {
-                        const rule = rulebook.rules.find((r) => r.id === ruleId);
+                        const rule = rulebook.rules.find(
+                          (r) => r.id === ruleId,
+                        );
                         return (
                           <button
                             key={ruleId}
@@ -168,7 +170,9 @@ export function OpenQuestionsCard({
                           type="button"
                           disabled={isBusy}
                           className="block w-full rounded border border-border px-2.5 py-1.5 text-left text-xs hover:bg-accent disabled:opacity-50"
-                          onClick={() => void settle(tension, "answered", option)}
+                          onClick={() =>
+                            void settle(tension, "answered", option)
+                          }
                         >
                           {option}
                         </button>
@@ -178,11 +182,13 @@ export function OpenQuestionsCard({
                           If it helps: {tension.recommendation}
                         </p>
                       ) : null}
-                      <Textarea
+                      <ProTextarea
                         value={draft}
                         onChange={(event) => setDraft(event.target.value)}
                         placeholder="Or say it in your own words — one sentence is plenty."
-                        rows={2}
+                        autoGrow
+                        minHeight={72}
+                        maxHeight={180}
                         className="text-xs"
                       />
                       <div className="flex flex-wrap gap-2">

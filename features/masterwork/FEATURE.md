@@ -795,6 +795,12 @@ deliberately never produced.
 
 ## Change log
 
+- **2026-08-19 — Open coherence questions no longer crush their own content column.** The
+  tension-kind badge now sits above the question instead of as a fixed-width flex sibling, so
+  every question, explanation, rule door, and answer control uses the full card width. The
+  freeform answer now uses the canonical voice-enabled `ProTextarea`, restoring the module's
+  talk-or-type invariant; save failures now use the captured platform toast path.
+
 - **2026-08-19 — The Rulebook is BOUND, not fetched (disease D4).** `rulebook_document` is
   now a declared, required variable on `masterwork.scout` and `masterwork.conductor`,
   rendered once by `agent-context/rulebookDocument.ts` and loaded before any conversation is
