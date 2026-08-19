@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { announceComingSoon } from "@/lib/coming-soon/announce";
 import {
   Download,
   FileText,
@@ -67,12 +68,19 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
     googleApi?.getGrantedScopes().includes(GOOGLE_SLIDES_SCOPE) ?? false;
 
   const baseCapabilities = getExportCapabilities();
-  // Google Slides requires the Google provider; force-disable it when absent.
+  // 🚨 Google Slides is BLOCKED, not merely unconfigured. The export is built,
+  // but it requests `auth/presentations` — a scope that is NOT on our
+  // production OAuth client, so Google refuses the consent step for every user
+  // (verified 2026-08-18, FOUND_DEFECTS D214). Leaving the button live meant
+  // offering a door that silently fails, which is the worst version of this.
+  // It is now a REGISTERED promise: the user gets a real explanation and the
+  // debt is countable. Unblocking it is a provider-access campaign, not a code
+  // change here. PDF / HTML / PowerPoint are fully local and untouched.
   const capabilities = {
     ...baseCapabilities,
     googleSlides: {
       ...baseCapabilities.googleSlides,
-      available: baseCapabilities.googleSlides.available && !!googleApi,
+      available: false,
     },
   };
 
@@ -475,8 +483,16 @@ const PresentationExportMenu: React.FC<PresentationExportMenuProps> = ({
 
             {/* Google Slides Export */}
             <button
-              onClick={() => handleExport("googleSlides")}
-              disabled={isExporting || !capabilities.googleSlides.available}
+              onClick={() => {
+                if (!capabilities.googleSlides.available) {
+                  void announceComingSoon(
+                    "presentations.google-slides-export",
+                  );
+                  return;
+                }
+                void handleExport("googleSlides");
+              }}
+              disabled={isExporting}
               className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-start gap-3 border-t border-gray-100 dark:border-gray-700"
             >
               <svg

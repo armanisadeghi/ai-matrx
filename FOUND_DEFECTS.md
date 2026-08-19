@@ -71,11 +71,17 @@ an unauthenticated OAuth probe is non-discriminating (approved `drive.file` retu
 error). Also note the export uses the GIS browser token client + `localStorage`, a path that never
 writes `integration_connections` — so the DB proves consent-screen history, not the export path.
 
-**Decision, not a fix** (do not silently delete a shipped feature): (a) gate/remove the Slides
-option now — PDF/HTML/PowerPoint are fully local (`jspdf`, `pptxgenjs`) and unaffected, and a
-`.pptx` still opens in Google Slides via upload; or (b) open `google.slides` as its own
-provider-access campaign and rebuild on the canonical connection + a first-party tool. Found while
-publishing the canonical Google Workspace tools; unrelated to that work, so filed rather than fixed.
+**RESOLVED (a), 2026-08-18 — option (b) is Arman's to open.** The dead button is closed: the Slides
+export is now a REGISTERED promise (`presentations.google-slides-export` in
+`lib/coming-soon/registry.ts`, stage `blocked`), so clicking it explains the real blocker instead of
+failing silently at Google's consent step. Nothing was deleted — the export code is intact and
+un-gating it is one line once the scope is approved. PDF/HTML/PowerPoint are fully local (`jspdf`,
+`pptxgenjs`) and untouched, and a `.pptx` still opens in Google Slides via upload.
+
+**Still open, and only Arman can start it:** (b) a `google.slides` provider-access campaign, after
+which the export should be rebuilt on the CANONICAL connection + a first-party tool rather than the
+hand-rolled per-feature OAuth path it uses today. Tracked in the Google integrations handoff
+(`docs/handoffs/google-integrations.md`).
 
 ### D211 — org/project invitation email templates interpolate unescaped user text into HTML (2026-08-18)
 

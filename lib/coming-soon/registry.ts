@@ -14,6 +14,24 @@
 import type { ComingSoonEntry } from "./types";
 
 export const COMING_SOON: Record<string, ComingSoonEntry> = {
+  "presentations.google-slides-export": {
+    id: "presentations.google-slides-export",
+    label: "Create Google Slides",
+    owner: "presentations",
+    promise:
+      "Turn a presentation into a real Google Slides deck in your own Drive.",
+    stage: "blocked",
+    // The export was BUILT and is dead: it requests
+    // `auth/presentations`, which is not on the production OAuth client, so
+    // Google blocks the consent step for every user. Verified 2026-08-18 —
+    // FOUND_DEFECTS D214. It needs its own provider-access campaign, which is
+    // Arman's to open; until then this is an honest promise instead of a
+    // button that silently fails. PDF / HTML / PowerPoint are fully local and
+    // unaffected, and a .pptx opens in Google Slides via upload.
+    blockedBy:
+      "Google has not approved the Slides scope for our app — it needs its own approval campaign (FOUND_DEFECTS D214).",
+    surfaces: ["Presentation export menu"],
+  },
   "agents.create-app": {
     id: "agents.create-app",
     label: "Create App from Agent",
