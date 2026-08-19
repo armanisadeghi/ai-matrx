@@ -22,7 +22,7 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { AppWindow, Cpu, RefreshCcw } from "lucide-react";
+import { AppWindow, Cpu, FileText, RefreshCcw } from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
@@ -53,6 +53,10 @@ import { useConversationDocumentsBridge } from "@/features/agents/hooks/useWorki
 import { selectIsManualExecutionMode } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { cn } from "@/lib/utils";
 import type { Resource } from "@/features/agents/resources/types";
+import { LazyTemplateBrowserModal } from "@/features/message-templates/components/TemplateSelector";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { prependTemplateToDraft } from "@/features/message-templates/utils/prepend-template-to-draft";
 
 const MANUAL_MODE_SETTINGS_HINT =
   "Per-run settings are edited in the builder panel during test runs";
@@ -70,6 +74,8 @@ interface PlusAttachMenuProps {
   /** Admin debug row at the bottom of the attach list. */
   onDebugClick?: () => void;
   showDebugActive?: boolean;
+  /** Expands the host composer after a template is inserted. */
+  onRequestInputExpand?: () => void;
 }
 
 /** Fixed shell height — never use max-h alone; inner sections flex within this box. */
@@ -182,12 +188,14 @@ export function PlusAttachMenu({
   container,
   onDebugClick,
   showDebugActive,
+  onRequestInputExpand,
 }: PlusAttachMenuProps) {
   useConversationDocumentsBridge(conversationId);
 
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<PlusMenuView>("menu");
+  const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
 
   const attachmentCapabilities = useAppSelector(
     selectAttachmentCapabilities(conversationId),
@@ -199,6 +207,7 @@ export function PlusAttachMenu({
   const isManualMode = useAppSelector(
     selectIsManualExecutionMode(conversationId),
   );
+  const inputText = useAppSelector(selectUserInputText(conversationId));
 
   const openRunControlsWindow = useOpenRunControlsWindow();
   const attachResource = useAttachResource(conversationId);
@@ -216,142 +225,173 @@ export function PlusAttachMenu({
     if (!next) setView("menu");
   };
 
-  return (
-    <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent
-        align={align}
-        side={side}
-        sideOffset={8}
-        container={container}
-        className={`flex ${PLUS_ATTACH_MENU_HEIGHT_CLASS} w-96 max-w-[calc(100vw-1rem)] flex-col overflow-hidden border-border p-0`}
-      >
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          {view === "overrides" ? (
-            <div className="flex min-h-full flex-col">
-              <ResourcePickerSubViewHeader
-                title="Overrides"
-                icon={<Cpu className="h-3.5 w-3.5 shrink-0 text-primary" />}
-                onBack={() => setView("menu")}
-              />
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-                <RunConfigOverrides conversationId={conversationId} />
-              </div>
-            </div>
-          ) : (
-            <div className="min-h-full">
-              <ResourcePickerMenu
-                conversationId={conversationId}
-                onResourceSelected={handleResourceSelected}
-                onClose={closeMenu}
-                attachmentCapabilities={attachmentCapabilities}
-                onDebugClick={onDebugClick}
-                showDebugActive={showDebugActive}
-              />
-            </div>
-          )}
-        </div>
+  const insertTemplate = (templateText: string) => {
+    dispatch(
+      setUserInputText({
+        conversationId,
+        text: prependTemplateToDraft(templateText, inputText),
+      }),
+    );
+    onRequestInputExpand?.();
+  };
 
-        <div className="flex shrink-0 flex-col">
-          {/* Model picker + Overrides (inline) + Advanced (settings window).
-              Overrides ≠ Advanced settings — terminology restored 2026-08-11. */}
-          <div className="flex items-center gap-1 border-t border-border px-2 py-1">
-            <QuickRunModelSelect
-              conversationId={conversationId}
-              className="h-6 min-w-0 flex-1"
-            />
-            <button
-              type="button"
-              disabled={isManualMode}
-              title={
-                isManualMode
-                  ? MANUAL_MODE_SETTINGS_HINT
-                  : "Per-run model overrides"
-              }
-              aria-pressed={view === "overrides"}
-              onClick={() => {
-                if (isManualMode) return;
-                setView((v) => (v === "overrides" ? "menu" : "overrides"));
-              }}
-              className={cn(
-                "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium transition-colors",
-                view === "overrides"
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                isManualMode &&
-                  "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
-              )}
-            >
-              <Cpu className="h-3.5 w-3.5 shrink-0" />
-              Overrides
-            </button>
-            <button
-              type="button"
-              disabled={isManualMode}
-              title={
-                isManualMode ? MANUAL_MODE_SETTINGS_HINT : "Advanced settings"
-              }
-              onClick={() => {
-                if (isManualMode) return;
-                closeMenu();
-                openRunControlsWindow({
-                  conversationId,
-                  initialTab: "settings",
-                });
-              }}
-              className={cn(
-                "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
-                isManualMode &&
-                  "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
-              )}
-            >
-              <AppWindow className="h-3.5 w-3.5 shrink-0" />
-              Advanced
-            </button>
+  return (
+    <>
+      <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
+        <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+        <PopoverContent
+          align={align}
+          side={side}
+          sideOffset={8}
+          container={container}
+          className={`flex ${PLUS_ATTACH_MENU_HEIGHT_CLASS} w-96 max-w-[calc(100vw-1rem)] flex-col overflow-hidden border-border p-0`}
+        >
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            {view === "overrides" ? (
+              <div className="flex min-h-full flex-col">
+                <ResourcePickerSubViewHeader
+                  title="Overrides"
+                  icon={<Cpu className="h-3.5 w-3.5 shrink-0 text-primary" />}
+                  onBack={() => setView("menu")}
+                />
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                  <RunConfigOverrides conversationId={conversationId} />
+                </div>
+              </div>
+            ) : (
+              <div className="min-h-full">
+                <ResourcePickerMenu
+                  conversationId={conversationId}
+                  onResourceSelected={handleResourceSelected}
+                  onClose={closeMenu}
+                  attachmentCapabilities={attachmentCapabilities}
+                  onDebugClick={onDebugClick}
+                  showDebugActive={showDebugActive}
+                />
+              </div>
+            )}
           </div>
 
-          {view === "menu" ? (
-            <>
-              <DocumentSwitchesRow conversationId={conversationId} />
-
-              <ContextLensMenuRow conversationId={conversationId} />
-
-              <ComputeLensMenuRow
+          <div className="flex shrink-0 flex-col">
+            {/* Model picker + Overrides (inline) + Advanced (settings window).
+              Overrides ≠ Advanced settings — terminology restored 2026-08-11. */}
+            <div className="flex items-center gap-1 border-t border-border px-2 py-1">
+              <QuickRunModelSelect
                 conversationId={conversationId}
-                onOpenPanel={() => {
+                className="h-6 min-w-0 flex-1"
+              />
+              <button
+                type="button"
+                disabled={isManualMode}
+                title={
+                  isManualMode
+                    ? MANUAL_MODE_SETTINGS_HINT
+                    : "Per-run model overrides"
+                }
+                aria-pressed={view === "overrides"}
+                onClick={() => {
+                  if (isManualMode) return;
+                  setView((v) => (v === "overrides" ? "menu" : "overrides"));
+                }}
+                className={cn(
+                  "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium transition-colors",
+                  view === "overrides"
+                    ? "bg-muted text-foreground"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  isManualMode &&
+                    "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
+                )}
+              >
+                <Cpu className="h-3.5 w-3.5 shrink-0" />
+                Overrides
+              </button>
+              <button
+                type="button"
+                disabled={isManualMode}
+                title={
+                  isManualMode ? MANUAL_MODE_SETTINGS_HINT : "Advanced settings"
+                }
+                onClick={() => {
+                  if (isManualMode) return;
                   closeMenu();
                   openRunControlsWindow({
                     conversationId,
-                    initialTab: "sandbox",
+                    initialTab: "settings",
                   });
                 }}
-              />
+                className={cn(
+                  "inline-flex h-6 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
+                  isManualMode &&
+                    "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
+                )}
+              >
+                <AppWindow className="h-3.5 w-3.5 shrink-0" />
+                Advanced
+              </button>
+            </div>
 
-              {/* "Enter submits" deliberately does NOT render here — it lives in
+            {view === "menu" ? (
+              <>
+                <div className="border-t border-border px-2 py-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMenu();
+                      setTemplateBrowserOpen(true);
+                    }}
+                    className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-xs font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Message templates
+                  </button>
+                </div>
+                <DocumentSwitchesRow conversationId={conversationId} />
+
+                <ContextLensMenuRow conversationId={conversationId} />
+
+                <ComputeLensMenuRow
+                  conversationId={conversationId}
+                  onOpenPanel={() => {
+                    closeMenu();
+                    openRunControlsWindow({
+                      conversationId,
+                      initialTab: "sandbox",
+                    });
+                  }}
+                />
+
+                {/* "Enter submits" deliberately does NOT render here — it lives in
                   Chat Options → Quickset, and per Arman (2026-08-08) every version
                   of this menu must be identical (the new-chat variant had an extra
                   full-width row the normal chat lacked). */}
-              {foldToolbarExtras && shouldShowAutoClearToggle && (
-                <div className="flex flex-col gap-0.5 border-t border-border px-2 py-1.5">
-                  <label className="flex cursor-pointer items-center justify-between gap-2 rounded-md px-1 py-1 hover:bg-muted/50">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
-                      <RefreshCcw className="h-3.5 w-3.5" />
-                      Auto-clear
-                    </span>
-                    <Switch
-                      checked={autoClear}
-                      onCheckedChange={(value) =>
-                        dispatch(setAutoClearMode({ conversationId, value }))
-                      }
-                      aria-label="Toggle auto-clear conversation"
-                    />
-                  </label>
-                </div>
-              )}
-            </>
-          ) : null}
-        </div>
-      </PopoverContent>
-    </Popover>
+                {foldToolbarExtras && shouldShowAutoClearToggle && (
+                  <div className="flex flex-col gap-0.5 border-t border-border px-2 py-1.5">
+                    <label className="flex cursor-pointer items-center justify-between gap-2 rounded-md px-1 py-1 hover:bg-muted/50">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+                        <RefreshCcw className="h-3.5 w-3.5" />
+                        Auto-clear
+                      </span>
+                      <Switch
+                        checked={autoClear}
+                        onCheckedChange={(value) =>
+                          dispatch(setAutoClearMode({ conversationId, value }))
+                        }
+                        aria-label="Toggle auto-clear conversation"
+                      />
+                    </label>
+                  </div>
+                )}
+              </>
+            ) : null}
+          </div>
+        </PopoverContent>
+      </Popover>
+      <LazyTemplateBrowserModal
+        isOpen={templateBrowserOpen}
+        onClose={() => setTemplateBrowserOpen(false)}
+        role="user"
+        onSelectTemplate={insertTemplate}
+      />
+    </>
   );
 }

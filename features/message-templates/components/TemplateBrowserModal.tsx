@@ -47,7 +47,7 @@ import { idMatchesQuery } from "@/utils/search-scoring";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type { ContentSource } from "@/features/rich-document/types";
 
-interface TemplateBrowserModalProps {
+export interface TemplateBrowserModalProps {
   isOpen: boolean;
   onClose: () => void;
   role?: MessageRole;

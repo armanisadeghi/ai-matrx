@@ -56,6 +56,7 @@ interface AgentTextareaProps {
   enablePasteImages?: boolean;
   surfaceKey?: string;
   disableSend?: boolean;
+  initiallyExpanded?: boolean;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -74,11 +75,12 @@ export function AgentTextarea({
   enablePasteImages = true,
   surfaceKey,
   disableSend = false,
+  initiallyExpanded = false,
 }: AgentTextareaProps) {
   const dispatch = useAppDispatch();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(initiallyExpanded && !singleRow);
   // When collapsing back from expanded mode (e.g. after submit) we want a
   // longer, eased transition for a smooth glide down — distinct from the fast
   // per-keystroke auto-resize, which must stay snappy to avoid flicker.
@@ -152,7 +154,9 @@ export function AgentTextarea({
 
   const handleSteerSend = useCallback(() => {
     if (disableSend) return;
-    dispatch(smartExecute({ conversationId, surfaceKey, whileRunning: "steer" }));
+    dispatch(
+      smartExecute({ conversationId, surfaceKey, whileRunning: "steer" }),
+    );
   }, [disableSend, conversationId, surfaceKey, dispatch]);
 
   const handleInterruptSend = useCallback(() => {

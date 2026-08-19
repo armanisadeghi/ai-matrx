@@ -28,12 +28,19 @@
  */
 
 import { useState } from "react";
-import { SlidersHorizontal, Plus, Maximize2, Minimize2 } from "lucide-react";
+import {
+  FileText,
+  SlidersHorizontal,
+  Plus,
+  Maximize2,
+  Minimize2,
+} from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
 } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 import { useDialogContainer } from "@/components/ui/dialog";
 import { usePopoutContainer } from "@/features/window-panels/popout/usePopoutContainer";
 import { cn } from "@/lib/utils";
@@ -49,6 +56,11 @@ import {
   type RunControlsTab,
 } from "./RunControlsTabPanel";
 import type { Resource } from "@/features/agents/resources/types";
+import { LazyTemplateBrowserModal } from "@/features/message-templates/components/TemplateSelector";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import { prependTemplateToDraft } from "@/features/message-templates/utils/prepend-template-to-draft";
 
 export interface RunControlsMenuProps {
   conversationId: string;
@@ -63,6 +75,7 @@ export interface RunControlsMenuProps {
    * toolbar buttons and must not be duplicated.
    */
   foldToolbarExtras?: boolean;
+  onRequestInputExpand?: () => void;
 }
 
 export function RunControlsMenu({
@@ -72,7 +85,9 @@ export function RunControlsMenu({
   align = variant === "plus" ? "start" : "end",
   side = variant === "plus" ? "top" : "bottom",
   foldToolbarExtras = false,
+  onRequestInputExpand,
 }: RunControlsMenuProps) {
+  const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const dialogContainer = useDialogContainer();
   const popoutContainer = usePopoutContainer();
@@ -86,8 +101,20 @@ export function RunControlsMenu({
 
   const [open, setOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
   const [tab, setTab] = useState<RunControlsTab>(rc.defaultTab);
   const activeTab = rc.resolveTab(tab);
+  const inputText = useAppSelector(selectUserInputText(conversationId));
+
+  const insertTemplate = (templateText: string) => {
+    dispatch(
+      setUserInputText({
+        conversationId,
+        text: prependTemplateToDraft(templateText, inputText),
+      }),
+    );
+    onRequestInputExpand?.();
+  };
 
   const attachResource = useAttachResource(conversationId);
   const handleResourceSelected = async (resource: Resource) => {
@@ -158,6 +185,7 @@ export function RunControlsMenu({
           align={align}
           side={side}
           foldToolbarExtras={foldToolbarExtras}
+          onRequestInputExpand={onRequestInputExpand}
         />
       );
     }
@@ -172,15 +200,45 @@ export function RunControlsMenu({
           open={open}
           onOpenChange={handleOpenChange}
           title="Chat options"
-          tabs={rc.tabs.map((t) => ({
-            id: t.id,
-            label: t.label,
-            icon: t.icon,
-            trailing: rc.tabTrailing(t.id),
-            content: (
-              <RunControlsTabPanel {...panelProps} activeTab={t.id} fill />
-            ),
-          }))}
+          tabs={[
+            ...(variant === "plus"
+              ? [
+                  {
+                    id: "message-templates",
+                    label: "Templates",
+                    icon: FileText,
+                    content: (
+                      <div className="p-4">
+                        <Button
+                          className="w-full"
+                          onClick={() => {
+                            setOpen(false);
+                            setTemplateBrowserOpen(true);
+                          }}
+                        >
+                          Browse message templates
+                        </Button>
+                      </div>
+                    ),
+                  },
+                ]
+              : []),
+            ...rc.tabs.map((t) => ({
+              id: t.id,
+              label: t.label,
+              icon: t.icon,
+              trailing: rc.tabTrailing(t.id),
+              content: (
+                <RunControlsTabPanel {...panelProps} activeTab={t.id} fill />
+              ),
+            })),
+          ]}
+        />
+        <LazyTemplateBrowserModal
+          isOpen={templateBrowserOpen}
+          onClose={() => setTemplateBrowserOpen(false)}
+          role="user"
+          onSelectTemplate={insertTemplate}
         />
       </>
     );

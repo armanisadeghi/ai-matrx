@@ -16,6 +16,7 @@ import { FileText } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import type { MessageRole } from "@/features/message-templates/types/message-templates-db";
+import type { TemplateBrowserModalProps } from "./TemplateBrowserModal";
 
 export interface TemplateSelectorProps {
   role: MessageRole;
@@ -59,6 +60,19 @@ const TemplateSelectorImpl = dynamic(
     loading: () => <TemplateSelectorTrigger disabled />,
   },
 );
+
+const TemplateBrowserModal = dynamic(
+  () =>
+    import("./TemplateBrowserModal").then(
+      (module) => module.TemplateBrowserModal,
+    ),
+  { ssr: false },
+);
+
+/** Lazy front door for integrations that already own their trigger. */
+export function LazyTemplateBrowserModal(props: TemplateBrowserModalProps) {
+  return props.isOpen ? <TemplateBrowserModal {...props} /> : null;
+}
 
 export function TemplateSelector(props: TemplateSelectorProps) {
   const [activated, setActivated] = useState(false);

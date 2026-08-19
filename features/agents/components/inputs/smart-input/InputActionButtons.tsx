@@ -104,6 +104,7 @@ interface InputActionButtonsProps {
   /** Fired when mic recording or final transcription is in flight. */
   onVoiceBusyChange?: (busy: boolean) => void;
   extraRightControls?: React.ReactNode;
+  onRequestInputExpand?: () => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -118,6 +119,7 @@ export function InputActionButtons({
   disableSend = false,
   onVoiceBusyChange,
   extraRightControls,
+  onRequestInputExpand,
 }: InputActionButtonsProps) {
   const dispatch = useAppDispatch();
   const [voiceBusy, setVoiceBusy] = useState(false);
@@ -191,6 +193,7 @@ export function InputActionButtons({
           conversationId={conversationId}
           variant="plus"
           includeAttach={showAttachments}
+          onRequestInputExpand={onRequestInputExpand}
         />
 
         {/* Bound sandbox / local PC only — connect via `+` → ComputeLensBar. */}

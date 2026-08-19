@@ -23,6 +23,9 @@ or unresolved paths before it creates an approvable interaction.
   may be consumed cross-org; internal templates may not.
 - `/settings/message-templates/new` is the repair door when the single-send surface finds no
   email-ready template.
+- The Smart Agent Input `+` menu opens the canonical `TemplateBrowserModal` filtered to user
+  messages. Selection prepends the template, then one blank line, then the byte-identical
+  existing draft; the standard composer opens its expanded writing view automatically.
 
 ## Reuse-first record
 
@@ -34,5 +37,7 @@ domain-local formatter were not safe send primitives.
 
 ## Change log
 
+- **2026-08-19** — Reused the canonical browser in chat's Smart Agent Input; template insertion
+  preserves existing drafts and automatically expands the composer.
 - **2026-08-15** — Added email-subject authoring and documented this existing feature as the
   shared frontend half of the message-template primitive.

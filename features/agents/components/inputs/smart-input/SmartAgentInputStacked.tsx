@@ -68,6 +68,7 @@ export function SmartAgentInputStacked({
   // transcript — submitting mid-voice drops the trailing audio and leaves the
   // recorder running.
   const [voiceBusy, setVoiceBusy] = useState(false);
+  const [expandRequestKey, setExpandRequestKey] = useState(0);
   // Hooks must run unconditionally — `conversationId` may be null on
   // first render, but the selectors short-circuit when it is and the
   // early-return below renders the uninitialized shell instead.
@@ -178,6 +179,7 @@ export function SmartAgentInputStacked({
 
       {/* Textarea — owns its own height transition for smooth flow */}
       <AgentTextarea
+        key={`composer-${expandRequestKey}`}
         conversationId={conversationId}
         compact={compact}
         uploadRoot={uploadRoot}
@@ -185,6 +187,7 @@ export function SmartAgentInputStacked({
         enablePasteImages={enablePasteImages}
         surfaceKey={surfaceKey}
         disableSend={sendBlocked}
+        initiallyExpanded={expandRequestKey > 0}
       />
 
       {/* Toolbar — always pinned at the bottom */}
@@ -200,6 +203,7 @@ export function SmartAgentInputStacked({
         disableSend={sendBlocked}
         onVoiceBusyChange={setVoiceBusy}
         extraRightControls={extraRightControls}
+        onRequestInputExpand={() => setExpandRequestKey((key) => key + 1)}
       />
     </SmartInputFileDropTarget>
   );
