@@ -657,7 +657,8 @@ DISTINCT`, resolved parent-first down the tree (`setup/service.ts#identityKey`,
   `web.site.settings.content_plan.archetype = {key, counts, concept_names?,
 instantiated_at}` — byte-identical to what aidream's `_record_site_archetype`
   writes (`concept_names` only when names were chosen), MERGED into the
-  `content_plan` block that already carries `vertical`, and guarded by the
+  `content_plan` block (which no longer carries `vertical` — that moved to the
+  `web.site.plan_profile_id` FK, WF-10), and guarded by the
   row's `version`. Nothing extra is stored beside it. In particular **child
   NAMES are not persisted** — they are re-derived from the live plan's own child
   labels (`namesFromPlan` in `setup/components/SetupView.tsx`, adopting only
