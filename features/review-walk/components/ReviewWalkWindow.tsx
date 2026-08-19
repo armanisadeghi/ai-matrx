@@ -3,26 +3,27 @@
 /**
  * ReviewWalkWindow — the drill-down review walk (Dynamic Agent Graph S3-A).
  *
- * A human walks DOWN from a bad output one layer at a time. Each layer shows
- * the inputs that step received and asks one question — "are these inputs
- * correct?" — with two verb-labeled answers:
+ * The root of a chat walk is a TRUE TURN: what the user sent, the context the
+ * system added (consolidated + counted, never masquerading as messages), the
+ * call setup, and the agent's response broken into its real parts (thinking,
+ * tool calls with results, text) in order. Turns are tabs; switching a tab
+ * re-roots the walk on that turn's assistant message. Provider framing (tool
+ * results as "user" messages) never reaches this surface.
  *
- *   - "These inputs are fine — the fault is HERE" → file a hindsight finding
- *     at this layer (POST /review/findings/from-walk with the full hop list).
- *   - per-input "This input is wrong" → descend into that input's producer
- *     and ask the same question one layer down.
- *
- * Multi-instance floating WindowPanel (modeled on GscDrilldownWindow): one
- * walk per walked unit, breadcrumbs to climb back up, honest stop states for
- * 404 (nothing captured) / 403 (someone else's conversation or run) — descent
- * stopping is an ANSWER, never a dead-end error toast.
+ * Marking an input wrong descends into its producer one layer down (deep
+ * layers render the same grouped sections); "the fault is here" files a
+ * hindsight finding with the full hop trail via POST /review/findings/from-walk.
+ * 404/403 stops are ANSWERS, rendered honestly in place.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowDown,
+  Braces,
   CheckCircle2,
+  ChevronsDown,
+  ChevronsUp,
   Crosshair,
   Loader2,
 } from "lucide-react";
@@ -34,6 +35,11 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 import { descend, describeWalkError, findingFromWalk } from "../api";
+import {
+  loadConversationTurns,
+  turnIndexForMessage,
+  type ConversationTurns,
+} from "../turns";
 import type {
   DescendInput,
   DescendOut,
@@ -43,7 +49,13 @@ import type {
   WalkLever,
   WalkUnitKind,
 } from "../types";
-import { ConfidenceBadge, WalkInputCard } from "./WalkInputCard";
+import {
+  ConfidenceBadge,
+  GroupedInputsView,
+  TurnDiagnosisView,
+  type ExpandBaseline,
+  type ExpandState,
+} from "./TurnDiagnosis";
 
 export interface ReviewWalkWindowProps {
   onClose: () => void;
@@ -103,6 +115,28 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
   const [submitting, setSubmitting] = useState(false);
   const [receipt, setReceipt] = useState<FindingFromWalkOut | null>(null);
 
+  // ── turn model (root chat layers only) ──────────────────────────────────
+  const [turnsData, setTurnsData] = useState<ConversationTurns | null>(null);
+  const [turnsFailed, setTurnsFailed] = useState(false);
+  const [activeRootId, setActiveRootId] = useState(unitId);
+
+  // ── display state ───────────────────────────────────────────────────────
+  const [raw, setRaw] = useState(false);
+  const [baseline, setBaseline] = useState<ExpandBaseline>("default");
+  const [overrides, setOverrides] = useState<Record<string, boolean>>({});
+  const expand: ExpandState = { baseline, overrides };
+  const handleToggle = useCallback((id: string, expanded: boolean) => {
+    setOverrides((prev) => ({ ...prev, [id]: expanded }));
+  }, []);
+  const expandAll = () => {
+    setBaseline("expanded");
+    setOverrides({});
+  };
+  const collapseAll = () => {
+    setBaseline("collapsed");
+    setOverrides({});
+  };
+
   const loadLayer = useCallback(
     async (kind: WalkUnitKind, id: string, atIndex: number) => {
       setLayers((prev) => [
@@ -147,6 +181,45 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
 
   const current = layers[layers.length - 1] ?? null;
   const currentIndex = layers.length - 1;
+  const root = layers[0] ?? null;
+
+  // Load the turn model once the root layer names its conversation.
+  const turnsRequested = useRef(false);
+  const rootConversationId =
+    root?.status === "loaded" ? (root.out?.unit.conversation_id ?? null) : null;
+  useEffect(() => {
+    if (turnsRequested.current) return;
+    if (unitKind !== "assistant_message" || !rootConversationId) return;
+    turnsRequested.current = true;
+    loadConversationTurns(rootConversationId)
+      .then(setTurnsData)
+      .catch((error) => {
+        // The turn model is an enhancement — the grouped descend view below
+        // still stands on its own. Loud in console, honest in UI.
+        console.error("[review-walk] turn model failed to load", error);
+        setTurnsFailed(true);
+      });
+  }, [unitKind, rootConversationId]);
+
+  const activeTurnIndex = turnsData
+    ? turnIndexForMessage(turnsData.turns, activeRootId)
+    : -1;
+  const activeTurn =
+    activeTurnIndex >= 0 && turnsData ? turnsData.turns[activeTurnIndex] : null;
+
+  /** Re-root the whole walk on another turn's assistant message. */
+  const switchToTurn = (turnIndex: number) => {
+    const turn = turnsData?.turns[turnIndex];
+    if (!turn?.rootAssistantMessageId) return;
+    if (turn.rootAssistantMessageId === activeRootId) return;
+    setHops([]);
+    setFiling(null);
+    setReceipt(null);
+    setOverrides({});
+    setBaseline("default");
+    setActiveRootId(turn.rootAssistantMessageId);
+    void loadLayer("assistant_message", turn.rootAssistantMessageId, 0);
+  };
 
   /** Climb back up: keep layers 0..index, drop deeper hops, cancel filing. */
   const jumpTo = (index: number) => {
@@ -207,8 +280,7 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
     }
     setSubmitting(true);
     try {
-      const snapshotId =
-        current.out?.producer?.snapshot_id ?? null;
+      const snapshotId = current.out?.producer?.snapshot_id ?? null;
       const finalHops: RecordedHop[] = [
         ...hops,
         {
@@ -226,10 +298,10 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
           layers.flatMap((l) => l.out?.snapshot_refs ?? []).filter(Boolean),
         ),
       );
-      const root = layers[0];
+      const rootLayer = layers[0];
       const out = await findingFromWalk({
-        unit_kind: root?.unitKind ?? unitKind,
-        unit_id: root?.unitId ?? unitId,
+        unit_kind: rootLayer?.unitKind ?? unitKind,
+        unit_id: rootLayer?.unitId ?? unitId,
         hops: finalHops.map((h, i) => ({
           hop: i,
           unit_kind: h.unitKind,
@@ -260,10 +332,10 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
   const vw = typeof window !== "undefined" ? window.innerWidth : 1280;
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
   const rect = {
-    width: Math.min(720, vw - 32),
-    height: Math.min(640, vh - 32),
-    x: Math.max(0, Math.min((vw - 720) / 2 + cascade, vw - 320)),
-    y: Math.max(0, Math.min((vh - 640) / 4 + cascade, vh - 240)),
+    width: Math.min(860, vw - 32),
+    height: Math.min(700, vh - 32),
+    x: Math.max(0, Math.min((vw - 860) / 2 + cascade, vw - 320)),
+    y: Math.max(0, Math.min((vh - 700) / 5 + cascade, vh - 240)),
   };
 
   const hindsightHref = receipt
@@ -271,6 +343,9 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
       ? `/agents/${agentId}/hindsight?enrollment=${receipt.enrollment_id}&finding=${receipt.finding_id}`
       : `/administration/agents/hindsight?enrollment=${receipt.enrollment_id}&finding=${receipt.finding_id}`
     : null;
+
+  const atRoot = layers.length === 1;
+  const showTurnView = atRoot && activeTurn !== null;
 
   return (
     <WindowPanel
@@ -283,6 +358,90 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
       <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
+        {/* ── turn tabs + display controls ─────────────────────────────── */}
+        {!receipt && (
+          <div className="flex items-center gap-2 border-b border-border px-3 py-1.5">
+            {turnsData && turnsData.turns.length > 0 && atRoot ? (
+              <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+                {turnsData.hasOlder && (
+                  <span
+                    className="shrink-0 pr-1 text-[10px] text-muted-foreground"
+                    title="Older turns exist beyond the loaded window."
+                  >
+                    …
+                  </span>
+                )}
+                {turnsData.turns.map((turn, i) => (
+                  <button
+                    key={turn.index}
+                    type="button"
+                    onClick={() => switchToTurn(i)}
+                    disabled={!turn.rootAssistantMessageId}
+                    className={cn(
+                      "h-7 shrink-0 rounded-full px-3 text-xs transition-colors",
+                      i === activeTurnIndex
+                        ? "bg-primary text-primary-foreground font-medium"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                      !turn.rootAssistantMessageId && "opacity-50",
+                    )}
+                    title={
+                      turn.userText
+                        ? turn.userText.slice(0, 120)
+                        : `Turn ${turn.index}`
+                    }
+                  >
+                    Turn {turn.index}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                {atRoot
+                  ? turnsFailed
+                    ? "Turn history unavailable — showing this call's recorded inputs."
+                    : unitKind === "assistant_message"
+                      ? "Loading turns…"
+                      : UNIT_LABELS[unitKind] ?? unitKind
+                  : "Walking one layer down"}
+              </div>
+            )}
+            <div className="flex shrink-0 items-center gap-1">
+              <button
+                type="button"
+                onClick={expandAll}
+                className="inline-flex h-7 items-center gap-1 rounded-full px-2 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                title="Expand everything"
+              >
+                <ChevronsDown className="h-3.5 w-3.5" aria-hidden />
+                Expand all
+              </button>
+              <button
+                type="button"
+                onClick={collapseAll}
+                className="inline-flex h-7 items-center gap-1 rounded-full px-2 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+                title="Collapse everything"
+              >
+                <ChevronsUp className="h-3.5 w-3.5" aria-hidden />
+                Collapse all
+              </button>
+              <button
+                type="button"
+                onClick={() => setRaw((v) => !v)}
+                className={cn(
+                  "inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-[11px] transition-colors",
+                  raw
+                    ? "border-primary bg-primary/10 font-medium text-foreground"
+                    : "border-border text-muted-foreground hover:text-foreground",
+                )}
+                title="Show the raw stored data instead of the readable view"
+              >
+                <Braces className="h-3.5 w-3.5" aria-hidden />
+                Raw
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Breadcrumb trail of hops walked so far — each climbs back up. */}
         {layers.length > 1 && !receipt && (
           <div className="flex flex-wrap items-center gap-1 border-b border-border px-3 py-2">
@@ -352,26 +511,25 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
                 </div>
               )}
 
-              <div className="text-xs font-medium text-muted-foreground">
-                The inputs this step had. Are they correct?
-              </div>
-
-              {(current.out.inputs ?? []).length === 0 ? (
-                <div className="rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
-                  No recorded inputs for this unit. If the output is wrong, the
-                  fault is here.
-                </div>
+              {showTurnView && activeTurn ? (
+                <TurnDiagnosisView
+                  turn={activeTurn}
+                  out={current.out}
+                  raw={raw}
+                  expand={expand}
+                  onToggle={handleToggle}
+                  disabled={submitting || filing !== null}
+                  onInputWrong={handleInputWrong}
+                />
               ) : (
-                <div className="space-y-2">
-                  {(current.out.inputs ?? []).map((input) => (
-                    <WalkInputCard
-                      key={input.key}
-                      input={input}
-                      disabled={submitting || filing !== null}
-                      onInputWrong={handleInputWrong}
-                    />
-                  ))}
-                </div>
+                <GroupedInputsView
+                  out={current.out}
+                  raw={raw}
+                  expand={expand}
+                  onToggle={handleToggle}
+                  disabled={submitting || filing !== null}
+                  onInputWrong={handleInputWrong}
+                />
               )}
 
               {filing ? (
@@ -393,14 +551,14 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
                 <div className="flex flex-col gap-2 border-t border-border pt-3 sm:flex-row">
                   <Button
                     type="button"
-                    className="h-10 w-full gap-1.5 sm:w-auto"
+                    className="h-10 w-full gap-1.5 rounded-full sm:w-auto"
                     onClick={handleFaultHere}
                   >
                     <Crosshair className="h-4 w-4" aria-hidden />
                     These inputs are fine — the fault is HERE
                   </Button>
                   <div className="self-center text-[11px] text-muted-foreground">
-                    …or mark the wrong input above to go one layer down.
+                    …or mark the wrong item above to trace where it came from.
                   </div>
                 </div>
               )}
@@ -620,7 +778,7 @@ function FilingPanel({
                 setLever(lever === option.value ? "" : option.value)
               }
               className={cn(
-                "h-9 rounded-md border px-2.5 text-xs",
+                "h-9 rounded-full border px-3 text-xs",
                 lever === option.value
                   ? "border-primary bg-primary/10 font-medium text-foreground"
                   : "border-border text-muted-foreground hover:text-foreground",
@@ -634,7 +792,7 @@ function FilingPanel({
       <div className="flex flex-col gap-2 pt-1 sm:flex-row">
         <Button
           type="button"
-          className="h-10 w-full gap-1.5 sm:w-auto"
+          className="h-10 w-full gap-1.5 rounded-full sm:w-auto"
           disabled={submitting || title.trim().length < 3}
           onClick={onSubmit}
         >
@@ -648,7 +806,7 @@ function FilingPanel({
         <Button
           type="button"
           variant="outline"
-          className="h-10 w-full sm:w-auto"
+          className="h-10 w-full rounded-full sm:w-auto"
           disabled={submitting}
           onClick={onCancel}
         >

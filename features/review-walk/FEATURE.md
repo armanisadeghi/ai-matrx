@@ -38,10 +38,18 @@ error toast):
 |---|---|
 | `types.ts` | contract aliases + walk state shapes (`WalkLayer`, `RecordedHop`) |
 | `api.ts` | typed client (`descend`, `findingFromWalk`, `describeWalkError`) — same pattern as `features/hindsight/api.ts`, deliberately NOT merged into it (that file is admin-scoped and separately owned) |
-| `components/ReviewWalkWindow.tsx` | the multi-instance floating window: breadcrumb hop trail, layer header (model/provider/iteration + confidence), inputs list, filing panel, receipt panel |
-| `components/WalkInputCard.tsx` | one input: label, producer + `linked`/`inferred` confidence badge (icon+word, never color alone), chars/truncated, expand-collapse (no nested scroll), per-answer note, "This input is wrong" |
-| `components/NegativeVerdictFollowUp.tsx` | the entry strip — renders ONLY while a negative verdict exists on the message: `[Diagnose] [Attach your version]` |
+| `turns.ts` | the TRUE-TURN model: folds the conversation (fetched DIRECT from Supabase via the canonical `fetchConversationBundle` + parsed through `parsePersistedMessageContent` — never a second parser) into turns: user message, context items, attachments, toolset, collab notes, and the agent's response parts (thinking / tool+result / text) in order. Provider framing (tool results as "user" messages) never reaches the UI |
+| `components/ReviewWalkWindow.tsx` | the multi-instance floating window: TURN TABS at the root (switching re-roots the walk on that turn's assistant message), expand-all/collapse-all + Pretty↔Raw toggle, breadcrumb hop trail, layer header, filing panel, receipt panel |
+| `components/TurnDiagnosis.tsx` | all presentation: `TurnDiagnosisView` (root chat layer — sections You sent / Context (N, collapsed) / Call setup / What the agent did / Also on this call), `GroupedInputsView` (deeper layers + non-chat units — descend inputs grouped the same way), `DiagCard` collapsible cards, pretty renderers (toolset chips, key-value args tables — JSON only in explicit Raw mode or for unknown payloads), the deliberate two-step "This is wrong" (open → optional note → Trace/Pin), `ConfidenceBadge` |
+| `components/NegativeVerdictFollowUp.tsx` | the entry strip — renders ONLY while a negative verdict exists on the message: `[Diagnose] [Attach your version] [?]` as rounded pills matching the tap-button bar, with a help popover explaining both actions |
 | `components/AttachVersionDialog.tsx` | O1 corrected-output editor → `captureCorrection` (`lib/output-feedback`) |
+
+Display defaults: the user's message and the FINAL assistant text are expanded;
+everything else (thinking, tools, context, setup) folds closed. Context is one
+counted, collapsed group — context items are never presented as messages or as
+"inputs the user gave". The turn model failing to load is an enhancement
+failure only — the window falls back to `GroupedInputsView` over the descend
+payload with an honest banner.
 | `features/overlays/openers/reviewWalkWindow.tsx` | multi-instance opener; deterministic instanceId `review-walk\|{unit_kind}\|{unit_id}`, focus-don't-duplicate (modeled on `gscDrilldownWindow`) |
 
 Overlay registration: `reviewWalkWindow` in
