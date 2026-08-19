@@ -303,15 +303,27 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    every count opens `PlanDriftSheet` on those rows. Repairs dry-run first and
    reuse `bridgeAdopt` / `bridgeResolveConflict` / realize / publish. Sync is
    the explicit immediate re-check; focus and reconnect never trigger writes.
-2. **Node panel** (`NodePanel.tsx`): label/slug/type, page-type + status
-   category pickers, priority, technical depth, needs-reviewer, brief
-   (line-per-bullet), vertical attributes (schema-driven,
-   `AttributesEditor.tsx`), and the canonical `SeoPlanEditor` over the node's
-   `web.page` plan record. `useNodeSeoPlan` resolves the CMS id join or route
-   index; an unlinked node shows the honest state plus ONE action through
-   `ensurePlannedPages`, then mounts the editor. No fallback reads or writes
-   `plan.node` SEO fields or secondary-keyword edges. Topic and entity
-   attachments remain in `NodeAssociations`.
+2. **Node panel** (`NodePanel.tsx`) — **THE PIPELINE IS THE PAGE (Arman
+   ruling, 2026-08-17; restructured in the same change).** The `NodeStepRail`
+   chips ARE the panel's tab strip: `Page | Keywords | Research | Family |
+   Write | Review | Build | Publish`. Every chip is always clickable — an
+   un-run step is a place to GO, never a dimmed dead control — and the run
+   arrows stay beside the chips. Content lives INSIDE its step, in flow
+   order: **Page** = label/slug/type, page-type + status pickers, priority,
+   technical depth, needs-reviewer, vertical attributes
+   (`AttributesEditor.tsx`), topic/entity attachments (`NodeAssociations`);
+   **Keywords** = the ONE canonical `SeoPlanEditor` over the node's
+   `web.page` plan record (`useNodeSeoPlan` resolves the CMS id join or
+   route index; an unlinked node shows the honest state plus ONE action via
+   `ensurePlannedPages`, then mounts the editor — no fallback reads or
+   writes `plan.node` SEO fields); **Research** = brief + lineage;
+   **Write** = "Write with AI" (the same p4 run the arrow fires, one shared
+   `usePageStepRun` — never a second seam) + the words editor
+   (`PageDraftEditor`); **Family** and **Review** render their artifact
+   INLINE through the canonical kind path; **Build** = reality card;
+   **Publish** = reality + live measurement. Opening a node lands on the
+   first thing it still NEEDS (`defaultTabFor`: no keyword → Keywords, no
+   brief → Research, else Write).
 
    🚨 **A KEYWORD-LESS PAGE SHOWS THE GAP ON THE PICKER, AND DRAFT BRIEF IS
    DISABLED.** A page with no target term cannot be briefed or written — the
@@ -771,6 +783,11 @@ always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
 
+- 2026-08-19 — **Doc catch-up: §2 now describes the pipeline-as-tabs
+  NodePanel** (shipped 2026-08-17 as "THE PIPELINE IS THE PAGE", commit
+  `3c6c2fdb5` — rail chips became the tab strip, content moved inside its
+  step, `defaultTabFor` lands on the first gap). The section previously
+  still described the pre-tabs stacked panel.
 - 2026-08-18 — **Bulk-deepen failure summaries stopped duplicating their
   causes.** API and stream failures remain captured individually; the aggregate
   error toast is display-only and cannot create a second detail-free queue row.

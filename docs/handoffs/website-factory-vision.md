@@ -262,7 +262,8 @@ builder, not an expert location/blog/service-page builder), or tiered at the FIL
 
 ## Remaining work (priority order)
 
-1. **Prove the loop at SCALE.** Never yet run: a real ~25-page site end to end — starter kit →
+1. **Prove the loop at SCALE.** *(Dispatched as a chip 2026-08-19 — check for a parallel session
+   before starting.)* Never yet run: a real ~25-page site end to end — starter kit →
    fill every node (all four steps) → human review → bulk publish → verify every URL live. Use a
    throwaway or `cosmeticinjectables` (`baa61391…`, already CMS-linked), never `iopbm` /
    `prp-injection-md`. Surface every failure; the queue's per-page isolation should make each one
@@ -276,15 +277,24 @@ builder, not an expert location/blog/service-page builder), or tiered at the FIL
    builder, blog builder, service-page builder — "over 200 agents". The pipeline needs NO code
    change: this is more DB agents plus mandate routing by `page_type`. Decide the routing seam
    (per-page-type binding on the mandate vs. a dispatcher agent) before authoring the fleet.
-4. **The effort TIER** (§ Effort tiers below). The knobs exist (`steps` / `include_review` on the
-   fill request); a tier is a named per-site + per-page preset over them, with the cheap end
-   merging steps into fewer calls (the one-shot author call IS the cheapest tier and still works).
+4. **The effort TIER** (§ Effort tiers below). *(Dispatched as a chip 2026-08-19.)* The knobs
+   exist (`steps` / `include_review` on the fill request — the server already accepts them; the
+   FE sends only `include_review`); a tier is a named per-site + per-page preset over them, with
+   the cheap end merging steps into fewer calls (the one-shot author call IS the cheapest tier
+   and still works). The Setup keyword-strategist tier (shipped 2026-08-18) is the UX pattern to
+   copy: named tiers on the SAME button, exact call count + priced cost before commit.
 5. **Site design system (S3) — the reusable block library.** Curated sections (hero, cards, CTA,
    FAQ, pricing) the starter kit installs; the build step MAY reach for them. Offered, never
    imposed — same law as templates.
 6. **Plan-UI remainder:** whole-page "run the rest of the pipeline" action; bulk run-step across a
    tree multi-selection.
-7. **Streaming-capable assists** (platform gap parked from the editor work): the editor's guided
+7. **WF-10 (folded in from the deleted bug-dispatch doc; LOW).** *(Dispatched as a chip
+   2026-08-19.)* Site→vertical binding is a buried settings convention
+   (`web.site.settings.content_plan.vertical` jsonb), so `plan.profile` binds ambiguously for
+   multi-profile orgs and the FE needs a manual picker. Fix: promote to a real column/FK on
+   `web.site` (Supabase MCP + `pnpm db-types` + aidream `db/generate.py`), migrate existing
+   settings values, update `aidream/services/content_plan/` readers and the FE setup view.
+8. **Streaming-capable assists** (platform gap parked from the editor work): the editor's guided
    AI actions are buttons, not assist chips, because an assist action cannot adopt a stream — a
    chip would spin silently through a minute-long call. Fix belongs in the assists capability,
    not this feature.
