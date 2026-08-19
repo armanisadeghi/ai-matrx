@@ -509,10 +509,8 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         label: "Email",
         href: marketingRoutes.email(),
         description:
-          "Lists, broadcasts, lifecycle automation, and deliverability health.",
+          "The mailbox you send from, the templates you send, and the sequences that send them.",
         iconName: "Mail",
-        status: "coming-soon",
-        comingSoonId: "marketing.email",
       },
       {
         label: "Paid Ads",
@@ -536,8 +534,6 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         description:
           "Link and PR prospecting, sequenced contact, and earned-placement tracking.",
         iconName: "Send",
-        status: "coming-soon",
-        comingSoonId: "marketing.outreach",
       },
     ],
   },
@@ -591,13 +587,11 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         iconName: "Swords",
       },
       {
-        label: "Brand Monitoring",
+        label: "Monitoring",
         href: marketingRoutes.monitoring(),
         description:
-          "Mentions, reviews, and sentiment across the web with alerting.",
+          "Who wrote about you, what happened to your links, and whether the answer engines cite you.",
         iconName: "Radar",
-        status: "coming-soon",
-        comingSoonId: "marketing.monitoring",
       },
     ],
   },

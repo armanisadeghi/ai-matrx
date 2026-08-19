@@ -44,6 +44,12 @@ describe("marketing-nav ↔ coming-soon registry", () => {
   const NON_ROUTE_PROMISES = new Set([
     // Lives on the existing site media view, not at a URL of its own.
     "marketing.generate-video",
+    // The three Marketing front doors SHIPPED on 2026-08-19, so their routes
+    // are live and carry no `comingSoonId`. What is still promised is the
+    // unbuilt REMAINDER inside each live page — Lane A opt-in email, and
+    // review monitoring + alerting — printed on the page it belongs to.
+    "marketing.email.opt-in-campaigns",
+    "marketing.monitoring.alerts",
   ]);
 
   it("every route-backed marketing registry row is declared in marketing-nav", () => {

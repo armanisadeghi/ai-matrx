@@ -159,14 +159,19 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/social route"],
   },
-  "marketing.email": {
-    id: "marketing.email",
-    label: "Email Marketing",
+  // Lane B email — the mailbox, the templates, the sequences — SHIPPED, and
+  // /marketing/email is now its front door. What remains is LANE A: opt-in
+  // marketing we send on the customer's behalf, which is committed vision and
+  // a genuinely different build (our reputation carries it, so consent becomes
+  // a hard eligibility gate). docs/handoffs/outreach-system.md §5.1 + Lane A.
+  "marketing.email.opt-in-campaigns": {
+    id: "marketing.email.opt-in-campaigns",
+    label: "Opt-in email campaigns",
     owner: "marketing",
     promise:
-      "Build lists, send broadcasts, run lifecycle automation, and watch deliverability health per brand.",
+      "Build lists, send broadcasts, and run lifecycle automation on your behalf — with recorded per-recipient consent as a hard send gate, a preference center, and one-click unsubscribe honored across every lane.",
     stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/email route"],
+    surfaces: ["/marketing/email route"],
   },
   "marketing.ads": {
     id: "marketing.ads",
@@ -177,23 +182,18 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
     stage: "planned",
     surfaces: ["/marketing hub card", "/marketing/ads route"],
   },
-  "marketing.outreach": {
-    id: "marketing.outreach",
-    label: "Outreach",
+  // Mentions and sentiment SHIPPED (coverage monitoring + the reputation
+  // decision brief), and /marketing/monitoring is now their front door. The
+  // untouched half of the original promise is what stays registered: review
+  // sites, and being TOLD when something moves instead of having to look.
+  "marketing.monitoring.alerts": {
+    id: "marketing.monitoring.alerts",
+    label: "Review monitoring and alerts",
     owner: "marketing",
     promise:
-      "Prospect link and PR targets, run sequenced contact, and track earned placements back to the pages they point at.",
+      "Watch review sites alongside press mentions, and get alerted the moment sentiment, coverage, or a citation moves — instead of having to open the page to find out.",
     stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/outreach route"],
-  },
-  "marketing.monitoring": {
-    id: "marketing.monitoring",
-    label: "Brand Monitoring",
-    owner: "marketing",
-    promise:
-      "Watch mentions, reviews, and sentiment across the web for every brand, with alerting when something moves.",
-    stage: "planned",
-    surfaces: ["/marketing hub card", "/marketing/monitoring route"],
+    surfaces: ["/marketing/monitoring route"],
   },
   "marketing.analytics": {
     id: "marketing.analytics",

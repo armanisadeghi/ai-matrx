@@ -36,10 +36,7 @@ const RESERVED_LETTERS: Readonly<Record<string, string>> = {
   "/marketing/initiatives": "In",
   "/marketing/competitors": "Cp",
   "/marketing/content-studio": "Cs",
-  "/marketing/email": "Em",
   "/marketing/local": "Lo",
-  "/marketing/monitoring": "Mo",
-  "/marketing/outreach": "Ou",
   "/marketing/ranks": "Rk",
   "/marketing/reports": "Rp",
   "/marketing/social": "So",
@@ -76,6 +73,26 @@ const STATIC_ROUTES: Readonly<Record<string, MarketingRouteIdentity>> = {
     description:
       "Manage location profiles, directory listings, and NAP consistency.",
     letter: "Lo",
+  },
+  // The three Marketing FRONT DOORS (shipped 2026-08-19). They stopped being
+  // reserved routes, so their identity moved out of RESERVED_LETTERS to here.
+  "/marketing/outreach": {
+    titlePrefix: "Outreach",
+    description:
+      "Link and PR prospecting, sequenced contact, and earned-placement tracking.",
+    letter: "Ou",
+  },
+  "/marketing/email": {
+    titlePrefix: "Email",
+    description:
+      "The mailbox you send from, the templates you send, and the sequences that send them.",
+    letter: "Em",
+  },
+  "/marketing/monitoring": {
+    titlePrefix: "Monitoring",
+    description:
+      "Who wrote about you, what happened to your links, and whether the answer engines cite you.",
+    letter: "Mo",
   },
   "/marketing/capabilities": {
     titlePrefix: "SEO Capabilities",
