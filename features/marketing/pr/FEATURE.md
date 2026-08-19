@@ -29,13 +29,25 @@ settled when it is (decision with Arman: per-site rows vs a shared pool with per
 everything here is code + type-check + jest only. The sort control at narrow widths, the rationale
 block's length in an open row, and the KPI grid's border behaviour at 2 columns are unproven.
 
-**4. Smaller, logged not fixed:** `fixtures.ts` (944 lines) is statically imported so the sample
-dataset ships in every bundle (should become a lazy import); `ScoreComb`'s tooltip trigger is a
-non-focusable div inside a button, so the five-score breakdown is keyboard-unreachable (the
-expanded row does carry it); "not in CRM — add" lands on the CRM index rather than a prefilled
-create.
+**4. Nothing outstanding here.** The three items this slot held — the eagerly-bundled fixture
+file, `ScoreComb`'s keyboard-unreachable breakdown, and the CRM add that landed on a bare index —
+are all fixed and listed below.
 
-**Closed since first ship** (kept so nobody re-reports them): the analyse trigger now exists —
+**Closed since first ship** (kept so nobody re-reports them): **`fixtures.ts` is loaded on
+demand** — `data.ts` imports it as a TYPE only and pulls the module in through `useSampleFixture`
+on the path that actually renders sample data, so the ~950-line dataset is no longer in every
+user's bundle for a screen approximately nobody sees (while the chunk is in flight the surface
+reports `isLoading`, which is what it is; a failed chunk screams rather than reading as an empty
+sample). **The five-score breakdown is keyboard-reachable** — `ScoreComb` is now phrasing-only,
+decorative content inside the row button (`aria-hidden` visuals, one `sr-only` readiness sentence,
+`title` for hover), and `ScoreBreakdown` in the expanded row is THE accessible source of the five
+labelled, weighted axes, opened by the same Enter that opens the row; the invalid
+`<div role="img">` tooltip trigger nested in a `<button>` is gone. **"not in CRM — add" prefills**
+— it opens `crmCreatePartyHref({kind:"person", name})` → `/crm?create=person&name=<name>`, which
+`CrmListPage` consumes once (then strips, so a reload does not re-open it) to open the canonical
+`crmCreatePartyWindow` with the name already in the form; the builder is `features/crm/routes.ts`
+and the prefill rides `PartyCreateForm`'s new `initialName`, so every surface naming a person the
+CRM should hold gets the same door rather than a second create flow. The analyse trigger exists —
 "Find my stories" on the sample banner and "Find stories" in the header call
 `POST /seo/sites/{id}/press/angles/generate` through `api.ts` (canonical `lib/python-client`),
 with a result panel reporting angles kept, angles REFUSED with reasons, pages captured/failed and
@@ -186,7 +198,7 @@ while the user is typing, so the search field keeps its own arrow keys.
 | Thing named | Door |
 |---|---|
 | Journalist / coverage author | `EntityRef token="party"` → `/crm/{partyId}`, new tab |
-| Journalist with no `party_id` | unresolved reference + "not in CRM — add" → `/crm` |
+| Journalist with no `party_id` | unresolved reference + "not in CRM — add" → `crmCreatePartyHref` (`/crm?create=person&name=…`), the create window prefilled |
 | Media lists | `/crm/outreach-lists` |
 | The site | `EntityRef token="web_site"` |
 | A story angle | `EntityRef` with an EXPLICIT `href` onto this page, focused on the row |
@@ -208,10 +220,10 @@ features/marketing/pr/
   scoring.ts                       SCORE_MODEL, pitch readiness, deadlines, queue ranking
   routes.ts                        the ONE URL-state module (+ the ?data scenario switch)
   data.ts                          Supabase reads, the scenario switch, session rulings, the page clock
-  fixtures.ts                      the ONE sample dataset
+  fixtures.ts                      the ONE sample dataset (loaded on demand, never bundled eagerly)
   PressRoomWorkspace.tsx           the surface
   components/
-    ScoreComb.tsx                  the comb + the opened-out breakdown
+    ScoreComb.tsx                  the decorative comb + the accessible opened-out breakdown
     EvidenceLadder.tsx             the ONE proof component (pill + ladder + contradictions)
     StoryAngleQueue.tsx            the hero queue
     SourceRequestRail.tsx          the deadline inbox
