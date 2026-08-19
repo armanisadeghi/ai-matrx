@@ -55,6 +55,7 @@ import type { PlanDeepenController } from "../hooks/useContentPlanAi";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import {
   PLAN_NODE_TYPES,
+  RUNNABLE_STEP_ACTIONS,
   TECHNICAL_DEPTHS,
   type PlanEntityRow,
   type PlanNodeRow,
@@ -79,7 +80,11 @@ import {
 } from "../hooks/useNodeMeasurement";
 import { NodeRealityCard } from "./NodeRealityCard";
 import { NodeMeasureCard } from "./NodeMeasureCard";
-import { NodeStepRail, StepArtifactView } from "./NodeStepRail";
+import {
+  NodeStepRail,
+  STEP_CHIP_CLASS,
+  StepArtifactView,
+} from "./NodeStepRail";
 import { usePageStepRun } from "../hooks/usePageStepRun";
 import { PageDraftEditor } from "./PageDraftEditor";
 import { SeoPlanEditor } from "@/features/marketing/seo/plan/SeoPlanEditor";
@@ -857,7 +862,7 @@ export function NodePanel({
                 size="sm"
                 onClick={() => setActiveTab("page")}
                 className={cn(
-                  "h-7 gap-1 rounded-full px-2 text-[11px] md:h-6",
+                  STEP_CHIP_CLASS,
                   activeTab === "page" && "ring-1 ring-primary/60",
                 )}
               >
@@ -1137,6 +1142,12 @@ export function NodePanel({
                   nodeId={node.id}
                   step="p3_family"
                   stepLabel="Family comparison"
+                  run={{
+                    label: RUNNABLE_STEP_ACTIONS.p3_family.action,
+                    hint: RUNNABLE_STEP_ACTIONS.p3_family.explains,
+                    busy: stepRun.isRunning,
+                    onRun: () => void stepRun.start("p3_family"),
+                  }}
                 />
               </PanelSection>
             ) : null}
@@ -1147,6 +1158,20 @@ export function NodePanel({
                   nodeId={node.id}
                   step="p5_review"
                   stepLabel="Review"
+                  // A review of nothing is not a run worth offering — the
+                  // empty state names the missing input and opens its tab.
+                  prerequisite={{
+                    step: "p4_write",
+                    line: "Add page content to see a review here.",
+                    goLabel: "Go to Write",
+                    onGo: () => setActiveTab("p4_write"),
+                  }}
+                  run={{
+                    label: RUNNABLE_STEP_ACTIONS.p5_review.action,
+                    hint: RUNNABLE_STEP_ACTIONS.p5_review.explains,
+                    busy: stepRun.isRunning,
+                    onRun: () => void stepRun.start("p5_review"),
+                  }}
                 />
               </PanelSection>
             ) : null}
@@ -1168,11 +1193,15 @@ export function NodePanel({
               /* THE AFTER (cms-page-hub doctrine): live results — Search
                 Console, analysis, findings — in every state. */
               <PanelSection title="Publish — the live page">
+                {/* The publish HALF only — the Build tab owns the reality card,
+                  and rendering it twice made this tab say nothing new. */}
                 <NodeRealityCard
                   node={node}
                   cmsPage={cmsPage ?? null}
                   cmsSiteId={cmsSiteId ?? null}
                   reality={reality}
+                  variant="publish"
+                  onGoToBuild={() => setActiveTab("p6_build")}
                 />
                 <div className="mt-4">
                   <NodeMeasureCard

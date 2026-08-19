@@ -178,7 +178,7 @@ export function BriefEditor({
           lines={lines}
           editable
           onChange={onChange}
-          emptyHint="No brief yet. Add a point, or use Draft brief to have one written against this page's siblings."
+          emptyHint="No brief yet — add a point, or use Draft brief."
         />
       </div>
 
@@ -201,12 +201,11 @@ export function BriefEditor({
               <p className="text-xs text-muted-foreground">Loading runs…</p>
             ) : runsError ? (
               <p className="text-xs text-destructive">
-                Could not load this page&apos;s run history: {runsError}. Your
-                runs are not lost — they are recorded against this page.
+                Could not load this page&apos;s run history: {runsError}
               </p>
             ) : runs.length === 0 ? (
               <p className="text-xs text-muted-foreground">
-                No brief has been run for this page yet.
+                No brief runs yet.
               </p>
             ) : (
               runs.map((run) => (

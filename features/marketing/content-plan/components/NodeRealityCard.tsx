@@ -18,6 +18,7 @@
  * stamped on a column — see THE TRUE CURRENT STATUS LAW.
  */
 import {
+    ArrowRight,
     ExternalLink,
     Hammer,
     Loader2,
@@ -42,6 +43,7 @@ import {
     type RealityState,
 } from "../lib/page-reality";
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
+import { StepEmptyState } from "./NodeStepRail";
 
 import { realityVerdictSummary } from "../format";
 import type { CmsPageMapEntry } from "../setup/bridge";
@@ -73,16 +75,31 @@ export function NodeRealityCard({
     cmsPage,
     cmsSiteId,
     reality,
+    variant = "build",
+    onGoToBuild,
 }: {
     node: PlanNodeRow;
     /** Owned by NodePanel so the same run also backs the agent write targets. */
     reality: NodeReality;
     cmsPage: CmsPageMapEntry | null;
     cmsSiteId: string | null;
+    /**
+     * THE BUILD/PUBLISH SPLIT (Arman, 2026-08-18). The Build and Publish tabs
+     * used to render this exact card twice, word for word, so the second tab
+     * said nothing the first had not. `"build"` owns everything up to the page
+     * existing and being written; `"publish"` owns only the live half —
+     * publish state, the publish action and the live doors — and hands the
+     * earlier states back to Build through a door instead of repeating them.
+     * ONE component, split by props; never a fork.
+     */
+    variant?: "build" | "publish";
+    /** Publish variant only: door back to the tab that owns the missing step. */
+    onGoToBuild?: () => void;
 }) {
     const { setView } = usePlanWorkspaceParams();
     const { verdict, busy } = reality;
     const elapsed = useElapsedSeconds(reality.startedAt);
+    const publishHalf = variant === "publish";
 
     const pageUrl = cmsPage
         ? cmsPage.isPublished
@@ -94,7 +111,9 @@ export function NodeRealityCard({
     // against a guess. Surfaced ONLY when the next action spends money, so the
     // caution lands where it costs something rather than nagging on every node.
     const missingKeyword =
-        !node.primary_keyword_id && verdict.action === "write-content";
+        !publishHalf &&
+        !node.primary_keyword_id &&
+        verdict.action === "write-content";
 
     /**
      * Rewriting overwrites the CMS draft — human work included — so it is
@@ -157,6 +176,34 @@ export function NodeRealityCard({
               : verdict.action === "publish"
                 ? ("publish" as const)
                 : null;
+
+    // Nothing to publish until the page exists and has words — say which step
+    // is missing and open it, rather than repeating the Build tab's card.
+    if (
+        publishHalf &&
+        (verdict.state === "no-cms-site" ||
+            verdict.state === "not-built" ||
+            verdict.state === "empty")
+    ) {
+        return (
+            <StepEmptyState
+                line={
+                    verdict.state === "empty"
+                        ? "Nothing written yet — nothing to publish."
+                        : "Not built yet — nothing to publish."
+                }
+                action={
+                    onGoToBuild
+                        ? {
+                              label: "Go to Build",
+                              onClick: onGoToBuild,
+                              icon: ArrowRight,
+                          }
+                        : undefined
+                }
+            />
+        );
+    }
 
     return (
         <div className="group/reality space-y-2 rounded-md border border-border bg-muted/20 p-2.5">
@@ -296,7 +343,11 @@ export function NodeRealityCard({
                 </div>
             ) : (
                 <div className="flex flex-wrap items-center gap-1.5">
-                    {verdict.action && ActionIcon ? (
+                    {verdict.action &&
+                    ActionIcon &&
+                    (!publishHalf ||
+                        verdict.action === "publish" ||
+                        verdict.action === "edit-in-cms") ? (
                         <Button
                             size="sm"
                             className="h-7 gap-1 text-xs"
@@ -312,7 +363,7 @@ export function NodeRealityCard({
                         </Button>
                     ) : null}
 
-                    {cmsPage && cmsSiteId ? (
+                    {cmsPage && cmsSiteId && !publishHalf ? (
                         <Button
                             variant="outline"
                             size="sm"
@@ -347,7 +398,7 @@ export function NodeRealityCard({
                     {/* Written but not yet live: publishing is available even
                       though the headline already asked for it, and rewriting
                       stays reachable without waiting for a "stale" verdict. */}
-                    {verdict.state === "unpublished" ? (
+                    {verdict.state === "unpublished" && !publishHalf ? (
                         <Button
                             variant="outline"
                             size="sm"

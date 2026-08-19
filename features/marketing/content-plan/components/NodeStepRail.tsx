@@ -33,6 +33,7 @@
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
+  ArrowRight,
   Check,
   Circle,
   Clock,
@@ -45,6 +46,12 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -68,6 +75,16 @@ import {
 } from "../lib/pipeline-staleness";
 
 const EMPTY_STEPS: ReadonlyMap<string, never> = new Map<string, never>();
+
+/**
+ * ONE chip geometry for the whole tab strip. Exported because the NodePanel
+ * renders a "Page" chip beside this rail — two hand-written class strings is
+ * exactly how the strip drifted into mismatched heights.
+ */
+export const STEP_CHIP_CLASS =
+  "h-7 shrink-0 gap-1 rounded-full px-2.5 text-[11px] font-medium md:h-6";
+/** Same height as a chip, square — the run arrow sits flush beside it. */
+export const STEP_RUN_BUTTON_CLASS = "h-7 w-7 shrink-0 p-0 md:h-6 md:w-6";
 
 function StatusIcon({
   status,
@@ -96,9 +113,9 @@ function StatusIcon({
     case "skipped":
       return <Minus className="h-3 w-3 text-muted-foreground" aria-hidden />;
     default:
-      return (
-        <Circle className="h-3 w-3 text-muted-foreground/50" aria-hidden />
-      );
+      // NOT `/50`: a half-transparent gray dot is invisible on the dark
+      // surface, so an un-run step read as a chip with no icon at all.
+      return <Circle className="h-3 w-3 text-muted-foreground" aria-hidden />;
   }
 }
 
@@ -230,19 +247,92 @@ function ArtifactDialog({
 }
 
 /**
+ * THE ONE EMPTY STATE for a step that has produced nothing yet — a real
+ * bordered component, never gray text floating in a tab (Arman, 2026-08-18).
+ * It states the PREREQUISITE, not just the absence, and carries the door or
+ * the run action that resolves it. Reused by every step tab and by the
+ * publish half of `NodeRealityCard`; never copy it per tab.
+ */
+export function StepEmptyState({
+  line,
+  action,
+}: {
+  line: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+    icon?: React.ComponentType<{ className?: string }>;
+    busy?: boolean;
+    disabled?: boolean;
+    hint?: string;
+  };
+}) {
+  const Icon = action?.icon;
+  const button = action ? (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="h-7 shrink-0 gap-1 text-xs"
+      disabled={action.busy || action.disabled}
+      onClick={action.onClick}
+    >
+      {action.busy ? (
+        <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+      ) : Icon ? (
+        <Icon className="h-3 w-3" aria-hidden />
+      ) : null}
+      {action.label}
+    </Button>
+  ) : null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/20 px-2.5 py-2">
+      <p className="min-w-0 text-xs leading-snug text-muted-foreground">
+        {line}
+      </p>
+      {button && action?.hint ? (
+        <TooltipProvider delayDuration={200}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="shrink-0">{button}</span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">{action.hint}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      ) : (
+        button
+      )}
+    </div>
+  );
+}
+
+/**
  * One step's artifact, INLINE — the body of that step's tab in the NodePanel.
  * Same cached `useNodeArtifacts` read the rail uses (no extra fetch), same
- * canonical kind-component render path as the dialog. Empty state is short:
- * the run arrow in the rail above is the action, not a paragraph down here.
+ * canonical kind-component render path as the dialog.
+ *
+ * NOTHING HERE IS A DEAD END. When the step has produced nothing, the tab
+ * shows `StepEmptyState`: the unmet prerequisite with a door to the tab that
+ * fixes it, or — when the prerequisite is met — the run action itself.
  */
 export function StepArtifactView({
   nodeId,
   step,
   stepLabel,
+  prerequisite,
+  run,
 }: {
   nodeId: string;
   step: string;
   stepLabel: string;
+  /**
+   * The step whose artifact this one is written FROM. When it has produced
+   * nothing, running this step is pointless, so the empty state points at the
+   * tab that fixes it instead of offering a run that would be refused.
+   */
+  prerequisite?: { step: string; line: string; goLabel: string; onGo: () => void };
+  /** Offered when the prerequisite is satisfied (or there is none). */
+  run?: { label: string; hint?: string; busy: boolean; onRun: () => void };
 }) {
   const artifacts = useNodeArtifacts(nodeId);
   const rows = (artifacts.data ?? []).filter((row) => row.step === step);
@@ -255,10 +345,41 @@ export function StepArtifactView({
     );
   }
   if (!current) {
+    // 🚨 NOT-LOADED IS UNKNOWN. Only a SETTLED read may claim the prerequisite
+    // is missing — the same trap the run arrows document above.
+    const prerequisiteMissing =
+      prerequisite !== undefined &&
+      artifacts.isSuccess &&
+      !(artifacts.data ?? []).some(
+        (row) => row.step === prerequisite.step && row.valid_to === null,
+      );
+    if (prerequisite && prerequisiteMissing) {
+      return (
+        <StepEmptyState
+          line={prerequisite.line}
+          action={{
+            label: prerequisite.goLabel,
+            onClick: prerequisite.onGo,
+            icon: ArrowRight,
+          }}
+        />
+      );
+    }
     return (
-      <p className="rounded-md border border-dashed border-border px-2.5 py-2 text-xs text-muted-foreground">
-        {stepLabel} has not run yet.
-      </p>
+      <StepEmptyState
+        line={`${stepLabel} has not run yet.`}
+        action={
+          run
+            ? {
+                label: run.label,
+                onClick: run.onRun,
+                icon: Play,
+                busy: run.busy,
+                hint: run.hint,
+              }
+            : undefined
+        }
+      />
     );
   }
   const kind = artifactKind(current);
@@ -352,9 +473,10 @@ export function NodeStepRail({
   const anyRun = progress !== null || (artifacts.data?.length ?? 0) > 0;
 
   return (
+    <TooltipProvider delayDuration={200}>
     <div className="space-y-1.5">
-      <div className="flex flex-wrap gap-1">
-        {PIPELINE_STEPS.map(({ step, label }) => {
+      <div className="flex flex-wrap items-center gap-1">
+        {PIPELINE_STEPS.map(({ step, label, what }) => {
           const state = byStep.get(step);
           const stepArtifacts = artifactsByStep.get(step) ?? [];
           const current = stepArtifacts.find((a) => a.valid_to === null);
@@ -366,13 +488,16 @@ export function NodeStepRail({
             current && current.valid_to === null
               ? (staleSteps.get(step) ?? null)
               : null;
-          const title = state?.error
-            ? `${label}: ${JSON.stringify(state.error)}`
+          // THE CHIP'S TOOLTIP: what the step IS, then where it stands, then
+          // what a click does. A bare `title=` gave none of that (and never
+          // shows on touch) — every chip and arrow carries a real Tooltip.
+          const statusLine = state?.error
+            ? `Failed: ${JSON.stringify(state.error)}`
             : staleness
               ? stalenessTitle(label, staleness)
               : status
-                ? `${label}: ${status}`
-                : `${label}: not run yet`;
+                ? `Status: ${status}`
+                : "Not run yet.";
           // A step this rail can run gets its own verb-labeled button beside
           // the status chip — never a chip that silently executes on click.
           const runnable = isRunnableStep(step)
@@ -400,87 +525,119 @@ export function NodeStepRail({
                   !artifactsByStep
                     .get("p4_write")
                     ?.some((a) => a.valid_to === null)
-                ? "Nothing to review yet — this page has no written content. Run “Write content” first."
+                ? "No written content yet — run Write first."
                 : null;
           const busyHere =
             stepRun.isRunning && stepRun.run.step === runnable && runnable;
           const isActive = tabMode && activeStep === step;
           return (
             <div key={step} className="flex items-center gap-0.5">
-              <Button
-                type="button"
-                variant={isActive ? "secondary" : "outline"}
-                size="sm"
-                disabled={tabMode ? false : !opens}
-                onClick={() =>
-                  tabMode
-                    ? onSelectStep?.(step)
-                    : opens && setOpenArtifact(opens)
-                }
-                title={title}
-                className={cn(
-                  "h-7 gap-1 rounded-full px-2 text-[11px] md:h-6",
-                  status === "failed" && "border-destructive/50",
-                  staleness &&
-                    status !== "failed" &&
-                    "border-amber-500/50 text-amber-700 dark:text-amber-400",
-                  // Tab mode: an un-run step is a place to GO (that's where
-                  // you run it), never a dimmed dead control.
-                  !status && !tabMode && "opacity-60",
-                  isActive && "ring-1 ring-primary/60",
-                )}
-              >
-                <StatusIcon
-                  status={busyHere ? "running" : status}
-                  stale={Boolean(staleness) && !busyHere}
-                />
-                {label}
-                {stepArtifacts.length > 1 ? (
-                  <span className="text-muted-foreground">
-                    ×{stepArtifacts.length}
-                  </span>
-                ) : null}
-                {!tabMode && opens ? (
-                  <FileText className="h-3 w-3 opacity-60" aria-hidden />
-                ) : null}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant={isActive ? "secondary" : "outline"}
+                    size="sm"
+                    disabled={tabMode ? false : !opens}
+                    onClick={() =>
+                      tabMode
+                        ? onSelectStep?.(step)
+                        : opens && setOpenArtifact(opens)
+                    }
+                    className={cn(
+                      STEP_CHIP_CLASS,
+                      status === "failed" && "border-destructive/50",
+                      staleness &&
+                        status !== "failed" &&
+                        "border-amber-500/50 text-amber-700 dark:text-amber-400",
+                      // Tab mode: an un-run step is a place to GO (that's where
+                      // you run it), never a dimmed dead control.
+                      !status && !tabMode && "opacity-60",
+                      isActive && "ring-1 ring-primary/60",
+                    )}
+                  >
+                    <StatusIcon
+                      status={busyHere ? "running" : status}
+                      stale={Boolean(staleness) && !busyHere}
+                    />
+                    {label}
+                    {stepArtifacts.length > 1 ? (
+                      <span className="text-muted-foreground">
+                        ×{stepArtifacts.length}
+                      </span>
+                    ) : null}
+                    {!tabMode && opens ? (
+                      <FileText className="h-3 w-3 opacity-60" aria-hidden />
+                    ) : null}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs space-y-1">
+                  <p className="font-medium text-popover-foreground">{label}</p>
+                  <p className="text-muted-foreground">{what}</p>
+                  <p className="text-muted-foreground">{statusLine}</p>
+                  <p className="text-muted-foreground">
+                    {tabMode
+                      ? "Click to open this step."
+                      : opens
+                        ? "Click to open what this step produced."
+                        : "Nothing to open until it runs."}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
               {runnable ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  // A truly `disabled` button swallows hover, so the reason
-                  // would never surface — aria-disabled keeps the tooltip
-                  // alive while the guard stops the run.
-                  disabled={stepRun.isRunning}
-                  aria-disabled={blockedReason !== null}
-                  onClick={() =>
-                    blockedReason === null && void stepRun.start(runnable)
-                  }
-                  title={
-                    blockedReason ??
-                    (staleness
-                      ? `${stalenessTitle(label, staleness)} (${RUNNABLE_STEP_ACTIONS[runnable].action})`
-                      : `${RUNNABLE_STEP_ACTIONS[runnable].action} — ${RUNNABLE_STEP_ACTIONS[runnable].explains}`)
-                  }
-                  aria-label={`${RUNNABLE_STEP_ACTIONS[runnable].action} for this page`}
-                  className={cn(
-                    "h-7 w-7 shrink-0 p-0 md:h-6 md:w-6",
-                    // The detected problem's one-click fix — so it reads as the
-                    // thing to press, not as an ambient re-run.
-                    staleness && "text-amber-600 dark:text-amber-400",
-                    blockedReason !== null &&
-                      "cursor-not-allowed opacity-40 hover:bg-transparent",
-                  )}
-                >
-                  {busyHere ? (
-                    <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-                  ) : opens ? (
-                    <RotateCw className="h-3 w-3" aria-hidden />
-                  ) : (
-                    <Play className="h-3 w-3" aria-hidden />
-                  )}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      // A truly `disabled` button swallows hover, so the reason
+                      // would never surface — aria-disabled keeps the tooltip
+                      // alive while the guard stops the run.
+                      disabled={stepRun.isRunning}
+                      aria-disabled={blockedReason !== null}
+                      onClick={() =>
+                        blockedReason === null && void stepRun.start(runnable)
+                      }
+                      aria-label={`${RUNNABLE_STEP_ACTIONS[runnable].action} for this page`}
+                      className={cn(
+                        STEP_RUN_BUTTON_CLASS,
+                        // The detected problem's one-click fix — so it reads as
+                        // the thing to press, not as an ambient re-run.
+                        staleness && "text-amber-600 dark:text-amber-400",
+                        blockedReason !== null &&
+                          "cursor-not-allowed opacity-40 hover:bg-transparent",
+                      )}
+                    >
+                      {busyHere ? (
+                        <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
+                      ) : opens ? (
+                        <RotateCw className="h-3 w-3" aria-hidden />
+                      ) : (
+                        <Play className="h-3 w-3" aria-hidden />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs space-y-1">
+                    <p className="font-medium text-popover-foreground">
+                      {opens
+                        ? `${RUNNABLE_STEP_ACTIONS[runnable].action} again`
+                        : RUNNABLE_STEP_ACTIONS[runnable].action}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {RUNNABLE_STEP_ACTIONS[runnable].explains}
+                    </p>
+                    {blockedReason ? (
+                      <p className="text-amber-600 dark:text-amber-400">
+                        {blockedReason}
+                      </p>
+                    ) : staleness ? (
+                      <p className="text-amber-600 dark:text-amber-400">
+                        {stalenessTitle(label, staleness)}
+                      </p>
+                    ) : null}
+                  </TooltipContent>
+                </Tooltip>
               ) : null}
             </div>
           );
@@ -498,9 +655,7 @@ export function NodeStepRail({
               return `${label} ran before ${staleness.supersededByLabel} did`;
             })
             .join("; ")}
-          . Run{" "}
-          {staleSteps.size === 1 ? "that step" : "those steps"} again to catch
-          up.
+          {" "}— run {staleSteps.size === 1 ? "it" : "them"} again.
         </p>
       ) : null}
       {stepRun.run.status === "running" && stepRun.run.stage ? (
@@ -545,5 +700,6 @@ export function NodeStepRail({
         onClose={() => setOpenArtifact(null)}
       />
     </div>
+    </TooltipProvider>
   );
 }

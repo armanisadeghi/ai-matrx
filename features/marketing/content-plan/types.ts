@@ -22,13 +22,41 @@ export type PlanNodeArtifactRow =
  * missing `plan.node_step` row means the step has never run.
  */
 export const PIPELINE_STEPS = [
-  { step: "p1_keywords", label: "SEO plan" },
-  { step: "p2_research", label: "Research" },
-  { step: "p3_family", label: "Family" },
-  { step: "p4_write", label: "Write" },
-  { step: "p5_review", label: "Review" },
-  { step: "p6_build", label: "Build" },
-  { step: "p7_publish", label: "Publish" },
+  {
+    step: "p1_keywords",
+    label: "SEO plan",
+    what: "The search this page is meant to win — its target keyword, supporting keywords and meta text.",
+  },
+  {
+    step: "p2_research",
+    label: "Research",
+    what: "The grounded brief this page is written from, and the sources behind it.",
+  },
+  {
+    step: "p3_family",
+    label: "Family",
+    what: "What this page covers versus its sibling pages, so two pages never compete for the same search.",
+  },
+  {
+    step: "p4_write",
+    label: "Write",
+    what: "The page's actual words, as editable sections you can change without touching code.",
+  },
+  {
+    step: "p5_review",
+    label: "Review",
+    what: "The written content checked against the brief and the research.",
+  },
+  {
+    step: "p6_build",
+    label: "Build",
+    what: "The real page on the website — whether it exists yet, and what to do about it.",
+  },
+  {
+    step: "p7_publish",
+    label: "Publish",
+    what: "Whether the page is live, and what it is doing out there.",
+  },
 ] as const;
 export type PipelineStepKey = (typeof PIPELINE_STEPS)[number]["step"];
 
