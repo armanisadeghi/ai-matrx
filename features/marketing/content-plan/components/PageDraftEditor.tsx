@@ -56,6 +56,7 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StepEmptyState } from "./StepEmptyState";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -496,24 +497,19 @@ export function PageDraftEditor({
 
   if (!resolved && !dirty && loadedArtifactId === null) {
     return (
-      <div className="space-y-1.5">
-        <p className="text-xs text-muted-foreground">
-          No content yet.
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-7 gap-1 text-xs"
-          onClick={() => {
+      // THE ONE empty-state component every step tab uses — "Write with AI"
+      // already sits directly above, so this offers the human half.
+      <StepEmptyState
+        line="No content yet."
+        action={{
+          label: "Write it myself",
+          icon: Plus,
+          onClick: () => {
             setValue({ ...EMPTY_PAGE_DRAFT, h1: pageLabel ?? "" });
             setDirty(true);
-          }}
-        >
-          <Plus className="h-3 w-3" />
-          Write it myself
-        </Button>
-      </div>
+          },
+        }}
+      />
     );
   }
 

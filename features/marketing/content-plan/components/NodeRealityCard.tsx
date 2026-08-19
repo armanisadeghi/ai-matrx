@@ -43,7 +43,7 @@ import {
     type RealityState,
 } from "../lib/page-reality";
 import { cmsPageEditorHref } from "@/features/cms/utils/cmsRoutes";
-import { StepEmptyState } from "./NodeStepRail";
+import { StepEmptyState } from "./StepEmptyState";
 
 import { realityVerdictSummary } from "../format";
 import type { CmsPageMapEntry } from "../setup/bridge";

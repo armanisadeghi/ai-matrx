@@ -44,18 +44,30 @@ interface ArmData {
 const ARM_LEASE_SECONDS = 10 * 60;
 
 /**
+ * The grace an arm with NO heartbeat gets (a row written before the lease
+ * existed): its own 30-minute ceiling plus a lease. Mirrors
+ * NO_HEARTBEAT_GRACE_SECONDS in the same reaper module — a start time is not a
+ * liveness signal, and the twin arm legitimately works that long in silence.
+ */
+const NO_HEARTBEAT_GRACE_SECONDS = 30 * 60 + ARM_LEASE_SECONDS;
+
+/**
  * A `running` arm whose heartbeat has lapsed is NOT running — its process died
  * and nobody is left to write a terminal status. Say so, instead of spinning a
  * spinner forever (race 58177feb's frontier arm sat "running" for 38 hours).
+ * Same two clocks the server reaper uses, so the page never claims an arm is
+ * lost that the sweep would leave alone.
  */
 function isArmLost(data: ArmData): boolean {
     if (data.status !== 'running') return false;
-    const lastSeen = data.heartbeat_at ?? data.started_at;
-    // A running arm with no stamp at all predates the lease — it is not live.
-    if (!lastSeen) return true;
-    const ms = new Date(lastSeen).getTime();
+    const stamp = data.heartbeat_at ?? data.started_at;
+    // Running with no clock at all: the runner stamps a heartbeat in the same
+    // write that claims `running`, so this can only be a writer that is gone.
+    if (!stamp) return true;
+    const ms = new Date(stamp).getTime();
     if (!Number.isFinite(ms)) return true;
-    return Date.now() - ms > ARM_LEASE_SECONDS * 1000;
+    const graceSeconds = data.heartbeat_at ? ARM_LEASE_SECONDS : NO_HEARTBEAT_GRACE_SECONDS;
+    return Date.now() - ms > graceSeconds * 1000;
 }
 
 function sinceLabel(iso?: string): string {
@@ -178,8 +190,8 @@ function ArmCard({
                 <div className="rounded border border-amber-500/40 bg-amber-500/5 p-2 text-[11px] text-amber-700 dark:text-amber-400">
                     <span className="font-medium">Runner lost — will be reaped.</span> This arm still says
                     &ldquo;running&rdquo;, but the process driving it stopped reporting{' '}
-                    {sinceLabel(data.heartbeat_at ?? data.started_at)} (lease {ARM_LEASE_SECONDS / 60} min). Nothing is
-                    working on it; the server sweep will mark it failed shortly.
+                    {sinceLabel(data.heartbeat_at ?? data.started_at)}. Nothing is working on it; the server sweep will
+                    mark it failed shortly.
                 </div>
             ) : null}
 
