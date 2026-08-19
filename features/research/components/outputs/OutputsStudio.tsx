@@ -75,15 +75,18 @@ function extractMarkdownTitle(md: string): string | null {
   return m ? m[1].trim() : null;
 }
 
-/** Build the generator input: prepend the Voice & Lens, then the report. */
-function buildGeneratorInput(
+/** Build the generator's declared variables. Structured content (the report)
+ *  and the Voice & Lens note travel as named variables, never as user_input —
+ *  there is no human turn on these generator buttons at all. THE USER-INPUT
+ *  LAW: common-docs/systems/agent-variable-binding/FEATURE.md. */
+function buildGeneratorVariables(
   reportMarkdown: string,
   toneProfile: string,
-): string {
-  return (
-    (toneProfile.trim() ? `Voice & Lens: ${toneProfile.trim()}\n\n` : "") +
-    `Research report:\n\n${reportMarkdown}`
-  );
+): Record<string, string> {
+  return {
+    report_markdown: reportMarkdown,
+    voice_lens: toneProfile.trim(),
+  };
 }
 
 /** Parse a JSON object out of an agent's text output, tolerating code fences
@@ -842,12 +845,9 @@ function BlogOutputCard({
     if (!hasReport || running) return;
     setStreamText("");
     setViewing(null);
-    const input =
-      (toneProfile.trim() ? `Voice & Lens: ${toneProfile.trim()}\n\n` : "") +
-      `Research report:\n\n${reportMarkdown}`;
     try {
       const md = await runMandate({
-        userInput: input,
+        variables: buildGeneratorVariables(reportMarkdown, toneProfile),
         organizationId,
         contextAnchor: {
           resource_type: "research_topic",
@@ -1106,7 +1106,7 @@ function SlidesOutputCard({
         mandateKey: SLIDES_MANDATE,
         surfaceKey: `research-outputs-slides:${topicId}`,
         sourceFeature: "research",
-        userInput: buildGeneratorInput(reportMarkdown, toneProfile),
+        variables: buildGeneratorVariables(reportMarkdown, toneProfile),
         organizationId,
         contextAnchor: {
           resource_type: "research_topic",
@@ -1326,7 +1326,7 @@ function SeoOutputCard({
           resource_type: "research_topic",
           resource_id: topicId,
         },
-        userInput: buildGeneratorInput(reportMarkdown, toneProfile),
+        variables: buildGeneratorVariables(reportMarkdown, toneProfile),
         coerce: (value) => {
           if (
             typeof value !== "object" ||
