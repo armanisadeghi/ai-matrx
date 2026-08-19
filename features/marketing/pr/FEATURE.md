@@ -14,26 +14,33 @@ grafted, and from where, is listed at the bottom.
 
 ## Known gaps — the honest list
 
-**1. "I have this" is session-only.** Status rulings persist (direct Supabase update in
-`data.ts::persistAngleRuling`); held evidence does not — the projection recomputes the ladder,
-`proof_required.satisfied`, `evidence_refs` and `evidence_quality` in memory and discards it on
-reload. The write is well-understood (the projection already computes the exact jsonb to persist);
-it needs a deliberate call on whether user-held evidence writes straight into the analyst's
-columns or gets its own provenance.
-
-**2. `seo.source_request.site_id` is nullable** while every RLS policy keys on it, so a request
+**1. `seo.source_request.site_id` is nullable** while every RLS policy keys on it, so a request
 ingested before it is matched to a site is invisible to users. Ingestion is unbuilt; this must be
 settled when it is (decision with Arman: per-site rows vs a shared pool with per-site match rows).
 
-**3. Not visually verified.** No dev server was run in this build (a hard constraint), so
+**2. Not visually verified.** No dev server was run in this build (a hard constraint), so
 everything here is code + type-check + jest only. The sort control at narrow widths, the rationale
 block's length in an open row, and the KPI grid's border behaviour at 2 columns are unproven.
 
-**4. Nothing outstanding here.** The three items this slot held — the eagerly-bundled fixture
+**3. Nothing outstanding here.** The three items this slot held — the eagerly-bundled fixture
 file, `ScoreComb`'s keyboard-unreachable breakdown, and the CRM add that landed on a bare index —
 are all fixed and listed below.
 
-**Closed since first ship** (kept so nobody re-reports them): **`fixtures.ts` is loaded on
+**Closed since first ship** (kept so nobody re-reports them): **"I have this" PERSISTS.**
+`data.ts::projectEvidenceHold` is the ONE place the consequence of a hold is computed — the closed
+gap leaves `missing_evidence`, a requirement that declared itself unsatisfied is flipped in place,
+a ref is appended, `evidence_quality` is recomputed from the ladder, and the angle is promoted to
+`pitch_now` when the last rung closes — and both the screen (`applyAngleRulings`) and the write
+(`persistEvidenceHold` → direct Supabase update, optimistic, failures surfaced per proof) consume
+it, so the page and the row can never say different things. It edits the STORED jsonb rather than
+serialising the parsed view models back over the columns, so the analyst's own fields and every
+malformed entry survive (`types.ts::readEntryKeys` maps raw index → key, and MIRRORS `readList`).
+The two design calls: **provenance is explicit** — a user-added ref carries
+`source: "Confirmed by you"` plus `held_by` / `held_at`, so it is never mistakable for
+analyst-cited evidence; and **the backend gate stays the authority** — the client promotion mirrors
+`story_engine.gate_angle` (no gaps + no contradictions + quality >= 50) and `gate_angle` gained
+`outstanding_proof` so a satisfied requirement is not re-counted as a blocker. Change one, change
+both, and say so in `aidream/services/seo/FEATURE.md` § Press & PR. **`fixtures.ts` is loaded on
 demand** — `data.ts` imports it as a TYPE only and pulls the module in through `useSampleFixture`
 on the path that actually renders sample data, so the ~950-line dataset is no longer in every
 user's bundle for a screen approximately nobody sees (while the chunk is in flight the surface
@@ -181,14 +188,23 @@ signals rather than a wall-clock guess, so what a reviewer reads is what a user
 would read.
 
 **Rulings.** Accept / Mark pitched / Dismiss / Mark submitted / Pass on it /
-"I have this" all WORK: the ruling is applied over the loaded rows and the
-queue, the funnel, the KPI strip and the readiness numbers move together. What
-they cannot yet do is persist — there is no write path to `seo.story_angle` or
-`seo.source_request` from this surface. ONE honest treatment, applied
-everywhere: a status bar at the top of the page says how many rulings are held
-in this session and offers to discard them. (The alternative — a disabled button
-that explains itself — was rejected: it teaches the user the product cannot do
-the thing at all, when the surface can already compute the whole consequence.)
+"I have this" all WORK, and all PERSIST: the ruling is applied over the loaded
+rows — the queue, the funnel, the KPI strip and the readiness numbers move
+together — and the row is written behind it, direct to Supabase on the canonical
+client path (never through Python). Optimistic: the write never blocks the
+screen, and a failure surfaces on the ruling that failed (keyed per proof for a
+hold, so two holds on one angle fail independently) rather than silently
+reverting. ONE honest treatment, applied everywhere: a status bar at the top of
+the page says how many rulings were made and whether every one of them landed,
+and offers to discard them. (The alternative — a disabled button that explains
+itself — was rejected: it teaches the user the product cannot do the thing at
+all, when the surface can already compute the whole consequence.)
+
+A hold is persisted from the STORED row plus every hold made this session, not
+from the projected row on screen, so the write is idempotent and never stacks a
+projection on a projection; each hold's `held_at` is recorded at the click and
+reproduced on every later write, so confirming a second proof cannot rewrite the
+provenance of the first.
 
 **Keyboard.** ↑ / ↓ walk the angle queue, Escape closes the open row. Suppressed
 while the user is typing, so the search field keeps its own arrow keys.

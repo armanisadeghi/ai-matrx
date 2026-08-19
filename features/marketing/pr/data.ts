@@ -44,9 +44,11 @@ import type { PressRoomFixture } from "@/features/marketing/pr/fixtures";
 import type { PressRoomScenario } from "@/features/marketing/pr/routes";
 import { ladderPercent, readLadder } from "@/features/marketing/pr/ladder";
 import {
+  readEntryKeys,
   readEvidenceRefs,
   readMissingEvidence,
   readProofRequired,
+  isJsonObject,
   type CoverageMention,
   type SourceRequest,
   type StoryAngle,
@@ -325,23 +327,36 @@ export function usePressRoom(
  * Accept / Mark pitched / Dismiss / "I have this" all WORK — the queue, the
  * funnel and the readiness numbers move together the moment one is made.
  *
- * Status rulings PERSIST: they write straight to `seo.story_angle` /
+ * ALL of them PERSIST: they write straight to `seo.story_angle` /
  * `seo.source_request` on the canonical client path (browser → Supabase
  * direct), optimistically, with any failure surfaced rather than silently
- * reverted. "I have this" is still session-only — it recomputes the ladder but
- * has no column of its own to land in yet.
+ * reverted. "I have this" writes the SAME projection the page is showing —
+ * `missing_evidence`, `proof_required`, `evidence_refs`, `evidence_quality`
+ * and the pitch promotion — through `projectEvidenceHold`, which is the ONE
+ * place that computes it for both the screen and the row.
  *
  * ONE honest treatment, applied everywhere: the ruling applies, and the status
- * bar says out loud how many rulings are held in this session and offers to
- * discard them. A disabled button that explains itself was the alternative, and
+ * bar says out loud how many rulings were made and whether every one of them
+ * was written. A disabled button that explains itself was the alternative, and
  * it is worse — it teaches the user the product cannot do the thing at all,
  * when in fact the whole surface can already compute the consequence.
  */
 export interface PressRoomRulings {
   angleStatus: Record<string, string>;
   requestStatus: Record<string, string>;
-  /** angle id → proof keys the human says are now in hand. */
-  evidenceHeld: Record<string, string[]>;
+  /** angle id → the proofs the human says are now in hand, when they said it. */
+  evidenceHeld: Record<string, HeldEvidence[]>;
+}
+
+/**
+ * One "I have this". `heldAt` is recorded ONCE, at the click, and reused on
+ * every subsequent write for that angle — each hold rewrites the whole
+ * projection from the stored row, so a stamp that moved would rewrite the
+ * provenance of evidence the user confirmed ten minutes ago.
+ */
+export interface HeldEvidence {
+  key: string;
+  heldAt: string;
 }
 
 export const EMPTY_RULINGS: PressRoomRulings = {
@@ -366,7 +381,12 @@ export interface RulingController {
   count: number;
   ruleAngle: (angleId: string, status: string) => void;
   ruleRequest: (requestId: string, status: string) => void;
-  holdEvidence: (angleId: string, proofKey: string) => void;
+  /**
+   * Takes the STORED angle, not the projected one on screen: the write is
+   * recomputed from the row in the database plus every hold made this session,
+   * so it is idempotent and never stacks a projection on a projection.
+   */
+  holdEvidence: (angle: StoryAngle, proofKey: string) => void;
   discard: () => void;
   /** Ruling id → why its write failed. Empty when everything persisted. */
   failures: Record<string, string>;
@@ -426,6 +446,182 @@ async function persistRequestRuling(
   if (error) throw new Error(error.message);
 }
 
+/**
+ * THE PITCH FLOOR. The backend gate (`aidream/services/seo/story_engine.py`
+ * ::`gate_angle`) withdraws `pitch_now` below this, and this client mirrors it.
+ * The two are one rule in two places: change one, change both, and say so in
+ * `aidream/services/seo/FEATURE.md` § Press & PR.
+ */
+const PITCH_QUALITY_FLOOR = 50;
+
+/**
+ * PROVENANCE. An `evidence_refs` entry the USER put there must never be
+ * mistakable for one the analyst cited from the evidence bundle. The `source`
+ * line is what the ladder renders, so it says so in the user's own language;
+ * `held_by` / `held_at` carry the machine-readable version for anything that
+ * reads the column later (a re-analysis, an audit, a Hindsight replay).
+ */
+const HELD_EVIDENCE_SOURCE = "Confirmed by you";
+
+export interface EvidenceHoldProjection {
+  missing_evidence: Json;
+  proof_required: Json;
+  evidence_refs: Json;
+  evidence_quality: number;
+  recommended_action: string;
+  requires_human_review: boolean;
+}
+
+function jsonArray(value: Json): Json[] {
+  return Array.isArray(value) ? [...value] : [];
+}
+
+/**
+ * THE ONE PROJECTION. What "I have this" does to an angle — for the screen and
+ * for the row, computed once so the two can never disagree.
+ *
+ * It edits the STORED jsonb in place rather than serialising the parsed view
+ * models back over the columns: the readers normalise key spellings and drop
+ * what they cannot parse, so a round-trip through them would delete the
+ * analyst's own fields and every malformed entry the surface promised to print
+ * verbatim. Only three things change — the closed gap leaves
+ * `missing_evidence`, a requirement that DECLARED itself unsatisfied is flipped
+ * (silence is left alone: silence lets `missing_evidence` decide, and that gap
+ * is already gone), and a new ref is appended carrying its provenance.
+ *
+ * `heldBy` is null on the in-memory path, where nothing renders it; the write
+ * path passes the signed-in user's id.
+ */
+export function projectEvidenceHold(
+  angle: StoryAngle,
+  held: readonly HeldEvidence[],
+  heldBy: string | null,
+): EvidenceHoldProjection | null {
+  if (held.length === 0) return null;
+  const heldAt = new Map(held.map((entry) => [entry.key, entry.heldAt]));
+
+  const missingKeys = readEntryKeys(angle.missing_evidence, "missing");
+  const proofKeys = readEntryKeys(angle.proof_required, "proof");
+  const missingByKey = new Map(
+    readMissingEvidence(angle.missing_evidence).items.map((item) => [
+      item.key,
+      item,
+    ]),
+  );
+  const declaredUnsatisfied = new Set(
+    readProofRequired(angle.proof_required)
+      .items.filter((item) => item.satisfied === false)
+      .map((item) => item.key),
+  );
+  const existingRefKeys = new Set(
+    readEvidenceRefs(angle.evidence_refs).items.map((item) => item.key),
+  );
+
+  const nextMissing = jsonArray(angle.missing_evidence).filter((_, index) => {
+    const key = missingKeys[index];
+    return key === null || !heldAt.has(key);
+  });
+
+  // A rung can be a gap because `proof_required` declared `satisfied: false`
+  // while `missing_evidence` never named it. Holding that key has to clear the
+  // declaration too, or "I have this" is a no-op that reports success.
+  const nextProof = jsonArray(angle.proof_required).map((entry, index) => {
+    const key = proofKeys[index];
+    if (key === null || !heldAt.has(key)) return entry;
+    if (!declaredUnsatisfied.has(key) || !isJsonObject(entry)) return entry;
+    return { ...entry, satisfied: true };
+  });
+
+  const nextRefs = jsonArray(angle.evidence_refs);
+  for (const entry of held) {
+    if (existingRefKeys.has(entry.key)) continue;
+    const gap = missingByKey.get(entry.key);
+    if (!gap) continue;
+    nextRefs.push({
+      key: gap.key,
+      label: gap.label,
+      source: HELD_EVIDENCE_SOURCE,
+      url: null,
+      captured_at: entry.heldAt,
+      held_at: entry.heldAt,
+      ...(heldBy ? { held_by: heldBy } : {}),
+    });
+  }
+
+  // Recomputed from the LADDER, so the number here and the bar the user is
+  // looking at can never disagree. Deriving it from the raw columns counted a
+  // different set of rungs and produced two percentages on one screen.
+  const projected: StoryAngle = {
+    ...angle,
+    missing_evidence: nextMissing,
+    proof_required: nextProof,
+    evidence_refs: nextRefs,
+  };
+  const ladder = readLadder(projected);
+  const quality = ladderPercent(ladder);
+
+  // The payoff the whole surface promises: prove the last thing and the angle
+  // becomes pitchable. Mirrors `gate_angle` — no outstanding rung, no
+  // contradiction, and evidence quality at or above the floor.
+  const contradictions = Array.isArray(angle.contradictions)
+    ? angle.contradictions.length
+    : 0;
+  const stillBuilding =
+    angle.recommended_action === "develop_evidence" ||
+    angle.recommended_action === "needs_expert_input";
+  const promoted =
+    stillBuilding &&
+    ladder.held === ladder.total &&
+    contradictions === 0 &&
+    quality >= PITCH_QUALITY_FLOOR;
+
+  return {
+    missing_evidence: nextMissing,
+    proof_required: nextProof,
+    evidence_refs: nextRefs,
+    evidence_quality: quality,
+    recommended_action: promoted ? "pitch_now" : angle.recommended_action,
+    // Anything short of a clean pitch keeps its review flag — the same rule the
+    // backend gate applies when it withdraws `pitch_now`.
+    requires_human_review: promoted ? false : angle.requires_human_review,
+  };
+}
+
+/**
+ * Persist a hold, on the same canonical client path as a status ruling.
+ *
+ * The projection is recomputed from the STORED row plus every hold made this
+ * session, so the write is idempotent: holding a second proof rewrites the
+ * whole set from the row rather than stacking a projection on a projection,
+ * and the first entry's `held_at` is reproduced exactly because it was recorded
+ * at the click.
+ */
+async function persistEvidenceHold(
+  angle: StoryAngle,
+  held: readonly HeldEvidence[],
+): Promise<void> {
+  const session = await requireAuthenticatedSupabaseSession(supabase);
+  const projection = projectEvidenceHold(angle, held, session.user.id);
+  if (!projection) return;
+
+  const patch: Database["seo"]["Tables"]["story_angle"]["Update"] = {
+    missing_evidence: projection.missing_evidence,
+    proof_required: projection.proof_required,
+    evidence_refs: projection.evidence_refs,
+    evidence_quality: projection.evidence_quality,
+    recommended_action: projection.recommended_action,
+    requires_human_review: projection.requires_human_review,
+    human_reviewed_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .schema("seo")
+    .from("story_angle")
+    .update(patch)
+    .eq("id", angle.id);
+  if (error) throw new Error(error.message);
+}
+
 export function usePressRoomRulings(): RulingController {
   const [rulings, setRulings] = useState<PressRoomRulings>(EMPTY_RULINGS);
   const [failures, setFailures] = useState<Record<string, string>>({});
@@ -458,19 +654,37 @@ export function usePressRoomRulings(): RulingController {
     );
   }, []);
 
-  const holdEvidence = useCallback((angleId: string, proofKey: string) => {
-    setRulings((current) => {
-      const existing = current.evidenceHeld[angleId] ?? [];
-      if (existing.includes(proofKey)) return current;
-      return {
+  const holdEvidence = useCallback(
+    (angle: StoryAngle, proofKey: string) => {
+      const existing = rulings.evidenceHeld[angle.id] ?? [];
+      if (existing.some((entry) => entry.key === proofKey)) return;
+      const held: HeldEvidence[] = [
+        ...existing,
+        { key: proofKey, heldAt: new Date().toISOString() },
+      ];
+      setRulings((current) => ({
         ...current,
-        evidenceHeld: {
-          ...current.evidenceHeld,
-          [angleId]: [...existing, proofKey],
-        },
-      };
-    });
-  }, []);
+        evidenceHeld: { ...current.evidenceHeld, [angle.id]: held },
+      }));
+
+      // Keyed per PROOF, not per angle: two holds on one angle can fail
+      // independently, and a status ruling on the same angle must not overwrite
+      // either message.
+      const failureKey = `${angle.id}#${proofKey}`;
+      void persistEvidenceHold(angle, held).then(
+        () =>
+          setFailures((f) => {
+            if (!(failureKey in f)) return f;
+            const next = { ...f };
+            delete next[failureKey];
+            return next;
+          }),
+        (err: Error) =>
+          setFailures((f) => ({ ...f, [failureKey]: err.message })),
+      );
+    },
+    [rulings],
+  );
 
   const discard = useCallback(() => setRulings(EMPTY_RULINGS), []);
 
@@ -509,65 +723,11 @@ export function applyAngleRulings(
     let next: StoryAngle = angle;
     if (status) next = { ...next, status };
 
-    if (held && held.length > 0) {
-      const missing = readMissingEvidence(next.missing_evidence).items;
-      const refs = readEvidenceRefs(next.evidence_refs).items;
-      const proof = readProofRequired(next.proof_required).items;
-      const moved = missing.filter((item) => held.includes(item.key));
-      const remaining = missing.filter((item) => !held.includes(item.key));
-      const nextRefs = [
-        ...refs,
-        ...moved
-          .filter((item) => !refs.some((ref) => ref.key === item.key))
-          .map((item) => ({
-            key: item.key,
-            label: item.label,
-            source: "Confirmed by you in this session",
-            url: null,
-            captured_at: new Date().toISOString(),
-          })),
-      ];
-      // A rung can be a gap because `proof_required` declared `satisfied: false`
-      // while `missing_evidence` never named it. Holding that key has to clear
-      // the declaration too, or "I have this" is a no-op that reports success.
-      const nextProof = proof.map((item) =>
-        held.includes(item.key) && item.satisfied === false
-          ? { ...item, satisfied: true }
-          : item,
-      );
+    // THE SAME projection the write path persists — one function, so the page
+    // and the row can never tell the user different things.
+    const projection = projectEvidenceHold(angle, held ?? [], null);
+    if (projection) next = { ...next, ...projection };
 
-      next = {
-        ...next,
-        missing_evidence: remaining as unknown as Json,
-        evidence_refs: nextRefs as unknown as Json,
-        proof_required: nextProof as unknown as Json,
-      };
-
-      // Recomputed from the LADDER, so the number here and the bar the user is
-      // looking at can never disagree. Deriving it from the raw columns counted
-      // a different set of rungs and produced two percentages on one screen.
-      const ladder = readLadder(next);
-      next = { ...next, evidence_quality: ladderPercent(ladder) };
-
-      // The payoff the whole surface promises: prove the last thing and the
-      // angle becomes pitchable. Mirrors the backend gate in
-      // `story_engine.gate_angle` — no outstanding rung, no contradiction, and
-      // evidence quality at or above the floor.
-      const contradictions = Array.isArray(next.contradictions)
-        ? next.contradictions.length
-        : 0;
-      const stillBuilding =
-        next.recommended_action === "develop_evidence" ||
-        next.recommended_action === "needs_expert_input";
-      if (
-        stillBuilding &&
-        ladder.held === ladder.total &&
-        contradictions === 0 &&
-        (next.evidence_quality ?? 0) >= 50
-      ) {
-        next = { ...next, recommended_action: "pitch_now" };
-      }
-    }
     return next;
   });
 }

@@ -171,6 +171,21 @@ export default function PressRoomWorkspace() {
     () => applyAngleRulings(press.angles, rulings.rulings),
     [press.angles, rulings.rulings],
   );
+
+  /**
+   * "I have this" is persisted from the STORED row, not the projected one the
+   * queue is rendering: the write recomputes the whole projection from what is
+   * in the database plus every hold made this session, so it stays idempotent
+   * and never stacks a projection on a projection.
+   */
+  const holdEvidence = useCallback(
+    (angleId: string, proofKey: string) => {
+      const stored = press.angles.find((angle) => angle.id === angleId);
+      if (!stored) return;
+      rulings.holdEvidence(stored, proofKey);
+    },
+    [press.angles, rulings],
+  );
   const requests = useMemo(
     () => applyRequestRulings(press.requests, rulings.rulings),
     [press.requests, rulings.rulings],
@@ -426,13 +441,13 @@ export default function PressRoomWorkspace() {
                     ) : (
                       <>
                         {rulings.count} ruling{rulings.count === 1 ? "" : "s"}{" "}
-                        applied and saved. Accepting, pitching and dismissing
-                        write straight to{" "}
+                        applied and saved. Accepting, pitching, dismissing and
+                        &ldquo;I have this&rdquo; all write straight to{" "}
                         <span className="font-mono text-[10px]">
                           seo.story_angle
                         </span>
-                        ; &ldquo;I have this&rdquo; recomputes the page for this
-                        session and is not stored yet.
+                        — evidence you confirm is stored as yours, so a reload
+                        shows the same readiness this page is showing now.
                       </>
                     )}
                   </span>
@@ -728,7 +743,7 @@ export default function PressRoomWorkspace() {
                   set({ focus: { kind: "request", id: requestId } })
                 }
                 onRuleAngle={rulings.ruleAngle}
-                onHoldEvidence={rulings.holdEvidence}
+                onHoldEvidence={holdEvidence}
                 angleHref={(angleId) =>
                   href({ view: "all", focus: { kind: "angle", id: angleId } })
                 }

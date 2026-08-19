@@ -474,3 +474,36 @@ export function readRequirements(column: Json): ParsedList<RequirementItem> {
     return { label, met: bool(record, "met") };
   });
 }
+
+/**
+ * The key each RAW entry in `proof_required` / `missing_evidence` parses to, by
+ * raw index — `null` for an entry no reader can understand.
+ *
+ * Persistence needs this. Writing a hold back to `seo.story_angle` must edit
+ * the STORED jsonb in place (drop the closed gap, flip the declared
+ * requirement) rather than serialising the parsed view models back over the
+ * column: the readers normalise key spellings and discard what they cannot
+ * read, so a round-trip through them would quietly delete the analyst's own
+ * fields and every malformed entry we promised to keep verbatim.
+ *
+ * It MIRRORS `readList` + the label/key rules above — same label spellings,
+ * same `key`/`id` preference, same index-based fallback. Change one, change
+ * both, or a persisted hold will target the wrong entry.
+ */
+export function readEntryKeys(
+  column: Json,
+  prefix: "proof" | "missing",
+): (string | null)[] {
+  return asArray(column).map((entry, index) => {
+    const record: { [key: string]: Json } | null =
+      typeof entry === "string" && entry.trim() !== ""
+        ? { label: entry }
+        : isJsonObject(entry)
+          ? entry
+          : null;
+    if (!record) return null;
+    const label = str(record, "label", "requirement", "claim", "title", "name", "text", "fact");
+    if (!label) return null;
+    return str(record, "key", "id") ?? `${prefix}_${index}`;
+  });
+}
