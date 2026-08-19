@@ -42,7 +42,11 @@ import { AssistChip } from "../components/AssistChip";
 import { useAssistExpiry } from "../components/expiry";
 import { SNOOZE_WINDOWS, isLowConfidence } from "../constants";
 import { useAssistsQuery } from "./useAssistsQuery";
-import { isSourceSuppressedUntil } from "../source-suppression";
+import {
+  isSourceSuppressedUntil,
+  SOURCE_SUPPRESSED_UNTIL,
+} from "../source-suppression";
+import { formatQuietRemaining } from "../quiet";
 import { ASSIST_URGENCY_ICON } from "../components/urgency-icon";
 import {
   ASSIST_URGENCIES,
@@ -511,15 +515,16 @@ export function AssistsManager() {
           <div className="mb-1.5 flex items-center gap-2">
             <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />
             <h2 className="text-xs font-semibold text-foreground">
-              Silenced assist kinds
+              Quieted assist kinds
             </h2>
             <span className="text-[11px] text-muted-foreground">
-              These stay quiet until you turn them back on.
+              A timed quiet ends on its own; the rest stay off until you turn
+              them back on.
             </span>
           </div>
           {sourceSuppressions.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              Nothing is silenced.
+              Nothing is quieted.
             </p>
           ) : (
             <div className="grid gap-1.5 lg:grid-cols-2">
@@ -533,7 +538,13 @@ export function AssistsManager() {
                       {suppression.label}
                     </div>
                     <div className="truncate text-[11px] text-muted-foreground">
-                      {suppression.reason} · {suppression.affectedRows} record
+                      {/* A window says when it comes back; a permanent mute
+                          says what the user typed. Never a bare timestamp. */}
+                      {suppression.until === SOURCE_SUPPRESSED_UNTIL
+                        ? suppression.reason
+                        : (formatQuietRemaining(suppression.until) ??
+                          "ending now")}{" "}
+                      · {suppression.affectedRows} record
                       {suppression.affectedRows === 1 ? "" : "s"} covered
                     </div>
                   </div>
@@ -542,7 +553,10 @@ export function AssistsManager() {
                     variant="outline"
                     className="h-7 shrink-0 gap-1 px-2 text-xs"
                     onClick={() => {
-                      void unsuppressSource(suppression.sourceKey)
+                      void unsuppressSource(
+                        suppression.sourceKey,
+                        suppression.until,
+                      )
                         .then((count) =>
                           toast.success(
                             `${suppression.label} is back on for ${count} assist${count === 1 ? "" : "s"}`,

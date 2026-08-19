@@ -23,9 +23,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { isLowConfidence, SNOOZE_WINDOWS } from "../constants";
+import { QUIET_FOREVER, QUIET_WINDOWS, quietUntil } from "../quiet";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAssistRunner } from "../runtime/useAssistRunner";
@@ -182,14 +185,36 @@ export function AssistCard({
     }
   };
 
-  const silence = async () => {
+  /** Quiet this whole kind until the user reverses it — reason required. */
+  const silenceForever = async () => {
     if (busy || !silenceReason.trim()) return;
     setBusy("silence");
     try {
-      const count = await suppressSource(assist, silenceReason);
+      const count = await suppressSource(assist, silenceReason, QUIET_FOREVER);
       if (count !== null) {
         toast.success(
           `${sourceLabel} is quiet — turn it back on from All assists`,
+        );
+        onClose();
+      }
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /**
+   * Quiet this whole kind for a window. No reason is asked for: a mute that
+   * reverses itself needs no record for the future to interpret, and a form in
+   * front of "quiet for an hour" is how a control stops being used.
+   */
+  const quietKindFor = async (windowKey: string, label: string) => {
+    if (busy) return;
+    setBusy("silence");
+    try {
+      const count = await suppressSource(assist, "", quietUntil(windowKey));
+      if (count !== null) {
+        toast.success(
+          `${sourceLabel} assists are quiet for ${label.toLowerCase()}`,
         );
         onClose();
       }
@@ -382,7 +407,7 @@ export function AssistCard({
                   Stop showing
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuItem
                   className="text-xs"
                   onSelect={() => {
@@ -391,8 +416,25 @@ export function AssistCard({
                     setNoteOpen(true);
                   }}
                 >
-                  Just this assist
+                  Just this assist, for good
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-[11px] font-normal text-muted-foreground">
+                  Quiet every {sourceLabel} assist for…
+                </DropdownMenuLabel>
+                {QUIET_WINDOWS.filter((w) => w.kind !== "forever").map(
+                  (window) => (
+                    <DropdownMenuItem
+                      key={window.key}
+                      className="text-xs"
+                      onSelect={() =>
+                        void quietKindFor(window.key, window.label)
+                      }
+                    >
+                      {window.label}
+                    </DropdownMenuItem>
+                  ),
+                )}
                 <DropdownMenuItem
                   className="text-xs"
                   onSelect={() => {
@@ -401,7 +443,7 @@ export function AssistCard({
                     setSilenceOpen(true);
                   }}
                 >
-                  Every assist like this
+                  Until I turn it back on…
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -466,7 +508,7 @@ export function AssistCard({
                 variant="destructive"
                 className="h-7 px-2 text-xs"
                 disabled={busy !== null || !silenceReason.trim()}
-                onClick={() => void silence()}
+                onClick={() => void silenceForever()}
               >
                 {busy === "silence" && (
                   <Loader2 className="mr-1 h-3 w-3 animate-spin" />

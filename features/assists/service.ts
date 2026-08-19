@@ -368,9 +368,17 @@ export async function listMySourceSuppressions(
   const { data, error } = await supabase
     .schema("platform")
     .from(TABLE)
-    .select("source_key, metadata, updated_at")
+    .select("source_key, metadata, updated_at, suppressed_until")
     .eq("user_id", userId)
-    .eq("suppressed_until", SOURCE_SUPPRESSED_UNTIL)
+    // Everything still muted — permanently or inside a window. A source quiet
+    // is NOT identified by its timestamp (an ordinary per-assist snooze writes
+    // a finite one too); `groupAssistSourceSuppressions` is what requires the
+    // `metadata.source_suppression` record, so the two can never be confused.
+    // That test lives in TS on purpose: it is the same predicate the grouping
+    // already applies, and one place to be right beats two.
+    .or(
+      `suppressed_until.eq.${SOURCE_SUPPRESSED_UNTIL},suppressed_until.gt.${nowIso()}`,
+    )
     .order("updated_at", { ascending: false });
   if (error) {
     throw new Error(
@@ -386,7 +394,7 @@ export async function listMySourceSuppressions(
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .eq("source_key", suppression.sourceKey)
-        .eq("suppressed_until", SOURCE_SUPPRESSED_UNTIL);
+        .eq("suppressed_until", suppression.until);
       if (countError) {
         throw new Error(
           `[assists] source suppression count failed: ${countError.message}`,
@@ -398,22 +406,32 @@ export async function listMySourceSuppressions(
 }
 
 /**
- * Silence one producer/check as a class — every current pending row and every
- * future row (the DB insert trigger inherits the source suppression).
+ * Quiet one producer/check as a class — every current pending row and every
+ * future row (the DB insert trigger inherits the window).
  *
- * The reason is required, matching whole-check finding suppression. The first
- * write makes the clicked assist the ONE visible record; if the class update
- * fails, its metadata is rolled back so the manager never advertises a mute
- * that did not land. Decision notes remain untouched.
+ * `until` is either `SOURCE_SUPPRESSED_UNTIL` ("until I turn it back on") or a
+ * finite ISO timestamp from one of the standard windows in `quiet.ts`. A timed
+ * source quiet reverses ITSELF, which is why the reason is optional for one
+ * and required for the permanent form: a mute that ends on its own does not
+ * need a record for the future to interpret, and demanding an essay for
+ * "quiet for an hour" is how a control stops being used.
+ *
+ * The first write makes the clicked assist the ONE visible record; if the
+ * class update fails, its metadata is rolled back so the manager never
+ * advertises a mute that did not land. Decision notes remain untouched.
  */
 export async function suppressAssistSource(
   userId: string,
   assistId: string,
   sourceKey: string,
   reason: string,
+  until: string = SOURCE_SUPPRESSED_UNTIL,
 ): Promise<number> {
   const supabase = createClient();
-  const suppressionReason = requireSuppressionReason(reason);
+  const permanent = until === SOURCE_SUPPRESSED_UNTIL;
+  const suppressionReason = permanent
+    ? requireSuppressionReason(reason)
+    : reason.trim() || `Quiet until ${until}`;
   const { data: record, error: recordError } = await supabase
     .schema("platform")
     .from(TABLE)
@@ -440,6 +458,7 @@ export async function suppressAssistSource(
         record.metadata,
         suppressionReason,
         nowIso(),
+        until,
       ),
     })
     .eq("id", record.id)
@@ -453,7 +472,7 @@ export async function suppressAssistSource(
   const { data, error } = await supabase
     .schema("platform")
     .from(TABLE)
-    .update({ suppressed_until: SOURCE_SUPPRESSED_UNTIL })
+    .update({ suppressed_until: until })
     .eq("user_id", userId)
     .eq("source_key", sourceKey)
     .eq("status", "pending")
@@ -480,10 +499,15 @@ export async function suppressAssistSource(
   return count;
 }
 
-/** Reverse a producer/check suppression. Finite per-assist snoozes stay put. */
+/**
+ * Reverse a producer/check quiet, permanent or timed. Scoped by the exact
+ * `until` the group carries so an ordinary per-assist snooze on a row of the
+ * same source is never swept up with it.
+ */
 export async function unsuppressAssistSource(
   userId: string,
   sourceKey: string,
+  until: string = SOURCE_SUPPRESSED_UNTIL,
 ): Promise<number> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -492,7 +516,7 @@ export async function unsuppressAssistSource(
     .update({ suppressed_until: null })
     .eq("user_id", userId)
     .eq("source_key", sourceKey)
-    .eq("suppressed_until", SOURCE_SUPPRESSED_UNTIL)
+    .eq("suppressed_until", until)
     .select("id");
   if (error) {
     throw new Error(`[assists] source unsuppression failed: ${error.message}`);
