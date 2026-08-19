@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   Users,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,11 @@ const NAV_ITEMS = [
     label: "Organizations",
     href: "/administration/users/organizations",
     icon: Building2,
+  },
+  {
+    label: "User Acquisition",
+    href: "/administration/users/acquisition",
+    icon: UserPlus,
   },
   {
     label: "Preferences",

@@ -10,6 +10,7 @@ import { SyncBootScript } from "@/lib/sync/components/SyncBootScript";
 import { syncPolicies } from "@/lib/sync/registry";
 import { ChunkRecoveryBootScript } from "@/components/errors/ChunkRecoveryBootScript";
 import { NewVersionWatcher } from "@/components/errors/NewVersionWatcher";
+import { UserAcquisitionCapture } from "@/lib/product-analytics/UserAcquisitionCapture";
 
 export { metadata, viewport };
 
@@ -78,6 +79,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             Routes that want streaming declare their own loading.tsx/Suspense
             BELOW their existence checks. */}
         {children}
+        <UserAcquisitionCapture />
         <Toaster />
         <Sonner />
         {/* Consent-based new-version prompt + post-boot stale-chunk guard.

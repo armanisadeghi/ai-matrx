@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-07-23`
+**Last updated:** `2026-08-19`
 
 ---
 
@@ -11,7 +11,7 @@
 `/administration/users` is the super-admin control plane for accounts and the
 access relationships around them. It brings the reciprocal user ↔ organization
 views into the same route-tabbed hub as preferences, admin levels, invitations,
-entitlements, usage, email, and announcements.
+entitlements, acquisition, usage, email, and announcements.
 
 The organization surface is a projection over the canonical IAM model. It does
 not own or duplicate organization or membership data.
@@ -23,11 +23,13 @@ not own or duplicate organization or membership data.
 - `app/(admin)/administration/users/layout.tsx` — shared tabbed shell; inherits the super-admin gate from the admin layout.
 - `app/(admin)/administration/users/page.tsx` — complete account roster, including each user's active organization memberships.
 - `app/(admin)/administration/users/organizations/page.tsx` — reciprocal organization/member directory and management surface.
+- `app/(admin)/administration/users/acquisition/page.tsx` — visitor → guest → account acquisition cohort, first-touch provenance, AI activity, and stored cost.
 - `features/admin/users/components/AccountsTableClient.tsx` — account table and user-focused organization deep links; reads `?user=<id>` to focus one account.
 - `features/admin/users/components/AdminUserRef.tsx` — **THE door for a user.** The name links to the account; the chevron menu carries every per-user destination. Used by all 12 surfaces that name a user.
 - `features/admin/users/components/OrganizationsAdminClient.tsx` — organization list, member list, user focus, and membership controls.
 - `app/api/admin/users/route.ts` — server-only auth roster plus profile, admin-level, and organization projections.
 - `app/api/admin/users/organizations/route.ts` — super-admin-only directory and membership mutation endpoint.
+- `app/api/admin/users/acquisition/route.ts` — super-admin projection joining auth users, guest-registry provenance, and the canonical usage rollup.
 - `features/admin/users/server/organizationMembershipAdmin.ts` — shared server projection and audited mutation caller.
 
 ---
@@ -39,8 +41,24 @@ not own or duplicate organization or membership data.
 - `iam.organization_member` is the active, soft-delete-aware read view used by the admin projection because the base membership table is intentionally not exposed to the Data API.
 - `iam.org_admin_audit` records super-admin membership mutations.
 - `auth.users` and `users.profiles` supply account identity and display fields.
+- `auth.users.is_anonymous` is the guest authority. A UUID-looking label is never used to infer status.
+- `public.guest_executions` owns browser fingerprint continuity, first/last execution, conversion, IP/user-agent, and `metadata.acquisition` first touch.
+- `chat.admin_user_usage_rollup` supplies stored all-time AI requests, last activity, and cost.
 
 No new table or Redux slice is owned by this feature.
+
+### Acquisition visibility
+
+`/administration/users/acquisition` is the canonical answer to who arrived,
+whether the identity is only a visitor, an anonymous guest, a permanent
+account, or a converted guest, where the browser was first observed, whether
+the user-agent is automated, and what that identity has cost. The timeframe is
+a **cohort-created/converted filter**; cost remains all-time stored cost for
+each identity so a cohort's full exposure is visible.
+
+Historical landing pages were never retained. Those rows say `Not captured`.
+The first-touch collector begins truthful forward capture and never backfills a
+guess from an AI surface, UUID, or latest page.
 
 ---
 
@@ -81,6 +99,9 @@ No new table or Redux slice is owned by this feature.
 - **A door is only added after reading the target route and confirming it consumes the param.** Both `?user=` destinations added on 2026-08-09 were previously broken promises: Accounts read no param at all, and the Accounts row menu advertised an "Admin level" filter that `…/users/admins` silently ignored. A link to a route that ignores its param is worse than no link, because it looks like it worked.
 - The name is a real anchor, not a click handler, so middle-click and cmd-click work. Where a user's name genuinely cannot be an anchor (inside a `<label>` or a button that means something else), render `AdminUserDoorControls` as a sibling instead — an anchor nested in interactive content is invalid DOM. All 12 call sites were verified clear on 2026-08-09.
 - **Never put `href` on a `MatrxDataTable` column whose cell renders `AdminUserRef`.** A column declaring `href` makes the table wrap the whole cell in a `<Link>` (`MatrxDataTable.tsx`), which would nest the name's anchor inside another anchor. Every current user column renders its own cell and declares no `href`; that is deliberate, not an oversight. Row-click navigation is safe alongside it — the table already ignores clicks originating inside an `<a>`.
+- **Guest, visitor, account, and converted are distinct states.** Visitor means a fingerprint observed before an auth identity exists; guest means `auth.users.is_anonymous=true`; converted means a guest-registry lineage now points at a permanent account.
+- **First-touch association is not conversion.** A permanent session observed by the collector links through `guest_executions.metadata.acquisition_user_id`; only the signup/promotion path writes `converted_at` / `converted_to_user_id`.
+- **Acquisition data is first observed, never reconstructed.** Preserve the first metadata object and show unknown for older rows. A later page is not a landing page.
 
 ---
 
@@ -103,6 +124,7 @@ No new table or Redux slice is owned by this feature.
 
 ## Change log
 
+- `2026-08-19` — Added User Acquisition: real guest/account/conversion state, bot/browser classification, created/first/last activity, first-touch page/referrer/UTM context, IP/client details, and canonical all-time stored LLM cost. Reused `guest_executions`, `auth.users`, `AdminUserRef`, and `admin_user_usage_rollup`; no new table.
 - `2026-08-13` — The Accounts roster is now agent-READABLE: `AccountsTableClient` mounts a `SurfaceRuntimeProvider` for `matrx-admin/users` and emits 20 surface values through the new builder `features/admin/users/lib/admin-users-scope.ts`. Two behavioural notes for anyone editing this file. **(1) `MatrxDataTable` is now in `controlled-local` mode** — search, column filters, sort and page live in `queryState` here, not inside the table (the table still does the filtering). That is what lets the page report how many accounts match the admin's live query; `visible_user_count` is computed by calling the table's own `filterAndSortRows`, so it cannot drift from what the table renders. Keep it that way rather than counting rows by hand. **(2) `getScope` must stay SYNCHRONOUS** — the Surface Context window polls it every 400ms while open, so a fetching emitter would hammer `/api/admin/users` behind an idle debug panel; every emitted value is a derivation over state this component has already rendered. Privacy posture is deliberate and documented in the manifest header: roster-wide values are counts only, `roster_sample` is capped at 10 and carries **no email addresses**, and only the account focused via `?user=` ships admin-relevant fields. **No agent write targets, by design** — admin level, magic links, password resets, email/DM sending and the onboarding toggle are all permissions / credentials / outbound communication and stay human; the ruling is argued in full in `admin-users.manifest.ts`.
 - `2026-08-09` — No Dead Ends sweep: a named user is now reachable. Accounts and `…/users/admins` both honour `?user=<id>`, and `AdminUserRef` makes the name itself a link (Door #1) with "Account" and "Admin level" joining its menu. Closes FOUND_DEFECTS D138's most-hit symptom; a canonical `/users/<id>` route and a `user` registry token remain open.
 - `2026-08-08` — Codex: made the shared Users & Access shell a deliberate two-row mobile header with an independently scrollable, touch-safe tab rail; added accessible navigation/back labels so child admin routes no longer inherit the prior title/tab overlap.

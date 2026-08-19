@@ -5,6 +5,24 @@ Workspace OAuth review into a GA4 scope campaign. These are separate systems:
 the Google tag writes anonymous page-view telemetry to AI Matrx's own GA4
 property and never reads a customer's Analytics account or uses OAuth.
 
+First-party acquisition capture is separate from GA4. `UserAcquisitionCapture`
+records a browser fingerprint's first observed host/path, sanitized referrer,
+UTM fields, timezone, language, and screen size in the existing
+`public.guest_executions.metadata.acquisition` object. It never stores arbitrary
+landing-page query strings. The registry then follows the same visitor through
+anonymous use and account conversion; `auth.users.is_anonymous` remains the
+authority for guest status.
+
+A permanent session observed by the collector is associated through
+`metadata.acquisition_user_id`; it never writes `converted_at` or
+`converted_to_user_id`. Only the signup/promotion flow can declare conversion.
+
+The root collector skips administration, login, and auth routes. Existing
+first-touch metadata is never overwritten, so later navigation cannot rewrite
+acquisition history. Collection predating this feature is unknown and stays
+unknown—admin UI labels the field **First observed page**, never invents a
+historical landing page.
+
 `InternalGoogleAnalytics` is mounted by the `(core)` server layout only for a
 signed-in `super_admin`. It does not load for guests, ordinary customers, or a
 direct Education request, and it refuses to send Education page views after a
@@ -22,5 +40,7 @@ Keywords, and Settings page titles.
 
 ## Change log
 
+- 2026-08-19 — Added durable first-touch acquisition capture over the canonical
+  guest registry, with sanitized URLs and conversion continuity.
 - 2026-08-15 — Added super-admin-only page-view collection for AI Matrx's own
   GA4 property, with Education excluded and no Google OAuth dependency.

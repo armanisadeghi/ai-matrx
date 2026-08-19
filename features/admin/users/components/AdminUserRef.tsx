@@ -59,6 +59,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   UserRound,
+  UserPlus,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -128,6 +129,11 @@ function doorsFor(userId: string): UserDoor[] {
       href: `/administration/users/usage?user=${id}`,
       label: "Usage & cost",
       Icon: Gauge,
+    },
+    {
+      href: `/administration/users/acquisition?user=${id}`,
+      label: "Acquisition",
+      Icon: UserPlus,
     },
     {
       href: `/administration/users/email?userId=${id}`,
