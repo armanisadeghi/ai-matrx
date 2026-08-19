@@ -1,3 +1,9 @@
+> 🔴 **SUPERSEDED — the ONE Masterwork document is
+> `/Users/armanisadeghi/code/common-docs/projects/masterwork/MASTERWORK.md`.**
+> It carries the evidence-verified state of every system, UI, agent and Approach.
+> This file is retained only for its per-task working notes; status claims here are
+> not authoritative.
+
 # Masterwork — Distillation → Rulebook → Build → a Masterwork
 
 > Vocabulary authority: [`common-docs/systems/vocabulary/FEATURE.md`](/Users/armanisadeghi/code/common-docs/systems/vocabulary/FEATURE.md).
