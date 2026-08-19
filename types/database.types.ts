@@ -14607,6 +14607,213 @@ export type Database = {
           },
         ]
       }
+      registry_ingest_run: {
+        Row: {
+          candidates_created: number
+          created_at: string
+          created_by: string | null
+          cursor: Json
+          deleted_at: string | null
+          error: Json | null
+          estimated_cost_usd: number
+          finished_at: string | null
+          heartbeat_at: string | null
+          id: string
+          items_seen: number
+          last_completed_at: string | null
+          lease_expires_at: string | null
+          lease_owner: string | null
+          lifetime: Json
+          metadata: Json
+          next_due_at: string | null
+          organization_id: string
+          organizations_created: number
+          organizations_matched: number
+          params: Json
+          pass_key: string
+          people_created: number
+          people_skipped_no_identifier: number
+          requests_made: number
+          run_count: number
+          source_slug: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          candidates_created?: number
+          created_at?: string
+          created_by?: string | null
+          cursor?: Json
+          deleted_at?: string | null
+          error?: Json | null
+          estimated_cost_usd?: number
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          items_seen?: number
+          last_completed_at?: string | null
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          lifetime?: Json
+          metadata?: Json
+          next_due_at?: string | null
+          organization_id: string
+          organizations_created?: number
+          organizations_matched?: number
+          params?: Json
+          pass_key: string
+          people_created?: number
+          people_skipped_no_identifier?: number
+          requests_made?: number
+          run_count?: number
+          source_slug: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          candidates_created?: number
+          created_at?: string
+          created_by?: string | null
+          cursor?: Json
+          deleted_at?: string | null
+          error?: Json | null
+          estimated_cost_usd?: number
+          finished_at?: string | null
+          heartbeat_at?: string | null
+          id?: string
+          items_seen?: number
+          last_completed_at?: string | null
+          lease_expires_at?: string | null
+          lease_owner?: string | null
+          lifetime?: Json
+          metadata?: Json
+          next_due_at?: string | null
+          organization_id?: string
+          organizations_created?: number
+          organizations_matched?: number
+          params?: Json
+          pass_key?: string
+          people_created?: number
+          people_skipped_no_identifier?: number
+          requests_made?: number
+          run_count?: number
+          source_slug?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      registry_source: {
+        Row: {
+          allows_customer_use: boolean
+          allows_persistence: boolean
+          allows_person_promotion: boolean
+          api_base_url: string | null
+          contact_email: string | null
+          crawl_policy: string
+          created_at: string
+          created_by: string | null
+          declared_at: string
+          deleted_at: string | null
+          deletion_feed: string | null
+          homepage_url: string | null
+          id: string
+          ingest_status: string
+          label: string
+          licence_class: string
+          metadata: Json
+          notes: string | null
+          organization_id: string
+          permitted_fields: string[]
+          rate_limit_per_second: number
+          refresh_cadence_days: number
+          review_due_at: string | null
+          slug: string
+          terms_url: string
+          terms_version: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          allows_customer_use?: boolean
+          allows_persistence?: boolean
+          allows_person_promotion?: boolean
+          api_base_url?: string | null
+          contact_email?: string | null
+          crawl_policy: string
+          created_at?: string
+          created_by?: string | null
+          declared_at?: string
+          deleted_at?: string | null
+          deletion_feed?: string | null
+          homepage_url?: string | null
+          id?: string
+          ingest_status?: string
+          label: string
+          licence_class: string
+          metadata?: Json
+          notes?: string | null
+          organization_id: string
+          permitted_fields?: string[]
+          rate_limit_per_second?: number
+          refresh_cadence_days?: number
+          review_due_at?: string | null
+          slug: string
+          terms_url: string
+          terms_version: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          allows_customer_use?: boolean
+          allows_persistence?: boolean
+          allows_person_promotion?: boolean
+          api_base_url?: string | null
+          contact_email?: string | null
+          crawl_policy?: string
+          created_at?: string
+          created_by?: string | null
+          declared_at?: string
+          deleted_at?: string | null
+          deletion_feed?: string | null
+          homepage_url?: string | null
+          id?: string
+          ingest_status?: string
+          label?: string
+          licence_class?: string
+          metadata?: Json
+          notes?: string | null
+          organization_id?: string
+          permitted_fields?: string[]
+          rate_limit_per_second?: number
+          refresh_cadence_days?: number
+          review_due_at?: string | null
+          slug?: string
+          terms_url?: string
+          terms_version?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
       saved_view: {
         Row: {
           created_at: string
