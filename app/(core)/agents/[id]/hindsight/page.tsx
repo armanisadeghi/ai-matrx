@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getAgent } from "@/lib/agents/data";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AgentHeader } from "@/features/agents/components/shared/AgentHeader";
@@ -22,11 +22,10 @@ export default async function AgentHindsightRoute({
       <div className="h-full overflow-hidden">
         <Suspense
           fallback={
-            <div className="flex h-64 items-center justify-center rounded-md bg-muted/50">
-              <SuspenseLoader
-                centered={false}
-                message="Loading hindsight workspace…"
-              />
+            <div className="flex h-full gap-3 p-4 pt-[calc(var(--shell-header-h)+1rem)]">
+              <Skeleton className="hidden h-full w-64 2xl:block" />
+              <Skeleton className="h-full flex-1" />
+              <Skeleton className="hidden h-full w-[26rem] 2xl:block" />
             </div>
           }
         >

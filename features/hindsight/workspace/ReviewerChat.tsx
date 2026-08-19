@@ -67,7 +67,9 @@ function ReviewIntro({ review }: { review: Review }) {
         )}
         {review.what_worked && (
           <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">What already works: </span>
+            <span className="font-medium text-foreground">
+              What already works:{" "}
+            </span>
             {review.what_worked}
           </p>
         )}
@@ -174,8 +176,14 @@ export function ReviewerChat({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-testid="hindsight-reviewer-chat">
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
+    <div
+      className="flex h-full min-h-0 flex-col"
+      data-testid="hindsight-reviewer-chat"
+    >
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4"
+      >
         <ReviewIntro review={review} />
 
         {thread.isLoading && <Skeleton className="h-24" />}
@@ -234,6 +242,7 @@ export function ReviewerChat({
         )}
 
         <Textarea
+          className="text-base md:text-sm"
           rows={3}
           value={draft}
           disabled={send.isPending || unavailable}

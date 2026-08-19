@@ -3,13 +3,12 @@
 // MobilePanelShell — the drop-in mobile treatment for any multi-pane route
 // (IDE, split editors, sidebar+detail workspaces, inspector rails).
 //
-// Desktop (>= md): renders `desktop` VERBATIM. Whatever resizable/split layout
-//                  the route already has is untouched — zero regression risk.
-// Mobile  (< md):  renders `main` as one full-height scrolling column, and each
-//                  side panel becomes an iOS-style BOTTOM DRAWER reachable from
-//                  ONE "…" tap target portaled into the shell header's right
-//                  slot. Nothing is crammed into the phone header, and no panel
-//                  silently disappears.
+// Wide: renders `desktop` VERBATIM. Whatever resizable/split layout the route
+//       already has is untouched — zero regression risk.
+// Compact: renders `main` as one full-height scrolling column, and each side
+//          panel becomes an iOS-style BOTTOM DRAWER reachable from ONE header
+//          tap target. The default boundary is `md`; dense workspaces may opt
+//          into `lg`, `xl`, or `2xl` with `collapseBelow`.
 //
 //   <MobilePanelShell
 //     desktop={<ResizablePanelGroup>…existing layout…</ResizablePanelGroup>}
@@ -40,6 +39,7 @@ import { createContext, useContext, useState } from "react";
 import { usePathname } from "next/navigation";
 import { MoreHorizontal, type LucideIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import PageHeaderRightPortal from "@/features/shell/components/header/PageHeaderRightPortal";
 import { TapTargetButton } from "@/components/icons/TapTargetButton";
 import {
@@ -88,7 +88,16 @@ export interface MobilePanelShellProps {
   menuIcon?: LucideIcon;
   /** Accessible name + sheet title for the panels trigger. Default "Panels". */
   menuLabel?: string;
+  /** Collapse a dense desktop workspace before phone width. */
+  collapseBelow?: "md" | "lg" | "xl" | "2xl";
 }
+
+const COLLAPSE_MAX_WIDTH = {
+  md: 767,
+  lg: 1023,
+  xl: 1279,
+  "2xl": 1535,
+} as const;
 
 export function MobilePanelShell({
   desktop,
@@ -97,8 +106,12 @@ export function MobilePanelShell({
   mainClassName,
   menuIcon: MenuIcon = MoreHorizontal,
   menuLabel = "Panels",
+  collapseBelow = "md",
 }: MobilePanelShellProps) {
   const isMobile = useIsMobile();
+  const compactWorkspace = useMediaQuery(
+    `(max-width: ${COLLAPSE_MAX_WIDTH[collapseBelow]}px)`,
+  );
   const [menuOpen, setMenuOpen] = useState(false);
   const [openPanelId, setOpenPanelId] = useState<string | null>(null);
   const [everOpened, setEverOpened] = useState<Set<string>>(() => new Set());
@@ -117,7 +130,8 @@ export function MobilePanelShell({
     setMenuOpen(false);
   }
 
-  if (!isMobile) return <>{desktop}</>;
+  const usePanelMode = collapseBelow === "md" ? isMobile : compactWorkspace;
+  if (!usePanelMode) return <>{desktop}</>;
 
   const hasPanels = Boolean(panels && panels.length > 0);
   const openPanel = panels?.find((p) => p.id === openPanelId) ?? null;
@@ -162,7 +176,11 @@ export function MobilePanelShell({
 
       {/* Panel picker */}
       {hasPanels && (
-        <BottomSheet open={menuOpen} onOpenChange={setMenuOpen} title={menuLabel}>
+        <BottomSheet
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          title={menuLabel}
+        >
           <BottomSheetHeader
             title={menuLabel}
             trailing={

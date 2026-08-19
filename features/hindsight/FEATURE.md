@@ -26,15 +26,17 @@ reviewer is the center of the experience** (Arman's directive): tell the
 intelligence watching your agent what it got right or wrong, and watch better
 proposals appear.
 
-| Pane | Component | What it holds |
-|---|---|---|
-| Left | [`workspace/EnrollmentSidebar.tsx`](./workspace/EnrollmentSidebar.tsx) | Review now / pause / archive, progress-to-next-review meter, editable reviewer focus (goal), compact spend, review timeline — selecting a review opens its conversation |
-| Center | [`workspace/ReviewerChat.tsx`](./workspace/ReviewerChat.tsx) | The selected review's thread as a real chat: the review's conclusions as the opening message, then the human↔reviewer exchange, composer pinned at the bottom |
-| Right | [`workspace/ImprovementsRail.tsx`](./workspace/ImprovementsRail.tsx) | Findings grouped **Waiting for you** vs **Decided** (canonical `FindingCard`), plus [`workspace/VersionLadder.tsx`](./workspace/VersionLadder.tsx) — recent agent versions via the `agx_get_version_history` RPC (direct Supabase, same source as the version-diff page), applied findings marked "from review", doors to `/agents/{id}/v/{n}`, `/agents/{id}/latest`, and `/agents/{id}/run` |
+| Pane   | Component                                                              | What it holds                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------ | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Left   | [`workspace/EnrollmentSidebar.tsx`](./workspace/EnrollmentSidebar.tsx) | Review now / pause / archive, progress-to-next-review meter, editable reviewer focus (goal), compact spend, review timeline — selecting a review opens its conversation                                                                                                                                                                                                                       |
+| Center | [`workspace/ReviewerChat.tsx`](./workspace/ReviewerChat.tsx)           | The selected review's thread as a real chat: the review's conclusions as the opening message, then the human↔reviewer exchange, composer pinned at the bottom                                                                                                                                                                                                                                 |
+| Right  | [`workspace/ImprovementsRail.tsx`](./workspace/ImprovementsRail.tsx)   | Findings grouped **Waiting for you** vs **Decided** (canonical `FindingCard`), plus [`workspace/VersionLadder.tsx`](./workspace/VersionLadder.tsx) — recent agent versions via the `agx_get_version_history` RPC (direct Supabase, same source as the version-diff page), applied findings marked "from review", doors to `/agents/{id}/v/{n}`, `/agents/{id}/latest`, and `/agents/{id}/run` |
 
 Not enrolled → [`components/EnableCard.tsx`](./components/EnableCard.tsx)
-centered. Mobile stacks chat (bounded height) → proposals → state, one scroll
-area. "Guide" on a finding routes into the center chat via `FindingCard`'s
+centered. Below the full three-pane desktop width, the conversation keeps the
+workspace and review history/settings plus proposals/versions move into the
+canonical `MobilePanelShell` drawers; no pane disappears and the page keeps one
+controlled scroll surface. "Guide" on a finding routes into the center chat via `FindingCard`'s
 optional `onGuide` prop (scope chip on the composer, thread switched to the
 finding's review) — the admin console omits `onGuide` and keeps the inline
 `DiscussPanel`. Shared mutations live ONCE in
@@ -58,23 +60,23 @@ platform admin, not in a backend-repo dashboard. Do not re-create a second copy.
 
 ## Map
 
-| Piece | Where |
-|---|---|
-| Page | `components/HindsightPage.tsx` — list + platform spend + detail pane |
-| Detail | `components/EnrollmentDetailPanel.tsx` — subject, spend, cadence, findings, reviews |
-| **Internal Affairs (C-19)** | `components/ChangeHistoryPanel.tsx` (every applied change to a governed agent/tool/workflow — version from→to, provenance tier, the finding that caused it, a door on both) + `components/FindingEffectivenessPanel.tsx` (per lever per unit: proposed/applied/rejected/**reverted**, accept + revert rates, time-to-decision, cost movement). Both mounted at the bottom of `HindsightPage`; API `getChangeHistory` / `getFindingEffectiveness`; server views in aidream migration `0375`. Read-only — Internal Affairs never writes. |
-| Enroll | `components/EnrollDialog.tsx` — five enrollable kinds (agent · **orchestra** · workflow · tool · environment), real pickers, and the **lens** (which runs the reviewer reads + how much of each it sees) |
-| Finding | `components/FindingCard.tsx` — levers, confidence, replay verdicts, the canonical adjacent Copy / Copy-for-AI controls (AI menu: contextual finding + JSON), Apply / Reject / **Guide** / **Revert** (applied state), and `components/RegressionCasesFromFinding.tsx` (C-17: turn a cited recorded call into a permanent test; admin-only). `copy.ts` owns the one rendered-view projection shared by human and agent copy. |
-| Revert | `components/RevertButton.tsx` — the ONE revert affordance (button + confirm naming "returns to v{n}" + version-diff door + receipt toast), shared by `FindingCard` and `VersionLadder`. Renders only on `status='applied'` findings; the ladder shows it only on the CURRENT `from review` row (reverting a non-current version is meaningless, so the door is hidden, not disabled). Server contract: `POST /hindsight/findings/{id}/revert` re-promotes the pre-apply version as a NEW version row — see aidream's hindsight `FEATURE.md` |
-| Discuss (admin) | `components/DiscussPanel.tsx` — the reviewer's thread + the reply box; product uses `workspace/ReviewerChat.tsx` |
-| Thread message | `components/ThreadMessageRow.tsx` — ONE renderer for reviewer-thread messages (`flat` admin / `chat` product variants) |
-| Review | `components/ReviewRow.tsx` → `components/ReplaysTable.tsx` |
-| Review progress | `components/ReviewProgress.tsx` — the "minutes, not seconds" elapsed panel, shared by both surfaces |
-| Layer 2 workspace | `workspace/ImprovementWorkspace.tsx` — enable CTA or the three-pane workspace, product doors |
-| Enrollment actions | `hooks/useEnrollmentActions.ts` — review-now / pause / goal / archive mutations, one home |
-| Doors | `subject-doors.ts` (audience-aware) + `components/door-audience.tsx` |
-| Types | `types.ts` — DERIVED from the OpenAPI contract |
-| Client | `api.ts` — `lib/api/typed-client.ts` over aidream `/hindsight/*` |
+| Piece                       | Where                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Page                        | `components/HindsightPage.tsx` — list + platform spend + detail pane                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Detail                      | `components/EnrollmentDetailPanel.tsx` — subject, spend, cadence, findings, reviews                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Internal Affairs (C-19)** | `components/ChangeHistoryPanel.tsx` (every applied change to a governed agent/tool/workflow — version from→to, provenance tier, the finding that caused it, a door on both) + `components/FindingEffectivenessPanel.tsx` (per lever per unit: proposed/applied/rejected/**reverted**, accept + revert rates, time-to-decision, cost movement). Both mounted at the bottom of `HindsightPage`; API `getChangeHistory` / `getFindingEffectiveness`; server views in aidream migration `0375`. Read-only — Internal Affairs never writes.      |
+| Enroll                      | `components/EnrollDialog.tsx` — five enrollable kinds (agent · **orchestra** · workflow · tool · environment), real pickers, and the **lens** (which runs the reviewer reads + how much of each it sees)                                                                                                                                                                                                                                                                                                                                    |
+| Finding                     | `components/FindingCard.tsx` — levers, confidence, replay verdicts, the canonical adjacent Copy / Copy-for-AI controls (AI menu: contextual finding + JSON), Apply / Reject / **Guide** / **Revert** (applied state), and `components/RegressionCasesFromFinding.tsx` (C-17: turn a cited recorded call into a permanent test; admin-only). `copy.ts` owns the one rendered-view projection shared by human and agent copy.                                                                                                                 |
+| Revert                      | `components/RevertButton.tsx` — the ONE revert affordance (button + confirm naming "returns to v{n}" + version-diff door + receipt toast), shared by `FindingCard` and `VersionLadder`. Renders only on `status='applied'` findings; the ladder shows it only on the CURRENT `from review` row (reverting a non-current version is meaningless, so the door is hidden, not disabled). Server contract: `POST /hindsight/findings/{id}/revert` re-promotes the pre-apply version as a NEW version row — see aidream's hindsight `FEATURE.md` |
+| Discuss (admin)             | `components/DiscussPanel.tsx` — the reviewer's thread + the reply box; product uses `workspace/ReviewerChat.tsx`                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Thread message              | `components/ThreadMessageRow.tsx` — ONE renderer for reviewer-thread messages (`flat` admin / `chat` product variants)                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Review                      | `components/ReviewRow.tsx` → `components/ReplaysTable.tsx`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| Review progress             | `components/ReviewProgress.tsx` — the "minutes, not seconds" elapsed panel, shared by both surfaces                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Layer 2 workspace           | `workspace/ImprovementWorkspace.tsx` — enable CTA or the three-pane workspace, product doors                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Enrollment actions          | `hooks/useEnrollmentActions.ts` — review-now / pause / goal / archive mutations, one home                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Doors                       | `subject-doors.ts` (audience-aware) + `components/door-audience.tsx`                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Types                       | `types.ts` — DERIVED from the OpenAPI contract                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| Client                      | `api.ts` — `lib/api/typed-client.ts` over aidream `/hindsight/*`                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 Backend contract + earned traps: `aidream/aidream/services/hindsight/FEATURE.md`.
 Wire shapes: `aidream/aidream/api/schemas/hindsight.py`. Work order:
@@ -163,12 +165,12 @@ reading the raw field.
 ## The three things that are easy to get wrong
 
 1. **Cost vocabulary is load-bearing — never blur it.**
-   *Replay cost* is money Hindsight SPENT. *Original cost* is what the historical
+   _Replay cost_ is money Hindsight SPENT. _Original cost_ is what the historical
    run cost: a BASELINE being beaten, not a charge, and never counted as spend.
    **A replay whose `status !== "completed"` must never render a dollar
    comparison** — it shows "did not run", "nothing spent — it never reached the
-   model", and the reason. Rendering `$0.000` there reads as *free* instead of
-   *never happened*, which is the exact confusion this port had to fix.
+   model", and the reason. Rendering `$0.000` there reads as _free_ instead of
+   _never happened_, which is the exact confusion this port had to fix.
    Guarded by `replayRan` / `replaySpend` / `replayBaseline` in `types.ts`.
 
 2. **"Review now" runs the whole reviewer inline — minutes, not seconds.**
@@ -192,8 +194,7 @@ Hindsight assists point here, and the page honours them:
 `aidream/services/hindsight/review.py` and `detector.py` — change both sides
 together. **The URL enrollment wins synchronously over mounted selection
 state.** Route transitions reuse the page; effect-based synchronization can
-briefly fetch the previous enrollment and turn a stale selection into a queued
-404.
+briefly fetch the previous enrollment and turn a stale selection into a queued 404.
 
 ## Verified (2026-08-11, real clicks, real data)
 
@@ -209,6 +210,11 @@ findings list refreshed itself, and the original finding was deprioritized to
 
 ## Change Log
 
+- **2026-08-18** — The product workspace now clears the glass Agent header,
+  keeps the reviewer conversation usable at ordinary desktop/tablet widths,
+  and moves both secondary rails into named `MobilePanelShell` drawers below
+  `2xl` instead of hiding or vertically stacking them. Finding cards use their
+  own container width for action layout, and every load failure has a retry.
 - **2026-08-18** — Deep-linked enrollment selection now wins during render,
   preventing reused admin pages from fetching the previous selection during a
   route transition and emitting an expected `enrollment not found` error.

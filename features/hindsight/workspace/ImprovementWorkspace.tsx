@@ -21,10 +21,18 @@
  */
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import {
+  Columns3,
+  History,
+  Lightbulb,
+  RefreshCw,
+  TriangleAlert,
+} from "lucide-react";
 
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
 
 import { getEnrollment, listEnrollments } from "../api";
 import type { Finding } from "../types";
@@ -44,7 +52,6 @@ function EnrolledWorkspace({
   enrollmentId: string;
   onArchived: () => void;
 }) {
-  const isMobile = useIsMobile();
   const actions = useEnrollmentActions(enrollmentId, { onArchived });
 
   const detail = useQuery({
@@ -57,18 +64,34 @@ function EnrolledWorkspace({
 
   if (detail.isLoading) {
     return (
-      <div className="flex h-full gap-3 p-4">
-        <Skeleton className="hidden h-full w-72 lg:block" />
+      <div className="flex h-full gap-3 p-4 pt-[calc(var(--shell-header-h)+1rem)]">
+        <Skeleton className="hidden h-full w-64 2xl:block" />
         <Skeleton className="h-full flex-1" />
-        <Skeleton className="hidden h-full w-96 xl:block" />
+        <Skeleton className="hidden h-full w-[26rem] 2xl:block" />
       </div>
     );
   }
   if (detail.isError) {
     return (
-      <div className="p-4">
-        <Card className="p-4 text-sm text-red-600 dark:text-red-400">
-          Could not load review status: {(detail.error as Error).message}
+      <div className="flex h-full items-start justify-center overflow-y-auto p-4 pt-[calc(var(--shell-header-h)+2rem)]">
+        <Card className="w-full max-w-lg p-5">
+          <div className="flex items-start gap-3">
+            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+            <div className="min-w-0 flex-1">
+              <h2 className="font-medium">Review workspace unavailable</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {(detail.error as Error).message}
+              </p>
+              <Button
+                className="mt-4"
+                size="sm"
+                onClick={() => void detail.refetch()}
+              >
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                Try again
+              </Button>
+            </div>
+          </div>
         </Card>
       </div>
     );
@@ -100,50 +123,60 @@ function EnrolledWorkspace({
     />
   );
 
-  if (isMobile) {
-    // Stacked, single scroll area: the conversation first (its own bounded
-    // height), then the proposals, then the review state.
-    return (
-      <div className="h-full overflow-y-auto">
-        <div className="h-[65dvh] border-b border-border">{chat}</div>
-        <ImprovementsRail
-          agentId={agentId}
-          findings={findings}
-          onChanged={actions.invalidate}
-          onGuide={handleGuide}
-        />
-        <div className="border-t border-border">
-          <EnrollmentSidebar
-            detail={data}
-            actions={actions}
-            activeReviewId={activeReview?.id ?? null}
-            onSelectReview={setSelectedReviewId}
-          />
-        </div>
-      </div>
-    );
-  }
+  const reviewPanel = (
+    <EnrollmentSidebar
+      detail={data}
+      actions={actions}
+      activeReviewId={activeReview?.id ?? null}
+      onSelectReview={setSelectedReviewId}
+    />
+  );
+  const improvementsPanel = (
+    <ImprovementsRail
+      agentId={agentId}
+      findings={findings}
+      onChanged={actions.invalidate}
+      onGuide={handleGuide}
+    />
+  );
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden">
-      <aside className="hidden w-72 shrink-0 border-r border-border lg:block">
-        <EnrollmentSidebar
-          detail={data}
-          actions={actions}
-          activeReviewId={activeReview?.id ?? null}
-          onSelectReview={setSelectedReviewId}
-        />
-      </aside>
-      <main className="min-w-0 flex-1">{chat}</main>
-      <aside className="hidden w-96 shrink-0 border-l border-border xl:block">
-        <ImprovementsRail
-          agentId={agentId}
-          findings={findings}
-          onChanged={actions.invalidate}
-          onGuide={handleGuide}
-        />
-      </aside>
-    </div>
+    <MobilePanelShell
+      collapseBelow="2xl"
+      menuIcon={Columns3}
+      menuLabel="Review panels"
+      main={chat}
+      mainClassName="overflow-hidden pt-[var(--shell-header-h)]"
+      panels={[
+        {
+          id: "reviews",
+          label: "Review history & settings",
+          icon: History,
+          content: (
+            <div className="h-[70dvh] overflow-hidden">{reviewPanel}</div>
+          ),
+        },
+        {
+          id: "improvements",
+          label: `Proposals & versions (${findings.length})`,
+          icon: Lightbulb,
+          content: (
+            <div className="h-[70dvh] overflow-hidden">{improvementsPanel}</div>
+          ),
+        },
+      ]}
+      desktop={
+        <div className="flex h-full min-h-0 overflow-hidden pt-[var(--shell-header-h)]">
+          <aside className="w-64 shrink-0 border-r border-border bg-card/30">
+            {reviewPanel}
+          </aside>
+          <main className="min-w-0 flex-1">{chat}</main>
+          <aside className="w-[26rem] shrink-0 border-l border-border bg-card/30">
+            {improvementsPanel}
+          </aside>
+        </div>
+      }
+    />
   );
 }
 
@@ -161,16 +194,32 @@ export function ImprovementWorkspace({
 
   if (enrollments.isLoading) {
     return (
-      <div className="p-4">
-        <Skeleton className="h-64" />
+      <div className="h-full p-4 pt-[calc(var(--shell-header-h)+1rem)]">
+        <Skeleton className="h-full" />
       </div>
     );
   }
   if (enrollments.isError) {
     return (
-      <div className="p-4">
-        <Card className="p-4 text-sm text-red-600 dark:text-red-400">
-          Could not load review status: {(enrollments.error as Error).message}
+      <div className="flex h-full items-start justify-center overflow-y-auto p-4 pt-[calc(var(--shell-header-h)+2rem)]">
+        <Card className="w-full max-w-lg p-5">
+          <div className="flex items-start gap-3">
+            <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+            <div className="min-w-0 flex-1">
+              <h2 className="font-medium">Review status unavailable</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {(enrollments.error as Error).message}
+              </p>
+              <Button
+                className="mt-4"
+                size="sm"
+                onClick={() => void enrollments.refetch()}
+              >
+                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                Try again
+              </Button>
+            </div>
+          </div>
         </Card>
       </div>
     );
@@ -189,8 +238,10 @@ export function ImprovementWorkspace({
           onArchived={() => void enrollments.refetch()}
         />
       ) : (
-        <div className="h-full overflow-y-auto p-4">
-          <EnableCard agentId={agentId} agentName={agentName} />
+        <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
+          <div className="p-4 sm:p-6">
+            <EnableCard agentId={agentId} agentName={agentName} />
+          </div>
         </div>
       )}
     </DoorAudienceProvider>

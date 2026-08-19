@@ -7,7 +7,16 @@
  * review timeline. Selecting a review opens its conversation in the center.
  */
 import { useState } from "react";
-import { Archive, Check, Eye, Pause, Pencil, Play, RefreshCw, X } from "lucide-react";
+import {
+  Archive,
+  Check,
+  Eye,
+  Pause,
+  Pencil,
+  Play,
+  RefreshCw,
+  X,
+} from "lucide-react";
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Badge } from "@/components/ui/badge";
@@ -51,7 +60,9 @@ function ReviewTimelineRow({
             completed ? "bg-emerald-500" : "bg-red-500",
           )}
         />
-        <span className="text-xs font-medium">{fmtDate(review.created_at)}</span>
+        <span className="text-xs font-medium">
+          {fmtDate(review.created_at)}
+        </span>
         {!completed && (
           <Badge variant="destructive" className="ml-auto text-[10px]">
             {review.status}
@@ -81,7 +92,8 @@ export function EnrollmentSidebar({
   onSelectReview: (id: string) => void;
 }) {
   const enrollment = detail.enrollment;
-  const { runReview, toggleStatus, updateGoal, archive, reviewStartedAt } = actions;
+  const { runReview, toggleStatus, updateGoal, archive, reviewStartedAt } =
+    actions;
 
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalDraft, setGoalDraft] = useState("");
@@ -93,7 +105,10 @@ export function EnrollmentSidebar({
 
   const findingsByReview = new Map<string, number>();
   for (const f of detail.findings ?? []) {
-    findingsByReview.set(f.review_id, (findingsByReview.get(f.review_id) ?? 0) + 1);
+    findingsByReview.set(
+      f.review_id,
+      (findingsByReview.get(f.review_id) ?? 0) + 1,
+    );
   }
 
   return (
@@ -121,7 +136,11 @@ export function EnrollmentSidebar({
             title={paused ? "Resume reviews" : "Pause reviews"}
             onClick={() => toggleStatus.mutate(paused ? "active" : "paused")}
           >
-            {paused ? <Play className="h-3.5 w-3.5" /> : <Pause className="h-3.5 w-3.5" />}
+            {paused ? (
+              <Play className="h-3.5 w-3.5" />
+            ) : (
+              <Pause className="h-3.5 w-3.5" />
+            )}
           </Button>
           <Button
             size="sm"
@@ -204,13 +223,18 @@ export function EnrollmentSidebar({
           {editingGoal ? (
             <div className="mt-1 space-y-1.5">
               <Textarea
+                className="text-base md:text-sm"
                 rows={3}
                 value={goalDraft}
                 onChange={(e) => setGoalDraft(e.target.value)}
                 placeholder="e.g. Answers should always cite the source document. Watch for cases where it guesses."
               />
               <div className="flex justify-end gap-1.5">
-                <Button size="sm" variant="outline" onClick={() => setEditingGoal(false)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEditingGoal(false)}
+                >
                   <X className="h-3.5 w-3.5" />
                 </Button>
                 <Button

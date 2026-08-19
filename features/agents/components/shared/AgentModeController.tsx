@@ -12,7 +12,7 @@ import {
   Pencil,
   Play,
   Plus,
-  Sparkles,
+  Telescope,
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -56,7 +56,7 @@ export const MODES: { id: ModeOption; label: string; icon: typeof Eye }[] = [
   { id: "shortcuts", label: "Shortcuts", icon: Zap },
   { id: "apps", label: "Apps", icon: AppWindow },
   { id: "surfaces", label: "Surfaces", icon: Layers },
-  { id: "hindsight", label: "Review", icon: Sparkles },
+  { id: "hindsight", label: "Review", icon: Telescope },
   { id: "versions", label: "Versions", icon: History },
   { id: "widgets", label: "Widgets", icon: LayoutGrid },
   { id: "new", label: "New", icon: Plus },
@@ -160,7 +160,11 @@ export function AgentModeController({
           {MODES.map(({ id, label, icon: Icon }) => {
             const isActive = id === mode;
             return (
-              <NavItemTooltip key={id} label={label} contentClassName="xl:hidden">
+              <NavItemTooltip
+                key={id}
+                label={label}
+                contentClassName="2xl:hidden"
+              >
                 <Link
                   href={getModeHref(id)}
                   onClick={(e) => {
@@ -173,13 +177,11 @@ export function AgentModeController({
                     "flex items-center justify-center gap-1 py-0.5 text-[0.6875rem] font-medium rounded-full transition-colors cursor-pointer",
                     "px-2.5",
                     "[&_svg]:w-3.5 [&_svg]:h-3.5",
-                    isActive
-                      ? NAV_ITEM_SELECTED
-                      : NAV_ITEM_UNSELECTED,
+                    isActive ? NAV_ITEM_SELECTED : NAV_ITEM_UNSELECTED,
                   )}
                 >
                   <Icon />
-                  <span className="hidden xl:inline">{label}</span>
+                  <span className="hidden 2xl:inline">{label}</span>
                 </Link>
               </NavItemTooltip>
             );

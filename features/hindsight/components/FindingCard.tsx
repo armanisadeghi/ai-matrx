@@ -8,7 +8,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
-import { Check, ChevronDown, ChevronRight, MessageSquare, Undo2, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  MessageSquare,
+  Undo2,
+  X,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
@@ -81,8 +88,8 @@ export function FindingCard({
   const busy = apply.isPending || reject.isPending;
 
   return (
-    <Card className="p-3" data-testid="hindsight-finding">
-      <div className="flex items-start justify-between gap-3">
+    <Card className="@container p-3" data-testid="hindsight-finding">
+      <div className="flex flex-col gap-2 @md:flex-row @md:items-start @md:justify-between">
         <button
           type="button"
           className="flex min-w-0 flex-1 items-start gap-2 text-left"
@@ -116,7 +123,7 @@ export function FindingCard({
                   className={cn(
                     "border-0",
                     VERDICT_COLOR[verdict as keyof typeof VERDICT_COLOR] ??
-                      "bg-slate-500/15 text-slate-600 dark:text-slate-400",
+                      "bg-muted text-muted-foreground",
                   )}
                 >
                   {count}× {verdict}
@@ -131,13 +138,15 @@ export function FindingCard({
                 <Badge variant="secondary">{finding.status}</Badge>
               )}
               {finding.applied_version_number != null && (
-                <Badge variant="outline">→ v{finding.applied_version_number}</Badge>
+                <Badge variant="outline">
+                  → v{finding.applied_version_number}
+                </Badge>
               )}
             </div>
             <div className="mt-1 text-sm font-medium">{finding.title}</div>
           </div>
         </button>
-        <div className="flex shrink-0 items-start gap-1.5">
+        <div className="flex w-full shrink-0 flex-wrap items-start justify-end gap-1.5 @md:w-auto">
           <CopyButtons
             size="icon"
             label={`Hindsight finding “${finding.title}”`}
@@ -168,33 +177,37 @@ export function FindingCard({
             <MessageSquare className="mr-1 h-3.5 w-3.5" />
             Guide
           </Button>
-          <RevertButton finding={finding} agentId={agentId} onChanged={onChanged} />
+          <RevertButton
+            finding={finding}
+            agentId={agentId}
+            onChanged={onChanged}
+          />
           {!decided && (
-          <>
-            <Button
-              size="sm"
-              disabled={busy}
-              onClick={() => apply.mutate()}
-              data-testid="hindsight-apply"
-            >
-              <Check className="mr-1 h-3.5 w-3.5" />
-              {apply.isPending
-                ? "Applying…"
-                : finding.machine_applicable
-                  ? "Apply"
-                  : "Accept"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              onClick={() => reject.mutate()}
-              title="Reject this finding"
-              data-testid="hindsight-reject"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </>
+            <>
+              <Button
+                size="sm"
+                disabled={busy}
+                onClick={() => apply.mutate()}
+                data-testid="hindsight-apply"
+              >
+                <Check className="mr-1 h-3.5 w-3.5" />
+                {apply.isPending
+                  ? "Applying…"
+                  : finding.machine_applicable
+                    ? "Apply"
+                    : "Accept"}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() => reject.mutate()}
+                title="Reject this finding"
+                data-testid="hindsight-reject"
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -249,8 +262,8 @@ export function FindingCard({
             <p className="text-xs text-muted-foreground">
               {LEVER_LABEL[finding.lever]} findings are reports for a human —
               “Accept” records the decision, it does not change anything by
-              itself. If the recommendation is close but not the real point,
-              use <strong>Guide</strong> and tell the reviewer.
+              itself. If the recommendation is close but not the real point, use{" "}
+              <strong>Guide</strong> and tell the reviewer.
             </p>
           )}
           {discussing && (
