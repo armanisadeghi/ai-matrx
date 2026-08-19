@@ -57,7 +57,8 @@ individually "works". Verified ground truth below is from a three-way full-featu
 | Cursor adapter | matrx-cursor-plugin `0.2.0-alpha.2` | Certified E2E to production (2026-08-12); **distribution-orphaned** (needs public repo or team plan) | repo frozen since 08-12 |
 | VS Code extension | matrx-vscode `v0.1.1` VSIX | Built+certified+packaged; **blocked ~7 days on Arman's 40-min publish checklist** | `OPERATOR_CHECKLIST.md` |
 | Duplicate-binding protection | DB | **FIXED**: partial unique index live, the one pair merged 2026-08-16 | zero duplicate pairs |
-| Outbox durability | matrx-local v1.4.35 + codex plugin `d07b6a5` | Fix RELEASED but **installed app is v1.4.34** — 21,636 rows waiting (all codex lanes, attempts=0), 88 quarantined | local sqlite, checked 2026-08-19 |
+| Outbox durability | matrx-local **v1.4.36** (`15b35f723`) + codex plugin `d07b6a5` | v1.4.35 installed and **did NOT fix it** — post-delivery writes lost the SQLite lock, row 72184 re-POSTed 48×, outbox grew to 22,126, coding-session routes starved to 330–1,040 s. Fixed in v1.4.36; awaiting on-machine confirmation | local sqlite + access.log, 2026-08-19 |
+| Codex stable-event-id stability | matrx-codex-plugin | **DEFECT**: one `UserPromptSubmit:<turn_id>` emitted with 16 different payloads in one session → server `entry_mutated`, 88 rows permanently quarantined | quarantine table, 2026-08-19 |
 
 ## Resources
 
@@ -83,11 +84,36 @@ individually "works". Verified ground truth below is from a three-way full-featu
 
 ## Remaining work (priority order)
 
-1. **ARMAN, 2 minutes — update the desktop app to v1.4.35** (restart AI Matrx / accept the update).
-   The outbox-wedge fix is published but the running app is v1.4.34, so 21,636 envelopes sit
-   undelivered (all codex lanes) and 88 quarantined. After updating: outbox count must fall,
-   then inspect the 88 quarantined rows (chip fired covers verification + the codex-lane
-   attempts=0 question — why the publisher never attempts codex lanes).
+1. **DONE-with-a-successor (2026-08-19): the app is on v1.4.35 and the wedge was NOT fixed by it.**
+   The updater installed 1.4.35 and the engine now reports it. **v1.4.35 did not drain the
+   outbox** — it fixed the v1.4.34 crash (an ack-write exception raising out of the tick) but
+   left the post-delivery writes on the shared aiosqlite connection, where they lost to the codex
+   hook burst with `database is locked`. Ack, delete, AND deferral all failed, the loop
+   `continue`d, and outbox row 72184 was re-POSTed to aidream **48 times** while the outbox grew
+   21,636 → 22,126. Because `sync_pending` holds `_sync_lock` for the whole tick, this starved
+   every coding-session route: `/coding-session/status` median **1,040 s**,
+   `/coding-session/hooks` median **330 s**, `/health` 0 ms.
+   **Fixed in matrx-local `15b35f723`, released as v1.4.36** — retirement now runs on a private
+   `BEGIN IMMEDIATE` connection (the same durable boundary the hook ingress uses), and a
+   delivered row is never uploaded twice. Regression:
+   `matrx-local/tests/unit/test_coding_session_delivered_row_wedge.py`.
+   - **The "codex lanes are starved / attempts=0" question is CLOSED — it was never a lane bug.**
+     The publisher only ever touches lane HEADS, so of 22,126 queued rows exactly **219** were
+     ever eligible to be attempted; `attempts=0` on the other 21,907 is correct by design. Lane
+     isolation (`be04a6038`) worked throughout. Codex dominates only because Claude Code hooks
+     deliver directly (109 claude_code rows vs 22,017 codex).
+   - **Still open:** verify on v1.4.36 that the outbox actually falls to a stable floor on
+     Arman's machine, and that `/coding-session/hooks` latency returns to milliseconds.
+   - **The 88 quarantined rows are correctly abandoned, not recoverable as-is** (all codex
+     `UserPromptSubmit`, all HTTP 409 `entry_mutated`, quarantined 08-17/08-18). Root cause is
+     upstream in matrx-codex-plugin: the same `UserPromptSubmit:<turn_id>` was emitted with
+     **different bytes** repeatedly within ONE session — one id has 16 rows with 16 distinct
+     payload hashes, another 13, another 10. The server stored the first version and refuses the
+     rest, which is correct. The plugin's own client-side quarantine caught the same class
+     locally (6 poison files, `stable hook event identity was reused with a different envelope`).
+     **The real fix belongs in matrx-codex-plugin: make the stable event id a function of the
+     payload, or stop mutating a turn's payload after first emit.** Re-sending the 88 as-is fails
+     forever; minting new ids would duplicate turns. They are preserved, never deleted.
 2. **Make a launched local run WATCHABLE (chip fired).** Launch works (146 sessions!) but the
    mirror detail view has zero realtime/poll/refresh — "watchable while it runs" is only true
    across manual reloads. The composer's post-launch door bug (landed users on a blank /chat/new)
