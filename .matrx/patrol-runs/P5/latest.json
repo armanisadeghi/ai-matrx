@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-19-copy-everywhere",
-  "state": "delivered",
-  "updatedAt": "2026-08-19T07:47:19.337Z",
-  "summary": "Certified candidate integrated to origin/main and released through the serialized release lane as v0.4.840.",
+  "state": "closed",
+  "updatedAt": "2026-08-19T07:47:23.847Z",
+  "summary": "Run closed: 3 verified findings, 2 fixed, 1 missing-machinery task remains open; no approvals or exceptions.",
   "source": "2026-08-19-copy-everywhere.json",
-  "eventHash": "d3386be8af73f0aaa8364726af674eacee0447ff1bba2dbdaad1322673b67a5f"
+  "eventHash": "b1ed5324c61b20f553633f2bc41aa4dbd4b27148f684ed29a66d63627c39e160"
 }
