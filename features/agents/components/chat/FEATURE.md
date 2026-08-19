@@ -5,7 +5,7 @@
 
 **Status:** `active`
 **Tier:** `1`
-**Last updated:** `2026-08-17`
+**Last updated:** `2026-08-19`
 
 > **This is the authoritative doc for the LIVE chat route.** The chat route lives at `app/(a)/chat/**` and is built on the `features/agents/` execution-system — **not** on the unbuilt `ConversationShell` in `features/conversation/`. If you were sent here by `features/conversation/FEATURE.md` or `phase-07-chat-route.md`, this file supersedes their description of how the route behaves.
 
@@ -74,6 +74,14 @@ Users reach prior conversations exactly one way: by clicking them in the **histo
 ---
 
 ## Key flows
+
+### Flow 0 — Open the cloud browser before the first message
+
+`NewChatLandingInput` renders a globe beside the `+` control. It calls the
+canonical `useOpenCloudBrowserCanvas` opener, so `/chat/new` can open the same
+live browser canvas that the full conversation rail and an agent handoff use.
+The affordance is available as soon as the landing conversation is initialized;
+it does not require the user to send a throwaway first message.
 
 ### Flow 1 — Start fresh with an agent (`/chat/a/[agentId]`)
 1. `ChatRoomClient` mounts with `agentId`, no `conversationId`. `surfaceKey = chat-route:<agentId>`.

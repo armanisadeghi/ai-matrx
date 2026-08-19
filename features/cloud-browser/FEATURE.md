@@ -31,6 +31,9 @@ Reconnect).
 
 ## Entry points
 
+- **First composer:** the globe beside the `/chat/new` composer opens the same
+  non-persisted canvas as every later conversation. A person can therefore start
+  with the cloud browser before sending the first message.
 - **Overlay:** `cloudBrowserWindow` — `useOpenCloudBrowserWindow()` /
   `<CloudBrowserWindowController>` (`features/overlays/openers/cloudBrowserWindow.tsx`),
   wired into `OverlayController.tsx` + `catalogue.ts` + `overlay-ids.ts`.
@@ -73,6 +76,10 @@ Reconnect).
 
 ## Change log
 
+- **2026-08-19 — first-composer entry:** added the cloud-browser globe to the
+  `/chat/new` composer and routed it through `useOpenCloudBrowserCanvas`. The
+  entry no longer appears only after the first message creates the full context
+  rail.
 - **2026-08-19 — private credential capture:** a credential-missing handoff now
   presents a user-only sign-in form after control is claimed. One action writes the
   values through the canonical vault capture endpoint, fills the current browser
