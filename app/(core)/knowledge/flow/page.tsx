@@ -1,1 +1,1 @@
-export { default } from "../../knowledge/flow/page";
+export { default } from "../../rag/flow/page";

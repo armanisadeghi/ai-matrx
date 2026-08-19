@@ -12,7 +12,7 @@ import {
   createRagDataStoresScope,
   type RagDataStoreEntry,
   type RagDataStoreMemberEntry,
-} from "@/features/surfaces/manifests/knowledge-data-stores.manifest";
+} from "@/features/surfaces/manifests/rag-data-stores.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type {
   DataStore,

@@ -1,1 +1,1 @@
-export { default } from "../../knowledge/embeddings/page";
+export { default } from "../../rag/embeddings/page";

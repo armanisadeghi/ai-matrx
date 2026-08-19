@@ -1,7 +1,7 @@
 /**
  * features/rag/api/search.ts
  *
- * Typed client for `POST /knowledge/search`. Mirror of the Python team's
+ * Typed client for `POST /rag/search`. Mirror of the Python team's
  * `SearchHitOut` / `SearchResponseOut` shapes.
  *
  * Lives in the rag feature alongside the other Knowledge endpoints (ingest,
@@ -108,9 +108,9 @@ export interface RagSearchRequest {
 }
 
 /**
- * Run a single Knowledge search. `POST /knowledge/search` STREAMS NDJSON since the
+ * Run a single Knowledge search. `POST /rag/search` STREAMS NDJSON since the
  * 2026-07-06 stream-everything conversion (identical to the retained
- * `/knowledge/search/stream` alias) — this function resolves with the terminal
+ * `/rag/search/stream` alias) — this function resolves with the terminal
  * `rag.search.result` payload carrying the old `SearchResponseOut` body.
  *
  * (The per-hit `rag.citation` / `rag.citation.summary` events were deleted
@@ -130,7 +130,7 @@ export async function ragSearch(
   } = {},
 ): Promise<RagSearchResponse> {
   let result: RagSearchResponse | null = null;
-  for await (const evt of postNdjson<RagSearchRequest>(`/knowledge/search`, body, {
+  for await (const evt of postNdjson<RagSearchRequest>(`/rag/search`, body, {
     signal: opts.signal,
   })) {
     if (evt.event === "error") {
@@ -157,14 +157,14 @@ export async function ragSearch(
 //   - cld_file    → /files/f/<source_id>?tab=document&chunk=<chunk_id>[&page=]
 //   - note        → /notes/<source_id> (noteid is the row id)
 //   - code_file   → /code/<source_id>  (legacy code workspace)
-//   - library_doc → /knowledge/viewer/<source_id>?chunk=<chunk_id>
+//   - library_doc → /rag/viewer/<source_id>?chunk=<chunk_id>
 //   - transcript  → /transcription/studio?session=<source_id>
 //   - scraped     → /scraper?url=<source_id>   (source_id is the page URL)
 //
 // The `metadata` dict on a hit may carry `page_number` for pdf-extracted
 // chunks; the helper looks it up and adds &page= when present.
 //
-// Anything else falls through to the standalone /knowledge/viewer (works whenever
+// Anything else falls through to the standalone /rag/viewer (works whenever
 // the chunk's underlying processed_document can be derived from source_id).
 // ---------------------------------------------------------------------------
 
@@ -188,7 +188,7 @@ export function citationHrefFor(hit: RagSearchHit): string {
     case "code_file":
       return `/code/${encodeURIComponent(hit.source_id)}`;
     case "library_doc":
-      return `/knowledge/viewer/${encodeURIComponent(
+      return `/rag/viewer/${encodeURIComponent(
         hit.source_id,
       )}?chunk=${encodeURIComponent(hit.chunk_id)}${pageQs}`;
     case "transcript":
@@ -201,7 +201,7 @@ export function citationHrefFor(hit: RagSearchHit): string {
       // scraper window with ?url=… restores the page in its viewer.
       return `/scraper?url=${encodeURIComponent(hit.source_id)}`;
     default:
-      return `/knowledge/viewer/${encodeURIComponent(
+      return `/rag/viewer/${encodeURIComponent(
         hit.source_id,
       )}?chunk=${encodeURIComponent(hit.chunk_id)}${pageQs}`;
   }

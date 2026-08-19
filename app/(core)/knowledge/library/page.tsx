@@ -1,1 +1,1 @@
-export { default } from "../../knowledge/library/page";
+export { default } from "../../rag/library/page";

@@ -17,7 +17,7 @@ import {
   type RagViewerDataStoreEntry,
   type RagViewerSearchHitEntry,
   type RagViewerSegmentEntry,
-} from "@/features/surfaces/manifests/knowledge-viewer.manifest";
+} from "@/features/surfaces/manifests/rag-viewer.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 import type { LibraryDocDetail } from "@/features/rag/types/library";
 import type {

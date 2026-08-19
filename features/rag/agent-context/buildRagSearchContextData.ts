@@ -3,7 +3,7 @@ import {
   createRagSearchScope,
   type RagDataStoreEntry,
   type RagQueryTermCoverageEntry,
-} from "@/features/surfaces/manifests/knowledge-search.manifest";
+} from "@/features/surfaces/manifests/rag-search.manifest";
 import { getHighlightTerms } from "@/features/rag/components/hit-card/query-highlighting";
 import type { RagSearchHit, RagSearchResponse } from "@/features/rag/api/search";
 

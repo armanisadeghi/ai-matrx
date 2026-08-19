@@ -1,1 +1,1 @@
-export { default } from "../../knowledge/repositories/page";
+export { default } from "../../rag/repositories/page";

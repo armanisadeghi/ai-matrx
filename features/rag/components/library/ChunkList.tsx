@@ -349,7 +349,7 @@ export function ChunksOnPage({
     setLoading(true);
     setError(null);
     apiGet(
-      buildPath("/knowledge/library/{processed_document_id}/chunks", {
+      buildPath("/rag/library/{processed_document_id}/chunks", {
         processed_document_id: documentId,
       }),
       { query: { limit, page_number: pageNumber } },

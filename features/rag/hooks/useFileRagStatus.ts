@@ -28,7 +28,7 @@ import {
   triggerFileIngestNow,
   type FileRagStatus,
 } from "@/features/rag/api/rag-jobs";
-import { subscribeToFileRagJob } from "@/features/rag/hooks/knowledge-job-realtime";
+import { subscribeToFileRagJob } from "@/features/rag/hooks/rag-job-realtime";
 
 /** Match the `detail` shape `useFileIngest.ts` dispatches for this event. */
 const PROCESSED_EVENT = "cloud-files:document-processed";

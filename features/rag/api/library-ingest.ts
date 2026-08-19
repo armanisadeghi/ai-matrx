@@ -3,11 +3,11 @@
  *
  * Client for P1's admin library-ingest endpoint:
  *
- *   POST /knowledge/library/stores/{store_id}/ingest   { file_id, profile? }
+ *   POST /rag/library/stores/{store_id}/ingest   { file_id, profile? }
  *
  * Super-admin only (server-gated). This is the CURATION path — "ingest this
  * file into a shared library store as system-owned content" — distinct from
- * the tenant `/knowledge/ingest` self-serve path in `./ingest.ts`.
+ * the tenant `/rag/ingest` self-serve path in `./ingest.ts`.
  *
  * Contract status: aidream publishes the signature day 1 but answers
  * `501 Not Implemented` until the full pipeline (system-owner rehome +
@@ -40,7 +40,7 @@ export async function ingestLibraryFile(
   opts: { profile?: string | null; signal?: AbortSignal } = {},
 ): Promise<LibraryIngestResponse> {
   const { data } = await postJson<LibraryIngestResponse, LibraryIngestRequest>(
-    `/knowledge/library/stores/${encodeURIComponent(storeId)}/ingest`,
+    `/rag/library/stores/${encodeURIComponent(storeId)}/ingest`,
     { file_id: fileId, profile: opts.profile ?? null },
     { signal: opts.signal },
   );

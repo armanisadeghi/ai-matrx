@@ -2,12 +2,12 @@
  * features/rag/api/stages.ts
  *
  * Streaming client for the per-stage Knowledge actions:
- *   POST /knowledge/library/{id}/extract
- *   POST /knowledge/library/{id}/clean
- *   POST /knowledge/library/{id}/chunk
- *   POST /knowledge/library/{id}/embed
- *   POST /knowledge/library/{id}/run-all
- *   GET  /knowledge/library/{id}/stages
+ *   POST /rag/library/{id}/extract
+ *   POST /rag/library/{id}/clean
+ *   POST /rag/library/{id}/chunk
+ *   POST /rag/library/{id}/embed
+ *   POST /rag/library/{id}/run-all
+ *   GET  /rag/library/{id}/stages
  *
  * The backend emits matrx-connect-shaped wire events:
  *   {"event": "data", "data": {"kind": "rag.stage.progress", ...}}
@@ -107,7 +107,7 @@ export async function fetchStagesStatus(
   // would force those consumers to widen — a breaking change, so we keep the
   // narrow shapes and read via the raw client. (Contract-drift REPORTED.)
   const { data } = await getJson<StagesStatusResponse>(
-    `/knowledge/library/${encodeURIComponent(processedDocumentId)}/stages`,
+    `/rag/library/${encodeURIComponent(processedDocumentId)}/stages`,
     { signal },
   );
   return data;
@@ -123,7 +123,7 @@ export async function* runStageStream(
   opts: { signal?: AbortSignal } = {},
 ): AsyncGenerator<StageStreamEvent, void, void> {
   const path = stage === "run_all" ? `run-all` : stage; // extract | clean | chunk | embed
-  const url = `${resolveBaseUrl()}/knowledge/library/${encodeURIComponent(processedDocumentId)}/${path}`;
+  const url = `${resolveBaseUrl()}/rag/library/${encodeURIComponent(processedDocumentId)}/${path}`;
 
   const { headers } = await buildHeaders({ signal: opts.signal }, true);
   const response = await fetch(url, {

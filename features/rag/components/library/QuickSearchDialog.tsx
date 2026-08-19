@@ -68,7 +68,7 @@ export function QuickSearchDialog({
     try {
       const organizationId = await ensureOrgId(undefined);
       const { data } = await apiPost(
-        buildPath("/knowledge/library/{processed_document_id}/test-search", {
+        buildPath("/rag/library/{processed_document_id}/test-search", {
           processed_document_id: processedDocumentId,
         }),
         {

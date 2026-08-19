@@ -104,7 +104,7 @@ import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-sy
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@/features/agents/mandates/useMandate";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
-import { createRagSearchScope } from "@/features/surfaces/manifests/knowledge-search.manifest";
+import { createRagSearchScope } from "@/features/surfaces/manifests/rag-search.manifest";
 import {
   buildRagSearchContextData,
   RAG_SEARCH_CONTEXT_MENU_PROPS,
@@ -136,7 +136,7 @@ import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableCo
 // (same stack as /chat and the Projects "Use AI" tab), NOT a bespoke chat.
 // ===========================================================================
 
-/** Surface registered in `features/surfaces/manifests/knowledge-search.manifest.ts`. */
+/** Surface registered in `features/surfaces/manifests/rag-search.manifest.ts`. */
 const RAG_SEARCH_SURFACE = "matrx-user/knowledge-search";
 const RAG_SEARCH_SOURCE_FEATURE: SourceFeature = "rag-search";
 // The chat agent is the `chat.default_new_chat` MANDATE (resolved in

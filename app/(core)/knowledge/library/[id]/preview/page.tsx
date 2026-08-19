@@ -1,1 +1,1 @@
-export { default } from "../../../../knowledge/library/[id]/preview/page";
+export { default } from "../../../../rag/library/[id]/preview/page";

@@ -3,7 +3,7 @@
  *
  * Client for the scheduled auto-Knowledge lifecycle (aidream kg_032):
  *
- *   GET  /files/{id}/knowledge-status  — scheduled / running / completed / failed
+ *   GET  /files/{id}/rag-status  — scheduled / running / completed / failed
  *   POST /files/{id}/ingest      — on-demand trigger (cancels the scheduled
  *                                  job; 409 `rag_already_complete` if done)
  *   POST /files/{id}/refresh     — re-run a completed file (new derivative)
@@ -46,7 +46,7 @@ export async function fetchFileRagStatus(
   signal?: AbortSignal,
 ): Promise<FileRagStatus> {
   const { data } = await apiGet(
-    buildPath("/files/{file_id}/knowledge-status", { file_id: fileId }),
+    buildPath("/files/{file_id}/rag-status", { file_id: fileId }),
     { signal },
   );
   return data;

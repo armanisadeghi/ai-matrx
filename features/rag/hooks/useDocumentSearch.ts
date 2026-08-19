@@ -87,7 +87,7 @@ export function useDocumentSearch(documentId: string): UseDocumentSearch {
       try {
         const organizationId = await ensureOrgId(undefined);
         const { data } = await apiPost(
-          buildPath("/knowledge/library/{processed_document_id}/test-search", {
+          buildPath("/rag/library/{processed_document_id}/test-search", {
             processed_document_id: documentId,
           }),
           {

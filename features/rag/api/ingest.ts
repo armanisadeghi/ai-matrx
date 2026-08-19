@@ -1,7 +1,7 @@
 /**
  * features/rag/api/ingest.ts
  *
- * Wrapper around the Knowledge team's `/knowledge/ingest` and `/knowledge/ingest/stream`
+ * Wrapper around the Knowledge team's `/rag/ingest` and `/rag/ingest/stream`
  * endpoints, scoped to the file-centric UX:
  *
  *   "Process this file for Knowledge."
@@ -63,7 +63,7 @@ export async function ingestSource(
   opts: { force?: boolean; signal?: AbortSignal } = {},
 ): Promise<IngestResponse> {
   const { data } = await postJson<IngestResponse, IngestRequestBody>(
-    `/knowledge/ingest`,
+    `/rag/ingest`,
     {
       source_kind: sourceKind,
       source_id: sourceId,
@@ -130,7 +130,7 @@ export async function* ingestFileStream(
   // structured error event before terminating, so we open the fetch
   // ourselves but pull the headers from the same factory.
   const { headers } = await buildHeaders({ signal: opts.signal }, true);
-  const response = await fetch(`${resolveBaseUrl()}/knowledge/ingest/stream`, {
+  const response = await fetch(`${resolveBaseUrl()}/rag/ingest/stream`, {
     method: "POST",
     headers,
     body: JSON.stringify(body),

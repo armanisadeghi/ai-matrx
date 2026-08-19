@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * /knowledge/library/[id]/preview — robust 3-pane document preview.
+ * /rag/library/[id]/preview — robust 3-pane document preview.
  *
  * Why this exists:
- *   The existing /knowledge/viewer/[id] is a 4-pane PDF + raw + cleaned + chunks
+ *   The existing /rag/viewer/[id] is a 4-pane PDF + raw + cleaned + chunks
  *   layout that depends on react-pdf, the page-image renderer, and a
  *   bundle of /api/document/* endpoints — any one of which can fail and
  *   leave the user staring at an error. The user explicitly said the
  *   viewer is broken.
  *
- *   This page is the "always works" preview. It uses ONLY the /knowledge/library/*
+ *   This page is the "always works" preview. It uses ONLY the /rag/library/*
  *   endpoints I built and tested. Three columns:
  *     - Left: page list (jump targets)
  *     - Middle: cleaned markdown of the active page
@@ -81,7 +81,7 @@ export interface LibraryPreviewPageProps {
    *  surfaces (e.g. the /files Document tab). */
   embedded?: boolean;
   /** Deep-link landing page (1-based), e.g. from a search citation
-   *  `/knowledge/viewer/<id>?page=12`. The viewer opens on this page instead of
+   *  `/rag/viewer/<id>?page=12`. The viewer opens on this page instead of
    *  page 1 so clicking a hit lands the user on the passage. */
   initialPageNumber?: number;
   /** Open the Knowledge Asset Builder drawer on mount (`?assets=1` deep link,
@@ -239,7 +239,7 @@ export function LibraryPreviewPage({
     }
   };
 
-  // Emit the surface scope ONLY when this is the real /knowledge/viewer/[id] route.
+  // Emit the surface scope ONLY when this is the real /rag/viewer/[id] route.
   // Embedded hosts (the /files Knowledge tab, the chat drawer) own their own
   // surface; a provider here would out-depth theirs and make the header Agents
   // chrome claim the user is standing on the viewer when they are not.
@@ -250,7 +250,7 @@ export function LibraryPreviewPage({
     <div className="relative flex flex-col bg-background h-full">
       {!embedded && (
         <EntityModeHeader
-          backHref="/knowledge/library"
+          backHref="/rag/library"
           entityLabel={docLoading || !doc ? "Loading…" : doc.name}
           actions={
             doc
@@ -419,14 +419,14 @@ export function LibraryPreviewPage({
 }
 
 /** Canonical `ui_surface.name` the standalone viewer route emits. */
-const RAG_VIEWER_SURFACE = "matrx-user/knowledge-viewer";
+const RAG_VIEWER_SURFACE = "matrx-user/rag-viewer";
 
 interface SurfaceFrameProps {
   getScope: () => SurfaceScopePayload;
   children: ReactNode;
 }
 
-/** Standalone `/knowledge/viewer/[id]` — registers the live surface scope. */
+/** Standalone `/rag/viewer/[id]` — registers the live surface scope. */
 function SurfaceFrame({ getScope, children }: SurfaceFrameProps) {
   return (
     <SurfaceRuntimeProvider
@@ -558,7 +558,7 @@ function PageContent({
   /** Active search term — literal matches are highlighted in the page text. */
   query: string;
   /** Lift the loaded page + the cleaned/raw choice to the route so the
-   *  `matrx-user/knowledge-viewer` surface can emit the text the user is reading.
+   *  `matrx-user/rag-viewer` surface can emit the text the user is reading.
    *  Optional so embedded hosts that don't emit a scope stay unchanged. */
   onActivePageLoaded?: (page: RagViewerActivePage | null) => void;
 }) {
@@ -577,7 +577,7 @@ function PageContent({
     setLoading(true);
     setError(null);
     apiGet(
-      buildPath("/knowledge/library/{processed_document_id}/page/{page_index}", {
+      buildPath("/rag/library/{processed_document_id}/page/{page_index}", {
         processed_document_id: documentId,
         page_index: pageIndex,
       }),

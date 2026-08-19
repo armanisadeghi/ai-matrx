@@ -42,7 +42,7 @@ import {
   setSort,
   toggleSelection,
 } from "@/features/files/redux/slice";
-import { prefetchRagStatusesForFiles } from "@/features/files/redux/knowledge-thunks";
+import { prefetchRagStatusesForFiles } from "@/features/files/redux/rag-thunks";
 import { primeEntityScopes } from "@/features/scopes/components/context-assignment/data";
 import type {
   AccessFilter,

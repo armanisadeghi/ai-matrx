@@ -1,5 +1,5 @@
 /**
- * features/files/redux/knowledge-thunks.ts
+ * features/files/redux/rag-thunks.ts
  *
  * Batch-prefetch the per-file Knowledge status (whether a `processed_documents`
  * row exists for the file) and mirror it into Redux. The Python backend

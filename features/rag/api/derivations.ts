@@ -6,10 +6,10 @@
  * rows, figure captions, multi-granularity chunks, page verification,
  * section summaries, synthetic Q&A).
  *
- *   GET  /knowledge/library/{id}/derivations        — rollup + recent runs
- *   POST /knowledge/library/{id}/derive/{kind}/rebuild-preview — destructive impact + confirmation token
- *   POST /knowledge/library/{id}/derive/{kind}       — NDJSON progress stream
- *   POST /knowledge/library/derive-runs/{id}/cancel  — cancel an in-flight run
+ *   GET  /rag/library/{id}/derivations        — rollup + recent runs
+ *   POST /rag/library/{id}/derive/{kind}/rebuild-preview — destructive impact + confirmation token
+ *   POST /rag/library/{id}/derive/{kind}       — NDJSON progress stream
+ *   POST /rag/library/derive-runs/{id}/cancel  — cancel an in-flight run
  *
  * Shares the exact wire envelope used by the per-stage runners in
  * `stages.ts` (matrx-connect data/completion/error events). This module
@@ -92,7 +92,7 @@ export async function fetchDerivations(
   signal?: AbortSignal,
 ): Promise<DerivationsResponse> {
   const { data } = await getJson<DerivationsResponse>(
-    `/knowledge/library/${encodeURIComponent(processedDocumentId)}/derivations`,
+    `/rag/library/${encodeURIComponent(processedDocumentId)}/derivations`,
     { signal },
   );
   return {
@@ -155,7 +155,7 @@ export async function fetchEstimate(
   signal?: AbortSignal,
 ): Promise<DerivationsEstimate> {
   const { data } = await getJson<DerivationsEstimate>(
-    `/knowledge/library/${encodeURIComponent(processedDocumentId)}/estimate`,
+    `/rag/library/${encodeURIComponent(processedDocumentId)}/estimate`,
     // The estimate does a live PDF scan (tables/figures/sections); on a large
     // doc it can take well over the default 30s. Give it room so our own fetch
     // timeout doesn't turn a slow scan into "scope estimate unavailable".
@@ -205,7 +205,7 @@ export async function prepareRebuild(
   signal?: AbortSignal,
 ): Promise<RebuildPreview> {
   const { data } = await postJson<RebuildPreview>(
-    `/knowledge/library/${encodeURIComponent(processedDocumentId)}/derive/${encodeURIComponent(kind)}/rebuild-preview`,
+    `/rag/library/${encodeURIComponent(processedDocumentId)}/derive/${encodeURIComponent(kind)}/rebuild-preview`,
     {},
     // The server performs the same authoritative PDF scan used by estimates.
     { signal, timeoutMs: 120_000 },
@@ -262,7 +262,7 @@ export async function fetchDerivativeChunks(
     params.set("page_number", String(opts.pageNumber));
   }
   const { data } = await getJson<DerivativeChunksResponse>(
-    `/knowledge/library/${encodeURIComponent(derivativeId)}/chunks?${params.toString()}`,
+    `/rag/library/${encodeURIComponent(derivativeId)}/chunks?${params.toString()}`,
     { signal: opts.signal },
   );
   return {
@@ -351,7 +351,7 @@ export async function* runDeriveStream(
   // (the default) RESUMES — already-done sections are skipped server-side, so a
   // re-run after an interruption never re-pays for completed work.
   const url =
-    `${resolveBaseUrl()}/knowledge/library/${encodeURIComponent(
+    `${resolveBaseUrl()}/rag/library/${encodeURIComponent(
       processedDocumentId,
     )}/derive/${encodeURIComponent(kind)}` + (opts.reset ? "?reset=true" : "");
 
@@ -508,7 +508,7 @@ export async function cancelDeriveRun(
   signal?: AbortSignal,
 ): Promise<CancelDeriveRunResponse> {
   const { data } = await postJson<CancelDeriveRunResponse>(
-    `/knowledge/library/derive-runs/${encodeURIComponent(runId)}/cancel`,
+    `/rag/library/derive-runs/${encodeURIComponent(runId)}/cancel`,
     {},
     { signal },
   );
