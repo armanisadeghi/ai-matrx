@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-17
+updated: 2026-08-19
 repos: [matrx-frontend, aidream, my-matrx]
 vision: [this doc §Vision — Arman's words, 2026-07-30 chat]
 ---
@@ -235,14 +235,14 @@ single-page-failure isolation both demonstrated.
   predicate on both sides is primary keyword OR page role — secondaries/links/notes deliberately
   do NOT count (narrowed 2026-08-18; change one side and you must change the other).
 - **Tiered bulk SEO planning** (cheap/thorough/advanced on the strategist, exact calls + priced
-  cost before the button) — that is the SETUP/keyword-strategist tier, live-proven; the
-  `cms_fill` effort tier (item 3 below) is still open, though its server knobs (`steps` /
-  `overwrite_steps` / `include_review` on the fill request) are already accepted — the FE just
-  never sends more than `include_review`.
+  cost before the button) — the SETUP/keyword-strategist tier, live-proven. **The `cms_fill`
+  effort tier now follows the same pattern (2026-08-19, item 4 below):** four tiers on the build
+  button, site default + per-page override, every tier priced before the click.
 
 **What it is NOT yet:** proven at 25-page scale, deep (p1 keyword research and a rich p2 content
-research have no producer — today's ~4 calls/page vs the 200–300-call vision), specialized (one
-builder, not an expert location/blog/service-page builder), or tiered at the FILL level.
+research have no producer — today's ~4 calls/page vs the 200–300-call vision), or specialized
+(one builder, not an expert location/blog/service-page builder). It IS tiered at the fill level
+as of 2026-08-19.
 
 **The feature's other parts and who owns them (the global map — keep it current):**
 - **Setup AI steps** (grounding strip, family namer, quick-research):
@@ -277,12 +277,16 @@ builder, not an expert location/blog/service-page builder), or tiered at the FIL
    builder, blog builder, service-page builder — "over 200 agents". The pipeline needs NO code
    change: this is more DB agents plus mandate routing by `page_type`. Decide the routing seam
    (per-page-type binding on the mandate vs. a dispatcher agent) before authoring the fleet.
-4. **The effort TIER** (§ Effort tiers below). *(Dispatched as a chip 2026-08-19.)* The knobs
-   exist (`steps` / `include_review` on the fill request — the server already accepts them; the
-   FE sends only `include_review`); a tier is a named per-site + per-page preset over them, with
-   the cheap end merging steps into fewer calls (the one-shot author call IS the cheapest tier
-   and still works). The Setup keyword-strategist tier (shipped 2026-08-18) is the UX pattern to
-   copy: named tiers on the SAME button, exact call count + priced cost before commit.
+4. ✅ **The effort TIER — BUILT 2026-08-19.** Four named tiers (`quick` 1 call/page = the
+   one-shot author call, `standard` 2, `thorough` 3, `advanced` 4 = today's whole pipeline and
+   the default) resolve to the `steps` the fill request always accepted — no parallel fill path,
+   no env var. Set on the SAME button as the site default
+   (`web.site.settings.content_plan.effort_tier`), overridden per page on the NodePanel Build tab
+   (`plan.node.metadata.effort_tier`), and priced for EVERY tier before the click by
+   `GET /content-plan/sites/{id}/cms-fill/estimate` (exact calls + measured cost, per-page
+   overrides honoured). Nothing is enforced mid-run. aidream `services/content_plan/effort.py`
+   + `cms_fill.py`; FE `setup/effort.ts` + `SetupBridgeSection` + `NodePanel`.
+   **Still open under this item:** nothing — remaining depth work is items 2 and 3.
 5. **Site design system (S3) — the reusable block library.** Curated sections (hero, cards, CTA,
    FAQ, pricing) the starter kit installs; the build step MAY reach for them. Offered, never
    imposed — same law as templates.
@@ -353,13 +357,13 @@ PRE-ESTIMATION. The three things that bind anyone building here:
   pages included) before the user commits, gate there, and let a started run finish. No hidden
   ceilings.
 
-Status: directive recorded, not built as an effort TIER. The per-step fan-out (item 4) shipped
-2026-08-16 and delivered the estimate-before-the-button half: `cms_fill_start` returns the exact
-call count plus a cost priced from the agents' own recorded runs, the status endpoint carries the
-actual, and nothing is enforced mid-run (no cap, by design). What is still missing is the tier
-itself — a per-page/per-site "effort" setting that MERGES steps into fewer calls at the cheap end.
-Today the shape of that setting already exists as `steps` / `include_review` on the fill request;
-a tier would be a named preset over them.
+Status: **BUILT 2026-08-19.** The tier is a named preset over `steps` (aidream
+`services/content_plan/effort.py`, FE mirror `setup/effort.ts`): `quick` (the one-shot author
+call, 1 call/page) · `standard` (write + build) · `thorough` (family + write + build) ·
+`advanced` (every step — the default, so an un-configured site is unchanged). Site default on
+`web.site.settings.content_plan.effort_tier`, per-page override on `plan.node.metadata.effort_tier`,
+override always wins. `GET .../cms-fill/estimate` prices every tier for the site before the
+button from measured history with overrides honoured; the run itself is never capped or aborted.
 
 ## The models each step runs (Arman's binding, 2026-08-16)
 

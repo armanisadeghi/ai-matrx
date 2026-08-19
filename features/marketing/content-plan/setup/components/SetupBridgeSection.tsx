@@ -58,6 +58,7 @@ import {
 } from "@/components/ui/select";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import type { MarketingSite } from "@/features/marketing/types";
+import { ProcessingUnitsBadge } from "@/components/processing-units/ProcessingUnitsBadge";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -65,10 +66,20 @@ import { extractErrorMessage } from "@/utils/errors";
 
 import { planKeys } from "../../data/hooks";
 import { marketingKeys } from "@/features/marketing/data/hooks";
-import { fetchFreshSite } from "../draft";
+import { fetchFreshSite, saveSiteEffortTier } from "../draft";
+import {
+  DEFAULT_EFFORT_TIER,
+  EFFORT_TIERS,
+  EFFORT_TIER_BLURB,
+  EFFORT_TIER_LABEL,
+  EFFORT_TIER_STEPS,
+  readSiteEffortTier,
+  type EffortTier,
+} from "../effort";
 import {
   bridgeFillCancel,
   bridgeFillPreview,
+  bridgeFillEstimate,
   bridgeFillStart,
   bridgeFillStatus,
   bridgePublish,
@@ -268,13 +279,33 @@ export function SetupBridgeSection({
   const [report, setReport] = useState<BridgeReport | null>(null);
   const [alignResult, setAlignResult] = useState<BridgeAlignResult | null>(null);
   const [fillPreview, setFillPreview] = useState<FillPreviewResult | null>(null);
-  // The review/fact-check pass. ON by default — it has caught invented facts in
-  // production — but it is a real choice, so it is a visible one.
-  const [includeReview, setIncludeReview] = useState(true);
+  // THE EFFORT TIER — a named pathway, not a cap (Arman, 2026-08-16). The
+  // site's recorded default seeds the picker; changing it here IS the site
+  // setting, and any page carrying its own override still wins at run time.
+  const [effortTier, setEffortTier] = useState<EffortTier>(
+    () => readSiteEffortTier(site.settings) ?? DEFAULT_EFFORT_TIER,
+  );
+  const [savingTier, setSavingTier] = useState(false);
   const [fillStatus, setFillStatus] = useState<FillStatus | null>(null);
   const [publishResult, setPublishResult] = useState<BridgePublishResult | null>(null);
 
   const fillRunning = fillStatus?.status === "pending" || fillStatus?.status === "processing";
+
+  // ESTIMATE BEFORE THE BUTTON — every tier priced for THIS site from measured
+  // history, per-page overrides honoured. Never enforced: it informs the click
+  // and nothing else (a mid-run budget kill spends the money AND loses the work).
+  const fillEstimate = useQuery({
+    queryKey: ["content-plan", "setup", "fill-effort-estimate", site.id, knownCmsSite],
+    enabled: linked && !fillRunning,
+    staleTime: 60 * 1000,
+    queryFn: () => bridgeFillEstimate(dispatch, site.id, { cmsSite: knownCmsSite }),
+  });
+  const tierRow =
+    fillEstimate.data?.tiers.find((row) => row.tier === effortTier) ?? null;
+  const overrideCount = Object.values(fillEstimate.data?.overrides ?? {}).reduce(
+    (total, count) => total + count,
+    0,
+  );
 
   // Restart-agnostic progress: hydrate the latest fill job once linked, then
   // poll live queue counts while one is running. A page reload (or a server
@@ -485,19 +516,22 @@ export function SetupBridgeSection({
   };
 
   const handleFillStart = async () => {
-    const pages = report?.matched ?? null;
-    // Each page is FOUR AI steps now, so the cost is stated before the run,
-    // not discovered afterwards. `includeReview` is the one choice offered.
-    const calls = pages ? pages * (includeReview ? 4 : 3) : null;
+    // The whole job's cost, stated BEFORE the commit — pages, exact calls, and
+    // a price measured from what these agents actually charged.
+    const pages = tierRow?.estimate.pages ?? report?.matched ?? null;
+    const calls = tierRow?.estimate.calls ?? null;
+    const steps = EFFORT_TIER_STEPS[effortTier];
     const ok = await confirm({
-      title: "Build the content for every drafted page?",
+      title: `Build the content for every drafted page — ${EFFORT_TIER_LABEL[effortTier]}?`,
       description:
         `Every unpublished draft page linked to a plan node on CMS site "${cms?.link.cmsSlug ?? ""}" ` +
-        "goes through the whole pipeline: work out what belongs on the page, write it, " +
-        (includeReview ? "review and fact-check it, " : "") +
-        "then build the page." +
-        (calls ? ` That is about ${calls} AI call(s) across ${pages} page(s).` : "") +
-        " Work that is already done is skipped, so re-running resumes rather than repeats. " +
+        `runs the ${EFFORT_TIER_LABEL[effortTier].toLowerCase()} pathway (${steps.join(" → ")}). ` +
+        EFFORT_TIER_BLURB[effortTier] +
+        (calls && pages ? ` That is ${calls} AI call(s) across ${pages} page(s)` : "") +
+        (tierRow?.estimate.usd != null
+          ? `, about $${tierRow.estimate.usd.toFixed(2)}.`
+          : ".") +
+        " Pages with their own effort setting keep it. Work that is already done is skipped, so re-running resumes rather than repeats. " +
         "Nothing is published. The job is crash-safe and survives restarts — you can leave this page.",
       confirmLabel: "Build the content",
     });
@@ -506,7 +540,7 @@ export function SetupBridgeSection({
     try {
       const started = await bridgeFillStart(dispatch, site.id, {
         cmsSite: knownCmsSite,
-        includeReview,
+        effortTier,
       });
       for (const line of started.skipped) toast.info(line);
       toast.success(
@@ -521,6 +555,21 @@ export function SetupBridgeSection({
       toast.error(`Content generation failed to start: ${extractErrorMessage(error)}`);
     } finally {
       endBusy();
+    }
+  };
+
+  /** Changing the picker IS the site's default — recorded, not just this run. */
+  const handleEffortTierChange = async (next: EffortTier) => {
+    const previous = effortTier;
+    setEffortTier(next);
+    setSavingTier(true);
+    try {
+      await saveSiteEffortTier(site.id, next);
+    } catch (error) {
+      setEffortTier(previous);
+      toast.error(`Could not save the effort tier: ${extractErrorMessage(error)}`);
+    } finally {
+      setSavingTier(false);
     }
   };
 
@@ -872,10 +921,37 @@ export function SetupBridgeSection({
                   )}
                   Preview one page
                 </Button>
+                <select
+                  aria-label="Content build effort"
+                  className="h-7 min-h-[44px] rounded-md border border-input bg-background px-1.5 text-xs sm:min-h-0"
+                  value={effortTier}
+                  disabled={!linked || busy !== null || savingTier}
+                  title={EFFORT_TIER_BLURB[effortTier]}
+                  onChange={(event) => {
+                    const next = EFFORT_TIERS.find(
+                      (candidate) => candidate === event.target.value,
+                    );
+                    if (next) void handleEffortTierChange(next);
+                  }}
+                >
+                  {EFFORT_TIERS.map((tier) => (
+                    <option key={tier} value={tier}>
+                      {EFFORT_TIER_LABEL[tier]} ·{" "}
+                      {EFFORT_TIER_STEPS[tier].length} call
+                      {EFFORT_TIER_STEPS[tier].length === 1 ? "" : "s"}/page
+                    </option>
+                  ))}
+                </select>
                 <Button
                   size="sm"
                   className="h-7 gap-1.5 px-2.5 text-xs"
                   disabled={!linked || busy !== null || fillPreview === null}
+                  title={
+                    fillEstimate.error
+                      ? `Estimate unavailable: ${extractErrorMessage(fillEstimate.error)}`
+                      : (tierRow?.estimate.basis ??
+                        "Calculating pages, calls, and approximate cost…")
+                  }
                   onClick={() => void handleFillStart()}
                 >
                   {busy === "fillStart" ? (
@@ -883,18 +959,23 @@ export function SetupBridgeSection({
                   ) : (
                     <PenLine className="h-3.5 w-3.5" />
                   )}
-                  Build all pages
+                  Build {tierRow?.estimate.pages ?? "all"} pages
+                  {tierRow ? ` · ${tierRow.estimate.calls} calls` : ""}
+                  {tierRow?.estimate.usd != null ? (
+                    <ProcessingUnitsBadge
+                      costUsd={tierRow.estimate.usd}
+                      hideIcon
+                      short
+                      className="ml-0.5 px-1.5 py-0"
+                    />
+                  ) : null}
                 </Button>
-                <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    className="h-3 w-3 accent-primary"
-                    checked={includeReview}
-                    disabled={busy !== null}
-                    onChange={(event) => setIncludeReview(event.target.checked)}
-                  />
-                  Review + fact-check each page
-                </label>
+                <span className="text-[11px] text-muted-foreground">
+                  {EFFORT_TIER_BLURB[effortTier]}
+                  {overrideCount > 0
+                    ? ` ${overrideCount} page(s) keep their own effort setting.`
+                    : ""}
+                </span>
                 {fillPreview === null ? (
                   <span className="text-[11px] text-muted-foreground">
                     Preview one page first so you see the writing style before

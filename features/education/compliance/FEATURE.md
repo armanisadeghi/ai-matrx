@@ -64,13 +64,15 @@ state, never a silent failure.
     set by a COPPA verifiable-consent method), NOT merely an active one. Two
     distinct blocks: `guardian_consent_required` (no active link — ask a parent)
     and `guardian_verification_pending` (active link, parent hasn't completed the
-    verifiable step — "waiting for a parent to verify"). **Undeclared band →
-    BLOCKED** with reason `age_undeclared` (since 2026-08-17; it was `allowed`
-    before, which is why the gate protected nobody). **Anonymous sessions and
-    no-subject callers stay allowed** — they are not this gate's subject, and the
-    guest funnel belongs to WP5. The verifiable-consent flow itself lives on the
-    guardian system — see [`../family/FEATURE.md`](../family/FEATURE.md)
-    §Verifiable parental consent.
+    verifiable step — "waiting for a parent to verify"). A **signed-in undeclared
+    band is ALLOWED with a nudge** (`age_undeclared` — hard-blocking it broke
+    ~232 accounts on 2026-08-17). A **GUEST (anonymous) with no declared band is
+    BLOCKED** with reason `guest_age_undeclared` (since 2026-08-19): a guest must
+    declare (or sign in) before education AI — closing the "sign out and keep
+    using AI as a guest" hole. A guest who declares 13-17/adult is allowed;
+    under-13 routes to the guardian flow. **no-subject callers stay allowed.**
+    The verifiable-consent flow itself lives on the guardian system — see
+    [`../family/FEATURE.md`](../family/FEATURE.md) §Verifiable parental consent.
 
 ## Entry points
 
@@ -180,20 +182,24 @@ no entry point to gate there.
 
 Three layers, in the order they fire:
 
-1. **`EducationAgeGateMount`** (education layout) — the moment a signed-in learner enters the
-   education area, an **undeclared** account is asked for its age band **once, up front**, with
-   `AgeDeclarationDialog`. This is "identify before submit". It never blocks browsing.
+1. **`EducationAgeGateMount`** (education layout) — the moment a learner enters the education
+   area, an **undeclared** account — signed-in OR guest — is asked for its age band **once, up
+   front**, with `AgeDeclarationDialog` (guests also get a sign-in link). This is "identify before
+   submit". It never blocks browsing.
 2. **`useAiComplianceGate.ensureAllowed()`** (per AI action) — the last line before a generation.
-   A still-undeclared learner is prompted here too and the action resumes on answer; a declared
-   under-13 without a verified guardian gets the consent dialog.
-3. **The server gate** (aidream) — refuses a declared under-13 without verified consent even if
-   the client is bypassed.
+   A still-undeclared learner (or guest) is prompted here too and the action resumes on answer; a
+   declared under-13 without a verified guardian gets the consent dialog.
+3. **The server gate** (aidream) — refuses a declared under-13 without verified consent, and an
+   undeclared guest, even if the client is bypassed.
 
-Undeclared is **allowed** at the generation boundary (it only nudges), because declaration is
-enforced by layers 1–2, not by failing a request — see the incident note in the change log.
-Signup itself does not collect age (OAuth / guest-conversion paths would bypass a form field, and
-a global age screen would mis-scope a study-age question onto every platform signup); the
-education-entry prompt is the universal, correctly-scoped collection point.
+For a SIGNED-IN account, undeclared is **allowed** at the generation boundary (it only nudges),
+because declaration is enforced by layers 1–2, not by failing an established account's request —
+see the incident note in the change log. For a **GUEST**, undeclared is **blocked** at the
+boundary (`guest_age_undeclared`): a guest is brand-new and ephemeral, so asking up front breaks
+no one, and it closes the sign-out-to-guest hole. Signup itself does not collect age (OAuth /
+guest-conversion paths would bypass a form field, and a global age screen would mis-scope a
+study-age question onto every platform signup); the education-entry prompt is the universal,
+correctly-scoped collection point.
 
 ## Known limits — read before claiming a surface is school-safe
 
@@ -202,8 +208,26 @@ education-entry prompt is the universal, correctly-scoped collection point.
   scoping is by `source_feature`, not by account. Two education surfaces (Audio
   Study, ingest transcription) route through those ungated pipelines. Raised as
   ARMAN_DECISIONS **D-4b** with a recommendation to enforce platform-wide.
-- **Anonymous/guest sessions are not gated at all** — a blocked child can sign out
-  and continue as a guest. A known open hole, scoped to WP5's guest funnel.
+- **Guest sessions are now gated (2026-08-19, D-4b).** A guest (anonymous) with no
+  declared age band is refused for education AI (`guest_age_undeclared`) and asked
+  to declare (or sign in) via `AgeDeclarationDialog` — the "sign out and keep using
+  AI as a guest" hole is closed. A guest who declares 13-17/adult proceeds; under-13
+  routes to the guardian flow (which needs signing up). The guest block is
+  education-scoped (`ai_allowed`); platform-wide non-education guest AI is untouched.
+  🚨 **Enforcement is the SERVER gate, not the browser client gate, for the common
+  guest.** A browser guest is **fingerprint-based** — aidream mints its anonymous
+  `auth.users` row server-side (`matrx-ai/db/guest_registry.py`); the browser holds
+  NO Supabase session, so `edu_coppa_gate()` (keyed on `auth.uid()`) returns
+  `no_subject → allowed` and the client gate / proactive prompt do not see it. Such
+  a guest is refused by **aidream's** `enforce_education_coppa` when the education
+  generation runs, and the refusal's safe `user_message` ("Tell us your age … or
+  sign in") surfaces via the canonical stream-error path. The interactive
+  `AgeDeclarationDialog` fires only where the browser genuinely holds an anonymous
+  Supabase session (and for the up-front proactive prompt). **Follow-up:** map the
+  `education_age_declaration_required` (and `education_coppa_consent_required`)
+  fatal_error → the dialog on education surfaces, so a fingerprint guest gets the
+  interactive prompt rather than a message — the same tracked headless-path wiring
+  already noted for the consent error.
 - **The age band is still self-attested at FIRST declaration.** The hard block
   stops the *escape* (`under_13 → adult`), not the initial lie. A verifiable-age
   step is Arman/legal (A-2).
@@ -212,6 +236,21 @@ education-entry prompt is the universal, correctly-scoped collection point.
 
 ## Change log
 
+- `2026-08-19` — **Guest (anonymous) sessions gated for education (D-4b).** Closed
+  the "sign out and keep using AI as a guest" hole: `edu_coppa_gate_for` now refuses
+  a guest with no declared age band (`ai_allowed=false, reason='guest_age_undeclared'`)
+  and drives it into the age-declaration prompt (with a sign-in nudge) instead of
+  a hard fail. One verdict function → all three enforcement layers inherit it (this
+  client gate, aidream's `enforce_education_coppa`, and `serverCoppaGate`). A guest
+  who declares 13-17/adult proceeds; under-13 hands off to the guardian flow. A
+  signed-in undeclared account is UNCHANGED (still `age_undeclared`, nudge only — the
+  2026-08-17 incident fix is preserved); the distinction is `is_anonymous AND age_band
+  IS NULL`. The universal (non-education) guard keys on `under_13`, which a guest never
+  has, so platform-wide guest AI is untouched. FE: `useAiComplianceGate` /
+  `EducationAgeGateMount` now prompt guests; `AgeDeclarationDialog` gains an `isGuest`
+  sign-in link; `serverCoppaGate.coppaRefusal` + the voice-token route return the
+  guest-declaration error (`education_age_declaration_required`). DB record:
+  `migrations/edu_coppa_gate_guest_declaration.sql`. Verified live (adversarial, 7/7).
 - `2026-08-17` — **INCIDENT + corrective flow.** The same-day "undeclared age hard-blocks
   generation" change (task #2) broke every existing account: 276 of 277 profiles had a NULL age
   band and nothing collected it, so ~232 real accounts were refused ALL education AI with a raw

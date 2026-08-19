@@ -832,28 +832,76 @@ export function TurnDiagnosisView({
       )}
 
       {/* ── anything else the call received ────────────────────────────── */}
-      {leftovers.length > 0 && (
+      <LeftoverSections
+        leftovers={leftovers}
+        keyPrefix={`${turnKey}:extra`}
+        expand={expand}
+        onToggle={onToggle}
+        raw={raw}
+        disabled={disabled}
+        onInputWrong={onInputWrong}
+      />
+    </div>
+  );
+}
+
+/** Stored values get their OWN honestly-labeled section — they are the
+ * conversation value store (pass-by-reference: the agent holds descriptors
+ * and reads content on demand), not something the user sent this turn. */
+function LeftoverSections({
+  leftovers,
+  keyPrefix,
+  expand,
+  onToggle,
+  raw,
+  disabled,
+  onInputWrong,
+}: {
+  leftovers: DescendInput[];
+  keyPrefix: string;
+  expand: ExpandState;
+  onToggle: (id: string, expanded: boolean) => void;
+  raw: boolean;
+  disabled?: boolean;
+  onInputWrong: (input: DescendInput, note: string | null) => void;
+}) {
+  const values = leftovers.filter((i) => i.key.startsWith("value:"));
+  const rest = leftovers.filter((i) => !i.key.startsWith("value:"));
+  const card = (input: DescendInput) => (
+    <DescendInputCard
+      key={input.key}
+      input={input}
+      id={`${keyPrefix}:${input.key}`}
+      expand={expand}
+      onToggle={onToggle}
+      raw={raw}
+      disabled={disabled}
+      onInputWrong={onInputWrong}
+    />
+  );
+  return (
+    <>
+      {values.length > 0 && (
+        <>
+          <SectionHeading
+            icon={<Package className="h-3.5 w-3.5" aria-hidden />}
+            title="Stored values available to the agent"
+            meta={`${values.length} — the conversation's value store; the agent sees a descriptor and reads content on demand`}
+          />
+          {values.map(card)}
+        </>
+      )}
+      {rest.length > 0 && (
         <>
           <SectionHeading
             icon={<Package className="h-3.5 w-3.5" aria-hidden />}
             title="Also on this call"
-            meta={`${leftovers.length} item${leftovers.length === 1 ? "" : "s"}`}
+            meta={`${rest.length} item${rest.length === 1 ? "" : "s"}`}
           />
-          {leftovers.map((input) => (
-            <DescendInputCard
-              key={input.key}
-              input={input}
-              id={`${turnKey}:extra:${input.key}`}
-              expand={expand}
-              onToggle={onToggle}
-              raw={raw}
-              disabled={disabled}
-              onInputWrong={onInputWrong}
-            />
-          ))}
+          {rest.map(card)}
         </>
       )}
-    </div>
+    </>
   );
 }
 

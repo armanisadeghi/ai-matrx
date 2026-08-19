@@ -962,6 +962,61 @@ export const fcService = {
     }
   },
 
+  /**
+   * Record the HUMAN's verdict on an agent-attached face image, then (on a
+   * rejection) soft-delete it. The verdict is stamped on the detail row BEFORE
+   * the soft-delete so the row survives as evidence: judge accuracy for
+   * `education.card_image_web_source` / `card_image_qc_judge` is only learnable
+   * if every "the agent was wrong here" click is written down somewhere the
+   * verdict ledger can later be reconciled against (VISION_AND_PLAN §2.4).
+   * A silent delete throws that signal away.
+   */
+  async reviewCardImage(
+    cardId: string,
+    face: "front" | "back",
+    verdict: "accepted" | "rejected",
+    opts: { reason?: string; surface?: string } = {},
+  ): Promise<FcResult<null>> {
+    const kind = `${face}_image`;
+    try {
+      const { data: rows, error: readErr } = await EDU()
+        .from("fc_detail")
+        .select("id, metadata")
+        .eq("card_id", cardId)
+        .eq("kind", kind)
+        .is("deleted_at", null);
+      if (readErr) return fail("reviewCardImage", readErr);
+
+      const reviewedAt = new Date().toISOString();
+      for (const row of rows ?? []) {
+        const prior =
+          row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+            ? (row.metadata as JsonObject)
+            : {};
+        const { error: writeErr } = await EDU()
+          .from("fc_detail")
+          .update({
+            metadata: {
+              ...prior,
+              human_review: {
+                verdict,
+                reviewed_at: reviewedAt,
+                surface: opts.surface ?? "set_illustrate_review",
+                ...(opts.reason ? { reason: opts.reason } : {}),
+              },
+            } as JsonObject,
+          })
+          .eq("id", row.id);
+        if (writeErr) return fail("reviewCardImage", writeErr);
+      }
+
+      if (verdict === "rejected") return await this.removeCardImage(cardId, face);
+      return { data: null, error: null };
+    } catch (e) {
+      return fail("reviewCardImage", e);
+    }
+  },
+
   /** Remove a face's image (soft-deletes every active row of the kind). */
   async removeCardImage(
     cardId: string,

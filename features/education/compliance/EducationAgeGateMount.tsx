@@ -11,8 +11,10 @@
 //
 // It never blocks browsing — picking a band writes it and closes; dismissing
 // just closes (they'll be asked again next visit, and the per-action gate still
-// catches them if they start an AI action). A declared account, an anonymous
-// visitor, or a still-loading gate is a no-op.
+// catches them if they start an AI action). A declared account or a still-loading
+// gate is a no-op. Since 2026-08-19 a GUEST (anonymous, undeclared) session is
+// asked here too — declaration is a guest's one-tap path past the education AI
+// gate (or they can sign in), closing the "keep using AI as a guest" hole.
 
 "use client";
 
@@ -28,8 +30,16 @@ export function EducationAgeGateMount() {
 
   useEffect(() => {
     if (loading) return;
-    // Only act on an undeclared, signed-in account.
-    if (!verdict || verdict.isAnonymous || verdict.ageBand !== null) return;
+    // Act on any undeclared account — signed-in (`age_undeclared`) OR guest
+    // (`guest_age_undeclared`). A guest is no longer skipped: it must declare
+    // before education AI, so ask up front rather than at the first action.
+    if (
+      !verdict ||
+      verdict.ageBand !== null ||
+      (verdict.reason !== "age_undeclared" &&
+        verdict.reason !== "guest_age_undeclared")
+    )
+      return;
 
     let cancelled = false;
     void (async () => {

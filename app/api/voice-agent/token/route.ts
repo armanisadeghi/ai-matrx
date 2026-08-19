@@ -18,7 +18,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveUser } from "@/utils/supabase/resolveUser";
 import { TOKEN_TTL_SECONDS } from "@/features/voice-agent/constants";
 import {
-  COPPA_REFUSAL_MESSAGE,
+  coppaRefusal,
   resolveServerCoppaVerdict,
 } from "@/utils/education/serverCoppaGate";
 
@@ -55,18 +55,21 @@ export async function POST(request: NextRequest) {
     // can never fire. Without this check a declared under-13 with no verified
     // guardian could hold a live voice conversation with a model, with neither
     // the client gate nor the server gate present (adversarial review,
-    // 2026-08-17). Adults, teens, verified under-13s and guests are unaffected.
+    // 2026-08-17). Adults, teens and verified under-13s are unaffected; since
+    // 2026-08-19 an undeclared GUEST is refused too (it must declare / sign in).
     const coppa = await resolveServerCoppaVerdict(user.id);
     if (!coppa.aiAllowed) {
-      console.error("[/api/voice-agent/token] REFUSED — COPPA consent required", {
+      const refusal = coppaRefusal(coppa);
+      console.error("[/api/voice-agent/token] REFUSED — COPPA gate", {
         userId: user.id,
         reason: coppa.reason,
         ageBand: coppa.ageBand,
+        errorType: refusal.errorType,
       });
       return NextResponse.json(
         {
-          error: COPPA_REFUSAL_MESSAGE,
-          error_type: "education_coppa_consent_required",
+          error: refusal.message,
+          error_type: refusal.errorType,
         },
         { status: 403 },
       );

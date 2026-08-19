@@ -11,7 +11,10 @@
 
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { CalendarClock, Loader2 } from "lucide-react";
+import { AUTH_DEST_PARAM } from "@/utils/auth/auth-destination";
 import {
   Dialog,
   DialogContent,
@@ -43,15 +46,23 @@ export function AgeDeclarationDialog({
   onOpenChange,
   onPick,
   saving,
+  isGuest = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onPick: (band: AgeBand) => void;
   /** The band currently being written, so its button shows the spinner. */
   saving: AgeBand | null;
+  /**
+   * A guest (anonymous) session. Adds a "sign in" path alongside declaring —
+   * a guest can either tell us their age here or sign into an existing account.
+   */
+  isGuest?: boolean;
 }) {
   const isMobile = useIsMobile();
   const busy = saving !== null;
+  const pathname = usePathname();
+  const signInHref = `/login?${AUTH_DEST_PARAM}=${encodeURIComponent(pathname ?? "/education")}`;
 
   const title = "How old are you?";
   const explainer = (
@@ -64,6 +75,15 @@ export function AgeDeclarationDialog({
       <span className="block">
         Pick your age below and we&apos;ll pick up right where you left off.
       </span>
+      {isGuest ? (
+        <span className="block text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link href={signInHref} className="font-medium underline underline-offset-2">
+            Sign in
+          </Link>
+          .
+        </span>
+      ) : null}
     </>
   );
 

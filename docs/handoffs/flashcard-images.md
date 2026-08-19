@@ -10,17 +10,33 @@ demonstrated), structural entitlements with batch pre-flight, the aidream stream
 browser-verified end to end). FE contract: `features/flashcards/FEATURE.md` § Images. aidream
 half: `aidream/services/education/card_images.py` + its FEATURE.md.
 
-## Remaining — all four independent lanes are CHIPPED (2026-08-18); pick up a chip's scope, not this list twice
+## Remaining — the independent lanes are CHIPPED (2026-08-18); pick up a chip's scope, not this list twice
+
+**DONE 2026-08-18 — Illustrate-this-set** (was chip `task_06ed19da`): the per-set trigger,
+streaming per-card progress in a floating window, and the keep/reject review pass all
+shipped. See `features/flashcards/FEATURE.md` § Images and
+`aidream/services/education/FEATURE.md`. What it left open is listed below under the judge
+feedback loop and the run-durability limit in the FE FEATURE's *Known limits*.
 
 1. **Editor free lanes** (chip `task_7c28d97b`): upload + Unsplash picker (+credit) in
    `CardImageSlot`, both stamping durable public `image_url` beside any `image_file_id`.
-2. **Illustrate-this-set** (chip `task_06ed19da`): per-set trigger in SetDetailView over the
-   live `/education/images/source-set` door, per-card streaming progress (Floating Law),
-   accept/reject review pass (rejections recorded for judge accuracy).
-3. **Link-rot re-source sweep** (chip `task_60e47449`): scheduled aidream sweep —
-   bounded-verify hotlinked `image_url` rows, re-source dead ones through the same mandate,
-   assists chip summary.
-4. **DB-deck print door** (chip `task_0aa48778`): Print action in SetDetailView feeding the
+**DONE 2026-08-19 — Link-rot re-source sweep** (was chip `task_60e47449`): shipped in aidream
+as `aidream/services/education/image_rot_sweep.py` + system task `education_card_image_rot_sweep`
+(daily, seed `…404`). Verifies hotlinked `fc_detail` image rows with the ONE bounded fetcher,
+re-sources genuinely dead ones through the same `education.card_image_web_source` mandate,
+retires the unrepairable so the face falls back to clean text, and raises one normal-band
+per-owner chip. Live-verified on production rows (a seeded 404 → NPS.gov replacement). Two
+rulings encoded there, both in `aidream/services/education/FEATURE.md`: **only terminal
+evidence counts as dead** (a `403/429/5xx/400` bot-block is indistinguishable from death, and
+replacing a working image is the worse error — Wikimedia really does answer 400 to our
+fetcher), and **repairs do not consume the owner's allowance** but ARE recorded in
+`billing.usage_ledger` with `metadata.lane='rot_repair'`.
+
+**FE follow-on (small, unclaimed):** the chip lands on `/education/flashcards/<set>/edit` (or
+the list when the repaired cards span sets) with no deep-link to the specific face — the page
+does not read an `?assist=` param today, so none is sent. If/when that page grows the
+launch-contract handling the Rulebook page has, the sweep can point at the exact card.
+2. **DB-deck print door** (chip `task_0aa48778`): Print action in SetDetailView feeding the
    existing 10-variant printer with `CardWithDetails → Flashcard` mapping (studyFaces for
    cloze + `getCardImages` for image urls).
 
@@ -37,10 +53,13 @@ half: `aidream/services/education/card_images.py` + its FEATURE.md.
   built-and-unwired with a Python-pinned model default — platform-level unfinished work, not
   flashcards-scoped. Do not delete (unfinished-work alarm); conforming them onto the Judge
   primitive + a mandate is the plan §2.4 shape.
-- **Judge human-feedback loop:** editor/review accept-reject clicks should feed
-  `platform.judge_verdict` accuracy (kappa calibration) for `education.card_image_qc_judge`;
-  the review UI (chip 2) records rejections in metadata — the verdict-ledger wiring is a
-  follow-on once that lands.
+- **Judge human-feedback loop:** the set review pass now WRITES the human verdict —
+  `fc_detail.metadata.human_review` = `{verdict, reviewed_at, surface}` on accept AND reject
+  (stamped before the soft-delete, so a rejected row survives as evidence). What is still
+  missing is the reconciliation: feeding those verdicts into `platform.judge_verdict`
+  accuracy (kappa calibration) for `education.card_image_web_source` /
+  `education.card_image_qc_judge`. That is a read over `fc_detail` + a verdict-ledger write,
+  not new UI.
 - **Rolled-up per-image USD:** usage_ledger counts actions; VISION_AND_PLAN §2.5's summed
   describe+generate+judge `pipeline_cost_usd` stamp is not implemented (waiting on the
   matrx-runtime MeterEvent spine, or a service-side AiUsage sum if wanted sooner).

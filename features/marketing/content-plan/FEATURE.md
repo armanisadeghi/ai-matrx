@@ -423,13 +423,33 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    polls live queue counts every 2.5s while one runs; **previewing ONE authored
    page is mandatory before fan-out** and renders composed global CSS + header
    - fragment + footer in a sandboxed iframe; failures/dead-letters listed
-     verbatim; Stop cancels claiming without killing in-flight pages), 5
+     verbatim; Stop cancels claiming without killing in-flight pages; **the
+     EFFORT TIER is chosen on that same button** — see below), 5
      **publish the site** (`POST /content-plan/sites/{id}/cms-publish`,
      2026-07-29 — bulk publish of every pending page through aidream's ONE
      per-page publish path; dry-run preview mandatory, apply behind a
      destructive confirm since this is the rung that changes the LIVE site;
      per-page results + `remaining_candidates` shown verbatim, and linked plan
      nodes advance to `published`).
+
+   **THE EFFORT TIER (rung 4, 2026-08-19).** Arman's ruling: effort is a
+   PATHWAY, not a cap. The rung's picker names four tiers — Quick (1 call/page,
+   the original one-shot authoring call), Standard (2), Thorough (3), Advanced
+   (4, today's whole pipeline and the default) — and **changing it IS the
+   site's setting**, recorded on `web.site.settings.content_plan.effort_tier`
+   through the same guarded `writeDraftOnce` path the setup draft uses. A page
+   can override it on the NodePanel's **Build** tab
+   (`plan.node.metadata.effort_tier`; empty = follow the site), and an override
+   always wins at run time. `GET .../cms-fill/estimate` prices EVERY tier for
+   this site before the button — exact calls plus a cost measured from what
+   these agents actually charged — so the button itself reads
+   "Build 24 pages · 96 calls · $0.33". **Nothing is enforced mid-run:** the
+   estimate informs the click and a started build always finishes. The tier
+   table is `setup/effort.ts`, a mirror of aidream's
+   `services/content_plan/effort.py` — change one and you change the other
+   (both are pinned by tests). The old "Review + fact-check each page"
+   checkbox is GONE: review is what separates Thorough from Advanced.
+
      CMS reads obey the same prerequisite: plan-bearing views first resolve the
      recorded `settings.cms` choice (then the existing domain match) through
      `useCmsLink`; only a concrete CMS id enables `useCmsPageMap`, and that id is

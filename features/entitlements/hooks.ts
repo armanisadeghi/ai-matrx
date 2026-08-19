@@ -53,6 +53,15 @@ export interface UseEntitlementResult extends EntitlementResult {
   check: () => Promise<EntitlementCheckResult>;
   /** The registry definition (label, upgrade copy, period) for paywall UIs. */
   definition: ReturnType<typeof getCapability>;
+  /**
+   * Re-read server truth into the snapshot so the meter converges.
+   *
+   * Use this — NOT `commit()` — after an action whose usage the SERVER already
+   * recorded (aidream writes `billing.usage_ledger` itself for the AI lanes it
+   * owns, e.g. the flashcard card-image pipelines). Calling `commit()` there
+   * would write a SECOND ledger row and double-count the spend.
+   */
+  refresh: () => Promise<void>;
 }
 
 /**
@@ -72,11 +81,17 @@ export function useEntitlement(capability: Capability): UseEntitlementResult {
     [capability],
   );
 
+  const dispatch = useAppDispatch();
+  const refresh = useCallback(async () => {
+    const snapshot = await fetchEntitlementSnapshot();
+    dispatch(setEntitlementSnapshot(snapshot));
+  }, [dispatch]);
+
   const definition = useMemo(() => getCapability(capability), [capability]);
 
   return useMemo(
-    () => ({ ...verdict, check, definition }),
-    [verdict, check, definition],
+    () => ({ ...verdict, check, definition, refresh }),
+    [verdict, check, definition, refresh],
   );
 }
 

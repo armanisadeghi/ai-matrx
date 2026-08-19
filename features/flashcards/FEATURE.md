@@ -63,6 +63,21 @@ own fresh conversation):
   `education.card_image_web_source`, and VERIFIED generation through
   `education.card_image_prompt_writer` → `card_image_generator` →
   `card_image_qc_judge` (generate → adversarial vision judge → retry once → refuse).
+- **Per-SET trigger:** "Illustrate this set" on
+  [`components/set-detail/SetDetailView.tsx`](./components/set-detail/SetDetailView.tsx),
+  over the `/education/images/source-set` door. THREE parts, one module each —
+  never fork a second copy: [`illustrateSetRun.ts`](./components/set-detail/illustrateSetRun.ts)
+  (the typed stream contract + pure reducer; wire twin of aidream's
+  `SetImagePlanEvent` / `SetImageProgressEvent`),
+  [`IllustrateSetWindow.tsx`](./components/set-detail/IllustrateSetWindow.tsx) (an
+  `inline-window` that renders the canonical `LiveRunProgress` rows WHILE the batch
+  runs — ~30-60s per card, so never a spinner and never a page-shifting block — then
+  becomes the review pass), and `fcService.reviewCardImage` (the writer).
+  **The review pass is the point:** every attached image shows the sourcing agent's own
+  trust reasoning, its source domain as a real link, and Keep / Reject; a rejection
+  stamps `fc_detail.metadata.human_review` BEFORE the soft-delete so the agent's miss
+  survives as evidence for judge accuracy. The set refetches after the run so badges and
+  thumbnails match.
 - **Editor slot:** [`components/editor/CardImageSlot.tsx`](./components/editor/CardImageSlot.tsx)
   — per-face Find (web agent) / Generate (verified) / Remove in `EditSetView`, streaming
   the aidream doors `/education/images/source-card|generate-card|source-set`. Agent
@@ -86,8 +101,14 @@ own fresh conversation):
 
 - The editor slot's UPLOAD and UNSPLASH lanes aren't wired yet (Find/Generate/Remove
   are live) — chipped; `docs/handoffs/flashcard-images.md`.
-- No per-SET "Illustrate this set" UI trigger yet (the server door
-  `/education/images/source-set` + pre-flight trimming exist) — chipped.
+- The set run is not durable across a page refresh: every attached image is already
+  committed to the DB card by card, but the REVIEW pass lives in page state, so a
+  refresh mid-run loses the keep/reject list (the images stay, and per-card Remove in
+  the editor still reaches them). Making the run itself resumable needs a server-side
+  run record.
+- The review pass records `fc_detail.metadata.human_review`; wiring those verdicts into
+  `platform.judge_verdict` accuracy for `education.card_image_web_source` is the
+  follow-on (see `docs/handoffs/flashcard-images.md`).
 - The markdown-block print lane only shows images when the caller's card data carries
   `frontImageUrl`/`backImageUrl` (widened `Flashcard` type); the DB-backed deck has no
   print door at all yet (SetDetailView exports, but doesn't print) — chipped.
@@ -99,6 +120,13 @@ own fresh conversation):
 
 ## Change log
 
+- **2026-08-18 — "Illustrate this set" (the per-SET image lane).** Set detail can now run
+  the whole deck through the web-sourcing agent in one action, entitlement-guarded with the
+  meter shown before the click. aidream's `source_set_images` was extended to stream typed
+  per-card progress, which this surface renders as live rows in a floating window; when the
+  run settles the same window becomes a review pass (thumbnail + the agent's trust
+  reasoning + source link + Keep/Reject), and rejections are recorded on the detail row
+  before the image is removed.
 - **2026-08-18 — Image lanes completed to the acceptance bars:** editor `CardImageSlot`
   (Find/Generate/Remove per face, streaming, metered), verified generation lane on
   mandates (adversarial judge, retry-once, refuse), structural entitlements with batch

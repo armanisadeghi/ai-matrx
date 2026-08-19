@@ -28,6 +28,7 @@ import {
   type PlanReviewResult,
 } from "./ai";
 import { SITE_SETTINGS_KEY } from "./archetypes";
+import { SITE_EFFORT_KEY, type EffortTier } from "./effort";
 import { assertFound } from "@/features/marketing/data/service";
 import { associationsService } from "@/features/scopes/service/associationsService";
 
@@ -415,6 +416,26 @@ export async function saveSetupDraft(
   if (await writeDraftOnce(siteId, mutate)) return;
   throw new Error(
     "The site record kept changing while saving the setup draft — your latest choices may not be stored.",
+  );
+}
+
+/**
+ * The site's DEFAULT effort tier for the content pipeline (Arman: set per site
+ * with a per-page override). One key in the same guarded `content_plan` block —
+ * zero schema, and `null` returns the site to the platform default.
+ */
+export async function saveSiteEffortTier(
+  siteId: string,
+  tier: EffortTier | null,
+): Promise<void> {
+  const mutate = (block: Record<string, unknown>) => {
+    if (tier) block[SITE_EFFORT_KEY] = tier;
+    else delete block[SITE_EFFORT_KEY];
+  };
+  if (await writeDraftOnce(siteId, mutate)) return;
+  if (await writeDraftOnce(siteId, mutate)) return;
+  throw new Error(
+    "The site record kept changing while saving the effort tier — the build would run at the previous setting.",
   );
 }
 

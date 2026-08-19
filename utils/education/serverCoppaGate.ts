@@ -18,9 +18,10 @@
 //
 // It is deliberately NOT education-scoped. COPPA is a fact about the ACCOUNT,
 // not about which page the child is on — an unconsented under-13 should not get
-// an unsupervised live model anywhere. Adults, teens, verified under-13s and
-// anonymous visitors are all allowed, so gating a route costs nothing
-// legitimate.
+// an unsupervised live model anywhere. Adults, teens and verified under-13s are
+// allowed; since 2026-08-19 a GUEST (anonymous) session that has not declared an
+// age band is refused too (reason `guest_age_undeclared`) — it must declare (or
+// sign in) first, so gating a route still costs nothing legitimate.
 
 import "server-only";
 import { createAdminClient } from "@/utils/supabase/adminClient";
@@ -34,6 +35,32 @@ export interface ServerCoppaVerdict {
 /** The refusal a route should return. Safe to show the user verbatim. */
 export const COPPA_REFUSAL_MESSAGE =
   "A parent or guardian must approve AI features for this account before it can be used. Ask a parent to approve access, then try again.";
+
+/** The guest-declaration refusal — a guest must declare an age (or sign in). */
+export const GUEST_DECLARATION_MESSAGE =
+  "Tell us your age to use this feature — or sign in. If you're under 13, a parent or guardian will need to approve access first.";
+
+/**
+ * Pick the right refusal for a verdict. A guest-undeclared block is a
+ * declaration prompt (`education_age_declaration_required`), not the under-13
+ * "a parent must approve" block (`education_coppa_consent_required`) — the two
+ * mirror aidream's server gate so a route and the agent funnel agree.
+ */
+export function coppaRefusal(verdict: ServerCoppaVerdict): {
+  message: string;
+  errorType: string;
+} {
+  if (verdict.reason === "guest_age_undeclared") {
+    return {
+      message: GUEST_DECLARATION_MESSAGE,
+      errorType: "education_age_declaration_required",
+    };
+  }
+  return {
+    message: COPPA_REFUSAL_MESSAGE,
+    errorType: "education_coppa_consent_required",
+  };
+}
 
 /**
  * Resolve one user's COPPA verdict server-side.

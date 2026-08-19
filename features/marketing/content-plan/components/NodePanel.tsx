@@ -57,6 +57,15 @@ import {
   useReparentPlanNode,
   useUpdatePlanNode,
 } from "../data/hooks";
+import {
+  coerceEffortTier,
+  EFFORT_TIERS,
+  EFFORT_TIER_BLURB,
+  EFFORT_TIER_LABEL,
+  EFFORT_TIER_STEPS,
+  readNodeEffortTier,
+  withNodeEffortTier,
+} from "../setup/effort";
 import type { PlanDeepenController } from "../hooks/useContentPlanAi";
 import { usePlanWorkspaceParams } from "../hooks/usePlanWorkspaceParams";
 import {
@@ -181,6 +190,8 @@ export function NodePanel({
     return "p4_write";
   };
   const [activeTab, setActiveTab] = useState<string>(() => defaultTabFor(node));
+  /** This page's own effort override; null = follow the site's setting. */
+  const nodeEffortTier = readNodeEffortTier(node.metadata);
 
   // One run state for the whole panel: the rail's arrows and the Write tab's
   // "Write with AI" report and drive the SAME run.
@@ -1193,6 +1204,47 @@ export function NodePanel({
               /* "This page does not exist yet" is the state that most needs an
                 answer — the card renders every state. */
               <PanelSection title="Build — the real page">
+                {/* THE PER-PAGE EFFORT OVERRIDE (Arman: set per site with a
+                  per-page override). One money page may run every step inside
+                  a cheap site — and a routine page may stay one call inside an
+                  expensive one. Empty = follow the site's setting. */}
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <label
+                    className="text-[11px] text-muted-foreground"
+                    htmlFor={`effort-${node.id}`}
+                  >
+                    Effort for this page
+                  </label>
+                  <select
+                    id={`effort-${node.id}`}
+                    className="h-7 rounded-md border border-input bg-background px-1.5 text-xs"
+                    value={nodeEffortTier ?? ""}
+                    disabled={update.isPending}
+                    onChange={(event) => {
+                      const next = coerceEffortTier(event.target.value);
+                      update.mutate({
+                        id: node.id,
+                        patch: {
+                          metadata: withNodeEffortTier(node.metadata, next),
+                        },
+                      });
+                    }}
+                  >
+                    <option value="">Follow the site setting</option>
+                    {EFFORT_TIERS.map((tier) => (
+                      <option key={tier} value={tier}>
+                        {EFFORT_TIER_LABEL[tier]} ·{" "}
+                        {EFFORT_TIER_STEPS[tier].length} call
+                        {EFFORT_TIER_STEPS[tier].length === 1 ? "" : "s"}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-[11px] text-muted-foreground">
+                    {nodeEffortTier
+                      ? EFFORT_TIER_BLURB[nodeEffortTier]
+                      : "This page runs whatever the site build is set to."}
+                  </span>
+                </div>
                 <NodeRealityCard
                   node={node}
                   cmsPage={cmsPage ?? null}

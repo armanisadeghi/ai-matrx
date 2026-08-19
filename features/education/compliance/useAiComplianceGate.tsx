@@ -17,9 +17,11 @@
 // legally allowed to collect/process data at all?".
 //
 // Two blocks, two dialogs, one entry point:
-//   - `age_undeclared`  -> ask for the age band, write it, and RESUME the action
-//     the learner clicked. Declaration is mandatory since 2026-08-17; before
-//     that the band was NULL for every account and the gate protected nobody.
+//   - `age_undeclared` (signed-in, nudge) / `guest_age_undeclared` (guest, hard
+//     block since 2026-08-19) -> ask for the age band, write it, and RESUME the
+//     action. Declaration is mandatory; before 2026-08-17 the band was NULL for
+//     every account and the gate protected nobody, and a guest could skip it
+//     entirely by never signing in — that hole is now closed too.
 //   - anything else     -> "a parent must approve" (the guardian-consent flow).
 // Because all nine AI entry points already share this primitive, both behaviours
 // land everywhere from here — never re-implement either dialog at a call site.
@@ -201,10 +203,16 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
     setGate(res.data);
     if (res.data.aiAllowed) return true;
 
-    if (res.data.reason === "age_undeclared") {
-      // Not a wall — a one-tap step. Resolve once the learner answers so the
-      // action they clicked resumes without a second click. Concurrent callers
-      // queue behind the same prompt and all settle together.
+    if (
+      res.data.reason === "age_undeclared" ||
+      res.data.reason === "guest_age_undeclared"
+    ) {
+      // Not a wall — a one-tap step, for a signed-in learner OR a guest (whose
+      // undeclared session is now blocked; declaring 13-17/adult resumes the
+      // action, under-13 hands off to the consent flow). Resolve once the
+      // learner answers so the action they clicked resumes without a second
+      // click. Concurrent callers queue behind the same prompt and all settle
+      // together.
       setAskAge(true);
       return await new Promise<boolean>((resolve) => {
         agePromptWaitersRef.current.push(resolve);
@@ -224,8 +232,14 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
    */
   const promptDeclarationIfNeeded = useCallback(() => {
     const g = gateRef.current;
-    // Only when we have a loaded verdict that says the account is undeclared.
-    if (g && !g.isAnonymous && g.ageBand === null && g.reason === "age_undeclared") {
+    // Only when we have a loaded verdict that says the account is undeclared —
+    // a signed-in learner (`age_undeclared`) OR a guest (`guest_age_undeclared`,
+    // blocked since 2026-08-19). Both get the same one-tap prompt up front.
+    if (
+      g &&
+      g.ageBand === null &&
+      (g.reason === "age_undeclared" || g.reason === "guest_age_undeclared")
+    ) {
       setAskAge(true);
     }
   }, []);
@@ -240,6 +254,7 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
           }}
           onPick={onPickBand}
           saving={savingBand}
+          isGuest={Boolean(gate?.isAnonymous)}
         />
         <AiConsentRequiredDialog
           open={open}
@@ -248,7 +263,15 @@ export function useAiComplianceGate(): UseAiComplianceGateResult {
         />
       </>
     ),
-    [open, askAge, savingBand, gate?.reason, onPickBand, settleAgePrompt],
+    [
+      open,
+      askAge,
+      savingBand,
+      gate?.reason,
+      gate?.isAnonymous,
+      onPickBand,
+      settleAgePrompt,
+    ],
   );
 
   return {

@@ -37,6 +37,8 @@ import {
   Headphones,
   Merge,
   Printer,
+  Images,
+  Loader2,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MergeCardsDialog } from "./MergeCardsDialog";
@@ -87,6 +89,11 @@ import {
 import { SetVisibilityControl } from "../sharing/SetVisibilityControl";
 import { AudioOverviewSection } from "./AudioOverviewSection";
 import { EnhanceSetDialog } from "./EnhanceSetDialog";
+import { IllustrateSetWindow } from "./IllustrateSetWindow";
+import { useIllustrateSetRun, type IllustrateCardState } from "./illustrateSetRun";
+import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
+import { useEntitlementGuard } from "@/features/entitlements/components/useEntitlementGuard";
+import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
 import { serializeDeck } from "@/features/education/media/audio/audioBrief";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { GeneratedFromChips } from "@/features/education/convert/GeneratedFromChips";
@@ -372,6 +379,57 @@ export function SetDetailView({ setId }: { setId: string }) {
   const access = useAccess("fc_set", setId);
   const canEdit = access.isOwner || canEditAccess(access.level);
   const viewOnly = !access.loading && !canEdit;
+
+  // ── Illustrate this set (per-SET image lane) ──────────────────────────────
+  // One agent run per card over aidream /education/images/source-set: search
+  // the open web, judge the source, attach only what clears the bar. Metered
+  // BEFORE the spend (guard), streamed into a floating window (THE FLOATING
+  // LAW — never a spinner, never a block that shifts the deck), then reviewed
+  // card by card. Server-side `source_card_image` records each attach in
+  // billing.usage_ledger itself, so this surface REFRESHES the meter instead of
+  // calling commit() — a client commit here would double-count the batch.
+  const illustrate = useEntitlementGuard("education.card_image_source");
+  const { run: illustrateRun, start: startIllustrate, setReview, reset: resetIllustrate } =
+    useIllustrateSetRun();
+  const [illustrateOpen, setIllustrateOpen] = useState(false);
+  const openCardWindow = useOpenFlashcardItemWindow();
+
+  const runIllustrate = async () => {
+    setIllustrateOpen(true);
+    const outcome = await startIllustrate(setId, "front");
+    // Whatever landed is already in the DB — refetch so badges and thumbnails
+    // on the deck below match what the review pass is showing.
+    setReloadKey((k) => k + 1);
+    void illustrate.refresh();
+    if (outcome.failed) return;
+    if (outcome.refused) {
+      toast.info("Your plan's image limit was reached for now.");
+      return;
+    }
+    toast.success(
+      outcome.attached === 0
+        ? "No image cleared the bar on this run — see why, card by card."
+        : `${outcome.attached} card${outcome.attached === 1 ? "" : "s"} illustrated — review them.`,
+    );
+  };
+
+  const reviewImage = async (
+    card: IllustrateCardState,
+    verdict: "accepted" | "rejected",
+  ) => {
+    const face = (card.result?.face === "back" ? "back" : "front") as
+      | "front"
+      | "back";
+    const res = await fcService.reviewCardImage(card.cardId, face, verdict, {
+      surface: "set_illustrate_review",
+    });
+    if (res.error) {
+      toast.error(res.error);
+      return;
+    }
+    setReview(card.cardId, verdict);
+    if (verdict === "rejected") setReloadKey((k) => k + 1);
+  };
 
   // Print — the SAME canonical printer (10 variants, same settings UX) the
   // markdown-block lane uses; only the data shape differs, and ONE mapper owns
@@ -716,6 +774,31 @@ export function SetDetailView({ setId }: { setId: string }) {
                     Enhance
                   </Button>
                 )}
+                {canEdit && (
+                  <div className="flex flex-col items-start gap-0.5">
+                    <Button
+                      variant="outline"
+                      disabled={
+                        data.cards.length === 0 ||
+                        illustrate.isChecking ||
+                        illustrateRun.phase === "starting" ||
+                        illustrateRun.phase === "running"
+                      }
+                      onClick={() => void illustrate.guard(runIllustrate)}
+                      title="An agent finds an expert image on the open web for each card's front, judges the source, and attaches only what clears the bar"
+                    >
+                      {illustrateRun.phase === "starting" ||
+                      illustrateRun.phase === "running" ? (
+                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Images className="mr-1.5 h-4 w-4" />
+                      )}
+                      Illustrate this set
+                    </Button>
+                    {/* Limits BEFORE the cap — never ambush a batch mid-run. */}
+                    <EntitlementMeter capability="education.card_image_source" />
+                  </div>
+                )}
                 <Button
                   variant="outline"
                   onClick={() => setConvertOpen(true)}
@@ -857,6 +940,35 @@ export function SetDetailView({ setId }: { setId: string }) {
 
             {/* "Make this deeper" — per-card enrich (detail layers) + deepen
                 (atomic sub-cards) via the live enrichCard/expandCard agents. */}
+            {/* Per-set image run — live progress, then the review pass.
+                Floats beside the deck so the page never shifts. */}
+            {illustrateOpen && (
+              <IllustrateSetWindow
+                run={illustrateRun}
+                setName={data.set.name}
+                onClose={() => {
+                  setIllustrateOpen(false);
+                  resetIllustrate();
+                }}
+                onKeep={(card) => reviewImage(card, "accepted")}
+                onReject={(card) => reviewImage(card, "rejected")}
+                onOpenCard={(cardId) => {
+                  const card = data.cards.find((c) => c.id === cardId);
+                  if (!card) return;
+                  const faces = studyFaces(card);
+                  const images = getCardImages(card);
+                  openCardWindow({
+                    front: faces ? faces.front : card.front,
+                    back: faces ? faces.back : card.back,
+                    title: data.set.name,
+                    frontImage: images.front ?? null,
+                    backImage: images.back ?? null,
+                  });
+                }}
+              />
+            )}
+            <illustrate.Paywall />
+
             <EnhanceSetDialog
               open={enhanceOpen}
               onOpenChange={setEnhanceOpen}

@@ -28,6 +28,11 @@ import { describeBackendFailure, parseStreamError } from "@/lib/api/errors";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { supabase } from "@/utils/supabase/client";
 import { authenticatedWebDb } from "@/utils/supabase/webDb";
+import {
+  coerceEffortTier,
+  DEFAULT_EFFORT_TIER,
+  type EffortTier,
+} from "./effort";
 import type { AppDispatch } from "@/lib/redux/store";
 
 import { slugify } from "./archetypes";
@@ -129,6 +134,30 @@ export interface FillEstimate {
   callsByStep: Record<string, number>;
   usd: number | null;
   basis: string;
+}
+
+/**
+ * One effort tier priced for THIS site, before the button. `calls` is exact;
+ * `usd === null` means the steps have no measured history yet — never a guess.
+ * Per-page overrides are honoured, so the row is the real job, not an average.
+ */
+export interface FillTierEstimate {
+  tier: EffortTier;
+  label: string;
+  blurb: string;
+  /** Pages this tier would newly govern (pages with their own override excluded). */
+  pagesAtTier: number;
+  estimate: FillEstimate;
+}
+
+export interface FillEffortEstimate {
+  pages: number;
+  /** The site's recorded default; null = it has never chosen one. */
+  siteTier: EffortTier | null;
+  defaultTier: EffortTier;
+  /** Pages carrying their own override, counted by tier. */
+  overrides: Record<string, number>;
+  tiers: FillTierEstimate[];
 }
 
 export interface FillStartResult {
@@ -669,6 +698,60 @@ export async function bridgeFillPreview(
   return preview;
 }
 
+/**
+ * What every effort tier would cost for this site — the number Arman requires
+ * BEFORE the button (a 300-page site knows its bill before the click). Read
+ * only; it starts nothing and enforces nothing.
+ */
+export async function bridgeFillEstimate(
+  dispatch: AppDispatch,
+  siteId: string,
+  options: { cmsSite?: string } = {},
+): Promise<FillEffortEstimate> {
+  const result = await dispatch(
+    callApi({
+      path: "/content-plan/sites/{site_id}/cms-fill/estimate",
+      method: "GET",
+      pathParams: { site_id: siteId },
+      queryParams: options.cmsSite ? { cms_site: options.cmsSite } : undefined,
+    }),
+  );
+  const data = requireBody(result, "cms-fill/estimate");
+  const tiers: FillTierEstimate[] = [];
+  for (const row of Array.isArray(data.tiers) ? data.tiers : []) {
+    if (!row || typeof row !== "object") continue;
+    const record = row as Record<string, unknown>;
+    const tier = coerceEffortTier(record.tier);
+    if (!tier) continue;
+    tiers.push({
+      tier,
+      label: str(record.label) || tier,
+      blurb: str(record.blurb),
+      pagesAtTier:
+        typeof record.pages_at_tier === "number" ? record.pages_at_tier : 0,
+      estimate:
+        parseFillEstimate(record.estimate) ??
+        { pages: 0, calls: 0, callsByStep: {}, usd: null, basis: "" },
+    });
+  }
+  const overrides: Record<string, number> = {};
+  if (data.overrides && typeof data.overrides === "object") {
+    for (const [key, value] of Object.entries(
+      data.overrides as Record<string, unknown>,
+    )) {
+      if (typeof value === "number") overrides[key] = value;
+    }
+  }
+  return {
+    pages: typeof data.pages === "number" ? data.pages : 0,
+    siteTier: coerceEffortTier(data.site_tier),
+    defaultTier: coerceEffortTier(data.default_tier) ?? DEFAULT_EFFORT_TIER,
+    overrides,
+    tiers,
+  };
+}
+
+
 /** Start the durable fill job (seeds the DB frontier, returns immediately). */
 export async function bridgeFillStart(
   dispatch: AppDispatch,
@@ -680,6 +763,12 @@ export async function bridgeFillStart(
     steps?: string[];
     /** The review/fact-check pass. ON unless explicitly turned off. */
     includeReview?: boolean;
+    /**
+     * The named effort tier for this run — a preset over `steps`, resolved per
+     * page against the page's own override and the site default. Ignored when
+     * `steps` is passed (that is the raw knob the preset sits on).
+     */
+    effortTier?: EffortTier | null;
   },
 ): Promise<FillStartResult> {
   const result = await dispatch(
@@ -691,6 +780,7 @@ export async function bridgeFillStart(
         cms_site: options.cmsSite ?? null,
         steps: options.steps ?? null,
         include_review: options.includeReview !== false,
+        effort_tier: options.effortTier ?? null,
         overwrite: options.overwrite === true,
       },
     }),

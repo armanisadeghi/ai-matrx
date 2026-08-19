@@ -15,16 +15,23 @@ export type AgeBand = "under_13" | "13_17" | "adult";
  * - `guardian_verification_pending` — under-13 with an active link, but the parent
  *   has NOT yet completed a *verifiable* consent step (COPPA §312.5). The child is
  *   still blocked; the UI shows "waiting for a parent to verify".
- * - `age_undeclared` — no age band on the account. Since 2026-08-17 this BLOCKS a
- *   signed-in learner (declaration is mandatory, or the gate protects nobody), and
- *   the fix is one tap: `useAiComplianceGate` asks for the band inline and resumes
- *   the original action. Anonymous visitors are never the gate's subject.
+ * - `age_undeclared` — no age band on a SIGNED-IN account. This does NOT block
+ *   (`aiAllowed=true`) — it only nudges: `useAiComplianceGate` asks for the band
+ *   inline and resumes. Hard-blocking undeclared signed-in accounts broke ~232
+ *   real users on 2026-08-17, so it stays a nudge.
+ * - `guest_age_undeclared` — an ANONYMOUS (guest) session with no age band.
+ *   Since 2026-08-19 this BLOCKS (`aiAllowed=false`): a guest can't be an
+ *   established account and can't hold consent, so it must declare before
+ *   education AI. One tap in `AgeDeclarationDialog` (declare 13-17/adult → resume;
+ *   under-13 → guardian flow), or sign in. Closes the "sign out and keep using AI
+ *   as a guest" hole.
  */
 export type CoppaGateReason =
   | "allowed"
   | "guardian_consent_required"
   | "guardian_verification_pending"
-  | "age_undeclared";
+  | "age_undeclared"
+  | "guest_age_undeclared";
 
 /**
  * The verdict from `edu_coppa_gate()`. `aiAllowed=false` is the block. For an
@@ -39,7 +46,12 @@ export interface CoppaGate {
   hasActiveGuardian: boolean;
   /** An active guardian link that completed a verifiable-consent method. */
   hasVerifiedGuardian: boolean;
-  /** An anonymous (guest) session — allowed, and never asked to declare an age. */
+  /**
+   * An anonymous (guest) session. Since 2026-08-19 a guest with no declared age
+   * band is BLOCKED (`reason='guest_age_undeclared'`) and asked to declare — the
+   * same one-tap prompt a signed-in learner gets. A guest who declares an age is
+   * allowed by the normal rules.
+   */
   isAnonymous: boolean;
   aiAllowed: boolean;
   reason: CoppaGateReason;
