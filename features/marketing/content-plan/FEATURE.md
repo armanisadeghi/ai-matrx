@@ -357,8 +357,25 @@ web_site|plan_node|web_page`, all `container_side='none'` so the relationship
    page with the same predicate since the same date; the bulk fill records
    that refusal as a readable SKIP.
 
-   **Empty and status states are one short line.** Keep every action and name
-   the fixing tab when needed; never explain an absence with a paragraph.
+   **Empty and status states are one short line, in ONE component.** Every
+   "this hasn't happened yet" state renders `components/StepEmptyState.tsx` —
+   a bordered line plus at most one action — and it names the PREREQUISITE,
+   not just the absence: Review with no written content offers a door to the
+   Write tab, never a run the server would refuse. Never explain an absence
+   with a paragraph, and never hand-write a second empty state beside it.
+
+   **Build and Publish are two halves of ONE card.** `NodeRealityCard` takes
+   `variant="build" | "publish"`; the publish half renders only the live
+   half (publish state, live doors, `NodeMeasureCard`) and hands the earlier
+   states back to Build through a door. Rendering the same card in both tabs
+   is the defect this replaced — never fork the component to split it.
+
+   **Every chip and run arrow carries a real `Tooltip`, never `title=`** (a
+   `title` never appears on touch and cannot be styled): the step's name,
+   what the step IS (`PIPELINE_STEPS[].what`), where it stands, and what a
+   click does. Chip geometry lives in ONE exported constant
+   (`STEP_CHIP_CLASS` / `STEP_RUN_BUTTON_CLASS` in `NodeStepRail.tsx`) — the
+   NodePanel's "Page" chip consumes it so the strip cannot drift.
 
 3. **Pillar map** (`PillarMap.tsx` + `pillar-map/`, React Flow, code-split
    behind the view switch with `ssr:false`): three user-switchable pure
@@ -782,6 +799,13 @@ No new server capability was added: `cms-align` always took a node-id array,
 always took `page_ids`. The defect was a surface ignoring what it had.
 
 ## Change log
+
+- 2026-08-19 — **Page-hub UI polish tail.** One shared `StepEmptyState` for every
+  step tab's absence (prerequisite + door/run, never gray text); Build/Publish
+  split by `NodeRealityCard variant` instead of rendering the same card twice;
+  uniform chip geometry with a real Tooltip on every chip and run arrow and a
+  dark-legible un-run status dot; the last paragraph empty states in
+  `BriefEditor` / `NodeMeasureCard` cut to one line.
 
 - 2026-08-19 — **Doc catch-up: §2 now describes the pipeline-as-tabs
   NodePanel** (shipped 2026-08-17 as "THE PIPELINE IS THE PAGE", commit

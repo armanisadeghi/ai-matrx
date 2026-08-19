@@ -1,6 +1,6 @@
 ---
 status: active
-updated: 2026-08-18
+updated: 2026-08-19
 repos: [matrx-frontend, aidream, my-matrx]
 vision: [common-docs/systems/cms-system/FEATURE.md § The Page Hub doctrine — Arman's words, verbatim]
 ---
@@ -27,6 +27,11 @@ any CMS work. This doc is the work order for what remains.
   links, meta).
 - **Publish → measurement join** (aidream): publish adopts the planned `web.page` row (never a
   duplicate across URL derivations) and writes `client_pages.web_page_id`. Regression-tested.
+- **Page-hub UI polish tail** (2026-08-19): ONE shared `StepEmptyState` (a bordered component
+  naming the PREREQUISITE with its door or run action) across every step tab and the publish
+  half; Build/Publish split by `NodeRealityCard variant` — no fork; every chip and run arrow
+  carries a real Tooltip on one exported chip geometry, un-run dot legible in dark. Browser-
+  verified, all 8 tabs, light and dark.
 - **Plan workspace UX**: four chrome rows → ONE toolbar (status-truthful Edit/Live); the pipeline
   rail IS the NodePanel's tab strip (Page | SEO plan | Research | Family | Write | Review |
   Build | Publish), smart default tab, "Write with AI" beside the manual editor; durable
@@ -34,28 +39,23 @@ any CMS work. This doc is the work order for what remains.
 
 ## REMAINING (the work order)
 
-1. **Page-hub UI polish tail (chipped 2026-08-18).** Cut every paragraph empty-state in
-   NodeRealityCard / NodeMeasureCard / PageDraftEditor to one short line; Review + Build empty
-   states become real components ("Add page content to see a review here"), not gray text;
-   Build/Publish stop repeating the same reality card sentences; step-chip visual consistency
-   (uniform sizes, dark-friendly status dot, REAL tooltips on every chip and run arrow).
-2. **Button-duplication fix pass — WAITS ON ARMAN.** The audit report is in the review queue
+1. **Button-duplication fix pass — WAITS ON ARMAN.** The audit report is in the review queue
    ("Content-plan button duplication audit"): per-control keep/merge/delete verdicts + the
    copy-cluster collapse (plain copy icon + ONE copy-for-AI dropdown) + the misleading skill
    lines to amend. Arman rules, then a session executes.
-3. **Best-in-class layer on the one store.** SERP-intent targets, entity/heading coverage vs
+2. **Best-in-class layer on the one store.** SERP-intent targets, entity/heading coverage vs
    plan, tracking against plan (verdicts, not timestamps). Benchmark: Ahrefs briefs /
    Clearscope / SurferSEO plan-vs-page scoring, wired to our own crawl + GSC data.
-4. **Collections render-half re-audit (chipped 2026-08-18).** my-matrx gained
+3. **Collections render-half re-audit (chipped 2026-08-18).** my-matrx gained
    `lib/render/collectionBindings.js` ("collection SSR and site discovery") AFTER the buildout
    handoff last updated — re-audit `common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md`
    against the code, groom it, and surface its six Arman decisions that still stand.
-5. **Hardening/parity tail — unowned since 07-23** (`aidream/docs/handoffs/cms-hardening-and-parity.md`).
+4. **Hardening/parity tail — unowned since 07-23** (`aidream/docs/handoffs/cms-hardening-and-parity.md`).
    Re-verified 2026-08-18: my-matrx `pages/api/create-page.js` still has ZERO handler-level auth
    (proxy matcher is the only lock). Pre-launch security triage is Arman's call; the feature-gap
    items there (version-history UI pages-only, zero tests on cms_assets/cms_verify) are ordinary
    work.
-6. **Lower priority:** research CMS-array reverse filter (`client_pages.research_topic_ids` — 0
+5. **Lower priority:** research CMS-array reverse filter (`client_pages.research_topic_ids` — 0
    rows carry data yet); components→page usage join (doesn't exist); Research tab (blocked on
    website-factory p2 artifacts); plan.node retired-column drop (after production verification).
 
