@@ -1,0 +1,115 @@
+# Google integrations — ALL of them
+
+**Owner:** unassigned
+**Created:** 2026-08-18
+**Scope:** every Google integration in the platform, in every repo. Not just Google Workspace.
+
+This document exists because the parts were built in isolation and nobody held the whole
+picture. Read the map first; it is the point of the doc. Everything else is detail.
+
+---
+
+## The map — what is wired to what
+
+**One canonical connection is the hub:** `aidream/aidream/services/google_integrations/`,
+table `users.integration_connections`, refresh token in the vault, resources in
+`users.integration_connection_resources`. Scope registries are mirrored in exactly two
+places and must stay in lockstep: `google_integrations/scopes.py` and
+`matrx-frontend/lib/googleScopes.ts`.
+
+### Wired into the hub (these talk to each other)
+
+| Integration | Scope | State |
+|---|---|---|
+| Docs / Sheets / Gmail-send | `drive.file`, `gmail.send` | **DONE.** Server tools, chat attach, in-app export, three client surfaces. |
+| Search Console | `webmasters.readonly` | **Live**, 33 properties, nightly sync. |
+| GA4 | `analytics.readonly` | Built, deliberately **paused** at two layers, pending its own approval campaign. |
+| YouTube | `youtube.readonly` | Built; **no live grant** since the Aug 8/9 credential cleanup. |
+| Outreach reply ingestion | `gmail.readonly` | Built and deployed, **100% blocked** — scope never requested. See below. |
+
+### Islands (own credentials, no shared code — correct or not, know they exist)
+
+| Island | Credential | Verdict |
+|---|---|---|
+| PageSpeed Insights | `GOOGLE_PSI_API_KEY` | Correct — it is a keyed public API, not OAuth. Healthy. |
+| Google Business Profile / Local Listings | DataForSEO proxy | **Real gap.** Reads the same real-world Google listing a first-party GBP integration would, sharing nothing with the hub. See below. |
+| Google search results | SerpAPI key | Correct — different question from Search Console (rank vs. impressions). Never cross-referenced; know that "what does Google say about this URL" lives in two systems. |
+| Gemini / Vertex | Provider key | Correct and clean. A model provider, not a user integration. Do not merge it. |
+| AI Matrx's own GA4 tag | Our own property | Correct. Our telemetry, not the customer GA4 feature. Do not confuse them. |
+| Google Fonts | none | Not an integration. |
+
+---
+
+## DONE — do not re-open
+
+**Google Workspace (Docs, Sheets, Gmail send) is complete and verified against a real
+account.** Two canonical tools (`google_workspace` server-side; `google_email_send` with
+**no server executor at all** — that absence is the Gmail boundary). Bound and offered on
+all four agent surfaces. In-app: "Send to Google Doc" on the shared content-action registry,
+"Send to Google Sheet" on the shared export menu, Google in the canonical attach menu, a
+connect-anywhere floating window, and a config-driven connector strip under every composer.
+Large-file paging is honest (`has_more` + the exact next call). Contracts:
+`aidream/aidream/services/google_workspace/FEATURE.md` and
+`matrx-frontend/features/google-workspace/FEATURE.md`.
+
+**One gate remains and only Arman can close it:** connect a genuinely fresh Google identity
+and send one reviewed message. Tracked in
+`common-docs/projects/google-oauth-verification/PRODUCTION-ROLLOUT.md`.
+
+---
+
+## OPEN — ranked by what actually costs us
+
+### 1. `gmail.readonly` is dark, and it is holding the whole outreach product hostage
+The largest live blockage in the inventory. `aidream/aidream/services/outreach_inbound/` is
+fully built and deployed; the send cadence **refuses to send un-listened**, so outreach stays
+dark until the scope lands. This is a provider-approval campaign, not engineering. Arman has
+already ruled it the next campaign. Nothing to build — someone has to run the campaign.
+
+### 2. Google Business Profile has no first-party integration
+`aidream/aidream/services/seo/local_listings.py` reads public GBP data through DataForSEO and
+says so in its own docstring. First-party GBP management needs the Google-approved GBP API and
+a human-gated application. **If it is ever built, it must go on the hub** — otherwise we get
+two disjoint "Google Business Profile" systems. Belongs to the Local Listings program.
+
+### 3. Google Slides is a registered promise, not a feature
+The export was built against `auth/presentations`, which is **not on our production OAuth
+client** — Google refuses consent for every user. Closed honestly 2026-08-18: it is now a
+registered coming-soon with the real blocker named (`presentations.google-slides-export`),
+so the button explains itself instead of failing. The code is intact; un-gating is one line
+once the scope is approved. **Opening that campaign is Arman's call.** `FOUND_DEFECTS` D214.
+
+### 4. Two chips are out for genuinely unfinished work
+- **The agency Search Console credential path.** `aidream/aidream/services/web_credentials/`
+  implements a complete second GSC OAuth flow plus service-account support (`google_gsc_sa`,
+  documented as "advanced — agencies"), with live routes — and **zero rows, zero UI callers**.
+  Its capability is real and the hub cannot express it: one per-user OAuth grant cannot cover
+  an agency's 200 client sites. Needs finishing or an explicit ruling. Do not delete it.
+- **`aidream/seo/utils/google_suggest_keyword_tool.py`** — orphaned autocomplete scraper in
+  the legacy root-level `seo/`. Needs a verdict, and a check against our do-not-crawl policy.
+
+### 5. Deeper Workspace capabilities, deliberately scoped out
+Separate doc, still accurate: `docs/handoffs/google-workspace-deeper-integrations.md` —
+Notes ↔ Docs both directions, Workbooks ↔ Sheets, widening `drive.file` past Docs/Sheets, and
+a connections directory page. Each carries a real design question stated there.
+
+### 6. Smaller, known
+- **Attach is web-only.** The `__google_files` context key works on the web client; the
+  extension and desktop offer the Google tools but have no attach affordance. Their agents can
+  still reach files via `list_resources`.
+- **The connector strip's directory half has no page.** `features/connectors/` already marks
+  Search Console directory-only; the surface that renders it does not exist.
+- **YouTube's grant was revoked and never restored** — restoring it is part of that campaign.
+
+---
+
+## Rules for whoever picks this up
+
+- **Everything user-connected goes on the hub.** A new per-feature Google client is the exact
+  pattern the canonical connection exists to replace. Slides is the cautionary tale.
+- **Never widen a scope without its campaign.** The two registries and the live consent screen
+  must agree. A scope in code that Google has not approved is a button that silently fails.
+- **The Gmail send boundary is load-bearing.** `google_email_send` has no server executor by
+  design. Bulk, scheduled, or background sending is outside the approval — do not add one.
+- **Never recommend deleting a built-but-unwired Google artifact.** Read
+  `common-docs/policies/unfinished-work-alarm.md` first. Two such artifacts are named above.

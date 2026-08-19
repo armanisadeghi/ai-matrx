@@ -1,5 +1,10 @@
 # Google Workspace
 
+> **The whole-platform Google map** — every Google integration across every repo, what is
+> wired to the canonical connection and what is an island, and what is still open — is
+> [`docs/handoffs/google-integrations.md`](../../docs/handoffs/google-integrations.md).
+> Read it before adding any Google capability anywhere.
+
 ## Purpose
 
 This is AI Matrx's focused, reviewer-visible Google Workspace product surface. It proves the exact user actions behind the first direct Google OAuth verification campaign without exposing unrelated product features.

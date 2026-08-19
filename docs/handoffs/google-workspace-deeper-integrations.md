@@ -1,5 +1,8 @@
 # Google Workspace — the deeper integrations still to build
 
+**Parent:** [`google-integrations.md`](google-integrations.md) — the whole-platform Google map.
+This doc is only the deeper Workspace capabilities.
+
 **Owner:** unassigned
 **Created:** 2026-08-18
 

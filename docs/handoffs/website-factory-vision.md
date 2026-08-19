@@ -210,21 +210,55 @@ the page (plan, keywords, research) and everything the live page produces (GSC, 
 findings) is associated and reachable as tabs that REUSE the existing canonical components;
 before/during/after all captured. Work order: [cms-page-hub.md](./cms-page-hub.md).
 
-## Where this stands (2026-08-17) — read this first
+## Where this stands (2026-08-19, global-view audit) — read this first
 
-**The factory works end to end, small.** One button (`cms_fill_start`) takes a planned site
-through four AI steps per page — family territory (p3) → structured write (p4) → review/fact-check
-(p5) → HTML build (p6) — on one durable queue, one item per (page, step), pages overlapping,
-crash-resumable, cost stated before the run and measured after. All four page agents are DATABASE
-agents behind mandates (`content_plan.p3_family|p4_write|p5_review|p6_build`; rebind from
-`/agents/mandates`, no deploy). A human edits any page's words without HTML (`PageDraftEditor`),
-and a human revision supersedes the agent's. Live proof 2026-08-16: 24/24 steps on a 6-page
-throwaway for $0.33; kill-resume and single-page-failure isolation both demonstrated.
+**The factory works end to end, small, and its whole surface is coherent.** One button
+(`cms_fill_start`) takes a planned site through four AI steps per page — family territory (p3) →
+structured write (p4) → review/fact-check (p5) → HTML build (p6) — on one durable queue, one item
+per (page, step), pages overlapping, crash-resumable, cost stated before the run and measured
+after. All four page agents are DATABASE agents behind mandates
+(`content_plan.p3_family|p4_write|p5_review|p6_build`; rebind from `/agents/mandates`, no deploy).
+A human edits any page's words without HTML (`PageDraftEditor`), and a human revision supersedes
+the agent's. Live proof 2026-08-16: 24/24 steps on a 6-page throwaway for $0.33; kill-resume and
+single-page-failure isolation both demonstrated.
+
+**Landed since, all verified on main 2026-08-19 (cross-session merge audit):**
+- **THE PIPELINE IS THE PAGE** (Arman ruling 2026-08-17): NodePanel's rail chips are now the
+  panel's TAB STRIP (Page | Keywords | Research | Family | Write | Review | Build | Publish);
+  content lives inside its step; `defaultTabFor` lands on the first gap. Four chrome rows
+  collapsed into ONE `PlanToolbar`. FE FEATURE.md §2 describes it (caught as doc drift, fixed).
+- **Keyword→brief enforcement, end to end + browser-verified:** write-step gate aligned with the
+  brief gate (bulk fill records refusals as readable SKIPs — server-proven HTTP 422, zero paid
+  work), warn-loud per-page floor on Deepen / tool / apply_plan_tree, keyword-containment check
+  on produced briefs, binding TARGET-KEYWORD prompt framing, precondition-aware run arrows
+  (reason + fix in the tooltip BEFORE the click; a not-loaded read never blocks). The ONE
+  predicate on both sides is primary keyword OR page role — secondaries/links/notes deliberately
+  do NOT count (narrowed 2026-08-18; change one side and you must change the other).
+- **Tiered bulk SEO planning** (cheap/thorough/advanced on the strategist, exact calls + priced
+  cost before the button) — that is the SETUP/keyword-strategist tier, live-proven; the
+  `cms_fill` effort tier (item 3 below) is still open, though its server knobs (`steps` /
+  `overwrite_steps` / `include_review` on the fill request) are already accepted — the FE just
+  never sends more than `include_review`.
 
 **What it is NOT yet:** proven at 25-page scale, deep (p1 keyword research and a rich p2 content
 research have no producer — today's ~4 calls/page vs the 200–300-call vision), specialized (one
-builder, not an expert location/blog/service-page builder), or tiered (the effort setting that
-merges steps at the cheap end).
+builder, not an expert location/blog/service-page builder), or tiered at the FILL level.
+
+**The feature's other parts and who owns them (the global map — keep it current):**
+- **Setup AI steps** (grounding strip, family namer, quick-research):
+  [content-plan-ai-steps.md](./content-plan-ai-steps.md) — same owner as this doc; open items 3,
+  4, 6–12 there.
+- **CMS side** (page hub, publish, collections, my-matrx renderer): [cms-page-hub.md](./cms-page-hub.md)
+  is THE CMS master handoff (separately owned); the code-verified global CMS map is
+  `common-docs/systems/cms-system/FEATURE.md` § THE CMS FEATURE MAP.
+- **Workflow-node exposure** of Content Plan/CMS operations: `aidream/docs/handoffs/features-to-workflows.md`
+  (separately owned) — 14 nodes built, more coming; the factory pipeline itself stays on the
+  durable `cms_fill` queue, not workflow nodes.
+- **Bug dispatch:** `website-factory-bug-dispatch.md` is DELETED (2026-08-19) — 11 of 12 items
+  were DONE; the sole survivor (WF-10) is folded in as item 7 below.
+- **Two dormant purpose-built agents** (Keyword Binder `8ffb091c…`, Brief Writer `f9789816…`,
+  zero runtime consumers) are held under the unfinished-work alarm — never delete; wire or get
+  Arman's written ruling.
 
 ## Remaining work (priority order)
 
