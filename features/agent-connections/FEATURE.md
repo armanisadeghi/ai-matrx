@@ -2,7 +2,7 @@
 
 **Status:** `live` (route family + overlay window shipped; `redux/skl` is the canonical content-block/render-definition store consumed platform-wide; 6 of 14 sections read real data, the rest are declared placeholders)
 **Tier:** `1`
-**Last updated:** `2026-08-11` — verified against live code this date.
+**Last updated:** `2026-08-18` — verified against live code this date.
 
 > Two things live here, and the second matters more than the first:
 >
@@ -74,7 +74,7 @@ Cross-repo product plan: [`common-docs/projects/ai-work-hub/PLAN.md`](/Users/arm
 | `SkillsSection`                                  | `features/skills/` slice (`/api/skills`); full CRUD, categories, filesystem ingest (admin)                                                                                                      |
 | `RenderBlocksSection`                            | skl via `hooks/useRenderBlocks.ts` (definitions + category tree); badges block type + visibility (see below); detail view read-only, editor pending                                             |
 | `AgentsSection`                                  | `features/agents/redux/agent-definition/` (`fetchAgentsList` → `selectLiveAgents`)                                                                                                              |
-| `McpServersSection`                              | `features/agents/redux/mcp/mcp.slice.ts` (`fetchCatalog`, `connectServer` / `disconnectServer` / `discoverServerTools`)                                                                         |
+| `McpServersSection`                              | `features/agents/redux/mcp/mcp.slice.ts`; OAuth opens the canonical popup, no-auth alone uses metadata-only connect, manual auth routes to the credential editor, and the detail renders live discovered tools/errors                                         |
 | `PreferencesSection`                             | `useSetting<T>("userPreferences.agentConnections.<key>")` — persistence via the user-preferences engine, no slice-binding needed                                                                |
 | `PluginsSection` (shown as **Coding Platforms**) | Owner-scoped `chat.coding_session` rows via direct Supabase; storage health, Claude-first connection status, four-provider filters, fidelity verdicts, and canonical conversation doors/actions |
 
@@ -138,6 +138,7 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 - **Sidebar section ⇒ route directory** (see Entry points). Adding a section touches `types.ts`, `constants.ts`, a section component, `AgentConnectionsBody`, and a `page.tsx`.
 - **Sidebar is bi-modal; `basePath` for every new surface.** `OverviewSection` needs `AgentConnectionsNavProvider`.
 - **Connection auth stays server-side.** No credentials/tokens in client state; `features/agents/services/mcp-oauth/` owns the OAuth dance; external-integration credential UI belongs to `features/api-integrations/`.
+- **Connection status must prove the auth strategy.** `oauth_discovery` always runs `startMcpOAuthPopup`; only `none` may call the metadata-only connection RPC. Bearer, API-key, and env strategies route to the full integrations credential editor. Never create a green connection row without its required credential.
 - **Skill/category/resource code does not come back here** — `features/skills/` owns all three now.
 - **Cookie name is versioned** (`panels:agent-connections:v1`).
 - **No permission gating in this feature** — scope filtering is a view filter (RLS is the ceiling); nothing here enforces admin tiers.
@@ -173,6 +174,7 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 
 ## Change log
 
+- `2026-08-18` — Closed the MCP false-connection dead end: Agent Connections now routes OAuth through the canonical popup, reserves metadata-only connect for no-auth servers, sends manual strategies to the credential editor, reports connection errors inline, and renders the live tool-discovery inventory instead of hiding it behind “coming later” copy.
 - `2026-08-15` — Coming-soon compliance: the two bare "coming soon" strings in this feature (`HooksSection`, `SubAgentsSection`) became registered promises — `agent-connections.hooks` (planned) and `agent-connections.sub-agents` (blocked on `agent_definition.kind`) in `lib/coming-soon/registry.ts`, with both sections rendering heading + body FROM the registry so the entry and the copy cannot drift.
 - `2026-08-12` — `fetchCodingSessions` replaced its flat 100-row read with keyset pagination (`beforeLastSeenAt` cursor, `hasMore`, limit+1 probe); `useCodingSessions` exposes `loadOlder`/`loadingMore`, and `PluginsSection` swapped the static "latest 100" disclosure for a real "Load older sessions" control.
 - `2026-08-12` — AI Work stopped treating the capped technical `PluginsSection` as its product inbox. The canonical conversation-history store now owns the unified list/pagination; this feature added only a narrow selected-conversation binding projection. `/agent-connections/plugins` remains unchanged and compatible.

@@ -19,9 +19,9 @@ export interface UseMcpCatalogResult {
   loading: boolean;
   error: string | null;
   reload: () => void;
-  connect: (params: UpsertConnectionParams) => void;
-  disconnect: (serverId: string) => void;
-  discover: (serverId: string) => void;
+  connect: (params: UpsertConnectionParams) => Promise<void>;
+  disconnect: (serverId: string) => Promise<void>;
+  discover: (serverId: string) => Promise<void>;
 }
 
 export function useMcpCatalog(): UseMcpCatalogResult {
@@ -42,14 +42,14 @@ export function useMcpCatalog(): UseMcpCatalogResult {
       reload: () => {
         void dispatch(fetchCatalog());
       },
-      connect: (params) => {
-        void dispatch(connectServer(params));
+      connect: async (params) => {
+        await dispatch(connectServer(params)).unwrap();
       },
-      disconnect: (serverId) => {
-        void dispatch(disconnectServer(serverId));
+      disconnect: async (serverId) => {
+        await dispatch(disconnectServer(serverId)).unwrap();
       },
-      discover: (serverId) => {
-        void dispatch(discoverServerTools(serverId));
+      discover: async (serverId) => {
+        await dispatch(discoverServerTools(serverId)).unwrap();
       },
     }),
     [servers, status, error, dispatch],

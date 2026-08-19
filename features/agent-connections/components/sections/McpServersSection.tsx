@@ -11,6 +11,12 @@ import { useMcpCatalog } from "../../hooks/useMcpCatalog";
 import { selectSelectedItemId, setSelectedItemId } from "../../redux/ui/slice";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { githubConnectUrl } from "@/features/github-integration/service";
+import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
+import { useMcpServerTools } from "@/features/agents/hooks/useMcpTools";
+import {
+  mcpConnectionActionLabel,
+  mcpConnectionRouteFor,
+} from "../../mcp-connection-route";
 
 type McpStatusTone = "stopped" | "running" | "error";
 
@@ -136,8 +142,59 @@ function McpDetail({
   entry: McpCatalogEntry;
   onBack: () => void;
 }) {
-  const { connect, disconnect, discover } = useMcpCatalog();
+  const { connect, disconnect, reload } = useMcpCatalog();
+  const { tools, discovery, refresh } = useMcpServerTools(entry.serverId);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const connected = entry.connectionStatus === "connected";
+  const route = mcpConnectionRouteFor(entry);
+
+  const handleConnect = async () => {
+    setActionError(null);
+    if (route === "github") {
+      window.location.assign(githubConnectUrl(window.location.pathname));
+      return;
+    }
+    if (route === "configure") {
+      window.location.assign("/settings/integrations");
+      return;
+    }
+
+    setBusy(true);
+    try {
+      if (route === "oauth") {
+        const outcome = await startMcpOAuthPopup(
+          entry.serverId,
+          window.location.pathname,
+        );
+        if (!outcome.ok && !outcome.cancelled) {
+          setActionError(outcome.error);
+        }
+        if (outcome.ok) reload();
+        return;
+      }
+      await connect({ serverId: entry.serverId, transport: entry.transport });
+      reload();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setBusy(true);
+    setActionError(null);
+    try {
+      await disconnect(entry.serverId);
+      reload();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="flex items-center gap-3 px-4 py-3 shrink-0 border-b border-border/40">
@@ -161,39 +218,40 @@ function McpDetail({
           {connected ? (
             <button
               type="button"
-              onClick={() => disconnect(entry.serverId)}
+              onClick={() => void handleDisconnect()}
+              disabled={busy}
               className="h-7 px-3 rounded-md text-xs border border-border bg-background hover:bg-accent transition-colors"
             >
-              Disconnect
+              {busy ? "Disconnecting…" : "Disconnect"}
             </button>
           ) : (
             <button
               type="button"
-              onClick={() => {
-                if (entry.slug === "github") {
-                  window.location.assign(githubConnectUrl(window.location.pathname));
-                  return;
-                }
-                connect({ serverId: entry.serverId });
-              }}
+              onClick={() => void handleConnect()}
+              disabled={busy}
               className="h-7 px-3 rounded-md text-xs bg-sky-600 hover:bg-sky-500 text-white transition-colors"
             >
-              Connect
+              {busy ? "Connecting…" : mcpConnectionActionLabel(route)}
             </button>
           )}
           <button
             type="button"
-            onClick={() => discover(entry.serverId)}
-            disabled={!connected}
+            onClick={refresh}
+            disabled={!connected || discovery?.status === "loading"}
             className="h-7 px-3 rounded-md text-xs border border-border bg-background hover:bg-accent transition-colors disabled:opacity-50"
           >
-            Refresh tools
+            {discovery?.status === "loading" ? "Checking tools…" : "Refresh tools"}
           </button>
         </div>
       </div>
       <div className="flex-1 overflow-auto scrollbar-thin p-4 space-y-3 text-sm">
         {entry.description && (
           <p className="text-sm text-foreground/90">{entry.description}</p>
+        )}
+        {actionError && (
+          <p role="alert" className="text-xs text-destructive">
+            {actionError}
+          </p>
         )}
         <div className="pt-2">
           <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
@@ -213,10 +271,39 @@ function McpDetail({
             </span>
           </div>
         )}
-        <p className="text-xs text-muted-foreground pt-4 border-t border-border/40">
-          Full connection config editor + tool list rendering coming with the
-          DetailEditor rollout.
-        </p>
+        <div className="pt-4 border-t border-border/40">
+          <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+            Available tools
+          </div>
+          {!connected ? (
+            <p className="text-xs text-muted-foreground">
+              Connect this server to check its tools.
+            </p>
+          ) : discovery?.status === "failed" ? (
+            <p role="alert" className="text-xs text-destructive">
+              {discovery.error ?? "Tool discovery failed"}
+            </p>
+          ) : discovery?.status === "loading" ? (
+            <p className="text-xs text-muted-foreground">Checking available tools…</p>
+          ) : tools.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No tools were reported by this server.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {tools.map((tool) => (
+                <li key={tool.name} className="rounded-md border border-border/50 p-2">
+                  <code className="text-xs font-mono">{tool.name}</code>
+                  {tool.description && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {tool.description}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
