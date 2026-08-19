@@ -1042,7 +1042,7 @@ SEO metrics are deterministic (shared pixel-width table between browser and scra
       name: "image_producer",
       label: "Image producer",
       description:
-        "Generates images for the page's image plan from a per-image spec (description, alt intent, placement). Must be bound to an agent whose model outputs images; the plan card's Generate button runs it headlessly and stores the produced file id on the plan entry.",
+        "Generates images for the page's image plan from a per-image spec (description, alt intent, placement). Must be bound to an agent whose model outputs images AND declares an `intent_or_content` runtime variable to receive the spec (the same variable name the platform's default image pipeline uses) — the spec never travels as user_input. The plan card's Generate button runs it headlessly and stores the produced file id on the plan entry.",
       kind: "single",
       defaultAgentId: null,
       sortOrder: 140,
