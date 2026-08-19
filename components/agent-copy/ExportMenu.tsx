@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * ExportMenu — the "Export" dropdown for any data surface. Sits beside
- * CopyButtons in toolbars/headers; each item downloads a file built at click
- * time (JSON raw data, CSV of the current view, payload text…).
+ * ExportMenu — the "Export" dropdown for any data surface. Prefer passing
+ * its items through `CopyButtons export={{ items }}` so it sits in the
+ * even-width group. Standalone use is for surfaces that export without copy.
+ * Each item downloads a file built at click time (JSON, CSV, payload text…).
  *
  * Pass `sheetRows` and the menu also offers "Send to Google Sheet" — the same
  * rows, landing in the user's own Drive instead of their downloads folder,
@@ -24,6 +25,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/lib/toast";
 import {
+  copyActionCellClass,
+  copyActionSegmentClass,
+  type CopyActionSize,
+} from "@/components/agent-copy/CopyActionGroup";
+import {
   downloadFile,
   exportFilename,
   type ExportItem,
@@ -34,7 +40,12 @@ export interface ExportMenuProps {
   label: string;
   items: ExportItem[];
   /** "icon" = icon-only trigger (toolbars); "sm" = icon + "Export" text. */
-  size?: "icon" | "sm";
+  size?: CopyActionSize | "sm";
+  /**
+   * Fill one even-width slot inside {@link CopyActionGroup}. Icon-only —
+   * the visible "Export" label is not used in a group.
+   */
+  grouped?: boolean;
   disabled?: boolean;
   className?: string;
   /**
@@ -48,13 +59,15 @@ export function ExportMenu({
   label,
   items,
   size = "icon",
+  grouped = false,
   disabled = false,
   className,
   sheetRows,
 }: ExportMenuProps) {
   const [sendingToSheet, setSendingToSheet] = useState(false);
   if (!items.length && !sheetRows) return null;
-  const isIcon = size === "icon";
+  const groupSize = size === "sm" && !grouped ? "sm" : size;
+  const isIcon = grouped || size !== "sm";
 
   const handle = (item: ExportItem) => {
     const { content, extension, mime } = item.build();
@@ -71,9 +84,8 @@ export function ExportMenu({
     }
     setSendingToSheet(true);
     try {
-      const { sendRowsToGoogleSheet } = await import(
-        "@/features/google-workspace/export/sendToGoogle"
-      );
+      const { sendRowsToGoogleSheet } =
+        await import("@/features/google-workspace/export/sendToGoogle");
       const result = await sendRowsToGoogleSheet(rows, label);
       if (!result.ok) {
         toast.info("Connect Google to send this to a Sheet", {
@@ -107,14 +119,20 @@ export function ExportMenu({
     }
   };
 
-  return (
+  const menu = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
           variant="ghost"
           size={isIcon ? "icon" : "sm"}
-          className={isIcon ? `h-7 w-7 ${className ?? ""}` : className}
+          className={
+            grouped
+              ? copyActionSegmentClass(groupSize === "sm" ? "sm" : groupSize)
+              : isIcon
+                ? `h-7 w-7 ${className ?? ""}`
+                : className
+          }
           disabled={disabled}
           aria-label={`Export ${label}`}
           title={`Export ${label}`}
@@ -145,5 +163,15 @@ export function ExportMenu({
         )}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+
+  if (!grouped) return menu;
+
+  return (
+    <span
+      className={copyActionCellClass(groupSize === "sm" ? "sm" : groupSize)}
+    >
+      {menu}
+    </span>
   );
 }

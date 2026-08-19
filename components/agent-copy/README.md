@@ -7,24 +7,34 @@ no page reimplements them.
 
 **Pieces:**
 
-- `CopyButtons` — **exactly two top-level, icon-only controls at every size**:
-  the normal Copy icon and one `CopyForAiIcon`. Every size keeps a 44px phone/tablet
-  tap target and collapses to its dense visual size at `lg+`. `size`: `"xs"` (h-5, dense list items /
-  metric cards / per-field), `"icon"` (h-7, rows/cards), `"sm"` (larger icon-only
-  header target). Stops click propagation by default (`stopPropagation={false}` to opt out).
-  The normal icon is plain unless multiple human-readable formats exist; then
-  **that same icon** owns their dropdown. **Pass `json`** for structured data;
-  JSON becomes an item in the Copy-for-AI dropdown, never a third button.
+- `CopyButtons` — **exactly two copy controls at every size**, icon-only:
+  the normal Copy icon and one `CopyForAiIcon`. Pass `export` and Download
+  joins them in one even-width `CopyActionGroup` — do not also render
+  `ExportMenu` beside it. Every size keeps a 44px phone/tablet tap target and
+  collapses to its dense visual size at `lg+`. `size`: `"xs"` (h-5, dense list
+  items / metric cards / per-field), `"icon"` (h-8 group / h-7 pair, rows/cards),
+  `"sm"` (larger icon-only header target). Stops click propagation by default
+  (`stopPropagation={false}` to opt out). The normal icon is plain unless
+  multiple human-readable formats exist; then **that same icon** owns their
+  dropdown. **Pass `json`** for structured data; JSON becomes an item in the
+  Copy-for-AI dropdown, never a third copy button. The AI chevron sits beside
+  the icon; every group cell is sized for that pair so the middle segment is
+  never the odd one.
 - `CopyForAiIcon` — the canonical text-free AI-copy mark: overlapping copy
   sheets containing a connected intelligence node. Keep this semantic shape
   across surfaces; do not substitute a bot, face, star, or sparkle.
 - `buildAgentPayload` — the xml-ish envelope (live URL/route/timestamp + full
   JSON dump).
+- `CopyActionGroup` — shared border, even-width cells, dividers. Used by
+  `CopyButtons` when `export` or `grouped` is set.
 - `ExportMenu` + `export.ts` (`jsonExportItem` / `csvExportItem` /
-  `textExportItem`, `rowsToCsv`) — the **Download** dropdown. **Every data
-  surface offers export, not just clipboard copy** — a list/table gets JSON +
-  CSV; a page gets its data JSON. `MatrxDataTable` toolbars get it free via the
-  `copy` config; `rowsToCsvFromColumns` (tableCopy.ts) builds view-shaped CSV.
+  `textExportItem`, `rowsToCsv`) — the **Download** dropdown. Prefer
+  `CopyButtons export={{ items, sheetRows }}` so it sits in the group.
+  Standalone `ExportMenu` stays valid for surfaces that export without copy.
+  **Every data surface offers export, not just clipboard copy** — a list/table
+  gets JSON + CSV; a page gets its data JSON. `MatrxDataTable` toolbars get it
+  free via the `copy` config; `rowsToCsvFromColumns` (tableCopy.ts) builds
+  view-shaped CSV.
 - `AgentCopyGroomerWindow` + `groomer-types.ts` — the page-level custom
   workspace opened from the **one Copy-for-AI dropdown**. It grooms the
   whole-page payload before copying; its footer also exports payload `.md` /
@@ -78,6 +88,12 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
     context: { filter, total },            // extra <context> entries
   })}
   groomer={() => getWholePageGroomerConfig()}
+  export={{
+    items: [
+      jsonExportItem(() => list),
+      csvExportItem(() => list, "CSV", COLUMNS),
+    ],
+  }}
 />
 ```
 
@@ -111,6 +127,8 @@ survives.
 ## Non-negotiable control shape
 
 - **Exactly two top-level copy controls:** normal Copy and Copy for AI.
+  Export is a third segment in the same group (`export` on `CopyButtons`),
+  never a fourth copy icon and never a loose button beside the pair.
 - **Icons only at every size.** Accessible names and tooltips carry the labels;
   visible `Copy`, `JSON`, or `Copy for AI` text is forbidden.
 - **Normal Copy owns human formats.** Keep it plain for one format; use its own

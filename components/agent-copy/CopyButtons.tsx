@@ -17,15 +17,23 @@ import {
   type AiCustomSource,
   type AiVariant,
 } from "@/components/agent-copy/AiCopyMenu";
+import {
+  CopyActionGroup,
+  copyActionCellClass,
+  copyActionSegmentClass,
+  type CopyActionSize,
+} from "@/components/agent-copy/CopyActionGroup";
+import {
+  ExportMenu,
+  type ExportMenuProps,
+} from "@/components/agent-copy/ExportMenu";
 import type { AgentCopyGroomerConfig } from "@/components/agent-copy/groomer-types";
 
 /**
  * CopyButtons — the reusable "copy this data" primitive.
  *
- * Renders two actions side by side:
- *   - Copy (human-readable text)
- *   - Copy for AI (xml-ish agent payload with live URL/route/timestamp + full
- *     JSON dump, via {@link buildAgentPayload})
+ * Renders Copy + Copy-for-AI. Pass `export` and they become a three-segment
+ * even-width group with Download. Copy-for-AI uses {@link buildAgentPayload}.
  *
  * Drop this onto any row, card, or page header. Pass the human text and the
  * agent payload as values or as builder functions (functions are preferred for
@@ -64,7 +72,7 @@ export interface CopyButtonsProps {
    * All sizes are icon-only: "xs" = micro pair (dense list items, metric
    * cards, per-field); "icon" = compact pair (rows/cards); "sm" = header pair.
    */
-  size?: "xs" | "icon" | "sm";
+  size?: CopyActionSize;
   /**
    * Stop click events from bubbling (rows/cards with their own onClick).
    * Default true — copying should never also select/navigate.
@@ -74,6 +82,17 @@ export interface CopyButtonsProps {
   disabled?: boolean;
   /** Wrapper className. */
   className?: string;
+  /**
+   * Download dropdown. When set, Copy + Copy-for-AI + Export render as one
+   * even-width {@link CopyActionGroup}. Pass the items you already build for
+   * a standalone ExportMenu — do not also render ExportMenu beside this.
+   */
+  export?: Pick<ExportMenuProps, "items" | "sheetRows">;
+  /**
+   * Force the even-width group chrome without an export slot (Copy + AI
+   * only). Defaults on when `export` is set.
+   */
+  grouped?: boolean;
   /**
    * Graded AI variants (e.g. a focused/short view). When set, the single
    * "Copy for AI" button upgrades in place to an {@link AiCopyMenu} dropdown:
@@ -113,12 +132,15 @@ export function CopyButtons({
   disabled = false,
   stopPropagation = true,
   className,
+  export: exportConfig,
+  grouped,
   aiVariants,
   aiCustom,
   agentVariant,
   groomer,
 }: CopyButtonsProps) {
   const [copied, setCopied] = React.useState<"human" | "agent" | null>(null);
+  const isGrouped = grouped ?? exportConfig !== undefined;
 
   const flash = (which: "human" | "agent") => {
     setCopied(which);
@@ -140,8 +162,9 @@ export function CopyButtons({
     toast.success(`${label} copied for AI agent`);
   };
 
-  const buttonCls =
-    size === "xs"
+  const buttonCls = isGrouped
+    ? copyActionSegmentClass(size)
+    : size === "xs"
       ? "h-11 w-11 lg:h-5 lg:w-5"
       : size === "icon"
         ? "h-11 w-11 lg:h-7 lg:w-7"
@@ -179,59 +202,95 @@ export function CopyButtons({
   const hasAiMenu =
     menuVariants.length > 1 || aiCustom !== undefined || groomer !== undefined;
 
+  const copyButton = (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className={buttonCls}
+      disabled={disabled}
+      onClick={handleHuman}
+      aria-label={`Copy ${label} (human-readable)`}
+      title={`Copy ${label} (human-readable)`}
+    >
+      {copied === "human" ? (
+        <Check className={iconCls} />
+      ) : (
+        <Copy className={iconCls} />
+      )}
+    </Button>
+  );
+
+  const aiButton = hasAiMenu ? (
+    <AiCopyMenu
+      size={size}
+      grouped={isGrouped}
+      label={label}
+      disabled={disabled}
+      stopPropagation={false}
+      variants={menuVariants}
+      custom={aiCustom}
+      groomer={groomer}
+    />
+  ) : (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className={buttonCls}
+      disabled={disabled}
+      onClick={handleAgent}
+      aria-label={`Copy ${label} for AI agent`}
+      title={`Copy ${label} with full context, formatted for an AI agent`}
+    >
+      {copied === "agent" ? (
+        <Check className={iconCls} />
+      ) : (
+        <CopyForAiIcon className={iconCls} />
+      )}
+    </Button>
+  );
+  const aiControl =
+    isGrouped && !hasAiMenu ? (
+      <span className={copyActionCellClass(size)}>{aiButton}</span>
+    ) : (
+      aiButton
+    );
+
+  const exportControl = exportConfig ? (
+    <ExportMenu
+      label={label}
+      items={exportConfig.items}
+      sheetRows={exportConfig.sheetRows}
+      size={size}
+      grouped={isGrouped}
+    />
+  ) : null;
+
+  const actions = isGrouped ? (
+    <CopyActionGroup size={size}>
+      <span className={copyActionCellClass(size)}>{copyButton}</span>
+      {aiControl}
+      {exportControl}
+    </CopyActionGroup>
+  ) : (
+    <>
+      {copyButton}
+      {aiControl}
+      {exportControl}
+    </>
+  );
+
   return (
     <div
       className={cn(
         "flex items-center",
-        size === "xs" ? "gap-0.5" : "gap-1",
+        !isGrouped && (size === "xs" ? "gap-0.5" : "gap-1"),
         className,
       )}
       onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
     >
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className={buttonCls}
-        disabled={disabled}
-        onClick={handleHuman}
-        aria-label={`Copy ${label} (human-readable)`}
-        title={`Copy ${label} (human-readable)`}
-      >
-        {copied === "human" ? (
-          <Check className={iconCls} />
-        ) : (
-          <Copy className={iconCls} />
-        )}
-      </Button>
-      {hasAiMenu ? (
-        <AiCopyMenu
-          size={size}
-          label={label}
-          disabled={disabled}
-          stopPropagation={false}
-          variants={menuVariants}
-          custom={aiCustom}
-          groomer={groomer}
-        />
-      ) : (
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={buttonCls}
-          disabled={disabled}
-          onClick={handleAgent}
-          aria-label={`Copy ${label} for AI agent`}
-          title={`Copy ${label} with full context, formatted for an AI agent`}
-        >
-          {copied === "agent" ? (
-            <Check className={iconCls} />
-          ) : (
-            <CopyForAiIcon className={iconCls} />
-          )}
-        </Button>
-      )}
+      {actions}
     </div>
   );
 }

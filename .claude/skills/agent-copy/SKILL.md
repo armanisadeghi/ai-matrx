@@ -81,11 +81,13 @@ this page the moment they click this?"_ — then hand the agent exactly that.
 - **Copy exists at EVERY granularity** — field/entry, item, row, list, record,
   page. Never display data the user can't copy. Dense surfaces hide the pair
   until hover (`opacity-0 group-hover/x:opacity-100 focus-within:opacity-100`).
-- **Exactly two top-level controls:** normal Copy and one Copy-for-AI icon.
+- **Exactly two top-level copy controls:** normal Copy and one Copy-for-AI icon.
   Normal Copy stays plain unless multiple human-readable formats exist, then
   that same icon owns their dropdown. Pass structured data as `json`; it is an
   item in the Copy-for-AI dropdown, never a standalone third icon. Scalars
-  skip JSON. Copy-for-AI is NEVER just JSON in an envelope.
+  skip JSON. Copy-for-AI is NEVER just JSON in an envelope. Pass `export` on
+  `CopyButtons` to add Download as a third even-width group segment — do not
+  also render `ExportMenu` beside it.
 - **`CopyForAiIcon` is canonical.** `Sparkles`, `Sparkle`, bot, face, star, or
   any substitute is banned for AI copy. Tooltips/accessibility names carry the
   words; visible Copy/JSON/Copy-for-AI text is forbidden.

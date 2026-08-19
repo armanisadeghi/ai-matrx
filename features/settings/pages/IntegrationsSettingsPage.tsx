@@ -16,7 +16,6 @@ import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { toast } from "@/lib/toast";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { keyFieldsAiVariant } from "@/features/marketing/lib/copy-payloads";
 import {
@@ -123,8 +122,7 @@ const STATUS_CONFIG: Record<
   },
   error: {
     label: "Error",
-    className:
-      "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20",
+    className: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20",
     icon: <X className="h-3 w-3" />,
   },
   disconnected: {
@@ -382,57 +380,54 @@ export default function IntegrationsPage() {
                 mcpEntryMeta, which drops endpoint URLs, auth strategies,
                 connection ids and token expiry. Never pass a raw entry. */}
             {sorted.length > 0 && (
-              <>
-                <CopyButtons
-                  size="icon"
-                  label="Integrations"
-                  human={() => mcpListSummary(sorted)}
-                  agent={() => ({
+              <CopyButtons
+                size="icon"
+                label="Integrations"
+                human={() => mcpListSummary(sorted)}
+                agent={() => ({
+                  kind: "mcp-integrations",
+                  location: mcpLocation("Settings — Integrations"),
+                  description:
+                    "The integrations matching the current filters. Sanitized: no endpoint URLs, auth strategies, connection ids or tokens.",
+                  data: {
+                    filters: {
+                      view: viewFilter,
+                      category: activeCategory,
+                      search: search || null,
+                    },
+                    counts: mcpConnectionCounts(sorted),
+                    integrations: sorted.map(mcpEntryMeta),
+                  },
+                  summary: mcpListSummary(sorted),
+                  attributes: {
+                    ...mcpConnectionCounts(sorted),
+                    view: viewFilter,
+                    category: activeCategory,
+                    sanitized: true,
+                  },
+                })}
+                agentVariant={{ position: "last" }}
+                aiVariants={[
+                  keyFieldsAiVariant({
                     kind: "mcp-integrations",
                     location: mcpLocation("Settings — Integrations"),
                     description:
-                      "The integrations matching the current filters. Sanitized: no endpoint URLs, auth strategies, connection ids or tokens.",
-                    data: {
-                      filters: {
-                        view: viewFilter,
-                        category: activeCategory,
-                        search: search || null,
-                      },
-                      counts: mcpConnectionCounts(sorted),
-                      integrations: sorted.map(mcpEntryMeta),
-                    },
-                    summary: mcpListSummary(sorted),
-                    attributes: {
-                      ...mcpConnectionCounts(sorted),
+                      "Integrations projected to core fields. Sanitized.",
+                    visible: sorted,
+                    project: mcpEntryBrief,
+                    query: {
                       view: viewFilter,
                       category: activeCategory,
+                      search: search || null,
+                    },
+                    attributes: {
+                      ...mcpConnectionCounts(sorted),
                       sanitized: true,
                     },
-                  })}
-                  agentVariant={{ position: "last" }}
-                  aiVariants={[
-                    keyFieldsAiVariant({
-                      kind: "mcp-integrations",
-                      location: mcpLocation("Settings — Integrations"),
-                      description:
-                        "Integrations projected to core fields. Sanitized.",
-                      visible: sorted,
-                      project: mcpEntryBrief,
-                      query: {
-                        view: viewFilter,
-                        category: activeCategory,
-                        search: search || null,
-                      },
-                      attributes: {
-                        ...mcpConnectionCounts(sorted),
-                        sanitized: true,
-                      },
-                    }),
-                  ]}
-                />
-                <ExportMenu
-                  label="Integrations"
-                  items={[
+                  }),
+                ]}
+                export={{
+                  items: [
                     jsonExportItem(() => ({
                       counts: mcpConnectionCounts(sorted),
                       integrations: sorted.map(mcpEntryMeta),
@@ -442,9 +437,9 @@ export default function IntegrationsPage() {
                       "CSV (all matching)",
                       MCP_CSV_COLUMNS,
                     ),
-                  ]}
-                />
-              </>
+                  ],
+                }}
+              />
             )}
           </div>
         </div>
@@ -535,8 +530,7 @@ function ServerCard({
     entry.serverStatus === "active" || entry.serverStatus === "beta";
   const hasEndpoint = !!entry.endpointUrl;
   const isStdioOnly = entry.transport === "stdio" && !hasEndpoint;
-  const canConnect =
-    (isActive || isCommunity) && hasEndpoint && !isConnected;
+  const canConnect = (isActive || isCommunity) && hasEndpoint && !isConnected;
   const needsOAuth = entry.authStrategy === "oauth_discovery";
   const needsToken =
     entry.authStrategy === "bearer" || entry.authStrategy === "api_key";
@@ -690,10 +684,7 @@ function ServerCard({
         <div className="flex items-center gap-1.5 mt-3 flex-wrap">
           <Badge
             variant="outline"
-            className={cn(
-              "text-[10px] px-1.5 py-0 gap-1",
-              transport.className,
-            )}
+            className={cn("text-[10px] px-1.5 py-0 gap-1", transport.className)}
           >
             {transport.icon}
             {transport.label}

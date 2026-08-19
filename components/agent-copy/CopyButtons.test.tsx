@@ -128,6 +128,44 @@ describe("CopyButtons AI variants", () => {
     ).toBe('{\n  "node": "pillar",\n  "depth": 1\n}');
   });
 
+  it("renders Copy, Copy-for-AI, and Export as one even-width group", () => {
+    act(() => {
+      root.render(
+        <CopyButtons
+          size="icon"
+          label="Integrations"
+          human="human list"
+          agent="agent list"
+          aiVariants={[{ id: "brief", label: "Brief", build: () => "brief" }]}
+          export={{
+            items: [
+              {
+                id: "json",
+                label: "JSON",
+                build: () => ({
+                  content: "{}",
+                  extension: "json",
+                  mime: "application/json",
+                }),
+              },
+            ],
+          }}
+        />,
+      );
+    });
+
+    expect(container.querySelector("[data-copy-action-group]")).not.toBeNull();
+    const buttons = [
+      ...container.querySelectorAll("[data-copy-action-group] button"),
+    ];
+    expect(buttons).toHaveLength(3);
+    expect(buttons.map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Copy Integrations (human-readable)",
+      "Mock Copy for AI menu",
+      "Export Integrations",
+    ]);
+  });
+
   it("folds a whole-page Groomer into the same AI control", () => {
     act(() => {
       root.render(

@@ -32,6 +32,11 @@ import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { AgentCopyGroomerHost } from "@/components/agent-copy/AgentCopyGroomerHost";
 import type { AgentCopyGroomerConfig } from "@/components/agent-copy/groomer-types";
 import {
+  copyActionCellClass,
+  copyActionSegmentClass,
+  type CopyActionSize,
+} from "@/components/agent-copy/CopyActionGroup";
+import {
   approxTokens,
   fmtBytes,
   writeClipboard,
@@ -149,7 +154,12 @@ export interface AiCopyMenuProps {
    * (rows / toolbars); "sm" = header icon. Every size is icon-only, matching
    * CopyButtons.
    */
-  size?: "xs" | "icon" | "sm";
+  size?: CopyActionSize;
+  /**
+   * Fill one even-width slot inside {@link CopyActionGroup}. The chevron
+   * sits beside the icon; every cell is sized for that pair.
+   */
+  grouped?: boolean;
   /** Stop click events from bubbling (rows/cards with their own onClick). */
   stopPropagation?: boolean;
   disabled?: boolean;
@@ -167,6 +177,7 @@ export function AiCopyMenu({
   groomer,
   label,
   size = "icon",
+  grouped = false,
   stopPropagation = true,
   disabled = false,
   className,
@@ -178,14 +189,17 @@ export function AiCopyMenu({
   const [groomerConfig, setGroomerConfig] =
     React.useState<AgentCopyGroomerConfig | null>(null);
 
-  const buttonCls =
-    size === "xs"
+  const buttonCls = grouped
+    ? copyActionSegmentClass(size)
+    : size === "xs"
       ? "h-11 w-11 lg:h-5 lg:w-5"
       : size === "icon"
         ? "h-11 w-11 lg:h-7 lg:w-7"
         : "h-11 w-11 lg:h-8 lg:w-8";
   const iconCls =
     size === "xs" ? "h-3 w-3" : size === "icon" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const chevronCls =
+    size === "xs" ? "!size-2.5" : size === "sm" ? "!size-3.5" : "!size-3";
 
   const runVariant = async (v: AiVariant) => {
     if (busy) return;
@@ -211,7 +225,7 @@ export function AiCopyMenu({
   };
 
   const triggerBody = (
-    <>
+    <span className="inline-flex h-full w-full items-center justify-center gap-0.5">
       {busy ? (
         <Loader2 className={cn(iconCls, "animate-spin")} />
       ) : (
@@ -219,23 +233,25 @@ export function AiCopyMenu({
       )}
       {!single && (
         <ChevronDown
-          className={cn(
-            "opacity-60",
-            size === "sm" ? "h-3.5 w-3.5" : "h-3 w-3",
-          )}
+          aria-hidden
+          className={cn("shrink-0 opacity-70", chevronCls)}
         />
       )}
-    </>
+    </span>
   );
 
-  const wrap = (node: React.ReactNode) =>
-    stopPropagation ? (
-      <span className="inline-flex" onClick={(e) => e.stopPropagation()}>
-        {node}
-      </span>
-    ) : (
-      node
-    );
+  const wrap = (node: React.ReactNode) => (
+    <span
+      className={cn(
+        "inline-flex",
+        grouped && copyActionCellClass(size),
+        stopPropagation && !grouped && "inline-flex",
+      )}
+      onClick={stopPropagation ? (e) => e.stopPropagation() : undefined}
+    >
+      {node}
+    </span>
+  );
 
   // Single action → plain icon button, no chevron, no dropdown.
   if (single) {
@@ -263,7 +279,7 @@ export function AiCopyMenu({
             type="button"
             variant="ghost"
             size="icon"
-            className={cn(buttonCls, "w-auto gap-0 px-1.5", className)}
+            className={cn(buttonCls, className)}
             disabled={disabled || busy}
             aria-label={`Copy ${label} for AI`}
             title={`Copy ${label} for AI`}
