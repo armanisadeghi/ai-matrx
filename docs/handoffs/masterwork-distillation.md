@@ -33,11 +33,19 @@
   rulebook` edge, agent role `conductor` on `matrx-user/masterwork-rulebook`. The header's
   primary action is now **Make a Masterwork**; the template Build moved into **More** as
   **Build from template** (NOT deleted — it is superseded, not gone; never extend it).
-  **Live-proved as admin on Arman's SEO Rulebook `8d1d4f08-…` against production**: read
-  the Rulebook, 8 `workflow_catalog` calls, then a rule-by-rule (a)/(b)/(c) verdict whose
-  best line is one no template could reach — _"All 28 of your rules describe how to judge,
-  categorize, and validate a keyword. Not one of them says where the candidates
-  originate."_ Two fixes landed with it: the Record's interview reader now filters edges on
+  **Live-proved END TO END as admin on Arman's SEO Rulebook `8d1d4f08-…` against
+  production**: read the Rulebook, 12 `workflow_catalog` calls, a rule-by-rule (a)/(b)/(c)
+  verdict whose best line is one no template could reach — _"All 28 of your rules describe
+  how to judge, categorize, and validate a keyword. Not one of them says where the candidates
+  originate."_ — and then, on the answers, a REAL authored workflow: `Primary Keyword
+  Decision for a Page` (`e07fbf06-…`, 24 nodes / 37 edges, `metadata.origin="conductor"` +
+  `built_from_rulebook` + `rulebook_version`) containing live Google + site crawl + GSC
+  branch **and five real `plan.step` Plans** (competitor authority · People Also Ask · local
+  results · GSC keyword footprint · long-tail restart), each with a `workflow.plan` row whose
+  output contract it set via `workflow_plan`, blank stand-in,
+  `allow_stand_in_in_production=false`. Compare the template Build's output from the same
+  Rulebook: two text boxes and a rubric, zero nodes touching Google, a URL, a SERP or Search
+  Console. Two fixes landed with it: the Record's interview reader now filters edges on
   `role` (a Conductor session must never be read as the Expert's own words), and the shared
   variable-display rule renders an attachment list as DOORS instead of raw JSON with UUIDs
   in it.

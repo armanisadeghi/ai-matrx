@@ -58,32 +58,27 @@
   `conductor` on the existing `matrx-user/masterwork-rulebook` surface — the Conductor is
   another agent on the Rulebook surface, not a second surface to keep in sync.
 
-  **Live-proved on Arman's real SEO Rulebook (`8d1d4f08-…`, 28 approved rules), signed in as
-  admin against the production backend.** It read the Rulebook, made 8 `workflow_catalog`
-  calls, and returned a rule-by-rule verdict: (a) page content, site crawl, live Google
-  results and the judgment work — each naming the rules it covers; (b) four gaps, of which
-  the sharpest is one no rubric would ever have found — _"All 28 of your rules describe how
-  to judge, categorize, and validate a keyword. Not one of them says where the candidates
-  originate."_ It also surfaced two real PLATFORM defects while doing it: the Google search
-  step's output schema drops the People-Also-Ask box (which a `critical` rule calls a
-  mandatory source), and the Search Console step returns a load receipt rather than the
-  keyword rows.
-
-  **It EMITS — proved 2026-08-18.** Told to build, the Conductor validated its definition
-  clean on the first pass and created `workflow.definition`
-  **`e07fbf06-1cf6-4d62-a3a4-e1a6111a110b`** — _"Primary Keyword Decision for a Page"_,
-  **24 nodes / 37 edges**, five of them honest `plan.step` open steps (competitor authority,
-  People-Also-Ask, the local pack, the Search-Console footprint read-back, the long-tail
-  restart). The emitted workflow is stamped `built_from_rulebook` + `rulebook_slug` +
-  `rulebook_version` exactly like the template Build's output, so **it appears on
-  `/masterwork/[id]/masterworks` with the same version-drift check** — that page's
-  `metadata->>built_from_rulebook` query is the reason the stamp shape is not optional.
-  Two platform gaps the emission exposed were fixed in aidream (never in the Conductor's
-  prompt, and never by extending `build.py`): plan rows are now materialized for EVERY
-  author, not just the Studio canvas, and `workflow_catalog action=definition_shape` returns
-  a worked, self-validating example definition so an authoring agent stops guessing the edge
-  shape. Contract + the full record: `common-docs/systems/masterwork/FEATURE.md` § THE ONE
-  CANONICAL MASTERWORK SYSTEM.
+  **Live-proved END TO END on Arman's real SEO Rulebook (`8d1d4f08-…`, 28 approved rules),
+  signed in as admin against the production backend.** It read the Rulebook, made 12
+  `workflow_catalog` calls, and returned a rule-by-rule verdict naming the rules each answer
+  covered; its sharpest finding is one no rubric would ever reach — _"All 28 of your rules
+  describe how to judge, categorize, and validate a keyword. Not one of them says where the
+  candidates originate."_ On the answers it said _"three things become open steps rather than
+  fake ones"_ and **authored a real workflow**: `Primary Keyword Decision for a Page`
+  (`e07fbf06-1cf6-4d62-a3a4-e1a6111a110b`, 24 nodes / 37 edges), stamping its own provenance
+  (`metadata.origin = "conductor"` + `built_from_rulebook` + `rulebook_version`). It contains
+  real steps (page scrape · site crawl · live Google → read every top result · a branch on
+  whether Search Console is connected · the GSC sync · the taxonomy and FAQ judgment steps)
+  and **five real `plan.step` Plans** — competitor authority, People Also Ask, local results,
+  the GSC keyword footprint, and the long-tail restart — each with a `workflow.plan` row
+  (`origin='agent'`) whose output contract it set through the `workflow_plan` tool, a blank
+  stand-in, and `allow_stand_in_in_production=false`. It also declined scope deliberately
+  (three content-production rules belong to a downstream system) and stated its own limit
+  plainly: _"They don't yet appear as separately editable cards… I'm not going to dress that
+  up as more than it is."_ Two real PLATFORM defects surfaced on the way and are filed: the
+  Google search step's output schema drops the People-Also-Ask box (which a `critical` rule
+  calls a mandatory source), and the Search Console step returns a load receipt rather than
+  the keyword rows — which is precisely why two of the five Plans exist.
 
   **The older TEMPLATE Build is not deleted and is not the primary action.** `build/` +
   aidream `services/masterworks/build.py` fill one of two fixed shapes with no questions
