@@ -26,15 +26,17 @@ import {
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { toast } from "@/lib/toast";
 import { GoogleResourcePicker } from "./GoogleResourcePicker";
-import { setContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import {
+  setContextEntry,
+  setContextEntries,
+} from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { selectInstanceContextEntry } from "@/features/agents/redux/execution-system/instance-context/instance-context.selectors";
 import {
   GOOGLE_FILES_CONTEXT_KEY,
   EMPTY_GOOGLE_FILE_IDS,
   selectGoogleFileIds,
 } from "@/features/google-workspace/attach/googleFileContext";
 import { useAppDispatch, useAppStore, useAppSelector } from "@/lib/redux/hooks";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   flattenResourcePickerItems,
   getVisibleResourcePickerCategories,
@@ -42,6 +44,15 @@ import {
 } from "./resource-picker-menu-items";
 import { useRunControlCounts } from "./useRunControlCounts";
 import type { Resource } from "@/features/agents/resources/types";
+
+/**
+ * Reserved context key for referenced conversations (THE USER-INPUT LAW —
+ * Arman, 2026-08-18: a reference is a RESOURCE, not prose in the person's
+ * message, so it rides as a context entry rather than being concatenated
+ * onto the draft). Mirrors `GOOGLE_FILES_CONTEXT_KEY`'s accumulate-array
+ * shape — each pick appends rather than overwriting the previous one.
+ */
+const CONVERSATION_REFERENCES_CONTEXT_KEY = "referenced_conversations";
 
 interface ResourcePickerMenuProps {
   onResourceSelected(
@@ -191,17 +202,32 @@ export function ResourcePickerMenu({
           currentConversationId={conversationId}
           onBack={() => setActiveView(null)}
           onSelect={(conversation) => {
-            // A reference is TEXT, not an attachment: the agent reads the id
-            // out of the message. Written with the SAME action the user's own
-            // keystrokes dispatch, so undo / draft protection / send behave
-            // identically (mirrors ChatRoomClient's `input_draft` handler).
-            const current =
-              selectUserInputText(conversationId)(store.getState()) ?? "";
+            // A reference is a RESOURCE, not prose in the person's message
+            // (THE USER-INPUT LAW) — it rides as a context entry, never
+            // concatenated onto the draft. The formatted mention text is
+            // preserved so the agent still reads the id unambiguously via
+            // ctx_get; picks accumulate rather than overwrite.
+            const existing = selectInstanceContextEntry(
+              conversationId,
+              CONVERSATION_REFERENCES_CONTEXT_KEY,
+            )(store.getState());
+            const priorMentions = Array.isArray(existing?.value)
+              ? (existing.value as string[])
+              : [];
             const mention = formatConversationReference(conversation);
-            const next = current.trim()
-              ? `${current.trimEnd()} ${mention}`
-              : mention;
-            dispatch(setUserInputText({ conversationId, text: next }));
+            dispatch(
+              setContextEntries({
+                conversationId,
+                entries: [
+                  {
+                    key: CONVERSATION_REFERENCES_CONTEXT_KEY,
+                    value: [...priorMentions, mention],
+                    type: "json",
+                    label: "Referenced conversations",
+                  },
+                ],
+              }),
+            );
             onClose();
           }}
         />
