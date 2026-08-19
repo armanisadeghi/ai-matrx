@@ -139,4 +139,27 @@ describe("shared vault UI contract", () => {
       typesSource.match(/VAULT_ATTACHMENT_COLUMNS[\s\S]*?as const/)?.[0],
     ).not.toContain("value_encrypted");
   });
+
+  test("makes each safe login destination an explicit door", () => {
+    const detailSource = readFileSync(
+      join(process.cwd(), "features/secrets/components/VaultItemDetail.tsx"),
+      "utf8",
+    );
+
+    expect(detailSource).toContain("safeVaultLoginUrl(url)");
+    expect(detailSource).toContain("Open website");
+    expect(detailSource).toContain('target="_blank"');
+    expect(detailSource).toContain('rel="noopener noreferrer"');
+    expect(detailSource).toContain("Invalid URL");
+  });
+
+  test("never presents rows loaded for a previous Vault scope", () => {
+    const hooksSource = readFileSync(
+      join(process.cwd(), "features/secrets/vault-hooks.ts"),
+      "utf8",
+    );
+
+    expect(hooksSource).toContain("loadedScopeKey === scopeKey ? items : []");
+    expect(hooksSource).toContain("requestId !== requestIdRef.current");
+  });
 });

@@ -185,8 +185,14 @@ export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
 
   const [items, setItems] = useState<VaultItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadedScopeKey, setLoadedScopeKey] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
+
+  const scopeKey = organizationId
+    ? `organization:${organizationId}`
+    : scopeKind;
 
   const currentScope = useCallback((): VaultScope => {
     if (organizationId) return { kind: "organization", organizationId };
@@ -195,37 +201,47 @@ export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
 
   // Post-mutation refresh (event-handler-invoked, so sync setState is fine).
   const refresh = useCallback(async () => {
+    const requestId = ++requestIdRef.current;
     setError(null);
     try {
       const rows = await fetchVaultItems(currentScope(), { orgAdmin });
+      if (requestId !== requestIdRef.current) return;
       setItems(rows);
+      setLoadedScopeKey(scopeKey);
     } catch (e) {
+      if (requestId !== requestIdRef.current) return;
       setError(e instanceof Error ? e.message : String(e));
+      setItems([]);
+      setLoadedScopeKey(scopeKey);
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [currentScope, orgAdmin]);
+  }, [currentScope, orgAdmin, scopeKey]);
 
   // Initial load — setState only inside async callbacks (lint doctrine).
   useEffect(() => {
     let active = true;
+    const requestId = ++requestIdRef.current;
     fetchVaultItems(currentScope(), { orgAdmin })
       .then((rows) => {
-        if (!active) return;
+        if (!active || requestId !== requestIdRef.current) return;
         setItems(rows);
+        setLoadedScopeKey(scopeKey);
         setError(null);
       })
       .catch((e: unknown) => {
-        if (!active) return;
+        if (!active || requestId !== requestIdRef.current) return;
         setError(e instanceof Error ? e.message : String(e));
+        setItems([]);
+        setLoadedScopeKey(scopeKey);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active && requestId === requestIdRef.current) setLoading(false);
       });
     return () => {
       active = false;
     };
-  }, [currentScope, orgAdmin]);
+  }, [currentScope, orgAdmin, scopeKey]);
 
   const run = useCallback(
     async <T>(success: string | null, op: () => Promise<T>): Promise<T> => {
@@ -378,7 +394,14 @@ export function useVault(scope: VaultScope, opts?: { orgAdmin?: boolean }) {
       }),
   };
 
-  return { items, loading, busy, error, refresh, actions };
+  return {
+    items: loadedScopeKey === scopeKey ? items : [],
+    loading: loading || loadedScopeKey !== scopeKey,
+    busy,
+    error,
+    refresh,
+    actions,
+  };
 }
 
 // ── Grants (via aidream — the access list is owner information) ───────────

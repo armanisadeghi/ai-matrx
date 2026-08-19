@@ -178,6 +178,12 @@ Personal and organization credentials render through the same
   plus explicit Show/Hide. Generated values remain only in the transient create
   form, exactly like a typed value, and are never logged or persisted outside
   the normal create request.
+- Every saved login destination is a labeled **Open website** door when it is
+  an absolute HTTP(S) URL. Unsafe schemes and malformed addresses remain plain
+  text with an Invalid URL warning; they never become clickable.
+- A scope switch immediately presents an empty loading view keyed to the new
+  scope. Late responses from Mine, Shared with me, or another organization are
+  discarded and can never appear under the newly selected scope label.
 
 ## Files and entry points
 
@@ -232,6 +238,11 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- **2026-08-18** — Closed two Vault navigation hazards: scope results are now
+  request-ordered and keyed to the active scope so stale credentials cannot
+  flash after a switch, and valid login destinations are explicit safe
+  Open-website actions while malformed or non-HTTP(S) values are refused.
 
 - **2026-08-17** — Reworked the canonical full Vault around established
   password-manager patterns: full-bleed three-pane workspace, compact identity

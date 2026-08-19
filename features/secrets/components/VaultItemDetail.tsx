@@ -15,6 +15,7 @@ import {
   Building2,
   Check,
   Download,
+  ExternalLink,
   FileKey2,
   GitFork,
   Globe,
@@ -56,6 +57,7 @@ import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
+import { safeVaultLoginUrl } from "../utils";
 
 import {
   useVaultAudit,
@@ -1298,6 +1300,10 @@ function DestinationSection({
   const addUrl = async (value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
+    if (!safeVaultLoginUrl(trimmed)) {
+      toast.error("Enter a complete http:// or https:// login URL");
+      return;
+    }
     await actions.updateItem(item.id, {
       login_urls: [...item.login_urls, trimmed],
     });
@@ -1356,27 +1362,46 @@ function DestinationSection({
 
       {hasDestination ? (
         <ul className="space-y-1">
-          {item.login_urls.map((url) => (
-            <li
-              key={url}
-              className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-xs"
-            >
-              <span className="min-w-0 flex-1 whitespace-normal break-all font-mono">
-                {url}
-              </span>
-              {editMode && caps.can_edit && (
-                <button
-                  type="button"
-                  className="shrink-0 text-muted-foreground hover:text-destructive"
-                  disabled={busy}
-                  onClick={() => void removeUrl(url)}
-                  aria-label={`Remove ${url}`}
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
-            </li>
-          ))}
+          {item.login_urls.map((url) => {
+            const safeUrl = safeVaultLoginUrl(url);
+            return (
+              <li
+                key={url}
+                className="flex items-center gap-2 rounded border border-border bg-background px-2 py-1 text-xs"
+              >
+                <span className="min-w-0 flex-1 whitespace-normal break-all font-mono">
+                  {url}
+                </span>
+                {safeUrl ? (
+                  <a
+                    href={safeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-1 font-sans font-medium text-primary hover:underline"
+                    aria-label={`Open ${url} in a new tab`}
+                  >
+                    Open website
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                ) : (
+                  <span className="shrink-0 font-sans text-destructive">
+                    Invalid URL
+                  </span>
+                )}
+                {editMode && caps.can_edit && (
+                  <button
+                    type="button"
+                    className="shrink-0 text-muted-foreground hover:text-destructive"
+                    disabled={busy}
+                    onClick={() => void removeUrl(url)}
+                    aria-label={`Remove ${url}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       ) : (
         <p className="text-xs text-muted-foreground">
