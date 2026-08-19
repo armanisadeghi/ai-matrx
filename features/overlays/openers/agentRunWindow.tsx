@@ -34,8 +34,21 @@ export interface OpenAgentRunWindowOptions {
    * only — the user reviews and sends). This is how the Shape studio hands a
    * kind-build brief to the creator agent in-place instead of navigating to
    * `/chat/a/[agentId]`.
+   *
+   * MUST carry only what the human actually typed — never structured data
+   * (a JSON schema, a data sample, an instance payload). Structured content
+   * belongs on `initialVariableValues` instead. THE USER-INPUT LAW:
+   * common-docs/systems/agent-variable-binding/FEATURE.md.
    */
   initialDraftText?: string | null;
+  /**
+   * Declared-variable values to seed onto the fresh conversation alongside
+   * (or instead of) `initialDraftText` — the structured-content channel for
+   * this opener. Filled once, same lifecycle as `initialDraftText`. Keyed by
+   * the AGENT's own variable name (verify it's actually declared before
+   * passing a value here — an undeclared name is silently dropped).
+   */
+  initialVariableValues?: Record<string, string> | null;
 }
 
 export interface AgentRunWindowHandle {
@@ -54,6 +67,7 @@ export function useOpenAgentRunWindow() {
             initialSelectedConversationId: opts.initialSelectedConversationId,
             initialAgentName: opts.initialAgentName,
             initialDraftText: opts.initialDraftText,
+            initialVariableValues: opts.initialVariableValues,
           },
         }),
       );
@@ -81,6 +95,7 @@ export function AgentRunWindowController(props: OpenAgentRunWindowOptions): null
     props.initialSelectedConversationId,
     props.initialAgentName,
     props.initialDraftText,
+    props.initialVariableValues,
   ]);
   return null;
 }

@@ -2729,6 +2729,12 @@ export default function OverlayController() {
                 ? data.initialDraftText
                 : null
             }
+            initialVariableValues={
+              data?.initialVariableValues &&
+              typeof data.initialVariableValues === "object"
+                ? (data.initialVariableValues as Record<string, string>)
+                : null
+            }
           />
         );
       })()}

@@ -54,6 +54,7 @@ import { AgentConversationColumn } from "@/features/agents/components/shared/Age
 import { DebugSessionActivator } from "@/features/agents/components/debug/DebugSessionActivator";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { selectUserInputEntryExists } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
+import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 const SOURCE_FEATURE: SourceFeature = "agent-runner";
@@ -211,18 +212,24 @@ interface AgentRunBodyProps {
    * only: the user reviews and sends (no auto-submit).
    */
   initialDraftText?: string | null;
+  /**
+   * Declared-variable values to seed onto the same fresh conversation, once.
+   * The structured-content channel — never folded into `initialDraftText`.
+   */
+  initialVariableValues?: Record<string, string> | null;
 }
 
 function AgentRunBody({
   agentId,
   selectedConversationId,
   initialDraftText,
+  initialVariableValues,
 }: AgentRunBodyProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
   const surfaceKey = `${SOURCE_FEATURE}:${agentId}`;
-  const hasDraft = Boolean(initialDraftText);
+  const hasDraft = Boolean(initialDraftText) || Boolean(initialVariableValues && Object.keys(initialVariableValues).length > 0);
 
   // Register as a `window` surface — fork outcomes update the window's
   // internal focus (no URL change). The conversation column already
@@ -306,6 +313,19 @@ function AgentRunBody({
     draftSeededRef.current = conversationId;
     dispatch(setUserInputText({ conversationId, text: initialDraftText }));
   }, [initialDraftText, conversationId, draftEntryReady, dispatch]);
+
+  // ── Seed declared-variable values onto the same fresh conversation ─────────
+  // The structured-content channel for this window: never mixed into the
+  // composer text. Fires independently of the draft-text seed above (a
+  // caller may pass variables with no draft, or a draft with no variables).
+  const variableSeededRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialVariableValues || Object.keys(initialVariableValues).length === 0) return;
+    if (!conversationId) return;
+    if (variableSeededRef.current === conversationId) return;
+    variableSeededRef.current = conversationId;
+    dispatch(setUserVariableValues({ conversationId, values: initialVariableValues }));
+  }, [initialVariableValues, conversationId, dispatch]);
 
   // ── Sync selectedConversationId → load + focus (replaces URL sync) ─────────
   const lastLoadedRef = useRef<string | null>(null);
@@ -435,6 +455,8 @@ interface AgentRunWindowProps {
    * hand-offs). Seeds a fresh conversation — see `AgentRunBodyProps`.
    */
   initialDraftText?: string | null;
+  /** Structured-content channel paired with `initialDraftText` — see AgentRunBodyProps. */
+  initialVariableValues?: Record<string, string> | null;
 }
 
 export default function AgentRunWindow({
@@ -444,6 +466,7 @@ export default function AgentRunWindow({
   initialSelectedConversationId,
   initialAgentName,
   initialDraftText,
+  initialVariableValues,
 }: AgentRunWindowProps) {
   if (!isOpen) return null;
   return (
@@ -453,6 +476,7 @@ export default function AgentRunWindow({
       initialSelectedConversationId={initialSelectedConversationId ?? null}
       initialAgentName={initialAgentName ?? null}
       initialDraftText={initialDraftText ?? null}
+      initialVariableValues={initialVariableValues ?? null}
     />
   );
 }
@@ -463,12 +487,14 @@ function AgentRunWindowInner({
   initialSelectedConversationId,
   initialAgentName,
   initialDraftText,
+  initialVariableValues,
 }: {
   onClose: () => void;
   initialAgentId: string | null;
   initialSelectedConversationId: string | null;
   initialAgentName: string | null;
   initialDraftText: string | null;
+  initialVariableValues: Record<string, string> | null;
 }) {
   const [agentId, setAgentId] = useState<string | null>(initialAgentId);
   const [selectedConversationId, setSelectedConversationId] = useState<
@@ -554,6 +580,7 @@ function AgentRunWindowInner({
           agentId={agentId}
           selectedConversationId={selectedConversationId}
           initialDraftText={initialDraftText}
+          initialVariableValues={initialVariableValues}
         />
       ) : (
         <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center text-muted-foreground">
