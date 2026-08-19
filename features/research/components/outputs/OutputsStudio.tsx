@@ -847,6 +847,12 @@ function BlogOutputCard({
     setViewing(null);
     try {
       const md = await runMandate({
+        // Non-structured kick phrase, not the payload — the report and voice
+        // note ride `variables` above. This agent's whole prompt lives in its
+        // SYSTEM message (both {{report_markdown}}/{{voice_lens}} placeholders
+        // are there), so a run with a genuinely empty user_input produces zero
+        // renderable Gemini "user" turns and the provider refuses the request.
+        userInput: "Write the article now.",
         variables: buildGeneratorVariables(reportMarkdown, toneProfile),
         organizationId,
         contextAnchor: {
@@ -1106,6 +1112,11 @@ function SlidesOutputCard({
         mandateKey: SLIDES_MANDATE,
         surfaceKey: `research-outputs-slides:${topicId}`,
         sourceFeature: "research",
+        // Non-structured kick phrase — see BlogOutputCard's identical comment;
+        // this agent's whole prompt (incl. {{report_markdown}}/{{voice_lens}})
+        // lives in its SYSTEM message, so an empty user_input produces zero
+        // renderable Gemini "user" turns.
+        userInput: "Build the deck now.",
         variables: buildGeneratorVariables(reportMarkdown, toneProfile),
         organizationId,
         contextAnchor: {
@@ -1326,6 +1337,10 @@ function SeoOutputCard({
           resource_type: "research_topic",
           resource_id: topicId,
         },
+        // Non-structured kick phrase — see BlogOutputCard's identical comment;
+        // this agent's whole prompt lives in its SYSTEM message, so an empty
+        // user_input produces zero renderable Gemini "user" turns.
+        userInput: "Generate the SEO package now.",
         variables: buildGeneratorVariables(reportMarkdown, toneProfile),
         coerce: (value) => {
           if (
