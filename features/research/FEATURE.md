@@ -305,6 +305,7 @@ find yourself writing code to add an output, something above is wrong.
 
 ## Change log
 
+- 2026-08-18 — **THE USER-INPUT LAW fix: OutputsStudio's blog/slides/SEO generators stopped concatenating the Voice & Lens note and the full research report into `user_input`.** `buildGeneratorInput()` (string concat) replaced with `buildGeneratorVariables()`, sending `report_markdown` and `voice_lens` as named variables to all three call sites (`BlogOutputCard`, `SlidesOutputCard`, `SeoOutputCard`) — `research_client.output_blog` / `output_slides` / `output_seo` already declare and template-consume both, so no DB change was needed. These generator runs have no human turn at all; `user_input` is now empty on all three. SoR: `common-docs/systems/agent-variable-binding/FEATURE.md` § THE USER-INPUT LAW.
 - 2026-08-17 — **Selected YouTube analyses dispatch the whole batch.** The
   library starts every independent video-analysis stream immediately and leaves
   provider admission to `matrx-ai`; each video retains its own controller and
