@@ -124,3 +124,6 @@ public/pdfjs/
 
 # Claude Code per-session agent dev servers (transient state)
 .matrx/dev-sessions/
+
+# Local tool-trace output (transient diagnostics)
+.matrx-debug/
