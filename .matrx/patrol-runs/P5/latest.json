@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "patrolId": "P5",
   "runId": "2026-08-19-copy-everywhere",
-  "state": "certifying",
-  "updatedAt": "2026-08-19T07:37:32.728Z",
-  "summary": "All cited Assist KPI gaps are repaired through canonical list context plus mirrored row/list attributes.",
+  "state": "delivery_queued",
+  "updatedAt": "2026-08-19T07:40:15.854Z",
+  "summary": "Certified candidate 8196a478e is queued for fast integration to origin/main.",
   "source": "2026-08-19-copy-everywhere.json",
-  "eventHash": "c93717a37285c81016baef128296ba3e523b70b8e3a5eaec44829465bce9a1f6"
+  "eventHash": "2440793e689d23aa36970e491b5bc2e81fb2ea9c92294293a07eac0903f47c83"
 }

@@ -4,7 +4,7 @@
 
 **Authority:** standing Tier-M adoption repairs plus detector precision
 
-**Certification:** pending independent review of the exact candidate SHA
+**Certification:** CERTIFIED — exact candidate `8196a478e530cd541714a5611faf5bfdf86bf95b`
 
 ## Outcome
 
@@ -71,6 +71,9 @@ review-only, and the canonical custom-copy workspace stays excluded.
   now accepts live `listContext`, so empty views keep their rendered scope in
   `<context>`; every Assist row attribute set also mirrors all visible status
   counts, including Everything.
+- Final independent review of exact candidate `8196a478e` returned
+  **CERTIFIED**. Both rejected candidates remain ancestors, all required gates
+  pass, and no concrete batch-caused defect remains.
 - The managed preview lease is owned by
   `/Users/armanisadeghi/code/matrx-frontend`, not this automation worktree.
   This run will not reuse or stop that foreign preview. The candidate changes
