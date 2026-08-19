@@ -24,7 +24,7 @@ import {
   ChevronDown,
   ChevronRight,
   Lightbulb,
-  Sparkles,
+  CheckCircle2,
   ListOrdered,
   EyeOff,
 } from "lucide-react";
@@ -62,9 +62,9 @@ function tierForSkill(
 
 const TIER_META: Record<
   AgentSkillTier,
-  { icon: typeof Sparkles; label: string }
+  { icon: typeof ListOrdered; label: string }
 > = {
-  included: { icon: Sparkles, label: "included" },
+  included: { icon: CheckCircle2, label: "included" },
   listed: { icon: ListOrdered, label: "listed" },
   forbidden: { icon: EyeOff, label: "forbidden" },
 };
@@ -260,7 +260,10 @@ export function RunSkillPicker({
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto py-0.5">
+      {/* min-h-0: a flex child's default min-height:auto floors it at content
+          height, so without it this list grows past the panel and never
+          scrolls (the whole surface just gets clipped). */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-0.5">
         {loading && skills.length === 0 ? (
           <p className="px-3 py-2 text-xs text-muted-foreground">
             Loading skills…

@@ -2170,3 +2170,51 @@
 [data-sonner-toast] {
   max-height: min(40rem, 90dvh);
 }
+
+/* ────────────────────────────────────────────────────────────────────────
+   .matrx-mobile-sheet — ONE mobile density for any desktop panel hosted in a
+   bottom sheet (TabbedBottomSheet sets it; see that file's header).
+
+   The run-controls tabs (tools, skills, overrides, settings…) are the SAME
+   components the desktop window renders, authored at desktop density —
+   text-[9px]…text-xs and h-7 rows. On a phone that is unreadable, untappable,
+   and inconsistent with the 16px index list one tap away, so the sheet
+   restates the scale once, here, instead of every panel growing an
+   `isMobile` branch (which is what made these surfaces diverge).
+
+   Deliberately UNLAYERED: Tailwind utilities live in @layer utilities, and
+   unlayered CSS beats every layered rule regardless of specificity — the only
+   way to re-scale utility-set font sizes from the host. Scoped to this class,
+   so the blast radius is exactly the sheet. Font size and control height
+   ONLY — never color, spacing, or layout.
+
+   Fields are forced to 16px because anything smaller makes iOS Safari zoom the
+   page on focus, which is itself a "the panel resized" bug.
+   ──────────────────────────────────────────────────────────────────────── */
+.matrx-mobile-sheet .text-\[9px\],
+.matrx-mobile-sheet .text-\[10px\],
+.matrx-mobile-sheet .text-\[11px\] {
+  font-size: 0.8125rem;
+  line-height: 1.15rem;
+}
+.matrx-mobile-sheet .text-xs {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.matrx-mobile-sheet .text-sm {
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+}
+.matrx-mobile-sheet input,
+.matrx-mobile-sheet textarea,
+.matrx-mobile-sheet select,
+.matrx-mobile-sheet [contenteditable="true"] {
+  font-size: 16px;
+}
+/* h-7 rows (list rows, search fields) are below the 44pt touch target. Raise
+   the floor with min-height — it wins over the utility's height without
+   unpinning it. Square icon buttons (h-7 w-7) are excluded so they stay
+   square. */
+.matrx-mobile-sheet .h-7:not([class*="w-7"]) {
+  min-height: 2.25rem;
+}
