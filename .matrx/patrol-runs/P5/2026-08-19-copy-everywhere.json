@@ -82,6 +82,43 @@
       ],
       "previousEventHash": "00694b031890c7eca6997993c34b4de32e7be6b85c66e348488f142e7bb181ec",
       "eventHash": "69b1266be61103569b0210e7a292f8c96ddbaaf6cc0f9bb1f04052540692774e"
+    },
+    {
+      "sequence": 7,
+      "state": "rejected",
+      "at": "2026-08-19T07:36:10.072Z",
+      "actor": "/root/p5_certifier",
+      "summary": "Candidate 0356e90a5 still omitted visible Assist KPIs from row attributes and empty-view payload body context.",
+      "evidence": [
+        "Other previously cited Assist fields are corrected; all static and focused interaction gates passed."
+      ],
+      "previousEventHash": "69b1266be61103569b0210e7a292f8c96ddbaaf6cc0f9bb1f04052540692774e",
+      "eventHash": "de8230004ebbcabee928e01b8a273ad17a1d4e25b3419adbbc68df996ead8c97"
+    },
+    {
+      "sequence": 8,
+      "state": "fixing",
+      "at": "2026-08-19T07:36:17.147Z",
+      "actor": "codex-p5-worker",
+      "summary": "Adding canonical list-context support and mirroring Assist status KPIs into every row envelope attribute set.",
+      "evidence": [
+        "The primitive change is payload-only and does not alter rendering, layout, interaction, theme, or chunk boundaries."
+      ],
+      "previousEventHash": "de8230004ebbcabee928e01b8a273ad17a1d4e25b3419adbbc68df996ead8c97",
+      "eventHash": "8cb43c47af66d75403353d7415914f8b0de7498f41bb314ca81a352d71405eb8"
+    },
+    {
+      "sequence": 9,
+      "state": "certifying",
+      "at": "2026-08-19T07:37:32.728Z",
+      "actor": "codex-p5-worker",
+      "summary": "All cited Assist KPI gaps are repaired through canonical list context plus mirrored row/list attributes.",
+      "evidence": [
+        "Type-check green; scoped ESLint has zero errors and one unchanged barrel warning; doctrine green; detector 89/0/1/24/9; detector tests 8/8; focused tests 5 suites/19 tests.",
+        "Empty-view list context has a dedicated regression test; no rendered primitive, layout, theme, or chunk boundary changed."
+      ],
+      "previousEventHash": "8cb43c47af66d75403353d7415914f8b0de7498f41bb314ca81a352d71405eb8",
+      "eventHash": "c93717a37285c81016baef128296ba3e523b70b8e3a5eaec44829465bce9a1f6"
     }
   ]
 }

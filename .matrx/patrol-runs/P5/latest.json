@@ -3,8 +3,8 @@
   "patrolId": "P5",
   "runId": "2026-08-19-copy-everywhere",
   "state": "certifying",
-  "updatedAt": "2026-08-19T07:33:32.532Z",
-  "summary": "The rejected Assist payload now includes every cited live state, action descriptor, decision note, and the Everything KPI.",
+  "updatedAt": "2026-08-19T07:37:32.728Z",
+  "summary": "All cited Assist KPI gaps are repaired through canonical list context plus mirrored row/list attributes.",
   "source": "2026-08-19-copy-everywhere.json",
-  "eventHash": "69b1266be61103569b0210e7a292f8c96ddbaaf6cc0f9bb1f04052540692774e"
+  "eventHash": "c93717a37285c81016baef128296ba3e523b70b8e3a5eaec44829465bce9a1f6"
 }

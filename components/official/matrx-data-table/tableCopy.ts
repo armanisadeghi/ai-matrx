@@ -74,6 +74,7 @@ export function buildViewAgentInput<T>(
       scope: meta?.scope ?? "view",
       ...config.listAttributes?.(visible, all),
     },
+    context: config.listContext?.(visible, all),
   };
 }
 

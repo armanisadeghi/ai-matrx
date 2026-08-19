@@ -217,7 +217,10 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 `MatrxDataTable` takes a `copy` config (`rowKind`/`listKind`/`humanRow`/…) and
 delivers ALL of: per-row two-control copy sets, toolbar this-view pair + ExportMenu
 (JSON + CSV downloads of the current view), a record pair in the row-window header, and
-per-field hover pairs in `DataRowInspector` (side panel + window). Also pass
+per-field hover pairs in `DataRowInspector` (side panel + window). Page KPIs,
+warnings, and live filters that must survive a zero-row view go in
+`copy.listContext`; mirror the same scalar counts in `listAttributes` and
+`rowAttributes`. Also pass
 `window={{ title }}` so rows open the record window.
 **Page already has its own header row above the table?** Set
 `copy.showToolbar: false` and put the view copy + ExportMenu IN that row —

@@ -26,25 +26,25 @@
 The run performed the periodic full AST detector pass plus the open P5 ledger
 review. It did not scope from raw Git churn.
 
-| Candidate | Verified route |
-| --- | --- |
-| `features/assists/manager/AssistsManager.tsx` | Fixed under standing authority with live manager filters, counts, warnings, and rendered row fields in the payload. |
-| `features/marketing/seo/keyword-research/components/KeywordResearchWorkbench.tsx` | Fixed under standing authority using the existing `buildKeywordBrief`, `humanLines`, and `webLocation` primitives. |
-| `features/admin/unwired/UnwiredConsole.tsx` | Open machinery task: extend the canonical table copy config with row-level AI variants, then fold “Copy brief” into that dropdown. |
-| `features/data-tables/components/TableCustomCopyWindow.tsx` | Detector false positive: canonical custom-copy workspace, now excluded with regression coverage. |
+| Candidate                                                                         | Verified route                                                                                                                     |
+| --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `features/assists/manager/AssistsManager.tsx`                                     | Fixed under standing authority with live manager filters, counts, warnings, and rendered row fields in the payload.                |
+| `features/marketing/seo/keyword-research/components/KeywordResearchWorkbench.tsx` | Fixed under standing authority using the existing `buildKeywordBrief`, `humanLines`, and `webLocation` primitives.                 |
+| `features/admin/unwired/UnwiredConsole.tsx`                                       | Open machinery task: extend the canonical table copy config with row-level AI variants, then fold “Copy brief” into that dropdown. |
+| `features/data-tables/components/TableCustomCopyWindow.tsx`                       | Detector false positive: canonical custom-copy workspace, now excluded with regression coverage.                                   |
 
 The 23 pre-existing review-only table rows remain Tier R. Native tables,
 JSON/code blocks, lists, and detail panes remain outside the mechanical class.
 
 ## Detector baseline
 
-| Status | Before | Candidate | Meaning |
-| --- | ---: | ---: | --- |
-| compliant | 87 | 89 | Two verified gaps now use the canonical config. |
-| auto-approved | 4 | 0 | Every narrow candidate was routed. |
-| equivalent controls | 1 | 1 | Existing canonical controls; do not duplicate. |
-| review | 23 | 24 | Unwired moved here because consolidation needs new row-variant machinery. |
-| excluded | 8 | 9 | The canonical custom-copy workspace is now classified with the primitive. |
+| Status              | Before | Candidate | Meaning                                                                   |
+| ------------------- | -----: | --------: | ------------------------------------------------------------------------- |
+| compliant           |     87 |        89 | Two verified gaps now use the canonical config.                           |
+| auto-approved       |      4 |         0 | Every narrow candidate was routed.                                        |
+| equivalent controls |      1 |         1 | Existing canonical controls; do not duplicate.                            |
+| review              |     23 |        24 | Unwired moved here because consolidation needs new row-variant machinery. |
+| excluded            |      8 |         9 | The canonical custom-copy workspace is now classified with the primitive. |
 
 Detector regression coverage grew from 6 to 8 cases: bespoke copy actions stay
 review-only, and the canonical custom-copy workspace stays excluded.
@@ -57,13 +57,20 @@ review-only, and the canonical custom-copy workspace stays excluded.
 - Post-edit: `pnpm type-check` green; scoped ESLint green;
   `pnpm check:doctrine` green; P5 detector tests 8/8; detector
   89 / 0 / 1 / 24 / 9; `git diff --check` green.
-- Canonical interaction coverage: CopyButtons, AI copy menu, and controlled
-  MatrxDataTable suites passed **3 suites / 17 tests**.
+- Canonical interaction and payload coverage: CopyButtons, AI copy menu,
+  controlled MatrxDataTable, empty-view list context, and Assist formatter
+  suites passed **5 suites / 19 tests**.
 - Independent review of candidate `809b7964f` returned **REJECTED** with one
   concrete batch-caused defect: the Assist projection omitted the visible
   flagged, unseen, low-confidence, decision-note, action-description, and
   Everything-count states. Those omissions are corrected in the replacement
   candidate, and a focused formatter regression test now covers them.
+- Re-review of candidate `0356e90a5` returned **REJECTED** because row envelope
+  attributes still omitted the visible status KPIs, and an empty view had no
+  row body in which to carry page context. The canonical table copy contract
+  now accepts live `listContext`, so empty views keep their rendered scope in
+  `<context>`; every Assist row attribute set also mirrors all visible status
+  counts, including Everything.
 - The managed preview lease is owned by
   `/Users/armanisadeghi/code/matrx-frontend`, not this automation worktree.
   This run will not reuse or stop that foreign preview. The candidate changes
@@ -79,8 +86,10 @@ review-only, and the canonical custom-copy workspace stays excluded.
   Marketing `humanLines` / `webLocation`, assist urgency/source/expiry
   formatters, the keyword window opener, and existing row doors/actions.
 - Added one pure Assist formatter module because no shared Assist row-copy
-  projection existed. No component, hook, service, table, overlay, route, or
-  chunk boundary was created.
+  projection existed, and extended the canonical table copy config with one
+  `listContext` callback so live view state survives empty result sets. No
+  component, hook, service, table, overlay, route, or chunk boundary was
+  created.
 
 ## Decisions, exceptions, and learning
 

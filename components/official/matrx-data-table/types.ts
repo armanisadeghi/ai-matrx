@@ -373,6 +373,14 @@ export interface MatrxDataTableCopyConfig<T> {
     all: T[],
   ) => Record<string, string | number | boolean | null | undefined>;
   /**
+   * Live view state rendered inside the list payload's <context>. Unlike
+   * per-row data, this remains present when the current view has zero rows.
+   */
+  listContext?: (
+    visible: T[],
+    all: T[],
+  ) => Record<string, string | number | boolean | null | undefined>;
+  /**
    * Graded AI variants for the toolbar's view copy (e.g. "Top 25", "Summary
    * only"). When set, the toolbar's Copy-for-AI upgrades to a dropdown with
    * these variants + the full-view payload as the automatic "Everything"
