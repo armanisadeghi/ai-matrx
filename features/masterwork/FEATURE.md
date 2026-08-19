@@ -796,6 +796,22 @@ deliberately never produced.
 
 ## Change log
 
+- **2026-08-19 — Every lane route carries the Rulebook surface and the canonical gate.**
+  `SurfaceRuntimeProvider` was mounted ONLY on `RulebookDetailPage`, so the same Conductor and
+  Scout launched from `/masterwork/[id]/conduct` and `/interview` passed
+  `MASTERWORK_RULEBOOK_SURFACE_NAME` with **nobody publishing values** — one implementation,
+  two doors, full scope through one and an empty scope through the other. The provider, the
+  `buildRulebookSurfaceScope` emitter (workspace args now optional; publishes `context.lane`),
+  and the `masterwork_refresh_rulebook` client tool moved into the ONE lane scaffold,
+  `components/RulebookLaneRoute.tsx`, which every `/masterwork/[id]/*` route now uses — a new
+  lane gets all three for free and must not hand-roll any of them. Denial handling was four
+  different patterns (a swallowed `.catch`, two copies of hand-written "doesn't exist or you
+  don't have access", and two lanes with no gate at all); all four are now
+  `<AccessGate token="rulebook" id/>`, and `MasterworksPage` takes the Rulebook the lane
+  already loaded and gated instead of re-reading it. Body layout is a scaffold prop
+  (`scroll` · `fill` for live conversations · `bare` for a component that draws its own
+  container).
+
 - **2026-08-19 — Open coherence questions no longer crush their own content column.** The
   tension-kind badge now sits above the question instead of as a fixed-width flex sibling, so
   every question, explanation, rule door, and answer control uses the full card width. The

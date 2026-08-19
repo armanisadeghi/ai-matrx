@@ -75,11 +75,19 @@ generalization, now codified in the CONTRACT doc.
    moves (today it knows only sections+approaches+weak-auditions; 5 checkup runs exist and
    no finding was ever surfaced as a next move); KPI `nextStepLine` extends past "Ready to
    Build"; AssistStrip on the module home; cross-dedupe coherence↔checkup.
-4. **`task_e895e08d` — lane routes get the surface scope + AccessGate; capture durability
-   goes from 1 lane to all 9.** `SurfaceRuntimeProvider` only on the detail page (the
-   Conductor on `/conduct` runs with an EMPTY scope — same code, two doors, different
-   behavior); 4 denial patterns incl. banned hand-written copy; `capture_failed_write` has
-   one callsite (Scout) while the bulk lanes are unprotected.
+4. ~~**`task_e895e08d` — lane routes get the surface scope + AccessGate; capture durability
+   goes from 1 lane to all 9.**~~ **DONE 2026-08-19.** `RulebookLaneRoute` is now the ONE
+   scaffold every `/masterwork/[id]/*` route uses and carries the `SurfaceRuntimeProvider`,
+   the `buildRulebookSurfaceScope` emitter (workspace args optional; publishes
+   `context.lane`), the `masterwork_refresh_rulebook` client tool, and
+   `<AccessGate token="rulebook" id/>` — the four denial patterns and both copies of the
+   banned hand-written string are gone, and `MasterworksPage` takes the Rulebook the lane
+   already gated instead of re-reading it. On the server, every Approach's
+   `build_draft_rules` write goes through `write_recovery.append_rules_with_recovery`, so an
+   infrastructure-failed append from any lane raises the same one-click restore chip on the
+   same source key and endpoint (a CAS conflict deliberately does not; restore re-dedupes
+   against the live Rulebook, so it is idempotent). Forcing tests:
+   `aidream/services/distillation/tests/test_lane_write_recovery.py`.
 5. **`task_c6b6b38d` — Encore shows the Audition + housekeeping.** Operators never see
    `quality_score`/the beat-vanilla verdict (the product's whole pitch); admin-map missing
    rows + 4 dead OPEN buttons; `/import/ai-chats` in no nav; orphan exports
@@ -197,6 +205,12 @@ ritual (delivery vehicle for 9/12 and the failure lever, not a lane).
   agent touch a clean approved rule · rename a live DB identifier without the §8a-2 shim ·
   launch a structured-output mandate from a page with write targets without
   `auto_tools_disabled` (mandates RUNTIME.md).
+
+## Attached remaining work (tasks — not separate staffing rows)
+
+| Task | Document | Still pending |
+|---|---|---|
+| Vision Interview v2 tail | `aidream/docs/handoffs/vision-interview-v2.md` | Live E2E proof, threshold/cadence tuning, mission-block A/B, Cartographer grounding. Vision Interview is an Approach inside Masterwork, not its own feature. |
 
 ## Definition of done (Arman's bar, unchanged)
 An Expert who cannot code opens the Studio, talks for twenty minutes, approves the rules
