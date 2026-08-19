@@ -80,6 +80,12 @@ review-only, and the canonical custom-copy workspace stays excluded.
 - The certified candidate was integrated to `origin/main` in merge
   `872394e1a`, then the serialized release lane published `v0.4.840` at
   `ef97be6b2`. The permanent record is closed with 13 valid hash-chained events.
+- Final delivery verification exposed a process contradiction: the permanent
+  state machine permits `delivered -> closed`, while the delivery policy only
+  accepted a latest `delivered` state. Exact process repair `b1fa1a9d5` now
+  accepts `closed` only after the same exact candidate was delivered with the
+  deterministic authority ref. Independent review returned **CERTIFIED**;
+  focused tests passed 2 suites / 11 tests and the real delivery check is green.
 - The managed preview lease is owned by
   `/Users/armanisadeghi/code/matrx-frontend`, not this automation worktree.
   This run will not reuse or stop that foreign preview. The candidate changes
