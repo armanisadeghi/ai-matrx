@@ -666,6 +666,7 @@ export async function returnControl(runId: string): Promise<ControllerState> {
 
 export async function saveAndFillHumanLogin(input: {
   runId: string;
+  profileId: string;
   pageUrl: string;
   displayName: string;
   username: string;
@@ -703,6 +704,8 @@ export async function saveAndFillHumanLogin(input: {
       submit_selector: submitSelector,
       uri_match_mode: "host",
       field_values: { username: input.username, password: input.password },
+      run_id: input.runId,
+      profile_id: input.profileId,
     },
   );
   const receipt = record(captured);
@@ -729,8 +732,42 @@ export async function saveAndFillHumanLogin(input: {
       })),
       submit: { selector: submitSelector },
       notes: "Captured from a user-completed Cloud Browser sign-in.",
+      human_confirmed: true,
     });
   }
+}
+
+export interface SavedLoginChoice {
+  itemId: string;
+  displayName: string;
+}
+
+export async function getSavedLoginChoices(
+  pageUrl: string,
+): Promise<SavedLoginChoice[]> {
+  const { data } = await postJson<unknown>("/api/vault/browser-login/matches", {
+    page_url: pageUrl,
+  });
+  const value = record(data);
+  if (!Array.isArray(value.matches)) return [];
+  return value.matches.map((entry) => {
+    const item = record(entry);
+    return {
+      itemId: requiredText(item.item_id, "saved sign-in id"),
+      displayName: requiredText(item.display_name, "saved sign-in name"),
+    };
+  });
+}
+
+export async function fillSavedLogin(input: {
+  runId: string;
+  pageUrl: string;
+  itemId: string;
+}): Promise<void> {
+  await postJson<unknown>(`/browser-manager/runs/${input.runId}/saved-login`, {
+    item_id: input.itemId,
+    page_url: input.pageUrl,
+  });
 }
 export async function requestScreenshot(
   runId: string,

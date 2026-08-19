@@ -54,7 +54,10 @@ export interface CloudBrowserBodyProps {
 
 /** The chrome-free Cloud Browser surface. The host (canvas pane or window)
  *  owns the frame + title. */
-export function CloudBrowserBody({ initialProfileId, className }: CloudBrowserBodyProps) {
+export function CloudBrowserBody({
+  initialProfileId,
+  className,
+}: CloudBrowserBodyProps) {
   const cb = useCloudBrowser(initialProfileId);
   const shots = useScreenshotSession(cb.run?.id ?? null);
 
@@ -66,9 +69,15 @@ export function CloudBrowserBody({ initialProfileId, className }: CloudBrowserBo
   const isMeDriving = controller?.kind === "human" && controller.isMe;
 
   // The media face the primary pane shows.
-  const face: FaceTab = isMeDriving ? "takeover" : shots.active ? "screenshots" : "written";
+  const face: FaceTab = isMeDriving
+    ? "takeover"
+    : shots.active
+      ? "screenshots"
+      : "written";
 
-  const canShare = cb.activeProfile ? cb.activeProfile.accessLevel !== "viewer" : false;
+  const canShare = cb.activeProfile
+    ? cb.activeProfile.accessLevel !== "viewer"
+    : false;
   const canDelete = cb.activeProfile?.accessLevel === "admin";
 
   const openStream = useCallback(async () => {
@@ -120,7 +129,9 @@ export function CloudBrowserBody({ initialProfileId, className }: CloudBrowserBo
         {cb.run?.currentUrl ? (
           <div className="flex items-center gap-1.5 truncate rounded-md border border-border bg-muted px-2 py-1 text-xs text-muted-foreground">
             <Globe className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{cb.run.currentTitle ?? cb.run.currentUrl}</span>
+            <span className="truncate">
+              {cb.run.currentTitle ?? cb.run.currentUrl}
+            </span>
           </div>
         ) : null}
         <AssistStrip surfaceName={CLOUD_BROWSER_ASSIST_SURFACE} />
@@ -132,7 +143,9 @@ export function CloudBrowserBody({ initialProfileId, className }: CloudBrowserBo
           variant="prompt"
           consent={cb.notificationConsent}
           onChange={cb.updateNotificationConsent}
-          onAcknowledge={() => void cb.updateNotificationConsent(cb.notificationConsent!)}
+          onAcknowledge={() =>
+            void cb.updateNotificationConsent(cb.notificationConsent!)
+          }
         />
       ) : null}
 
@@ -225,12 +238,19 @@ export function CloudBrowserBody({ initialProfileId, className }: CloudBrowserBo
             cb.handoff?.reason === "credentials_missing" &&
             cb.handoff.origin &&
             cb.run ? (
-              <LoginCapturePanel runId={cb.run.id} pageUrl={cb.handoff.origin} />
+              <LoginCapturePanel
+                runId={cb.run.id}
+                profileId={cb.run.profileId}
+                pageUrl={cb.handoff.origin}
+              />
             ) : null}
           </div>
         </TabsContent>
 
-        <TabsContent value="people" className="min-h-0 flex-1 overflow-auto p-1">
+        <TabsContent
+          value="people"
+          className="min-h-0 flex-1 overflow-auto p-1"
+        >
           {cb.activeProfile ? (
             <ShareControl
               profileId={cb.activeProfile.id}
@@ -240,29 +260,45 @@ export function CloudBrowserBody({ initialProfileId, className }: CloudBrowserBo
           ) : null}
         </TabsContent>
 
-        <TabsContent value="accounts" className="min-h-0 flex-1 overflow-auto p-1">
+        <TabsContent
+          value="accounts"
+          className="min-h-0 flex-1 overflow-auto p-1"
+        >
           <HealthWarnings bindings={cb.bindings} />
         </TabsContent>
 
         <TabsContent value="usage" className="min-h-0 flex-1 overflow-auto">
-          <TelemetrySurface telemetry={cb.telemetry} onRefresh={cb.refreshTelemetry} />
+          <TelemetrySurface
+            telemetry={cb.telemetry}
+            onRefresh={cb.refreshTelemetry}
+          />
         </TabsContent>
 
         <TabsContent value="history" className="min-h-0 flex-1">
           <AuditTimeline events={cb.progress} />
         </TabsContent>
 
-        <TabsContent value="settings" className="min-h-0 flex-1 overflow-auto p-1">
+        <TabsContent
+          value="settings"
+          className="min-h-0 flex-1 overflow-auto p-1"
+        >
           <div className="flex flex-col gap-4">
             {cb.consent ? (
               <section className="flex flex-col gap-1.5">
-                <h3 className="text-sm font-semibold text-foreground">What the agent may do on its own</h3>
-                <AccountSettings consent={cb.consent} onChange={cb.updateConsent} />
+                <h3 className="text-sm font-semibold text-foreground">
+                  What the agent may do on its own
+                </h3>
+                <AccountSettings
+                  consent={cb.consent}
+                  onChange={cb.updateConsent}
+                />
               </section>
             ) : null}
             {cb.notificationConsent ? (
               <section className="flex flex-col gap-1.5">
-                <h3 className="text-sm font-semibold text-foreground">How we reach you</h3>
+                <h3 className="text-sm font-semibold text-foreground">
+                  How we reach you
+                </h3>
                 <NotificationConsent
                   variant="inline"
                   consent={cb.notificationConsent}
@@ -272,7 +308,9 @@ export function CloudBrowserBody({ initialProfileId, className }: CloudBrowserBo
             ) : null}
             {cb.activeProfile ? (
               <section className="flex flex-col gap-1.5">
-                <h3 className="text-sm font-semibold text-foreground">Delete</h3>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Delete
+                </h3>
                 <DeletionFlow
                   profileId={cb.activeProfile.id}
                   profileName={cb.activeProfile.displayName}
@@ -289,7 +327,11 @@ export function CloudBrowserBody({ initialProfileId, className }: CloudBrowserBo
       </Tabs>
 
       {cb.error ? (
-        <p className={cn("rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400")}>
+        <p
+          className={cn(
+            "rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400",
+          )}
+        >
           {cb.error}
         </p>
       ) : null}

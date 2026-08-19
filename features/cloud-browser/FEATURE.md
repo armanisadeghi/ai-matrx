@@ -78,6 +78,10 @@ Reconnect).
   values through the canonical vault capture endpoint, fills the current browser
   through the human-control boundary, submits the form, and records a structural
   recipe proposal. Values never enter an agent tool argument or result.
+  The same panel now lists matching saved sign-ins by label. Choosing one invokes a
+  server-to-worker fill; no value returns through the React client. New captures
+  also send the run/profile custody needed for the durable account binding and
+  login-attempt record.
 
 - **2026-08-19 — live service and video:** replaced fixture reads with direct live
   browser-table reads and mounted control-plane calls for run, takeover, and
