@@ -1,82 +1,87 @@
 # Pattern Patrol P5 — Copy everywhere
 
-**Run:** 2026-08-12 (America/Los_Angeles)  
-**Authority:** six manually approved Tier-M `MatrxDataTable.copy` repairs
-**Certification:** CERTIFIED — baseline-delta static coverage plus focused rendered-component fallback
+**Run:** 2026-08-19 (America/Los_Angeles)
+
+**Authority:** standing Tier-M adoption repairs plus detector precision
+
+**Certification:** pending independent review of the exact candidate SHA
 
 ## Outcome
 
-- **6 verified findings; 6 fixed** across 3 product files: AI Visibility
-  Claims, Sources, Signals, and History; Referring Domain Intelligence; and SEO
-  Change Tracking's Untracked Changes queue.
-- Every repair uses the existing `MatrxDataTable.copy` configuration and the
-  existing Marketing `humanLines` and `webLocation` helpers. No copy primitive,
-  layout, theme, interaction, or chunk boundary changed.
-- Adversarial review found three concrete payload-fidelity defects in the first
-  draft: the Claims copy omitted its visible critical warning, Referring Domains
-  dropped visible fallback text, and Untracked Changes exposed raw field keys
-  instead of the visible title-cased labels. All three were corrected and
-  independently reverified.
-- `SitesPortfolio` remains the pinned equivalent-controls false-positive: its
-  page and row already have canonical copy actions, so no duplicate control was
-  added.
+- The full `MatrxDataTable` detector returned **4 auto-approved candidates**.
+- Verification found **3 real adoption gaps** and **1 detector false positive**.
+- **2 gaps are fixed**: the Assists manager and Keyword Research library now
+  consume the canonical `MatrxDataTable.copy` system for row, current-view,
+  JSON, AI, and export actions.
+- **1 gap remains open as missing machinery**: the Unwired console already has
+  a bespoke per-row “Copy brief” action. Adding the standard pair without a
+  row-level AI-variant seam would create three copy controls and violate the
+  canonical consolidation rule.
+- The custom table-copy workspace is not an adoption target. It is the
+  canonical workspace opened by the table copy system itself, so the detector
+  now excludes it explicitly.
 
-## Scope scanned
+## Scope and routing
 
-- Full repository `MatrxDataTable` AST pass via
-  `pnpm check:copy-everywhere`, including all open P5 ledger entries.
-- The six approved product surfaces and the canonical false-positive classes:
-  tests/specs, demos, the `MatrxDataTable` primitive, and same-surface equivalent
-  whole-list plus row controls.
-- This recovery used an isolated worktree from `origin/main`; no shared dirty
-  checkout files were modified.
+The run performed the periodic full AST detector pass plus the open P5 ledger
+review. It did not scope from raw Git churn.
 
-## Current detector baseline
+| Candidate | Verified route |
+| --- | --- |
+| `features/assists/manager/AssistsManager.tsx` | Fixed under standing authority with live manager filters, counts, warnings, and rendered row fields in the payload. |
+| `features/marketing/seo/keyword-research/components/KeywordResearchWorkbench.tsx` | Fixed under standing authority using the existing `buildKeywordBrief`, `humanLines`, and `webLocation` primitives. |
+| `features/admin/unwired/UnwiredConsole.tsx` | Open machinery task: extend the canonical table copy config with row-level AI variants, then fold “Copy brief” into that dropdown. |
+| `features/data-tables/components/TableCustomCopyWindow.tsx` | Detector false positive: canonical custom-copy workspace, now excluded with regression coverage. |
 
-| Status | Table instances | Meaning |
-| --- | ---: | --- |
-| compliant | 80 | Direct built-in `copy` configuration |
-| equivalent controls | 1 | Canonical controls already exist; do not duplicate |
-| auto-approved | 2 | Narrow mechanical candidates for a future patrol |
-| review | 20 | Insufficient structural evidence; Tier R/manual review |
-| excluded | 8 | Tests, demos, or the canonical primitive |
+The 23 pre-existing review-only table rows remain Tier R. Native tables,
+JSON/code blocks, lists, and detail panes remain outside the mechanical class.
 
-The six approved findings moved exactly from `auto-approved` to `compliant`.
-The two untouched future candidates remain
-`features/assists/manager/AssistsManager.tsx` and
-`features/marketing/seo/keyword-research/components/KeywordResearchWorkbench.tsx`.
+## Detector baseline
 
-## Verification and certification
+| Status | Before | Candidate | Meaning |
+| --- | ---: | ---: | --- |
+| compliant | 87 | 89 | Two verified gaps now use the canonical config. |
+| auto-approved | 4 | 0 | Every narrow candidate was routed. |
+| equivalent controls | 1 | 1 | Existing canonical controls; do not duplicate. |
+| review | 23 | 24 | Unwired moved here because consolidation needs new row-variant machinery. |
+| excluded | 8 | 9 | The canonical custom-copy workspace is now classified with the primitive. |
 
-- Pre-edit baseline: `pnpm type-check` green; detector tests 6/6; detector
-  baseline 74 compliant / 8 auto-approved / 1 equivalent / 20 review / 8
-  excluded; scoped ESLint green.
-- Post-edit: `pnpm type-check` green; `pnpm sync-types` completed with
-  "Type-check passed"; `pnpm check:migrations` green; detector tests 6/6;
-  detector baseline 80 / 2 / 1 / 20 / 8; scoped detector 7 compliant and zero
-  findings across the three product files; scoped ESLint and `git diff --check`
-  green. `pnpm check:doctrine` had no batch-caused finding.
-- The one bounded direct-route proof was infrastructure-blocked: while compiling
-  the stable Referring Domains route, the managed Next preview reached
-  9,754,688 KB RSS and was stopped immediately at the fleet's 8 GB safety cap,
-  before navigation completed. This was not a product rejection and no retry
-  was attempted.
-- Focused fallback proof rendered the unchanged canonical `MatrxDataTable` with
-  the same Referring Domain copy-config shape. It proved toolbar and row human
-  Copy, JSON, and Copy-for-AI actions, 44px mobile action sizing, compact desktop
-  sizing, and the sticky mobile identity column. Together with canonical
-  `MatrxDataTable` controlled/mobile and `CopyButtons` suites: **3 suites, 9
-  tests passed**. The temporary proof file was removed afterward; the committed
-  product batch remained exact and clean.
-- Independent certifier verdict: **CERTIFIED**. No concrete batch-caused defect
-  remains; direct-route visual proof was unavailable only for infrastructure
-  reasons and the focused rendered-component fallback completed certification.
+Detector regression coverage grew from 6 to 8 cases: bespoke copy actions stay
+review-only, and the canonical custom-copy workspace stays excluded.
 
-## Loop health and candidates
+## Verification
 
-- This is the first completed P5 repair cycle, so there is not a month of clean
-  runs and no longer cadence is proposed.
-- Mutation is not paused; there is no repeated product rejection pattern.
-- No recurring unregistered class was found, so no Candidate-bench nomination
-  is made.
-- No exception is proposed or approved.
+- Pre-edit: `pnpm type-check` green; P5 detector tests 6/6; detector
+  87 compliant / 4 auto-approved / 1 equivalent / 23 review / 8 excluded;
+  scoped status clean; patrol contracts green.
+- Post-edit: `pnpm type-check` green; scoped ESLint green;
+  `pnpm check:doctrine` green; P5 detector tests 8/8; detector
+  89 / 0 / 1 / 24 / 9; `git diff --check` green.
+- Canonical interaction coverage: CopyButtons, AI copy menu, and controlled
+  MatrxDataTable suites passed **3 suites / 17 tests**.
+- The managed preview lease is owned by
+  `/Users/armanisadeghi/code/matrx-frontend`, not this automation worktree.
+  This run will not reuse or stop that foreign preview. The candidate changes
+  no shared primitive, layout, theme, or chunk boundary; exact-source static
+  coverage plus canonical rendered-component tests are the bounded fallback.
+
+## Reuse and inventory proof
+
+- Searched `MatrxDataTable.copy`, `CopyButtons`, `buildKeywordBrief`, keyword
+  copy/format helpers, assist formatters, entity registries, peek registries,
+  overlay openers, and item action registries.
+- Reused the canonical table copy configuration, the existing keyword brief,
+  Marketing `humanLines` / `webLocation`, assist urgency/source/expiry
+  formatters, the keyword window opener, and existing row doors/actions.
+- Added one pure Assist formatter module because no shared Assist row-copy
+  projection existed. No component, hook, service, table, overlay, route, or
+  chunk boundary was created.
+
+## Decisions, exceptions, and learning
+
+- Human approvals needed: **0**.
+- Exceptions proposed or approved: **0**.
+- Focused machinery task: add row-level AI variants to the canonical
+  `MatrxDataTable.copy` contract before repairing the Unwired console.
+- Learning: detector auto-approval must stop when a table file already owns a
+  bespoke clipboard action; consolidation is not a mechanical prop addition.

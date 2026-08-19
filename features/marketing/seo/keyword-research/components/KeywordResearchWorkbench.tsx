@@ -61,6 +61,8 @@ import {
   formatCpc,
   formatSearchVolume,
 } from "./KeywordMetrics";
+import { keywordLibraryCopyRow } from "../format";
+import { webLocation } from "@/features/marketing/lib/copy-payloads";
 
 const EDGE_TYPE_LABELS: Record<string, string> = {
   refines: "Refines",
@@ -736,6 +738,44 @@ export default function KeywordResearchWorkbench() {
               getRowId={(row) => row.id}
               isLoading={loading}
               toolbar={toolbar}
+              copy={{
+                label: "Keyword",
+                listLabel: clusterPrimaryKeyword
+                  ? `Keywords in “${clusterPrimaryKeyword}”`
+                  : "Keyword library (this view)",
+                location: webLocation("Keyword Research — Library"),
+                rowKind: "web-keyword",
+                listKind: "web-keyword-library",
+                humanRow: (row) =>
+                  keywordLibraryCopyRow(
+                    row,
+                    researchIds === null ? null : researchIds.has(row.id),
+                  ).human,
+                agentRow: (row) =>
+                  keywordLibraryCopyRow(
+                    row,
+                    researchIds === null ? null : researchIds.has(row.id),
+                  ).data,
+                rowAttributes: (row) => ({
+                  keyword_id: row.id,
+                  phrase: row.phrase,
+                  source:
+                    researchIds === null
+                      ? "unknown"
+                      : researchIds.has(row.id)
+                        ? "research"
+                        : "manual",
+                }),
+                listAttributes: (visible, all) => ({
+                  visible_count: visible.length,
+                  scoped_rows: all.length,
+                  library_rows: keywords.length,
+                  view: clusterPrimaryKeyword ? "cluster" : "library",
+                  cluster: clusterPrimaryKeyword,
+                  search: search || undefined,
+                  volume_stage: volumeStage,
+                }),
+              }}
               pageSize={25}
               pageSizeOptions={[10, 25, 50, 100]}
               selection={{

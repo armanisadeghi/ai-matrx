@@ -54,6 +54,12 @@ import {
   urgencyFromPriority,
 } from "../types";
 import type { Assist, AssistStatus, AssistUrgency } from "../types";
+import {
+  ASSIST_SOURCE_KIND_OPTIONS,
+  formatAssistDate,
+  humanAssistRow,
+  projectAssistRow,
+} from "../format";
 
 const STATUS_TABS: Array<{
   value: string;
@@ -90,22 +96,6 @@ const STATUS_TONE: Record<AssistStatus, string> = {
   resolved: "bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/20",
 };
 
-const SOURCE_KIND_OPTIONS = [
-  { value: "deterministic", label: "Noticed by the system" },
-  { value: "agent", label: "Suggested by AI" },
-  { value: "sweep", label: "Background review" },
-  { value: "stream", label: "Live run" },
-];
-
-function shortDate(value: string | null): string {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 /**
  * Live countdown for a pending row with a future deadline; the plain date for
  * everything else (what a decided/expired row's deadline WAS is still
@@ -122,7 +112,7 @@ function ExpiresCell({ assist }: { assist: Assist }) {
       </span>
     );
   }
-  return <>{shortDate(assist.expiresAt)}</>;
+  return <>{formatAssistDate(assist.expiresAt)}</>;
 }
 
 export function AssistsManager() {
@@ -241,10 +231,10 @@ export function AssistsManager() {
         header: "Origin",
         accessorFn: (row) => row.sourceKind,
         filter: "select",
-        filterOptions: SOURCE_KIND_OPTIONS,
+        filterOptions: ASSIST_SOURCE_KIND_OPTIONS,
         cell: (row) =>
-          SOURCE_KIND_OPTIONS.find((o) => o.value === row.sourceKind)?.label ??
-          row.sourceKind,
+          ASSIST_SOURCE_KIND_OPTIONS.find((o) => o.value === row.sourceKind)
+            ?.label ?? row.sourceKind,
       },
       {
         id: "surfaceName",
@@ -310,7 +300,7 @@ export function AssistsManager() {
         header: "First noticed",
         accessorFn: (row) => row.firstSeenAt ?? row.createdAt,
         filter: false,
-        cell: (row) => shortDate(row.firstSeenAt ?? row.createdAt),
+        cell: (row) => formatAssistDate(row.firstSeenAt ?? row.createdAt),
       },
       {
         id: "expires_at",
@@ -331,7 +321,7 @@ export function AssistsManager() {
         header: "Decided",
         accessorFn: (row) => row.decidedAt ?? "",
         filter: false,
-        cell: (row) => shortDate(row.decidedAt),
+        cell: (row) => formatAssistDate(row.decidedAt),
       },
       {
         id: "actions",
@@ -523,9 +513,7 @@ export function AssistsManager() {
             </span>
           </div>
           {sourceSuppressions.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              Nothing is quieted.
-            </p>
+            <p className="text-xs text-muted-foreground">Nothing is quieted.</p>
           ) : (
             <div className="grid gap-1.5 lg:grid-cols-2">
               {sourceSuppressions.map((suppression) => (
@@ -599,6 +587,48 @@ export function AssistsManager() {
           }}
           toolbar={{
             searchPlaceholder: "Search title, body, or producer…",
+          }}
+          copy={{
+            label: "Assist",
+            listLabel: "Assists (this view)",
+            location: "AI Matrx — Assists manager (/assists)",
+            rowKind: "assist",
+            listKind: "assists",
+            humanRow: humanAssistRow,
+            agentRow: (row) => ({
+              ...projectAssistRow(row),
+              page_context: {
+                status_view: tab,
+                urgency_filter: urgency,
+                include_snoozed: includeSnoozed,
+                flagged_only: starredOnly,
+                unseen_only: unseenOnly,
+                quieted_kinds: sourceSuppressions.length,
+                load_error: error,
+                status_counts: stats,
+              },
+            }),
+            rowAttributes: (row) => ({
+              assist_id: row.id,
+              status: row.status,
+              source_kind: row.sourceKind,
+              priority: row.priority,
+            }),
+            listAttributes: (visible) => ({
+              visible_count: visible.length,
+              total_count: total,
+              open: stats.pending,
+              accepted: stats.accepted,
+              dismissed: stats.dismissed,
+              went_away: stats.resolved,
+              status_view: tab,
+              urgency_filter: urgency,
+              include_snoozed: includeSnoozed,
+              flagged_only: starredOnly,
+              unseen_only: unseenOnly,
+              quieted_kinds: sourceSuppressions.length,
+              load_error: error,
+            }),
           }}
         />
       </div>

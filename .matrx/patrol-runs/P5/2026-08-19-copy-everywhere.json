@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "patrolId": "P5",
+  "runId": "2026-08-19-copy-everywhere",
+  "baseSha": "4cf48135c30f3240cfb1f292de212220f331eece",
+  "createdAt": "2026-08-19T07:22:45.146Z",
+  "events": [
+    {
+      "sequence": 1,
+      "state": "discovered",
+      "at": "2026-08-19T07:22:45.146Z",
+      "actor": "codex-p5-worker",
+      "summary": "Full P5 detector pass found four narrow MatrxDataTable candidates for verification.",
+      "evidence": [
+        "Pre-edit type-check green; detector 87 compliant, 4 auto-approved, 1 equivalent, 23 review, 8 excluded; detector tests 6/6; patrol contracts green.",
+        "No unfinished prior P5 permanent record exists; the 2026-08-12 report and automation memory both describe a delivered certified run."
+      ],
+      "previousEventHash": null,
+      "eventHash": "d75011c8f07f17be10251acfcb77330ab5940b25b3796abcbf60928219f0c738"
+    },
+    {
+      "sequence": 2,
+      "state": "fixing",
+      "at": "2026-08-19T07:23:50.658Z",
+      "actor": "codex-p5-worker",
+      "summary": "Two canonical table-copy repairs are mechanical; one candidate needs row-level AI-variant machinery; one candidate is the copy workspace itself.",
+      "evidence": [
+        "Standing-authority fixes: AssistsManager and KeywordResearchWorkbench.",
+        "UnwiredConsole already exposes a bespoke copy-brief action; adding the table pair without a row AI-variant seam would create a forbidden third control, so it remains an explicit machinery task.",
+        "TableCustomCopyWindow is the canonical custom-copy workspace and should be excluded by detector rule, not repaired recursively."
+      ],
+      "previousEventHash": "d75011c8f07f17be10251acfcb77330ab5940b25b3796abcbf60928219f0c738",
+      "eventHash": "b89b33c65a3934c80eaa3ae50eb166b992351b1a5ce9f632c03546ab53ac0e86"
+    },
+    {
+      "sequence": 3,
+      "state": "certifying",
+      "at": "2026-08-19T07:28:07.071Z",
+      "actor": "codex-p5-worker",
+      "summary": "Two product repairs and two detector classifications are ready for exact-SHA adversarial certification.",
+      "evidence": [
+        "Post-edit type-check, scoped ESLint, doctrine, detector, and detector tests are green; canonical CopyButtons/AiCopyMenu/MatrxDataTable suites pass 17/17.",
+        "Managed preview lease belongs to another checkout; focused canonical component tests are the bounded fallback because no shared layout, theme, interaction primitive, or chunk boundary changed."
+      ],
+      "previousEventHash": "b89b33c65a3934c80eaa3ae50eb166b992351b1a5ce9f632c03546ab53ac0e86",
+      "eventHash": "ea5b1a423d2e82a4553470a6b95f099861b279feb1b312998058eb5dc4693e55"
+    }
+  ]
+}

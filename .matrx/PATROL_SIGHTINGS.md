@@ -10,6 +10,7 @@ Format: `- [ ] <P#> | <file-or-route> | <one line> | <date>`
 
 ## Open
 
+- [ ] P5 | `features/admin/unwired/UnwiredConsole.tsx:184` | table needs canonical row/view Copy, but its existing per-row “Copy brief” must first move into a row-level Copy-for-AI variant; adding the pair now would create a forbidden third copy control | missing-machinery | 2026-08-19
 - [ ] P1 | `features/masterwork/components/masterworks/AuditionDialog.tsx` (findings list) | backtest cites a specific Rulebook `rule_id` as inert text; build one canonical rule-level route/anchor/opener on the Rulebook detail surface, then consume it here and for every rule citation | missing-machinery | 2026-08-17
 - [x] P3 | `features/marketing/content-plan/**` (`/marketing/content-plan`, `/marketing/content-plan/[siteId]`) | whole feature was below the touch floor and clipped at 390px (~120 h-6/h-7/h-8 controls, no `<h1>`, one `useIsMobile()` caller); fixed as a class with the new `.matrx-touch-targets` subtree floor + `MatrxColumnDef.mobileHidden`, measured 0 controls under 44px across all six views | fixed-measured | 2026-08-16
 - [ ] P3 | hover-only controls, see `.matrx/patrol-reports/mobile-friendly-ui.md` | current detector returns 225 files; the two real structurally new actions in `OpenQuestionsPanel` are repaired in the 2026-08-17 candidate, while decorative-icon matches remain non-findings and the broader class still needs control-vs-decoration triage | partial-fixed; detector-task-open | 2026-08-16

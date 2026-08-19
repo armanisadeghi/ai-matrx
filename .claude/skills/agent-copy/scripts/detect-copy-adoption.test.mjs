@@ -44,6 +44,16 @@ test("a table without a toolbar stays review-only", () => {
   );
 });
 
+test("a table with a bespoke copy action needs consolidation review", () => {
+  assert.equal(
+    status(
+      "features/example/Table.tsx",
+      "<MatrxDataTable data={rows} toolbar={toolbar} />; navigator.clipboard.writeText(value)",
+    ),
+    "review",
+  );
+});
+
 test("tests and demos are excluded", () => {
   assert.equal(
     status(
@@ -59,6 +69,16 @@ test("the canonical table implementation is excluded", () => {
     status(
       "components/official/matrx-data-table/MatrxDataTable.tsx",
       "<MatrxDataTable data={rows} />",
+    ),
+    "excluded",
+  );
+});
+
+test("the canonical custom-copy workspace is excluded", () => {
+  assert.equal(
+    status(
+      "features/data-tables/components/TableCustomCopyWindow.tsx",
+      "<MatrxDataTable data={rows} toolbar={toolbar} />",
     ),
     "excluded",
   );

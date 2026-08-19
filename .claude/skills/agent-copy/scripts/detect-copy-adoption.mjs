@@ -29,6 +29,9 @@ function excludedPath(file) {
     /\.(?:test|spec|stories)\.tsx$/.test(file) ||
     /(?:^|\/)app\/\(dev\)\//.test(file) ||
     /(?:^|\/)component-displays\//.test(file) ||
+    file.endsWith(
+      "features/data-tables/components/TableCustomCopyWindow.tsx",
+    ) ||
     file.endsWith("components/official/matrx-data-table/MatrxDataTable.tsx")
   );
 }
@@ -41,6 +44,13 @@ function hasEquivalentControls(source) {
     source.includes("<CopyForAiButton") ||
     source.includes("<CopyForAiIcon");
   return wholeList && rowAi;
+}
+
+function hasBespokeCopyAction(source) {
+  return (
+    source.includes("navigator.clipboard.writeText") ||
+    /\bcopy[A-Z][A-Za-z0-9_]*\s*=\s*async\b/.test(source)
+  );
 }
 
 export function classifySource(file, source) {
@@ -66,6 +76,7 @@ export function classifySource(file, source) {
       if (attributes.has("copy")) status = "compliant";
       else if (excludedPath(file)) status = "excluded";
       else if (equivalentControls) status = "equivalent-controls";
+      else if (hasBespokeCopyAction(source)) status = "review";
       else if (attributes.has("toolbar")) status = "auto-approved";
       else status = "review";
       results.push({ file, line, status });

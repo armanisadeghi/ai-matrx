@@ -9,7 +9,13 @@ import {
   BING_PROVIDER,
   GOOGLE_SEARCH_CONSOLE_PROVIDER,
 } from "@/features/marketing/lib/provider-names";
-import type { SiteKeywordPerformanceRow } from "./types";
+import { humanLines } from "@/features/marketing/lib/copy-payloads";
+import { buildKeywordBrief } from "@/features/marketing/seo/keyword/keyword-brief";
+import {
+  US_LOCATION_CODE,
+  type KeywordWithMarket,
+  type SiteKeywordPerformanceRow,
+} from "./types";
 import { keywordWorkflowStage } from "./workflow-status";
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -92,4 +98,34 @@ export function humanMatchingQueriesStat(
   siteDomain: string,
 ): string {
   return `Matching queries: ${formatCount(total)} (${siteDomain})`;
+}
+
+/** The rendered keyword-library row, shared by human and AI table copy. */
+export function keywordLibraryCopyRow(
+  row: KeywordWithMarket,
+  discovered: boolean | null,
+) {
+  const market =
+    row.keyword_market.find(
+      (candidate) => candidate.location_code === US_LOCATION_CODE,
+    ) ??
+    row.keyword_market[0] ??
+    null;
+  const brief = buildKeywordBrief({
+    phrase: row.phrase,
+    keyword: row,
+    market,
+  });
+  const source =
+    discovered === null ? "Unknown" : discovered ? "Research" : "Manual";
+  const lines: Array<[string, string]> = [
+    ["Keyword", row.phrase],
+    ["Source", source],
+    ...brief.lines.filter(([label]) => label !== "Keyword"),
+  ];
+  return {
+    human: humanLines(lines),
+    data: { ...brief.data, source },
+    source,
+  };
 }
