@@ -35,6 +35,10 @@ so Phase 4 extended it instead of creating outreach-local authoring. The new run
 in aidream and is intentionally strict; the existing permissive AI variable replacement and
 domain-local formatter were not safe send primitives.
 
+The Smart Agent Input integration searched for existing template browsers, selectors, and draft
+writers. It reused `TemplateBrowserModal`, the execution system's canonical user-input slice, and
+the existing composer expansion path; only the domain-local prepend rule was added.
+
 ## Change log
 
 - **2026-08-19** — Reused the canonical browser in chat's Smart Agent Input; template insertion
