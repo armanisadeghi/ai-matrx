@@ -8309,6 +8309,19 @@
             "default": "",
             "title": "Source",
             "type": "string"
+          },
+          "content_ir": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Content Ir"
           }
         },
         "required": [
@@ -8426,6 +8439,19 @@
             "default": "",
             "title": "Source",
             "type": "string"
+          },
+          "content_ir": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Content Ir"
           }
         },
         "required": [

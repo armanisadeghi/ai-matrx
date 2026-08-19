@@ -20,7 +20,8 @@ export type Replay = components["schemas"]["ReplayOut"];
 export type RegressionCase = components["schemas"]["RegressionCaseOut"];
 export type ToolSubject = components["schemas"]["ToolSubjectOut"];
 export type HindsightCosts = components["schemas"]["HindsightCostsOut"];
-export type EnrollRequest = components["schemas"]["EnrollRequest"];
+export type EnrollRequest =
+  components["schemas"]["aidream__services__hindsight__enrollment__EnrollRequest"];
 export type EnrollmentUpdateRequest =
   components["schemas"]["EnrollmentUpdateRequest"];
 export type ReviewRunResult = components["schemas"]["ReviewRunResult"];
@@ -88,12 +89,14 @@ export function replayJudgeReasoning(replay: Replay): string | null {
  * so strip the terminal formatting and keep the sentence.
  */
 export function cleanFailureText(raw: string): string {
-  return raw
-    // ANSI colour codes, with or without the surviving ESC byte.
-    .replace(/\u001b?\[\d{1,3}m/g, "")
-    .replace(/-{4,}/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    raw
+      // ANSI colour codes, with or without the surviving ESC byte.
+      .replace(/\u001b?\[\d{1,3}m/g, "")
+      .replace(/-{4,}/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }
 
 export function replayFailureReason(replay: Replay): string {
@@ -113,14 +116,17 @@ export function replayFailureReason(replay: Replay): string {
  * interpolation would print `[object Object]` at the exact moment a human is
  * reading the evidence for their own walk, so each shape gets a sentence.
  */
-export function evidenceLine(item: NonNullable<Finding["evidence"]>[number]): string {
+export function evidenceLine(
+  item: NonNullable<Finding["evidence"]>[number],
+): string {
   if (typeof item === "string") return item;
   if (typeof item.hop === "number") {
     const verdict =
       item.answer === "input_wrong"
         ? "its inputs were wrong"
         : "its inputs were fine";
-    const note = typeof item.note === "string" && item.note ? ` — ${item.note}` : "";
+    const note =
+      typeof item.note === "string" && item.note ? ` — ${item.note}` : "";
     return `Step ${item.hop + 1}: ${String(item.unit_kind)} ${String(item.unit_id)} — ${verdict}${note}`;
   }
   if (item.fault_unit_id) {

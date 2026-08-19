@@ -125,14 +125,15 @@ export interface paths {
          *     is prod?" short of fingerprinting /openapi.json against git history).
          *
          *     Resolution order, loud never crashing:
-         *       1. GIT_SHA / BUILD_TIME env vars — set from Docker build args (see
-         *          Dockerfile) at image build time, when a builder passes them.
-         *       2. SOURCE_COMMIT / COOLIFY_BRANCH — Coolify injects these into the
+         *       1. SOURCE_COMMIT / COOLIFY_BRANCH — Coolify injects these into the
          *          running container automatically at RUNTIME (verified live 2026-07-23:
          *          the prod container carries SOURCE_COMMIT=<full sha>, COOLIFY_BRANCH).
          *          This is the source that actually works on Coolify with zero build-arg
          *          wiring — .dockerignore excludes .git so the checkout fallback can't
          *          fire in-container.
+         *       2. GIT_SHA / BUILD_TIME env vars — set from Docker build args (see
+         *          Dockerfile) at image build time for non-Coolify builders. Runtime
+         *          SOURCE_COMMIT wins because cached image metadata can be stale.
          *       3. `git rev-parse HEAD` — fallback for a local/dev checkout.
          *       4. "unknown" — none available. Never raises; a broken version probe
          *          must not take down the health surface.
@@ -3961,6 +3962,71 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vault/browser-login/capture-context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browser Capture Context
+         * @description The known/unknown branch for a login we have NO credential for. Decrypts
+         *     nothing. Origin is derived server-side from the executor's real page URL.
+         */
+        post: operations["browser_capture_context_vault_browser_login_capture_context_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/browser-login/capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browser Capture
+         * @description Write a user-typed credential as a NEW vault item, stamped with the agent's
+         *     metadata. ``field_values`` (the user-typed plaintext) lives in this request's
+         *     memory only and is written straight to the vault — never echoed or logged.
+         *     `no-store`.
+         */
+        post: operations["browser_capture_vault_browser_login_capture_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/browser-login/recipe-proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browser Recipe Proposal
+         * @description Document an UNKNOWN login as a PROPOSED recipe (human-provenance; a human
+         *     activates it). Selectors + signal descriptors only — never a value.
+         */
+        post: operations["browser_recipe_proposal_vault_browser_login_recipe_proposal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vault/items/{item_id}/fork": {
         parameters: {
             query?: never;
@@ -3988,6 +4054,117 @@ export interface paths {
         /** List Audit */
         get: operations["list_audit_vault_items__item_id__audit_get"];
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/authenticator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Authenticators
+         * @description Every account the actor holds an authenticator for — metadata only
+         *     (issuer / account / label / enabled). Never a seed, never a code.
+         */
+        get: operations["list_authenticators_authenticator_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/authenticator/{credential_item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Authenticator */
+        get: operations["get_authenticator_authenticator__credential_item_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete Authenticator
+         * @description Delete the seed. Generation stops immediately. Does NOT remove two-factor
+         *     at the provider — the user's phone app / backup codes still work.
+         */
+        delete: operations["delete_authenticator_authenticator__credential_item_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/authenticator/enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enroll
+         * @description Route 1/2 (paste): store the setup key or otpauth URI as a sealed seed.
+         *
+         *     Enrolling a seed mints every future code for the account, so it is the most
+         *     privileged act in the system — D-15 item 1 gates it on a fresh sign-in.
+         *     ``enforce_recent_auth`` refuses a stale session (when the recency cap is
+         *     configured); the same fresh-auth fact is passed to the service.
+         */
+        post: operations["enroll_authenticator_enroll_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/authenticator/enroll/qr": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enroll Qr
+         * @description Route 2 (QR image): decode the otpauth URI server-side, then enroll. The
+         *     image is read into memory, decoded, and dropped in this same request — never
+         *     written to disk, never stored as a Matrx file, never attached.
+         */
+        post: operations["enroll_qr_authenticator_enroll_qr_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/authenticator/{credential_item_id}/enabled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set Enabled
+         * @description Per-account consent toggle. Takes effect on the next generation — there
+         *     is no cached seed to invalidate.
+         */
+        put: operations["set_enabled_authenticator__credential_item_id__enabled_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4270,6 +4447,47 @@ export interface paths {
         put?: never;
         /** Register File */
         post: operations["register_file_google_workspace_files_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/documents/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Document
+         * @description Create a Doc AI Matrx made for this user, and register it.
+         *
+         *     Still ``drive.file``: the scope covers files this app creates. The new file
+         *     joins the same registry a Picker-selected file joins, so every later read or
+         *     write passes the same boundary check.
+         */
+        post: operations["create_document_google_workspace_documents_create_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/sheets/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Sheet */
+        post: operations["create_sheet_google_workspace_sheets_create_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5891,6 +6109,52 @@ export interface paths {
          *     surface's, and the row is indistinguishable from a searched one afterwards.
          */
         post: operations["run_prospect_capture_seo_prospect_capture_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/press/angles/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Press Story Angles
+         * @description Find what is genuinely newsworthy about this business.
+         *
+         *     Composes a closed evidence bundle from platform truth the site already owns,
+         *     asks the mandated Press Story Analyst which angles a journalist would care
+         *     about, then applies deterministic gates before anything persists. An angle
+         *     claiming `pitch_now` while it still has missing evidence is downgraded, never
+         *     shipped.
+         */
+        post: operations["generate_press_story_angles_seo_sites__site_id__press_angles_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/press/angles/{angle_id}/ruling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rule On Press Story Angle
+         * @description Record the human's decision on an angle. The ruling always wins.
+         */
+        post: operations["rule_on_press_story_angle_seo_press_angles__angle_id__ruling_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8754,6 +9018,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vision-interview/sessions/{session_id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ensure Interview Roles
+         * @description Resolve every role and return its stable conversation id.
+         *
+         *     Idempotent — the client calls it when the room opens, before the person has
+         *     said anything and before any run exists.
+         */
+        post: operations["ensure_interview_roles_vision_interview_sessions__session_id__roles_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vision-interview/sessions/{session_id}/observe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Observe Interview Turn
+         * @description A turn landed in one role's conversation — keep the room current.
+         *
+         *     Returns immediately; the mirror + Scribe + tracker pass runs server-side so
+         *     it survives the person closing the tab. The pass is idempotent, so calling
+         *     this twice for the same turn is free and missing one call is repaired by the
+         *     next.
+         */
+        post: operations["observe_interview_turn_vision_interview_sessions__session_id__observe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vision-interview/sessions/{session_id}/start": {
         parameters: {
             query?: never;
@@ -10046,30 +10358,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19061,6 +19349,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/persistence/watchdog/sweep": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sweep Watchdog Once
+         * @description Run the canonical lifecycle repair pass and return fresh status.
+         */
+        post: operations["sweep_watchdog_once_admin_persistence_watchdog_sweep_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/persistence/failures": {
         parameters: {
             query?: never;
@@ -24097,6 +24405,38 @@ export interface components {
              */
             vanilla_input?: string | null;
         };
+        /**
+         * AuthenticatorEntryOut
+         * @description One account's authenticator, metadata only. Deliberately no ``code`` and
+         *     no ``seed`` member.
+         */
+        AuthenticatorEntryOut: {
+            /** Credential Item Id */
+            credential_item_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Label */
+            label?: string | null;
+            /** Issuer */
+            issuer?: string | null;
+            /** Digits */
+            digits: number;
+            /** Period */
+            period: number;
+            /** Algorithm */
+            algorithm: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Login Urls */
+            login_urls?: string[];
+            /** Seed Field Id */
+            seed_field_id?: string | null;
+        };
+        /** AuthenticatorListResponse */
+        AuthenticatorListResponse: {
+            /** Entries */
+            entries?: components["schemas"]["AuthenticatorEntryOut"][];
+        };
         /** AuthorityCandidate */
         AuthorityCandidate: {
             /** Candidate Key */
@@ -25008,6 +25348,11 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_enroll_qr_authenticator_enroll_qr_post */
+        Body_enroll_qr_authenticator_enroll_qr_post: {
+            /** Image */
+            image: string;
+        };
         /** Body_extract_text_from_pdf_utilities_pdf_extract_text_post */
         Body_extract_text_from_pdf_utilities_pdf_extract_text_post: {
             /** File */
@@ -25788,6 +26133,151 @@ export interface components {
             expires_at: number;
         };
         /**
+         * BrowserCaptureContextRequest
+         * @description Executor-derived page URL — never agent-supplied. Answers the
+         *     known/unknown branch (does a login recipe exist for this origin?).
+         */
+        BrowserCaptureContextRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Page Url */
+            page_url: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BrowserCaptureFieldSpecIn
+         * @description One field the agent identified. NAMES + selectors only — no value.
+         */
+        BrowserCaptureFieldSpecIn: {
+            /** Field Key */
+            field_key: string;
+            /** Selector */
+            selector: string;
+            /** Label */
+            label?: string | null;
+            /**
+             * Secret
+             * @default true
+             */
+            secret?: boolean;
+            /**
+             * Step
+             * @default 0
+             */
+            step?: number;
+            /**
+             * Clear First
+             * @default true
+             */
+            clear_first?: boolean;
+        };
+        /**
+         * BrowserCaptureRequest
+         * @description Write a user-typed credential as a NEW vault item stamped with the agent's
+         *     metadata. ``field_values`` maps each declared ``field_key`` to the value the
+         *     USER typed — it is server-request memory only and is never echoed, logged, or
+         *     returned. Every declared field must have a value; a value for an undeclared
+         *     key is refused (smuggle guard).
+         */
+        BrowserCaptureRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Display Name */
+            display_name: string;
+            /** Login Url */
+            login_url: string;
+            /** Description */
+            description?: string | null;
+            /** Provider Key */
+            provider_key?: string | null;
+            /** Fields */
+            fields: components["schemas"]["BrowserCaptureFieldSpecIn"][];
+            /** Submit Selector */
+            submit_selector?: string | null;
+            /**
+             * Uri Match Mode
+             * @default host
+             * @enum {string}
+             */
+            uri_match_mode?: "host" | "exact" | "never";
+            /** Notes */
+            notes?: string | null;
+            /** Field Values */
+            field_values?: {
+                [key: string]: string;
+            };
+            /** Before Capture Id */
+            before_capture_id?: string | null;
+            /** After Capture Id */
+            after_capture_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * BrowserCaptureResponse
+         * @description The receipt — field KEYS only, never a value. ``proceed`` is the go
+         *     signal; ``propose_recipe`` asks the agent to document a recipe on unknown.
+         */
+        BrowserCaptureResponse: {
+            /** Status */
+            status: string;
+            /** Credential Item Id */
+            credential_item_id?: string | null;
+            /** Branch */
+            branch?: string | null;
+            /** Field Keys */
+            field_keys?: string[];
+            /**
+             * Proceed
+             * @default false
+             */
+            proceed?: boolean;
+            /** Recipe Id */
+            recipe_id?: string | null;
+            /** Recipe Version */
+            recipe_version?: number | null;
+            /** Login Attempt Id */
+            login_attempt_id?: string | null;
+            /**
+             * Propose Recipe
+             * @default false
+             */
+            propose_recipe?: boolean;
+            /** Guidance */
+            guidance?: string | null;
+            /** Detail */
+            detail?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /**
          * BrowserFetchRequest
          * @description One-shot browser-rendered fetch of a single URL.
          *
@@ -26038,6 +26528,108 @@ export interface components {
             tool_invocation_id?: string | null;
         } & {
             [key: string]: unknown;
+        };
+        /** BrowserRecipeFieldMapIn */
+        BrowserRecipeFieldMapIn: {
+            /**
+             * Step
+             * @default 0
+             */
+            step?: number;
+            /** Selector */
+            selector: string;
+            /** Field Key */
+            field_key?: string | null;
+            /** Literal Key */
+            literal_key?: string | null;
+            /**
+             * Clear First
+             * @default true
+             */
+            clear_first?: boolean;
+        };
+        /**
+         * BrowserRecipeProposalRequest
+         * @description The agent's documented experience of an UNKNOWN login → a PROPOSED recipe.
+         *     Selectors + signal descriptors only; a human activates it.
+         */
+        BrowserRecipeProposalRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Normalized Origin */
+            normalized_origin: string;
+            /** Match Pattern */
+            match_pattern?: string | null;
+            /** Provider Key */
+            provider_key?: string | null;
+            /** Field Map */
+            field_map: components["schemas"]["BrowserRecipeFieldMapIn"][];
+            /** Submit */
+            submit?: {
+                [key: string]: unknown;
+            };
+            /** Success Signals */
+            success_signals?: components["schemas"]["BrowserRecipeSignalIn"][];
+            /** Failure Signals */
+            failure_signals?: components["schemas"]["BrowserRecipeSignalIn"][];
+            /** Challenge Signals */
+            challenge_signals?: components["schemas"]["BrowserRecipeSignalIn"][];
+            /** Notes */
+            notes?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** BrowserRecipeProposalResponse */
+        BrowserRecipeProposalResponse: {
+            /** Status */
+            status: string;
+            /** Recipe Id */
+            recipe_id?: string | null;
+            /** Normalized Origin */
+            normalized_origin: string;
+            /** Provenance */
+            provenance: string;
+            /** Recipe */
+            recipe: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        /** BrowserRecipeSignalIn */
+        BrowserRecipeSignalIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "selector_present" | "selector_absent" | "url_prefix" | "cookie_present" | "text_present";
+            /** Value */
+            value: string;
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "authenticated" | "challenged" | "rejected";
+            /**
+             * Weight
+             * @default 0.5
+             */
+            weight?: number;
+            /** Label */
+            label?: string | null;
         };
         /** BudgetRejectionRow */
         BudgetRejectionRow: {
@@ -31052,6 +31644,16 @@ export interface components {
              * @description Executable tools to assign, by canonical tool NAME (from agent_catalog list_tools; DB UUIDs also accepted). Validated against the live registry — unknown or inactive tools are rejected loudly. Written to the authoritative agent.definition.tools column the executor reads.
              */
             tools?: string[];
+            /**
+             * Owner User Id
+             * @description WHO this agent belongs to. Set it whenever the agent is being built FOR a user (a Masterwork's Maker/Editor/Chief, anything a customer's build produces): the agent is born agent_type='user', created_by=<this user>, in their effective org, with an internal card — exactly what a normal user-created agent gets. Leave it None ONLY for a platform builtin the PLATFORM ships to everyone (the internal_agents/*.md factory, seed scripts); a builtin is ownerless, sits in the Matrx System org, and shows in every user's browse list.
+             */
+            owner_user_id?: string | null;
+            /**
+             * Owner Organization Id
+             * @description Optional org placement for an owned agent. Ignored unless owner_user_id is set; when omitted it resolves to the owner's personal org via resolve_effective_organization_id. Never NULL on the written row.
+             */
+            owner_organization_id?: string | null;
         };
         /** CreateArgs */
         CreateArgs: {
@@ -31067,6 +31669,18 @@ export interface components {
             name: string;
             /** Content */
             content?: string | null;
+        };
+        /** CreateDocumentRequest */
+        CreateDocumentRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Text
+             * @default
+             */
+            text?: string;
         };
         /** CreateDraftRequest */
         CreateDraftRequest: {
@@ -31238,6 +31852,15 @@ export interface components {
             expires_at?: string | null;
             /** Max Uses */
             max_uses?: number | null;
+        };
+        /** CreateSheetRequest */
+        CreateSheetRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Title */
+            title: string;
+            /** Values */
+            values?: string[][];
         };
         /** CreateTemplateBody */
         CreateTemplateBody: {
@@ -33128,33 +33751,6 @@ export interface components {
             /** Error */
             error?: string | null;
         };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
-        };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
             /** Ok */
@@ -33904,6 +34500,10 @@ export interface components {
             text: string;
             /** Truncated */
             truncated: boolean;
+            /** Total Chars */
+            total_chars: number;
+            /** Start Char */
+            start_char: number;
         };
         /** DocumentDetail */
         DocumentDetail: {
@@ -34817,66 +35417,6 @@ export interface components {
             expect_chars_min?: number | null;
         } & {
             [key: string]: unknown;
-        };
-        /** EnrollRequest */
-        EnrollRequest: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Window Mode */
-            window_mode?: ("since_watermark" | "last_n_runs") | null;
-            /** Window N */
-            window_n?: number | null;
-            /** Lens Visibility */
-            lens_visibility?: ("with_context" | "unit_only") | null;
-            /**
-             * Subject Kind
-             * @enum {string}
-             */
-            subject_kind: "agent" | "workflow" | "tool" | "environment" | "orchestra" | "workflow_node";
-            /** Subject Id */
-            subject_id?: string | null;
-            /** Subject Ref */
-            subject_ref?: string | null;
-            /** Subject Selector */
-            subject_selector?: {
-                [key: string]: string;
-            };
-            /** Display Name */
-            display_name?: string | null;
-            /**
-             * Review Every N
-             * @default 10
-             */
-            review_every_n?: number;
-            /**
-             * Max Examples Per Review
-             * @default 25
-             */
-            max_examples_per_review?: number;
-            /** Goal */
-            goal?: string | null;
-            /** Lens Config */
-            lens_config?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Backfill Days
-             * @default 14
-             */
-            backfill_days?: number;
         };
         /** EnrollmentCostRow */
         EnrollmentCostRow: {
@@ -38101,13 +38641,6 @@ export interface components {
         GoogleExchangeResponse: {
             /** Connection Id */
             connection_id: string;
-        };
-        /** GoogleFileRequest */
-        GoogleFileRequest: {
-            /** Connection Id */
-            connection_id: string;
-            /** File Id */
-            file_id: string;
         };
         /** GoogleListingCheckBody */
         GoogleListingCheckBody: {
@@ -44447,6 +44980,70 @@ export interface components {
             /** State */
             state: string;
         };
+        /**
+         * ObserveTurnBody
+         * @description POST body for /vision-interview/sessions/{id}/observe.
+         */
+        ObserveTurnBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Role Key
+             * @description Which role's conversation just took a turn (the active stage tab).
+             */
+            role_key: string;
+            /**
+             * Wait
+             * @description Run the pass inline and return its counts instead of scheduling it. For tests and admin tooling — the room never waits.
+             * @default false
+             */
+            wait?: boolean;
+        };
+        /** ObserveTurnResult */
+        ObserveTurnResult: {
+            /** Session Id */
+            session_id: string;
+            /** Role Key */
+            role_key: string;
+            /**
+             * Scheduled
+             * @description True when the pass runs in the background (the normal path).
+             */
+            scheduled: boolean;
+            /**
+             * Turns Mirrored
+             * @default 0
+             */
+            turns_mirrored?: number;
+            /**
+             * Questions Closed
+             * @default 0
+             */
+            questions_closed?: number;
+            /**
+             * Scribe Applied
+             * @default false
+             */
+            scribe_applied?: boolean;
+            /**
+             * Verdicts
+             * @default 0
+             */
+            verdicts?: number;
+        };
         /** ObservedEmailCandidate */
         ObservedEmailCandidate: {
             /** Key */
@@ -49052,6 +49649,18 @@ export interface components {
              */
             created_at: string;
         };
+        /** ReadDocumentRequest */
+        ReadDocumentRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** File Id */
+            file_id: string;
+            /**
+             * Start Char
+             * @default 0
+             */
+            start_char?: number;
+        };
         /**
          * RealtimeTool
          * @description One tool declared to a realtime session, in xAI function shape.
@@ -51533,6 +52142,35 @@ export interface components {
             /** Explanation */
             explanation: string;
         };
+        /** RoleBinding */
+        RoleBinding: {
+            /** Agent Id */
+            agent_id: string;
+            /**
+             * Is Version
+             * @default false
+             */
+            is_version?: boolean;
+            /** Definition Agent Id */
+            definition_agent_id: string;
+            /** Conversation Id */
+            conversation_id: string;
+        };
+        /**
+         * RolesReadyPayload
+         * @description Every role's binding for a session — the v3 room's tab manifest.
+         *
+         *     ``conversation_id`` is stable per role, per session, across runs: it is the
+         *     ordinary agent conversation the person's stage tab talks to.
+         */
+        RolesReadyPayload: {
+            /** Session Id */
+            session_id: string;
+            /** Roles */
+            roles: {
+                [key: string]: components["schemas"]["RoleBinding"];
+            };
+        };
         /**
          * RollupPoint
          * @description One nightly capture from meta.table_stats_history.
@@ -53507,6 +54145,14 @@ export interface components {
             /** Reason */
             reason: string;
         };
+        /** SetEnabledRequest */
+        SetEnabledRequest: {
+            /**
+             * Enabled
+             * @description Turn this account's authenticator on or off. Effective on the next generation.
+             */
+            enabled: boolean;
+        };
         /** SetImagesRequest */
         SetImagesRequest: {
             /**
@@ -53840,6 +54486,12 @@ export interface components {
             values: string[][];
             /** Truncated */
             truncated: boolean;
+            /** Total Rows */
+            total_rows: number;
+            /** Total Columns */
+            total_columns: number;
+            /** Sheet Title */
+            sheet_title: string;
         };
         /** SheetWriteRequest */
         SheetWriteRequest: {
@@ -55553,6 +56205,45 @@ export interface components {
              */
             applied?: boolean;
         };
+        /** StoryAngleGenerateBody */
+        StoryAngleGenerateBody: {
+            /**
+             * Max Angles
+             * @default 12
+             */
+            max_angles?: number;
+        };
+        /** StoryAngleGenerateResponse */
+        StoryAngleGenerateResponse: {
+            /** Kept */
+            kept: number;
+            /** Dropped */
+            dropped: number;
+            /** Gates */
+            gates?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Bundle Stats */
+            bundle_stats?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Coverage Assessment */
+            coverage_assessment?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Limitations */
+            limitations?: string[];
+        };
+        /** StoryAngleRulingBody */
+        StoryAngleRulingBody: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
+            /** Note */
+            note?: string | null;
+        };
         /** StripMetadataRequest */
         StripMetadataRequest: {
             /** Output Mode */
@@ -55723,6 +56414,8 @@ export interface components {
         StuckRowsResponse: {
             /** Table */
             table: string;
+            /** Schema */
+            schema: string;
             /** Predicate */
             predicate: string;
             /** Max Age Secs */
@@ -60961,6 +61654,11 @@ export interface components {
             oldest_stuck_age_secs: number | null;
             /** Sla Breached */
             sla_breached: boolean;
+            /**
+             * Query Error
+             * @default false
+             */
+            query_error?: boolean;
         };
         /** WaterfallResult */
         WaterfallResult: {
@@ -62138,6 +62836,25 @@ export interface components {
             /** Change Note */
             change_note?: string | null;
         };
+        /**
+         * EnrollRequest
+         * @description Enroll a seed onto an EXISTING credential item. The user brings the
+         *     seed — a setup key or a full ``otpauth://`` URI (from paste). QR-image
+         *     enrollment is the separate multipart ``/enroll/qr`` route so the image is
+         *     decoded and destroyed server-side.
+         */
+        aidream__api__schemas__authenticator__EnrollRequest: {
+            /**
+             * Credential Item Id
+             * @description The account's existing vault item.
+             */
+            credential_item_id: string;
+            /**
+             * Enrollment Input
+             * @description A base32 setup key OR a full otpauth://totp/... URI. Never stored as-is; the seed goes into a sealed field.
+             */
+            enrollment_input: string;
+        };
         /** ToolListResponse */
         aidream__services__admin_ops__tools_wire__ToolListResponse: {
             summary: components["schemas"]["ToolSummary"];
@@ -62271,6 +62988,66 @@ export interface components {
              * @default false
              */
             allow_context_create?: boolean;
+        };
+        /** EnrollRequest */
+        aidream__services__hindsight__enrollment__EnrollRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Window Mode */
+            window_mode?: ("since_watermark" | "last_n_runs") | null;
+            /** Window N */
+            window_n?: number | null;
+            /** Lens Visibility */
+            lens_visibility?: ("with_context" | "unit_only") | null;
+            /**
+             * Subject Kind
+             * @enum {string}
+             */
+            subject_kind: "agent" | "workflow" | "tool" | "environment" | "orchestra" | "workflow_node";
+            /** Subject Id */
+            subject_id?: string | null;
+            /** Subject Ref */
+            subject_ref?: string | null;
+            /** Subject Selector */
+            subject_selector?: {
+                [key: string]: string;
+            };
+            /** Display Name */
+            display_name?: string | null;
+            /**
+             * Review Every N
+             * @default 10
+             */
+            review_every_n?: number;
+            /**
+             * Max Examples Per Review
+             * @default 25
+             */
+            max_examples_per_review?: number;
+            /** Goal */
+            goal?: string | null;
+            /** Lens Config */
+            lens_config?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Backfill Days
+             * @default 14
+             */
+            backfill_days?: number;
         };
         /** MentionRow */
         aidream__services__knowledge_graph__graph__MentionRow: {
@@ -69524,6 +70301,105 @@ export interface operations {
             };
         };
     };
+    browser_capture_context_vault_browser_login_capture_context_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserCaptureContextRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_capture_vault_browser_login_capture_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserCaptureRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserCaptureResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browser_recipe_proposal_vault_browser_login_recipe_proposal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowserRecipeProposalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowserRecipeProposalResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     fork_vault_items__item_id__fork_post: {
         parameters: {
             query?: never;
@@ -69579,6 +70455,189 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultAuditResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_authenticators_authenticator_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthenticatorListResponse"];
+                };
+            };
+        };
+    };
+    get_authenticator_authenticator__credential_item_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credential_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthenticatorEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_authenticator_authenticator__credential_item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credential_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enroll_authenticator_enroll_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["aidream__api__schemas__authenticator__EnrollRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthenticatorEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enroll_qr_authenticator_enroll_qr_post: {
+        parameters: {
+            query: {
+                credential_item_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_enroll_qr_authenticator_enroll_qr_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthenticatorEntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_enabled_authenticator__credential_item_id__enabled_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                credential_item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetEnabledRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthenticatorEntryOut"];
                 };
             };
             /** @description Validation Error */
@@ -70067,6 +71126,72 @@ export interface operations {
             };
         };
     };
+    create_document_google_workspace_documents_create_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDocumentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectedFileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_sheet_google_workspace_sheets_create_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSheetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectedFileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_document_google_workspace_documents_read_post: {
         parameters: {
             query?: never;
@@ -70076,7 +71201,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GoogleFileRequest"];
+                "application/json": components["schemas"]["ReadDocumentRequest"];
             };
         };
         responses: {
@@ -72596,6 +73721,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProspectCaptureResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_press_story_angles_seo_sites__site_id__press_angles_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryAngleGenerateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryAngleGenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rule_on_press_story_angle_seo_press_angles__angle_id__ruling_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                angle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryAngleRulingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -76312,7 +77509,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["EnrollRequest"];
+                "application/json": components["schemas"]["aidream__services__hindsight__enrollment__EnrollRequest"];
             };
         };
         responses: {
@@ -77389,6 +78586,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionPayload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ensure_interview_roles_vision_interview_sessions__session_id__roles_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RolesReadyPayload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    observe_interview_turn_vision_interview_sessions__session_id__observe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ObserveTurnBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObserveTurnResult"];
                 };
             };
             /** @description Validation Error */
@@ -79722,41 +80985,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -95966,6 +97194,7 @@ export interface operations {
         parameters: {
             query?: {
                 limit?: number;
+                schema?: string;
             };
             header?: never;
             path: {
@@ -95991,6 +97220,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sweep_watchdog_once_admin_persistence_watchdog_sweep_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WatchdogStatusResponse"];
                 };
             };
         };

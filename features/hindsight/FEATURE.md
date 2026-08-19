@@ -87,6 +87,10 @@ Wire shapes: `aidream/aidream/api/schemas/hindsight.py`. Work order:
   they were given real response models so this link exists. If a handler ever
   reverts to an untyped dict, the contract degrades to `unknown` and this file
   is where the damage lands — fix the backend, don't hand-write the type here.
+  `EnrollRequest` is a collision — authenticator and Hindsight both export that
+  name, so OpenAPI qualifies it. Alias
+  `aidream__services__hindsight__enrollment__EnrollRequest`, never the short
+  key.
 - **Reuse, not re-implementation.** Data reads go DIRECT to Supabase
   (`@/utils/supabase/client`) for the agent / workflow / tool-name pickers;
   compute goes to aidream through the typed client. No bespoke `fetch`.

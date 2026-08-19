@@ -874,6 +874,7 @@ export interface CheckupFinding {
   evidence_ref?: Record<string, unknown>;
   confidence?: number;
   source?: string;
+  content_ir?: Record<string, unknown> | null;
 }
 
 export interface MasterworkCheckupCompleteData {
