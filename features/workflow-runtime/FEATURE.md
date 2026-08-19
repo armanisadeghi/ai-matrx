@@ -52,7 +52,7 @@ that is the exit-test surface.
 | Builder: the sample run | `builder/sample-run.ts`, `builder/useSamplePreviewRun.ts` | A workflow that has never run still gets a REAL preview: genuine `WorkflowRunEvent` objects folded by the real reducer into the real slice, at any moment on a scrubber (`adopt={false}`, so zero network). The only invented text is the explicit label "Sample output", never plausible-looking output. |
 | Builder: the preview | `builder/PreviewPane.tsx` | Binds to the newest **completed** run when one exists (a failed run teaches an author nothing), else the sample. LOUD RECOVERY: if a past run's history never arrives within 5s it says so and falls back, rather than leaving a page reading "Not started" forever. Picking a screen winds the sample to the moment that screen is live AND its own steps are busy. |
 | Surface renderer | `components/RunSurfaceView.tsx` | Renders a config over a run: trigger-resolved visibility (`appearOn`/`hideOn`, empty states), pages with auto-advance (manual tab choice wins until a LATER page's trigger fires), mobile single column by `mobileOrder ?? (y,x)`. **Layout is a FLOW, not the literal Grafana grid** (2026-08-18): `w` picks a span in a 12-column flow, `(y,x)` is the order, `h` is a MINIMUM height. The fixed 30px rows forced every readout into a ~240px porthole with its own scrollbar — live writing had nowhere to be read. `hideRunStatusCards` / `hideProgressRails` let a host that renders those better (RunStage) suppress the built-in copies. The flow only ever grows — zero page shift. |
-| Exit-test page | `app/(dev)/demos/workflow-runtime/page.dev.tsx` | Pick → run → watch; run id rides `?run=` so mid-run refresh re-adopts and resumes. |
+| Lifecycle verbs | `hooks/useWorkflowRunControls.ts` | THE ONE start/step/execute/pause/resume/cancel/answer/retry/skip path. Every verb is a `callApi` config typed against the GENERATED OpenAPI paths — path, `{param}` set and body all come from `types/python-generated/api-types.ts`, so a route or field that moves on the server is a compile error here. Never reintroduce a stringly-typed `post(path, …)` helper: the casts it needed hid a real defect (a free-text interrupt answer was sent as a bare string where the engine takes an object). |
 
 ## Invariants (violating any of these is a defect)
 
@@ -119,6 +119,17 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-08-19 — **`useWorkflowRunControls` is fully typed against the generated OpenAPI paths.**
+  The Phase-1 generic `post(path, …)` helper and its six `as never` casts are gone; each verb now
+  passes a literal `ApiCallConfig<path, "POST">` to `callApi`, so the path, its `{param}` set, the
+  request body and `?mode=` are all checked against `types/python-generated/api-types.ts`.
+  **The casts were hiding a real bug:** `answerInterrupt` typed `resumeValue` as `unknown` and cast
+  it, and the free-text branch of the Pause & Ask form sent a bare STRING — the engine's
+  `ResumeRunRequest.resume_value` is `dict[str, Any] | None`, so every free-text answer would have
+  been refused 422. It now travels as `{ answer }`, which is what `control.human_input` reads.
+  Verified: `pnpm type-check` clean, 125 workflow-runtime tests green, a real Study Pack run
+  started from `/workflows/{id}` and completed 24/24 ($0.24), and pause / resume-paused /
+  cancel?mode=graceful / step-runs each accepted live by the server on real runs.
 - 2026-08-18 — **THE FLOOR + `Readout.prefer` decides WHEN, never whether.** Settled output with
   no kind component now renders as a human document through `StructuredValueView`
   (`components/official/structured-value/`) instead of `JSON.stringify` in a ```json fence —

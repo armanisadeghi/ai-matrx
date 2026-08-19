@@ -22,7 +22,6 @@ zero, watch every step work with real signal, and the deliverables land as real 
 | Feature internals | `features/workflow-runtime/` — adapter (replay+SSE+poller), tree slice (keeps node_stream deltas), 12-lane budget, trigger points | LIVE |
 | Server events | matrx-graph vocabulary + `workflow_events.py` node emitters; generated TS types (one artifact, both apps) | LIVE (see server handoff for the 2 open items) |
 | Kinds/rendering | Every Study Pack kind ACTIVE with a web component (incl. `agent_result`, `ingested_sources`, `study_notes`); media 4 live; `KindInstanceRender variant="bare"` per the wrapper law | LIVE — but see THE UPSTREAM RULING below |
-| Demo page | `/demos/workflow-runtime` — a door to the real routes, not a second copy | LIVE |
 | Studio (Vite) | edits DEFINITIONS — adjacent app, not this feature; shares the generated event types | n/a |
 
 ## 🚨 THE UPSTREAM RULING (Arman, 2026-08-18) — the kinds MODEL is broken
@@ -47,8 +46,10 @@ decisions land, this feature consumes them. The in-flight universal-renderer chi
    DB-backed tables; PLAN Phase 6's second half).
 2. **`/workflows` marketing page** — route reserved + redirect live; the page itself unbuilt
    (chipped: see Dispatched).
-3. **Typed per-verb callApi** — `useWorkflowRunControls` still carries 6 `as never` casts
-   (chipped).
+3. **Pause / Stop have no door on the run stage.** `useWorkflowRunControls.pause` /
+   `resumePaused` / `cancel` are wired and server-proven, but `WorkflowRunBoard` — the only
+   surface that renders those buttons — is mounted ONLY for nested child runs
+   (`ReadoutView`). A person watching their own run at `/workflows/[id]` cannot stop it.
 4. **Realtime backstop** — consume `hooks/useRunListRealtime.ts` on the first runs-LIST
    surface (verify `workflow.run` is in the `supabase_realtime` publication first).
 5. **executeNode per-node `inputs` collection UI** (Phase 4 tail).
@@ -68,6 +69,11 @@ UI now speaks plain language — keep the split or reunite. ③ The WORKFLOW_KIN
 (his doc, his call).
 
 ## Recently shipped (compressed; details in FEATURE.md change log)
+
+2026-08-19: `useWorkflowRunControls` typed per-verb against the generated OpenAPI paths (the 6
+`as never` casts gone) — and the casts were hiding a live defect: a free-text Pause & Ask answer
+was sent as a bare string where `ResumeRunRequest.resume_value` is an object, so it now travels
+as `{ answer }`.
 
 2026-08-16/17: Phases 1–5 (adapter, slice, lanes, surfaces, drag builder, actions/HITL, Study
 Pack + Podcast pinned proofs). 2026-08-18/19: run stage rebuilt (promise-first hero, full plan,
