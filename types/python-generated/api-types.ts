@@ -8414,6 +8414,10 @@ export interface paths {
         /**
          * Trigger Review
          * @description Manual review trigger — runs the full review inline (owner or admin).
+         *
+         *     With ``example_ids`` it reviews exactly those conversations/runs; a bad id
+         *     (unknown, or belonging to a different subject) comes back as a 400 sentence
+         *     rather than a silently empty review.
          */
         post: operations["trigger_review_hindsight_enrollments__enrollment_id__review_post"];
         delete?: never;
@@ -10375,30 +10379,6 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/dev/login-as": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
-         */
-        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -18779,6 +18759,249 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/browser-manager/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Run */
+        post: operations["start_run_browser_manager_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Run */
+        post: operations["stop_run_browser_manager_runs__run_id__stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/control-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request Control */
+        post: operations["request_control_browser_manager_runs__run_id__control_requests_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/claim-control": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Control */
+        post: operations["claim_control_browser_manager_runs__run_id__claim_control_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/release-control": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Release Control */
+        post: operations["release_control_browser_manager_runs__run_id__release_control_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/ops/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ops Snapshot
+         * @description Content-free ops dashboard data (D-9). Admin-gated at mount time.
+         */
+        get: operations["ops_snapshot_browser_manager_ops_snapshot_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/screenshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Capture Screenshot */
+        post: operations["capture_screenshot_browser_manager_runs__run_id__screenshot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/human-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fill Human Login */
+        post: operations["fill_human_login_browser_manager_runs__run_id__human_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/saved-login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fill Saved Login */
+        post: operations["fill_saved_login_browser_manager_runs__run_id__saved_login_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/authenticator": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fill Authenticator Code */
+        post: operations["fill_authenticator_code_browser_manager_runs__run_id__authenticator_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/runs/{run_id}/stream-ticket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mint Stream Ticket */
+        post: operations["mint_stream_ticket_browser_manager_runs__run_id__stream_ticket_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{stream_slug}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Stream */
+        post: operations["claim_stream__stream_slug__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{stream_slug}/renew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Renew Stream */
+        post: operations["renew_stream__stream_slug__renew_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{stream_slug}/{path}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Proxy Stream Http */
+        get: operations["proxy_stream_http__stream_slug___path__post__get__stream_slug_path"];
+        put?: never;
+        /** Proxy Stream Http */
+        post: operations["proxy_stream_http__stream_slug___path__post__post__stream_slug_path"];
+        delete?: never;
+        options?: never;
+        /** Proxy Stream Http */
+        head: operations["proxy_stream_http__stream_slug___path__post__head__stream_slug_path"];
+        patch?: never;
+        trace?: never;
+    };
     "/media-heal/drain": {
         parameters: {
             query?: never;
@@ -23120,7 +23343,7 @@ export interface components {
             citation_count?: number;
             /** Analysis */
             analysis?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Error */
             error?: string | null;
@@ -24517,6 +24740,17 @@ export interface components {
             login_urls?: string[];
             /** Seed Field Id */
             seed_field_id?: string | null;
+        };
+        /** AuthenticatorFillRequest */
+        AuthenticatorFillRequest: {
+            /** Item Id */
+            item_id: string;
+            /** Page Url */
+            page_url: string;
+            /** Code Selector */
+            code_selector: string;
+            /** Submit Selector */
+            submit_selector?: string | null;
         };
         /** AuthenticatorListResponse */
         AuthenticatorListResponse: {
@@ -26323,6 +26557,10 @@ export interface components {
             before_capture_id?: string | null;
             /** After Capture Id */
             after_capture_id?: string | null;
+            /** Run Id */
+            run_id?: string | null;
+            /** Profile Id */
+            profile_id?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -26675,6 +26913,11 @@ export interface components {
             challenge_signals?: components["schemas"]["BrowserRecipeSignalIn"][];
             /** Notes */
             notes?: string | null;
+            /**
+             * Human Confirmed
+             * @default false
+             */
+            human_confirmed?: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -28598,6 +28841,15 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ClaimControlResponse */
+        ClaimControlResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Controller Kind */
+            controller_kind: string;
+            /** Controller Revision */
+            controller_revision: number;
+        };
         /** ClaimCreate */
         ClaimCreate: {
             /** Applicant Name */
@@ -28697,6 +28949,11 @@ export interface components {
             job_offer_date?: string | null;
             /** Large Employer */
             large_employer?: boolean | null;
+        };
+        /** ClaimRequest */
+        ClaimRequest: {
+            /** Ticket */
+            ticket: string;
         };
         /** ClassificationProposal */
         ClassificationProposal: {
@@ -31321,6 +31578,22 @@ export interface components {
             /** Models */
             models: components["schemas"]["ModelReport"][];
         };
+        /** ControlBlock */
+        ControlBlock: {
+            /** Control Revision */
+            control_revision: number;
+            /** Lease Expires At */
+            lease_expires_at: number;
+            /** Renew Interval Seconds */
+            renew_interval_seconds: number;
+        };
+        /** ControlRequestResponse */
+        ControlRequestResponse: {
+            /** Request Id */
+            request_id: string;
+            /** State */
+            state: string;
+        };
         /** ConversationContinueRequest */
         ConversationContinueRequest: {
             /**
@@ -33836,33 +34109,6 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
-        };
-        /** DevLoginRequest */
-        DevLoginRequest: {
-            /**
-             * User Id
-             * @description UUID of an existing row in auth.users.
-             */
-            user_id: string;
-            /**
-             * Ttl Seconds
-             * @description JWT expiry. Default 2h, min 60s, max 24h.
-             * @default 7200
-             */
-            ttl_seconds?: number;
-        };
-        /** DevLoginResponse */
-        DevLoginResponse: {
-            /** Access Token */
-            access_token: string;
-            /** User Id */
-            user_id: string;
-            /** Expires At */
-            expires_at: number;
-            /** Issued At */
-            issued_at: number;
-            /** Jti */
-            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -37919,7 +38165,7 @@ export interface components {
             fixer_version?: string;
             /** Proposal */
             proposal?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /**
@@ -39155,6 +39401,33 @@ export interface components {
             replay_count?: number;
             /** By Enrollment */
             by_enrollment?: components["schemas"]["EnrollmentCostRow"][];
+        };
+        /** HumanLoginField */
+        HumanLoginField: {
+            /** Selector */
+            selector: string;
+            /** Value */
+            value: string;
+        };
+        /** HumanLoginRequest */
+        HumanLoginRequest: {
+            /** Fields */
+            fields: components["schemas"]["HumanLoginField"][];
+            /** Submit Selector */
+            submit_selector: string;
+        };
+        /** IceBlock */
+        IceBlock: {
+            /** Stun Urls */
+            stun_urls: string[];
+            /** Turn Urls */
+            turn_urls: string[];
+            /** Turn Username */
+            turn_username: string;
+            /** Turn Credential */
+            turn_credential: string;
+            /** Turn Expires At */
+            turn_expires_at: number;
         };
         /** IdeDiagnostic */
         IdeDiagnostic: {
@@ -43574,6 +43847,21 @@ export interface components {
             /** Tools */
             tools: components["schemas"]["McpDiscoveredTool"][];
         };
+        /** MediaBlock */
+        MediaBlock: {
+            /** Video */
+            video: boolean;
+            /** Audio */
+            audio: boolean;
+            /** Clipboard */
+            clipboard: boolean;
+            /** Microphone */
+            microphone: boolean;
+            /** Camera */
+            camera: boolean;
+            /** File Transfer */
+            file_transfer: boolean;
+        };
         /**
          * MediaListProspect
          * @description One journalist a news search surfaced. A proposal, never a member.
@@ -44158,6 +44446,58 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * MintControlRequest
+         * @description Body of POST /handoffs/{handoff_id}/stream-ticket.
+         */
+        MintControlRequest: {
+            /**
+             * Mode
+             * @default control
+             * @constant
+             */
+            mode?: "control";
+            /**
+             * Client Kind
+             * @default web_panel
+             * @enum {string}
+             */
+            client_kind?: "web_panel" | "desktop" | "other";
+            /**
+             * Takeover
+             * @default false
+             */
+            takeover?: boolean;
+        };
+        /**
+         * MintResponse
+         * @description S4 §2.1 / §2.2. `endpoint` is DATA — the client never constructs it.
+         */
+        MintResponse: {
+            /** Ticket */
+            ticket: string;
+            /** Expires At */
+            expires_at: number;
+            /** Endpoint */
+            endpoint: string;
+            /**
+             * Protocol
+             * @default selkies_webrtc
+             * @constant
+             */
+            protocol?: "selkies_webrtc";
+            /** Stream Session Id */
+            stream_session_id: string;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "control" | "view";
+            control: components["schemas"]["ControlBlock"] | null;
+            media: components["schemas"]["MediaBlock"];
+            ice: components["schemas"]["IceBlock"];
+            viewport: components["schemas"]["ViewportBlock"];
         };
         /**
          * MintTokenRequest
@@ -45609,6 +45949,47 @@ export interface components {
             /** Dependencies */
             dependencies: string[];
         };
+        /** OpsAdmissionSnapshot */
+        OpsAdmissionSnapshot: {
+            /** Resident By Class */
+            resident_by_class?: {
+                [key: string]: number;
+            };
+            /** Ceiling By Class */
+            ceiling_by_class?: {
+                [key: string]: number;
+            };
+            /**
+             * Storm Window Count
+             * @default 0
+             */
+            storm_window_count?: number;
+            /**
+             * Storm Window Max
+             * @default 0
+             */
+            storm_window_max?: number;
+        };
+        /**
+         * OpsSnapshotResponse
+         * @description Content-free ops dashboard data (D-9). Counts only — never a run's content.
+         */
+        OpsSnapshotResponse: {
+            /**
+             * Live Run Count
+             * @default 0
+             */
+            live_run_count?: number;
+            /** Runs By Execution Target */
+            runs_by_execution_target?: {
+                [key: string]: number;
+            };
+            /** Runs By State */
+            runs_by_state?: {
+                [key: string]: number;
+            };
+            admission?: components["schemas"]["OpsAdmissionSnapshot"];
+        };
         /** OpsSummaryResponse */
         OpsSummaryResponse: {
             /** Total Issue Classes */
@@ -45944,11 +46325,11 @@ export interface components {
             analyzer_version?: string;
             /** Artifact */
             artifact?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Summary */
             summary?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** PageAnalyzeBatchBody */
@@ -46059,7 +46440,7 @@ export interface components {
             issues?: components["schemas"]["PageAuditIssue"][];
             /** Audit */
             audit?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /**
@@ -46258,11 +46639,11 @@ export interface components {
             mapper_version?: string;
             /** Artifact */
             artifact?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
             /** Summary */
             summary?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** PageLinkGapBody */
@@ -49244,7 +49625,7 @@ export interface components {
             last_run_id?: string | null;
             /** Last Run Error */
             last_run_error?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
         /** ProviderSpendRow */
@@ -50741,6 +51122,13 @@ export interface components {
             rejected_at: string;
             /** Reason */
             reason?: string | null;
+        };
+        /** ReleaseControlResponse */
+        ReleaseControlResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Controller Kind */
+            controller_kind: string;
         };
         /** RemoveEdgeOp */
         RemoveEdgeOp: {
@@ -52904,6 +53292,47 @@ export interface components {
              */
             force?: boolean;
         };
+        /**
+         * RunView
+         * @description The safe run facts a caller receives. No worker address, no token.
+         */
+        RunView: {
+            /** Run Id */
+            run_id: string;
+            /** Profile Id */
+            profile_id: string;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "provisioning" | "agent_control" | "handoff_requested" | "human_control" | "resume_pending" | "stopping" | "stopped" | "failed" | "failed_persistence";
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "handoff_capable" | "automation_only";
+            /**
+             * Execution Target
+             * @enum {string}
+             */
+            execution_target: "browser_fleet" | "sandbox" | "local_surface";
+            /**
+             * Controller Kind
+             * @enum {string}
+             */
+            controller_kind: "none" | "agent" | "human" | "system";
+            /** Controller User Id */
+            controller_user_id: string | null;
+            /**
+             * Reconnected
+             * @default false
+             */
+            reconnected?: boolean;
+            /** Current Url */
+            current_url?: string | null;
+            /** Started At */
+            started_at?: string | null;
+        };
         /** RunWorkflowRequest */
         RunWorkflowRequest: {
             /**
@@ -53318,6 +53747,13 @@ export interface components {
             /** Bullets */
             bullets?: string[];
         };
+        /** SavedLoginRequest */
+        SavedLoginRequest: {
+            /** Item Id */
+            item_id: string;
+            /** Page Url */
+            page_url: string;
+        };
         /**
          * ScanQuad
          * @description Document corners in post-EXIF-transpose pixel coordinates — the
@@ -53492,6 +53928,20 @@ export interface components {
             error_class: string;
             /** Error Message */
             error_message: string;
+        };
+        /** ScreenshotResponse */
+        ScreenshotResponse: {
+            /** Id */
+            id: string;
+            /**
+             * Captured At
+             * Format: date-time
+             */
+            captured_at: string;
+            /** File Id */
+            file_id: string;
+            /** Preview Url */
+            preview_url: string;
         };
         /**
          * ScrubRequest
@@ -56162,6 +56612,33 @@ export interface components {
              */
             task_id?: string | null;
         };
+        /** StartRunRequest */
+        StartRunRequest: {
+            /** Profile Id */
+            profile_id?: string | null;
+            /**
+             * Mode
+             * @default handoff_capable
+             * @enum {string}
+             */
+            mode?: "handoff_capable" | "automation_only";
+            /**
+             * Execution Target
+             * @default browser_fleet
+             * @enum {string}
+             */
+            execution_target?: "browser_fleet" | "sandbox" | "local_surface";
+            /** Activation Key */
+            activation_key: string;
+            /** Runtime Execution Id */
+            runtime_execution_id?: string | null;
+        };
+        /** StartRunResponse */
+        StartRunResponse: {
+            run: components["schemas"]["RunView"];
+            /** Reconnected */
+            reconnected: boolean;
+        };
         /**
          * StartStepRunResponse
          * @description A freshly created step-mode run — a ``paused`` run seeded at its entry
@@ -56361,6 +56838,13 @@ export interface components {
         StatusResponse: {
             /** Status */
             status: string;
+        };
+        /** StopRunResponse */
+        StopRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** State */
+            state: string;
         };
         /** StorageUsageResponse */
         StorageUsageResponse: {
@@ -56586,7 +57070,7 @@ export interface components {
             issues?: components["schemas"]["StructuredDataIssue"][];
             /** Data */
             data?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             };
         };
         /** StructuredDataIssue */
@@ -59332,6 +59816,35 @@ export interface components {
             updated_at?: string | null;
         };
         /**
+         * TriggerReviewRequest
+         * @description Optional body for a manual review.
+         *
+         *     ``example_ids`` is the "review THIS conversation" door: the automatic window
+         *     filters ``updated_at <= settle_cutoff`` so a session someone is still using
+         *     is never reviewed mid-thought — correct for the drain, and exactly wrong for
+         *     a person staring at a bad conversation right now. Naming ids reviews those
+         *     and only those, and never advances the watermark.
+         */
+        TriggerReviewRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Example Ids */
+            example_ids?: string[] | null;
+        };
+        /**
          * TtsDialogueTurn
          * @description One pre-rendered dialogue turn for ElevenLabs ``text_to_dialogue`` — the
          *     podcast pipeline's ``[{text, voice_id}]`` shape (built per run by
@@ -61559,6 +62072,19 @@ export interface components {
              * @default 1
              */
             zoom?: number;
+        };
+        /** ViewportBlock */
+        ViewportBlock: {
+            /** Width */
+            width: number;
+            /** Height */
+            height: number;
+            /**
+             * Resize Negotiation
+             * @default disabled
+             * @constant
+             */
+            resize_negotiation?: "disabled";
         };
         /**
          * VirtualAdapterDescriptor
@@ -77991,7 +78517,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TriggerReviewRequest"] | null;
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -81352,41 +81882,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
-                };
-            };
-        };
-    };
-    dev_login_as_dev_login_as_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                "X-Dev-Login-Secret"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DevLoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DevLoginResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -96428,6 +96923,512 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BridgeIntegrationResponse"];
+                };
+            };
+        };
+    };
+    start_run_browser_manager_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StartRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_run_browser_manager_runs__run_id__stop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StopRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_control_browser_manager_runs__run_id__control_requests_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ControlRequestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_control_browser_manager_runs__run_id__claim_control_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClaimControlResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    release_control_browser_manager_runs__run_id__release_control_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseControlResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ops_snapshot_browser_manager_ops_snapshot_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpsSnapshotResponse"];
+                };
+            };
+        };
+    };
+    capture_screenshot_browser_manager_runs__run_id__screenshot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScreenshotResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fill_human_login_browser_manager_runs__run_id__human_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HumanLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fill_saved_login_browser_manager_runs__run_id__saved_login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fill_authenticator_code_browser_manager_runs__run_id__authenticator_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthenticatorFillRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mint_stream_ticket_browser_manager_runs__run_id__stream_ticket_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                origin?: string | null;
+            };
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MintControlRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MintResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_stream__stream_slug__claim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                origin?: string | null;
+            };
+            path: {
+                stream_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    renew_stream__stream_slug__renew_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_stream_http__stream_slug___path__post__get__stream_slug_path: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_slug: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_stream_http__stream_slug___path__post__post__stream_slug_path: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_slug: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    proxy_stream_http__stream_slug___path__post__head__stream_slug_path: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stream_slug: string;
+                path: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

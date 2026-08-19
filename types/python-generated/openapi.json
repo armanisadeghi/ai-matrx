@@ -14968,7 +14968,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StoryAngleGenerateResponse"
+                  "$ref": "#/components/schemas/StoryAngleGenerateResult"
                 }
               }
             }
@@ -15021,9 +15021,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Rule On Press Story Angle Seo Press Angles  Angle Id  Ruling Post"
+                  "$ref": "#/components/schemas/StoryAngleRulingResult"
                 }
               }
             }
@@ -19720,7 +19718,7 @@
               "maximum": 2160,
               "exclusiveMinimum": 0,
               "description": "window size, hours",
-              "default": 24.0,
+              "default": 24,
               "title": "Hours"
             },
             "description": "window size, hours"
@@ -19768,7 +19766,7 @@
               "maximum": 2160,
               "exclusiveMinimum": 0,
               "description": "window size, hours",
-              "default": 24.0,
+              "default": 24,
               "title": "Hours"
             },
             "description": "window size, hours"
@@ -19816,7 +19814,7 @@
               "maximum": 2160,
               "exclusiveMinimum": 0,
               "description": "window size, hours",
-              "default": 24.0,
+              "default": 24,
               "title": "Hours"
             },
             "description": "window size, hours"
@@ -19915,7 +19913,7 @@
               "type": "number",
               "maximum": 21600,
               "exclusiveMinimum": 0,
-              "default": 300.0,
+              "default": 300,
               "title": "Lease Seconds"
             }
           }
@@ -20992,7 +20990,7 @@
           "Hindsight"
         ],
         "summary": "Trigger Review",
-        "description": "Manual review trigger — runs the full review inline (owner or admin).",
+        "description": "Manual review trigger — runs the full review inline (owner or admin).\n\nWith ``example_ids`` it reviews exactly those conversations/runs; a bad id\n(unknown, or belonging to a different subject) comes back as a 400 sentence\nrather than a silently empty review.",
         "operationId": "trigger_review_hindsight_enrollments__enrollment_id__review_post",
         "parameters": [
           {
@@ -21005,6 +21003,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/TriggerReviewRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -26000,66 +26015,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/dev/login-as": {
-      "post": {
-        "tags": [
-          "Dev Login"
-        ],
-        "summary": "Dev Login As",
-        "description": "Mint a Supabase-shaped JWT for the given user_id.\n\nValidates the user exists in auth.users, then signs a token with the\nsame SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.\nThe auth middleware verifies the result like any other Supabase token.",
-        "operationId": "dev_login_as_dev_login_as_post",
-        "parameters": [
-          {
-            "name": "X-Dev-Login-Secret",
-            "in": "header",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Dev-Login-Secret"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DevLoginRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DevLoginResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -49259,6 +49214,726 @@
         }
       }
     },
+    "/browser-manager/runs": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Start Run",
+        "operationId": "start_run_browser_manager_runs_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StartRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/stop": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Stop Run",
+        "operationId": "stop_run_browser_manager_runs__run_id__stop_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StopRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/control-requests": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Request Control",
+        "operationId": "request_control_browser_manager_runs__run_id__control_requests_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ControlRequestResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/claim-control": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Claim Control",
+        "operationId": "claim_control_browser_manager_runs__run_id__claim_control_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClaimControlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/release-control": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Release Control",
+        "operationId": "release_control_browser_manager_runs__run_id__release_control_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseControlResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/ops/snapshot": {
+      "get": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Ops Snapshot",
+        "description": "Content-free ops dashboard data (D-9). Admin-gated at mount time.",
+        "operationId": "ops_snapshot_browser_manager_ops_snapshot_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpsSnapshotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/screenshot": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Capture Screenshot",
+        "operationId": "capture_screenshot_browser_manager_runs__run_id__screenshot_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScreenshotResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/human-login": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Fill Human Login",
+        "operationId": "fill_human_login_browser_manager_runs__run_id__human_login_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HumanLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/saved-login": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Fill Saved Login",
+        "operationId": "fill_saved_login_browser_manager_runs__run_id__saved_login_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/authenticator": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Fill Authenticator Code",
+        "operationId": "fill_authenticator_code_browser_manager_runs__run_id__authenticator_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthenticatorFillRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/runs/{run_id}/stream-ticket": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Mint Stream Ticket",
+        "operationId": "mint_stream_ticket_browser_manager_runs__run_id__stream_ticket_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          },
+          {
+            "name": "origin",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Origin"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MintControlRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MintResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{stream_slug}/claim": {
+      "post": {
+        "tags": [
+          "cloud-browser-stream"
+        ],
+        "summary": "Claim Stream",
+        "operationId": "claim_stream__stream_slug__claim_post",
+        "parameters": [
+          {
+            "name": "stream_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stream Slug"
+            }
+          },
+          {
+            "name": "origin",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Origin"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClaimRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{stream_slug}/renew": {
+      "post": {
+        "tags": [
+          "cloud-browser-stream"
+        ],
+        "summary": "Renew Stream",
+        "operationId": "renew_stream__stream_slug__renew_post",
+        "parameters": [
+          {
+            "name": "stream_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stream Slug"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{stream_slug}/{path}": {
+      "post": {
+        "tags": [
+          "cloud-browser-stream"
+        ],
+        "summary": "Proxy Stream Http",
+        "operationId": "proxy_stream_http__stream_slug___path__post__post__stream_slug_path",
+        "parameters": [
+          {
+            "name": "stream_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stream Slug"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "cloud-browser-stream"
+        ],
+        "summary": "Proxy Stream Http",
+        "operationId": "proxy_stream_http__stream_slug___path__post__get__stream_slug_path",
+        "parameters": [
+          {
+            "name": "stream_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stream Slug"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "tags": [
+          "cloud-browser-stream"
+        ],
+        "summary": "Proxy Stream Http",
+        "operationId": "proxy_stream_http__stream_slug___path__post__head__stream_slug_path",
+        "parameters": [
+          {
+            "name": "stream_slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Stream Slug"
+            }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/media-heal/drain": {
       "post": {
         "tags": [
@@ -53510,6 +54185,52 @@
         }
       }
     },
+    "/admin/producer-yield": {
+      "get": {
+        "tags": [
+          "Admin",
+          "Admin / Producer yield"
+        ],
+        "summary": "Get Producer Yield",
+        "description": "Every autonomous spender, worst first — unmeasurable spend, then lowest\nyield, then biggest spend.",
+        "operationId": "get_producer_yield_admin_producer_yield_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProducerYieldOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/producer-yield/check": {
+      "post": {
+        "tags": [
+          "Admin",
+          "Admin / Producer yield"
+        ],
+        "summary": "Post Yield Check",
+        "description": "Run the floor pass now (banner + /ops-triage record + assist chips).",
+        "operationId": "post_yield_check_admin_producer_yield_check_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YieldCheckOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/admin/agent-context/organizations": {
       "get": {
         "tags": [
@@ -53781,8 +54502,8 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Successful Response",
+          "200": {
+            "description": "An identical live schedule already existed; it is returned unchanged with `deduplicated: true` and nothing was created.",
             "content": {
               "application/json": {
                 "schema": {
@@ -53791,8 +54512,8 @@
               }
             }
           },
-          "200": {
-            "description": "An identical live schedule already existed; it is returned unchanged with `deduplicated: true` and nothing was created.",
+          "201": {
+            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
@@ -57670,15 +58391,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -57889,7 +58610,7 @@
           "spend_usd": {
             "type": "number",
             "title": "Spend Usd",
-            "default": 0.0
+            "default": 0
           },
           "statement": {
             "type": "string",
@@ -58106,32 +58827,32 @@
           },
           "max_attempts": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Attempts",
             "description": "Maximum execution attempts allowed for each item.",
             "default": 3
           },
           "lease_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 30.0,
+            "maximum": 86400,
+            "minimum": 30,
             "title": "Lease Seconds",
             "description": "Seconds an item claim remains valid without renewal.",
             "default": 900
           },
           "max_concurrency": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrency",
             "description": "Maximum assignment items executed concurrently by this run.",
             "default": 5
           },
           "retry_delay_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 0.0,
+            "maximum": 86400,
+            "minimum": 0,
             "title": "Retry Delay Seconds",
             "description": "Delay before a retryable item becomes claimable again.",
             "default": 0
@@ -59683,16 +60404,16 @@
           },
           "max_iterations": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Iterations",
             "description": "Maximum agent reasoning/tool-loop iterations.",
             "default": 100
           },
           "max_retries_per_iteration": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 0.0,
+            "maximum": 10,
+            "minimum": 0,
             "title": "Max Retries Per Iteration",
             "description": "Maximum provider retries allowed within one agent iteration.",
             "default": 2
@@ -59821,15 +60542,15 @@
           },
           "max_runtime_seconds": {
             "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 1.0,
+            "maximum": 86400,
+            "minimum": 1,
             "title": "Max Runtime Seconds",
             "default": 600
           },
           "max_concurrent": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Concurrent",
             "default": 1
           }
@@ -60383,8 +61104,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           },
@@ -60415,8 +61136,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -61387,7 +62108,9 @@
             "default": 0
           },
           "analysis": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Analysis"
           },
@@ -61809,8 +62532,8 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
@@ -62047,7 +62770,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -62425,7 +63148,7 @@
         "properties": {
           "input_tokens": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Input Tokens"
           }
         },
@@ -63052,8 +63775,8 @@
         "properties": {
           "trust_stage": {
             "type": "integer",
-            "maximum": 3.0,
-            "minimum": 0.0,
+            "maximum": 3,
+            "minimum": 0,
             "title": "Trust Stage"
           },
           "requirement": {
@@ -63071,8 +63794,8 @@
           },
           "sample_percent": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Sample Percent"
           },
           "source": {
@@ -63633,7 +64356,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "description": "Renders below this size return as base64 data_url; larger renders return a 5-minute ephemeral signed_url.",
             "default": 262144
@@ -64254,37 +64977,37 @@
           },
           "total_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Total Items",
             "description": "Total materialized items in the session."
           },
           "pending_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Pending Items",
             "description": "Items still waiting to be claimed."
           },
           "running_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Running Items",
             "description": "Items currently leased or executing."
           },
           "completed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Completed Items",
             "description": "Items that completed successfully."
           },
           "failed_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failed Items",
             "description": "Items that reached terminal failure."
           },
           "cancelled_items": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Cancelled Items",
             "description": "Items cancelled without execution completion."
           },
@@ -64344,8 +65067,8 @@
         "properties": {
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -64714,6 +65437,46 @@
         ],
         "title": "AuthenticatorEntryOut",
         "description": "One account's authenticator, metadata only. Deliberately no ``code`` and\nno ``seed`` member."
+      },
+      "AuthenticatorFillRequest": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Item Id"
+          },
+          "page_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Page Url"
+          },
+          "code_selector": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Code Selector"
+          },
+          "submit_selector": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Submit Selector"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "page_url",
+          "code_selector"
+        ],
+        "title": "AuthenticatorFillRequest"
       },
       "AuthenticatorListResponse": {
         "properties": {
@@ -65260,7 +66023,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -65280,7 +66043,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -65498,8 +66261,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 25
           },
@@ -65699,15 +66462,15 @@
           },
           "detail_limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Detail Limit",
             "default": 1000
           },
           "detail_max_rows": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Detail Max Rows",
             "default": 10000
           },
@@ -65740,8 +66503,8 @@
           },
           "enrichment_limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Enrichment Limit",
             "default": 25
           }
@@ -66392,8 +67155,8 @@
           },
           "max_link_pages": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 1.0,
+            "maximum": 10,
+            "minimum": 1,
             "title": "Max Link Pages",
             "default": 1
           },
@@ -66478,22 +67241,22 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Window Days",
             "default": 28
           },
           "max_query_fanout": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Max Query Fanout",
             "default": 50
           },
           "max_calls": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Calls",
             "default": 100
           },
@@ -66763,8 +67526,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Level",
             "default": 3
           },
@@ -66781,7 +67544,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -66806,7 +67569,7 @@
           },
           "max_inline_bytes": {
             "type": "integer",
-            "minimum": 1024.0,
+            "minimum": 1024,
             "title": "Max Inline Bytes",
             "default": 262144
           }
@@ -67027,8 +67790,8 @@
           },
           "signed_url_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Url Ttl",
             "default": 3600
           },
@@ -67639,7 +68402,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -68386,19 +69149,19 @@
           },
           "transcript_bytes": {
             "type": "integer",
-            "maximum": 268435456.0,
-            "minimum": 0.0,
+            "maximum": 268435456,
+            "minimum": 0,
             "title": "Transcript Bytes"
           },
           "transcript_entry_count": {
             "type": "integer",
-            "maximum": 1000000.0,
-            "minimum": 0.0,
+            "maximum": 1000000,
+            "minimum": 0,
             "title": "Transcript Entry Count"
           },
           "transcript_mtime_ns": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Transcript Mtime Ns"
           },
           "source_complete": {
@@ -68407,8 +69170,8 @@
           },
           "corrupt_line_count": {
             "type": "integer",
-            "maximum": 1000000.0,
-            "minimum": 0.0,
+            "maximum": 1000000,
+            "minimum": 0,
             "title": "Corrupt Line Count",
             "default": 0
           }
@@ -68612,15 +69375,15 @@
           },
           "max_pages": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Max Pages",
             "default": 25
           },
           "max_links_per_page": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Max Links Per Page",
             "default": 60
           },
@@ -68673,7 +69436,7 @@
           "estimated_cost_usd": {
             "type": "number",
             "title": "Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "reason": {
             "anyOf": [
@@ -69040,6 +69803,28 @@
               }
             ],
             "title": "After Capture Id"
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Run Id"
+          },
+          "profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Id"
           }
         },
         "additionalProperties": true,
@@ -69169,8 +69954,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000.0,
-            "minimum": 1000.0,
+            "maximum": 30000,
+            "minimum": 1000,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -69256,8 +70041,8 @@
           },
           "timeout_ms": {
             "type": "integer",
-            "maximum": 30000.0,
-            "minimum": 1000.0,
+            "maximum": 30000,
+            "minimum": 1000,
             "title": "Timeout Ms",
             "default": 25000
           },
@@ -69864,6 +70649,11 @@
               }
             ],
             "title": "Notes"
+          },
+          "human_confirmed": {
+            "type": "boolean",
+            "title": "Human Confirmed",
+            "default": false
           }
         },
         "additionalProperties": true,
@@ -70122,8 +70912,8 @@
           },
           "variant_count": {
             "type": "integer",
-            "maximum": 8.0,
-            "minimum": 2.0,
+            "maximum": 8,
+            "minimum": 2,
             "title": "Variant Count",
             "default": 5
           }
@@ -71890,8 +72680,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000.0,
-                "minimum": 1.0
+                "maximum": 100000,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -71959,7 +72749,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -74929,11 +75719,11 @@
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "description": "Drop findings below this certainty before they reach the Expert.",
-            "default": 0.0
+            "default": 0
           }
         },
         "additionalProperties": false,
@@ -75369,6 +76159,30 @@
         "title": "CitationLookupResult",
         "description": "A single resolved citation from a citation-lookup request."
       },
+      "ClaimControlResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "controller_kind": {
+            "type": "string",
+            "title": "Controller Kind"
+          },
+          "controller_revision": {
+            "type": "integer",
+            "title": "Controller Revision"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "controller_kind",
+          "controller_revision"
+        ],
+        "title": "ClaimControlResponse"
+      },
       "ClaimCreate": {
         "properties": {
           "applicant_name": {
@@ -75762,6 +76576,20 @@
         "type": "object",
         "title": "ClaimPatch"
       },
+      "ClaimRequest": {
+        "properties": {
+          "ticket": {
+            "type": "string",
+            "title": "Ticket"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ticket"
+        ],
+        "title": "ClaimRequest"
+      },
       "ClassificationProposal": {
         "properties": {
           "competitor_id": {
@@ -76066,8 +76894,8 @@
           },
           "max_turns": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Turns",
             "default": 20
           },
@@ -76075,8 +76903,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1000.0,
-                "exclusiveMinimum": 0.0
+                "maximum": 1000,
+                "exclusiveMinimum": 0
               },
               {
                 "type": "null"
@@ -79033,8 +79861,8 @@
           },
           "writer_lease_seconds": {
             "type": "integer",
-            "maximum": 3600.0,
-            "minimum": 30.0,
+            "maximum": 3600,
+            "minimum": 30,
             "title": "Writer Lease Seconds",
             "default": 300
           },
@@ -79042,7 +79870,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -79052,8 +79880,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 250
           },
@@ -79950,8 +80778,8 @@
           },
           "relevance_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Relevance Score"
           },
           "threat_level": {
@@ -80059,15 +80887,15 @@
           },
           "max_competitors": {
             "type": "integer",
-            "maximum": 15.0,
-            "minimum": 1.0,
+            "maximum": 15,
+            "minimum": 1,
             "title": "Max Competitors",
             "default": 5
           },
           "pages_per_competitor": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 1.0,
+            "maximum": 10,
+            "minimum": 1,
             "title": "Pages Per Competitor",
             "default": 3
           },
@@ -80242,8 +81070,8 @@
           },
           "max_competitors": {
             "type": "integer",
-            "maximum": 25.0,
-            "minimum": 1.0,
+            "maximum": 25,
+            "minimum": 1,
             "title": "Max Competitors",
             "default": 12
           },
@@ -80453,8 +81281,8 @@
           },
           "already_have_percentage": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Already Have Percentage"
           },
           "upgrade_page_ids": {
@@ -82474,6 +83302,48 @@
         ],
         "title": "ContractAuditReport"
       },
+      "ControlBlock": {
+        "properties": {
+          "control_revision": {
+            "type": "integer",
+            "title": "Control Revision"
+          },
+          "lease_expires_at": {
+            "type": "integer",
+            "title": "Lease Expires At"
+          },
+          "renew_interval_seconds": {
+            "type": "integer",
+            "title": "Renew Interval Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "control_revision",
+          "lease_expires_at",
+          "renew_interval_seconds"
+        ],
+        "title": "ControlBlock"
+      },
+      "ControlRequestResponse": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "request_id",
+          "state"
+        ],
+        "title": "ControlRequestResponse"
+      },
       "ConversationContinueRequest": {
         "properties": {
           "organization_id": {
@@ -83129,7 +83999,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -83280,7 +84150,7 @@
           "estimated_cost_usd": {
             "type": "number",
             "title": "Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -84267,8 +85137,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -85281,7 +86151,7 @@
           "reviewer_cost_usd": {
             "type": "number",
             "title": "Reviewer Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "error": {
             "anyOf": [
@@ -86899,8 +87769,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -89029,15 +89899,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -89105,61 +89975,6 @@
         },
         "type": "object",
         "title": "DetectorRunInfo"
-      },
-      "DevLoginRequest": {
-        "properties": {
-          "user_id": {
-            "type": "string",
-            "title": "User Id",
-            "description": "UUID of an existing row in auth.users."
-          },
-          "ttl_seconds": {
-            "type": "integer",
-            "maximum": 86400.0,
-            "minimum": 60.0,
-            "title": "Ttl Seconds",
-            "description": "JWT expiry. Default 2h, min 60s, max 24h.",
-            "default": 7200
-          }
-        },
-        "type": "object",
-        "required": [
-          "user_id"
-        ],
-        "title": "DevLoginRequest"
-      },
-      "DevLoginResponse": {
-        "properties": {
-          "access_token": {
-            "type": "string",
-            "title": "Access Token"
-          },
-          "user_id": {
-            "type": "string",
-            "title": "User Id"
-          },
-          "expires_at": {
-            "type": "integer",
-            "title": "Expires At"
-          },
-          "issued_at": {
-            "type": "integer",
-            "title": "Issued At"
-          },
-          "jti": {
-            "type": "string",
-            "title": "Jti"
-          }
-        },
-        "type": "object",
-        "required": [
-          "access_token",
-          "user_id",
-          "expires_at",
-          "issued_at",
-          "jti"
-        ],
-        "title": "DevLoginResponse"
       },
       "DiagSpawnDetachedResponse": {
         "properties": {
@@ -89298,15 +90113,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 1
           },
@@ -90179,7 +90994,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "status": {
             "type": "string",
@@ -90344,8 +91159,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           }
@@ -92128,8 +92943,8 @@
         "properties": {
           "limit": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -92680,8 +93495,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Count",
             "default": 1
           }
@@ -93217,8 +94032,8 @@
           },
           "output_dimensionality": {
             "type": "integer",
-            "maximum": 3072.0,
-            "minimum": 128.0,
+            "maximum": 3072,
+            "minimum": 128,
             "title": "Output Dimensionality",
             "default": 1536
           },
@@ -93570,17 +94385,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0.0
+            "default": 0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0.0
+            "default": 0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           }
         },
         "additionalProperties": false,
@@ -93796,17 +94611,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0.0
+            "default": 0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0.0
+            "default": 0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "review_count": {
             "type": "integer",
@@ -93886,8 +94701,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500.0,
-                "minimum": 1.0
+                "maximum": 500,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -93930,8 +94745,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500.0,
-                "minimum": 1.0
+                "maximum": 500,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -93943,8 +94758,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100.0,
-                "minimum": 1.0
+                "maximum": 100,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -95108,8 +95923,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "default": 3
           },
@@ -96264,7 +97079,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -98571,7 +99386,7 @@
           },
           "attempt_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Attempt Count",
             "default": 0
           },
@@ -98609,7 +99424,7 @@
           },
           "chunk_count": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Chunk Count",
             "default": 0
           },
@@ -99437,8 +100252,8 @@
           },
           "max_hits_per_page": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Hits Per Page",
             "default": 5
           }
@@ -99916,7 +100731,9 @@
             "default": "findingfix-v1"
           },
           "proposal": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Proposal"
           }
@@ -100532,15 +101349,15 @@
         "properties": {
           "x": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "X",
             "description": "0=left, 1=right"
           },
           "y": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Y",
             "description": "0=top, 1=bottom"
           }
@@ -100593,8 +101410,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 250
           },
@@ -100660,8 +101477,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 250
           },
@@ -100715,8 +101532,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 250
           },
@@ -101453,8 +102270,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -101661,8 +102478,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 4.0,
-            "minimum": 1.0,
+            "maximum": 4,
+            "minimum": 1,
             "title": "Count",
             "description": "Number of images to generate.",
             "default": 1
@@ -101725,8 +102542,8 @@
           },
           "max_nodes": {
             "type": "integer",
-            "maximum": 150.0,
-            "minimum": 10.0,
+            "maximum": 150,
+            "minimum": 10,
             "title": "Max Nodes",
             "default": 40
           },
@@ -102721,8 +103538,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90.0,
-                "minimum": 1.0
+                "maximum": 90,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -102969,17 +103786,17 @@
           "review_cost": {
             "type": "number",
             "title": "Review Cost",
-            "default": 0.0
+            "default": 0
           },
           "replay_cost": {
             "type": "number",
             "title": "Replay Cost",
-            "default": 0.0
+            "default": 0
           },
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "review_count": {
             "type": "integer",
@@ -103003,6 +103820,94 @@
         "type": "object",
         "title": "HindsightCostsOut",
         "description": "Platform-wide Hindsight spend — what this system costs to run."
+      },
+      "HumanLoginField": {
+        "properties": {
+          "selector": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Selector"
+          },
+          "value": {
+            "type": "string",
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Value"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "selector",
+          "value"
+        ],
+        "title": "HumanLoginField"
+      },
+      "HumanLoginRequest": {
+        "properties": {
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/HumanLoginField"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Fields"
+          },
+          "submit_selector": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Submit Selector"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fields",
+          "submit_selector"
+        ],
+        "title": "HumanLoginRequest"
+      },
+      "IceBlock": {
+        "properties": {
+          "stun_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Stun Urls"
+          },
+          "turn_urls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Turn Urls"
+          },
+          "turn_username": {
+            "type": "string",
+            "title": "Turn Username"
+          },
+          "turn_credential": {
+            "type": "string",
+            "title": "Turn Credential"
+          },
+          "turn_expires_at": {
+            "type": "integer",
+            "title": "Turn Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stun_urls",
+          "turn_urls",
+          "turn_username",
+          "turn_credential",
+          "turn_expires_at"
+        ],
+        "title": "IceBlock"
       },
       "IdeDiagnostic": {
         "properties": {
@@ -103214,17 +104119,17 @@
           "hard_bounce_rate": {
             "type": "number",
             "title": "Hard Bounce Rate",
-            "default": 0.0
+            "default": 0
           },
           "complaint_rate": {
             "type": "number",
             "title": "Complaint Rate",
-            "default": 0.0
+            "default": 0
           },
           "reply_rate": {
             "type": "number",
             "title": "Reply Rate",
-            "default": 0.0
+            "default": 0
           },
           "computed_at": {
             "type": "string",
@@ -103356,8 +104261,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "description": "Encoder quality from 1 to 100 for lossy output formats.",
             "default": 90
@@ -104361,8 +105266,8 @@
           },
           "count": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Count",
             "description": "Number of random assignments to materialize."
           },
@@ -104889,8 +105794,8 @@
           },
           "pages_per_chunk": {
             "type": "integer",
-            "maximum": 25.0,
-            "minimum": 1.0,
+            "maximum": 25,
+            "minimum": 1,
             "title": "Pages Per Chunk",
             "description": "Pages handed to the distiller per extraction chunk (documents only).",
             "default": 6
@@ -105230,8 +106135,8 @@
           },
           "chunk_words": {
             "type": "integer",
-            "maximum": 8000.0,
-            "minimum": 500.0,
+            "maximum": 8000,
+            "minimum": 500,
             "title": "Chunk Words",
             "description": "Words per extraction chunk.",
             "default": 2500
@@ -105331,8 +106236,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -106888,8 +107793,8 @@
           },
           "window_days": {
             "type": "integer",
-            "maximum": 365.0,
-            "minimum": 1.0,
+            "maximum": 365,
+            "minimum": 1,
             "title": "Window Days",
             "default": 30
           },
@@ -107396,8 +108301,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 200
           }
@@ -110033,8 +110938,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -111333,8 +112238,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Limit",
             "default": 10
           }
@@ -114365,7 +115270,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -114376,8 +115281,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -114675,6 +115580,44 @@
         ],
         "title": "McpToolsResponse"
       },
+      "MediaBlock": {
+        "properties": {
+          "video": {
+            "type": "boolean",
+            "title": "Video"
+          },
+          "audio": {
+            "type": "boolean",
+            "title": "Audio"
+          },
+          "clipboard": {
+            "type": "boolean",
+            "title": "Clipboard"
+          },
+          "microphone": {
+            "type": "boolean",
+            "title": "Microphone"
+          },
+          "camera": {
+            "type": "boolean",
+            "title": "Camera"
+          },
+          "file_transfer": {
+            "type": "boolean",
+            "title": "File Transfer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "video",
+          "audio",
+          "clipboard",
+          "microphone",
+          "camera",
+          "file_transfer"
+        ],
+        "title": "MediaBlock"
+      },
       "MediaListProspect": {
         "properties": {
           "party_id": {
@@ -114900,8 +115843,8 @@
           },
           "max_results": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Results",
             "default": 20
           }
@@ -115111,15 +116054,15 @@
           },
           "cadence_days": {
             "type": "integer",
-            "maximum": 180.0,
-            "minimum": 1.0,
+            "maximum": 180,
+            "minimum": 1,
             "title": "Cadence Days",
             "default": 14
           },
           "window_days": {
             "type": "integer",
-            "maximum": 365.0,
-            "minimum": 1.0,
+            "maximum": 365,
+            "minimum": 1,
             "title": "Window Days",
             "default": 30
           },
@@ -115460,7 +116403,7 @@
           "cost": {
             "type": "number",
             "title": "Cost",
-            "default": 0.0
+            "default": 0
           },
           "input_tokens": {
             "type": "integer",
@@ -116116,6 +117059,102 @@
         "title": "MessageUpdate",
         "description": "Fields the client can edit on an existing ``cx_message`` row.\n\nEvery field is optional — only fields the caller actually sets are\nwritten to the DB. ``content`` accepts the same structured JSON the\nserver would have written (list of parts) — callers that want to\nedit a simple text message should still send the list form."
       },
+      "MintControlRequest": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "const": "control",
+            "title": "Mode",
+            "default": "control"
+          },
+          "client_kind": {
+            "type": "string",
+            "enum": [
+              "web_panel",
+              "desktop",
+              "other"
+            ],
+            "title": "Client Kind",
+            "default": "web_panel"
+          },
+          "takeover": {
+            "type": "boolean",
+            "title": "Takeover",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MintControlRequest",
+        "description": "Body of POST /handoffs/{handoff_id}/stream-ticket."
+      },
+      "MintResponse": {
+        "properties": {
+          "ticket": {
+            "type": "string",
+            "title": "Ticket"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
+          },
+          "protocol": {
+            "type": "string",
+            "const": "selkies_webrtc",
+            "title": "Protocol",
+            "default": "selkies_webrtc"
+          },
+          "stream_session_id": {
+            "type": "string",
+            "title": "Stream Session Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "control",
+              "view"
+            ],
+            "title": "Mode"
+          },
+          "control": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ControlBlock"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "media": {
+            "$ref": "#/components/schemas/MediaBlock"
+          },
+          "ice": {
+            "$ref": "#/components/schemas/IceBlock"
+          },
+          "viewport": {
+            "$ref": "#/components/schemas/ViewportBlock"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ticket",
+          "expires_at",
+          "endpoint",
+          "stream_session_id",
+          "mode",
+          "control",
+          "media",
+          "ice",
+          "viewport"
+        ],
+        "title": "MintResponse",
+        "description": "S4 §2.1 / §2.2. `endpoint` is DATA — the client never constructs it."
+      },
       "MintTokenRequest": {
         "properties": {
           "audience": {
@@ -116281,29 +117320,29 @@
         "properties": {
           "chunk_count": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Chunk Count",
             "default": 10
           },
           "chunk_delay_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 0.0,
+            "maximum": 60000,
+            "minimum": 0,
             "title": "Chunk Delay Ms",
             "default": 200
           },
           "heartbeat_interval_ms": {
             "type": "integer",
-            "maximum": 60000.0,
-            "minimum": 1000.0,
+            "maximum": 60000,
+            "minimum": 1000,
             "title": "Heartbeat Interval Ms",
             "default": 10000
           },
           "max_lifetime_ms": {
             "type": "integer",
-            "maximum": 600000.0,
-            "minimum": 1000.0,
+            "maximum": 600000,
+            "minimum": 1000,
             "title": "Max Lifetime Ms",
             "default": 120000
           },
@@ -119552,8 +120591,8 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Priority"
           },
           "impact": {
@@ -119576,8 +120615,8 @@
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence": {
@@ -119619,6 +120658,67 @@
           "dependencies"
         ],
         "title": "OpportunityAssessment"
+      },
+      "OpsAdmissionSnapshot": {
+        "properties": {
+          "resident_by_class": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Resident By Class"
+          },
+          "ceiling_by_class": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Ceiling By Class"
+          },
+          "storm_window_count": {
+            "type": "integer",
+            "title": "Storm Window Count",
+            "default": 0
+          },
+          "storm_window_max": {
+            "type": "integer",
+            "title": "Storm Window Max",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OpsAdmissionSnapshot"
+      },
+      "OpsSnapshotResponse": {
+        "properties": {
+          "live_run_count": {
+            "type": "integer",
+            "title": "Live Run Count",
+            "default": 0
+          },
+          "runs_by_execution_target": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Runs By Execution Target"
+          },
+          "runs_by_state": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Runs By State"
+          },
+          "admission": {
+            "$ref": "#/components/schemas/OpsAdmissionSnapshot"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "OpsSnapshotResponse",
+        "description": "Content-free ops dashboard data (D-9). Counts only — never a run's content."
       },
       "OpsSummaryResponse": {
         "properties": {
@@ -120518,16 +121618,16 @@
           },
           "fill_opacity": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Fill Opacity",
             "default": 0.18
           },
           "stroke_width": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Stroke Width",
-            "default": 2.0
+            "default": 2
           },
           "label": {
             "anyOf": [
@@ -120542,9 +121642,9 @@
           },
           "font_size": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Font Size",
-            "default": 10.0
+            "default": 10
           }
         },
         "type": "object",
@@ -120600,12 +121700,16 @@
             "default": "pageanalyze-v1"
           },
           "artifact": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Artifact"
           },
           "summary": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Summary"
           }
@@ -120850,7 +121954,9 @@
             "title": "Issues"
           },
           "audit": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Audit"
           }
@@ -121380,12 +122486,16 @@
             "default": "pagemap-v1"
           },
           "artifact": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Artifact"
           },
           "summary": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Summary"
           }
@@ -121447,15 +122557,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 1000
           },
           "max_spam_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Max Spam Score",
             "default": 30
           },
@@ -122639,7 +123749,7 @@
           },
           "use_ocr_threshold": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Use Ocr Threshold",
             "default": 100
           }
@@ -122746,12 +123856,12 @@
         "properties": {
           "output_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Output Page"
           },
           "source_page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page"
           }
         },
@@ -122766,12 +123876,12 @@
         "properties": {
           "start": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Start"
           },
           "end": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "End"
           }
         },
@@ -122814,8 +123924,8 @@
           },
           "signed_ttl": {
             "type": "integer",
-            "maximum": 604800.0,
-            "minimum": 60.0,
+            "maximum": 604800,
+            "minimum": 60,
             "title": "Signed Ttl",
             "default": 3600
           }
@@ -122847,14 +123957,14 @@
           },
           "source_page_count": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Source Page Count"
           },
           "source_size_bytes": {
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -122864,7 +123974,7 @@
           },
           "source_bytes_fetched": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Source Bytes Fetched",
             "default": 0
           },
@@ -124511,7 +125621,7 @@
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "request": {
             "additionalProperties": {
@@ -124627,7 +125737,7 @@
           "total_cost": {
             "type": "number",
             "title": "Total Cost",
-            "default": 0.0
+            "default": 0
           },
           "error": {
             "type": "string",
@@ -125428,8 +126538,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 10.0,
-                "minimum": 1.0
+                "maximum": 10,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -125521,7 +126631,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -125534,7 +126644,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -125906,7 +127016,7 @@
             "type": "number",
             "title": "Total Cost Usd",
             "description": "What this run has cost in total.",
-            "default": 0.0
+            "default": 0
           },
           "progress": {
             "$ref": "#/components/schemas/RunProgress",
@@ -126028,7 +127138,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -126358,8 +127468,8 @@
           },
           "n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "N",
             "default": 5
           }
@@ -126438,12 +127548,12 @@
           },
           "width": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Width"
           },
           "height": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Height"
           },
           "format": {
@@ -126459,8 +127569,8 @@
           },
           "quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Quality",
             "description": "Ignored for png",
             "default": 85
@@ -126762,7 +127872,7 @@
           "heartbeat_interval_s": {
             "type": "number",
             "title": "Heartbeat Interval S",
-            "default": 15.0
+            "default": 15
           },
           "debug": {
             "type": "boolean",
@@ -126887,6 +127997,296 @@
         ],
         "title": "ProducerRef",
         "description": "Who produced one input. ``descend_ref`` present ⇒ the walk can continue\ndown through this producer."
+      },
+      "ProducerYieldOut": {
+        "properties": {
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/ProducerYieldRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/ProducerYieldTotals"
+          },
+          "floors": {
+            "$ref": "#/components/schemas/YieldFloors"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "totals"
+        ],
+        "title": "ProducerYieldOut"
+      },
+      "ProducerYieldRow": {
+        "properties": {
+          "producer_key": {
+            "type": "string",
+            "title": "Producer Key"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "outcome_token": {
+            "type": "string",
+            "title": "Outcome Token"
+          },
+          "measurement_state": {
+            "type": "string",
+            "title": "Measurement State",
+            "description": "no_acceptance_signal | never_decided | measured | idle. Read this BEFORE any rate below — a NULL rate is never a zero."
+          },
+          "produced": {
+            "type": "integer",
+            "title": "Produced"
+          },
+          "accepted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted"
+          },
+          "rejected": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rejected"
+          },
+          "expired": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expired"
+          },
+          "undecided": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Undecided"
+          },
+          "decided": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided"
+          },
+          "runs": {
+            "type": "integer",
+            "title": "Runs",
+            "default": 0
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "yield_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Rate",
+            "description": "accepted / PRODUCED. NULL until something is decided."
+          },
+          "accept_rate_of_decided": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accept Rate Of Decided"
+          },
+          "decision_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Rate"
+          },
+          "cost_per_accepted_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Per Accepted Usd",
+            "description": "The honest cost number."
+          },
+          "cost_per_produced_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Per Produced Usd",
+            "description": "The FLATTERING cost number. Never alarm on it."
+          },
+          "age_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Days"
+          },
+          "last_produced_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Produced At"
+          },
+          "last_accepted_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Accepted At"
+          },
+          "door_href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Door Href"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "producer_key",
+          "display_name",
+          "outcome_token",
+          "measurement_state",
+          "produced"
+        ],
+        "title": "ProducerYieldRow"
+      },
+      "ProducerYieldTotals": {
+        "properties": {
+          "producers": {
+            "type": "integer",
+            "title": "Producers",
+            "default": 0
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd",
+            "default": 0
+          },
+          "measured_cost_usd": {
+            "type": "number",
+            "title": "Measured Cost Usd",
+            "default": 0
+          },
+          "unmeasurable_cost_usd": {
+            "type": "number",
+            "title": "Unmeasurable Cost Usd",
+            "default": 0
+          },
+          "produced": {
+            "type": "integer",
+            "title": "Produced",
+            "default": 0
+          },
+          "accepted": {
+            "type": "integer",
+            "title": "Accepted",
+            "default": 0
+          },
+          "yield_rate": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Rate"
+          },
+          "cost_per_accepted_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Per Accepted Usd"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProducerYieldTotals"
       },
       "ProjectInputPart": {
         "properties": {
@@ -127699,7 +129099,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "claim": {
             "type": "string",
@@ -128346,7 +129746,9 @@
           "last_run_error": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
                 "type": "object"
               },
               {
@@ -128815,8 +130217,8 @@
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence_refs": {
@@ -129177,8 +130579,8 @@
         "properties": {
           "overall_confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Overall Confidence"
           },
           "accepted_cases": {
@@ -129315,8 +130717,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -129668,8 +131070,8 @@
           },
           "cadence_days": {
             "type": "integer",
-            "maximum": 90.0,
-            "minimum": 1.0,
+            "maximum": 90,
+            "minimum": 1,
             "title": "Cadence Days",
             "default": 7
           },
@@ -129865,8 +131267,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 90.0,
-                "minimum": 1.0
+                "maximum": 90,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -130009,7 +131411,7 @@
           },
           "start_char": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Start Char",
             "default": 0
           }
@@ -130465,8 +131867,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence"
           },
           "run_id": {
@@ -130812,15 +132214,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           },
@@ -130840,7 +132242,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "x0": {
@@ -130903,7 +132305,7 @@
           },
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -131195,7 +132597,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -132023,7 +133425,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "faithful": {
             "anyOf": [
@@ -132211,6 +133613,25 @@
         "title": "RejectDraftResponse",
         "description": "Deliberately LEAN. Rejecting must not depend on re-rendering the message:\nthe template or the member may be exactly what is wrong with the draft, and\na rejection that fails after cancelling the row would show the reviewer an\nerror for work that already happened."
       },
+      "ReleaseControlResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "controller_kind": {
+            "type": "string",
+            "title": "Controller Kind"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "controller_kind"
+        ],
+        "title": "ReleaseControlResponse"
+      },
       "RemoveEdgeOp": {
         "properties": {
           "op": {
@@ -132395,8 +133816,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 300.0,
-            "minimum": 8.0,
+            "maximum": 300,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -132414,8 +133835,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -132487,14 +133908,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "dpi": {
             "type": "integer",
-            "maximum": 600.0,
-            "minimum": 8.0,
+            "maximum": 600,
+            "minimum": 8,
             "title": "Dpi",
             "default": 150
           },
@@ -132512,8 +133933,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 85
           },
@@ -132565,8 +133986,8 @@
           },
           "dpi": {
             "type": "integer",
-            "maximum": 400.0,
-            "minimum": 36.0,
+            "maximum": 400,
+            "minimum": 36,
             "title": "Dpi",
             "default": 144
           },
@@ -132678,14 +134099,14 @@
           },
           "page": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page",
             "default": 1
           },
           "max_side": {
             "type": "integer",
-            "maximum": 2048.0,
-            "minimum": 16.0,
+            "maximum": 2048,
+            "minimum": 16,
             "title": "Max Side",
             "default": 256
           },
@@ -132702,8 +134123,8 @@
           },
           "jpeg_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Jpeg Quality",
             "default": 80
           }
@@ -133000,8 +134421,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Limit",
             "default": 100
           },
@@ -133877,32 +135298,32 @@
           },
           "priority": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Priority"
           },
           "confidence": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Confidence"
           },
           "evidence_quality": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Evidence Quality"
           },
           "risk_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Risk Score"
           },
           "opportunity_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Opportunity Score"
           },
           "recommended_action": {
@@ -134158,8 +135579,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -134641,8 +136062,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Limit",
             "default": 2000
           },
@@ -134979,8 +136400,8 @@
           },
           "max_chars": {
             "type": "integer",
-            "maximum": 10000.0,
-            "minimum": 1.0,
+            "maximum": 10000,
+            "minimum": 1,
             "title": "Max Chars",
             "default": 5000
           }
@@ -135388,8 +136809,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -135529,7 +136950,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -135540,8 +136961,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -135863,7 +137284,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -136708,7 +138129,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "total_input_tokens": {
             "type": "integer",
@@ -136952,8 +138373,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50.0,
-                "minimum": 1.0
+                "maximum": 50,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -136965,8 +138386,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 20.0,
-                "minimum": 1.0
+                "maximum": 20,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -137809,6 +139230,112 @@
         "type": "object",
         "title": "RunTrackerBody"
       },
+      "RunView": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "profile_id": {
+            "type": "string",
+            "title": "Profile Id"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "provisioning",
+              "agent_control",
+              "handoff_requested",
+              "human_control",
+              "resume_pending",
+              "stopping",
+              "stopped",
+              "failed",
+              "failed_persistence"
+            ],
+            "title": "State"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "handoff_capable",
+              "automation_only"
+            ],
+            "title": "Mode"
+          },
+          "execution_target": {
+            "type": "string",
+            "enum": [
+              "browser_fleet",
+              "sandbox",
+              "local_surface"
+            ],
+            "title": "Execution Target"
+          },
+          "controller_kind": {
+            "type": "string",
+            "enum": [
+              "none",
+              "agent",
+              "human",
+              "system"
+            ],
+            "title": "Controller Kind"
+          },
+          "controller_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Controller User Id"
+          },
+          "reconnected": {
+            "type": "boolean",
+            "title": "Reconnected",
+            "default": false
+          },
+          "current_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Url"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "profile_id",
+          "state",
+          "mode",
+          "execution_target",
+          "controller_kind",
+          "controller_user_id"
+        ],
+        "title": "RunView",
+        "description": "The safe run facts a caller receives. No worker address, no token."
+      },
       "RunWorkflowRequest": {
         "properties": {
           "organization_id": {
@@ -137925,8 +139452,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           },
@@ -137934,8 +139461,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 256.0,
-                "minimum": 1.0
+                "maximum": 256,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -137984,7 +139511,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           }
         },
         "type": "object",
@@ -138059,7 +139586,7 @@
           "lease_seconds": {
             "type": "number",
             "title": "Lease Seconds",
-            "default": 1800.0
+            "default": 1800
           },
           "idempotency_key": {
             "anyOf": [
@@ -138633,8 +140160,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 3.0,
-            "minimum": 2.0,
+            "maximum": 3,
+            "minimum": 2,
             "title": "Level",
             "default": 2
           },
@@ -138662,6 +140189,27 @@
           "heading"
         ],
         "title": "SaveDraftSectionBody"
+      },
+      "SavedLoginRequest": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Item Id"
+          },
+          "page_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Page Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "page_url"
+        ],
+        "title": "SavedLoginRequest"
       },
       "ScanQuad": {
         "properties": {
@@ -139054,6 +140602,36 @@
         ],
         "title": "ScreenshotFailure"
       },
+      "ScreenshotResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          },
+          "file_id": {
+            "type": "string",
+            "title": "File Id"
+          },
+          "preview_url": {
+            "type": "string",
+            "title": "Preview Url"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "captured_at",
+          "file_id",
+          "preview_url"
+        ],
+        "title": "ScreenshotResponse"
+      },
       "ScrubRequest": {
         "properties": {
           "output_mode": {
@@ -139229,8 +140807,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -139245,8 +140823,8 @@
           },
           "max_page_read": {
             "type": "integer",
-            "maximum": 20.0,
-            "minimum": 1.0,
+            "maximum": 20,
+            "minimum": 1,
             "title": "Max Page Read",
             "default": 10
           },
@@ -139326,8 +140904,8 @@
           },
           "anchor_size": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 10.0,
+            "maximum": 1000,
+            "minimum": 10,
             "title": "Anchor Size",
             "default": 100
           },
@@ -139345,8 +140923,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 30.0,
-            "minimum": 10.0,
+            "maximum": 30,
+            "minimum": 10,
             "title": "Total Results Per Keyword",
             "default": 10
           },
@@ -139435,8 +141013,8 @@
           },
           "total_results_per_keyword": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Total Results Per Keyword",
             "default": 5
           },
@@ -140938,8 +142516,8 @@
           },
           "depth": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 10.0,
+            "maximum": 100,
+            "minimum": 10,
             "title": "Depth",
             "default": 30
           },
@@ -141848,7 +143426,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "outcomes": {
             "items": {
@@ -142277,8 +143855,8 @@
           },
           "event_spacing_ms": {
             "type": "integer",
-            "maximum": 5000.0,
-            "minimum": 0.0,
+            "maximum": 5000,
+            "minimum": 0,
             "title": "Event Spacing Ms",
             "description": "Milliseconds to wait between simulated events.",
             "default": 250
@@ -142623,15 +144201,15 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 1000.0,
-            "minimum": 1.0,
+            "maximum": 1000,
+            "minimum": 1,
             "title": "Limit",
             "default": 1000
           },
           "max_spam_score": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Max Spam Score",
             "default": 30
           },
@@ -143942,7 +145520,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -143953,8 +145531,8 @@
           },
           "max_steps": {
             "type": "integer",
-            "maximum": 100000.0,
-            "minimum": 1.0,
+            "maximum": 100000,
+            "minimum": 1,
             "title": "Max Steps",
             "default": 1000
           }
@@ -144116,7 +145694,7 @@
         "properties": {
           "page_number": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Page Number"
           },
           "bbox": {
@@ -144124,10 +145702,10 @@
           },
           "expand_pad_pt": {
             "type": "number",
-            "maximum": 20.0,
-            "minimum": 0.0,
+            "maximum": 20,
+            "minimum": 0,
             "title": "Expand Pad Pt",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
@@ -145446,7 +147024,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 1.0
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -145882,6 +147460,79 @@
         "type": "object",
         "title": "StartRunBody",
         "description": "POST body for /vision-interview/sessions/{id}/start — the session id\nrides the path; only injected scope may appear on the body."
+      },
+      "StartRunRequest": {
+        "properties": {
+          "profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Id"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "handoff_capable",
+              "automation_only"
+            ],
+            "title": "Mode",
+            "default": "handoff_capable"
+          },
+          "execution_target": {
+            "type": "string",
+            "enum": [
+              "browser_fleet",
+              "sandbox",
+              "local_surface"
+            ],
+            "title": "Execution Target",
+            "default": "browser_fleet"
+          },
+          "activation_key": {
+            "type": "string",
+            "title": "Activation Key"
+          },
+          "runtime_execution_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime Execution Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "activation_key"
+        ],
+        "title": "StartRunRequest"
+      },
+      "StartRunResponse": {
+        "properties": {
+          "run": {
+            "$ref": "#/components/schemas/RunView"
+          },
+          "reconnected": {
+            "type": "boolean",
+            "title": "Reconnected"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run",
+          "reconnected"
+        ],
+        "title": "StartRunResponse"
       },
       "StartStepRunResponse": {
         "properties": {
@@ -146385,6 +148036,25 @@
         ],
         "title": "StatusResponse"
       },
+      "StopRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "state"
+        ],
+        "title": "StopRunResponse"
+      },
       "StorageUsageResponse": {
         "properties": {
           "tier_id": {
@@ -146561,7 +148231,7 @@
           "confidence": {
             "type": "number",
             "title": "Confidence",
-            "default": 0.0
+            "default": 0
           },
           "reason": {
             "type": "string",
@@ -146585,15 +148255,15 @@
         "properties": {
           "max_angles": {
             "type": "integer",
-            "maximum": 25.0,
-            "minimum": 1.0,
+            "maximum": 25,
+            "minimum": 1,
             "title": "Max Angles",
             "default": 12
           },
           "capture_pages": {
             "type": "integer",
-            "maximum": 25.0,
-            "minimum": 0.0,
+            "maximum": 25,
+            "minimum": 0,
             "title": "Capture Pages",
             "default": 8
           }
@@ -146602,7 +148272,7 @@
         "type": "object",
         "title": "StoryAngleGenerateBody"
       },
-      "StoryAngleGenerateResponse": {
+      "StoryAngleGenerateResult": {
         "properties": {
           "kept": {
             "type": "integer",
@@ -146650,7 +148320,8 @@
           "kept",
           "dropped"
         ],
-        "title": "StoryAngleGenerateResponse"
+        "title": "StoryAngleGenerateResult",
+        "description": "Durable result shared by the HTTP route and workflow node."
       },
       "StoryAngleRulingBody": {
         "properties": {
@@ -146683,6 +148354,33 @@
           "status"
         ],
         "title": "StoryAngleRulingBody"
+      },
+      "StoryAngleRulingResult": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "developing",
+              "pitched",
+              "landed",
+              "dismissed"
+            ],
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "title": "StoryAngleRulingResult",
+        "description": "The human-owned status written to one story angle."
       },
       "StripMetadataRequest": {
         "properties": {
@@ -146838,15 +148536,15 @@
           },
           "min_pages_ratio": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Pages Ratio",
             "default": 0.3333333333333333
           },
           "min_confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Min Confidence",
             "default": 0.5
           }
@@ -146954,7 +148652,9 @@
             "title": "Issues"
           },
           "data": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
             "type": "object",
             "title": "Data"
           }
@@ -151483,8 +153183,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 200.0,
-            "minimum": 1.0,
+            "maximum": 200,
+            "minimum": 1,
             "title": "Limit",
             "default": 50
           }
@@ -151558,7 +153258,7 @@
           "total_estimated_cost_usd": {
             "type": "number",
             "title": "Total Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "page_analyses": {
             "$ref": "#/components/schemas/CostBreakdownItem"
@@ -151603,7 +153303,7 @@
           "total_estimated_cost_usd": {
             "type": "number",
             "title": "Total Estimated Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "page_analyses": {
             "$ref": "#/components/schemas/CostBreakdownItem"
@@ -152746,12 +154446,12 @@
           "min_internal_similarity": {
             "type": "number",
             "title": "Min Internal Similarity",
-            "default": 0.0
+            "default": 0
           },
           "max_instance_similarity": {
             "type": "number",
             "title": "Max Instance Similarity",
-            "default": 0.0
+            "default": 0
           },
           "distinct_conversations": {
             "type": "integer",
@@ -152761,7 +154461,7 @@
           "mean_arg_coverage": {
             "type": "number",
             "title": "Mean Arg Coverage",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -153969,6 +155669,63 @@
         ],
         "title": "TriggerResponse"
       },
+      "TriggerReviewRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "example_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Ids"
+          }
+        },
+        "type": "object",
+        "title": "TriggerReviewRequest",
+        "description": "Optional body for a manual review.\n\n``example_ids`` is the \"review THIS conversation\" door: the automatic window\nfilters ``updated_at <= settle_cutoff`` so a session someone is still using\nis never reviewed mid-thought — correct for the drain, and exactly wrong for\na person staring at a bad conversation right now. Naming ids reviews those\nand only those, and never advances the watermark."
+      },
       "TtsDialogueTurn": {
         "properties": {
           "text": {
@@ -154844,8 +156601,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500.0,
-                "minimum": 1.0
+                "maximum": 500,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -154857,8 +156614,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 200.0,
-                "minimum": 1.0
+                "maximum": 200,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -154870,8 +156627,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 86400.0,
-                "minimum": 0.0
+                "maximum": 86400,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -154883,8 +156640,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 86400.0,
-                "minimum": 0.0
+                "maximum": 86400,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -154896,8 +156653,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 23.0,
-                "minimum": 0.0
+                "maximum": 23,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -154909,8 +156666,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 23.0,
-                "minimum": 0.0
+                "maximum": 23,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -156776,8 +158533,8 @@
           },
           "next_n": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Next N",
             "default": 5
           }
@@ -159587,15 +161344,15 @@
           },
           "max_urls": {
             "type": "integer",
-            "maximum": 20000.0,
-            "minimum": 1.0,
+            "maximum": 20000,
+            "minimum": 1,
             "title": "Max Urls",
             "default": 2000
           },
           "concurrency": {
             "type": "integer",
-            "maximum": 32.0,
-            "minimum": 1.0,
+            "maximum": 32,
+            "minimum": 1,
             "title": "Concurrency",
             "default": 8
           }
@@ -159638,22 +161395,46 @@
           "x": {
             "type": "number",
             "title": "X",
-            "default": 0.0
+            "default": 0
           },
           "y": {
             "type": "number",
             "title": "Y",
-            "default": 0.0
+            "default": 0
           },
           "zoom": {
             "type": "number",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Zoom",
-            "default": 1.0
+            "default": 1
           }
         },
         "type": "object",
         "title": "Viewport"
+      },
+      "ViewportBlock": {
+        "properties": {
+          "width": {
+            "type": "integer",
+            "title": "Width"
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height"
+          },
+          "resize_negotiation": {
+            "type": "string",
+            "const": "disabled",
+            "title": "Resize Negotiation",
+            "default": "disabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "width",
+          "height"
+        ],
+        "title": "ViewportBlock"
       },
       "VirtualAdapterDescriptor": {
         "properties": {
@@ -160275,7 +162056,7 @@
         "properties": {
           "hop": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Hop"
           },
           "unit_kind": {
@@ -161584,7 +163365,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "pinned_model": {
             "anyOf": [
@@ -161719,7 +163500,7 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "reason": {
             "anyOf": [
@@ -161796,7 +163577,7 @@
           "cost_usd": {
             "type": "number",
             "title": "Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "fidelity": {
             "additionalProperties": true,
@@ -162144,12 +163925,12 @@
           "total_cost_usd": {
             "type": "number",
             "title": "Total Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "avg_run_cost_usd": {
             "type": "number",
             "title": "Avg Run Cost Usd",
-            "default": 0.0
+            "default": 0
           },
           "runs_per_day": {
             "items": {
@@ -162204,6 +163985,159 @@
           "content"
         ],
         "title": "WriteArgs"
+      },
+      "YieldBreachOut": {
+        "properties": {
+          "producer_key": {
+            "type": "string",
+            "title": "Producer Key"
+          },
+          "display_name": {
+            "type": "string",
+            "title": "Display Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "urgency": {
+            "type": "string",
+            "title": "Urgency"
+          },
+          "headline": {
+            "type": "string",
+            "title": "Headline"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          },
+          "fix": {
+            "type": "string",
+            "title": "Fix"
+          },
+          "produced": {
+            "type": "integer",
+            "title": "Produced"
+          },
+          "accepted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Accepted"
+          },
+          "cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "door_href": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Door Href"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "producer_key",
+          "display_name",
+          "kind",
+          "urgency",
+          "headline",
+          "detail",
+          "fix",
+          "produced"
+        ],
+        "title": "YieldBreachOut"
+      },
+      "YieldCheckOut": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "clean | breached | no_addressee | error. `clean` means the pass RAN and found nothing — never confuse it with 'never ran'."
+          },
+          "producers_checked": {
+            "type": "integer",
+            "title": "Producers Checked",
+            "default": 0
+          },
+          "assists_created": {
+            "type": "integer",
+            "title": "Assists Created",
+            "default": 0
+          },
+          "breaches": {
+            "items": {
+              "$ref": "#/components/schemas/YieldBreachOut"
+            },
+            "type": "array",
+            "title": "Breaches"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "YieldCheckOut"
+      },
+      "YieldFloors": {
+        "properties": {
+          "min_produced_for_verdict": {
+            "type": "integer",
+            "title": "Min Produced For Verdict",
+            "default": 20
+          },
+          "yield_floor": {
+            "type": "number",
+            "title": "Yield Floor",
+            "default": 0.1
+          },
+          "never_decided_min_age_days": {
+            "type": "number",
+            "title": "Never Decided Min Age Days",
+            "default": 3
+          },
+          "no_signal_min_cost_usd": {
+            "type": "number",
+            "title": "No Signal Min Cost Usd",
+            "default": 1
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "YieldFloors",
+        "description": "The thresholds the alarm uses, so the surface can show its own rules."
       },
       "YouTubeSearchPage": {
         "properties": {
@@ -162302,8 +164236,8 @@
           },
           "max_results": {
             "type": "integer",
-            "maximum": 50.0,
-            "minimum": 1.0,
+            "maximum": 50,
+            "minimum": 1,
             "title": "Max Results",
             "default": 25
           },
@@ -162362,8 +164296,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 50.0,
-                "minimum": 1.0
+                "maximum": 50,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -162375,8 +164309,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 1440.0,
-                "minimum": 1.0
+                "maximum": 1440,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -163249,8 +165183,8 @@
           },
           "max_hits": {
             "type": "integer",
-            "maximum": 2000.0,
-            "minimum": 1.0,
+            "maximum": 2000,
+            "minimum": 1,
             "title": "Max Hits",
             "default": 200
           },
@@ -163483,8 +165417,8 @@
           },
           "limit": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Limit",
             "default": 20
           },
@@ -163548,8 +165482,8 @@
           },
           "multi_query": {
             "type": "integer",
-            "maximum": 5.0,
-            "minimum": 1.0,
+            "maximum": 5,
+            "minimum": 1,
             "title": "Multi Query",
             "description": "If >1, the query is rewritten into N paraphrases via gpt-4o-mini and each one contributes a separate vector ranking that gets fused via RRF. Boosts recall on awkward phrasings.",
             "default": 1
@@ -164326,8 +166260,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 500.0,
-                "minimum": 1.0
+                "maximum": 500,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -164404,15 +166338,15 @@
           },
           "review_every_n": {
             "type": "integer",
-            "maximum": 500.0,
-            "minimum": 1.0,
+            "maximum": 500,
+            "minimum": 1,
             "title": "Review Every N",
             "default": 10
           },
           "max_examples_per_review": {
             "type": "integer",
-            "maximum": 100.0,
-            "minimum": 1.0,
+            "maximum": 100,
+            "minimum": 1,
             "title": "Max Examples Per Review",
             "default": 25
           },
@@ -164434,8 +166368,8 @@
           },
           "backfill_days": {
             "type": "integer",
-            "maximum": 365.0,
-            "minimum": 0.0,
+            "maximum": 365,
+            "minimum": 0,
             "title": "Backfill Days",
             "default": 14
           }

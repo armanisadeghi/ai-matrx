@@ -18,8 +18,8 @@
  * when you only care about refreshing the Python API surface.
  */
 
-import { execSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { execFileSync, execSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -47,6 +47,73 @@ const outDir = resolve(PROJECT_ROOT, 'types/python-generated');
 const AIDREAM_SYNC_SCRIPT = resolve(PROJECT_ROOT, '../aidream/scripts/sync-types.mjs');
 const BACKEND_SYNC_MAX_ATTEMPTS = 3;
 const BACKEND_SYNC_RETRY_DELAY_MS = 3_000;
+const OPENAPI_METHODS = new Set([
+    'get',
+    'put',
+    'post',
+    'delete',
+    'options',
+    'head',
+    'patch',
+    'trace',
+]);
+
+function normalizeDuplicateOperationIds(openapiPath) {
+    const document = JSON.parse(readFileSync(openapiPath, 'utf-8'));
+    const operationsById = new Map();
+
+    for (const [path, pathItem] of Object.entries(document.paths ?? {})) {
+        if (!pathItem || typeof pathItem !== 'object') continue;
+        for (const [method, operation] of Object.entries(pathItem)) {
+            if (!OPENAPI_METHODS.has(method) || !operation || typeof operation !== 'object') continue;
+            const operationId = operation.operationId;
+            if (typeof operationId !== 'string' || operationId.length === 0) continue;
+            const entries = operationsById.get(operationId) ?? [];
+            entries.push({ method, operation, path });
+            operationsById.set(operationId, entries);
+        }
+    }
+
+    let normalized = 0;
+    for (const [operationId, entries] of operationsById) {
+        if (entries.length < 2) continue;
+        for (const { method, operation, path } of entries) {
+            const pathSuffix = path.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+            operation.operationId = `${operationId}__${method}__${pathSuffix}`;
+            normalized += 1;
+        }
+    }
+
+    if (normalized > 0) {
+        writeFileSync(openapiPath, `${JSON.stringify(document, null, 2)}\n`, 'utf-8');
+    }
+    return normalized;
+}
+
+function regenerateOpenApiTypes(outDir) {
+    const openapiPath = resolve(outDir, 'openapi.json');
+    if (!existsSync(openapiPath)) return;
+
+    const normalized = normalizeDuplicateOperationIds(openapiPath);
+    if (normalized === 0) return;
+
+    const generator = resolve(PROJECT_ROOT, 'node_modules/.bin/openapi-typescript');
+    if (!existsSync(generator)) {
+        throw new Error(`openapi-typescript not found at ${generator}`);
+    }
+    execFileSync(
+        generator,
+        [
+            openapiPath,
+            '--default-non-nullable',
+            'false',
+            '-o',
+            resolve(outDir, 'api-types.ts'),
+        ],
+        { stdio: 'inherit', cwd: PROJECT_ROOT },
+    );
+    console.log(`  ✓ Normalized ${normalized} duplicate OpenAPI operation ids.\n`);
+}
 
 const modeLabel = fastMode ? 'fast (api types only)' : useLocal ? 'local (all 3 steps)' : 'live (all 3 steps)';
 
@@ -122,6 +189,18 @@ if (!backendSyncSucceeded) {
         console.error(`    Could not reach: ${backendUrl}`);
         console.error('    Use --local to sync from your local backend instead.');
     }
+    process.exit(1);
+}
+
+try {
+    // FastAPI emits one operationId when a single route accepts several HTTP
+    // methods. OpenAPI requires operationIds to be unique, and generated TS
+    // rejects the duplicate property names. Normalize consumer-side so the
+    // frontend contract remains independently releasable from the backend.
+    regenerateOpenApiTypes(outDir);
+} catch (error) {
+    console.error('\n  ✗ Failed to normalize duplicate OpenAPI operation ids.');
+    console.error(`    ${error instanceof Error ? error.message : String(error)}\n`);
     process.exit(1);
 }
 
