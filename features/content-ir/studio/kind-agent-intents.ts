@@ -10,13 +10,31 @@
  * THE USER-INPUT LAW: `initialDraftText` carries ONLY what a human genuinely
  * typed (or a short, non-structured kick phrase for one-click affordances —
  * never a schema, a live instance dump, or a composed instruction paragraph).
- * All structured content — the JSON schema, the live instance JSON, the
- * per-part build instruction, the admin's free-form note — travels on
- * `task_brief`, a variable declared on BOTH `content_ir.kind_creator` and
- * `content_ir.kind_architect` for exactly this purpose (added 2026-08-18
- * alongside `user_data_sample`; both default to "" and are blank no-ops for
- * a normal from-scratch build). SoR:
- * common-docs/systems/agent-variable-binding/FEATURE.md § THE USER-INPUT LAW.
+ * Structured content never rides `initialDraftText`, and per THE GRANULARITY
+ * RULE it does not all pile into one variable either — each piece the agent
+ * reasons about separately gets its own named variable, because a character
+ * cap on a prompt (see `FIX_INSTANCE_CONTENT_MAX` below) is the tell that
+ * structured content is inside and wants to be capped/swapped/diffed on its
+ * own:
+ *
+ *   - `task_brief` — the per-part build INSTRUCTION only (which part, which
+ *     kind, the admin's free-form note folded in as more instruction prose).
+ *     Genuinely one thing: short, human-readable directive text.
+ *   - `kind_schema` — the kind's emitted JSON schema, when the composer has
+ *     one. The agent designs/validates against the real structural
+ *     authority, never a guess, and the platform can cap/diff/swap the
+ *     schema independently of the instruction that references it.
+ *   - `user_data_sample` — a representative JSON data sample. Already
+ *     declared on `content_ir.kind_creator` for a user-pasted sample; the
+ *     in-render "fix this component" affordance reuses the SAME variable for
+ *     the live instance JSON the user was looking at, because both are the
+ *     same kind of thing (one JSON data sample the agent reads), just from
+ *     different origins.
+ *
+ * All three default to "" on the agent and are blank no-ops for a normal
+ * from-scratch build (added 2026-08-18 / extended 2026-08-19 with
+ * `kind_schema`). SoR: common-docs/systems/agent-variable-binding/FEATURE.md
+ * § THE USER-INPUT LAW + § THE GRANULARITY RULE.
  *
  * Pure and importable. `emittedJsonSchema` is inlined verbatim when present so
  * the agent designs against the real structural authority, never a guess.
@@ -72,21 +90,27 @@ const PART_INTENT: Record<KindAgentPart, (label: string, slug: string) => string
     `Edit the existing Shape (kind) \`${slug}\` — "${label}".`,
 };
 
-function schemaBlock(schema: Json | null | undefined): string {
+/** The kind's JSON schema as its own variable value — header baked in so an
+ *  absent schema renders nothing (never a dangling "Its current JSON
+ *  schema:" label with no schema under it). */
+function schemaVariable(schema: Json | null | undefined): string {
   if (schema == null) return "";
-  return `\n\nIts current JSON schema:\n\n\`\`\`json\n${JSON.stringify(schema, null, 2)}\n\`\`\``;
+  return `Its current JSON schema:\n\n\`\`\`json\n${JSON.stringify(schema, null, 2)}\n\`\`\``;
 }
 
-/** Compose the kind-creator agent seed: instruction + schema + note all ride
- *  `task_brief` (structured/machine content); the composer gets a short,
- *  reviewable kick phrase, never the brief itself. */
+/** Compose the kind-creator agent seed: the instruction (+ the admin's note,
+ *  folded in as more directive prose) rides `task_brief`; the kind's own JSON
+ *  schema — structured content the platform may want to cap/diff/swap on its
+ *  own — rides its own `kind_schema` variable instead of being inlined into
+ *  the instruction text. The composer gets a short, reviewable kick phrase,
+ *  never the brief itself. */
 export function composeKindAgentIntent(input: KindAgentIntentInput): KindAgentSeed {
   const base = PART_INTENT[input.part](input.label, input.kind);
   const note = input.note?.trim() ? `\n\n${input.note.trim()}` : "";
-  const brief = `${base}${schemaBlock(input.emittedJsonSchema)}${note}`;
+  const brief = `${base}${note}`;
   return {
     draftText: "Let's do it.",
-    variables: { task_brief: brief },
+    variables: { task_brief: brief, kind_schema: schemaVariable(input.emittedJsonSchema) },
   };
 }
 
@@ -104,7 +128,11 @@ export interface KindSampleFillIntentInput {
  * stages into the canonical `KindInputForm`. Deliberately read-only work — the
  * creator agent must not touch the kind itself here, and the user still presses
  * Render (the real ajv gate) and Save. This run has no human turn at all (no
- * composer, no review) — every field rides `task_brief`.
+ * composer, no review) — the instruction rides `task_brief`, the kind's own
+ * schema rides its own `kind_schema` variable (a character cap on a prompt is
+ * the tell that structured content belongs elsewhere, and this schema is
+ * exactly the kind of thing the platform would want to cap/diff/swap on its
+ * own, independent of the instruction that references it).
  */
 export function composeKindSampleFillIntent(
   input: KindSampleFillIntentInput,
@@ -115,8 +143,8 @@ export function composeKindSampleFillIntent(
     `Do NOT create, edit, activate or otherwise modify this Shape or any of its assets — this is a read-only drafting task. ` +
     `Respond with a single JSON object containing ONLY this Shape's own fields: no \`__kind\` key, no wrapper object, no commentary around it. ` +
     `Fill every required field with plausible, specific content (never "string", "example" or lorem ipsum), and include optional fields when they make the sample more convincing.` +
-    `${schemaBlock(input.emittedJsonSchema)}${note}`;
-  return { task_brief: brief };
+    `${note}`;
+  return { task_brief: brief, kind_schema: schemaVariable(input.emittedJsonSchema) };
 }
 
 /** Cap for inlined live-instance JSON — enough context, never a mega-prompt. */
@@ -132,7 +160,10 @@ export interface KindComponentFixIntentInput {
  * Seed for the in-render "fix this component" affordance: the user was
  * LOOKING at a live instance rendered by the kind's DB component and hit the
  * badge. The agent gets the kind slug (its kind_* tools fetch the component
- * row itself) plus the exact instance data via `task_brief`; the composer
+ * row itself) via `task_brief`'s instruction text; the exact instance data
+ * — a JSON data sample, same kind of thing `content_ir.kind_creator` already
+ * declares `user_data_sample` for (a user-pasted data sample) — rides that
+ * SAME variable instead of being inlined into the instruction. The composer
  * carries only a short human-editable stub the user completes before sending.
  */
 export function composeKindComponentFixIntent(
@@ -146,10 +177,9 @@ export function composeKindComponentFixIntent(
   const brief =
     `Fix the output component for the existing Shape (kind) \`${input.kind}\`. ` +
     `I was viewing a live instance rendered by this kind's DB component and noticed a problem. ` +
-    `Load the current component with your kind tools, reproduce the issue against the instance data below, and fix it.\n\n` +
-    `The exact instance I was viewing:\n\n\`\`\`json\n${content}\n\`\`\``;
+    `Load the current component with your kind tools, reproduce the issue against the instance data in your data sample, and fix it.`;
   return {
     draftText: "What I want changed: ",
-    variables: { task_brief: brief },
+    variables: { task_brief: brief, user_data_sample: content },
   };
 }

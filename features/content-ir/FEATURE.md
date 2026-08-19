@@ -155,6 +155,31 @@ Done: 0 extract+tests · 1 registry/session/parser upgrades · 2 accumulator sha
 
 ## Change Log
 
+- 2026-08-19 — **THE GRANULARITY RULE applied to `task_brief`.** The 2026-08-18
+  fix correctly cleared THE USER-INPUT LAW but fused STRUCTURED content into
+  `task_brief` alongside the instruction: `composeKindSampleFillIntent` inlined
+  the kind's emitted JSON schema, and `composeKindComponentFixIntent` inlined
+  the live instance JSON (the `FIX_INSTANCE_CONTENT_MAX = 6_000` cap was the
+  tell — a character cap on a prompt means structured content is inside).
+  Split (`kind-agent-intents.ts`): `task_brief` now carries ONLY the
+  instruction (+ the admin's free-form note folded in as more directive
+  prose — genuinely one thing, not split further); the kind's own JSON schema
+  rides a NEW `kind_schema` variable (header baked into the value so an
+  absent schema renders nothing, never a dangling label); the live instance
+  JSON in the component-fix flow rides the EXISTING `user_data_sample`
+  variable instead of a second copy — same kind of thing (one JSON data
+  sample the agent reads) as the user-pasted sample `content_ir.kind_creator`
+  already declared it for. `composeKindAgentIntent` (the per-part
+  content_block/skill/component/surface/example/edit composer) got the same
+  fix for consistency — same blob pattern, same file. DB: `content_ir.kind_creator`
+  (`agent.definition` id `4f4ffd49-…`) gained the `kind_schema` variable
+  definition + `{{kind_schema}}` placeholder in its templated user message
+  via Supabase MCP; `user_data_sample`/`task_brief` were already declared and
+  needed no DB change. `content_ir.kind_architect` is untouched — neither
+  composer in this file targets it. Verified: `pnpm type-check` clean; live
+  `POST /ai/mandates/content_ir.kind_creator?dry_run=true` with all three
+  variables set substitutes cleanly, no `{{...}}` left unrendered. SoR:
+  `common-docs/systems/agent-variable-binding/FEATURE.md` § THE GRANULARITY RULE.
 - 2026-08-18 — **THE USER-INPUT LAW fix: Shape-studio agent hand-offs stopped inlining schemas/instance JSON/build instructions into `user_input`.** `kind-agent-intents.ts` composers (`composeKindAgentIntent`, `composeKindComponentFixIntent`, `composeKindSampleFillIntent`) now return `{draftText, variables}` — structured content (JSON schema, the exact live instance JSON previously capped at 6000 chars, the per-part build instruction) rides a new `task_brief` variable declared on both `content_ir.kind_creator` and `content_ir.kind_architect` (alongside the existing `user_data_sample`, verified via the code-truth query before switching), while the composer only ever gets genuinely human-typed text or a short non-structured kick phrase. `NewShapeClient` and `KindBuilderClient` now split their own typed intent/notes (stays in the draft) from pasted sample/structure data (now `user_data_sample`). Added an `initialVariableValues` seed channel to the `agentRunWindow` opener → `OverlayController` → `AgentRunWindow` (mirrors `useMermaidAgentEdit`'s variables+context pattern) and to the assists `launch_agent` action, consumed by `shape-assists-producer.ts`. SoR: `common-docs/systems/agent-variable-binding/FEATURE.md` § THE USER-INPUT LAW.
 
 - 2026-08-18 — **THE FLOOR: an unregistered shape now renders as a document, not a JSON dump** (§ THE FLOOR above — the system's guarantee changed, read that section). New platform primitive `components/official/structured-value/StructuredValueView.tsx` composes the existing `result-fields` engine and is wired into every fallthrough: `GenericStructuredBlock` (rewritten — document body, muted honesty footer, now BARE per THE WRAPPER LAW), `KindInstanceRender`'s unroutable + non-object paths, workflow-runtime's `JsonBody`/`SettledOutputBody`, and `AgentResultBlock` (fences only a payload carrying a routable `__kind`). Measured before/after on the real Study Pack run `fedd6591-…`: "Your materials" went from a 22-line JSON block to fields + a chunk table, "Flashcards" from a 95-line JSON block to a filterable Question/Answer/Difficulty/Tags table, `/shapes/study_pack_set` from a tree in a double card to one clean document. Fixed in `result-fields/` on the way: cross-realm `isPlainObject` (every `structuredClone`d value was falling to the JSON tree), roomy empty-STATE used as an empty FIELD, and `[1 item]` collapse for short scalar chip lists. Fixed in `ReadoutView`: a terminal run no longer tells the reader a step "fills in when the run reaches" it — the Study Pack's one never-run node of 24 said that forever.
