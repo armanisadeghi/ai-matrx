@@ -55,6 +55,9 @@ review dossier, or approval monitor.
 - **Classify the Next.js → aidream boundary before naming a service.** Cloudflare challenge
   HTML means FastAPI and the vault never ran; preserve `cf-ray` / `x-request-id` and report
   the edge failure instead of calling every 403 a vault denial.
+- **Retry OAuth token persistence only for transient transport failures.** The callback retries
+  network failures and 502/503/504 responses across brief aidream deploy windows; structured
+  application failures return immediately and keep their actionable detail.
 - Agent tool lists are server-computed; the client never mints tool definitions.
 
 ## Known state (D128)
@@ -92,6 +95,7 @@ listener cleanup, popup-blocker errors, and cancellation settlement.
 
 ## Change log
 
+- `2026-08-18` — made OAuth token persistence survive transient aidream deploy/restart windows.
 - `2026-08-18` — extracted the provider-neutral OAuth popup primitive for MCP and GitHub connection flows.
 - `2026-08-17` — made shared external-MCP OAuth state validation fail closed before the
   Microsoft Graph / Work IQ rollout; missing, empty, malformed, and mismatched state values

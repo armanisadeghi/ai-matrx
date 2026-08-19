@@ -4,6 +4,33 @@ export interface McpBackendFailure {
   diagnostic: string;
 }
 
+const TRANSIENT_GATEWAY_STATUSES = new Set([502, 503, 504]);
+
+/** Retry the token-persistence handoff across a brief backend deploy/restart window. */
+export async function persistMcpOAuthTokens(
+  input: string,
+  init: RequestInit,
+  fetcher: typeof fetch = fetch,
+): Promise<Response> {
+  const maxAttempts = 3;
+  let response: Response | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      response = await fetcher(input, init);
+      if (!TRANSIENT_GATEWAY_STATUSES.has(response.status)) return response;
+    } catch (error) {
+      if (attempt === maxAttempts) throw error;
+    }
+
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+    }
+  }
+
+  return response as Response;
+}
+
 interface ApiErrorBody {
   detail?: string | { message?: string };
   error?: string;

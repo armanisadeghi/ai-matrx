@@ -1,4 +1,7 @@
-import { classifyMcpBackendFailure } from "../backend-failure";
+import {
+  classifyMcpBackendFailure,
+  persistMcpOAuthTokens,
+} from "../backend-failure";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
@@ -70,6 +73,42 @@ describe("classifyMcpBackendFailure", () => {
     );
     expect(failure.diagnostic).toContain("unclassified_backend_response");
     expect(failure.diagnostic).toContain("request_id=req-500");
+  });
+});
+
+describe("persistMcpOAuthTokens", () => {
+  it("retries transient gateway responses during backend restarts", async () => {
+    const fetcher = jest
+      .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
+      .mockResolvedValueOnce(response("bad gateway", 502, {}))
+      .mockResolvedValueOnce(response("unavailable", 503, {}))
+      .mockResolvedValueOnce(response("{}", 200, { "content-type": "application/json" }));
+
+    const result = await persistMcpOAuthTokens(
+      "https://server.example/api/mcp-connections/server/oauth-tokens",
+      { method: "POST", body: "{}" },
+      fetcher,
+    );
+
+    expect(result.status).toBe(200);
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not retry an actionable application response", async () => {
+    const fetcher = jest
+      .fn<ReturnType<typeof fetch>, Parameters<typeof fetch>>()
+      .mockResolvedValue(response('{"detail":"denied"}', 403, {
+        "content-type": "application/json",
+      }));
+
+    const result = await persistMcpOAuthTokens(
+      "https://server.example/api/mcp-connections/server/oauth-tokens",
+      { method: "POST", body: "{}" },
+      fetcher,
+    );
+
+    expect(result.status).toBe(403);
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });
 

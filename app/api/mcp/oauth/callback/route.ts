@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient } from "@/utils/supabase/server";
-import { classifyMcpBackendFailure } from "@/features/agents/services/mcp-oauth/backend-failure";
+import {
+  classifyMcpBackendFailure,
+  persistMcpOAuthTokens,
+} from "@/features/agents/services/mcp-oauth/backend-failure";
 import { isValidOAuthState } from "@/features/agents/services/mcp-oauth/state";
 
 interface OAuthSession {
@@ -166,7 +169,7 @@ export async function GET(req: NextRequest) {
     const backendBase =
       process.env.NEXT_PUBLIC_BACKEND_URL ||
       "https://server.app.matrxserver.com";
-    const persistRes = await fetch(
+    const persistRes = await persistMcpOAuthTokens(
       `${backendBase}/api/mcp-connections/${encodeURIComponent(session.serverId)}/oauth-tokens`,
       {
         method: "POST",
