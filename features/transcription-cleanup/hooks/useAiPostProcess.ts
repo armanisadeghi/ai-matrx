@@ -18,8 +18,12 @@
  *      content, text, input, …).
  *   3. SINGLE VARIABLE — an agent with exactly one declared variable gets
  *      the text there.
- *   4. USER INPUT — otherwise the text is sent as the user message
- *      (`user_input`), which every agent accepts.
+ *
+ * Per THE USER-INPUT LAW, there is no user_input fallback: an agent that
+ * exposes no transcript-shaped variable and has no single declared variable
+ * cannot receive the transcript, and `process()` throws a descriptive error
+ * (surfaced via the hook's existing `error` state) instead of silently
+ * routing the transcript through the person's own message.
  *
  * Context items are passed as PROPER context entries (the fix for the old
  * "questionable" handling):
@@ -42,7 +46,6 @@ import { createManualInstance } from "@/features/agents/redux/execution-system/t
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { setContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
-import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import { fetchAgentExecutionMinimal } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 import {
@@ -247,7 +250,19 @@ export function useAiPostProcess() {
             landedVar = target.name;
           }
         }
-        const useUserInputFallback = !landedVar;
+        if (!landedVar) {
+          // THE USER-INPUT LAW: the transcript is structured content, never
+          // prose in the person's own message. No silent user_input reroute —
+          // a missing declared variable is a real agent misconfiguration.
+          throw new Error(
+            `This agent has no declared variable to receive the transcript ` +
+              `(no transcript-shaped variable like "transcribed_text" / ` +
+              `"transcript" / "content", and no single declared variable to ` +
+              `fall back to). Add a matching variable to the agent's ` +
+              `definition, or bind it to the "${bindingSurface}" surface, ` +
+              `before running it here.`,
+          );
+        }
 
         // 4. Context items → proper context entries.
         const entries: InstanceContextEntry[] = [...resolved.contextEntries];
@@ -321,13 +336,9 @@ export function useAiPostProcess() {
         if (entries.length > 0) {
           dispatch(setContextEntries({ conversationId: cid, entries }));
         }
-        if (useUserInputFallback) {
-          dispatch(setUserInputText({ conversationId: cid, text }));
-        }
 
-        const mappingInfo: InputMappingInfo = useUserInputFallback
-          ? { mode: "user_input" }
-          : bindingMappings && Object.keys(bindingMappings).length > 0
+        const mappingInfo: InputMappingInfo =
+          bindingMappings && Object.keys(bindingMappings).length > 0
             ? { mode: "binding", target: landedVar }
             : { mode: "variable", target: landedVar };
         setMapping(mappingInfo);
