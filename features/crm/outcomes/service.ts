@@ -98,3 +98,32 @@ export async function decideOutcomeEvent(input: {
   if (!data) throw new Error("The decision returned no updated record.");
   return data as OutcomeEventRow;
 }
+
+/**
+ * Confirmed wins across MANY campaigns, newest first — what the outreach front
+ * door shows as "recent wins".
+ *
+ * Separate from `listOutcomeEvents` on purpose: that one answers "what happened
+ * on THIS campaign" and pages; this one answers "did outreach work lately" over
+ * the campaigns the caller can already see, and is capped rather than paged.
+ * Callers pass campaign ids they resolved themselves (RLS still applies) — an
+ * empty list means there is nothing to ask about, so we never issue an
+ * unbounded `.in()` with zero values.
+ */
+export async function listRecentWins(input: {
+  campaignIds: readonly string[];
+  limit: number;
+}): Promise<OutcomeEventRow[]> {
+  if (input.campaignIds.length === 0) return [];
+  const db = await platformDb();
+  const { data, error } = await db
+    .from("outcome_event")
+    .select("*")
+    .in("campaign_id", input.campaignIds as string[])
+    .eq("status", "confirmed")
+    .order("matched_at", { ascending: false })
+    .order("id", { ascending: true })
+    .limit(input.limit);
+  if (error) throw pgError(error);
+  return (data ?? []) as OutcomeEventRow[];
+}
