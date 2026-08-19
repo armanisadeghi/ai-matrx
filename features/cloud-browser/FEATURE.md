@@ -73,6 +73,12 @@ Reconnect).
 
 ## Change log
 
+- **2026-08-19 — private credential capture:** a credential-missing handoff now
+  presents a user-only sign-in form after control is claimed. One action writes the
+  values through the canonical vault capture endpoint, fills the current browser
+  through the human-control boundary, submits the form, and records a structural
+  recipe proposal. Values never enter an agent tool argument or result.
+
 - **2026-08-19 — live service and video:** replaced fixture reads with direct live
   browser-table reads and mounted control-plane calls for run, takeover, and
   telemetry operations. The takeover canvas now claims a one-use ticket, embeds

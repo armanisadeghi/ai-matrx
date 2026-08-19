@@ -341,6 +341,7 @@ function mapHandoff(row: HandoffRow): CloudBrowserHandoff {
     message:
       row.instructions_safe ??
       "The browser needs your input before it can continue.",
+    origin: row.origin,
     requestedAt: row.requested_at,
     expiresAt: row.expires_at,
   };
@@ -661,6 +662,75 @@ export async function returnControl(runId: string): Promise<ControllerState> {
     streamActive: false,
     pendingRequestFrom: null,
   };
+}
+
+export async function saveAndFillHumanLogin(input: {
+  runId: string;
+  pageUrl: string;
+  displayName: string;
+  username: string;
+  password: string;
+}): Promise<void> {
+  const usernameSelector =
+    "input[autocomplete='username'], input[type='email'], input[name*='user' i]";
+  const passwordSelector = "input[type='password']";
+  const submitSelector = "button[type='submit'], input[type='submit']";
+  const fields = [
+    {
+      field_key: "username",
+      selector: usernameSelector,
+      label: "Username or email",
+      secret: false,
+      step: 0,
+      clear_first: true,
+    },
+    {
+      field_key: "password",
+      selector: passwordSelector,
+      label: "Password",
+      secret: true,
+      step: 0,
+      clear_first: true,
+    },
+  ];
+  const { data: captured } = await postJson<unknown>(
+    "/api/vault/browser-login/capture",
+    {
+      display_name: input.displayName,
+      login_url: input.pageUrl,
+      description: "Saved from the private Cloud Browser sign-in window.",
+      fields,
+      submit_selector: submitSelector,
+      uri_match_mode: "host",
+      field_values: { username: input.username, password: input.password },
+    },
+  );
+  const receipt = record(captured);
+  if (receipt.proceed !== true)
+    throw new Error("The sign-in information could not be saved.");
+
+  await postJson<unknown>(`/browser-manager/runs/${input.runId}/human-login`, {
+    fields: [
+      { selector: usernameSelector, value: input.username },
+      { selector: passwordSelector, value: input.password },
+    ],
+    submit_selector: submitSelector,
+  });
+
+  if (receipt.propose_recipe === true) {
+    const origin = new URL(input.pageUrl).origin;
+    await postJson<unknown>("/api/vault/browser-login/recipe-proposal", {
+      normalized_origin: origin,
+      field_map: fields.map(({ field_key, selector, step, clear_first }) => ({
+        field_key,
+        selector,
+        step,
+        clear_first,
+      })),
+      submit: { selector: submitSelector },
+      notes: "Captured from a user-completed Cloud Browser sign-in.",
+    });
+  }
 }
 export async function requestScreenshot(
   runId: string,

@@ -166,6 +166,7 @@ export interface CloudBrowserHandoff {
   reason: HandoffReason;
   state: HandoffState;
   message: string;
+  origin: string | null;
   requestedAt: string;
   expiresAt: string | null;
 }

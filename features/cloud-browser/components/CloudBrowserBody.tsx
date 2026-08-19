@@ -43,6 +43,7 @@ import { AccountSettings } from "./AccountSettings";
 import { ShareControl } from "./ShareControl";
 import { DeletionFlow } from "./DeletionFlow";
 import { Walkthrough } from "./Walkthrough";
+import { LoginCapturePanel } from "./LoginCapturePanel";
 
 type FaceTab = "written" | "screenshots" | "takeover";
 
@@ -219,6 +220,12 @@ export function CloudBrowserBody({ initialProfileId, className }: CloudBrowserBo
                   </div>
                 </div>
               </div>
+            ) : null}
+            {isMeDriving &&
+            cb.handoff?.reason === "credentials_missing" &&
+            cb.handoff.origin &&
+            cb.run ? (
+              <LoginCapturePanel runId={cb.run.id} pageUrl={cb.handoff.origin} />
             ) : null}
           </div>
         </TabsContent>

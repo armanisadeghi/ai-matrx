@@ -138,6 +138,7 @@ export const FIXTURE_HANDOFF: CloudBrowserHandoff = {
   state: "requested",
   message:
     "This site is asking for a verification code. It needs the person who owns this browser to complete that step — work will continue automatically afterward.",
+  origin: "https://signin.aws.amazon.com",
   requestedAt: minsAgo(1),
   expiresAt: new Date(Date.now() + 29 * 60_000).toISOString(),
 };
