@@ -6782,6 +6782,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/content-plan/sites/{site_id}/cms-fill/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cms Fill Effort Estimate Route
+         * @description Exact calls and measured cost for EVERY effort tier, before any spend.
+         */
+        get: operations["cms_fill_effort_estimate_route_content_plan_sites__site_id__cms_fill_estimate_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-plan/sites/{site_id}/cms-fill/status": {
         parameters: {
             query?: never;
@@ -9312,6 +9332,30 @@ export interface paths {
          *     result but never launches this pass on its own.
          */
         post: operations["clean_expert_corpus_endpoint_masterworks_clean_corpus_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/{rulebook_id}/corpus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Expert Corpus
+         * @description THE RECORD — everything the Expert contributed to this Rulebook.
+         *
+         *     The SAME assembly the Final Checkup judges against, so the page and the
+         *     audit can never read different records of the same Expert
+         *     (`services/masterwork_corpus/`).
+         */
+        get: operations["read_expert_corpus_masterworks__rulebook_id__corpus_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -18991,14 +19035,14 @@ export interface paths {
             cookie?: never;
         };
         /** Proxy Stream Http */
-        get: operations["proxy_stream_http__stream_slug___path__get__get__stream_slug_path"];
+        get: operations["proxy_stream_http__stream_slug___path__post__get__stream_slug_path"];
         put?: never;
         /** Proxy Stream Http */
-        post: operations["proxy_stream_http__stream_slug___path__get__post__stream_slug_path"];
+        post: operations["proxy_stream_http__stream_slug___path__post__post__stream_slug_path"];
         delete?: never;
         options?: never;
         /** Proxy Stream Http */
-        head: operations["proxy_stream_http__stream_slug___path__get__head__stream_slug_path"];
+        head: operations["proxy_stream_http__stream_slug___path__post__head__stream_slug_path"];
         patch?: never;
         trace?: never;
     };
@@ -22499,6 +22543,13 @@ export interface components {
          *     that live in the host application (``IdeState``, ``CacheBypass``) are
          *     accepted as ``dict`` and validated by the host-injected request class
          *     on the boundary.
+         *
+         *     ONE field is workflow-only: ``runtime_config_overrides``. It is not a
+         *     request field — it is the per-run config layer an upstream step delivers
+         *     on an edge, folded into ``config_overrides`` before the host request is
+         *     built (see ``agent_start``). A workflow step's authored config is static
+         *     by definition, so without it nothing computed during the run could ever
+         *     reach the agent's config.
          */
         AgentStartStrictInput: {
             /**
@@ -22533,9 +22584,16 @@ export interface components {
             };
             /**
              * Config Overrides
-             * @description LLM parameter overrides (temperature, max_tokens, model, ...). Validated against LLMParams by the host's AgentStartRequest on entry.
+             * @description LLM parameter overrides (temperature, max_tokens, model, ...) the workflow AUTHOR set for this step. Static by nature — it is part of the saved definition. Validated against LLMParams by the host's AgentStartRequest on entry.
              */
             config_overrides?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /**
+             * Runtime Config Overrides
+             * @description Per-RUN LLM parameter overrides, meant to arrive on an EDGE from an upstream step (e.g. a voice map computed from the run's cast). Merged on TOP of both the mandate's config and this step's authored config_overrides, key by key — this is the run-scope layer, so it never wipes the other two the way a plain edge-delivered config_overrides would (the engine's input merge is last-writer-wins per KEY of the node input, so an edge feeding config_overrides replaces the whole authored dict).
+             */
+            runtime_config_overrides?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /**
@@ -29441,6 +29499,29 @@ export interface components {
              */
             basis?: string;
         };
+        /** CmsFillEffortEstimate */
+        CmsFillEffortEstimate: {
+            /** Web Site Id */
+            web_site_id: string;
+            /**
+             * Pages
+             * @default 0
+             */
+            pages?: number;
+            /** Site Tier */
+            site_tier?: string | null;
+            /**
+             * Default Tier
+             * @default advanced
+             */
+            default_tier?: string;
+            /** Overrides */
+            overrides?: {
+                [key: string]: number;
+            };
+            /** Tiers */
+            tiers?: components["schemas"]["CmsFillTierEstimate"][];
+        };
         /** CmsFillItemOut */
         CmsFillItemOut: {
             /** Node Id */
@@ -29501,6 +29582,8 @@ export interface components {
              * @default true
              */
             include_review?: boolean;
+            /** Effort Tier */
+            effort_tier?: ("quick" | "standard" | "thorough" | "advanced") | null;
             /**
              * Overwrite
              * @default false
@@ -29666,6 +29749,24 @@ export interface components {
             dead_letter?: number;
             /** Cost Usd */
             cost_usd?: number | null;
+        };
+        /**
+         * CmsFillTierEstimate
+         * @description What one tier would cost for THIS site, said before the button.
+         */
+        CmsFillTierEstimate: {
+            /** Tier */
+            tier: string;
+            /** Label */
+            label: string;
+            /** Blurb */
+            blurb: string;
+            /**
+             * Pages At Tier
+             * @default 0
+             */
+            pages_at_tier?: number;
+            estimate?: components["schemas"]["CmsFillCostEstimate"];
         };
         /**
          * CmsPageMapResult
@@ -31864,6 +31965,68 @@ export interface components {
             signed_url?: string | null;
             /** Download Url */
             download_url?: string | null;
+        };
+        /**
+         * CorpusLimitOut
+         * @description Something the corpus does NOT contain, said out loud.
+         */
+        CorpusLimitOut: {
+            /** Lane */
+            lane: string;
+            /** Reason */
+            reason: string;
+            /** Count */
+            count: number;
+            /** Recoverable */
+            recoverable: boolean;
+        };
+        /**
+         * CorpusSegmentOut
+         * @description One thing the Expert contributed, with every door that exists for it.
+         */
+        CorpusSegmentOut: {
+            /** Label */
+            label: string;
+            /** Segment Id */
+            segment_id: string;
+            /** Lane */
+            lane: string;
+            /** Lane Label */
+            lane_label: string;
+            /** Kind */
+            kind: string;
+            /** Text */
+            text: string;
+            /** Chars */
+            chars: number;
+            /** Title */
+            title?: string | null;
+            /** When */
+            when?: string | null;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /**
+             * Cleaned
+             * @default false
+             */
+            cleaned?: boolean;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Message Id */
+            message_id?: string | null;
+            /** File Id */
+            file_id?: string | null;
+            /** Url */
+            url?: string | null;
+            /** Entity Token */
+            entity_token?: string | null;
+            /** Entity Id */
+            entity_id?: string | null;
+            /** Corpus Item Id */
+            corpus_item_id?: string | null;
         };
         /** CostBreakdownItem */
         CostBreakdownItem: {
@@ -36455,6 +36618,36 @@ export interface components {
             existing_expert_status?: string | null;
             /** Why */
             why?: string[];
+        };
+        /** ExpertCorpusResponse */
+        ExpertCorpusResponse: {
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Segments */
+            segments?: components["schemas"]["CorpusSegmentOut"][];
+            /** Interviews */
+            interviews?: components["schemas"]["RulebookInterviewOut"][];
+            /** Limits */
+            limits?: components["schemas"]["CorpusLimitOut"][];
+            /** Lane Counts */
+            lane_counts?: {
+                [key: string]: number;
+            };
+            /**
+             * Total Chars
+             * @default 0
+             */
+            total_chars?: number;
+            /**
+             * Hidden Conversation Count
+             * @default 0
+             */
+            hidden_conversation_count?: number;
+            /**
+             * Can Read Material
+             * @default true
+             */
+            can_read_material?: boolean;
         };
         /**
          * ExpertEvidence
@@ -52847,6 +53040,39 @@ export interface components {
             rule: components["schemas"]["LeakRule"];
             /** Count */
             count: number;
+        };
+        /** RulebookInterviewOut */
+        RulebookInterviewOut: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** Title */
+            title?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /**
+             * Message Count
+             * @default 0
+             */
+            message_count?: number;
+            /**
+             * Expert Turn Count
+             * @default 0
+             */
+            expert_turn_count?: number;
+            /**
+             * Expert Chars
+             * @default 0
+             */
+            expert_chars?: number;
+            /** First Expert Line */
+            first_expert_line?: string | null;
+            /**
+             * Rules Produced
+             * @default 0
+             */
+            rules_produced?: number;
         };
         /**
          * Ruleset
@@ -75683,6 +75909,39 @@ export interface operations {
             };
         };
     };
+    cms_fill_effort_estimate_route_content_plan_sites__site_id__cms_fill_estimate_get: {
+        parameters: {
+            query?: {
+                cms_site?: string | null;
+            };
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsFillEffortEstimate"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     cms_fill_status_route_content_plan_sites__site_id__cms_fill_status_get: {
         parameters: {
             query?: {
@@ -79912,6 +80171,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_expert_corpus_masterworks__rulebook_id__corpus_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rulebook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpertCorpusResponse"];
                 };
             };
             /** @description Validation Error */
@@ -97337,7 +97627,7 @@ export interface operations {
             };
         };
     };
-    proxy_stream_http__stream_slug___path__get__get__stream_slug_path: {
+    proxy_stream_http__stream_slug___path__post__get__stream_slug_path: {
         parameters: {
             query?: never;
             header?: never;
@@ -97369,7 +97659,7 @@ export interface operations {
             };
         };
     };
-    proxy_stream_http__stream_slug___path__get__post__stream_slug_path: {
+    proxy_stream_http__stream_slug___path__post__post__stream_slug_path: {
         parameters: {
             query?: never;
             header?: never;
@@ -97401,7 +97691,7 @@ export interface operations {
             };
         };
     };
-    proxy_stream_http__stream_slug___path__get__head__stream_slug_path: {
+    proxy_stream_http__stream_slug___path__post__head__stream_slug_path: {
         parameters: {
             query?: never;
             header?: never;

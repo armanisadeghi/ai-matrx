@@ -16686,6 +16686,66 @@
         }
       }
     },
+    "/content-plan/sites/{site_id}/cms-fill/estimate": {
+      "get": {
+        "tags": [
+          "Content Plan",
+          "Content Plan"
+        ],
+        "summary": "Cms Fill Effort Estimate Route",
+        "description": "Exact calls and measured cost for EVERY effort tier, before any spend.",
+        "operationId": "cms_fill_effort_estimate_route_content_plan_sites__site_id__cms_fill_estimate_get",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Site Id"
+            }
+          },
+          {
+            "name": "cms_site",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cms Site"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CmsFillEffortEstimate"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/content-plan/sites/{site_id}/cms-fill/status": {
       "get": {
         "tags": [
@@ -23132,6 +23192,50 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/masterworks/{rulebook_id}/corpus": {
+      "get": {
+        "tags": [
+          "Masterworks"
+        ],
+        "summary": "Read Expert Corpus",
+        "description": "THE RECORD — everything the Expert contributed to this Rulebook.\n\nThe SAME assembly the Final Checkup judges against, so the page and the\naudit can never read different records of the same Expert\n(`services/masterwork_corpus/`).",
+        "operationId": "read_expert_corpus_masterworks__rulebook_id__corpus_get",
+        "parameters": [
+          {
+            "name": "rulebook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Rulebook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertCorpusResponse"
+                }
               }
             }
           },
@@ -49792,12 +49896,12 @@
       }
     },
     "/{stream_slug}/{path}": {
-      "get": {
+      "post": {
         "tags": [
           "cloud-browser-stream"
         ],
         "summary": "Proxy Stream Http",
-        "operationId": "proxy_stream_http__stream_slug___path__get__get__stream_slug_path",
+        "operationId": "proxy_stream_http__stream_slug___path__post__post__stream_slug_path",
         "parameters": [
           {
             "name": "stream_slug",
@@ -49839,12 +49943,12 @@
           }
         }
       },
-      "post": {
+      "get": {
         "tags": [
           "cloud-browser-stream"
         ],
         "summary": "Proxy Stream Http",
-        "operationId": "proxy_stream_http__stream_slug___path__get__post__stream_slug_path",
+        "operationId": "proxy_stream_http__stream_slug___path__post__get__stream_slug_path",
         "parameters": [
           {
             "name": "stream_slug",
@@ -49891,7 +49995,7 @@
           "cloud-browser-stream"
         ],
         "summary": "Proxy Stream Http",
-        "operationId": "proxy_stream_http__stream_slug___path__get__head__stream_slug_path",
+        "operationId": "proxy_stream_http__stream_slug___path__post__head__stream_slug_path",
         "parameters": [
           {
             "name": "stream_slug",
@@ -60169,7 +60273,23 @@
               }
             ],
             "title": "Config Overrides",
-            "description": "LLM parameter overrides (temperature, max_tokens, model, ...). Validated against LLMParams by the host's AgentStartRequest on entry.",
+            "description": "LLM parameter overrides (temperature, max_tokens, model, ...) the workflow AUTHOR set for this step. Static by nature — it is part of the saved definition. Validated against LLMParams by the host's AgentStartRequest on entry.",
+            "ui:widget": "json"
+          },
+          "runtime_config_overrides": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Runtime Config Overrides",
+            "description": "Per-RUN LLM parameter overrides, meant to arrive on an EDGE from an upstream step (e.g. a voice map computed from the run's cast). Merged on TOP of both the mandate's config and this step's authored config_overrides, key by key — this is the run-scope layer, so it never wipes the other two the way a plain edge-delivered config_overrides would (the engine's input merge is last-writer-wins per KEY of the node input, so an edge feeding config_overrides replaces the whole authored dict).",
             "ui:widget": "json"
           },
           "conversation_id": {
@@ -60422,7 +60542,7 @@
         "additionalProperties": false,
         "type": "object",
         "title": "AgentStartStrictInput",
-        "description": "Workflow-side request body for the ``ai.agent.start`` action.\n\nField names are kept identical to ``aidream.api.routers.agents.AgentStartRequest``\nso the action's input form is a 1:1 mirror of the API contract. Types\nthat live in the host application (``IdeState``, ``CacheBypass``) are\naccepted as ``dict`` and validated by the host-injected request class\non the boundary."
+        "description": "Workflow-side request body for the ``ai.agent.start`` action.\n\nField names are kept identical to ``aidream.api.routers.agents.AgentStartRequest``\nso the action's input form is a 1:1 mirror of the API contract. Types\nthat live in the host application (``IdeState``, ``CacheBypass``) are\naccepted as ``dict`` and validated by the host-injected request class\non the boundary.\n\nONE field is workflow-only: ``runtime_config_overrides``. It is not a\nrequest field — it is the per-run config layer an upstream step delivers\non an edge, folded into ``config_overrides`` before the host request is\nbuilt (see ``agent_start``). A workflow step's authored config is static\nby definition, so without it nothing computed during the run could ever\nreach the agent's config."
       },
       "AgentSummary": {
         "properties": {
@@ -77783,6 +77903,55 @@
         "title": "CmsFillCostEstimate",
         "description": "What this job is about to cost, said BEFORE it runs.\n\nThe per-step pipeline multiplies a site's spend ~4x by design — that is the\npoint, not an accident — so the number is stated up front rather than\ndiscovered on the invoice. There is deliberately NO hidden cap here: a cap\nthat silently truncates a build is worse than a build that costs what it\ncosts, and if one is ever wanted it is Arman's call to add."
       },
+      "CmsFillEffortEstimate": {
+        "properties": {
+          "web_site_id": {
+            "type": "string",
+            "title": "Web Site Id"
+          },
+          "pages": {
+            "type": "integer",
+            "title": "Pages",
+            "default": 0
+          },
+          "site_tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Site Tier"
+          },
+          "default_tier": {
+            "type": "string",
+            "title": "Default Tier",
+            "default": "advanced"
+          },
+          "overrides": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Overrides"
+          },
+          "tiers": {
+            "items": {
+              "$ref": "#/components/schemas/CmsFillTierEstimate"
+            },
+            "type": "array",
+            "title": "Tiers"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "web_site_id"
+        ],
+        "title": "CmsFillEffortEstimate"
+      },
       "CmsFillItemOut": {
         "properties": {
           "node_id": {
@@ -77969,6 +78138,23 @@
             "type": "boolean",
             "title": "Include Review",
             "default": true
+          },
+          "effort_tier": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "quick",
+                  "standard",
+                  "thorough",
+                  "advanced"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effort Tier"
           },
           "overwrite": {
             "type": "boolean",
@@ -78290,6 +78476,39 @@
         ],
         "title": "CmsFillStepCounts",
         "description": "One step's live queue counts — the \"12 written, 4 reviewed, 2 built\" row.\n\nDerived from item rows on every read, never from worker memory."
+      },
+      "CmsFillTierEstimate": {
+        "properties": {
+          "tier": {
+            "type": "string",
+            "title": "Tier"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "blurb": {
+            "type": "string",
+            "title": "Blurb"
+          },
+          "pages_at_tier": {
+            "type": "integer",
+            "title": "Pages At Tier",
+            "default": 0
+          },
+          "estimate": {
+            "$ref": "#/components/schemas/CmsFillCostEstimate"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tier",
+          "label",
+          "blurb"
+        ],
+        "title": "CmsFillTierEstimate",
+        "description": "What one tier would cost for THIS site, said before the button."
       },
       "CmsPageMapResult": {
         "properties": {
@@ -84125,6 +84344,188 @@
         ],
         "title": "CopyInfo",
         "description": "New-file info when a mutate or upload op also performs a copy_to.\n\nCarries the same URL flavours as AssetVariant so the FE can navigate\ndirectly to the new file without a second round-trip."
+      },
+      "CorpusLimitOut": {
+        "properties": {
+          "lane": {
+            "type": "string",
+            "title": "Lane"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "recoverable": {
+            "type": "boolean",
+            "title": "Recoverable"
+          }
+        },
+        "type": "object",
+        "required": [
+          "lane",
+          "reason",
+          "count",
+          "recoverable"
+        ],
+        "title": "CorpusLimitOut",
+        "description": "Something the corpus does NOT contain, said out loud."
+      },
+      "CorpusSegmentOut": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "segment_id": {
+            "type": "string",
+            "title": "Segment Id"
+          },
+          "lane": {
+            "type": "string",
+            "title": "Lane"
+          },
+          "lane_label": {
+            "type": "string",
+            "title": "Lane Label"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "chars": {
+            "type": "integer",
+            "title": "Chars"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "when": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "When"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated",
+            "default": false
+          },
+          "cleaned": {
+            "type": "boolean",
+            "title": "Cleaned",
+            "default": false
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          },
+          "file_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Id"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "entity_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Token"
+          },
+          "entity_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entity Id"
+          },
+          "corpus_item_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corpus Item Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "segment_id",
+          "lane",
+          "lane_label",
+          "kind",
+          "text",
+          "chars"
+        ],
+        "title": "CorpusSegmentOut",
+        "description": "One thing the Expert contributed, with every door that exists for it."
       },
       "CostBreakdownItem": {
         "properties": {
@@ -96143,6 +96544,62 @@
         ],
         "title": "ExpertCandidate",
         "description": "A person the research names, with the confidence the evidence supports."
+      },
+      "ExpertCorpusResponse": {
+        "properties": {
+          "rulebook_id": {
+            "type": "string",
+            "title": "Rulebook Id"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/CorpusSegmentOut"
+            },
+            "type": "array",
+            "title": "Segments"
+          },
+          "interviews": {
+            "items": {
+              "$ref": "#/components/schemas/RulebookInterviewOut"
+            },
+            "type": "array",
+            "title": "Interviews"
+          },
+          "limits": {
+            "items": {
+              "$ref": "#/components/schemas/CorpusLimitOut"
+            },
+            "type": "array",
+            "title": "Limits"
+          },
+          "lane_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "Lane Counts"
+          },
+          "total_chars": {
+            "type": "integer",
+            "title": "Total Chars",
+            "default": 0
+          },
+          "hidden_conversation_count": {
+            "type": "integer",
+            "title": "Hidden Conversation Count",
+            "default": 0
+          },
+          "can_read_material": {
+            "type": "boolean",
+            "title": "Can Read Material",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "rulebook_id"
+        ],
+        "title": "ExpertCorpusResponse"
       },
       "ExpertEvidence": {
         "properties": {
@@ -138067,6 +138524,83 @@
           "count"
         ],
         "title": "RuleCount"
+      },
+      "RulebookInterviewOut": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "message_count": {
+            "type": "integer",
+            "title": "Message Count",
+            "default": 0
+          },
+          "expert_turn_count": {
+            "type": "integer",
+            "title": "Expert Turn Count",
+            "default": 0
+          },
+          "expert_chars": {
+            "type": "integer",
+            "title": "Expert Chars",
+            "default": 0
+          },
+          "first_expert_line": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Expert Line"
+          },
+          "rules_produced": {
+            "type": "integer",
+            "title": "Rules Produced",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "conversation_id"
+        ],
+        "title": "RulebookInterviewOut"
       },
       "Ruleset": {
         "properties": {
