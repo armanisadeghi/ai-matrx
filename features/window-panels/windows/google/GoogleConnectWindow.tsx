@@ -175,10 +175,6 @@ function GoogleConnectWindowBody({
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-y-auto"
     >
       <div className="flex flex-col gap-3 p-3">
-        {reason ? (
-          <p className="text-xs text-muted-foreground">{reason}</p>
-        ) : null}
-
         {inventory.isLoading ? (
           <div className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -186,9 +182,16 @@ function GoogleConnectWindowBody({
           </div>
         ) : !connection ? (
           <div className="flex flex-col gap-2">
+            {/* The caller's reason replaces the generic line rather than
+                stacking on top of it — saying the same thing twice is how a
+                small panel starts feeling like a form. */}
             <p className="text-sm text-foreground">
-              Connect Google and AI Matrx can work with the docs and sheets you
-              choose — nothing else in your Drive.
+              {reason
+                ? `Connect Google ${reason}.`
+                : "Connect Google and AI Matrx can work with the docs and sheets you choose."}{" "}
+              <span className="text-muted-foreground">
+                Nothing else in your Drive.
+              </span>
             </p>
             <Button size="sm" onClick={connect} disabled={busy === "connect"}>
               {busy === "connect" ? "Connecting…" : "Connect Google"}

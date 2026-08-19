@@ -11,6 +11,7 @@ import {
 } from "./chat-quick-actions.config";
 import { stashChatDraftTransfer } from "./chat-draft-transfer";
 import { NewChatLandingInput } from "./NewChatLandingInput";
+import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
 import { cn } from "@/lib/utils";
 
 interface NewChatGreetingProps {
@@ -105,11 +106,16 @@ export function NewChatGreeting({
               conversationId={sourceConversationId}
               surfaceKey={surfaceKey}
             />
+            {/* The first-run offer. This is the screen where a brand-new user
+                learns what a conversation could reach — the one place the
+                reminder matters most. */}
+            <ChatConnectorStrip className="mt-2 justify-center" />
           </div>
         )}
         {!sourceConversationId && (
           <div className="w-full">
             <NewChatLandingInputShell />
+            <ChatConnectorStrip className="mt-2 justify-center" />
           </div>
         )}
 
