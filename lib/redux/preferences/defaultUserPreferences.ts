@@ -231,4 +231,10 @@ export const defaultUserPreferences: UserPreferences = {
   // (lib/list-views/defaults.ts). Keep in sync with the in-slice defaults at
   // lib/redux/preferences/userPreferencesSlice.ts.
   listViews: {},
+  assists: {
+    // null = the default bottom-right corner; the user has not dragged it.
+    dockPosition: null,
+    // null = not quiet. Keep in sync with userPreferencesSlice.ts.
+    quietUntil: null,
+  },
 };

@@ -55,8 +55,16 @@ export interface AssistRunnerApi {
    * kill it forever.
    */
   snoozeAssist: (assist: Assist, window?: SnoozeWindowKey) => Promise<void>;
-  /** Silence every current and future assist from this producer/check. */
-  suppressSource: (assist: Assist, reason: string) => Promise<number | null>;
+  /**
+   * Quiet every current and future assist from this producer/check. `until` is
+   * `"infinity"` ("until I turn it back on") or an ISO timestamp from one of
+   * the standard windows in `quiet.ts`.
+   */
+  suppressSource: (
+    assist: Assist,
+    reason: string,
+    until?: string,
+  ) => Promise<number | null>;
 }
 
 export function useAssistRunner(): AssistRunnerApi {
@@ -202,7 +210,11 @@ export function useAssistRunner(): AssistRunnerApi {
   );
 
   const suppressSource = useCallback(
-    async (assist: Assist, reason: string): Promise<number | null> => {
+    async (
+      assist: Assist,
+      reason: string,
+      until?: string,
+    ): Promise<number | null> => {
       if (!assist.id || !userId) return null;
       try {
         const count = await suppressAssistSource(
@@ -210,6 +222,7 @@ export function useAssistRunner(): AssistRunnerApi {
           assist.id,
           assist.sourceKey,
           reason,
+          until,
         );
         dispatch(assistsSourceSuppressed(assist.sourceKey));
         return count;

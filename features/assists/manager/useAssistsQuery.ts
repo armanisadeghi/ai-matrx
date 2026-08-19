@@ -85,7 +85,7 @@ export interface AssistsManagerApi {
   dismissAll: (ids: string[]) => Promise<number>;
   snoozeAll: (ids: string[], window: SnoozeWindowKey) => Promise<number>;
   setStarred: (id: string, starred: boolean) => Promise<void>;
-  unsuppressSource: (sourceKey: string) => Promise<number>;
+  unsuppressSource: (sourceKey: string, until?: string) => Promise<number>;
 }
 
 export function useAssistsQuery(
@@ -241,9 +241,9 @@ export function useAssistsQuery(
   }, []);
 
   const unsuppressSource = useCallback(
-    async (sourceKey: string) => {
+    async (sourceKey: string, until?: string) => {
       if (!userId) return 0;
-      const count = await unsuppressAssistSource(userId, sourceKey);
+      const count = await unsuppressAssistSource(userId, sourceKey, until);
       await dispatch(fetchMyAssists({ userId }));
       refresh();
       return count;

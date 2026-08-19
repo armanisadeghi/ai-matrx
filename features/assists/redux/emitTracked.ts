@@ -8,9 +8,17 @@
  * surface strip update without a refetch. Lives beside the slice (not in
  * service.ts) because service.ts must not import the slice — the slice
  * already imports the service.
+ *
+ * 🚨 **This is also the client-side QUIET GATE, and it is the reason quiet is
+ * not just a CSS class.** While the user has assists quiet, no client producer
+ * writes a row and no agent is launched to think one up — a suggestion nobody
+ * will read costs real money to compute, and a mute that only hides the chip
+ * keeps spending it. Producers do not each remember to check: they cannot
+ * emit without coming through here.
  */
 
-import type { AppDispatch } from "@/lib/redux/store";
+import { getStore, type AppDispatch } from "@/lib/redux/store";
+import { isQuiet } from "../quiet";
 import type { Json } from "@/types/database.types";
 import { emitAssist } from "../service";
 import { toAssist, type EmitAssistInput } from "../types";
@@ -21,6 +29,11 @@ export async function emitAssistTracked(
   input: EmitAssistInput,
   dispatch: AppDispatch,
 ): Promise<string | null> {
+  // `getStore()` is null before the store singleton is created; a producer
+  // that early cannot be answering a mute the user has not been able to set.
+  const quietUntil =
+    getStore()?.getState().userPreferences.assists?.quietUntil ?? null;
+  if (isQuiet(quietUntil)) return null;
   const id = await emitAssist(userId, input);
   if (!id) return null;
   const now = new Date().toISOString();

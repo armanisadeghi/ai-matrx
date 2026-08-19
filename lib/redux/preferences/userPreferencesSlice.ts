@@ -414,6 +414,22 @@ export interface ListViewPrefs {
  */
 export type ListViewsPreferences = Record<string, ListViewPrefs>;
 
+/**
+ * Assists (the AI chips) — where the dock sits, and whether the user has told
+ * the whole system to be quiet for a while.
+ *
+ * `quietUntil` is not a rendering flag: client-side producers read it and stop
+ * emitting, because a suggestion nobody will read costs real money to compute.
+ * Values are ISO timestamps, `"infinity"` for "until I turn it back on", or
+ * null for "not quiet" — the vocabulary lives in `features/assists/quiet.ts`.
+ */
+export interface AssistsPreferences {
+  /** Offset from the bottom-right corner, or null for the default corner. */
+  dockPosition: { right: number; bottom: number } | null;
+  /** ISO timestamp, `"infinity"`, or null. */
+  quietUntil: string | null;
+}
+
 export interface OrganizationPreferences {
   /**
    * The user's DEFAULT active organization. When set, the active-org bootstrap
@@ -599,6 +615,7 @@ export interface UserPreferences {
   scratchpad: ScratchpadPreferences;
   siteWorkbench: SiteWorkbenchPreferences;
   listViews: ListViewsPreferences;
+  assists: AssistsPreferences;
 }
 
 // Add state interface for async operations
@@ -1043,6 +1060,11 @@ export const initializeUserPreferencesState = (
     // Empty = every list surface falls back to its own declared defaults
     // (lib/list-views/defaults.ts). Keep in sync with defaultUserPreferences.ts.
     listViews: {},
+    assists: {
+      // null = the default bottom-right corner; the user has not dragged it.
+      dockPosition: null,
+      quietUntil: null,
+    },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -1116,6 +1138,10 @@ export const initializeUserPreferencesState = (
     listViews: {
       ...defaultPreferences.listViews,
       ...preferences.listViews,
+    },
+    assists: {
+      ...defaultPreferences.assists,
+      ...preferences.assists,
     },
   };
 
@@ -1472,6 +1498,7 @@ const PREFERENCE_MODULE_KEYS: readonly (keyof UserPreferences)[] = [
   "scratchpad",
   "siteWorkbench",
   "listViews",
+  "assists",
 ] as const;
 
 export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
