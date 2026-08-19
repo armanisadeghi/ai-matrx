@@ -223,9 +223,12 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
   `writes_for`; the FE reads them with `useSiteParties` and every person row
   is a door to `/crm/[partyId]`.
 - `plan.profile` — vertical config (attribute schemas, cadences, template
-  maps) per org. **No hard site→vertical binding exists yet** (open item in
-  the system-of-record doc) — the attributes editor offers an explicit
-  profile picker, auto-selecting when the org has exactly one.
+  maps) per org. A site NAMES its vertical: `web.site.plan_profile_id` is a
+  real FK to `plan.profile` (WF-10, 2026-08-19 — it replaced the
+  `settings.content_plan.vertical` jsonb convention, which is gone). The
+  attributes editor preselects the bound profile and only shows the picker as
+  an override; the sites list resolves the FK to a vertical label through
+  `useAllPlanProfiles` (cross-org on purpose — the list spans orgs).
 - Categories: dimensions `plan_page_type` / `plan_status` /
   `plan_person_role` / `plan_source_type` (system seeds, `visibility='public'`
   since `plan_seed_categories_public.sql`) via the canonical `useCategories`.

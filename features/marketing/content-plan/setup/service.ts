@@ -12,7 +12,7 @@
  *     byte-for-byte the shape aidream's `_record_site_archetype` writes
  *     (`{key, counts, instantiated_at}`), so the server-side foundation
  *     checklist and this view read the SAME fact. One source of truth; the
- *     `content_plan` block (which already carries `vertical`) is MERGED, never
+ *     `content_plan` block is MERGED, never
  *     replaced. Nothing extra is stored here — an extra key the server does not
  *     write is a second source of truth waiting to drift.
  *  3. the IDEMPOTENT APPLY — node identity is the DB's own unique key

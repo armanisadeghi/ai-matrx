@@ -358,9 +358,10 @@ export async function softDeletePlanEntity(id: string): Promise<void> {
 
 // ─── plan.profile ────────────────────────────────────────────────────────
 
-/** The org's vertical profiles (config, not content). There is currently NO
- * hard site→vertical binding in the DB (open item in the system-of-record
- * doc); callers pick a profile explicitly, defaulting when the org has one. */
+/** The org's vertical profiles (config, not content). A site NAMES its
+ * vertical through the `web.site.plan_profile_id` FK — callers preselect that
+ * profile and only fall back to "the org has exactly one" for an unbound
+ * site. */
 export async function listPlanProfiles(
   organizationId: string,
   signal?: AbortSignal,

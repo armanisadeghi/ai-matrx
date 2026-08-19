@@ -48,6 +48,7 @@ import {
   listNodeSteps,
   listPlanEntities,
   listPlanNodes,
+  listAllPlanProfiles,
   listPlanProfiles,
   listPlanSiteStats,
   listSeoTopics,
@@ -67,6 +68,7 @@ export const planKeys = {
   siteParties: (siteId: string) =>
     ["content-plan", "site-parties", siteId] as const,
   profiles: (orgId: string) => ["content-plan", "profiles", orgId] as const,
+  allProfiles: () => ["content-plan", "profiles", "all"] as const,
   nodeEdges: (nodeId: string) =>
     ["content-plan", "node-edges", nodeId] as const,
   // One joined segment — spreading raw ids would make smaller id-sets
@@ -147,6 +149,17 @@ export function usePlanProfiles(orgId: string | null) {
   });
 }
 
+/** Every visible `plan.profile` row, across orgs — the lookup that turns a
+ * site's `plan_profile_id` FK into a vertical label in a cross-org list.
+ * Config vocabulary, not content; RLS is still the ceiling. */
+export function useAllPlanProfiles() {
+  return useQuery({
+    queryKey: planKeys.allProfiles(),
+    queryFn: ({ signal }) => listAllPlanProfiles(signal),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 /** Site-wide pipeline step state (plan.node_step) — badges + the NodePanel
  * rail. Server-written; refetched on a modest interval so a running fill
  * visibly advances without a manual refresh. */
@@ -190,7 +203,8 @@ export function useKeywordLabels(ids: string[]) {
 export function useSiteKeywordValues(siteId: string | null) {
   return useQuery({
     queryKey: planKeys.siteKeywordValues(siteId ?? "none"),
-    queryFn: ({ signal }) => listSiteKeywordValues(siteId as string, undefined, signal),
+    queryFn: ({ signal }) =>
+      listSiteKeywordValues(siteId as string, undefined, signal),
     enabled: Boolean(siteId),
     staleTime: 60 * 1000,
   });
@@ -301,9 +315,7 @@ export function useSiteParties(siteId: string | null) {
     queryFn: async () => {
       const ids = await listSitePartyIds(siteId as string);
       const rows = await fetchPartiesByIds(ids);
-      return rows.sort((a, b) =>
-        a.display_name.localeCompare(b.display_name),
-      );
+      return rows.sort((a, b) => a.display_name.localeCompare(b.display_name));
     },
   });
 }

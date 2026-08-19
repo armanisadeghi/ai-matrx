@@ -9,7 +9,13 @@
  */
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
-import { BookOpenCheck, BrainCircuit, Loader2, PenLine, Trash2 } from "lucide-react";
+import {
+  BookOpenCheck,
+  BrainCircuit,
+  Loader2,
+  PenLine,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -110,6 +116,7 @@ export function NodePanel({
   entities,
   parties,
   profiles,
+  boundProfileId,
   onDeleted,
   deepen,
   cmsPage,
@@ -125,6 +132,8 @@ export function NodePanel({
   /** The site's linked crm.party roster (people/companies). */
   parties: PartyRow[];
   profiles: PlanProfileRow[];
+  /** `web.site.plan_profile_id` — the site's bound vertical profile. */
+  boundProfileId: string | null;
   onDeleted: () => void;
   /** Workbench-owned so an in-flight run survives node switches (the panel
    * remounts per node via key={node.id}). */
@@ -166,7 +175,8 @@ export function NodePanel({
   // tab is the first thing the page still NEEDS — keyword, then brief, then
   // words — so opening a node lands you on the work, not on a form.
   const defaultTabFor = (row: PlanNodeRow): string => {
-    if (!hasKeywordAssignment(row, sitePlans.data ?? null)) return "p1_keywords";
+    if (!hasKeywordAssignment(row, sitePlans.data ?? null))
+      return "p1_keywords";
     if ((row.brief?.length ?? 0) === 0) return "p2_research";
     return "p4_write";
   };
@@ -949,191 +959,194 @@ export function NodePanel({
             ) : null}
 
             {activeTab === "page" ? (
-            <>
-            <PanelSection title="Page">
-              <div className="grid grid-cols-2 gap-x-3 gap-y-3">
-                <div className="col-span-2">
-                  <Label className="mb-1 block text-xs font-medium">
-                    Label
-                  </Label>
-                  <Input
-                    value={current.label}
-                    onChange={(event) =>
-                      setDraft((d) => ({ ...d, label: event.target.value }))
-                    }
-                    className="h-8"
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1 block text-xs font-medium">
-                    Slug (kebab-case)
-                  </Label>
-                  <Input
-                    value={current.slug ?? ""}
-                    placeholder={
-                      current.node_type === "home"
-                        ? "(home — none)"
-                        : "my-page-slug"
-                    }
-                    onChange={(event) =>
-                      setDraft((d) => ({
-                        ...d,
-                        slug:
-                          event.target.value.trim() === ""
-                            ? null
-                            : event.target.value.trim(),
-                      }))
-                    }
-                    className="h-8 font-mono"
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1 block text-xs font-medium">
-                    Node type
-                  </Label>
-                  <Select
-                    value={current.node_type}
-                    onValueChange={(next) =>
-                      setDraft((d) => ({
-                        ...d,
-                        node_type: next as PlanNodeType,
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PLAN_NODE_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {NODE_TYPE_LABELS[type]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="mb-1 block text-xs font-medium">
-                    Page type
-                  </Label>
-                  <CategorySelect
-                    dimension={CATEGORY_DIMENSIONS.planPageType}
-                    value={current.page_type_id}
-                    onChange={(id) =>
-                      setDraft((d) => ({ ...d, page_type_id: id }))
-                    }
-                    placeholder="Page type"
-                  />
-                </div>
-                <div data-surface-value="status_options">
-                  <Label className="mb-1 block text-xs font-medium">
-                    Status
-                  </Label>
-                  <CategorySelect
-                    dimension={CATEGORY_DIMENSIONS.planStatus}
-                    value={current.status_id}
-                    onChange={(id) =>
-                      setDraft((d) => ({ ...d, status_id: id }))
-                    }
-                    placeholder="Status"
-                  />
-                </div>
-                <div>
-                  <Label className="mb-1 block text-xs font-medium">
-                    Priority (1 = highest)
-                  </Label>
-                  <Select
-                    value={
-                      current.priority == null
-                        ? "none"
-                        : String(current.priority)
-                    }
-                    onValueChange={(next) =>
-                      setDraft((d) => ({
-                        ...d,
-                        priority: next === "none" ? null : Number(next),
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        <span className="text-muted-foreground">None</span>
-                      </SelectItem>
-                      <SelectItem value="1">1 — must have</SelectItem>
-                      <SelectItem value="2">2 — should have</SelectItem>
-                      <SelectItem value="3">3 — nice to have</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="mb-1 block text-xs font-medium">
-                    Technical depth
-                  </Label>
-                  <Select
-                    value={current.technical_depth ?? "none"}
-                    onValueChange={(next) =>
-                      setDraft((d) => ({
-                        ...d,
-                        technical_depth:
-                          next === "none" ? null : (next as TechnicalDepth),
-                      }))
-                    }
-                  >
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">
-                        <span className="text-muted-foreground">None</span>
-                      </SelectItem>
-                      {TECHNICAL_DEPTHS.map((depth) => (
-                        <SelectItem key={depth} value={depth}>
-                          {depth}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end gap-2 pb-1">
-                  <Checkbox
-                    id={`needs-reviewer-${node.id}`}
-                    checked={current.needs_reviewer}
-                    onCheckedChange={(checked) =>
-                      setDraft((d) => ({
-                        ...d,
-                        needs_reviewer: checked === true,
-                      }))
-                    }
-                  />
-                  <Label
-                    htmlFor={`needs-reviewer-${node.id}`}
-                    className="text-xs font-medium"
-                  >
-                    Needs reviewer (E-E-A-T)
-                  </Label>
-                </div>
-              </div>
-            </PanelSection>
+              <>
+                <PanelSection title="Page">
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-3">
+                    <div className="col-span-2">
+                      <Label className="mb-1 block text-xs font-medium">
+                        Label
+                      </Label>
+                      <Input
+                        value={current.label}
+                        onChange={(event) =>
+                          setDraft((d) => ({ ...d, label: event.target.value }))
+                        }
+                        className="h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-1 block text-xs font-medium">
+                        Slug (kebab-case)
+                      </Label>
+                      <Input
+                        value={current.slug ?? ""}
+                        placeholder={
+                          current.node_type === "home"
+                            ? "(home — none)"
+                            : "my-page-slug"
+                        }
+                        onChange={(event) =>
+                          setDraft((d) => ({
+                            ...d,
+                            slug:
+                              event.target.value.trim() === ""
+                                ? null
+                                : event.target.value.trim(),
+                          }))
+                        }
+                        className="h-8 font-mono"
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-1 block text-xs font-medium">
+                        Node type
+                      </Label>
+                      <Select
+                        value={current.node_type}
+                        onValueChange={(next) =>
+                          setDraft((d) => ({
+                            ...d,
+                            node_type: next as PlanNodeType,
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PLAN_NODE_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {NODE_TYPE_LABELS[type]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="mb-1 block text-xs font-medium">
+                        Page type
+                      </Label>
+                      <CategorySelect
+                        dimension={CATEGORY_DIMENSIONS.planPageType}
+                        value={current.page_type_id}
+                        onChange={(id) =>
+                          setDraft((d) => ({ ...d, page_type_id: id }))
+                        }
+                        placeholder="Page type"
+                      />
+                    </div>
+                    <div data-surface-value="status_options">
+                      <Label className="mb-1 block text-xs font-medium">
+                        Status
+                      </Label>
+                      <CategorySelect
+                        dimension={CATEGORY_DIMENSIONS.planStatus}
+                        value={current.status_id}
+                        onChange={(id) =>
+                          setDraft((d) => ({ ...d, status_id: id }))
+                        }
+                        placeholder="Status"
+                      />
+                    </div>
+                    <div>
+                      <Label className="mb-1 block text-xs font-medium">
+                        Priority (1 = highest)
+                      </Label>
+                      <Select
+                        value={
+                          current.priority == null
+                            ? "none"
+                            : String(current.priority)
+                        }
+                        onValueChange={(next) =>
+                          setDraft((d) => ({
+                            ...d,
+                            priority: next === "none" ? null : Number(next),
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            <span className="text-muted-foreground">None</span>
+                          </SelectItem>
+                          <SelectItem value="1">1 — must have</SelectItem>
+                          <SelectItem value="2">2 — should have</SelectItem>
+                          <SelectItem value="3">3 — nice to have</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="mb-1 block text-xs font-medium">
+                        Technical depth
+                      </Label>
+                      <Select
+                        value={current.technical_depth ?? "none"}
+                        onValueChange={(next) =>
+                          setDraft((d) => ({
+                            ...d,
+                            technical_depth:
+                              next === "none" ? null : (next as TechnicalDepth),
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">
+                            <span className="text-muted-foreground">None</span>
+                          </SelectItem>
+                          {TECHNICAL_DEPTHS.map((depth) => (
+                            <SelectItem key={depth} value={depth}>
+                              {depth}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-end gap-2 pb-1">
+                      <Checkbox
+                        id={`needs-reviewer-${node.id}`}
+                        checked={current.needs_reviewer}
+                        onCheckedChange={(checked) =>
+                          setDraft((d) => ({
+                            ...d,
+                            needs_reviewer: checked === true,
+                          }))
+                        }
+                      />
+                      <Label
+                        htmlFor={`needs-reviewer-${node.id}`}
+                        className="text-xs font-medium"
+                      >
+                        Needs reviewer (E-E-A-T)
+                      </Label>
+                    </div>
+                  </div>
+                </PanelSection>
 
-            <PanelSection title="Placement">
-              <MoveNodeControl node={node} siteId={siteId} />
-            </PanelSection>
+                <PanelSection title="Placement">
+                  <MoveNodeControl node={node} siteId={siteId} />
+                </PanelSection>
 
-            <AttributesEditor
-              value={current.attributes}
-              profiles={profiles}
-              onChange={(attributes) => setDraft((d) => ({ ...d, attributes }))}
-            />
+                <AttributesEditor
+                  value={current.attributes}
+                  profiles={profiles}
+                  boundProfileId={boundProfileId}
+                  onChange={(attributes) =>
+                    setDraft((d) => ({ ...d, attributes }))
+                  }
+                />
 
-            <NodeAssociations
-              nodeId={node.id}
-              entities={entities}
-              parties={parties}
-            />
-            </>
+                <NodeAssociations
+                  nodeId={node.id}
+                  entities={entities}
+                  parties={parties}
+                />
+              </>
             ) : null}
 
             {activeTab === "p3_family" ? (
@@ -1215,69 +1228,69 @@ export function NodePanel({
             ) : null}
 
             {activeTab === "p1_keywords" ? (
-            <PanelSection title="SEO plan">
-              {/* 🚨 ONE SEO PLAN PER PAGE, ON `web.page` (content-planning
+              <PanelSection title="SEO plan">
+                {/* 🚨 ONE SEO PLAN PER PAGE, ON `web.page` (content-planning
                   invariant 9). A node without that record gets one honest
                   state and the ONE planned-page writer. Once it exists, every
                   field is edited through the canonical page-plan editor. */}
-              {nodeSeoPlan.state === "ready" && nodeSeoPlan.page ? (
-                <div>
-                  <SeoPlanEditor
-                    variant="bare"
-                    page={nodeSeoPlan.page}
-                    brandId={nodeSeoPlan.brandId}
-                  />
-                  {keywordGap ? (
-                    <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-500">
-                      No keyword targeted — choose one above or use{" "}
-                      <span className="font-medium">Deepen</span>.
-                    </p>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="rounded-md border border-dashed border-border p-2.5">
-                  {nodeSeoPlan.state === "creatable" ? (
-                    <>
-                      <p className="text-xs text-muted-foreground">
-                        No SEO plan yet.
+                {nodeSeoPlan.state === "ready" && nodeSeoPlan.page ? (
+                  <div>
+                    <SeoPlanEditor
+                      variant="bare"
+                      page={nodeSeoPlan.page}
+                      brandId={nodeSeoPlan.brandId}
+                    />
+                    {keywordGap ? (
+                      <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-500">
+                        No keyword targeted — choose one above or use{" "}
+                        <span className="font-medium">Deepen</span>.
                       </p>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="mt-2 h-7 text-xs"
-                        disabled={nodeSeoPlan.creating}
-                        onClick={() => void nodeSeoPlan.create()}
-                      >
-                        {nodeSeoPlan.creating ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : null}
-                        Create the plan record
-                      </Button>
-                    </>
-                  ) : nodeSeoPlan.state === "no-route" ? (
-                    <p className="text-xs text-muted-foreground">
-                      This page needs a saved route before its SEO plan record
-                      can be created.
-                    </p>
-                  ) : nodeSeoPlan.state === "error" ? (
-                    <p className="text-xs text-destructive">
-                      {nodeSeoPlan.error?.message ??
-                        "The SEO plan record could not be loaded."}
-                    </p>
-                  ) : (
-                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Finding this page&apos;s SEO plan record…
-                    </p>
-                  )}
-                  {nodeSeoPlan.error && nodeSeoPlan.state === "creatable" ? (
-                    <p className="mt-1.5 text-xs text-destructive">
-                      {nodeSeoPlan.error.message}
-                    </p>
-                  ) : null}
-                </div>
-              )}
-            </PanelSection>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-dashed border-border p-2.5">
+                    {nodeSeoPlan.state === "creatable" ? (
+                      <>
+                        <p className="text-xs text-muted-foreground">
+                          No SEO plan yet.
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mt-2 h-7 text-xs"
+                          disabled={nodeSeoPlan.creating}
+                          onClick={() => void nodeSeoPlan.create()}
+                        >
+                          {nodeSeoPlan.creating ? (
+                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          ) : null}
+                          Create the plan record
+                        </Button>
+                      </>
+                    ) : nodeSeoPlan.state === "no-route" ? (
+                      <p className="text-xs text-muted-foreground">
+                        This page needs a saved route before its SEO plan record
+                        can be created.
+                      </p>
+                    ) : nodeSeoPlan.state === "error" ? (
+                      <p className="text-xs text-destructive">
+                        {nodeSeoPlan.error?.message ??
+                          "The SEO plan record could not be loaded."}
+                      </p>
+                    ) : (
+                      <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Finding this page&apos;s SEO plan record…
+                      </p>
+                    )}
+                    {nodeSeoPlan.error && nodeSeoPlan.state === "creatable" ? (
+                      <p className="mt-1.5 text-xs text-destructive">
+                        {nodeSeoPlan.error.message}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
+              </PanelSection>
             ) : null}
 
             {activeTab === "p2_research" ? (

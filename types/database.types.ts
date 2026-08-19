@@ -63565,6 +63565,7 @@ export type Database = {
           name: string
           og_image_url: string | null
           organization_id: string
+          plan_profile_id: string | null
           root_url: string
           settings: Json
           status: string
@@ -63593,6 +63594,7 @@ export type Database = {
           name: string
           og_image_url?: string | null
           organization_id: string
+          plan_profile_id?: string | null
           root_url: string
           settings?: Json
           status?: string
@@ -63621,6 +63623,7 @@ export type Database = {
           name?: string
           og_image_url?: string | null
           organization_id?: string
+          plan_profile_id?: string | null
           root_url?: string
           settings?: Json
           status?: string
@@ -64375,6 +64378,7 @@ export type Database = {
           name: string
           og_image_url: string | null
           organization_id: string
+          plan_profile_id: string | null
           root_url: string
           settings: Json
           status: string
@@ -64421,6 +64425,7 @@ export type Database = {
           name: string
           og_image_url: string | null
           organization_id: string
+          plan_profile_id: string | null
           root_url: string
           settings: Json
           status: string

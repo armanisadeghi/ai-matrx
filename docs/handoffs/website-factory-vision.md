@@ -288,12 +288,17 @@ builder, not an expert location/blog/service-page builder), or tiered at the FIL
    imposed — same law as templates.
 6. **Plan-UI remainder:** whole-page "run the rest of the pipeline" action; bulk run-step across a
    tree multi-selection.
-7. **WF-10 (folded in from the deleted bug-dispatch doc; LOW).** *(Dispatched as a chip
-   2026-08-19.)* Site→vertical binding is a buried settings convention
-   (`web.site.settings.content_plan.vertical` jsonb), so `plan.profile` binds ambiguously for
-   multi-profile orgs and the FE needs a manual picker. Fix: promote to a real column/FK on
-   `web.site` (Supabase MCP + `pnpm db-types` + aidream `db/generate.py`), migrate existing
-   settings values, update `aidream/services/content_plan/` readers and the FE setup view.
+7. ~~**WF-10** — Site→vertical binding was a buried settings convention.~~ **DONE 2026-08-19.**
+   `web.site.plan_profile_id` is a real nullable FK to `plan.profile` (`ON DELETE SET NULL`,
+   partial index `idx_site_plan_profile_id`); all 5 sites carrying
+   `settings.content_plan.vertical` were migrated to it and that jsonb key was deleted. Types
+   regenerated in both repos. Readers moved to the column: `signals.py` (resolves the binding,
+   skips loudly only for an unbound multi-profile org), `cms_fill.py`, and `service.get_profiles`
+   (bound profile FIRST). FE: `AttributesEditor` preselects the bound profile instead of demanding
+   a picker, `PlanSitesList` resolves the FK via the new `useAllPlanProfiles`, and the workbench
+   agent scope marks `is_bound_to_this_site`. Also fixed en route: the `ai-platform` profile lived
+   in a personal test workspace while `aimatrx.com` lives in the AI Matrx org, so the binding was
+   unresolvable — the profile was moved to the AI Matrx org.
 8. **Streaming-capable assists** (platform gap parked from the editor work): the editor's guided
    AI actions are buttons, not assist chips, because an assist action cannot adopt a stream — a
    chip would spin silently through a minute-long call. Fix belongs in the assists capability,

@@ -68,7 +68,7 @@ import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { resolveCmsLink } from "../setup/readiness";
 import { planStatusColor } from "../constants";
 import { countBy, formatUpdated, withCounts } from "../utils";
-import { usePlanSiteStats } from "../data/hooks";
+import { useAllPlanProfiles, usePlanSiteStats } from "../data/hooks";
 import { planSiteStatusMix, planSiteSummary } from "../format";
 import type { PlanSiteStats } from "../data/service";
 import { useContentPlanSites } from "./ContentPlanHeader";
@@ -100,24 +100,18 @@ interface PlanSiteRow {
   id: string;
 }
 
-/** `web.site.settings.content_plan.vertical` without casting through `any`. */
-function planVertical(settings: MarketingSite["settings"]): string | null {
-  if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
-    return null;
-  }
-  const block = (settings as Record<string, unknown>)["content_plan"];
-  if (!block || typeof block !== "object" || Array.isArray(block)) return null;
-  const vertical = (block as Record<string, unknown>)["vertical"];
-  return typeof vertical === "string" && vertical.length > 0 ? vertical : null;
-}
-
-
-
-
 export function PlanSitesList() {
   const router = useRouter();
   const { sites, orgSites } = useContentPlanSites();
   const stats = usePlanSiteStats();
+  // `web.site.plan_profile_id` → the profile's vertical. Cross-org read on
+  // purpose: this list spans orgs, and an org-scoped read would blank the
+  // column for every row outside the active org.
+  const profiles = useAllPlanProfiles();
+  const verticalById = useMemo(
+    () => new Map((profiles.data ?? []).map((row) => [row.id, row.vertical])),
+    [profiles.data],
+  );
   // ONE CMS list for the whole page — resolves each row's CMS counterpart so
   // the menu can jump straight into the CMS admin. Failure is non-fatal: the
   // entry simply doesn't render.
@@ -139,7 +133,10 @@ export function PlanSitesList() {
     anyOf: "",
     columnFilters: {},
     sort: prefs.sort
-      ? { id: prefs.sort, direction: prefs.direction === "desc" ? "desc" : "asc" }
+      ? {
+          id: prefs.sort,
+          direction: prefs.direction === "desc" ? "desc" : "asc",
+        }
       : null,
   }));
 
@@ -266,8 +263,13 @@ export function PlanSitesList() {
   const columns = useMemo<MatrxColumnDef<PlanSiteRow>[]>(() => {
     const brandLabel = (row: PlanSiteRow) =>
       row.site.brand_id ? "Assigned" : "Missing";
+    // The vertical is the `plan.profile` the site is BOUND to
+    // (`web.site.plan_profile_id`), resolved through the cross-org profile
+    // lookup — not a settings convention.
     const verticalLabel = (row: PlanSiteRow) =>
-      planVertical(row.site.settings) ?? "";
+      row.site.plan_profile_id
+        ? (verticalById.get(row.site.plan_profile_id) ?? "")
+        : "";
 
     const brandCounts = countBy(rows, brandLabel);
     const verticalCounts = countBy(rows, verticalLabel);
@@ -496,7 +498,7 @@ export function PlanSitesList() {
         align: "center",
       },
     ];
-  }, [rows, statusMetaById, publishedCount, openWorkspace]);
+  }, [rows, statusMetaById, publishedCount, openWorkspace, verticalById]);
 
   const hiddenColumns = prefs.hiddenColumns ?? [];
   const visibleColumns = useMemo(
@@ -578,7 +580,9 @@ export function PlanSitesList() {
               domain: row.site.domain,
               name: row.site.name,
               has_brand: row.site.brand_id !== null,
-              vertical: planVertical(row.site.settings),
+              vertical: row.site.plan_profile_id
+                ? (verticalById.get(row.site.plan_profile_id) ?? null)
+                : null,
               pages_planned: row.stats?.totalNodes ?? 0,
               pages_with_keyword: row.stats?.keywordBound ?? 0,
               pages_published: publishedCount(row),
@@ -612,151 +616,153 @@ export function PlanSitesList() {
       getScope={getScope}
       getWriteHandlers={getWriteHandlers}
     >
-    <MatrxDataTable<PlanSiteRow>
-      data={pageRows}
-      columns={visibleColumns}
-      getRowId={(row) => row.id}
-      isLoading={sites.isLoading || stats.isLoading}
-      isFetching={sites.isFetching || stats.isFetching}
-      query={{
-        mode: "controlled",
-        state: query,
-        totalItems: processed.length,
-        onStateChange: handleQueryChange,
-      }}
-      detail={{ enabled: false }}
-      onRowOpen={(row) => openWorkspace(row)}
-      copy={{
-        label: "Plan site",
-        listLabel: "Plan sites",
-        location: webLocation("Content Plan — all plans"),
-        rowKind: "plan_site",
-        listKind: "plan_site_list",
-        rowDescription:
-          "One site on the Content Plan list, with its plan aggregates as rendered.",
-        listDescription:
-          "The Content Plan list — every site you can plan, with its plan aggregates.",
-        humanRow: (row) =>
-          planSiteSummary({
-            name: row.site.name,
-            domain: row.site.domain,
-            stats: row.stats,
-          }),
-        // The row cell shows the top four status chips; the payload carries
-        // the WHOLE mix, named rather than id'd — a truncated view must never
-        // become a truncated payload.
-        agentRow: (row) => ({
-          id: row.id,
-          domain: row.site.domain,
-          name: row.site.name,
-          has_brand: row.site.brand_id !== null,
-          vertical: planVertical(row.site.settings),
-          pages_planned: row.stats?.totalNodes ?? 0,
-          pages_with_keyword: row.stats?.keywordBound ?? 0,
-          pages_published: publishedCount(row),
-          status_mix: planSiteStatusMix(
-            row.stats,
-            (statusId) => statusMetaById.get(statusId)?.name ?? "No status",
-          ),
-          last_activity: row.stats?.lastUpdatedAt ?? null,
-        }),
-        rowAttributes: (row) => ({
-          site_id: row.id,
-          domain: row.site.domain,
-          pages_planned: row.stats?.totalNodes ?? 0,
-        }),
-        listAttributes: (visible, all) => ({
-          rows: visible.length,
-          sites_total: all.length,
-          pages_planned_total: all.reduce(
-            (sum, row) => sum + (row.stats?.totalNodes ?? 0),
-            0,
-          ),
-          sites_without_a_plan: all.filter(
-            (row) => (row.stats?.totalNodes ?? 0) === 0,
-          ).length,
-        }),
-        aiVariants: (visible) => [
-          keyFieldsAiVariant({
-            kind: "plan_site_list",
-            location: webLocation("Content Plan — all plans"),
-            description:
-              "The sites in the current view, projected to their plan aggregates.",
-            visible,
-            project: (row: PlanSiteRow) => ({
-              domain: row.site.domain ?? row.site.name,
-              pages_planned: row.stats?.totalNodes ?? 0,
-              pages_with_keyword: row.stats?.keywordBound ?? 0,
-              pages_published: publishedCount(row),
-              last_activity: row.stats?.lastUpdatedAt ?? null,
+      <MatrxDataTable<PlanSiteRow>
+        data={pageRows}
+        columns={visibleColumns}
+        getRowId={(row) => row.id}
+        isLoading={sites.isLoading || stats.isLoading}
+        isFetching={sites.isFetching || stats.isFetching}
+        query={{
+          mode: "controlled",
+          state: query,
+          totalItems: processed.length,
+          onStateChange: handleQueryChange,
+        }}
+        detail={{ enabled: false }}
+        onRowOpen={(row) => openWorkspace(row)}
+        copy={{
+          label: "Plan site",
+          listLabel: "Plan sites",
+          location: webLocation("Content Plan — all plans"),
+          rowKind: "plan_site",
+          listKind: "plan_site_list",
+          rowDescription:
+            "One site on the Content Plan list, with its plan aggregates as rendered.",
+          listDescription:
+            "The Content Plan list — every site you can plan, with its plan aggregates.",
+          humanRow: (row) =>
+            planSiteSummary({
+              name: row.site.name,
+              domain: row.site.domain,
+              stats: row.stats,
             }),
-            query,
+          // The row cell shows the top four status chips; the payload carries
+          // the WHOLE mix, named rather than id'd — a truncated view must never
+          // become a truncated payload.
+          agentRow: (row) => ({
+            id: row.id,
+            domain: row.site.domain,
+            name: row.site.name,
+            has_brand: row.site.brand_id !== null,
+            vertical: row.site.plan_profile_id
+              ? (verticalById.get(row.site.plan_profile_id) ?? null)
+              : null,
+            pages_planned: row.stats?.totalNodes ?? 0,
+            pages_with_keyword: row.stats?.keywordBound ?? 0,
+            pages_published: publishedCount(row),
+            status_mix: planSiteStatusMix(
+              row.stats,
+              (statusId) => statusMetaById.get(statusId)?.name ?? "No status",
+            ),
+            last_activity: row.stats?.lastUpdatedAt ?? null,
           }),
-        ],
-      }}
-      toolbar={{
-        searchPlaceholder: "Search site name or domain…",
-        actions: (
-          <>
-            <Button
-              size="sm"
-              className="h-8 gap-1.5 px-2.5 text-xs"
-              onClick={() =>
-                // From the plans list, the default intent is a site that
-                // doesn't exist yet — the form still offers both kinds.
-                router.push(`${marketingRoutes.newSite()}?purpose=planned`)
-              }
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New site
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5 px-2 text-xs"
-                >
-                  <Columns3 className="h-3.5 w-3.5" />
-                  Columns
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel className="text-xs">
-                  Visible columns
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {columns
-                  .filter((column) => column.id !== "actions")
-                  .map((column) => {
-                    const id = column.id ?? "";
-                    return (
-                      <DropdownMenuCheckboxItem
-                        key={id}
-                        className="text-xs"
-                        checked={!hiddenColumns.includes(id)}
-                        disabled={id === "site"}
-                        onCheckedChange={() => toggleColumn(id)}
-                        onSelect={(event) => event.preventDefault()}
-                      >
-                        {COLUMN_LABELS[id] ?? id}
-                      </DropdownMenuCheckboxItem>
-                    );
-                  })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
-        ),
-      }}
-      emptyState={{
-        title: rows.length === 0 ? "No sites yet" : "No sites match",
-        description:
-          rows.length === 0
-            ? "Create a site in Marketing → Sites, assign it a brand, then plan its content here."
-            : "Adjust the search or clear the column filters.",
-      }}
-      className="p-2"
-    />
+          rowAttributes: (row) => ({
+            site_id: row.id,
+            domain: row.site.domain,
+            pages_planned: row.stats?.totalNodes ?? 0,
+          }),
+          listAttributes: (visible, all) => ({
+            rows: visible.length,
+            sites_total: all.length,
+            pages_planned_total: all.reduce(
+              (sum, row) => sum + (row.stats?.totalNodes ?? 0),
+              0,
+            ),
+            sites_without_a_plan: all.filter(
+              (row) => (row.stats?.totalNodes ?? 0) === 0,
+            ).length,
+          }),
+          aiVariants: (visible) => [
+            keyFieldsAiVariant({
+              kind: "plan_site_list",
+              location: webLocation("Content Plan — all plans"),
+              description:
+                "The sites in the current view, projected to their plan aggregates.",
+              visible,
+              project: (row: PlanSiteRow) => ({
+                domain: row.site.domain ?? row.site.name,
+                pages_planned: row.stats?.totalNodes ?? 0,
+                pages_with_keyword: row.stats?.keywordBound ?? 0,
+                pages_published: publishedCount(row),
+                last_activity: row.stats?.lastUpdatedAt ?? null,
+              }),
+              query,
+            }),
+          ],
+        }}
+        toolbar={{
+          searchPlaceholder: "Search site name or domain…",
+          actions: (
+            <>
+              <Button
+                size="sm"
+                className="h-8 gap-1.5 px-2.5 text-xs"
+                onClick={() =>
+                  // From the plans list, the default intent is a site that
+                  // doesn't exist yet — the form still offers both kinds.
+                  router.push(`${marketingRoutes.newSite()}?purpose=planned`)
+                }
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New site
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 px-2 text-xs"
+                  >
+                    <Columns3 className="h-3.5 w-3.5" />
+                    Columns
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel className="text-xs">
+                    Visible columns
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {columns
+                    .filter((column) => column.id !== "actions")
+                    .map((column) => {
+                      const id = column.id ?? "";
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={id}
+                          className="text-xs"
+                          checked={!hiddenColumns.includes(id)}
+                          disabled={id === "site"}
+                          onCheckedChange={() => toggleColumn(id)}
+                          onSelect={(event) => event.preventDefault()}
+                        >
+                          {COLUMN_LABELS[id] ?? id}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ),
+        }}
+        emptyState={{
+          title: rows.length === 0 ? "No sites yet" : "No sites match",
+          description:
+            rows.length === 0
+              ? "Create a site in Marketing → Sites, assign it a brand, then plan its content here."
+              : "Adjust the search or clear the column filters.",
+        }}
+        className="p-2"
+      />
     </SurfaceRuntimeProvider>
   );
 }

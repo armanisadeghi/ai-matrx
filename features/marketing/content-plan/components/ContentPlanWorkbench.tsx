@@ -523,7 +523,14 @@ export function ContentPlanWorkbench({
             return {
               people_and_companies: partyRows,
               sources_and_media: entityRows,
-              profiles: profiles.data ?? [],
+              // The site NAMES its vertical (`web.site.plan_profile_id`) —
+              // say WHICH profile is bound rather than handing over an
+              // undifferentiated menu the agent has to guess from.
+              profiles: (profiles.data ?? []).map((row) => ({
+                ...row,
+                is_bound_to_this_site:
+                  row.id === (site?.plan_profile_id ?? null),
+              })),
             };
           },
         },
@@ -906,6 +913,7 @@ export function ContentPlanWorkbench({
                   entities={entities.data ?? []}
                   parties={siteParties.data ?? []}
                   profiles={profiles.data ?? []}
+                  boundProfileId={site?.plan_profile_id ?? null}
                   onDeleted={onDeleted}
                   deepen={deepen}
                   cmsPage={cmsPages.pagesByNodeId.get(node.id) ?? null}
@@ -978,6 +986,7 @@ export function ContentPlanWorkbench({
                       entities={entities.data ?? []}
                       parties={siteParties.data ?? []}
                       profiles={profiles.data ?? []}
+                      boundProfileId={site?.plan_profile_id ?? null}
                       onDeleted={() => setSelectedNodeId(null)}
                       deepen={deepen}
                       cmsPage={
@@ -1061,6 +1070,7 @@ export function ContentPlanWorkbench({
                 entities={entities.data ?? []}
                 parties={siteParties.data ?? []}
                 profiles={profiles.data ?? []}
+                boundProfileId={site?.plan_profile_id ?? null}
                 onDeleted={() => setSelectedNodeId(null)}
                 deepen={deepen}
                 cmsPage={cmsPages.pagesByNodeId.get(selectedNode.id) ?? null}

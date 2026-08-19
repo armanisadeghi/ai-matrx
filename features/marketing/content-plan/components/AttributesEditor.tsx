@@ -4,10 +4,11 @@
  * Vertical-attribute editor for plan.node.attributes, schema-driven from
  * `plan.profile.attribute_schemas.node` (a JSON Schema per vertical).
  *
- * There is NO hard site→vertical binding in the DB yet (open item in the
- * content-planning system-of-record doc), so the vertical is an explicit
- * picker over the org's profiles; a single-profile org auto-selects it.
- * Fields render from the schema (string arrays, booleans, strings); anything
+ * The site NAMES its vertical: `web.site.plan_profile_id` is a real FK to
+ * `plan.profile`, so the bound profile is selected automatically — no manual
+ * picker, even for a multi-profile org. The picker only appears as an
+ * override when the org has several profiles, and it stays visible so an
+ * unbound site is still editable. Fields render from the schema (string arrays, booleans, strings); anything
  * the simple renderer can't express stays editable as raw JSON — never
  * silently dropped.
  */
@@ -38,9 +39,9 @@ function nodeSchemaProperties(
   profile: PlanProfileRow | null,
 ): Record<string, SchemaProperty> | null {
   if (!profile) return null;
-  const schemas = profile.attribute_schemas as
-    | { node?: { properties?: Record<string, SchemaProperty> } }
-    | null;
+  const schemas = profile.attribute_schemas as {
+    node?: { properties?: Record<string, SchemaProperty> };
+  } | null;
   const properties = schemas?.node?.properties;
   return properties && typeof properties === "object" ? properties : null;
 }
@@ -48,14 +49,19 @@ function nodeSchemaProperties(
 export function AttributesEditor({
   value,
   profiles,
+  boundProfileId,
   onChange,
 }: {
   value: Json;
   profiles: PlanProfileRow[];
+  /** `web.site.plan_profile_id` — the site's bound vertical, preselected. */
+  boundProfileId: string | null;
   onChange: (attributes: Json) => void;
 }) {
   const [verticalId, setVerticalId] = useState<string | null>(
-    profiles.length === 1 ? profiles[0].id : null,
+    (boundProfileId && profiles.some((row) => row.id === boundProfileId)
+      ? boundProfileId
+      : null) ?? (profiles.length === 1 ? profiles[0].id : null),
   );
   const [rawOpen, setRawOpen] = useState(false);
   const [rawDraft, setRawDraft] = useState<string | null>(null);
@@ -157,12 +163,17 @@ export function AttributesEditor({
                 <div key={key} className="flex items-center gap-2">
                   <Checkbox
                     id={`attr-${key}`}
-                    checked={Boolean(attributes[key] ?? property.default ?? false)}
+                    checked={Boolean(
+                      attributes[key] ?? property.default ?? false,
+                    )}
                     onCheckedChange={(checked) =>
                       setField(key, checked === true)
                     }
                   />
-                  <Label htmlFor={`attr-${key}`} className="text-xs font-medium capitalize">
+                  <Label
+                    htmlFor={`attr-${key}`}
+                    className="text-xs font-medium capitalize"
+                  >
                     {label}
                   </Label>
                 </div>
@@ -174,7 +185,9 @@ export function AttributesEditor({
                 : [];
               return (
                 <div key={key}>
-                  <Label className="mb-1 block text-xs font-medium capitalize">{label} (comma-separated)</Label>
+                  <Label className="mb-1 block text-xs font-medium capitalize">
+                    {label} (comma-separated)
+                  </Label>
                   <Input
                     value={items.join(", ")}
                     onChange={(event) =>
@@ -193,7 +206,9 @@ export function AttributesEditor({
             }
             return (
               <div key={key}>
-                <Label className="mb-1 block text-xs font-medium capitalize">{label}</Label>
+                <Label className="mb-1 block text-xs font-medium capitalize">
+                  {label}
+                </Label>
                 <Input
                   value={String(attributes[key] ?? "")}
                   onChange={(event) => setField(key, event.target.value)}
