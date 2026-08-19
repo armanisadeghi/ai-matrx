@@ -212,6 +212,38 @@ Wax, and Dean Brown with literal evidence. Confirming Steven created person
 `e88e1740-b7e8-4d5e-b71a-6c4791da7a69`, and observed `shw@4pbw.com`. Repeating confirmation
 matched the same person by email, reused the affiliation, and added zero contact points.
 
+### G2b — Open-registry acquisition at volume. ✅ **DONE 2026-08-19 (server)**
+G2 answers "who at THIS domain?" one domain at a time. This is the other half: where the domains
+come from in the first place, at volume and under a licence we can defend.
+`aidream/services/registry_ingestion/` turns the CC0/public-domain registries (Wikidata, DOAJ,
+Crossref, OpenAlex, ORCID) into a durable graph of outlets, journals and identified authors.
+
+**`crm.registry_source` is the source/licence ledger** outreach-data FEATURE.md asked for: all 17
+evaluated sources, declared in CODE and refused at two independent layers — the service, and a
+database CHECK that an allowlisted source must actually have persistence + customer-use rights and
+a CC0/public-domain/permissive licence class. The ledger is a record; `do_not_crawl.py` remains the
+enforcement, and a guard proves the two agree.
+
+**G2's suggestion-gate rule is not merely honoured here, it is structural.** An organization
+resolves automatically as `record_class='discovered'`; a PERSON needs a stable external identifier
+proven twice (the source must permit it AND the record must carry one), so a bare byline is counted
+as skipped and dropped; and every address is a `crm.contact_candidate` in **the same ranked list
+`ContactCandidatesCard` already renders** — no second store, no second surface, and no address is
+ever synthesized. Note for anyone auditing the G2 promise: an `external_id` contact point (a
+Wikidata QID) DOES land, and that is identity, not reach — the rule to assert is zero *reachable*
+contact points, never zero contact points.
+
+Slices are bounded, durable, leased and resumable; the nightly `crm_registry_ingestion` sweep costs
+zero tokens. **Proven live 30/30** against the real database and real registries, every probe row
+removed (`aidream/scripts/_verify_registry_ingestion.py`). Contract:
+`aidream/services/registry_ingestion/FEATURE.md`.
+
+**Frontend: nothing is required.** The candidates surface already covers it. What is OPEN, and each
+is a one-liner needing a decision rather than code: which country/language slices to ingest (a
+product call about markets, not an agent's to make); a MONITORED mailbox for the Crossref/OpenAlex
+polite pool; and `/crm` REST doors for declaring a slice, if a human should do that from the UI
+rather than leaving it to the sweep.
+
 ### G3 — Message templates + personalization. *No primitive exists anywhere.*
 Nothing in the platform composes a parameterized message. Needed: variables bound to real record
 fields (`{{party.display_name}}`, `{{case.pitch_angle}}`, `{{backlink.anchor}}`), a preview against
