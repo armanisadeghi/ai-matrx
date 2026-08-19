@@ -76,6 +76,9 @@ Reconnect).
 
 ## Change log
 
+- **2026-08-19 — first-open settings:** loading a browser snapshot now selects the
+  persisted profile returned by that snapshot. Profile-scoped settings therefore
+  save against the browser the user is viewing, including on the very first open.
 - **2026-08-19 — first-composer entry:** added the cloud-browser globe to the
   `/chat/new` composer and routed it through `useOpenCloudBrowserCanvas`. The
   entry no longer appears only after the first message creates the full context

@@ -89,6 +89,7 @@ const slice = createSlice({
     },
     hydrateSnapshot(state, action: PayloadAction<CloudBrowserSnapshot>) {
       const s = action.payload;
+      state.activeProfileId = s.activeProfileId;
       state.profiles = s.profiles;
       state.quotas = s.quotas;
       state.run = s.run;

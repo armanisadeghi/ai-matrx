@@ -60,6 +60,7 @@ const DEFAULT_NOTIFICATIONS: NotificationConsent = {
 };
 
 export interface CloudBrowserSnapshot {
+  activeProfileId: string;
   profiles: CloudBrowserProfile[];
   quotas: Record<string, ProfileQuota>;
   run: CloudBrowserRun | null;
@@ -516,6 +517,7 @@ export async function loadSnapshot(
         pendingRequestFrom: null,
       };
   return {
+    activeProfileId: selected.id,
     profiles,
     quotas,
     run: activeRun,
