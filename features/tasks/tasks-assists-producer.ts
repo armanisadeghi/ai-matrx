@@ -13,7 +13,7 @@
  *   (session-boot full context + per-user snooze state); zero fetches,
  *   zero tokens to notice. Snoozed tasks never count — a snooze is the
  *   user saying "not now", and the chip must respect it.
- * - the action is real: launches the `tasks.triage_assistant` mandate
+ * - the action is real: launches the `tasks.triage` mandate
  *   (swappable from /agents/mandates, no deploy) with the triage brief ready.
  *
  * System-of-record: /Users/armanisadeghi/code/common-docs/systems/assists/FEATURE.md

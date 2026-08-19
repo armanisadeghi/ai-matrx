@@ -38,7 +38,7 @@ import {
  * 🚨 Do NOT set this to an agent UUID. A raw agent id in this repo is exactly
  * what the Mandates system exists to annihilate; the sibling feature is the
  * worked reference (`features/projects/debug/projectCreateAiDebug.ts` —
- * `PROJECT_CREATE_MANDATE_KEY = "projects.create_assistant"`, resolved by
+ * `PROJECT_CREATE_MANDATE_KEY = "projects.creation_guide"`, resolved by
  * `ProjectCreatePanel` via `useMandate`, with the id demoted to a documented
  * seed mirror that nothing runs).
  *

@@ -20,7 +20,7 @@ mapping, content plans, and cannibalization evidence. It never computes a
 second PageRank or stores a parallel recommendation system.
 
 The server first creates a deterministic allowlist of missing source→target
-edges. The versioned `seo.internal_authority_router` agent is constrained to
+edges. The versioned `seo.site_link_authority_router` agent is constrained to
 those exact IDs/URLs and streams `seo_authority_route_analysis` through the
 normal server stream. `useAuthorityRouter` adopts that foreign stream into the
 canonical Content IR pipeline; `LiveRunDisplay` renders progressively parsed

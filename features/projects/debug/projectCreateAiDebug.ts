@@ -8,7 +8,7 @@
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 /**
- * The project-creation agent is a MANDATE — `projects.create_assistant` —
+ * The project-creation agent is a MANDATE — `projects.creation_guide` —
  * resolved by ProjectCreatePanel via `useMandate` (system default → the
  * user's own binding).
  */

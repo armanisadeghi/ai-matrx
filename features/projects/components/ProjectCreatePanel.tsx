@@ -70,7 +70,7 @@ export function ProjectCreatePanel({
 }: ProjectCreatePanelProps) {
   const dispatchThunk = useDispatchThunk();
 
-  // The AI tab's agent is the `projects.create_assistant` mandate — the user's
+  // The AI tab's agent is the `projects.creation_guide` mandate — the user's
   // own binding wins. While resolving (first mount only; 5-min cache) or on a
   // resolution failure the AI mode stays off and the manual form carries the
   // panel; failures are already screamed by useMandate, never silently
