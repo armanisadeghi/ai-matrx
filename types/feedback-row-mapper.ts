@@ -363,6 +363,7 @@ export function mapUserFeedbackRow(row: UserFeedbackRowLike): UserFeedback {
     testing_url: row.testing_url,
     testing_result: narrowTestingResult(row.testing_result),
     has_open_issues: row.has_open_issues,
+    metadata: row.metadata,
   };
 }
 

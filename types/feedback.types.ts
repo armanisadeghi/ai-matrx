@@ -1,3 +1,5 @@
+import type { Json } from "@/types/database.types";
+
 // Types for user feedback and bug reporting system
 
 /**
@@ -96,6 +98,15 @@ export interface UserFeedback {
   testing_result: TestingResult | null;
   // Flags
   has_open_issues: boolean;
+  /**
+   * Structured machine payload stored with the row. Today it carries exactly one
+   * shape — `repo_diff`, Hindsight's reviewable repo-file change proposal (read
+   * it with `readRepoDiffProposal` from `types/repo-diff-proposal.ts`, never by
+   * indexing this raw). A proposal that lives only as prose in `description`
+   * cannot be rendered as a diff or handed to a coding session, which is why the
+   * column is carried end to end instead of being flattened away.
+   */
+  metadata: Json;
 }
 
 export interface FeedbackComment {

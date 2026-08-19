@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   updateFeedback,
   setAdminDecision,
@@ -17,6 +17,8 @@ import {
   feedbackScreenshotHref,
   getFeedbackScreenshotRefs,
 } from "@/features/feedback/screenshot-refs";
+import { readRepoDiffProposal } from "@/types/repo-diff-proposal";
+import { RepoDiffProposalPanel } from "./RepoDiffProposalPanel";
 import {
   UserFeedback,
   FeedbackStatus,
@@ -179,6 +181,11 @@ export default function FeedbackDetailDialog({
 }: FeedbackDetailDialogProps) {
   // Live local copy of the feedback item — updated from server responses
   const [item, setItem] = useState<UserFeedback>(feedback);
+  // Hindsight's reviewable repo-file change proposal, when this row carries one.
+  const repoDiffProposal = useMemo(
+    () => readRepoDiffProposal(item.metadata),
+    [item.metadata],
+  );
   const screenshotRefs = getFeedbackScreenshotRefs(item);
 
   const [activeTab, setActiveTab] = useState(initialTab || "submission");
@@ -1130,6 +1137,14 @@ export default function FeedbackDetailDialog({
             <div className="px-6 py-4">
               {/* SECTION 1: User Submission */}
               <TabsContent value="submission" className="mt-0 space-y-4">
+                {/* A Hindsight repo-file change proposal (D8) renders as a real
+                    diff ABOVE the description, because the diff is the thing an
+                    admin has to read — the description is its prose twin and
+                    scrolls. There is deliberately no apply button here. */}
+                {repoDiffProposal ? (
+                  <RepoDiffProposalPanel proposal={repoDiffProposal} />
+                ) : null}
+
                 {/* Description */}
                 <div>
                   <label className="text-sm font-medium text-muted-foreground mb-1.5 block">
