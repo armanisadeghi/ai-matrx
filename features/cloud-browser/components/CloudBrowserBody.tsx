@@ -44,6 +44,7 @@ import { ShareControl } from "./ShareControl";
 import { DeletionFlow } from "./DeletionFlow";
 import { Walkthrough } from "./Walkthrough";
 import { LoginCapturePanel } from "./LoginCapturePanel";
+import { AuthenticatorPanel } from "./AuthenticatorPanel";
 
 type FaceTab = "written" | "screenshots" | "takeover";
 
@@ -194,6 +195,15 @@ export function CloudBrowserBody({
                   <Camera className="mr-1 h-3.5 w-3.5" /> Screenshots
                 </Button>
               </div>
+            ) : null}
+            {isMeDriving &&
+            cb.handoff?.reason === "mfa_required" &&
+            cb.handoff.origin &&
+            cb.run ? (
+              <AuthenticatorPanel
+                runId={cb.run.id}
+                pageUrl={cb.handoff.origin}
+              />
             ) : null}
 
             <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">

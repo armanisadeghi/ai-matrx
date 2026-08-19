@@ -769,6 +769,24 @@ export async function fillSavedLogin(input: {
     page_url: input.pageUrl,
   });
 }
+
+export async function fillAuthenticatorCode(input: {
+  runId: string;
+  pageUrl: string;
+  itemId: string;
+}): Promise<void> {
+  await postJson<unknown>(
+    `/browser-manager/runs/${input.runId}/authenticator`,
+    {
+      item_id: input.itemId,
+      page_url: input.pageUrl,
+      code_selector:
+        "#mfacode, input[autocomplete='one-time-code'], input[inputmode='numeric'], input[name*='code' i]",
+      submit_selector:
+        "#submitMfa_button, button[type='submit'], input[type='submit']",
+    },
+  );
+}
 export async function requestScreenshot(
   runId: string,
 ): Promise<ScreenshotFrame> {

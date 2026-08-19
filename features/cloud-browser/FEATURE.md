@@ -82,6 +82,9 @@ Reconnect).
   server-to-worker fill; no value returns through the React client. New captures
   also send the run/profile custody needed for the durable account binding and
   login-attempt record.
+  A verification-code handoff lists matching saved-account labels and offers the
+  server-side generate-and-type operation; the generated code never crosses the
+  React client.
 
 - **2026-08-19 — live service and video:** replaced fixture reads with direct live
   browser-table reads and mounted control-plane calls for run, takeover, and
