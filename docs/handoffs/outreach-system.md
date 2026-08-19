@@ -889,17 +889,41 @@ Phases 1–4 are independently valuable and shippable. **Nothing before Phase 5 
 human did not approve** — the correct risk posture for a system whose failure mode is "we helped
 a customer spam strangers from their real mailbox."
 
-## What is actually open, 2026-08-16
+## What is actually open, 2026-08-19 (global-view sweep — verified against code, not prior docs)
 
 **Engineering on the G1–G9 spine is DONE.** Everything below is either a human action, a
 deliberately deferred item, or a spun-off session with its own brief. Nothing here blocks anything
 else here.
 
+**Closed since 2026-08-16, each verified in code/DB (not taken from chip claims):** every user on
+Pro via complimentary grants + signup trigger (`billing.seed_prelaunch_complimentary`; the "trial"
+banner reads the live authority) · the four bring-up UX fixes (audience split — DevOps vocabulary
+is operators-only now; unmistakable connect; next-step-voice copy; dead-simple TXT step; commit
+`b389dfd3e`) · the mailbox-picker dead end ("Connect a different Google account" always offered) ·
+the first outreach assist producers (`aidream/services/outreach_assists/`) · the agent factory's
+reasoning-output floor (`guards.reasoning_output_floor`) · builtin `card_visibility` enforcement
+(migration 0387) · backlink 1000-row truncation (paged, proven 1000 → 2468).
+
+**FRONT-DOOR GAP (found 2026-08-19; chip `task_f391df4c` carries the full brief):** the Marketing
+pillar's three promised doors — `/marketing/outreach`, `/marketing/email`, `/marketing/monitoring`
+— are still "coming soon" placeholders while the entire product ships behind `/crm/*` and the site
+workspace. A user exploring Marketing is told outreach does not exist. The classic
+parts-built-but-not-talking failure; the fix is doors to the real workspaces, never a duplicate
+console (§7 trap).
+
+**Related fronts OTHER programs own that touch this feature** (so no future owner loses the
+global view): `docs/handoffs/crm-system.md` (the contact-table folds feed outreach's contact
+supply) · aidream `docs/handoffs/features-to-workflows.md` (plans CRM/outreach WORKFLOW NODES —
+when built, they must go through the one send/draft primitives, never a side door) ·
+aidream `docs/handoffs/assist-producer-noise.md` (assists-dock hygiene; outreach's producers write
+into that same dock) · `common-docs/systems/mandates/ROLLOUT.md` (vocabulary/binding campaign that
+renamed agent slots to Mandates across these docs).
+
 1. **The five human gates** — see the status block above. All guided by
    `/crm/sending-identities`. Gate 1 (named mailbox + TXT) is the critical path: it starts the
    28-day warmup clock.
 2. **Scaled open-registry media ingestion** — the one remaining WP3 build, deliberately spun off
-   rather than half-built (chip `task_b58614bd`): source/licence ledger → Wikidata slices → the
+   rather than half-built (chip `task_b58614bd` DIED in a sub-agent failure; superseded by chip `task_d59200f5`, 2026-08-19): source/licence ledger → Wikidata slices → the
    DOAJ/Crossref/OpenAlex/ORCID spine → a candidate-review queue. Allowlisted, candidate-only,
    resumable. Nothing blocks it.
 3. **The link-gap "Start outreach" door** — the last prospecting surface without one, deliberately
