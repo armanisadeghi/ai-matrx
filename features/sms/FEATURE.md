@@ -78,7 +78,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 2. The Text assistant section reads transport readiness directly from `communication.get_my_sms_assistant_program` and controls only delivery through `communication.set_my_sms_assistant_enabled`.
 3. **Agent identity resolves only through `sms.owner_beta`.** The canonical `MandateAgentPicker` writes its Holder/version choice through the Mandate Binding API; the settings surface never writes an agent id into communication tables.
 4. The inbound webhook durably claims the provider event, gives STOP/HELP/START precedence, resolves the exact provider/account/source/destination/program/user/CRM/conversation binding, and queues only a resolved, ready assistant turn.
-5. Aidream resolves `sms.owner_beta` fresh for the exact user and organization on every admitted turn, runs the resolved Holder against the reserved canonical chat conversation with tools disabled, atomically enqueues the reply, and delivers it through the durable outbound worker.
+5. Aidream resolves `sms.owner_beta` fresh for the exact user and organization on every admitted turn, runs the resolved Holder against the reserved canonical chat conversation with its complete authored tool set, atomically enqueues the reply, and delivers it through the durable outbound worker. Read-only tools run normally; consequential invocations suspend for exact-action approval and recent app re-authentication.
 6. Pause changes delivery only and preserves the Binding. Holder/version changes happen only through the canonical Mandate surface and leave ordinary SMS-notification enrollment unchanged.
 
 ### Notification-family preferences
@@ -111,7 +111,7 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 - **Global and user stops are distinct.** `sms_phone_numbers.assistant_enabled` is read-only health on user surfaces; `sms_notification_preferences.ai_agent_messages` is the user's pause/resume switch.
 - **Consent, notification families, and assistant replies are independent controls.** Overall verified SMS consent is the delivery prerequisite; `task_notifications` is an explicit family opt-in; `ai_agent_messages` governs only assistant replies.
 - **The communication schema never chooses an agent.** `sms.owner_beta` is the named job; its system/org/user/run Binding selects the Holder. Legacy preferred-agent columns are constrained NULL and legacy configuration RPCs do not exist.
-- **Consequential tools stay disabled in the owner beta.** The SMS worker invokes the canonical agent with an empty replacement tool set.
+- **Transport never edits the Holder's tools.** SMS adds only its database-owned channel context. A `db_write`-or-higher call uses the canonical durable delegated-tool suspension, sends the user an authenticated conversation door, and requires a 15-minute, single-use approval bound to the exact canonical tool name, normalized arguments, user, organization, and conversation. Stale sessions complete an email OTP re-authentication before approval; secrets in arguments are redacted in the review card.
 - **A word is never authority.** `DONE` executes only through one exact durable offer; zero, malformed, or ambiguous offers never enter the worker queue.
 - **Task workspace is not transport tenancy.** An editable task may belong to any workspace; the caller's one active program enrollment owns the notification, conversation, message, and assist rows. Zero or multiple enrollments fail before durable intent.
 - A worker crash must not mint a second chat turn or Twilio send. Expired processing/sending claims become explicit stuck/uncertain work for repair, never automatic retries.
@@ -130,6 +130,8 @@ All SMS tables live in the `communication` schema. The enrollment contract prima
 ---
 
 ## Change log
+
+- `2026-08-18` — Added exact-action SMS authorization without narrowing the Mandate Holder: service-role-only atomic confirm/consume RPCs, recent AMR enforcement, 15-minute single-use receipts, authenticated chat deep links, a redacted approval card with email OTP re-authentication, and cold-resume support for durable pending calls. The existing `sms/assistant` context injection remains unchanged.
 
 - `2026-08-18` — Replaced the SMS assistant's direct agent/version pointers with the canonical `sms.owner_beta` Mandate and user Binding; runtime resolves the Holder fresh per admitted turn, Messaging uses the canonical Binding picker, and legacy agent-selection RPCs/columns are retired as authority.
 - `2026-08-17` — Removed the task-workspace coupling from `enqueue_my_task_sms_reminder`: exact caller+program enrollment now resolves independently, all communication artifacts stay in the enrollment organization, and zero/multiple enrollments fail closed before any durable intent.
