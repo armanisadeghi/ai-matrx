@@ -1199,6 +1199,14 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Yield register",
+        description:
+          "What did the money buy? Every autonomous spender in the platform with its accepted-per-produced yield and cost per accepted outcome — plus the floors that alarm when a producer stops buying anything. NULL is never zero: unmeasurable, unmeasured, and measured-zero are three different problems.",
+        iconName: "Target",
+        link: "/administration/reporting/producer-yield",
+        isNew: true,
+      },
+      {
         title: "ESLint debt",
         description:
           "Every error-severity ESLint finding in the repo, classified bug / correctness / doctrine / style so the backlog can be worked worst-first. Ranked by feature and file, each row with a one-click repair brief.",

@@ -20009,6 +20009,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/producer-yield": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Producer Yield
+         * @description Every autonomous spender, worst first — unmeasurable spend, then lowest
+         *     yield, then biggest spend.
+         */
+        get: operations["get_producer_yield_admin_producer_yield_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/producer-yield/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Yield Check
+         * @description Run the floor pass now (banner + /ops-triage record + assist chips).
+         */
+        post: operations["post_yield_check_admin_producer_yield_check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/agent-context/organizations": {
         parameters: {
             query?: never;
@@ -48580,6 +48621,110 @@ export interface components {
              */
             confidence: "linked" | "inferred";
         };
+        /** ProducerYieldOut */
+        ProducerYieldOut: {
+            /** Rows */
+            rows?: components["schemas"]["ProducerYieldRow"][];
+            totals: components["schemas"]["ProducerYieldTotals"];
+            floors?: components["schemas"]["YieldFloors"];
+        };
+        /** ProducerYieldRow */
+        ProducerYieldRow: {
+            /** Producer Key */
+            producer_key: string;
+            /** Display Name */
+            display_name: string;
+            /** Outcome Token */
+            outcome_token: string;
+            /**
+             * Measurement State
+             * @description no_acceptance_signal | never_decided | measured | idle. Read this BEFORE any rate below — a NULL rate is never a zero.
+             */
+            measurement_state: string;
+            /** Produced */
+            produced: number;
+            /** Accepted */
+            accepted?: number | null;
+            /** Rejected */
+            rejected?: number | null;
+            /** Expired */
+            expired?: number | null;
+            /** Undecided */
+            undecided?: number | null;
+            /** Decided */
+            decided?: number | null;
+            /**
+             * Runs
+             * @default 0
+             */
+            runs?: number;
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /**
+             * Yield Rate
+             * @description accepted / PRODUCED. NULL until something is decided.
+             */
+            yield_rate?: number | null;
+            /** Accept Rate Of Decided */
+            accept_rate_of_decided?: number | null;
+            /** Decision Rate */
+            decision_rate?: number | null;
+            /**
+             * Cost Per Accepted Usd
+             * @description The honest cost number.
+             */
+            cost_per_accepted_usd?: number | null;
+            /**
+             * Cost Per Produced Usd
+             * @description The FLATTERING cost number. Never alarm on it.
+             */
+            cost_per_produced_usd?: number | null;
+            /** Age Days */
+            age_days?: number | null;
+            /** Last Produced At */
+            last_produced_at?: string | null;
+            /** Last Accepted At */
+            last_accepted_at?: string | null;
+            /** Door Href */
+            door_href?: string | null;
+        };
+        /** ProducerYieldTotals */
+        ProducerYieldTotals: {
+            /**
+             * Producers
+             * @default 0
+             */
+            producers?: number;
+            /**
+             * Cost Usd
+             * @default 0
+             */
+            cost_usd?: number;
+            /**
+             * Measured Cost Usd
+             * @default 0
+             */
+            measured_cost_usd?: number;
+            /**
+             * Unmeasurable Cost Usd
+             * @default 0
+             */
+            unmeasurable_cost_usd?: number;
+            /**
+             * Produced
+             * @default 0
+             */
+            produced?: number;
+            /**
+             * Accepted
+             * @default 0
+             */
+            accepted?: number;
+            /** Yield Rate */
+            yield_rate?: number | null;
+            /** Cost Per Accepted Usd */
+            cost_per_accepted_usd?: number | null;
+        };
         /** ProjectInputPart */
         ProjectInputPart: {
             /** Metadata */
@@ -56313,8 +56458,11 @@ export interface components {
              */
             capture_pages?: number;
         };
-        /** StoryAngleGenerateResponse */
-        StoryAngleGenerateResponse: {
+        /**
+         * StoryAngleGenerateResult
+         * @description Durable result shared by the HTTP route and workflow node.
+         */
+        StoryAngleGenerateResult: {
             /** Kept */
             kept: number;
             /** Dropped */
@@ -56343,6 +56491,19 @@ export interface components {
             status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
             /** Note */
             note?: string | null;
+        };
+        /**
+         * StoryAngleRulingResult
+         * @description The human-owned status written to one story angle.
+         */
+        StoryAngleRulingResult: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "accepted" | "developing" | "pitched" | "landed" | "dismissed";
         };
         /** StripMetadataRequest */
         StripMetadataRequest: {
@@ -62330,6 +62491,79 @@ export interface components {
             field_id?: string | null;
             /** Expected Updated At */
             expected_updated_at?: string | null;
+        };
+        /** YieldBreachOut */
+        YieldBreachOut: {
+            /** Producer Key */
+            producer_key: string;
+            /** Display Name */
+            display_name: string;
+            /** Kind */
+            kind: string;
+            /** Urgency */
+            urgency: string;
+            /** Headline */
+            headline: string;
+            /** Detail */
+            detail: string;
+            /** Fix */
+            fix: string;
+            /** Produced */
+            produced: number;
+            /** Accepted */
+            accepted?: number | null;
+            /** Cost Usd */
+            cost_usd?: number | null;
+            /** Door Href */
+            door_href?: string | null;
+        };
+        /** YieldCheckOut */
+        YieldCheckOut: {
+            /**
+             * Status
+             * @description clean | breached | no_addressee | error. `clean` means the pass RAN and found nothing — never confuse it with 'never ran'.
+             */
+            status: string;
+            /**
+             * Producers Checked
+             * @default 0
+             */
+            producers_checked?: number;
+            /**
+             * Assists Created
+             * @default 0
+             */
+            assists_created?: number;
+            /** Breaches */
+            breaches?: components["schemas"]["YieldBreachOut"][];
+            /** Error */
+            error?: string | null;
+        };
+        /**
+         * YieldFloors
+         * @description The thresholds the alarm uses, so the surface can show its own rules.
+         */
+        YieldFloors: {
+            /**
+             * Min Produced For Verdict
+             * @default 20
+             */
+            min_produced_for_verdict?: number;
+            /**
+             * Yield Floor
+             * @default 0.1
+             */
+            yield_floor?: number;
+            /**
+             * Never Decided Min Age Days
+             * @default 3
+             */
+            never_decided_min_age_days?: number;
+            /**
+             * No Signal Min Cost Usd
+             * @default 1
+             */
+            no_signal_min_cost_usd?: number;
         };
         /** YouTubeSearchPage */
         YouTubeSearchPage: {
@@ -73855,7 +74089,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StoryAngleGenerateResponse"];
+                    "application/json": components["schemas"]["StoryAngleGenerateResult"];
                 };
             };
             /** @description Validation Error */
@@ -73890,9 +74124,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["StoryAngleRulingResult"];
                 };
             };
             /** @description Validation Error */
@@ -98401,6 +98633,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_producer_yield_admin_producer_yield_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProducerYieldOut"];
+                };
+            };
+        };
+    };
+    post_yield_check_admin_producer_yield_check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YieldCheckOut"];
                 };
             };
         };
