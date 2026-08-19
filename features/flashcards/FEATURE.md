@@ -58,9 +58,21 @@ own fresh conversation):
   (`getCardImages` / `getFaceImageDetail` / `cardHasImage`) — the image twin of
   `voiceTestExtra.ts`. Never inline the `details.find(...)` idiom again.
 - **ONE writer:** `fcService.setCardImage(cardId, face, {file_id|url, alt, ...})` /
-  `removeCardImage` — supersede-then-insert. Server-side (agent lane) writes are
-  aidream `services/education/card_images.py` through the mandate
-  `education.card_image_web_source`.
+  `removeCardImage` — supersede-then-insert. Server-side (agent lanes) writes are
+  aidream `services/education/card_images.py`: web-sourcing through mandate
+  `education.card_image_web_source`, and VERIFIED generation through
+  `education.card_image_prompt_writer` → `card_image_generator` →
+  `card_image_qc_judge` (generate → adversarial vision judge → retry once → refuse).
+- **Editor slot:** [`components/editor/CardImageSlot.tsx`](./components/editor/CardImageSlot.tsx)
+  — per-face Find (web agent) / Generate (verified) / Remove in `EditSetView`, streaming
+  the aidream doors `/education/images/source-card|generate-card|source-set`. Agent
+  refusals surface with their reasoning; never forced, never silent.
+- **Metered, structurally (Arman 2026-08-18):** capabilities
+  `education.card_image_source` / `card_image_generate` — FE
+  `useEntitlementGuard` (guard before spend, commit on success, paywall on cap);
+  server checks `billing.resolve_capability` BEFORE any spend and records
+  `usage_ledger` rows even while unenforced; `source_set_images` pre-flight-trims a
+  batch to the plan's remaining allowance. Numbers live in the admin plan UI.
 - **Wired surfaces:** FlashcardItem flip faces (+ open-in-window forwarding),
   FlashcardMobileView slides (via `toFlashcardMobileCardsFromStudy`), StudyDeck,
   CanvasFlashcardsView, FastFire live card (`DrillCard.frontImage*`), SetDetailView
@@ -72,16 +84,26 @@ own fresh conversation):
 
 ### Known limits (images)
 
-- The editor (`EditSetView`) has no per-face image slot yet (upload / stock / web /
-  remove) — P1 in the SoR plan; `docs/handoffs/flashcard-images.md`.
+- The editor slot's UPLOAD and UNSPLASH lanes aren't wired yet (Find/Generate/Remove
+  are live) — chipped; `docs/handoffs/flashcard-images.md`.
+- No per-SET "Illustrate this set" UI trigger yet (the server door
+  `/education/images/source-set` + pre-flight trimming exist) — chipped.
 - The markdown-block print lane only shows images when the caller's card data carries
   `frontImageUrl`/`backImageUrl` (widened `Flashcard` type); the DB-backed deck has no
-  print door at all yet (SetDetailView exports, but doesn't print).
-- Stored-file images (`image_file_id`) don't reach ANON pages until the writer also
-  stamps the public CDN URL into `image_url`.
+  print door at all yet (SetDetailView exports, but doesn't print) — chipped.
+- Hotlinked `image_url` rot has a graceful render fallback but no re-source sweep yet —
+  chipped.
+- Uploaded stored-file images (`image_file_id`, future upload lane) must also stamp the
+  public CDN URL into `image_url` or they won't reach ANON pages (the generation lane
+  already writes both).
 
 ## Change log
 
+- **2026-08-18 — Image lanes completed to the acceptance bars:** editor `CardImageSlot`
+  (Find/Generate/Remove per face, streaming, metered), verified generation lane on
+  mandates (adversarial judge, retry-once, refuse), structural entitlements with batch
+  pre-flight, aidream `/education/images` streaming router. Live-verified in the
+  browser end to end (including a correct, explained agent refusal).
 - **2026-08-18 — Duplicate-deck bug fixed (D-WP3-4).** Every surface generation was
   creating TWO identical fc_set rows (explicit save + render-block materialization,
   ~500ms apart). Single-writer contract above; 20 historical duplicate pairs

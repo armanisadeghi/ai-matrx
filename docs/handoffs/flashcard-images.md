@@ -1,36 +1,55 @@
 # Flashcard images — remaining lanes
 
 **SoR (read first):** `/Users/armanisadeghi/code/common-docs/systems/flashcard-images/VISION_AND_PLAN.md`
-— its status block says exactly what shipped 2026-08-18 (P0 model+rendering everywhere; the
-web-sourcing lane through mandate `education.card_image_web_source`, live-demonstrated).
-FE contract: `features/flashcards/FEATURE.md` § Images. aidream half:
-`aidream/services/education/card_images.py` + its FEATURE.md.
+— its §0/status blocks say exactly what is LIVE as of 2026-08-18: the data model, ONE renderer
+wired through every UI + 5 print variants, the web-sourcing lane (mandate
+`education.card_image_web_source`, demonstrated on real cards incl. correct refusals), the
+VERIFIED generation lane (3 more mandates, adversarial judge, retry-once-then-refuse,
+demonstrated), structural entitlements with batch pre-flight, the aidream streaming router
+`/education/images/*`, and the editor's per-face `CardImageSlot` (Find / Generate / Remove,
+browser-verified end to end). FE contract: `features/flashcards/FEATURE.md` § Images. aidream
+half: `aidream/services/education/card_images.py` + its FEATURE.md.
 
-## Remaining
+## Remaining — all four independent lanes are CHIPPED (2026-08-18); pick up a chip's scope, not this list twice
 
-1. **P1 — editor image slot (FE only).** Per-face image control in `EditSetView`'s
-   `CardEditor`: show current image (`getCardImages`), replace/remove via
-   `fcService.setCardImage`/`removeCardImage`; sources = upload (`useFileUpload` /
-   `openFilePicker` + `<CloudFilesPickerHost/>`), the existing Unsplash picker
-   (`<ImageManager>` / `SingleImageSelect`, credit → metadata), paste-a-URL, and a
-   "Find an image on the web" button calling the aidream lane (needs a thin service
-   entry the FE can POST to — none exists yet; there is deliberately no education
-   router, so decide the door with the workflow/service owner). Closes the editor
-   header's declared fast-follow.
-2. **FE trigger for the web lane** ("Illustrate this card / set") — surface the
-   sourcing agent per-card and per-set with live progress (floating LiveRunWindow law)
-   + the accept/reject review affordance (human feedback trains judge accuracy).
-3. **P2 — verified GENERATION pipeline** (plan §2.4): wire `media.images.produce`,
-   conform `ai.image.qc_judge` onto JudgeContract + a mandate (its model default is
-   still pinned in Python), retry/refuse loop, rolled-up cost, entitlement capability
-   `education.card_image_generate` (plan §2.5).
-4. **P3 — study_pack_v1 image lane** (mandate-aware, never the hardcoded-agent shape).
-5. **Print gaps:** DB-backed decks have no print door (SetDetailView exports only);
-   markdown-lane print shows images only when card data carries `frontImageUrl` — wire
-   the DB→print data path when the print door lands.
-6. **Link-rot sweep:** hotlinked `image_url` rows whose bounded re-fetch fails →
-   re-source via the same mandate (FlashcardFaceImage console-warns on rot; make it a
-   real sweep + assist chip).
-7. **Anon stored-file images:** when the stored lane (upload/generation) writes
-   `image_file_id` for a card on a PUBLIC set, also stamp the public CDN URL into
-   `image_url` so the anon RPC lane can render it.
+1. **Editor free lanes** (chip `task_7c28d97b`): upload + Unsplash picker (+credit) in
+   `CardImageSlot`, both stamping durable public `image_url` beside any `image_file_id`.
+2. **Illustrate-this-set** (chip `task_06ed19da`): per-set trigger in SetDetailView over the
+   live `/education/images/source-set` door, per-card streaming progress (Floating Law),
+   accept/reject review pass (rejections recorded for judge accuracy).
+3. **Link-rot re-source sweep** (chip `task_60e47449`): scheduled aidream sweep —
+   bounded-verify hotlinked `image_url` rows, re-source dead ones through the same mandate,
+   assists chip summary.
+4. **DB-deck print door** (chip `task_0aa48778`): Print action in SetDetailView feeding the
+   existing 10-variant printer with `CardWithDetails → Flashcard` mapping (studyFaces for
+   cloze + `getCardImages` for image urls).
+
+## Not chipped (blocked on other owners / rulings)
+
+- **study_pack_v1 image lane (P3):** add an optional per-card web-sourcing step to the study
+  pack workflow. Blocked-ish on study_pack's own mandate conversion (its 4 hardcoded agent
+  version ids are a tracked education-program item); when that lands, the lane is a call into
+  `source_card_image` per generated card.
+- **Orphaned platform image-pipeline graph nodes:** `ai.image.concept_generate` /
+  `prompt_write` / `qc_judge` (`packages/matrx-ai/matrx_ai/graph_nodes/image_pipeline_actions.py`)
+  + the never-created `media.images.produce` workflow. The flashcard lanes deliberately went
+  through mandates instead (superseding qc_judge FOR CARDS), but the nodes remain
+  built-and-unwired with a Python-pinned model default — platform-level unfinished work, not
+  flashcards-scoped. Do not delete (unfinished-work alarm); conforming them onto the Judge
+  primitive + a mandate is the plan §2.4 shape.
+- **Judge human-feedback loop:** editor/review accept-reject clicks should feed
+  `platform.judge_verdict` accuracy (kappa calibration) for `education.card_image_qc_judge`;
+  the review UI (chip 2) records rejections in metadata — the verdict-ledger wiring is a
+  follow-on once that lands.
+- **Rolled-up per-image USD:** usage_ledger counts actions; VISION_AND_PLAN §2.5's summed
+  describe+generate+judge `pipeline_cost_usd` stamp is not implemented (waiting on the
+  matrx-runtime MeterEvent spine, or a service-side AiUsage sum if wanted sooner).
+
+## Related flashcards-feature work owned elsewhere (global view, 2026-08-18)
+
+- WP3 (study core depth) reports fully dispositioned on the education STATUS_BOARD;
+  the duplicate-deck single-writer contract lives in `features/flashcards/FEATURE.md`.
+- Flashcard generation streams no chunks until run end (aidream agent/provider config) —
+  chipped under the Live Run Streaming Sweep handoff, not here.
+- Mandate override surfaces (users/orgs swapping the four card-image mandates' agents):
+  PROPOSED plan awaiting Arman at `common-docs/projects/mandate-binding-surfaces/PLAN.md`.
