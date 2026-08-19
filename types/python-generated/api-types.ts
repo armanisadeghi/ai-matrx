@@ -19035,14 +19035,14 @@ export interface paths {
             cookie?: never;
         };
         /** Proxy Stream Http */
-        get: operations["proxy_stream_http__stream_slug___path__post__get__stream_slug_path"];
+        get: operations["proxy_stream_http__stream_slug___path__get__get__stream_slug_path"];
         put?: never;
         /** Proxy Stream Http */
-        post: operations["proxy_stream_http__stream_slug___path__post__post__stream_slug_path"];
+        post: operations["proxy_stream_http__stream_slug___path__get__post__stream_slug_path"];
         delete?: never;
         options?: never;
         /** Proxy Stream Http */
-        head: operations["proxy_stream_http__stream_slug___path__post__head__stream_slug_path"];
+        head: operations["proxy_stream_http__stream_slug___path__get__head__stream_slug_path"];
         patch?: never;
         trace?: never;
     };
@@ -97627,7 +97627,7 @@ export interface operations {
             };
         };
     };
-    proxy_stream_http__stream_slug___path__post__get__stream_slug_path: {
+    proxy_stream_http__stream_slug___path__get__get__stream_slug_path: {
         parameters: {
             query?: never;
             header?: never;
@@ -97659,7 +97659,7 @@ export interface operations {
             };
         };
     };
-    proxy_stream_http__stream_slug___path__post__post__stream_slug_path: {
+    proxy_stream_http__stream_slug___path__get__post__stream_slug_path: {
         parameters: {
             query?: never;
             header?: never;
@@ -97691,7 +97691,7 @@ export interface operations {
             };
         };
     };
-    proxy_stream_http__stream_slug___path__post__head__stream_slug_path: {
+    proxy_stream_http__stream_slug___path__get__head__stream_slug_path: {
         parameters: {
             query?: never;
             header?: never;
