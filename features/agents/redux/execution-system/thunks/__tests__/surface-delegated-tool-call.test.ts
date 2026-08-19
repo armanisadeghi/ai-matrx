@@ -189,6 +189,40 @@ describe("surfaceDelegatedToolCall cold desktop reconciliation", () => {
     expect(mockSubmitToolResult).not.toHaveBeenCalled();
   });
 
+  it("surfaces an SMS exact-action approval without treating the tool as unsupported", async () => {
+    const dispatch = jest.fn((action) => action);
+    surfaceDelegatedToolCall({
+      ...BASE_ARGS,
+      toolName: "task_update",
+      data: {
+        arguments: { task_id: "task-1", status: "done" },
+        execution_authorization: {
+          kind: "sms_consequential_action",
+          version: 1,
+          action_digest: "a".repeat(64),
+          side_effect_class: "db_write",
+          tool_name: "task_update",
+          requested_at: "2026-08-18T00:00:00Z",
+          expires_at: "2026-08-18T00:15:00Z",
+        },
+      },
+    })(dispatch as never, jest.fn() as never, undefined);
+    await flushPromises();
+
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: expect.stringContaining("enqueuePendingAsk"),
+        payload: expect.objectContaining({
+          kind: "sms_action_authorization",
+          toolName: "task_update",
+          smsActionArguments: { task_id: "task-1", status: "done" },
+        }),
+      }),
+    );
+    expect(mockSubmitToolResult).not.toHaveBeenCalled();
+    expect(mockWatchDesktopDelegation).not.toHaveBeenCalled();
+  });
+
   it("still rejects an unknown non-desktop delegated tool", async () => {
     const dispatch = jest.fn((action) => action);
     surfaceDelegatedToolCall({

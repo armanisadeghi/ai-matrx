@@ -10397,6 +10397,8 @@ export type Database = {
           num_segments: number | null
           organization_id: string
           outcome_uncertain_at: string | null
+          part_group_id: string | null
+          part_index: number
           price: number | null
           price_unit: string | null
           processing_worker_id: string | null
@@ -10441,6 +10443,8 @@ export type Database = {
           num_segments?: number | null
           organization_id: string
           outcome_uncertain_at?: string | null
+          part_group_id?: string | null
+          part_index?: number
           price?: number | null
           price_unit?: string | null
           processing_worker_id?: string | null
@@ -10485,6 +10489,8 @@ export type Database = {
           num_segments?: number | null
           organization_id?: string
           outcome_uncertain_at?: string | null
+          part_group_id?: string | null
+          part_index?: number
           price?: number | null
           price_unit?: string | null
           processing_worker_id?: string | null
@@ -11076,6 +11082,19 @@ export type Database = {
           task_notifications: boolean
         }[]
       }
+      confirm_sms_tool_authorization: {
+        Args: { p_call_id: string; p_recent_auth_at: string; p_user_id: string }
+        Returns: Json
+      }
+      consume_sms_tool_authorization: {
+        Args: {
+          p_action_digest: string
+          p_conversation_id: string
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       consume_voice_agent_session_reference: {
         Args: {
           p_provider: string
@@ -11139,6 +11158,7 @@ export type Database = {
           p_execution_known_not_started?: boolean
           p_inbound_message_id: string
           p_operator_detail?: string
+          p_replies?: string[]
           p_reply?: string
           p_request_id?: string
           p_retry_after_seconds?: number
@@ -50008,6 +50028,7 @@ export type Database = {
           agent_id: string | null
           auth_mode: string
           id: string
+          mandate_key: string | null
           max_concurrent: number
           max_runtime_seconds: number
           metadata: Json
@@ -50019,6 +50040,7 @@ export type Database = {
           agent_id?: string | null
           auth_mode?: string
           id: string
+          mandate_key?: string | null
           max_concurrent?: number
           max_runtime_seconds?: number
           metadata?: Json
@@ -50030,6 +50052,7 @@ export type Database = {
           agent_id?: string | null
           auth_mode?: string
           id?: string
+          mandate_key?: string | null
           max_concurrent?: number
           max_runtime_seconds?: number
           metadata?: Json

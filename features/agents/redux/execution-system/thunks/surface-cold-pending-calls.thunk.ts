@@ -64,7 +64,10 @@ export const surfaceColdPendingCalls = (
           // Reconstruct the live `tool_delegated` data shape ({ arguments })
           // from the persisted cx_tool_call.arguments so the dispatched/stored
           // shape is byte-identical to the live path.
-          data: { arguments: call.arguments ?? {} },
+          data: {
+            arguments: call.arguments ?? {},
+            execution_authorization: call.execution_authorization,
+          },
         }),
       );
       surfaced++;

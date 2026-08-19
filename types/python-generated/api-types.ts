@@ -10078,6 +10078,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/communications/sms/action-authorizations/{call_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Action */
+        post: operations["confirm_action_communications_sms_action_authorizations__call_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/outreach/replies/lists/{outreach_list_id}/members/{member_id}/thread": {
         parameters: {
             query?: never;
@@ -10358,6 +10375,30 @@ export interface paths {
          * @description JSON-RPC 2.0 entry point. Supports ``tools/list`` and ``tools/call``.
          */
         post: operations["jsonrpc_endpoint_mcp_debug_traces_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a Supabase-shaped JWT for the given user_id.
+         *
+         *     Validates the user exists in auth.users, then signs a token with the
+         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
+         *     The auth middleware verifies the result like any other Supabase token.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -22403,6 +22444,8 @@ export interface components {
         AgentTaskCreate: {
             /** Agent Id */
             agent_id?: string | null;
+            /** Mandate Key */
+            mandate_key?: string | null;
             /**
              * Prompt
              * @default
@@ -22437,6 +22480,8 @@ export interface components {
             id: string;
             /** Agent Id */
             agent_id?: string | null;
+            /** Mandate Key */
+            mandate_key?: string | null;
             /** Prompt */
             prompt: string;
             /** Variables */
@@ -33750,6 +33795,33 @@ export interface components {
             finished_at?: string | null;
             /** Error */
             error?: string | null;
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description JWT expiry. Default 2h, min 60s, max 24h.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /** DiagSpawnDetachedResponse */
         DiagSpawnDetachedResponse: {
@@ -46920,6 +46992,10 @@ export interface components {
             claimed_by_instance_id?: string | null;
             /** Claim Expires At */
             claim_expires_at?: string | null;
+            /** Execution Authorization */
+            execution_authorization?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
         };
         /**
          * PermissionRecord
@@ -55248,6 +55324,25 @@ export interface components {
              */
             layout?: "title" | "title_content" | "section" | "blank";
         };
+        /** SmsActionAuthorizationRequest */
+        SmsActionAuthorizationRequest: {
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
+        };
+        /** SmsActionAuthorizationResponse */
+        SmsActionAuthorizationResponse: {
+            /** Confirmed */
+            confirmed: boolean;
+            /** Call Id */
+            call_id: string;
+            /** Action Digest */
+            action_digest: string;
+            /** Expires At */
+            expires_at: string;
+        };
         /** SnapBboxBody */
         SnapBboxBody: {
             /** Page Number */
@@ -56212,6 +56307,11 @@ export interface components {
              * @default 12
              */
             max_angles?: number;
+            /**
+             * Capture Pages
+             * @default 8
+             */
+            capture_pages?: number;
         };
         /** StoryAngleGenerateResponse */
         StoryAngleGenerateResponse: {
@@ -80514,6 +80614,41 @@ export interface operations {
             };
         };
     };
+    confirm_action_communications_sms_action_authorizations__call_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                call_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SmsActionAuthorizationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SmsActionAuthorizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_reply_thread_outreach_replies_lists__outreach_list_id__members__member_id__thread_get: {
         parameters: {
             query?: never;
@@ -80985,6 +81120,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

@@ -17,6 +17,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { AskUserResponse, UserAskOption } from "../tools/schemas";
 import type { ApprovalChange } from "../ui/approval-types";
+import type { SmsActionAuthorization } from "../sms-action-authorization";
 
 export type PendingAskKind =
   | "confirm"
@@ -29,6 +30,7 @@ export type PendingAskKind =
   | "takeover"
   // Structured agent-edit approval rendered by <ApprovalCard> (not <AskCard>).
   | "approval"
+  | "sms_action_authorization"
   // One Gmail message the user reviews, may edit, and sends themselves —
   // rendered by <GmailReviewCard>. See features/google-workspace/agent/.
   | "email_review";
@@ -69,6 +71,8 @@ export interface PendingAsk {
   };
   /** kind:"approval" — the structured change descriptor rendered by <ApprovalCard>. */
   approval?: ApprovalChange;
+  smsActionAuthorization?: SmsActionAuthorization;
+  smsActionArguments?: Record<string, unknown>;
   /** kind:"approval" — the tile this change acts on (drives "always approve"). */
   threadId?: string;
   /**
