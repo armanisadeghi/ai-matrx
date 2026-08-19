@@ -36,8 +36,26 @@ const DRAFT_FIELDS: readonly string[] = [
 export interface PartyCreateFormProps {
   initialKind?: PartyKind;
   initialOrgId?: string | null;
+  /**
+   * A name the calling surface already had on screen — a journalist on a story
+   * angle, an author on a piece of coverage. Prefilled so the user confirms a
+   * record instead of re-typing one somebody else already read to them.
+   */
+  initialName?: string | null;
   onCancel: () => void;
   onCreated: (partyId: string) => void;
+}
+
+/**
+ * "Sarah Chen" → first "Sarah", last "Chen"; "Maria de la Cruz" keeps the whole
+ * tail as the surname. A prefill is a starting point the user can correct in
+ * the field, never a claim about how the name decomposes.
+ */
+function splitPersonName(full: string): { first: string; last: string } {
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { first: "", last: "" };
+  if (parts.length === 1) return { first: parts[0]!, last: "" };
+  return { first: parts[0]!, last: parts.slice(1).join(" ") };
 }
 
 /**
@@ -47,15 +65,24 @@ export interface PartyCreateFormProps {
 export function PartyCreateForm({
   initialKind = "person",
   initialOrgId,
+  initialName,
   onCancel,
   onCreated,
 }: PartyCreateFormProps) {
   const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
   const orgId = initialOrgId ?? effectiveOrgId;
+  const seedName = initialName?.trim() ?? "";
+  const seedPerson = splitPersonName(seedName);
   const [kind, setKind] = useState<PartyKind>(initialKind);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [companyName, setCompanyName] = useState("");
+  const [firstName, setFirstName] = useState(
+    initialKind === "person" ? seedPerson.first : "",
+  );
+  const [lastName, setLastName] = useState(
+    initialKind === "person" ? seedPerson.last : "",
+  );
+  const [companyName, setCompanyName] = useState(
+    initialKind === "person" ? "" : seedName,
+  );
   const [jobTitle, setJobTitle] = useState("");
   const [domain, setDomain] = useState("");
   const [email, setEmail] = useState("");

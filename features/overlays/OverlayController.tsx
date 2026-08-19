@@ -3297,6 +3297,9 @@ export default function OverlayController() {
             initialOrgId={
               typeof data?.initialOrgId === "string" ? data.initialOrgId : null
             }
+            initialName={
+              typeof data?.initialName === "string" ? data.initialName : null
+            }
           />
         );
       })()}

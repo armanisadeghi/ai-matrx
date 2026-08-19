@@ -10,6 +10,8 @@ const OVERLAY_ID = "crmCreatePartyWindow" as const;
 export interface OpenCrmCreatePartyWindowOptions {
   initialKind?: PartyKind;
   initialOrgId?: string | null;
+  /** A name the calling surface already knows — prefilled into the form. */
+  initialName?: string | null;
 }
 
 export interface CrmCreatePartyWindowHandle {
@@ -27,6 +29,7 @@ export function useOpenCrmCreatePartyWindow() {
         data: {
           initialKind: options.initialKind,
           initialOrgId: options.initialOrgId,
+          initialName: options.initialName,
         },
       }),
     );
@@ -43,6 +46,6 @@ export function CrmCreatePartyWindowController(
   useEffect(() => {
     const handle = open(props);
     return () => handle.close();
-  }, [open, props.initialKind, props.initialOrgId]);
+  }, [open, props.initialKind, props.initialOrgId, props.initialName]);
   return null;
 }

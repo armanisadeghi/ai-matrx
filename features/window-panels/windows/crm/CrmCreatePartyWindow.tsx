@@ -12,6 +12,7 @@ export interface CrmCreatePartyWindowProps {
   onClose: () => void;
   initialKind?: PartyKind;
   initialOrgId?: string | null;
+  initialName?: string | null;
 }
 
 export default function CrmCreatePartyWindow({
@@ -19,6 +20,7 @@ export default function CrmCreatePartyWindow({
   onClose,
   initialKind,
   initialOrgId,
+  initialName,
 }: CrmCreatePartyWindowProps) {
   const router = useRouter();
   if (!isOpen) return null;
@@ -39,6 +41,7 @@ export default function CrmCreatePartyWindow({
       <PartyCreateForm
         initialKind={initialKind}
         initialOrgId={initialOrgId}
+        initialName={initialName}
         onCancel={onClose}
         onCreated={(partyId) => {
           onClose();
