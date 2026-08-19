@@ -418,6 +418,9 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
       description:
         "Audits the complete Rulebook for gaps, conflicts, weak evidence, and rules that are difficult to apply, then recommends the smallest useful improvements.",
       kind: "single",
+      // The advisor job IS the Final Checkup's auditor — one Mandate, never a
+      // second agent for the same judgment (bound 2026-08-19; was an empty role).
+      mandateKey: "masterwork.checkup_auditor",
       defaultAgentId: null,
       allowCustom: true,
       autoRun: "never",
@@ -429,6 +432,8 @@ Never approve, reject, retire, activate, build, or release on the user's behalf.
       description:
         "Turns the Expert's intent and evidence into precise proposed rules and stages them through the Rule draft write target for human review.",
       kind: "single",
+      // The improver's draft-new shape is exactly this job (bound 2026-08-19).
+      mandateKey: "masterwork.rule_improver",
       defaultAgentId: null,
       allowCustom: true,
       autoRun: "never",

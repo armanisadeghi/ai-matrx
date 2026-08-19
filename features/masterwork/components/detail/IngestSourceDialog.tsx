@@ -146,6 +146,7 @@ export function IngestSourceDialog({
   rulebook,
   onIngested,
   onFollowupSeed,
+  initialLane = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -157,13 +158,24 @@ export function IngestSourceDialog({
    * interview panel with this composer seed.
    */
   onFollowupSeed?: (seed: string) => void;
+  /**
+   * Deep-link entry (the Approach picker's `?ingest=` param): pre-select the
+   * lane so choosing an Approach lands ON that Approach, never on a default.
+   * "source" = instructional text · "exemplar" = examples of best work ·
+   * "file" = upload a file/recording.
+   */
+  initialLane?: "source" | "exemplar" | "file" | null;
 }) {
   const { upload } = useFileUpload();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [shape, setShape] = useState<SourceShape>("text");
+  const [shape, setShape] = useState<SourceShape>(
+    initialLane === "file" ? "file" : "text",
+  );
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
-  const [mode, setMode] = useState<IngestMode>("instructional");
+  const [mode, setMode] = useState<IngestMode>(
+    initialLane === "exemplar" ? "exemplar" : "instructional",
+  );
   const [sourceNote, setSourceNote] = useState("");
   const [uploading, setUploading] = useState(false);
 

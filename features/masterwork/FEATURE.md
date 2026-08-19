@@ -441,9 +441,10 @@ rulebook.version` → the Masterworks page flags "rebuild" AND opens the rule-le
 - `components/detail/RulebookDetailPage.tsx` + `RuleEditorDialog.tsx` — the Expert surface. Plain
   language only: "rules", "how to spot a violation", "how bad is breaking it". Zero jargon is a
   requirement, not a style choice (THE MISMATCH RULE). Rule textareas open at six rows. **Clean
-  up with AI** runs Mandate `masterwork.rule_cleanup` with the current draft plus the complete
-  `buildRulebookSurfaceScope` payload, streams through `LiveRunDisplay`, and stages the validated
-  result for review; only Save writes. The source quote, severity, and section are mechanically
+  up with AI** runs Mandate `masterwork.rule_improver` in its TIDY shape (empty `expert_input`;
+  `masterwork.rule_cleanup` was retired into it 2026-08-18 — both DB rows are soft-deleted, never
+  re-bind them) through the ONE runner `review/useRuleImproveRun.ts`, streams through
+  `LiveRunDisplay`, and stages the validated result for review; only Save writes. The source quote, severity, and section are mechanically
   protected from AI changes. The generic `wizardDraftSlice` preserves a paid cleanup until Save,
   explicit Cancel, or Undo.
 - `build/BuildWindow.tsx` — "Build a Masterwork" as a WindowPanel (streams

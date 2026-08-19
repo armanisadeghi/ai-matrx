@@ -581,6 +581,18 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
   const dumpFocus = searchParams.get("dump") === "1";
+  // The Approach picker's deep link (`platform.approach.intake_query`): choosing
+  // the source / exemplar / file Approach must land ON that lane. Before this
+  // param existed (2026-08-19) those three enabled Approaches dead-ended on a
+  // bare detail page — the mechanical cause of exemplar's zero rules.
+  const ingestParam = searchParams.get("ingest");
+  const ingestLane =
+    ingestParam === "source" || ingestParam === "exemplar" || ingestParam === "file"
+      ? ingestParam
+      : null;
+  useEffect(() => {
+    if (ingestLane) setIngestOpen(true);
+  }, [ingestLane]);
   // The body_of_work Approach ("Everything you've published") lands here with
   // ?body_of_work=1 — the corpus dialog IS the next step.
   const [corpusOpen, setCorpusOpen] = useState(
@@ -1635,6 +1647,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <IngestSourceDialog
             open={ingestOpen}
             onOpenChange={setIngestOpen}
+            initialLane={ingestLane}
             rulebook={rulebook}
             onIngested={() => {
               void getRulebook(rulebook.id)
