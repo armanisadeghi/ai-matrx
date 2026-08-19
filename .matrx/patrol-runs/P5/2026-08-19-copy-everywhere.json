@@ -119,6 +119,33 @@
       ],
       "previousEventHash": "8cb43c47af66d75403353d7415914f8b0de7498f41bb314ca81a352d71405eb8",
       "eventHash": "c93717a37285c81016baef128296ba3e523b70b8e3a5eaec44829465bce9a1f6"
+    },
+    {
+      "sequence": 10,
+      "state": "certified",
+      "at": "2026-08-19T07:39:30.916Z",
+      "actor": "/root/p5_certifier",
+      "summary": "Exact candidate 8196a478e is CERTIFIED after two payload-fidelity rejections were repaired.",
+      "evidence": [
+        "Both rejected candidates remain ancestors; no concrete batch-caused defect remains."
+      ],
+      "certification": {
+        "verdict": "CERTIFIED",
+        "candidateSha": "8196a478e530cd541714a5611faf5bfdf86bf95b",
+        "certifierTaskId": "/root/p5_certifier",
+        "checks": [
+          "pnpm type-check: pass",
+          "scoped ESLint: 0 errors, 1 unchanged baseline warning",
+          "pnpm check:doctrine: pass",
+          "pnpm check:copy-everywhere: 89 compliant, 0 auto-approved, 1 equivalent, 24 review, 9 excluded",
+          "pnpm test:copy-everywhere: 8/8",
+          "focused Jest: 5 suites, 19 tests",
+          "pnpm check:patrol-contracts: pass",
+          "run record verify and git diff --check: pass"
+        ]
+      },
+      "previousEventHash": "c93717a37285c81016baef128296ba3e523b70b8e3a5eaec44829465bce9a1f6",
+      "eventHash": "aef094ee3224704475a14f4f583b954cc7970883c880b81d2c8898c5606fb804"
     }
   ]
 }
