@@ -1,115 +1,71 @@
 ---
 status: active
-updated: 2026-08-17
-repos: [matrx-frontend, aidream]
-vision: [common-docs/systems/cms-system/FEATURE.md § The Page Hub doctrine — Arman's words, preserved verbatim]
+updated: 2026-08-18
+repos: [matrx-frontend, aidream, my-matrx]
+vision: [common-docs/systems/cms-system/FEATURE.md § The Page Hub doctrine — Arman's words, verbatim]
 ---
 
-# CMS Page Hub — everything that makes a page is PART of the page
+# CMS — the feature's master handoff (Page Hub + closeout map)
 
-The work order for `/cms/[siteId]/pages/[pageId]` as the page's HOME: every resource that went
-into making the page (plan, keywords, research, pipeline artifacts) and every resource the live
-page produces (search-console data, analysis, findings) is associated, visible, and manageable
-from here. Sibling of [website-factory-vision.md](./website-factory-vision.md) (the pipeline
-spine); this doc owns the page-editor surface itself.
+**THE GLOBAL VIEW LIVES IN ONE PLACE:
+`common-docs/systems/cms-system/FEATURE.md` § THE CMS FEATURE MAP** — every CMS part, its
+code-verified status, and whether the parts talk. Read it FIRST; update it in the same change as
+any CMS work. This doc is the work order for what remains.
 
-## Vision — Arman's words (2026-08-14)
+## What is DONE (code-verified on origin/main + live DB, 2026-08-18 — one line each)
 
-**Canonically preserved (verbatim, with the four 2026-08-16 rulings) in
-`common-docs/systems/cms-system/FEATURE.md` § The Page Hub doctrine** — read it there. The core:
+- **Page Hub**: 7 URL-synced editor tabs; Plan tab mounts the full canonical NodePanel; Measure
+  mounts PageWorkspace wholesale; doors both directions. Production-verified.
+- **SEO plan, one store** (invariant 9): `web.page.desired_values.keyword_plan` + `meta_*_desired`;
+  ONE `SeoPlanEditor` in all three homes; legacy plan-node writer annihilated; typed-keyword
+  commit-on-blur fix (the dead-Save trap) proven end-to-end into the live row.
+- **Keyword→pipeline integrity** (aidream): `assign_primary_keyword` is the one writer (heals on
+  re-apply, lights the `p1_keywords` step); bulk brief paths soft-gate loudly; briefs are
+  post-checked for keyword coverage. Tested.
+- **Bulk SEO-plan generation**: cheap/thorough/advanced tiers, exact cost before the button,
+  crash-safe batches; live-proven on wf4-step-queue-proof (6/6 pages gained roles, secondaries,
+  links, meta).
+- **Publish → measurement join** (aidream): publish adopts the planned `web.page` row (never a
+  duplicate across URL derivations) and writes `client_pages.web_page_id`. Regression-tested.
+- **Plan workspace UX**: four chrome rows → ONE toolbar (status-truthful Edit/Live); the pipeline
+  rail IS the NodePanel's tab strip (Page | SEO plan | Research | Family | Write | Review |
+  Build | Publish), smart default tab, "Write with AI" beside the manual editor; durable
+  `web_site_id` CMS-link authority; ContextMenuV3 mobile `<tr>` fix; sparkle-icon ban recorded.
 
-> "Before, during, and after are all captured. Just because we're in the *during* period doesn't
-> mean we should forget where we came from and where we can go."
+## REMAINING (the work order)
 
-Every workspace surface asks three questions — what came BEFORE (associate + show it; absent →
-offer to create it, never pretend the step didn't exist), what happens DURING (the editor), what
-comes AFTER (measurement, analysis, findings feeding back into editing). A tab is a reused
-canonical component, never a rebuilt poorer one.
-
-## Current state — verified against code + live DB 2026-08-17
-
-**The hub surface is DONE and production-verified.** 7 URL-synced tabs (Preview ·
-Code[html/css/js pill switcher] · Plan · SEO · Measure · Settings · Versions), deep-linkable both
-directions. Plan tab mounts the canonical `NodePanel` (hosted) — the REAL editor per Arman's
-ruling, pipeline rail on top; adopt flow for plan-less pages (`bridgeAdopt`). Measure tab mounts
-`PageWorkspace` wholesale off `client_pages.web_page_id`. Reverse doors everywhere
-(`cmsPageEditorHref`); before/during/after sweep ran twice, all named gaps closed and
-browser-verified (details: git history of this file).
-
-**The SEO-plan unification is DONE on both halves** (invariant 9,
-`common-docs/systems/content-planning/FEATURE.md` is canon): ONE plan per page on
-`web.page.meta_*_desired` + `desired_values.keyword_plan` (+ `outbound_links` as the one
-link-prescription system); `web.page.status='planned'` rows minted at plan/CMS time through
-`ensure_planned_page_urls`, crawler ADOPTS by URL; 567/567 nodes migrated
-(`aidream/scripts/migrate_plan_seo_to_page.py`, idempotent); aidream pipeline/strategist/brief
-writer read `services/content_plan/page_seo_plan.py`; the ONE editor
-`features/marketing/seo/plan/SeoPlanEditor` is live in all three homes (plan workspace NodePanel,
-marketing PageWorkspace, CMS SEO tab via `useCmsPageSeoPlan` + one-click plan-record create).
-plan.node's copied SEO columns are retained but retired — **column drop deferred until after
-production verification.**
-
-**Measured data state (live DB, 2026-08-17)** — the store is unified but the plans are THIN:
-
-- `web.page`: 682 `planned` rows; 570 carry `keyword_plan` — but **569 are primary-keyword-only**
-  (0 with secondary keywords, 2 with page_role, 0 with planned `outbound_links`, 5 with desired
-  meta). The migration moved what existed; the strategist has never applied at scale in
-  production. **The one store is real; the plans inside it are skeletons.**
-- CMS DB `client_pages` (121 rows): 77 have `plan_node_id` (BEFORE doors live), **1 has
-  `web_page_id`** (Measure tab + SEO tab empty for ~all CMS pages; the join is minted on-demand
-  by the SEO tab's create button or publish+crawl adoption — publish does NOT auto-link), 0 have
-  `research_topic_ids`.
-
-## WHAT'S NEXT — the open front
-
-~~**1. Fill the thin plans — effort-tiered bulk SEO-plan generation (the big one).**~~ DONE
-2026-08-18 — the existing Setup strategist now plans every page with `cheap` / `thorough` /
-`advanced` batching, exact call count and measured-history + live-catalog cost shown before the
-single existing button, crash-safe per-batch proposal checkpoints, and floating live progress.
-The existing Apply seam remains the only writer. Live proof on `wf4-step-queue-proof`: cheap ran
-6 pages in 1 call; after Apply, 6/6 `web.page` rows had roles, secondary keywords, planned links,
-and desired meta (12 secondary keywords, 13 links). No client site was touched.
-
-**2. Best-in-class layer on the one store.** SERP-intent targets, entity/heading coverage vs
-plan, tracking against plan (observed vs desired verdicts, not timestamps). Benchmark: Ahrefs
-content briefs / Clearscope / SurferSEO's plan-vs-page scoring — but wired into our own
-crawl + GSC data we already have.
-
-~~**3. Fix `useCmsPagePlanContext`.**~~ DONE 2026-08-17 — the hook now reads plan content from
-`plan.node` and ALL SEO intent (keyword, role, secondaries, desired meta, planned links) from
-the one store via `useSitePlanIndex`/`planForRoute`; raw `attributes` dropped from agent
-context in favour of the structured `seo_plan` block; `features/cms/FEATURE.md` updated.
-
-~~**4. Annihilate the legacy plan-node SEO writer.**~~ DONE 2026-08-17 — NodePanel now shows an
-honest missing-record state with one `ensurePlannedPages` action, then mounts the canonical
-`SeoPlanEditor`. The fallback file and its read-only strategy section are deleted; plan-node
-primary/meta and `secondary_keyword` edge write paths are gone.
-
-~~**5. Wire the AFTER join at publish.**~~ DONE 2026-08-17 — aidream's ONE per-page publish
-path now resolves `page_urls().live_url`, prefers the linked `plan_node_id`'s existing planned
-row, adopts that identity onto the real live URL, advances it to `active`, and writes
-`client_pages.web_page_id` only through `page_service.set_web_page_link`. `publish_many` and
-bridge `cms_publish` inherit the same path. The recorded custom-domain vs
-`mymatrx.com/c/{slug}` hazard is closed: the canonical URL writer moves the planned row rather
-than inserting a second one, with a regression test proving the insert seam is not called.
-
-**Lower priority:** research CMS-array reverse filter (`client_pages.research_topic_ids`, CMS
-DB — 0 rows carry data today, wire when research artifacts flow); CMS components→page usage join
-(join doesn't exist); Research tab (blocked on website-factory p3/p4/p5 artifact flow).
+1. **Page-hub UI polish tail (chipped 2026-08-18).** Cut every paragraph empty-state in
+   NodeRealityCard / NodeMeasureCard / PageDraftEditor to one short line; Review + Build empty
+   states become real components ("Add page content to see a review here"), not gray text;
+   Build/Publish stop repeating the same reality card sentences; step-chip visual consistency
+   (uniform sizes, dark-friendly status dot, REAL tooltips on every chip and run arrow).
+2. **Button-duplication fix pass — WAITS ON ARMAN.** The audit report is in the review queue
+   ("Content-plan button duplication audit"): per-control keep/merge/delete verdicts + the
+   copy-cluster collapse (plain copy icon + ONE copy-for-AI dropdown) + the misleading skill
+   lines to amend. Arman rules, then a session executes.
+3. **Best-in-class layer on the one store.** SERP-intent targets, entity/heading coverage vs
+   plan, tracking against plan (verdicts, not timestamps). Benchmark: Ahrefs briefs /
+   Clearscope / SurferSEO plan-vs-page scoring, wired to our own crawl + GSC data.
+4. **Collections render-half re-audit (chipped 2026-08-18).** my-matrx gained
+   `lib/render/collectionBindings.js` ("collection SSR and site discovery") AFTER the buildout
+   handoff last updated — re-audit `common-docs/systems/cms-system/CMS-BUILDOUT-HANDOFF.md`
+   against the code, groom it, and surface its six Arman decisions that still stand.
+5. **Hardening/parity tail — unowned since 07-23** (`aidream/docs/handoffs/cms-hardening-and-parity.md`).
+   Re-verified 2026-08-18: my-matrx `pages/api/create-page.js` still has ZERO handler-level auth
+   (proxy matcher is the only lock). Pre-launch security triage is Arman's call; the feature-gap
+   items there (version-history UI pages-only, zero tests on cms_assets/cms_verify) are ordinary
+   work.
+6. **Lower priority:** research CMS-array reverse filter (`client_pages.research_topic_ids` — 0
+   rows carry data yet); components→page usage join (doesn't exist); Research tab (blocked on
+   website-factory p2 artifacts); plan.node retired-column drop (after production verification).
 
 ## Resources
 
 - Editor: `features/cms/components/PageEditor.tsx` · route `app/(core)/cms/[siteId]/pages/[pageId]`
-- FE CMS contract: `features/cms/FEATURE.md` (§ Agent surfaces carries the AI-everywhere rule)
-- SEO plan: `features/marketing/seo/plan/` (`plan-model.ts` is the canonical normalizer — never
-  re-implement it); server read: aidream `services/content_plan/page_seo_plan.py`
-- Plan side: `features/marketing/content-plan/` (NodePanel/NodeStepRail, setup/bridge.ts);
-  pipeline records: aidream `services/content_plan/artifacts.py`
-- Measured side: `features/marketing/components/pages/PageWorkspace.tsx`, GSC
-  `features/marketing/search-console/`
-- Worked example page (plan-created, has `plan_node_id`, unpublished):
-  `/cms/4d536826-9795-4788-bbfa-3fc77a59767a/pages/7f79c21a-6a77-4bdc-8e9f-a649ce6376b2`
-  — PBW Law, owned by arman@armansadeghi.com in the AI Matrx org; the `admin@admin.com` test
-  login is NOT a member of that org and gets refused. Use `dev-website` (`16f6b29b-…`) for
-  test-login walkthroughs.
-- Test login `admin@admin.com` / `Password1234#`; never write to `iopbm` / `prp-injection-md`
-  (real clients — use dev-website / cosmeticinjectables).
+- FE CMS contract: `features/cms/FEATURE.md` · plan workspace: `features/marketing/content-plan/`
+  (NodePanel/NodeStepRail); SEO plan: `features/marketing/seo/plan/` (`plan-model.ts` is the one
+  normalizer); server: aidream `services/content_plan/` (`page_seo_plan.py`, `artifacts.py`)
+- Pipeline spine (sibling feature): `docs/handoffs/website-factory-vision.md`
+- Test site: wf4-step-queue-proof `/marketing/content-plan/17de2e51-eb28-4f5f-8efa-6cc42d44723e`;
+  login `admin@admin.com` / `Password1234#`; NEVER write to `iopbm` / `prp-injection-md` (real
+  clients — use dev-website / cosmeticinjectables)
